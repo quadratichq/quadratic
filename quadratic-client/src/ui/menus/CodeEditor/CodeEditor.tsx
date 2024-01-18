@@ -4,7 +4,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { hasPerissionToEditFile } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -78,6 +78,8 @@ export const CodeEditor = () => {
 
   const updateCodeCell = useCallback(
     (updateEditorContent: boolean) => {
+      // selectedCellSheet may be undefined if code editor was activated from within the CellInput
+      if (!editorInteractionState.selectedCellSheet) return;
       const codeCell = grid.getCodeCell(
         editorInteractionState.selectedCellSheet,
         editorInteractionState.selectedCell.x,
@@ -166,7 +168,7 @@ export const CodeEditor = () => {
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Don't allow the shortcuts below for certain users
-    if (!hasPerissionToEditFile(editorInteractionState.permissions)) {
+    if (!hasPermissionToEditFile(editorInteractionState.permissions)) {
       return;
     }
 

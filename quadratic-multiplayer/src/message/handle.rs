@@ -11,12 +11,14 @@ use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
 };
 use crate::state::connection::Connection;
+use crate::state::transaction_queue::GROUP_NAME;
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
-use quadratic_core::controller::transaction::TransactionServer;
+use quadratic_core::controller::transaction::{Transaction, TransactionServer};
+use quadratic_rust_shared::pubsub::PubSub;
 use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -69,16 +71,20 @@ pub(crate) async fn handle_message(
 
                 tracing::trace!("permissions: {:?}", permissions);
 
-                // check for updated sequence num from the transaction queue
-                // todo: this will need to be reworked to check the transaction data store
-                if let Some(transaction_sequence_num) = state
+                // TODO(ddimaria): break out any pubsub work into a separate file
+                if let Ok(pubsub_sequence_num) = state
                     .transaction_queue
                     .lock()
                     .await
-                    .get_sequence_num(file_id)
+                    .pubsub
+                    .connection
+                    .last_message(&file_id.to_string())
+                    .await
                 {
-                    // replace the current sequence_num with the transaction sequence_num
-                    sequence_num = transaction_sequence_num;
+                    // ignore parsing errors for now
+                    let pubsub_sequence_num =
+                        pubsub_sequence_num.0.parse::<u64>().unwrap_or(sequence_num);
+                    sequence_num = sequence_num.max(pubsub_sequence_num);
                 }
 
                 (permissions, sequence_num)
@@ -108,7 +114,19 @@ pub(crate) async fn handle_message(
                 last_heartbeat: chrono::Utc::now(),
             };
 
-            println!("user: {:?}", user);
+            // subscribe to the file's pubsub channel
+            // TODO(ddimaria): break out any pubsub work into a separate file
+            if let Err(error) = state
+                .transaction_queue
+                .lock()
+                .await
+                .pubsub
+                .connection
+                .subscribe(&file_id.to_string(), GROUP_NAME)
+                .await
+            {
+                tracing::info!("Error subscribing to pubsub channel: {}", error);
+            };
 
             let is_new = state
                 .enter_room(file_id, &user, connection.id, sequence_num)
@@ -180,8 +198,16 @@ pub(crate) async fn handle_message(
             // unpack the operations or return an error
             let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;
 
-            // update the room's sequence_num
-            let sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+            // get the room's sequence_num
+            let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
+
+            // add the transaction to the transaction queue
+            let sequence_num = state
+                .transaction_queue
+                .lock()
+                .await
+                .push_pending(id, file_id, operations_unpacked, room_sequence_num)
+                .await;
 
             // broadcast the transaction to all users in the room
             let response = MessageResponse::Transaction {
@@ -191,14 +217,6 @@ pub(crate) async fn handle_message(
                 sequence_num,
             };
             broadcast(vec![], file_id, Arc::clone(&state), response);
-
-            // add the transaction to the transaction queue
-            state.transaction_queue.lock().await.push_pending(
-                id,
-                file_id,
-                operations_unpacked,
-                sequence_num,
-            );
 
             Ok(None)
         }
@@ -212,17 +230,20 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
-            // todo: this will also need to get the unpending transactions to catch the client up
-
-            // get transactions from the transaction queue
-            let transactions: Vec<TransactionServer> = state
+            // TODO(ddimaria): break out any pubsub work into a separate file
+            let transactions = state
                 .transaction_queue
                 .lock()
                 .await
-                .get_pending_min_sequence_num(file_id, min_sequence_num)?
+                .pubsub
+                .connection
+                .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string())
+                .await?
                 .iter()
-                .map(|t| t.to_owned())
-                .collect::<Vec<_>>();
+                .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
+                .flatten()
+                .map(|transaction| transaction.into())
+                .collect::<Vec<TransactionServer>>();
 
             let response = MessageResponse::Transactions {
                 transactions: serde_json::to_string(&transactions)?,

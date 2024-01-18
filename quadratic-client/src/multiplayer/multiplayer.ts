@@ -473,6 +473,7 @@ export class Multiplayer {
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
   private async receiveTransactions(data: ReceiveTransactions) {
+    console.log(data.transactions)
     grid.receiveMultiplayerTransactions(data.transactions);
     if (await offline.unsentTransactionsCount()) {
       this.state = 'syncing';

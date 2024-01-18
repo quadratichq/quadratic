@@ -39,10 +39,8 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   }
 
   const isFileOwner = !file.ownerTeamId && file.ownerUserId === userId;
-
-  // todo...had to hack around this
-  const teamRole = undefined; // file.ownerTeam && file.ownerTeam.UserTeamRole[0] ? file.ownerTeam.UserTeamRole[0].role : undefined;
-  const fileRole = undefined; // file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
+  const teamRole = undefined; //file.ownerTeam && file.ownerTeam.UserTeamRole[0] ? file.ownerTeam.UserTeamRole[0].role : undefined;
+  const fileRole = undefined; //file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
 
   const filePermissions = getFilePermissions({
     fileRole,

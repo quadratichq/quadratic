@@ -8,7 +8,7 @@ import { useRecoilValue } from 'recoil';
 import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
-import { hasPerissionToEditFile } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '../../../constants/urls';
 import { colors } from '../../../theme/colors';
@@ -29,7 +29,7 @@ interface Props {
 export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, saveAndRunCell, cancelPython, closeEditor } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = hasPerissionToEditFile(editorInteractionState.permissions);
+  const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
 
   const language = editorInteractionState.mode;
 

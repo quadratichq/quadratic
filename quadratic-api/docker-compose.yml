@@ -10,3 +10,8 @@ services:
       POSTGRES_USER: prisma
       POSTGRES_PASSWORD: prisma
       POSTGRES_DB: quadratic-api
+    networks:
+      - quadratic
+
+networks:
+  quadratic:

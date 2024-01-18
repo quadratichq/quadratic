@@ -1,4 +1,6 @@
 import asyncio
+import inspect
+import itertools
 import operator
 import os
 import re
@@ -147,6 +149,111 @@ def ensure_not_cell(item):
         return [ensure_not_cell(x) for x in item]
     return not_cell(item)
 
+def _get_user_frames() -> list[inspect.FrameInfo] | None:
+    rev_frames = reversed(inspect.stack())
+    try:
+        rev_frames = itertools.dropwhile(
+            lambda frame: not ("/_pyodide/" in frame.filename and frame.function == "eval_code_async"),
+            rev_frames,
+        )
+        rev_frames = itertools.dropwhile(
+            lambda frame: frame.filename != "<exec>", rev_frames
+        )
+        rev_frames = itertools.takewhile(
+            lambda frame: frame.filename == "<exec>", rev_frames
+        )
+
+        return list(reversed(list(rev_frames)))
+    except:
+        return None
+
+def _line_number_from_traceback() -> int:
+    cl, exc, tb = sys.exc_info()
+    line_number = traceback.extract_tb(tb)[-1].lineno
+    return line_number
+
+def _get_return_line(code: str) -> int:
+    code = code.rstrip()
+    return code.count("\n") + 1
+
+def _error_result(
+    error: Exception, code: str, cells_accessed: list[list], sout: StringIO, line_number: int,
+) -> dict:
+    error_class = error.__class__.__name__
+    detail = error.args[0]
+    return {
+        "output_value": None,
+        "array_output": None,
+        "cells_accessed": cells_accessed,
+        "std_out": sout.getvalue(),
+        "success": False,
+        "input_python_stack_trace": "{} on line {}: {}".format(
+            error_class, line_number, detail
+        ),
+        "line_number": line_number,
+        "formatted_code": code,
+    }
+
+class FigureDisplayError(Exception):
+    def __init__(self, message: str, *, source_line: int):
+        super().__init__(message)
+        self._source_line = source_line
+
+    @property
+    def source_line(self) -> int:
+        return self._source_line
+
+class _FigureHolder:
+    def __init__(self):
+        self._result = None
+        self._result_set_from_line = None
+
+    def set_result(self, figure) -> None:
+        user_call_frames = _get_user_frames()
+        current_result_set_from_line = (
+            user_call_frames[0].lineno if user_call_frames is not None else "unknown"
+        )
+
+        if self._result is not None:
+            raise FigureDisplayError(
+                f"Cannot produce multiple figures from a single cell. "
+                f"First produced on line {self._result_set_from_line}, "
+                f"then on {current_result_set_from_line}",
+                source_line=current_result_set_from_line
+            )
+
+        self._result = figure
+        self._result_set_from_line = current_result_set_from_line
+
+    @property
+    def result(self):
+        return self._result
+
+    @property
+    def result_set_from_line(self) -> int | None:
+        return self._result_set_from_line
+
+async def _intercept_plotly_html(code) -> _FigureHolder | None:
+    if "plotly" not in pyodide.code.find_imports(code):
+        return None
+
+    await micropip.install("plotly")
+    import plotly.io
+
+    # TODO: It would be nice if we could prevent the user from setting the default renderer
+    plotly.io.renderers.default = "browser"
+    figure_holder = _FigureHolder()
+
+    plotly.io._base_renderers.open_html_in_browser = _make_open_html_patch(figure_holder.set_result)
+
+    return figure_holder
+
+def _make_open_html_patch(figure_saver):
+    def open_html_in_browser(html, *args, **kwargs):
+        figure_saver(html)
+
+    return open_html_in_browser
+
 async def run_python(code):
     cells_accessed = []
 
@@ -262,6 +369,8 @@ async def run_python(code):
     output_value = None
 
     try:
+        plotly_html = await _intercept_plotly_html(code)
+
         # Capture STDOut to sout
         with redirect_stdout(sout):
             output_value = await pyodide.code.eval_code_async(
@@ -271,17 +380,12 @@ async def run_python(code):
                 quiet_trailing_semicolon=False,
             )
 
+    except FigureDisplayError as err:
+        return _error_result(err, code, cells_accessed, sout, err.source_line)
     except SyntaxError as err:
-        error_class = err.__class__.__name__
-        detail = err.args[0]
-        line_number = err.lineno
-        # full_trace = traceback.format_exc()
+        return _error_result(err, code, cells_accessed, sout, err.lineno)
     except Exception as err:
-        error_class = err.__class__.__name__
-        detail = err.args[0]
-        cl, exc, tb = sys.exc_info()
-        line_number = traceback.extract_tb(tb)[-1][1]
-        # full_trace = traceback.format_exc()
+        return _error_result(err, code, cells_accessed, sout, _line_number_from_traceback())
     else:
         # Successfully Created a Result
         await micropip.install(
@@ -332,6 +436,17 @@ async def run_python(code):
         except Exception:
             pass
 
+        if plotly_html is not None and plotly_html.result is not None:
+            if output_value is not None or array_output is not None:
+                err = RuntimeError(
+                    "Cannot return result from cell that has displayed a figure "
+                    f"(displayed on line {plotly_html.result_set_from_line})"
+                )
+
+                return _error_result(err, code, cells_accessed, sout, _get_return_line(code))
+            else:
+                output_value = plotly_html.result
+
         # removes output_value if there's an array or None
         if array_output or output_value is None:
             output_value = ""
@@ -345,19 +460,5 @@ async def run_python(code):
             "input_python_stack_trace": None,
             "formatted_code": formatted_code,
         }
-
-    return {
-        "output_value": None,
-        "array_output": None,
-        "cells_accessed": cells_accessed,
-        "std_out": sout.getvalue(),
-        "success": False,
-        "input_python_stack_trace": "{} on line {}: {}".format(
-            error_class, line_number, detail
-        ),
-        "line_number": line_number,
-        "formatted_code": code,
-    }
-
 
 print("[Python WebWorker] initialized")

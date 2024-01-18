@@ -4,7 +4,7 @@ import mixpanel from 'mixpanel-browser';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPerissionToEditFile } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
@@ -25,7 +25,7 @@ export const SheetBar = (): JSX.Element => {
 
   const theme = useTheme();
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = hasPerissionToEditFile(permissions) && !isMobile;
+  const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);

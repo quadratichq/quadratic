@@ -59,6 +59,7 @@ router.put(
       }
 
       // Create a new checkpoint
+
       const newCheckpoint = await prisma.fileCheckpoint.create({
         data: {
           file: { connect: { uuid: fileUuid } },

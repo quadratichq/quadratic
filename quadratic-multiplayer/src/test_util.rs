@@ -52,7 +52,11 @@ pub(crate) fn new_user() -> User {
             code_running: "".to_string(),
         },
         image: FilePath().fake(),
-        permissions: vec![FilePermRole::FileEdit],
+        permissions: vec![
+            FilePermRole::FileEdit,
+            FilePermRole::FileView,
+            FilePermRole::FileDelete,
+        ],
         socket: None,
         last_heartbeat: chrono::Utc::now(),
     }
