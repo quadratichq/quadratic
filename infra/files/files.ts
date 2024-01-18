@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
+import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import { redisHost, redisPort } from "../shared/redis";
 import { filesEc2SecurityGroup } from "../shared/securityGroups";
@@ -14,8 +15,6 @@ const quadraticApiUri = config.require("quadratic-api-uri");
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
 const instanceSize = config.require("files-instance-size");
-const ecrRegistryUrl = config.require("ecr-registry-url");
-const pulumiAccessToken = config.require("pulumi-access-token");
 
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
@@ -26,36 +25,17 @@ const instance = new aws.ec2.Instance("files-instance", {
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
   userDataReplaceOnChange: true, // TODO: remove this
-  userData: pulumi.all([redisHost, redisPort]).apply(
-    ([host, port]) => `#!/bin/bash
-echo 'Installing Docker'
-sudo yum update -y
-sudo yum install -y docker
-sudo systemctl start docker
-sudo systemctl enable docker
-
-echo 'Installing Pulumi ESC CLI'
-curl -fsSL https://get.pulumi.com/esc/install.sh | sh
-export PATH=$PATH:/.pulumi/bin
-export PULUMI_ACCESS_TOKEN=${pulumiAccessToken}
-esc login
-
-echo 'Setting ENV Vars'
-esc env open quadratic/quadratic-files-development --format dotenv > .env
-sed -i 's/"//g' .env
-echo PUBSUB_HOST=${host} >> .env
-echo PUBSUB_PORT=${port} >> .env
-echo QUADRATIC_API_URI=${quadraticApiUri} >> .env
-
-echo 'Ensure AWS Cli is installed'
-sudo yum install aws-cli -y
-
-echo 'Logging into ECR'
-aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS --password-stdin ${ecrRegistryUrl}
-
-echo 'Pulling and running Docker image from ECR'
-sudo docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
-sudo docker run -d --restart always -p 80:80 --env-file .env ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`
+  userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
+    runDockerImageBashScript(
+      "quadratic-files-development",
+      dockerImageTag,
+      "quadratic-files-development",
+      {
+        PUBSUB_HOST: host,
+        PUBSUB_PORT: port.toString(),
+        QUADRATIC_API_URI: quadraticApiUri,
+      }
+    )
   ),
 });
 
