@@ -75,7 +75,10 @@ pub(crate) async fn serve() -> Result<()> {
         .local_addr()
         .map_err(|e| MpError::InternalServer(e.to_string()))?;
 
-    tracing::info!("listening on {local_addr}");
+    tracing::info!(
+        "listening on {local_addr}, environment={}",
+        config.environment
+    );
 
     if !config.authenticate_jwt {
         tracing::warn!("JWT authentication is disabled");
@@ -198,8 +201,9 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
                     // kill the ws connection for auth errors
                     MpError::Authentication(_) => {
                         break;
-                    } // kill the ws connection for critical file permission errors
-                    MpError::FilePermissions(is_critical, _) if is_critical => {
+                    }
+                    // kill the ws connection for file permission errors
+                    MpError::FilePermissions(_) => {
                         break;
                     }
                     // noop

@@ -8,6 +8,7 @@
 use quadratic_rust_shared::{Aws, SharedError};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use uuid::Uuid;
 
 pub(crate) type Result<T> = std::result::Result<T, MpError>;
 
@@ -26,7 +27,7 @@ pub(crate) enum MpError {
     Connection(String),
 
     #[error("File permissions error: {0}")]
-    FilePermissions(bool, String),
+    FilePermissions(String),
 
     #[error("File service error: {0}")]
     FileService(String),
@@ -64,16 +65,14 @@ pub(crate) enum MpError {
     #[error("User error: {0}")]
     User(String),
 
-    #[error("User does not exist: {0}")]
-    UserDoesNotExist(String),
+    #[error("User {0} not found in room {1}")]
+    UserNotFound(Uuid, Uuid),
 }
 
 impl From<SharedError> for MpError {
     fn from(error: SharedError) -> Self {
         match error {
-            SharedError::QuadraticApi(is_critical, error) => {
-                MpError::FilePermissions(is_critical, error)
-            }
+            SharedError::QuadraticApi(error) => MpError::FilePermissions(error),
             SharedError::Aws(aws) => match aws {
                 Aws::S3(error) => MpError::S3(error),
             },

@@ -44,6 +44,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
   // Upload file contents to S3 and create a checkpoint
   const { uuid } = dbFile;
   const response = await uploadStringAsFileS3(`${uuid}-0.grid`, contents);
+
   await dbClient.fileCheckpoint.create({
     data: {
       fileId: dbFile.id,

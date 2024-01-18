@@ -8,6 +8,7 @@ mod background_worker;
 mod config;
 mod error;
 mod message;
+mod permissions;
 mod server;
 mod state;
 #[cfg(test)]
