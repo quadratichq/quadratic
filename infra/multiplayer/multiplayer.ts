@@ -1,6 +1,5 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import * as fs from "fs";
 import { redisHost, redisPort } from "../shared/redis";
 import {
   multiplayerEc2SecurityGroup,
@@ -11,6 +10,7 @@ const config = new pulumi.Config();
 // Configuration from command line
 const multiplayerSubdomain = config.require("multiplayer-subdomain");
 const quadraticApiUri = config.require("quadratic-api-uri");
+const dockerImageTag = config.require("docker-image-tag");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
@@ -19,27 +19,12 @@ const instanceKeyName = config.require("ec2-instance-key-name");
 const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
-const dataDogEnv = config.require("data-dog-env");
-const dataDogApiKey = config.require("data-dog-api-key");
 const instanceSize = config.require("multiplayer-instance-size");
 const instanceAmi = config.require("multiplayer-instance-ami");
-const awsS3AccessKey = config.require("multiplayer-aws-s3-access-key-id");
-const awsS3Secret = config.require("multiplayer-aws-s3-secret-access-key");
 const pulumiAccessToken = config.require("pulumi-access-token");
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
-// Read the content of the Bash script
-let setupMultiplayerService = fs.readFileSync(
-  "multiplayer/setup-multiplayer-service.sh",
-  "utf-8"
-);
-// Set the environment variables in the Bash script
-setupMultiplayerService = setupMultiplayerService
-  .replace("{{DD_ENV}}", dataDogEnv)
-  .replace("{{DD_API_KEY}}", dataDogApiKey)
-  .replace("{{QUADRATIC_API_URI}}", quadraticApiUri)
-  .replace("{{MULTIPLAYER_AWS_S3_ACCESS_KEY_ID}}", awsS3AccessKey)
-  .replace("{{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}", awsS3Secret)
-  .replace("{{pulumiAccessToken}}", pulumiAccessToken);
+
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
@@ -50,13 +35,36 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   keyName: instanceKeyName,
   // Run Setup script on instance boot to create multiplayer systemd service
   userDataReplaceOnChange: true, // TODO: remove this
-  userData: pulumi
-    .all([redisHost, redisPort])
-    .apply(([host, port]) =>
-      setupMultiplayerService
-        .replace("{{PUBSUB_HOST}}", host)
-        .replace("{{PUBSUB_PORT}}", port.toString())
-    ),
+  userData: pulumi.all([redisHost, redisPort]).apply(
+    ([host, port]) => `#!/bin/bash
+echo 'Installing Docker'
+sudo yum update -y
+sudo yum install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+
+echo 'Installing Pulumi ESC CLI'
+curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+export PATH=$PATH:/.pulumi/bin
+export PULUMI_ACCESS_TOKEN=${pulumiAccessToken}
+esc login
+
+echo 'Setting ENV Vars'
+esc env open quadratic/quadratic-multiplayer-development --format dotenv > .env
+sed -i 's/"//g' .env
+echo PUBSUB_HOST=${host} >> .env
+echo PUBSUB_PORT=${port} >> .env
+echo QUADRATIC_API_URI=${quadraticApiUri} >> .env
+
+echo 'Ensure AWS Cli is installed'
+sudo yum install aws-cli -y
+
+echo 'Logging into ECR'
+aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS --password-stdin ${ecrRegistryUrl}
+
+echo 'Pulling and running Docker image from ECR'
+sudo docker pull ${ecrRegistryUrl}/quadratic-multiplayer-development:${dockerImageTag}
+sudo docker run -d --restart always -p 80:80 --env-file .env ${ecrRegistryUrl}/quadratic-multiplayer-development:${dockerImageTag}`,
 });
 
 // Create a new Network Load Balancer

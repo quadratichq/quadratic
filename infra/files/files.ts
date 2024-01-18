@@ -104,12 +104,12 @@ sudo docker run -d --restart always -p 80:80 --env-file .env ${ecrRegistryUrl}/q
 // // Create a Route 53 record pointing to EC2 instance
 // const dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
 //   zoneId: hostedZone.id,
-//   name: `${multiplayerSubdomain}.${domain}`, // subdomain you want to use
+//   name: `${filesSubdomain}.${domain}`, // subdomain you want to use
 //   type: "A",
 //   aliases: [
 //     {
-//       name: nlb.dnsName,
-//       zoneId: nlb.zoneId,
+//       name: instance.arn,
+//       zoneId: instance.availabilityZone.apply((az) => az),
 //       evaluateTargetHealth: true,
 //     },
 //   ],
