@@ -5,7 +5,7 @@ cat <<EOF | sudo tee /home/ubuntu/start-quadratic-multiplayer.sh
 
 echo 'Installing Pulumi ESC CLI'
 curl -fsSL https://get.pulumi.com/esc/install.sh | sh
-export PATH=$PATH:/.pulumi/bin
+export PATH=$PATH:/root/.pulumi/bin
 export PULUMI_ACCESS_TOKEN={{pulumiAccessToken}}
 esc login
 
