@@ -1,4 +1,3 @@
-import { UserFileRole, UserTeamRole } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 import { ApiError } from '../utils/ApiError';
 import { getFilePermissions } from '../utils/permissions';
@@ -46,8 +45,8 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   }
 
   const isFileOwner = !file.ownerTeamId && file.ownerUserId === userId;
-  const teamRole = 'OWNER'; //file.ownerTeam && file.ownerTeam.UserTeamRole[0] ? file.ownerTeam.UserTeamRole[0].role : undefined;
-  const fileRole = 'EDITOR'; //file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
+  const teamRole = file.ownerTeam && file.ownerTeam.UserTeamRole[0] ? file.ownerTeam.UserTeamRole[0].role : undefined;
+  const fileRole = file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
 
   const filePermissions = getFilePermissions({
     fileRole,
@@ -64,8 +63,8 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     file,
     userMakingRequest: {
       filePermissions,
-      fileRole: fileRole as UserFileRole,
-      teamRole: teamRole as UserTeamRole,
+      fileRole,
+      teamRole,
       id: userId,
       isFileOwner,
     },
