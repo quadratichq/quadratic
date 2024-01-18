@@ -57,7 +57,7 @@ const instance = new aws.ec2.Instance("files-instance", {
   iamInstanceProfile: instanceProfile,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
-  userDataReplaceOnChange: true,
+  userDataReplaceOnChange: true, // TODO: remove this
   userData: pulumi.all([redisHost, redisPort]).apply(
     ([host, port]) => `#!/bin/bash
 echo 'Installing Docker'
@@ -75,11 +75,8 @@ esc login
 echo 'Setting ENV Vars'
 esc env open quadratic/quadratic-files-development --format dotenv > .env
 sed -i 's/"//g' .env
-echo 'setting redisHost=${host}'
 echo PUBSUB_HOST=${host} >> .env
-echo 'setting redisPort=${port}'
 echo PUBSUB_PORT=${port} >> .env
-echo 'setting quadraticApiUri=${quadraticApiUri}'
 echo QUADRATIC_API_URI=${quadraticApiUri} >> .env
 
 echo 'Ensure AWS Cli is installed'

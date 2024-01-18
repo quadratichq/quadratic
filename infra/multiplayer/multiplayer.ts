@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import * as fs from "fs";
+import { redisHost, redisPort } from "../shared/redis";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -53,30 +54,12 @@ let setupMultiplayerService = fs.readFileSync(
   "utf-8"
 );
 // Set the environment variables in the Bash script
-setupMultiplayerService = setupMultiplayerService.replace(
-  "{{DD_ENV}}",
-  dataDogEnv
-);
-setupMultiplayerService = setupMultiplayerService.replace(
-  "{{DD_API_KEY}}",
-  dataDogApiKey
-);
-setupMultiplayerService = setupMultiplayerService.replace(
-  "{{QUADRATIC_API_URI}}",
-  quadraticApiUri
-);
-setupMultiplayerService = setupMultiplayerService.replace(
-  "{{MULTIPLAYER_AWS_S3_ACCESS_KEY_ID}}",
-  awsS3AccessKey
-);
-setupMultiplayerService = setupMultiplayerService.replace(
-  "{{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}",
-  awsS3Secret
-);
-// setupMultiplayerService = setupMultiplayerService.replace(
-//   "{{AWS_REDIS_CONNECTION_STRING}}",
-//   redisConnectionString
-// );
+setupMultiplayerService = setupMultiplayerService
+  .replace("{{DD_ENV}}", dataDogEnv)
+  .replace("{{DD_API_KEY}}", dataDogApiKey)
+  .replace("{{QUADRATIC_API_URI}}", quadraticApiUri)
+  .replace("{{MULTIPLAYER_AWS_S3_ACCESS_KEY_ID}}", awsS3AccessKey)
+  .replace("{{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}", awsS3Secret);
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
@@ -86,7 +69,14 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   ami: instanceAmi,
   keyName: instanceKeyName,
   // Run Setup script on instance boot to create multiplayer systemd service
-  userData: setupMultiplayerService,
+  userDataReplaceOnChange: true, // TODO: remove this
+  userData: pulumi
+    .all([redisHost, redisPort])
+    .apply(([host, port]) =>
+      setupMultiplayerService
+        .replace("{{PUBSUB_HOST}}", host)
+        .replace("{{PUBSUB_PORT}}", port.toString())
+    ),
 });
 
 // Create a new Network Load Balancer
