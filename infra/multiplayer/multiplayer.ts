@@ -1,5 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
+import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { redisHost, redisPort } from "../shared/redis";
 import {
   multiplayerEc2SecurityGroup,
@@ -15,12 +16,10 @@ const dockerImageTag = config.require("docker-image-tag");
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
-const instanceKeyName = config.require("ec2-instance-key-name");
 const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 const instanceSize = config.require("multiplayer-instance-size");
-const instanceAmi = config.require("multiplayer-instance-ami");
 const pulumiAccessToken = config.require("pulumi-access-token");
 const ecrRegistryUrl = config.require("ecr-registry-url");
 
@@ -30,8 +29,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   },
   instanceType: instanceSize,
   vpcSecurityGroupIds: [multiplayerEc2SecurityGroup.id],
-  ami: instanceAmi,
-  keyName: instanceKeyName,
+  ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
   userDataReplaceOnChange: true, // TODO: remove this
   userData: pulumi.all([redisHost, redisPort]).apply(
