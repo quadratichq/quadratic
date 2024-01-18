@@ -103,7 +103,7 @@ jobs:
         EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
 
   files_preview:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-8-cores 
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
