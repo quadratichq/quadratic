@@ -1,4 +1,22 @@
 #!/bin/bash
+# Install the quadratic-multiplayer service
+cat <<EOF | sudo tee /home/ubuntu/start-quadratic-multiplayer.sh
+#!/bin/bash
+
+echo 'Installing Pulumi ESC CLI'
+curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+export PATH=$PATH:/.pulumi/bin
+export PULUMI_ACCESS_TOKEN={{pulumiAccessToken}}
+esc login
+
+echo 'Setting ENV Vars'
+eval $(esc env open quadratic/quadratic-multiplayer-development --format shell)
+
+# Start the quadratic-multiplayer service
+exec /home/ubuntu/quadratic-multiplayer
+EOF
+sudo chmod +x /home/ubuntu/start-quadratic-multiplayer.sh
+
 # Create a systemd service
 cat <<EOF | sudo tee /etc/systemd/system/quadratic-multiplayer.service
 [Unit]
@@ -9,24 +27,11 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/home/ubuntu/
-ExecStart=/home/ubuntu/quadratic-multiplayer
+ExecStart=/home/ubuntu/start-quadratic-multiplayer.sh
 Restart=always
-Environment="HOST=0.0.0.0"
-Environment="PORT=80"
-Environment="HEARTBEAT_CHECK_S=15"
-Environment="HEARTBEAT_TIMEOUT_S=60"
 Environment="QUADRATIC_API_URI={{QUADRATIC_API_URI}}"
-Environment="QUADRATIC_API_JWT=ADD_TOKEN_HERE"
-Environment="AUTH0_JWKS_URI=https://dev-nje7dw8s.us.auth0.com/.well-known/jwks.json"
-Environment="AUTHENTICATE_JWT=true"
-Environment="AWS_S3_BUCKET_NAME=quadratic-development"
-Environment="AWS_S3_REGION=us-west-2"
-Environment="AWS_S3_ACCESS_KEY_ID={{MULTIPLAYER_AWS_S3_ACCESS_KEY_ID}}"
-Environment="AWS_S3_SECRET_ACCESS_KEY={{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}"
 Environment="PUBSUB_HOST={{PUBSUB_HOST}}"
 Environment="PUBSUB_PORT={{PUBSUB_PORT}}"
-Environment="PUBSUB_PASSWORD="
-Environment="PUBSUB_ACTIVE_CHANNELS=active_channels"
 
 [Install]
 WantedBy=multi-user.target

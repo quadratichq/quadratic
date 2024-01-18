@@ -2,6 +2,10 @@ import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import * as fs from "fs";
 import { redisHost, redisPort } from "../shared/redis";
+import {
+  multiplayerEc2SecurityGroup,
+  multiplayerNlbSecurityGroup,
+} from "../shared/securityGroups";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -21,32 +25,7 @@ const instanceSize = config.require("multiplayer-instance-size");
 const instanceAmi = config.require("multiplayer-instance-ami");
 const awsS3AccessKey = config.require("multiplayer-aws-s3-access-key-id");
 const awsS3Secret = config.require("multiplayer-aws-s3-secret-access-key");
-
-// Create a Security Group for the NLB
-const nlbSecurityGroup = new aws.ec2.SecurityGroup("nlb-security-group", {
-  ingress: [
-    { protocol: "tcp", fromPort: 443, toPort: 443, cidrBlocks: ["0.0.0.0/0"] },
-  ],
-  egress: [
-    { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
-  ],
-});
-
-// Create a Security Group for the EC2 instance
-const ec2SecurityGroup = new aws.ec2.SecurityGroup("multiplayer-sg", {
-  ingress: [
-    { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
-    {
-      protocol: "tcp",
-      fromPort: 80,
-      toPort: 80,
-      securityGroups: [nlbSecurityGroup.id],
-    },
-  ],
-  egress: [
-    { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
-  ],
-});
+const pulumiAccessToken = config.require("pulumi-access-token");
 
 // Read the content of the Bash script
 let setupMultiplayerService = fs.readFileSync(
@@ -59,13 +38,14 @@ setupMultiplayerService = setupMultiplayerService
   .replace("{{DD_API_KEY}}", dataDogApiKey)
   .replace("{{QUADRATIC_API_URI}}", quadraticApiUri)
   .replace("{{MULTIPLAYER_AWS_S3_ACCESS_KEY_ID}}", awsS3AccessKey)
-  .replace("{{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}", awsS3Secret);
+  .replace("{{MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY}}", awsS3Secret)
+  .replace("{{pulumiAccessToken}}", pulumiAccessToken);
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
   },
   instanceType: instanceSize,
-  vpcSecurityGroupIds: [ec2SecurityGroup.id],
+  vpcSecurityGroupIds: [multiplayerEc2SecurityGroup.id],
   ami: instanceAmi,
   keyName: instanceKeyName,
   // Run Setup script on instance boot to create multiplayer systemd service
@@ -85,7 +65,7 @@ const nlb = new aws.lb.LoadBalancer("multiplayer-nlb", {
   loadBalancerType: "network",
   subnets: [subNet1, subNet2],
   enableCrossZoneLoadBalancing: true,
-  securityGroups: [nlbSecurityGroup.id],
+  securityGroups: [multiplayerNlbSecurityGroup.id],
 });
 
 // Create a new Target Group
