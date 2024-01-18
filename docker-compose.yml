@@ -22,11 +22,12 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: prisma
-      POSTGRES_PASSWORD: prisma
-      POSTGRES_DB: quadratic-api
+      POSTGRES_USER: postgres
+      PGUSER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U prisma -d quadratic-api"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -43,7 +44,7 @@ services:
       - "127.0.0.1:4510-4559:4510-4559" # external services port range
     environment:
       # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN- }
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
       - DEBUG=${DEBUG:-0}
       - SERVICES=s3:4566
       - HOSTNAME=localstack
@@ -72,24 +73,25 @@ services:
         aws --endpoint-url=http://localstack:4566 s3api create-bucket --bucket quadratic-api-docker --region us-east-1
       "
 
-  # quadratic-api:
-  #   build:
-  #     context: .
-  #     dockerfile: quadratic-api/Dockerfile
-  #   env_file:
-  #     - quadratic-api/.env.docker
-  #   # restart: "always"
-  #   ports:
-  #     - "3000:3000"
-  #   command: "node dist/server.js"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   profiles:
-  #     - backend
-  #     - api
-  #   networks:
-  #     - host
+  quadratic-api:
+    build:
+      context: .
+      dockerfile: quadratic-api/Dockerfile
+    env_file:
+      - quadratic-api/.env
+      # - quadratic-api/.env.docker
+    restart: "always"
+    ports:
+      - "8000:8000"
+    command: "node dist/server.js"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - backend
+      - temp
+    networks:
+      - host
 
   quadratic-multiplayer:
     build:
@@ -111,8 +113,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      # quadratic-api:
-      #   condition: service_healthy
+      quadratic-api:
+        condition: service_started
     profiles:
       - backend
       - quadratic-files-dev
@@ -139,8 +141,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      # quadratic-api:
-      #   condition: service_healthy
+      quadratic-api:
+        condition: service_started
     profiles:
       - backend
       - quadratic-multiplayer-dev
