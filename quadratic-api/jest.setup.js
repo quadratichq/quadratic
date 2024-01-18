@@ -15,3 +15,13 @@ jest.mock('./src/middleware/validateAccessToken', () => {
     }),
   };
 });
+
+jest.mock('./src/aws/s3', () => {
+  return {
+    s3Client: {},
+    generatePresignedUrl: jest.fn().mockImplementation(async (str) => str),
+    uploadStringAsFileS3: jest.fn().mockImplementation(async () => {
+      return { bucket: 'test-bucket', key: 'test-key' };
+    }),
+  };
+});

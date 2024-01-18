@@ -8,10 +8,16 @@ on:
 # Our runners pick up jobs first, and if all our runners are being used or are down
 # it will automatically back up to using GitHub hosted runners.
 
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
 
   infra:
+    needs:
+     - files_preview
+     - multiplayer_preview
     name: Create or Update Infrastructure with Pulumi
     runs-on: ubuntu-latest-8-cores 
     steps:
@@ -44,26 +50,20 @@ jobs:
           - aws-infra-development
         EOF
 
-        pulumi config set subdomain multiplayer-pr-${{ env.PR_ID }}
+        pulumi config set multiplayer-subdomain multiplayer-pr-${{ env.PR_ID }}
+        pulumi config set files-subdomain files-pr-${{ env.PR_ID }}
+        pulumi config set docker-image-tag pr-${{ env.PR_ID }}
         pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
-        pulumi config set multiplayer-aws-s3-access-key-id ${{ secrets.MULTIPLAYER_AWS_S3_ACCESS_KEY_ID }} --secret
-        pulumi config set multiplayer-aws-s3-secret-access-key ${{ secrets.MULTIPLAYER_AWS_S3_SECRET_ACCESS_KEY }} --secret
 
         pulumi up -y
-        echo "MULTIPLAYER_INSTANCE_DNS=$(pulumi stack output multiplayerInstanceDns)" >> "$GITHUB_OUTPUT"
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
         PR_ID: ${{ github.event.pull_request.number }}
-        DD_API_KEY: ${{ secrets.DD_API_KEY }}
-
-    outputs:
-      MULTIPLAYER_INSTANCE_DNS: ${{ steps.pulumiInfra.outputs.MULTIPLAYER_INSTANCE_DNS }}
 
 
   multiplayer_preview:
-    needs: infra
     runs-on: ubuntu-latest-8-cores 
     steps:
     - uses: actions/checkout@v4
@@ -71,29 +71,55 @@ jobs:
       with:
         node-version: 18
 
-    - name: Set up Rust
-      uses: moonrepo/setup-rust@v1
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        components: clippy, llvm-tools-preview
-        cache: false
-        channel: 'nightly'
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Install pkg-config
-      if: github.runner.isHosted == true
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y pkg-config
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Build quadratic-multiplayer
-      working-directory: quadratic-multiplayer
-      run: |
-        cargo build --release
-
-    - name: Deploy Multiplayer to EC2
-      run: ./infra/multiplayer/deploy-multiplayer-service.sh
+    - name: Build, Tag, and Push Image to Amazon ECR
       env:
-        EC2_KEY_PEM: ${{ secrets.EC2_KEY_PEM_DEVELOPMENT }}
-        EC2_INSTANCE_DNS: ${{needs.infra.outputs.MULTIPLAYER_INSTANCE_DNS}}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: quadratic-multiplayer-development
+        IMAGE_TAG: pr-${{ github.event.pull_request.number }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-multiplayer/Dockerfile .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+
+  files_preview:
+    runs-on: ubuntu-latest-8-cores 
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, Tag, and Push Image to Amazon ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: quadratic-files-development
+        IMAGE_TAG: pr-${{ github.event.pull_request.number }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-files/Dockerfile .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
 
   # client_preview:
   #   needs: infra

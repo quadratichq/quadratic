@@ -49,7 +49,7 @@ export type GenericAction = {
 
 // TODO: create generic hasPermission(permission, permissionToCheck) function
 
-export const hasPerissionToEditFile = (permissions: FilePermission[]) => permissions.includes(FILE_EDIT);
+export const hasPermissionToEditFile = (permissions: FilePermission[]) => permissions.includes(FILE_EDIT);
 const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => isAuthenticated;
 
 export const createNewFileAction = {
@@ -62,7 +62,7 @@ export const createNewFileAction = {
 
 export const renameFileAction = {
   label: 'Rename',
-  isAvailable: hasPerissionToEditFile,
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const duplicateFileAction = {
@@ -120,22 +120,22 @@ export const viewDocsAction = {
 
 export const cutAction = {
   label: 'Cut',
-  isAvailable: hasPerissionToEditFile,
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const pasteAction = {
   label: 'Paste',
-  isAvailable: hasPerissionToEditFile,
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const undoAction = {
   label: 'Undo',
-  isAvailable: hasPerissionToEditFile,
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const redoAction = {
   label: 'Redo',
-  isAvailable: hasPerissionToEditFile,
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const copyAction = {

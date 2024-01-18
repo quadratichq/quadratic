@@ -1,5 +1,5 @@
 import { UploadFile } from '@mui/icons-material';
-import { hasPerissionToEditFile } from '../../../../actions';
+import { hasPermissionToEditFile } from '../../../../actions';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
@@ -7,7 +7,7 @@ import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../Co
 const ListItems = [
   {
     label: 'Import: CSV',
-    isAvailable: hasPerissionToEditFile,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { addGlobalSnackbar } = useGlobalSnackbar();
 

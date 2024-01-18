@@ -16,18 +16,24 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     include: {
       ownerTeam: {
         include: {
-          UserTeamRole: {
-            where: {
-              userId: userId,
-            },
-          },
+          UserTeamRole:
+            userId !== undefined
+              ? {
+                  where: {
+                    userId: userId,
+                  },
+                }
+              : undefined,
         },
       },
-      UserFileRole: {
-        where: {
-          userId,
-        },
-      },
+      UserFileRole:
+        userId !== undefined
+          ? {
+              where: {
+                userId,
+              },
+            }
+          : undefined,
     },
   });
 
