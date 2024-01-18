@@ -67,7 +67,7 @@ fn from_key(key: &str) -> String {
 
 fn from_value(value: &Value) -> String {
     if let Value::Data(bytes) = value {
-        String::from_utf8(bytes.to_owned()).unwrap()
+        String::from_utf8(bytes.to_owned()).unwrap_or_default()
     } else {
         "".into()
     }
