@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
+import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import { redisHost, redisPort } from "../shared/redis";
 import { filesEc2SecurityGroup } from "../shared/securityGroups";
 const config = new pulumi.Config();
@@ -16,45 +17,12 @@ const instanceSize = config.require("files-instance-size");
 const ecrRegistryUrl = config.require("ecr-registry-url");
 const pulumiAccessToken = config.require("pulumi-access-token");
 
-// Create an IAM Role for EC2
-const role = new aws.iam.Role("files-ec2-role", {
-  assumeRolePolicy: JSON.stringify({
-    Version: "2012-10-17",
-    Statement: [
-      {
-        Action: "sts:AssumeRole",
-        Effect: "Allow",
-        Principal: {
-          Service: "ec2.amazonaws.com",
-        },
-      },
-    ],
-  }),
-});
-
-// Attach the AmazonEC2ContainerRegistryReadOnly policy
-const policyAttachment = new aws.iam.RolePolicyAttachment(
-  "files-ec2-role-policy-attachment",
-  {
-    role: role,
-    policyArn: "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly",
-  }
-);
-
-// Create an Instance Profile for EC2
-const instanceProfile = new aws.iam.InstanceProfile(
-  "files-ec2-instance-profile",
-  {
-    role: role,
-  }
-);
-
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
     Name: `files-instance-${filesSubdomain}`,
   },
   instanceType: instanceSize,
-  iamInstanceProfile: instanceProfile,
+  iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
   userDataReplaceOnChange: true, // TODO: remove this

@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
+import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import { redisHost, redisPort } from "../shared/redis";
 import {
   multiplayerEc2SecurityGroup,
@@ -28,6 +29,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
   },
   instanceType: instanceSize,
+  iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [multiplayerEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
