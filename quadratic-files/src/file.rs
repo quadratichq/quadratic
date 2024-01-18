@@ -160,11 +160,11 @@ pub(crate) async fn process_queue_for_room(
     let operations = transactions
         .into_iter()
         .flat_map(|transaction| {
-            tracing::info!(
-                "Processing transaction {}, sequence number {} for room {file_id}",
-                transaction.id,
-                transaction.sequence_num
-            );
+            // tracing::info!(
+            //     "Processing transaction {}, sequence number {} for room {file_id}",
+            //     transaction.id,
+            //     transaction.sequence_num
+            // );
 
             transaction.operations
         })

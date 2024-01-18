@@ -15,7 +15,6 @@ use serde::Deserialize;
 pub(crate) struct Config {
     pub(crate) host: String,
     pub(crate) port: String,
-    pub(crate) password: String,
     pub(crate) file_check_s: i64,
     pub(crate) files_per_check: i64,
     pub(crate) environment: Environment,

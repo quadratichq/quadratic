@@ -190,11 +190,11 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
-            tracing::info!(
-                "Transaction received for room {} from user {}",
-                file_id,
-                session_id
-            );
+            // tracing::info!(
+            //     "Transaction received for room {} from user {}",
+            //     file_id,
+            //     session_id
+            // );
 
             // unpack the operations or return an error
             let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;

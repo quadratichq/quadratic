@@ -40,11 +40,11 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 .map(|room| (room.file_id.to_owned(), room.checkpoint_sequence_num))
                 .collect::<Vec<_>>();
 
-            // parallelize the work for each room
-            rooms.into_par_iter().for_each(|(file_id, _)| {
-                let state = Arc::clone(&state);
+            let state = Arc::clone(&state);
 
-                tokio::spawn(async move {
+            tokio::spawn(async move {
+                // parallelize the work for each room
+                for (file_id, _) in rooms.iter() {
                     tracing::trace!("Processing room {}", file_id);
 
                     // broadcast sequence number to all users in the room
@@ -69,7 +69,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                             error
                         );
                     }
-                });
+                }
             });
 
             interval.tick().await;
