@@ -1,6 +1,5 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
-import * as fs from "fs";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { redisHost, redisPort } from "../shared/redis";
 import { filesEc2SecurityGroup } from "../shared/securityGroups";
@@ -50,16 +49,6 @@ const instanceProfile = new aws.iam.InstanceProfile(
   }
 );
 
-// Configuration from other files
-let deployFilesService = fs
-  .readFileSync("files/deploy-files-service.sh", "utf-8")
-  .replace("${pulumiAccessToken}", pulumiAccessToken)
-  .replace("${ecrRegistryUrl}", ecrRegistryUrl)
-  .replace("${dockerImageTag}", dockerImageTag)
-  .replace("${quadraticApiUri}", quadraticApiUri)
-  .replace("${redisHost}", `${redisHost.apply((v) => `${v}`)}`)
-  .replace("${redisPort}", `${redisPort.apply((v) => `${v}`)}`);
-
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
     Name: `files-instance-${filesSubdomain}`,
@@ -68,7 +57,38 @@ const instance = new aws.ec2.Instance("files-instance", {
   iamInstanceProfile: instanceProfile,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
-  userData: deployFilesService,
+  userData: `#!/bin/bash
+echo 'Installing Docker'
+sudo yum update -y
+sudo yum install -y docker
+sudo systemctl start docker
+sudo systemctl enable docker
+
+echo 'Installing Pulumi ESC CLI'
+curl -fsSL https://get.pulumi.com/esc/install.sh | sh
+export PATH=$PATH:/.pulumi/bin
+export PULUMI_ACCESS_TOKEN=${pulumiAccessToken}
+esc login
+
+echo 'Setting ENV Vars'
+esc env open quadratic/quadratic-files-development --format dotenv > .env
+sed -i 's/"//g' .env
+echo 'setting redisHost=${redisHost}'
+echo PUBSUB_HOST=${redisHost} >> .env
+echo 'setting redisPort=${redisPort}'
+echo PUBSUB_PORT=${redisPort} >> .env
+echo 'setting quadraticApiUri=${quadraticApiUri}'
+echo QUADRATIC_API_URI=${quadraticApiUri} >> .env
+
+echo 'Ensure AWS Cli is installed'
+sudo yum install aws-cli -y
+
+echo 'Logging into ECR'
+aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS --password-stdin ${ecrRegistryUrl}
+
+echo 'Pulling and running Docker image from ECR'
+sudo docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
+sudo docker run -d -p 80:80 --env-file .env --restart-always ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`,
 });
 
 // // Get the hosted zone ID for domain
