@@ -57,7 +57,8 @@ const instance = new aws.ec2.Instance("files-instance", {
   iamInstanceProfile: instanceProfile,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
-  userData: `#!/bin/bash
+  userData: pulumi.all([redisHost, redisPort]).apply(
+    ([host, port]) => `#!/bin/bash
 echo 'Installing Docker'
 sudo yum update -y
 sudo yum install -y docker
@@ -73,10 +74,10 @@ esc login
 echo 'Setting ENV Vars'
 esc env open quadratic/quadratic-files-development --format dotenv > .env
 sed -i 's/"//g' .env
-echo 'setting redisHost=${redisHost}'
-echo PUBSUB_HOST=${redisHost} >> .env
-echo 'setting redisPort=${redisPort}'
-echo PUBSUB_PORT=${redisPort} >> .env
+echo 'setting redisHost=${host}'
+echo PUBSUB_HOST=${host} >> .env
+echo 'setting redisPort=${port}'
+echo PUBSUB_PORT=${port} >> .env
 echo 'setting quadraticApiUri=${quadraticApiUri}'
 echo QUADRATIC_API_URI=${quadraticApiUri} >> .env
 
@@ -88,7 +89,8 @@ aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS
 
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
-sudo docker run -d -p 80:80 --env-file .env --restart-always ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`,
+sudo docker run -d -p 80:80 --env-file .env --restart-always ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`
+  ),
 });
 
 // // Get the hosted zone ID for domain
