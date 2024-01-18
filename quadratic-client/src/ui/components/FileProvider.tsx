@@ -2,7 +2,7 @@ import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useSetRecoilState } from 'recoil';
-import { hasPerissionToEditFile } from '../../actions';
+import { hasPermissionToEditFile } from '../../actions';
 import { apiClient } from '../../api/apiClient';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { useFileRouteLoaderData } from '../../dashboard/FileRoute';
@@ -36,7 +36,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
-  const canEdit = hasPerissionToEditFile(initialFileData.permissions);
+  const canEdit = hasPermissionToEditFile(initialFileData.permissions);
 
   const renameFile: FileContextType['renameFile'] = useCallback(
     (newName) => {
