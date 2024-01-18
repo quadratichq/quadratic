@@ -24,7 +24,6 @@ const instanceAmi = config.require("multiplayer-instance-ami");
 const pulumiAccessToken = config.require("pulumi-access-token");
 const ecrRegistryUrl = config.require("ecr-registry-url");
 
-
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
@@ -64,7 +63,8 @@ aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS
 
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/quadratic-multiplayer-development:${dockerImageTag}
-sudo docker run -d --restart always -p 80:80 --env-file .env ${ecrRegistryUrl}/quadratic-multiplayer-development:${dockerImageTag}`,
+sudo docker run -d --restart always -p 80:80 --env-file .env ${ecrRegistryUrl}/quadratic-multiplayer-development:${dockerImageTag}`
+  ),
 });
 
 // Create a new Network Load Balancer
