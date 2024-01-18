@@ -57,6 +57,7 @@ const instance = new aws.ec2.Instance("files-instance", {
   iamInstanceProfile: instanceProfile,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
+  userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(
     ([host, port]) => `#!/bin/bash
 echo 'Installing Docker'
@@ -89,7 +90,7 @@ aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS
 
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}
-sudo docker run -d -p 80:80 --env-file .env --restart-always ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`
+sudo docker run -d --restart always -p 80:80 --env-file .env ${ecrRegistryUrl}/quadratic-files-development:${dockerImageTag}`
   ),
 });
 
