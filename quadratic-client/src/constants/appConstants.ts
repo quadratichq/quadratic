@@ -9,6 +9,36 @@ export const EXAMPLE_FILES = {
     name: 'Python (example)',
     description: 'Advanced examples of how to use Python in the app.',
   },
+  'financial_analysis.grid': {
+    name: 'Financial analysis (example',
+
+    description: 'Intro to analytics for stocks.',
+  },
+  'machine_learning.grid': {
+    name: 'Machine learning (example)',
+
+    description: 'Getting started with machine learning in Quadratic.',
+  },
+  'netflix_viewer_data.grid': {
+    name: 'Netflix viewer data (example)',
+
+    description: 'Studying Netflix viewer data with basic charting and analytics.',
+  },
+  'sentiment_analysis.grid': {
+    name: 'Sentiment analysis (example)',
+
+    description: 'Intro to sentiment analysis in Quadratic.',
+  },
+  'crypto_exploration.grid': {
+    name: 'Crypto exploration (example)',
+
+    description: 'Exploring crypto data.',
+  },
+  'time_series_prediction.grid': {
+    name: 'Time series prediction (example)',
+
+    description: 'Time series prediction using ARIMA model.',
+  },
   'npm_downloads.grid': {
     name: 'NPM downloads (example)',
     description: 'Example of pulling download stats from the NPM API.',
@@ -42,7 +72,7 @@ export const EXAMPLE_FILES = {
   },
   'charting_example.grid': {
     name: 'Charting (example)',
-    description: 'Example of charting data using Python and Plotly.',
+    description: 'Example of charting data using Python + Plotly.',
   },
 };
 export type ExampleFileNames = keyof typeof EXAMPLE_FILES;

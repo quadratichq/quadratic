@@ -31,7 +31,7 @@
     "Westborough"
   ],
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true
+    "source.organizeImports": "explicit"
   },
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
