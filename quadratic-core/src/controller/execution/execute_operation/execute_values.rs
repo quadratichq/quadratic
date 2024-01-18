@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_set_cell_value() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_set_cell_values_no_sheet() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let summary = gc.set_cell_value(
             SheetPos {
@@ -159,7 +159,7 @@ mod test {
 
     #[test]
     fn test_set_cell_values_code_cell_remove() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
             x: 0,
@@ -183,7 +183,7 @@ mod test {
 
     #[test]
     fn test_set_cell_values_undo() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
             x: 0,

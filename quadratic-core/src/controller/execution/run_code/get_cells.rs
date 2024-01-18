@@ -126,7 +126,7 @@ mod test {
 
     #[test]
     fn test_calculation_get_cells_bad_transaction_id() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
 
         let result = gc.calculation_get_cells(JsComputeGetCells::new(
             "bad transaction id".to_string(),
@@ -139,7 +139,7 @@ mod test {
 
     #[test]
     fn test_calculation_get_cells_no_transaction() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
 
         let result = gc.calculation_get_cells(JsComputeGetCells::new(
             Uuid::new_v4().to_string(),
@@ -152,7 +152,7 @@ mod test {
 
     #[test]
     fn test_calculation_get_cells_transaction_but_no_current_sheet_pos() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
             SheetPos {
@@ -179,7 +179,7 @@ mod test {
 
     #[test]
     fn test_calculation_get_cells_sheet_name_not_found() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let transaction_id = gc
             .set_code_cell(
@@ -214,7 +214,7 @@ mod test {
 
     #[test]
     fn test_calculation_get_cells_self_reference() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value(
@@ -262,7 +262,7 @@ mod test {
 
     #[test]
     fn test_calculation_get_cells() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_cell_value(

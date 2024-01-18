@@ -91,7 +91,7 @@ mod test {
 
     #[test]
     fn test_move_sheet_operation() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         gc.add_sheet(None);
         gc.add_sheet(None);
 
@@ -137,7 +137,7 @@ mod test {
 
     #[test]
     fn test_get_sheet_next_name() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         assert_eq!(gc.get_next_sheet_name(), "Sheet 2");
         gc.add_sheet(None);
         assert_eq!(gc.get_next_sheet_name(), "Sheet 3");

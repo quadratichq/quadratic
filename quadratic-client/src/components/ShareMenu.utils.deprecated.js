@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { getUserShareOptions } from './ShareMenu.utils';
 
 // A set of example users and would be returned by the API

@@ -168,9 +168,20 @@ export const ApiSchemas = {
    * File invites
    */
   '/v0/files/:uuid/invites.POST.request': FileUserSchema.pick({ email: true, role: true }),
-  '/v0/files/:uuid/invites.POST.response': FileUserSchema.pick({ email: true, role: true }).extend({
-    id: FileUserSchema.shape.id,
-  }),
+  // Responds with either an invite or a user
+  '/v0/files/:uuid/invites.POST.response': z
+    .object({
+      email: emailSchema,
+      id: z.number(),
+      role: UserFileRoleSchema,
+    })
+    .or(
+      z.object({
+        userId: FileUserSchema.shape.id,
+        id: z.number(),
+        role: UserFileRoleSchema,
+      })
+    ),
   '/v0/files/:uuid/invites/:inviteId.DELETE.response': z.object({ message: z.string() }),
 
   /**

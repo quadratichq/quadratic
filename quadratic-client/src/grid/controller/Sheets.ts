@@ -80,7 +80,7 @@ class Sheets {
     return this._current;
   }
   set current(value: string) {
-    if (value !== this._current) {
+    if (value !== this._current && this.sheets.find((sheet) => sheet.id === value)) {
       this._current = value;
       pixiApp.viewport.dirty = true;
       pixiApp.gridLines.dirty = true;

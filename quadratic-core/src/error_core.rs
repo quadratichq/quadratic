@@ -24,6 +24,9 @@ pub enum CoreError {
 
     #[error("Unhandled language: {0}")]
     UnhandledLanguage(String),
+
+    #[error("IndexedDb error: {0}")]
+    IndexedDbError(String),
 }
 
 impl From<serde_json::Error> for CoreError {

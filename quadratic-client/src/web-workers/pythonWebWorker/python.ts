@@ -201,13 +201,5 @@ class PythonWebWorker {
 
 export const pythonWebWorker = new PythonWebWorker();
 
-declare global {
-  interface Window {
-    runPython: any;
-    getCellsPython: any;
-  }
-}
-
-// need to bind to window because rustWorker.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
+// need to bind to window because rustCallbacks.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 window.runPython = pythonWebWorker.runPython.bind(pythonWebWorker);
-window.getCellsPython = pythonWebWorker.getCells.bind(pythonWebWorker);

@@ -112,7 +112,7 @@ pub(crate) async fn process_queue_for_room(
     } = &state.settings;
 
     let checkpoint_sequence_num =
-        match get_file_checkpoint(&quadratic_api_uri, &quadratic_api_jwt, file_id).await {
+        match get_file_checkpoint(quadratic_api_uri, quadratic_api_jwt, file_id).await {
             Ok(last_checkpoint) => last_checkpoint.sequence_number + 1,
             Err(_) => 1,
         };
@@ -129,8 +129,7 @@ pub(crate) async fn process_queue_for_room(
         .get_messages_from(channel, &checkpoint_sequence_num.to_string())
         .await?
         .iter()
-        .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
-        .flatten()
+        .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
         .collect::<Vec<TransactionServer>>();
 
     tracing::info!(
@@ -198,8 +197,8 @@ pub(crate) async fn process_queue_for_room(
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
     set_file_checkpoint(
-        &quadratic_api_uri,
-        &quadratic_api_jwt,
+        quadratic_api_uri,
+        quadratic_api_jwt,
         file_id,
         last_sequence_num,
         CURRENT_VERSION.into(),
@@ -224,18 +223,17 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
         .lock()
         .await
         .connection
-        .active_channels(&active_channels)
+        .active_channels(active_channels)
         .await?
         .into_iter()
-        .map(|file_id| Uuid::parse_str(&file_id))
-        .flatten()
+        .flat_map(|file_id| Uuid::parse_str(&file_id))
         .collect::<Vec<_>>();
 
     // collect info for stats
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
     for file_id in files.iter() {
-        process_queue_for_room(&state, file_id, active_channels).await?;
+        process_queue_for_room(state, file_id, active_channels).await?;
     }
 
     Ok(())
@@ -243,20 +241,27 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
 
 #[cfg(test)]
 mod tests {
+    // use std::str::FromStr;
+    // use crate::test_util::new_arc_state;
+
     use super::*;
     use quadratic_core::{CellValue, Pos, SheetPos};
 
     #[test]
-    fn loads_a_file() {
-        let file = load_file(
-            "test",
+    fn loads_a_file_and_applies_a_transaction_and_exports_the_file() {
+        let key = "test";
+
+        // load the file
+        let mut file = load_file(
+            key,
             include_str!("../../quadratic-rust-shared/data/grid/v1_4_simple.grid"),
         )
         .unwrap();
 
-        let mut client = GridController::from_grid(file.clone(), 0);
-        let sheet_id = client.sheet_ids().first().unwrap().to_owned();
-        let summary = client.set_cell_value(
+        // add a cell value to the file
+        let mut gc = GridController::from_grid(file.clone(), 0);
+        let sheet_id = gc.sheet_ids().first().unwrap().to_owned();
+        let summary = gc.set_cell_value(
             SheetPos {
                 x: 1,
                 y: 2,
@@ -265,68 +270,74 @@ mod tests {
             "hello".to_string(),
             None,
         );
-        let sheet = client.grid().try_sheet(sheet_id).unwrap();
+        let sheet = gc.grid().try_sheet(sheet_id).unwrap();
+
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
         );
 
-        let mut server = GridController::from_grid(file, 0);
+        // apply a transaction to the file
         apply_transaction(
-            &mut server,
+            &mut gc,
             serde_json::from_str(&summary.operations.unwrap()).unwrap(),
         );
-        let sheet = server.grid().try_sheet(sheet_id).unwrap();
+        let sheet = gc.grid().try_sheet(sheet_id).unwrap();
+
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
             Some(CellValue::Text("hello".to_string()))
         );
+
+        let grid = export_file(key, &mut file);
+        assert!(grid.is_ok());
     }
 
-    // #[tokio::test]
-    // async fn processes_a_file() {
-    //     let config = config().unwrap();
-    //     let client = new_client(
-    //         &config.aws_s3_access_key_id,
-    //         &config.aws_s3_secret_access_key,
-    //         &config.aws_s3_region,
-    //     )
-    //     .await;
+    #[tokio::test]
+    async fn processes_a_file() {
+        // let state = new_arc_state().await;
+        // let Settings {
+        //     aws_client,
+        //     aws_s3_bucket_name,
+        //     quadratic_api_uri,
+        //     quadratic_api_jwt,
+        //     ..
+        // } = &state.settings;
 
-    //     let file_id = Uuid::from_str("daf6008f-d858-4a6a-966b-928213048941").unwrap();
-    //     let sequence = 0;
-    //     let key = key(file_id, sequence);
+        // println!("{:?}", aws_s3_bucket_name);
 
-    //     let file = download_object(&client, &config.aws_s3_bucket_name, &key)
-    //         .await
-    //         .unwrap();
-    //     let body = file.body.collect().await.unwrap().into_bytes();
-    //     let body = std::str::from_utf8(&body).unwrap();
-    //     println!("{:?}", body);
-    //     return;
+        // let file_id = Uuid::from_str("daf6008f-d858-4a6a-966b-928213048941").unwrap();
+        // let sequence = 0;
+        // let key = key(file_id, sequence);
 
-    //     // let mut grid = get_and_load_object(&client, &config.aws_s3_bucket_name, &key)
-    //     //     .await
-    //     //     .unwrap();
-    //     // let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
-    //     // let sheet_rect = SheetPos {
-    //     //     x: 0,
-    //     //     y: 0,
-    //     //     sheet_id,
-    //     // }
-    //     // .into();
-    //     // let value = CellValue::Text("hello".to_string());
-    //     // let values = Array::from(value);
-    //     // let operation = Operation::SetCellValues { sheet_rect, values };
+        // let file = get_and_load_object(&aws_client, aws_s3_bucket_name, &key, 0)
+        //     .await
+        //     .unwrap();
+        // println!("{:?}", file);
+        // return;
 
-    //     // process_transactions(
-    //     //     &client,
-    //     //     &config.aws_s3_bucket_name,
-    //     //     file_id,
-    //     //     sequence,
-    //     //     vec![operation],
-    //     // )
-    //     // .await
-    //     // .unwrap();
-    // }
+        // let mut grid = get_and_load_object(&client, &config.aws_s3_bucket_name, &key)
+        //     .await
+        //     .unwrap();
+        // let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
+        // let sheet_rect = SheetPos {
+        //     x: 0,
+        //     y: 0,
+        //     sheet_id,
+        // }
+        // .into();
+        // let value = CellValue::Text("hello".to_string());
+        // let values = Array::from(value);
+        // let operation = Operation::SetCellValues { sheet_rect, values };
+
+        // process_transactions(
+        //     &client,
+        //     &config.aws_s3_bucket_name,
+        //     file_id,
+        //     sequence,
+        //     vec![operation],
+        // )
+        // .await
+        // .unwrap();
+    }
 }

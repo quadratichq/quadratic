@@ -64,7 +64,7 @@ mod tests {
         bolds: &[bool],
         fill_colors: &[&str],
     ) -> (GridController, SheetId) {
-        let mut grid_controller = GridController::new();
+        let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let mut count = 0;
 
@@ -557,5 +557,15 @@ mod tests {
         assert_cell_value_row(&grid, sheet_id, 2, 10, 6, expected_empty);
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 2, expected_bold_full);
         assert_cell_format_bold_row(&grid, sheet_id, 2, 10, 6, expected_bold_empty);
+    }
+
+    #[test]
+    fn test_autocomplete_sheet_id_not_found() {
+        let selected: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 5, y: 3 });
+        let range: Rect = Rect::new_span(Pos { x: 2, y: 2 }, Pos { x: 10, y: 7 });
+        let (mut grid, _) = test_setup_rect(&selected);
+
+        let result = grid.autocomplete(SheetId::new(), selected, range, None);
+        assert!(result.is_err());
     }
 }

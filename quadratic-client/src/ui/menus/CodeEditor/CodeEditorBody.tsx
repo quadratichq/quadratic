@@ -64,16 +64,20 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
       monaco.languages.registerHoverProvider('formula', { provideHover });
 
-      editor.addCommand(
-        monaco.KeyCode.Escape,
+      setDidMount(true);
+    },
+    [didMount]
+  );
+
+  useEffect(() => {
+    if (editorRef.current && monacoRef.current && didMount) {
+      editorRef.current.addCommand(
+        monacoRef.current.KeyCode.Escape,
         () => closeEditor(false),
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
-
-      setDidMount(true);
-    },
-    [didMount, closeEditor]
-  );
+    }
+  }, [closeEditor, didMount]);
 
   useEffect(() => {
     return () => editorRef.current?.dispose();

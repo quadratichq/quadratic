@@ -392,7 +392,7 @@ mod test {
     };
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
-        let mut grid_controller = GridController::new();
+        let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid().sheets()[0].id;
         let mut count = 0;
 

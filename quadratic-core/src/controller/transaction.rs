@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use super::{
     active_transactions::pending_transaction::PendingTransaction, execution::TransactionType,
-    operations::operation::Operation, transaction_summary::TransactionSummary,
+    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
 };
 
 // Transaction created by client
@@ -51,5 +51,12 @@ impl Into<Transaction> for TransactionServer {
             operations: self.operations,
             cursor: None,
         }
+    }
+}
+
+impl GridController {
+    /// Marks a transaction as sent by the multiplayer.ts server
+    pub fn mark_transaction_sent(&mut self, transaction_id: Uuid) {
+        self.transactions.mark_transaction_sent(transaction_id);
     }
 }

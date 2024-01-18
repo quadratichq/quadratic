@@ -53,7 +53,7 @@ mod test {
 
     #[test]
     fn test_sheet_ids() {
-        let mut gc = super::GridController::new();
+        let mut gc = super::GridController::test();
         let sheet_ids = gc.sheet_ids();
         assert_eq!(sheet_ids.len(), 1);
         let sheet_id = sheet_ids[0];
@@ -68,7 +68,7 @@ mod test {
 
     #[test]
     fn test_try_sheet_from_id() {
-        let mut gc = super::GridController::new();
+        let mut gc = super::GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         assert_eq!(gc.try_sheet(sheet_id).unwrap().name, "Sheet 1");
 
@@ -82,7 +82,7 @@ mod test {
 
     #[test]
     fn test_try_sheet_mut_from_id() {
-        let mut gc = super::GridController::new();
+        let mut gc = super::GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.try_sheet_mut(sheet_id).unwrap().name = "Sheet 1 modified".to_string();
 
@@ -99,7 +99,7 @@ mod test {
 
     #[test]
     fn test_try_sheet_from_name() {
-        let mut gc = super::GridController::new();
+        let mut gc = super::GridController::test();
         assert_eq!(
             gc.try_sheet_from_name("Sheet 1".to_string()).unwrap().name,
             "Sheet 1"
@@ -116,7 +116,7 @@ mod test {
 
     #[test]
     fn test_try_sheet_mut_from_name() {
-        let mut gc = super::GridController::new();
+        let mut gc = GridController::test();
         gc.add_sheet(None);
 
         gc.try_sheet_mut_from_name("Sheet 1".to_string())
@@ -134,7 +134,7 @@ mod test {
 
     #[test]
     fn test_try_sheet_from_string_id() {
-        let gc = GridController::new();
+        let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         assert_eq!(
             gc.try_sheet_from_string_id(sheet_id.to_string())

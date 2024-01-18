@@ -107,9 +107,8 @@ export const BottomBar = () => {
         )}
       </Stack>
       <Stack direction="row">
-        <SelectionSummary></SelectionSummary>
+        <SelectionSummary />
         <SyncState />
-
         {showOnDesktop && <PythonStateItem />}
         {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem

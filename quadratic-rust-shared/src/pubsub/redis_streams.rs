@@ -62,7 +62,7 @@ fn to_keys(keys: Vec<&str>) -> Vec<String> {
 }
 
 fn from_key(key: &str) -> String {
-    key.split_once("-").unwrap().0.to_string()
+    key.split_once('-').unwrap_or_default().0.to_string()
 }
 
 fn from_value(value: &Value) -> String {
@@ -75,7 +75,7 @@ fn from_value(value: &Value) -> String {
 
 fn parse_message(id: &StreamId) -> Message {
     let StreamId { id, map: value } = id;
-    let parsed_id = from_key(&id);
+    let parsed_id = from_key(id);
     let message = from_value(value.iter().next().unwrap().1);
     (parsed_id.to_string(), message)
 }
@@ -194,7 +194,7 @@ impl super::PubSub for RedisConnection {
         keys: Vec<&str>,
         active_channel: Option<&str>,
     ) -> Result<()> {
-        if keys.len() == 0 {
+        if keys.is_empty() {
             return Err(SharedError::PubSub(
                 "Error acking messages for channel {channel}: no keys provided".into(),
             ));
@@ -236,7 +236,7 @@ impl super::PubSub for RedisConnection {
 
         let opts = StreamReadOptions::default()
             .count(max_messages)
-            .group(&group, &channel);
+            .group(group, channel);
 
         let raw_messages: Result<StreamReadReply> = self
             .multiplex
@@ -267,7 +267,7 @@ impl super::PubSub for RedisConnection {
         let message: StreamRangeReply =
             self.multiplex.xrevrange_count(channel, "+", "-", 1).await?;
 
-        let id = message.ids.iter().next().ok_or_else(|| {
+        let id = message.ids.first().ok_or_else(|| {
             SharedError::PubSub("Error getting last message: no messages found".into())
         })?;
 

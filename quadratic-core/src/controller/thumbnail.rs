@@ -28,7 +28,7 @@ mod test {
 
     #[test]
     fn test_thumbnail_dirty_pos() {
-        let gc = GridController::new();
+        let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         assert!(gc.thumbnail_dirty_sheet_pos(SheetPos {
             x: 0,
@@ -54,7 +54,7 @@ mod test {
 
     #[test]
     fn test_thumbnail_dirty_rect() {
-        let gc = GridController::new();
+        let gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         assert!(gc.thumbnail_dirty_sheet_rect(&SheetRect {
             min: Pos { x: 0, y: 0 },

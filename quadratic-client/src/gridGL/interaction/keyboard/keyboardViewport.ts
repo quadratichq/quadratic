@@ -39,6 +39,12 @@ export function keyboardViewport(options: {
     if (presentationMode) {
       setPresentationMode(false);
       return true;
+    } else if (editorInteractionState.showCodeEditor) {
+      setEditorInteractionState({
+        ...editorInteractionState,
+        editorEscapePressed: true,
+      });
+      return true;
     }
     return pointer.handleEscape();
   }

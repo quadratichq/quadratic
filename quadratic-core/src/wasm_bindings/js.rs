@@ -14,7 +14,7 @@ extern "C" {
     pub(crate) fn log(s: &str);
 }
 
-#[wasm_bindgen(module = "/../quadratic-client/src/web-workers/rustWorker.ts")]
+#[wasm_bindgen(module = "/../quadratic-client/src/grid/controller/rustCallbacks.ts")]
 extern "C" {
     pub fn runPython(
         transactionId: String,
@@ -25,7 +25,12 @@ extern "C" {
     ) -> JsValue;
 }
 
-#[wasm_bindgen(module = "/../quadratic-client/src/web-workers/rustWorker.ts")]
+#[wasm_bindgen(module = "/../quadratic-client/src/grid/controller/rustCallbacks.ts")]
 extern "C" {
-    pub fn getCellsPython(code_string: String) -> JsValue;
+    pub fn addUnsentTransaction(transaction_id: String, transaction: String);
+}
+
+#[wasm_bindgen(module = "/../quadratic-client/src/grid/controller/rustCallbacks.ts")]
+extern "C" {
+    pub fn sendTransaction(transaction_id: String, transaction: String);
 }
