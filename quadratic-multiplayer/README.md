@@ -62,6 +62,22 @@ npm run lint
 
 ## API
 
+### Health Checks
+
+#### Request
+
+```shell
+curl http://127.0.0.1:3001/health -i
+```
+
+#### Response
+
+```shell
+HTTP/1.1 200 OK
+content-length: 0
+date: Mon, 08 Jan 2024 22:56:23 GMT
+```
+
 ### Enter Room
 
 Signals that a user has entered the room

@@ -62,7 +62,7 @@ impl UnsavedTransactions {
                     reverse,
                     sent_to_server: false,
                 };
-                if !cfg!(test) && !cfg!(multiplayer) && send {
+                if !cfg!(test) && !cfg!(feature = "multiplayer") && send {
                     if let Ok(stringified) = serde_json::to_string(&transaction) {
                         #[allow(unused_unsafe)]
                         unsafe {
@@ -78,7 +78,7 @@ impl UnsavedTransactions {
             Some((_, unsaved_transaction)) => {
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
-                if !cfg!(test) && !cfg!(multiplayer) && send {
+                if !cfg!(test) && !cfg!(feature = "multiplayer") && send {
                     if let Ok(stringified) = serde_json::to_string(&unsaved_transaction) {
                         #[allow(unused_unsafe)]
                         unsafe {

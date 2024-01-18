@@ -24,6 +24,9 @@ pub enum SharedError {
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(bool, String),
 
+    #[error("Error with Pubsub: {0}")]
+    PubSub(String),
+
     #[error("Error with Reqwest: {0}")]
     Request(String),
 
@@ -32,6 +35,18 @@ pub enum SharedError {
 
     #[error("Error with Uuid: {0}")]
     Uuid(String),
+}
+
+impl From<redis::RedisError> for SharedError {
+    fn from(error: redis::RedisError) -> Self {
+        SharedError::PubSub(error.to_string())
+    }
+}
+
+impl From<reqwest::Error> for SharedError {
+    fn from(error: reqwest::Error) -> Self {
+        SharedError::Request(error.to_string())
+    }
 }
 
 impl From<serde_json::Error> for SharedError {
@@ -43,11 +58,5 @@ impl From<serde_json::Error> for SharedError {
 impl From<uuid::Error> for SharedError {
     fn from(error: uuid::Error) -> Self {
         SharedError::Uuid(error.to_string())
-    }
-}
-
-impl From<reqwest::Error> for SharedError {
-    fn from(error: reqwest::Error) -> Self {
-        SharedError::Request(error.to_string())
     }
 }
