@@ -243,7 +243,7 @@ pub(crate) async fn handle_message(
                 .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
                 .flatten()
                 .map(|transaction| transaction.into())
-                .collect::<Vec<Transaction>>();
+                .collect::<Vec<TransactionServer>>();
 
             let response = MessageResponse::Transactions {
                 transactions: serde_json::to_string(&transactions)?,

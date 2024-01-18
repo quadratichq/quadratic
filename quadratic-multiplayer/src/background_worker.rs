@@ -43,7 +43,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
             // parallelize the work for each room
             rooms
                 .into_par_iter()
-                .for_each(|(file_id, checkpoint_sequence_num)| {
+                .for_each(|(file_id, _checkpoint_sequence_num)| {
                     let state = Arc::clone(&state);
 
                     tokio::spawn(async move {
