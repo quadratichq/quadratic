@@ -95,6 +95,9 @@ const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
 
 // Create NLB Listener for TLS on port 443
 const nlbListener = new aws.lb.Listener("multiplayer-nlb-listener", {
+  tags: {
+    Name: `multiplayer-nlb-${multiplayerSubdomain}`,
+  },
   loadBalancerArn: nlb.arn,
   port: 443,
   protocol: "TLS",
