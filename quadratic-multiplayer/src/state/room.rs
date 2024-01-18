@@ -37,9 +37,9 @@ impl Room {
         self.sequence_num
     }
 
-    pub fn set_checkpoint_sequence_num(&mut self, sequence_num: u64) {
-        self.checkpoint_sequence_num = sequence_num;
-    }
+    // pub fn set_checkpoint_sequence_num(&mut self, sequence_num: u64) {
+    //     self.checkpoint_sequence_num = sequence_num;
+    // }
 }
 
 impl State {
@@ -50,14 +50,14 @@ impl State {
         Ok(room)
     }
 
-    pub(crate) async fn set_checkpoint_sequence_num(
-        &self,
-        file_id: &Uuid,
-        sequence_num: u64,
-    ) -> Result<()> {
-        get_mut_room!(self, file_id)?.set_checkpoint_sequence_num(sequence_num);
-        Ok(())
-    }
+    // pub(crate) async fn set_checkpoint_sequence_num(
+    //     &self,
+    //     file_id: &Uuid,
+    //     sequence_num: u64,
+    // ) -> Result<()> {
+    //     get_mut_room!(self, file_id)?.set_checkpoint_sequence_num(sequence_num);
+    //     Ok(())
+    // }
 
     /// Add a user to a room.  If the room doesn't exist, it is created.  Users
     /// are only added to a room once (DashMap).  Returns true if the user was

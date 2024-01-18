@@ -17,7 +17,7 @@ use crate::state::{user::User, State};
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::stream::SplitSink;
 use quadratic_core::controller::operations::operation::Operation;
-use quadratic_core::controller::transaction::{Transaction, TransactionServer};
+use quadratic_core::controller::transaction::TransactionServer;
 use quadratic_rust_shared::pubsub::PubSub;
 use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
