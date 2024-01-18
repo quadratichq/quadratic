@@ -10,19 +10,19 @@ export const EXAMPLE_FILES = {
     description: 'Advanced examples of how to use Python in the app.',
   },
   'financial_analysis.grid': {
-    name: 'Financial analysis (example',
+    name: 'Financial analysis (example)',
 
     description: 'Intro to analytics for stocks.',
   },
   'machine_learning.grid': {
     name: 'Machine learning (example)',
 
-    description: 'Getting started with machine learning in Quadratic.',
+    description: 'Machine learning in Quadratic.',
   },
   'netflix_viewer_data.grid': {
     name: 'Netflix viewer data (example)',
 
-    description: 'Studying Netflix viewer data with basic charting and analytics.',
+    description: 'Studying Netflix viewer data with basic analytics.',
   },
   'sentiment_analysis.grid': {
     name: 'Sentiment analysis (example)',
@@ -41,38 +41,36 @@ export const EXAMPLE_FILES = {
   },
   'npm_downloads.grid': {
     name: 'NPM downloads (example)',
-    description: 'Example of pulling download stats from the NPM API.',
+    description: 'Pulling download stats from the NPM API.',
   },
   'mercury_bank.grid': {
     name: 'Mercury bank transactions (example)',
-    description: 'Example of pulling data from the Mercury API.',
+    description: 'Pulling data from the Mercury API.',
   },
   'open_ai.grid': {
     name: 'OpenAI (example)',
 
-    description: 'Example prompt querying the OpenAI API.',
+    description: 'Prompt querying the OpenAI API.',
   },
-  // Leaving this one out, as it has nothing useful for users
-  // 'airports_large.grid': { name: 'Airports large (example)', description: 'Lorem ipsum santa dolor.' },
   'airports_distance.grid': {
     name: 'Airports distance (example)',
-    description: 'Example of filtering data and calculating values in the app.',
+    description: 'Filtering data and calculating values in the app.',
   },
   'expenses.grid': {
     name: 'Expenses (example)',
-    description: 'Example of spreadsheet-style budgeting.',
+    description: 'Spreadsheet-style budgeting.',
   },
   'monte_carlo_simulation.grid': {
     name: 'Monte Carlo simulation (example)',
-    description: 'Example of working with large sets of data.',
+    description: 'Working with large datasets.',
   },
   'startup_portfolio.grid': {
     name: 'Startup portfolio (example)',
-    description: 'Example with calculations from formulas and Python.',
+    description: 'Calculations from formulas and Python.',
   },
   'charting_example.grid': {
     name: 'Charting (example)',
-    description: 'Example of charting data using Python + Plotly.',
+    description: 'Charting using Python + Plotly.',
   },
 };
 export type ExampleFileNames = keyof typeof EXAMPLE_FILES;
