@@ -37,39 +37,6 @@ beforeAll(async () => {
       publicLinkAccess: 'NOT_SHARED',
     },
   });
-
-  // Create a team
-  // const user_2 = await dbClient.user.create({
-  //   data: { auth0_id: 'test_user_2' },
-  // });
-  // await dbClient.team.create({
-  //   data: {
-  //     name: 'Test Team 1',
-  //     uuid: '00000000-0000-4000-8000-000000000001',
-  //     // id: 1,
-  //     UserTeamRole: {
-  //       create: [
-  //         {
-  //           userId: user_2.id,
-  //           role: 'OWNER',
-  //         },
-  //       ],
-  //     },
-  //   },
-  // });
-
-  // // Team file
-  // await dbClient.file.create({
-  //   data: {
-  //     teamId: 1,
-  //     ownerUserId: user_2.id,
-  //     name: 'test_file_team',
-  //     contents: Buffer.from('contents_0'),
-  //     uuid: '00000000-0000-4000-8000-000000000002',
-  //     publicLinkAccess: 'NOT_SHARED',
-  //   },
-  // });
-  // File with individual user invites
 });
 
 afterAll(async () => {
