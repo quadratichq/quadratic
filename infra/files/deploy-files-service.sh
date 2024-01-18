@@ -14,8 +14,11 @@ esc login
 echo 'Setting ENV Vars'
 esc env open quadratic/quadratic-files-development --format dotenv > .env
 sed -i 's/"//g' .env
+echo 'setting redisHost=${redisHost}'
 echo PUBSUB_HOST=${redisHost} >> .env
+echo 'setting redisPort=${redisPort}'
 echo PUBSUB_PORT=${redisPort} >> .env
+echo 'setting quadraticApiUri=${quadraticApiUri}'
 echo QUADRATIC_API_URI=${quadraticApiUri} >> .env
 
 echo 'Ensure AWS Cli is installed'
