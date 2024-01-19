@@ -4,6 +4,7 @@ import { colors } from '@/theme/colors';
 import { useEffect, useState } from 'react';
 import { Coordinate } from '../../types/size';
 import './CodeError.css';
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 
 interface CodeErrorInterface {
   location: Coordinate;
@@ -80,11 +81,14 @@ export const CodeError = () => {
     }
   }
 
+  useEffect(() => {
+    const viewport = pixiApp.viewport;
+    viewport.on('zoom', () => {});
+  }, []);
+
   return (
     <div
-      className={`code-error-container ${
-        error && !remove ? 'code-error-fade-in' : error && remove ? 'code-error-fade-out' : ''
-      }`}
+      className={`code-error ${error && !remove ? 'code-error-fade-in' : error && remove ? 'code-error-fade-out' : ''}`}
       style={{
         position: 'absolute',
         visibility: error ? 'visible' : 'hidden',
