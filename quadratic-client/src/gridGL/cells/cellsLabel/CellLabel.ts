@@ -22,7 +22,7 @@ interface CharRenderData {
 const OPEN_SANS_FIX = { x: 1.8, y: -1 };
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
-const CHART_TEXT = ' #CHART';
+const CHART_TEXT = ' CHART';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 

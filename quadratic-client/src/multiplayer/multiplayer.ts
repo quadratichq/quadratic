@@ -188,6 +188,9 @@ export class Multiplayer {
     }
     this.lastTime = now;
     if (now - this.lastHeartbeat > HEARTBEAT_TIME) {
+      if (debugShowMultiplayer) {
+        console.log('[Multiplayer] Sending heartbeat to the server...');
+      }
       const heartbeat: Heartbeat = {
         type: 'Heartbeat',
         session_id: this.sessionId,
