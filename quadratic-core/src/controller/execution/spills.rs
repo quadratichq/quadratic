@@ -65,6 +65,7 @@ impl GridController {
     /// Checks all code_runs for changes in spill_errors.
     pub fn check_all_spills(&mut self, transaction: &mut PendingTransaction, sheet_id: SheetId) {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
+            crate::test_util::print_code_run_order(&sheet);
             for index in 0..sheet.code_runs.len() {
                 if let Some(spill_error) = self.check_spill(sheet_id, index) {
                     self.change_spill(transaction, sheet_id, index, spill_error);
