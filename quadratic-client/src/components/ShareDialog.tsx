@@ -205,6 +205,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     });
 
   const disallowedEmails: string[] = [
+    ...(owner.type === 'user' ? [owner.email] : []),
     ...users.map((user) => user.email),
     ...invites.map((invite) => invite.email),
     ...pendingInvites.map((invite) => invite.email),
