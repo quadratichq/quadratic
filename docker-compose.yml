@@ -72,6 +72,24 @@ services:
       "
         aws --endpoint-url=http://localstack:4566 s3api create-bucket --bucket quadratic-api-docker --region us-east-1
       "
+  quadratic-client:
+    build:
+      context: .
+      dockerfile: quadratic-client/Dockerfile
+    env_file:
+      - quadratic-client/.env.docker
+    restart: "always"
+    ports:
+      - "3000:3000"
+    command: "npm run start"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - frontend
+      - all
+    networks:
+      - host
 
   quadratic-api:
     build:
@@ -89,7 +107,7 @@ services:
         condition: service_healthy
     profiles:
       - backend
-      - temp
+      - all
     networks:
       - host
 
@@ -118,6 +136,7 @@ services:
     profiles:
       - backend
       - quadratic-files-dev
+      - all
     networks:
       - host
 
@@ -146,6 +165,7 @@ services:
     profiles:
       - backend
       - quadratic-multiplayer-dev
+      - all
     networks:
       - host
 
