@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 const program = new Command();
 
 program
-  .name("node startup")
+  .name("node dev")
   .description(
     "Runs the Quadratic dev server. By default, only React runs in watch mode."
   )
