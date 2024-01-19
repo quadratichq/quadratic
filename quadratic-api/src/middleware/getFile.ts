@@ -15,18 +15,24 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     include: {
       ownerTeam: {
         include: {
-          UserTeamRole: {
-            where: {
-              userId: userId,
-            },
-          },
+          UserTeamRole:
+            userId !== undefined
+              ? {
+                  where: {
+                    userId: userId,
+                  },
+                }
+              : undefined,
         },
       },
-      UserFileRole: {
-        where: {
-          userId,
-        },
-      },
+      UserFileRole:
+        userId !== undefined
+          ? {
+              where: {
+                userId,
+              },
+            }
+          : undefined,
     },
   });
 
@@ -39,8 +45,8 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   }
 
   const isFileOwner = !file.ownerTeamId && file.ownerUserId === userId;
-  const teamRole = undefined; //file.ownerTeam && file.ownerTeam.UserTeamRole[0] ? file.ownerTeam.UserTeamRole[0].role : undefined;
-  const fileRole = undefined; //file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
+  const teamRole = file.ownerTeam && file.ownerTeam.UserTeamRole[0] ? file.ownerTeam.UserTeamRole[0].role : undefined;
+  const fileRole = file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
 
   const filePermissions = getFilePermissions({
     fileRole,
