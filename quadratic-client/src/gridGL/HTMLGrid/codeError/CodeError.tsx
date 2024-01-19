@@ -1,10 +1,10 @@
 import { sheets } from '@/grid/controller/Sheets';
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCellState } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { useEffect, useState } from 'react';
 import { Coordinate } from '../../types/size';
 import './CodeError.css';
-import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 
 interface CodeErrorInterface {
   location: Coordinate;
@@ -16,22 +16,22 @@ interface CodeErrorInterface {
 const FADE_TIME = 500;
 
 export const CodeError = () => {
-  const [error, setError] = useState<CodeErrorInterface | undefined>();
+  const [message, setMessage] = useState<CodeErrorInterface | undefined>();
   const [remove, setRemove] = useState(0);
   const [overDialog, setOverDialog] = useState(false);
 
   useEffect(() => {
     const addError = (e: any /* { detail: CodeErrorInterface } */) => {
       if (!e.detail) {
-        if (error && !remove) {
+        if (message && !remove) {
           const timeout = window.setTimeout(() => {
             setRemove(0);
-            setError(undefined);
+            setMessage(undefined);
           }, FADE_TIME);
           setRemove(timeout);
         }
       } else {
-        setError((error) => {
+        setMessage((error) => {
           if (
             !remove &&
             error &&
@@ -53,10 +53,10 @@ export const CodeError = () => {
     };
     window.addEventListener('overlap-code-error', addError);
     return () => window.removeEventListener('overlap-code-error', addError);
-  }, [remove, error]);
+  }, [remove, message]);
 
   let text: JSX.Element | undefined;
-  if (error?.type === 'SpillError') {
+  if (message?.type === 'SpillError') {
     text = (
       <>
         <div className="code-error-header">Spill Error</div>
@@ -66,8 +66,8 @@ export const CodeError = () => {
         </div>
       </>
     );
-  } else if (error?.type === 'RunError') {
-    const code = sheets.sheet.getCodeCell(error.location.x, error.location.y);
+  } else if (message?.type === 'RunError') {
+    const code = sheets.sheet.getCodeCell(message.location.x, message.location.y);
     if (code) {
       text = (
         <>
@@ -88,16 +88,17 @@ export const CodeError = () => {
 
   return (
     <div
-      className={`code-error ${error && !remove ? 'code-error-fade-in' : error && remove ? 'code-error-fade-out' : ''}`}
+      className={`code-error-container ${
+        message && !remove ? 'code-error-fade-in' : message && remove ? 'code-error-fade-out' : ''
+      }`}
       style={{
         position: 'absolute',
-        visibility: error ? 'visible' : 'hidden',
-        left: error?.x,
-        top: error?.y,
-        pointerEvents: 'auto',
+        left: message?.x,
+        top: message?.y,
+        visibility: message ? 'visible' : 'hidden',
       }}
       onPointerEnter={() => {
-        if (error && remove) {
+        if (message && remove) {
           window.clearTimeout(remove);
           setRemove(0);
           setOverDialog(true);
@@ -107,14 +108,14 @@ export const CodeError = () => {
         if (overDialog) {
           const timeout = window.setTimeout(() => {
             setRemove(0);
-            setError(undefined);
+            setMessage(undefined);
           }, FADE_TIME);
           setOverDialog(false);
           setRemove(timeout);
         }
       }}
     >
-      <div className="code-error" style={{ border: `1px solid ${colors.error}` }}>
+      <div className="code-error" style={{ border: `1px solid ${colors.error}`, left: '-100%' }}>
         {text}
       </div>
     </div>

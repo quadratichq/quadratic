@@ -7,7 +7,6 @@ import { Coordinate } from '../types/size';
 const TRIANGLE_SIZE = 100;
 const TRIANGLE_COLOR = 'red';
 const INDICATOR_SIZE = 4;
-const TRIGGER_WIDTH = 20;
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
@@ -24,7 +23,7 @@ export class CellsMarkers extends Container {
   private triangle: Texture;
 
   constructor() {
-    super(); //, { vertices: true, tint: true });
+    super();
     this.triangle = this.createTriangle();
   }
 
@@ -79,7 +78,7 @@ export class CellsMarkers extends Container {
 
       this.markers.push({
         sprite: child,
-        bounds: new Rectangle(box.x, box.y, TRIGGER_WIDTH, box.height),
+        bounds: new Rectangle(box.x, box.y, box.width, box.height),
         rectangle: new Rectangle(child.x, child.y, 4, 4),
         codeCell: { x: Number(codeCell.x), y: Number(codeCell.y) },
         type: codeCell.state,

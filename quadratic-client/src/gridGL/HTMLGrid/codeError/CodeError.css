@@ -1,5 +1,4 @@
 .code-error-container {
-  opacity: 0;
   transition: opacity 500ms linear 1s;
 }
 
@@ -31,5 +30,4 @@
 
 .code-error-fade-out {
   opacity: 0;
-  transition: opacity 500ms linear;
 }
