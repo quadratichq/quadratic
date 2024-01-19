@@ -40,40 +40,37 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                 .map(|room| (room.file_id.to_owned(), room.checkpoint_sequence_num))
                 .collect::<Vec<_>>();
 
-            // parallelize the work for each room
-            rooms
-                .into_par_iter()
-                .for_each(|(file_id, _checkpoint_sequence_num)| {
-                    let state = Arc::clone(&state);
+            let state = Arc::clone(&state);
 
-                    tokio::spawn(async move {
-                        tracing::trace!("Processing room {}", file_id);
+            tokio::spawn(async move {
+                // parallelize the work for each room
+                for (file_id, _) in rooms.iter() {
+                    tracing::trace!("Processing room {}", file_id);
 
-                        // broadcast sequence number to all users in the room
-                        let broadcasted =
-                            broadcast_sequence_num(Arc::clone(&state), &file_id).await;
+                    // broadcast sequence number to all users in the room
+                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), &file_id).await;
 
-                        if let Err(error) = broadcasted {
-                            tracing::warn!("Error broadcasting sequence number: {:?}", error);
-                        }
+                    if let Err(error) = broadcasted {
+                        tracing::warn!("Error broadcasting sequence number: {:?}", error);
+                    }
 
-                        // remove stale users in the room
-                        let removed = remove_stale_users_in_room(
-                            Arc::clone(&state),
-                            &file_id,
-                            heartbeat_timeout_s,
-                        )
-                        .await;
+                    // remove stale users in the room
+                    let removed = remove_stale_users_in_room(
+                        Arc::clone(&state),
+                        &file_id,
+                        heartbeat_timeout_s,
+                    )
+                    .await;
 
-                        if let Err(error) = removed {
-                            tracing::warn!(
-                                "Error removing stale users from room {}: {:?}",
-                                file_id,
-                                error
-                            );
-                        }
-                    });
-                });
+                    if let Err(error) = removed {
+                        tracing::warn!(
+                            "Error removing stale users from room {}: {:?}",
+                            file_id,
+                            error
+                        );
+                    }
+                }
+            });
 
             interval.tick().await;
         }
@@ -165,7 +162,7 @@ mod tests {
         let user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
 
         let room = state.get_room(&file_id).await.unwrap();
-        assert_eq!(room.users.get(&user.session_id).unwrap().value(), &user);
+        assert_eq!(room.get_user(&user.session_id).unwrap(), user);
 
         let result = super::remove_stale_users_in_room(state.clone(), &file_id, -1).await;
         assert!(result.is_ok_and(|v| v.is_none()));

@@ -22,7 +22,7 @@ pub enum SharedError {
     Aws(Aws),
 
     #[error("Error communicating with the Quadratic API: {0}")]
-    QuadraticApi(bool, String),
+    QuadraticApi(String),
 
     #[error("Error with Pubsub: {0}")]
     PubSub(String),

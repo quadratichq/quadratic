@@ -19,7 +19,7 @@ export default [
   handler,
 ];
 
-async function handler(req: RequestWithUser, res: Response) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.POST.response']>) {
   const {
     user: { id: userId },
     body: { name, contents, version },
@@ -44,6 +44,7 @@ async function handler(req: RequestWithUser, res: Response) {
   // Upload file contents to S3 and create a checkpoint
   const { uuid } = dbFile;
   const response = await uploadStringAsFileS3(`${uuid}-0.grid`, contents);
+
   await dbClient.fileCheckpoint.create({
     data: {
       fileId: dbFile.id,
@@ -54,10 +55,9 @@ async function handler(req: RequestWithUser, res: Response) {
     },
   });
 
-  const data: ApiTypes['/v0/files.POST.response'] = {
+  return res.status(201).json({
     ...dbFile,
     createdDate: dbFile.createdDate.toISOString(),
     updatedDate: dbFile.updatedDate.toISOString(),
-  };
-  return res.status(201).json(data);
+  });
 }

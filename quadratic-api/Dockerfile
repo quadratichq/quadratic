@@ -10,4 +10,4 @@ RUN npm install
 WORKDIR /quadratic/quadratic-api
 RUN npm install
 RUN npm run build --workspace=quadratic-api
-CMD ["node", "dist/server.js"]
+CMD ["npm", "start"]
