@@ -741,7 +741,7 @@ function ListItemPublicLink({
             variant="link"
             onClick={() => {
               mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
-              const url = `${window.location.origin}/files/${uuid}`;
+              const url = window.location.origin + ROUTES.FILE(uuid);
               navigator.clipboard
                 .writeText(url)
                 .then(() => {
