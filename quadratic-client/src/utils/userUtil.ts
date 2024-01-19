@@ -39,9 +39,3 @@ export const displayInitials = (user: User | MultiplayerUser | undefined): strin
   }
   return user?.index !== undefined ? user.index + 1 : '0';
 };
-
-// const getDeviceName = (): string => {
-//   let parser = new UAParser(window.navigator.userAgent);
-//   let result = parser.getResult();
-//   return result.device?.model || result.device?.type || '';
-// }
