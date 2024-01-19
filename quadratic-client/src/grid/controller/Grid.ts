@@ -1,4 +1,4 @@
-import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
+import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';

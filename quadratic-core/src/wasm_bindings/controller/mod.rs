@@ -8,6 +8,7 @@ pub mod borders;
 pub mod bounds;
 pub mod cells;
 pub mod clipboard;
+pub mod code;
 pub mod export;
 pub mod formatting;
 pub mod import;
@@ -68,23 +69,5 @@ impl GridController {
     #[wasm_bindgen(js_name = "redo")]
     pub fn js_redo(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
-    }
-
-    #[wasm_bindgen(js_name = "calculationComplete")]
-    pub fn js_calculation_complete(&mut self, result: JsCodeResult) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(
-            &self.calculation_complete(result),
-        )?)
-    }
-
-    #[wasm_bindgen(js_name = "calculationGetCells")]
-    pub fn js_calculation_get_cells(
-        &mut self,
-        get_cells: JsComputeGetCells,
-    ) -> Result<JsValue, JsValue> {
-        match self.calculation_get_cells(get_cells) {
-            Ok(get_cells) => Ok(serde_wasm_bindgen::to_value(&get_cells)?),
-            Err(e) => Err(serde_wasm_bindgen::to_value(&e)?),
-        }
     }
 }

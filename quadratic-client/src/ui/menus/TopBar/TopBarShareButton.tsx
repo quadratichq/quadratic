@@ -26,7 +26,7 @@ export const TopBarShareButton = () => {
         </Button>
       ) : (
         <Button asChild variant="outline" size="sm" className=" self-center">
-          <Link to={ROUTES.LOGIN_WITH_REDIRECT()} replace>
+          <Link to={ROUTES.LOGIN_WITH_REDIRECT()} replace style={{ whiteSpace: 'nowrap' }}>
             Log in
           </Link>
         </Button>

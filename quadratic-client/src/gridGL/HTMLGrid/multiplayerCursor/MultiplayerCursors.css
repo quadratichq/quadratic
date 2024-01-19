@@ -15,7 +15,6 @@
   left: 0;
   top: 0;
   transition: transform 0.25s cubic-bezier(0.17, 0.93, 0.38, 1);
-  z-index: 10000;
 }
 
 .multiplayer-cursor-offscreen {

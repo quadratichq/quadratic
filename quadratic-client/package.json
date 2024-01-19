@@ -70,7 +70,7 @@
     "build:wasm:javascript:dev": "cd .. && cd quadratic-core && wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs --dev",
     "start:production": "npm run build && serve build",
     "test:all": "concurrently \"npm run test:unit:ci\" \"npm run test:e2e\"",
-    "test:unit": "node --experimental-vm-modules ../node_modules/jest/bin/jest.js",
+    "test:unit": "vitest",
     "test:unit:dev": "npm run build:wasm:nodejs && npm run test:unit -- --watchAll",
     "test:unit:ci": "npm run test:unit -- --ci --runInBand",
     "test:e2e": "playwright test --workers=1",

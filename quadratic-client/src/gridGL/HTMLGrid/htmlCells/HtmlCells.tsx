@@ -19,9 +19,7 @@ export const HtmlCells = () => {
     <div
       ref={divRef}
       style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
+        pointerEvents: 'none',
       }}
     />
   );
