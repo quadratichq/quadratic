@@ -59,6 +59,11 @@ pub enum Operation {
         row: i64,
         new_size: f64,
     },
+
+    // used for User transactions to set cursor (eg, Paste)
+    SetCursor {
+        sheet_rect: SheetRect,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -119,6 +124,9 @@ impl fmt::Display for Operation {
                 sheet_id, row, new_size
             ),
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
+            Operation::SetCursor { sheet_rect } => {
+                write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)
+            }
         }
     }
 }

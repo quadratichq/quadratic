@@ -6,17 +6,12 @@ import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAt
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
+import { getCursorLocation, isCursorAtEnd, isCursorAtStart } from '../interaction/contentEditableHelper';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
-import { getCursorLocation, isCursorAtEnd, isCursorAtStart } from './contentEditableHelper';
 
-interface CellInputProps {
-  container?: HTMLDivElement;
-}
-
-export const CellInput = (props: CellInputProps) => {
-  const { container } = props;
+export const CellInput = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
 
   const viewport = pixiApp.viewport;
@@ -88,9 +83,6 @@ export const CellInput = (props: CellInputProps) => {
     [cell, handleFocus]
   );
 
-  // If we don't have a viewport, we can't continue.
-  if (!viewport || !container) return null;
-
   // If the cell is open in the code editor, don't show the input
   if (
     editorInteractionState.showCodeEditor &&
@@ -99,35 +91,7 @@ export const CellInput = (props: CellInputProps) => {
   )
     return null;
 
-  // Function used to move and scale the Input with the Grid
-  function updateInputCSSTransform() {
-    if (!container) return '';
-
-    // Get world transform matrix
-    let worldTransform = viewport.worldTransform;
-
-    // Calculate position of input based on cell (magic number via experimentation)
-    let cell_offset_scaled = viewport.toScreen(cellOffsets.x + CURSOR_THICKNESS, cellOffsets.y + CURSOR_THICKNESS);
-
-    // Generate transform CSS
-    const transform =
-      'matrix(' +
-      [
-        worldTransform.a,
-        worldTransform.b,
-        worldTransform.c,
-        worldTransform.d,
-        cell_offset_scaled.x + container.offsetLeft,
-        cell_offset_scaled.y + container.offsetTop,
-      ].join(',') +
-      ')';
-
-    // Update input css matrix
-    if (textInput) textInput.style.transform = transform;
-
-    // return transform
-    return transform;
-  }
+  const transform = `translate(${cellOffsets.x + CURSOR_THICKNESS}px, ${cellOffsets.y + CURSOR_THICKNESS}px)`;
 
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
   let closed = false;
@@ -159,18 +123,7 @@ export const CellInput = (props: CellInputProps) => {
 
     // Set focus back to Grid
     focusGrid();
-
-    // Clean up listeners
-    viewport.off('moved-end', updateInputCSSTransform);
-    viewport.off('moved', updateInputCSSTransform);
   };
-
-  // Register lister for when grid moves to resize and move input with CSS
-  viewport.on('moved', updateInputCSSTransform);
-  viewport.on('moved-end', updateInputCSSTransform);
-
-  // set input's initial position correctly
-  const transform = updateInputCSSTransform();
 
   const handlePaste = (event: ClipboardEvent) => {
     const text = event.clipboardData?.getData('text') || '';

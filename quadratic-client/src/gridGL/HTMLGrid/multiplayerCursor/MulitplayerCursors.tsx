@@ -1,14 +1,18 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { useEffect, useState } from 'react';
-import { multiplayer } from '../multiplayer';
+import { multiplayer } from '../../../multiplayer/multiplayer';
 import { MultiplayerCursor } from './MultiplayerCursor';
 import './MultiplayerCursors.css';
-import { MULTIPLAYER_COLORS } from './multiplayerColors';
 
-const OFFSCREEN_SIZE = 5;
+const OFFSCREEN_SIZE = 10;
 
-export const MultiplayerCursors = () => {
+interface Props {
+  topHeading: number;
+  leftHeading: number;
+}
+
+export const MultiplayerCursors = (props: Props) => {
   // triggers a render
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_, setPlayersTrigger] = useState(0);
@@ -31,11 +35,8 @@ export const MultiplayerCursors = () => {
   return (
     <div className="multiplayer-cursors">
       {[...multiplayer.users].flatMap(([id, player]) => {
-        const color = MULTIPLAYER_COLORS[player.color];
-        const bounds = pixiApp.viewport.getVisibleBounds();
-        const rect = pixiApp.canvas.getBoundingClientRect();
-        const offsetTop = rect.top;
-        const { x, y, sheet_id, first_name, last_name, email, visible, index } = player;
+        let { x, y } = player;
+        const { sheet_id, first_name, last_name, email, visible, index } = player;
         let name: string;
         if (first_name || last_name) {
           name = `${first_name} ${last_name}`;
@@ -45,33 +46,25 @@ export const MultiplayerCursors = () => {
           name = `User ${index + 1}`;
         }
 
+        const color = player.colorString;
+        const bounds = pixiApp.viewport.getVisibleBounds();
         if (visible && x !== undefined && y !== undefined && sheet_id === sheets.sheet.id) {
-          const translated = pixiApp.viewport.toScreen(x, y);
           let offscreen = false;
-          if (x > bounds.right - OFFSCREEN_SIZE) {
+          if (x > bounds.right) {
             offscreen = true;
-            translated.x = rect.right - OFFSCREEN_SIZE * 2;
+            x = bounds.right - OFFSCREEN_SIZE;
           } else if (x < bounds.left) {
             offscreen = true;
-            translated.x = rect.left;
+            x = bounds.left + props.leftHeading;
           }
           if (y > bounds.bottom) {
             offscreen = true;
-            translated.y = rect.bottom;
-          } else if (y < bounds.top - offsetTop + OFFSCREEN_SIZE) {
+            y = bounds.bottom - OFFSCREEN_SIZE;
+          } else if (y < bounds.top) {
             offscreen = true;
-            translated.y = rect.top - offsetTop;
+            y = bounds.top + props.topHeading;
           }
-          return [
-            <MultiplayerCursor
-              key={id}
-              x={translated.x}
-              y={translated.y}
-              name={name}
-              color={color}
-              offscreen={offscreen}
-            />,
-          ];
+          return [<MultiplayerCursor key={id} x={x} y={y} name={name} color={color} offscreen={offscreen} />];
         }
         return [];
       })}

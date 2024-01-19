@@ -66,6 +66,8 @@ pub(crate) async fn handle_message(
                 let (permissions, mut sequence_num) =
                     get_file_perms(base_url, jwt, file_id).await?;
 
+                tracing::trace!("permissions: {:?}", permissions);
+
                 // TODO(ddimaria): break out any pubsub work into a separate file
                 if let Ok(pubsub_sequence_num) = state
                     .transaction_queue

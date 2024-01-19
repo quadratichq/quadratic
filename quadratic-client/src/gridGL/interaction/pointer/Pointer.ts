@@ -2,7 +2,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import { Viewport } from 'pixi-viewport';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { PointerAutoComplete } from './PointerAutoComplete/PointerAutoComplete';
+import { PointerAutoComplete } from './PointerAutoComplete';
 import { PointerDown } from './PointerDown';
 import { PointerHeading } from './PointerHeading';
 import { PointerHtmlCells } from './PointerHtmlCells';
@@ -28,7 +28,14 @@ export class Pointer {
     viewport.on('pointerupoutside', this.pointerUp);
     pixiApp.canvas.addEventListener('pointerleave', this.pointerLeave);
     window.addEventListener('blur', this.pointerLeave);
+    window.addEventListener('visibilitychange', this.visibilityChange);
   }
+
+  private visibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      multiplayer.sendMouseMove();
+    }
+  };
 
   private pointerLeave = () => {
     multiplayer.sendMouseMove();

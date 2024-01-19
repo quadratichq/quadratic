@@ -159,8 +159,8 @@ mod tests {
         let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
-        let transaction_id_2 = Uuid::new_v4();
-        let operations_2 = operation(&mut grid, 1, 0, "2");
+        let _transaction_id_2 = Uuid::new_v4();
+        let _operations_2 = operation(&mut grid, 1, 0, "2");
 
         state
             .transaction_queue

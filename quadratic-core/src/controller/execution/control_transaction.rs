@@ -106,8 +106,7 @@ impl GridController {
         }
 
         self.after_calculation_async(&mut transaction, result)?;
-
-        Ok(transaction.prepare_summary(transaction.complete))
+        Ok(self.finalize_transaction(&mut transaction))
     }
 }
 

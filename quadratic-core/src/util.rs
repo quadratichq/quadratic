@@ -231,10 +231,15 @@ pub fn maybe_reverse_range(
 
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(test) {
+    if cfg!(test) || cfg!(feature = "multiplayer") {
         dbg!(val);
     } else {
-        crate::wasm_bindings::js::log(&(format!("{:?}", val)));
+        // this unsafe marker is necessary b/c of quadratic-multiplayer uses quadratic-core as a dependency
+        // (although the feature="multiplayer" should prevent this from ever being called form quadratic-multiplayer)
+        #[allow(unused_unsafe)]
+        unsafe {
+            crate::wasm_bindings::js::log(&(format!("{:?}", val)));
+        }
     }
 }
 

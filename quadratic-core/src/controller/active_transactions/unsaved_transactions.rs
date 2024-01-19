@@ -117,15 +117,16 @@ impl DerefMut for UnsavedTransactions {
 mod test {
     use super::*;
     use crate::{controller::operations::operation::Operation, grid::SheetId};
-    use std::collections::VecDeque;
 
     #[test]
     fn test_unsaved_transactions() {
         let mut unsaved_transactions = UnsavedTransactions::default();
         let transaction = Transaction::default();
-        let mut pending = PendingTransaction::default();
-        pending.id = transaction.id;
         let id = transaction.id;
+        let pending = PendingTransaction {
+            id,
+            ..Default::default()
+        };
         unsaved_transactions.insert_or_replace(&pending, false);
         assert_eq!(
             unsaved_transactions.find_forward(id),
@@ -133,9 +134,10 @@ mod test {
         );
         assert_eq!(unsaved_transactions.find_index(id), Some(0));
 
-        let mut pending_2 = PendingTransaction::default();
-        pending_2.id = pending.id;
-        pending_2.operations = VecDeque::new();
+        let mut pending_2 = PendingTransaction {
+            id: pending.id,
+            ..Default::default()
+        };
         pending_2.operations.push_front(Operation::ResizeRow {
             sheet_id: SheetId::new(),
             row: 0,

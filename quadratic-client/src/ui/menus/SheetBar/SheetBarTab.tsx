@@ -1,5 +1,4 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
@@ -334,7 +333,7 @@ function TabMultiplayer({ sheetId }: { sheetId: string }) {
       setUsers(
         multiplayer.getUsers().flatMap((user) => {
           if (user.sheet_id === sheetId) {
-            return [MULTIPLAYER_COLORS[user.color % MULTIPLAYER_COLORS.length]];
+            return [user.colorString];
           }
           return [];
         })

@@ -61,7 +61,8 @@ export class SheetCursor {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
     this.multiCursor = value.multiCursor;
-    pixiApp.updateCursorPosition();
+    multiplayer.sendSelection(this.getMultiplayerSelection());
+    pixiApp.cursor.dirty = true;
   }
 
   changePosition(options: {

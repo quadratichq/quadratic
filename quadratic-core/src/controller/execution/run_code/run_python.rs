@@ -10,7 +10,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
-    ) -> bool {
+    ) {
         if !cfg!(test) {
             crate::wasm_bindings::js::runPython(
                 transaction.id.to_string(),
@@ -25,7 +25,6 @@ impl GridController {
         transaction.current_sheet_pos = Some(sheet_pos);
         transaction.waiting_for_async = Some(CodeCellLanguage::Python);
         transaction.has_async = true;
-        true
     }
 }
 

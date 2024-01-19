@@ -42,3 +42,12 @@ impl Display for SheetId {
         write!(f, "{}", self.id)
     }
 }
+
+#[cfg(test)]
+impl SheetId {
+    pub fn test() -> Self {
+        Self {
+            id: Uuid::parse_str("00000000-0000-0000-0000-000000000000").unwrap(),
+        }
+    }
+}

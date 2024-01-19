@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '../../../constants/gridConstants';
@@ -212,6 +213,7 @@ export class PointerHeading {
         }
       }
     }
+    multiplayer.sendMouseMove(world.x, world.y);
     return true;
   }
 

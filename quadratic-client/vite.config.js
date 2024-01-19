@@ -1,4 +1,52 @@
 import react from '@vitejs/plugin-react';
+import path from 'path';
+import { defineConfig } from 'vite';
+import checker from 'vite-plugin-checker';
+
+export default defineConfig(() => {
+  return {
+    build: {
+      outDir: '../build',
+    },
+    assetsInclude: ['**/*.py'],
+    server: {
+      port: 3000,
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+    plugins: [
+      react(),
+      checker({
+        typescript: true,
+        eslint: {
+          lintCommand: 'eslint --ext .ts,.tsx src',
+        },
+      }),
+    ],
+    worker: {
+      format: 'iife',
+      plugins: () => [
+        checker({
+          typescript: true,
+          eslint: {
+            lintCommand: 'eslint --ext .ts src',
+          },
+        }),
+      ],
+    },
+    test: {
+      globals: true,
+      environment: 'happy-dom',
+    }
+  };
+});
+/*
+old version:
+
+import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
 import topLevelAwait from 'vite-plugin-top-level-await';
@@ -10,7 +58,7 @@ export default defineConfig(() => {
     build: {
       outDir: '../build',
     },
-    assetsInclude: ['**/*.py', '**/*.wasm'],
+    assetsInclude: ['** /*.py', '** /*.wasm'],
     server: {
       port: 3000,
     },
@@ -58,3 +106,6 @@ export default defineConfig(() => {
     },
   };
 });
+
+
+*/
