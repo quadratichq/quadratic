@@ -158,7 +158,7 @@ async fn ws_handler(
         }
     }
 
-    let connection = Connection::new(jwt);
+    let connection = Connection::new(None, jwt);
 
     tracing::info!(
         "`{user_agent}` at {addr} connected: connection_id={}",
@@ -204,6 +204,10 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
                     }
                     // kill the ws connection for file permission errors
                     MpError::FilePermissions(_) => {
+                        break;
+                    }
+                    // kill the ws connection for room not found errors
+                    MpError::RoomNotFound(_) => {
                         break;
                     }
                     // noop
@@ -441,9 +445,10 @@ pub(crate) mod tests {
         let expected = MessageResponse::UsersInRoom {
             users: vec![user.clone()],
         };
+        let connecton = Connection::new(Some(session_id), None);
 
         state
-            .enter_room(file_id, &new_user, connection_id, 0)
+            .enter_room(file_id, &new_user, connection_id, connecton, 0)
             .await
             .unwrap();
 

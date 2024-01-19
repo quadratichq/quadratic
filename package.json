@@ -18,9 +18,6 @@
   "scripts": {
     "start": "npm run watch:front-end",
     "api:start": "npm start --workspace=quadratic-api",
-    "dev:multiplayer": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"npm:watch:multiplayer\" \"docker compose --profile quadratic-multiplayer-dev up\"",
-    "dev:files": "npm run build:wasm:types && concurrently -n=react,core,api,files,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"npm:watch:files\" \"docker compose --profile quadratic-files-dev up\"",
-    "dev:multiplayer-files": "npm run build:wasm:types && concurrently -n=react,core,api,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"docker compose up\"",
     "clean": "npm exec --workspaces -- npx rimraf node_modules && npx rimraf node_modules",
     "perf": "npm run watch:perf:front-end",
     "watch:javascript": "cd quadratic-client && npm run watch:javascript",

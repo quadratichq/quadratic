@@ -96,14 +96,19 @@ async fn remove_stale_users_in_room(
     file_id: &Uuid,
     heartbeat_timeout_s: i64,
 ) -> Result<Option<JoinHandle<()>>> {
-    let (num_removed, num_remaining) = state
+    let (stale_users, num_remaining) = state
         .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
         .await?;
 
     tracing::trace!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
 
-    if num_removed == 0 {
+    if stale_users.len() == 0 {
         return Ok(None);
+    } else {
+        for user_id in stale_users.into_iter() {
+            // let connection_id = state.connections.lock().await.get(&user_id);
+            // state.connections.lock().await.remove(&user_id).await?;
+        }
     }
 
     if num_remaining == 0 {
@@ -134,8 +139,7 @@ mod tests {
     async fn test_broadcast_sequence_num() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
-        let connection_id = Uuid::new_v4();
-        let _user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let _user = add_new_user_to_room(file_id, state.clone()).await;
         let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
@@ -158,8 +162,7 @@ mod tests {
     async fn remove_stale_users_in_room() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
-        let connection_id = Uuid::new_v4();
-        let user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let user = add_new_user_to_room(file_id, state.clone()).await;
 
         let room = state.get_room(&file_id).await.unwrap();
         assert_eq!(room.get_user(&user.session_id).unwrap(), user);

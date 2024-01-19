@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::error::MpError;
 use crate::message::response::MessageResponse;
-use crate::state::State;
+use crate::state::{room, State};
 
 pub mod handle;
 pub mod request;
@@ -22,29 +22,33 @@ pub(crate) fn broadcast(
     message: MessageResponse,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
-        let result = async {
-            for user in state
-                .get_room(&file_id)
-                .await?
-                .users
-                .iter()
-                .filter(|user| !exclude.contains(&user.session_id))
-            {
-                if let Some(sender) = &user.socket {
-                    sender
-                        .lock()
-                        .await
-                        .send(Message::Text(serde_json::to_string(&message)?))
-                        .await
-                        .map_err(|e| MpError::SendingMessage(e.to_string()))?;
+        if let Ok(room) = state.get_room(&file_id).await {
+            let result = async {
+                for user in room
+                    .users
+                    .iter()
+                    .filter(|user| !exclude.contains(&user.session_id))
+                {
+                    if let Some(sender) = &user.socket {
+                        let sent = sender
+                            .lock()
+                            .await
+                            .send(Message::Text(serde_json::to_string(&message)?))
+                            .await
+                            .map_err(|e| MpError::SendingMessage(e.to_string()));
+
+                        if let Err(_) = sent {
+                            state.leave_room(file_id, &user.session_id).await?;
+                        }
+                    }
                 }
+
+                Ok::<_, MpError>(())
+            };
+
+            if let Err(e) = result.await {
+                tracing::warn!("Error broadcasting message: {:?}", e.to_string());
             }
-
-            Ok::<_, MpError>(())
-        };
-
-        if let Err(e) = result.await {
-            tracing::warn!("Error broadcasting message: {:?}", e.to_string());
         }
     })
 }

@@ -96,8 +96,8 @@ impl State {
         &self,
         file_id: Uuid,
         heartbeat_timeout_s: i64,
-    ) -> Result<(usize, usize)> {
-        let mut active_users = 0;
+    ) -> Result<(Vec<Uuid>, usize)> {
+        let mut num_active_users = 0;
         let stale_users = get_room!(self, file_id)?
             .users
             .iter()
@@ -106,7 +106,7 @@ impl State {
                     user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp();
 
                 if !no_heartbeat {
-                    active_users += 1;
+                    num_active_users += 1;
                 }
 
                 no_heartbeat
@@ -120,7 +120,7 @@ impl State {
             self.leave_room(file_id, user_id).await?;
         }
 
-        Ok((stale_users.len(), active_users))
+        Ok((stale_users, num_active_users))
     }
 
     /// Updates a user's heartbeat in a room
@@ -185,33 +185,34 @@ impl State {
 mod tests {
     use crate::{
         error::MpError,
+        state::connection::Connection,
         test_util::{new_state, new_user},
     };
 
-    async fn setup() -> (State, Uuid, Uuid, User) {
+    async fn setup() -> (State, Connection, Uuid, User) {
         let state = new_state().await;
-        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
+        let connection = Connection::new(Some(user.session_id), None);
 
         state
-            .enter_room(file_id, &user, connection_id, 0)
+            .enter_room(file_id, &user, connection.id, connection.clone(), 0)
             .await
             .unwrap();
 
-        (state, connection_id, file_id, user)
+        (state, connection, file_id, user)
     }
 
     use super::*;
     #[tokio::test]
     async fn removes_stale_users_in_room() {
-        let (state, connection_id, file_id, _) = setup().await;
+        let (state, connection, file_id, _) = setup().await;
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
         let new_user = new_user();
         state
-            .enter_room(file_id, &new_user, connection_id, 0)
+            .enter_room(file_id, &new_user, connection.id, connection, 0)
             .await
             .unwrap();
         state.remove_stale_users_in_room(file_id, 0).await.unwrap();

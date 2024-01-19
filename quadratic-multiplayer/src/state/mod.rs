@@ -24,10 +24,12 @@ use crate::state::room::Room;
 use crate::state::settings::Settings;
 use crate::state::transaction_queue::TransactionQueue;
 
+use self::connection::Connection;
+
 #[derive(Debug)]
 pub(crate) struct State {
     pub(crate) rooms: Mutex<DashMap<Uuid, Room>>,
-    pub(crate) connections: Mutex<HashMap<Uuid, Uuid>>,
+    pub(crate) connections: Mutex<HashMap<Uuid, Connection>>,
     pub(crate) transaction_queue: Mutex<TransactionQueue>,
     pub(crate) settings: Settings,
 }
