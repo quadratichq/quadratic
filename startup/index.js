@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 const program = new Command();
 
 program
-  .name("quadratic-dev")
+  .name("node startup")
   .description(
     "Runs the Quadratic dev server. By default, only React runs in watch mode."
   )
@@ -25,6 +25,7 @@ program.parse();
 const options = program.opts();
 
 if (options.all) {
+  options.api = true;
   options.core = true;
   options.multiplayer = true;
   options.files = true;
