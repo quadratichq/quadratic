@@ -15,7 +15,9 @@
     "quadratic-files",
     "quadratic-multiplayer"
   ],
+  "type": "module",
   "scripts": {
+    "new": "node scripts/dev.mjs",
     "start": "npm run watch:front-end",
     "api:start": "npm start --workspace=quadratic-api",
     "dev:multiplayer": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"npm:watch:multiplayer\" \"docker compose --profile quadratic-multiplayer-dev up\"",
@@ -62,6 +64,7 @@
     "concurrently": "^6.5.1",
     "eslint": "^8.54.0",
     "jest": "^29.6.1",
+    "kill-port": "^2.0.1",
     "prettier": "2.8.3",
     "ts-jest": "^29.1.1",
     "typescript": "^5.3.2"

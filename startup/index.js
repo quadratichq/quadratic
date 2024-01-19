@@ -1,6 +1,6 @@
-import chalk from 'chalk';
+import chalk from "chalk";
 import { Command } from "commander";
-import killPort from 'kill-port';
+import killPort from "kill-port";
 import { spawn } from "node:child_process";
 
 const program = new Command();
@@ -19,7 +19,7 @@ program
   .option(
     "-p, --perf",
     "Run quadratic-core in perf mode (slower linking but faster runtime)"
-)
+  );
 
 program.parse();
 const options = program.opts();
@@ -31,81 +31,104 @@ if (options.all) {
 }
 
 const printOutput = (command, name, color, callback) => {
-  command.stdout.on('data', (data) => {
-    process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`)
+  command.stdout.on("data", (data) => {
+    process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
     if (callback) {
       callback(data);
     }
   });
-  command.stderr.on('data', (data) => process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`));
-}
+  command.stderr.on("data", (data) =>
+    process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`)
+  );
+};
 
 const runClient = () => {
   const client = spawn("npm", ["start", "--workspace=quadratic-client"]);
-  printOutput(client, 'Client', 'magenta');
-}
+  printOutput(client, "Client", "magenta");
+};
 
 const runTypes = async () => {
   return new Promise((resolve) => {
     if (!options.skipTypes) {
-      const types = spawn("npm", ["run", "build:wasm:types"])
-      printOutput(types, "WASM Types", 'magenta')
-      types.on('exit', resolve)
+      const types = spawn("npm", ["run", "build:wasm:types"]);
+      printOutput(types, "WASM Types", "magenta");
+      types.on("exit", resolve);
     } else {
-      resolve()
+      resolve();
     }
-  })
-}
-
-const runAPI = () => {
-  killPort(8000).then(() => {
-    const api = spawn("npm", ["run", options.api ? "start" : "start-no-watch", "--workspace=quadratic-api"]);
-    printOutput(api, 'API', 'blue');
   });
-}
+};
+
+const runAPI = async () => {
+  try {
+    await killPort(8000);
+  } catch (e) {
+    // ignore errors related to there being no process on port
+  }
+  const api = spawn("npm", [
+    "run",
+    options.api ? "start" : "start-no-watch",
+    "--workspace=quadratic-api",
+  ]);
+  printOutput(api, "API", "blue");
+};
 
 const runCore = () => {
   return new Promise((resolve) => {
     if (options.core) {
-      const core = spawn("npm", ["run", options.perf ? "watch:wasm:perf:javascript" : "watch:wasm:javascript"]);
-      printOutput(core, 'Core', 'cyan', (data) => {
-        if (data.toString() === '[Finished running. Exit status: 0]\n') {
+      const core = spawn("npm", [
+        "run",
+        options.perf ? "watch:wasm:perf:javascript" : "watch:wasm:javascript",
+      ]);
+      printOutput(core, "Core", "cyan", (data) => {
+        if (data.toString() === "[Finished running. Exit status: 0]\n") {
           runClient();
           resolve();
         }
       });
     } else {
-      const core = spawn("npm", ["run", options.perf ? "build:wasm:perf:javascript" : "build:wasm:javascript"]);
-      printOutput(core, "Core", 'magenta');
-      core.on('exit', () => {
-        runClient()
-        resolve()
-      })
+      const core = spawn("npm", [
+        "run",
+        options.perf ? "build:wasm:perf:javascript" : "build:wasm:javascript",
+      ]);
+      printOutput(core, "Core", "magenta");
+      core.on("exit", () => {
+        runClient();
+        resolve();
+      });
     }
   });
-}
+};
 
 const runMultiplayer = () => {
   return new Promise((resolve) => {
-    const multiplayer = spawn("npm", ["run", options.multiplayer ? "dev" : "start", "--workspace=quadratic-multiplayer"]);
-    printOutput(multiplayer, 'Multiplayer', 'green', (data) => {
+    const multiplayer = spawn("npm", [
+      "run",
+      options.multiplayer ? "dev" : "start",
+      "--workspace=quadratic-multiplayer",
+    ]);
+    printOutput(multiplayer, "Multiplayer", "green", (data) => {
       if (data.toString().includes("listening on")) {
         resolve();
       }
     });
   });
-}
+};
 
 const runFiles = () => {
   return new Promise((resolve) => {
-    const files = spawn("npm", ["run", options.files ? "dev" : "start", "--workspace=quadratic-files"]);
-    printOutput(files, 'Files', 'yellow', (data) => {
+    const files = spawn("npm", [
+      "run",
+      options.files ? "dev" : "start",
+      "--workspace=quadratic-files",
+    ]);
+    printOutput(files, "Files", "yellow", (data) => {
       if (data.toString().includes("listening on")) {
         resolve();
       }
     });
   });
-}
+};
 
 const startAsync = async () => {
   runAPI();
