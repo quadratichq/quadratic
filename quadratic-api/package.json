@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "kill-port 8000 && dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
+    "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
+    "start-no-watch": "dotenv -e .env -- ts-node --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
     "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
     "build": "tsc && tsc ../quadratic-shared/*.ts",
