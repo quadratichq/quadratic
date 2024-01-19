@@ -15,7 +15,9 @@
     "quadratic-files",
     "quadratic-multiplayer"
   ],
+  "type": "module",
   "scripts": {
+    "new": "node scripts/dev.mjs",
     "start": "npm run watch:front-end",
     "api:start": "npm start --workspace=quadratic-api",
     "dev:multiplayer": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"npm:watch:multiplayer\" \"docker compose --profile quadratic-multiplayer-dev up\"",
@@ -23,8 +25,8 @@
     "dev:multiplayer-files": "npm run build:wasm:types && concurrently -n=react,core,api,docker \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"docker compose up\"",
     "clean": "npm exec --workspaces -- npx rimraf node_modules && npx rimraf node_modules",
     "perf": "npm run watch:perf:front-end",
-    "watch:javascript": "cd quadratic-client && npm run watch:javascript",
-    "watch:react": "npm run build:wasm:types && npm run build:wasm:perf:javascript && concurrently -n=react,api,multiplayer,files \"npm run watch:javascript\" \"npm:api:start\" \"npm:build:multiplayer\" \"npm:build:files\"",
+    "watch:javascript": "npm start --workspace:quadratic-client",
+    "watch:react": "npm run build:wasm:types && npm run build:wasm:javascript && concurrently -n=react,api,multiplayer,files \"npm run watch:javascript\" \"npm:api:start\" \"npm:build:multiplayer\" \"npm:build:files\"",
     "watch:front-end": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer,files \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:api:start\" \"npm:watch:multiplayer\" \"npm:watch:files\"",
     "watch:perf:front-end": "npm run build:wasm:types && concurrently -n=react,rust,api,multiplayer,files \"npm:watch:javascript\" \"npm:watch:wasm:perf:javascript\" \"npm run api:start\" \"npm:watch:multiplayer\" \"npm:build:files\"",
     "watch:front-end-back-end": "npm run build:wasm:types && concurrently -n=react,core,api,multiplayer \"npm:watch:javascript\" \"npm:watch:wasm:javascript\" \"npm:start:api\" \"npm:watch:multiplayer\"",
@@ -57,9 +59,12 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.3",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
     "concurrently": "^6.5.1",
     "eslint": "^8.54.0",
     "jest": "^29.6.1",
+    "kill-port": "^2.0.1",
     "prettier": "2.8.3",
     "ts-jest": "^29.1.1",
     "typescript": "^5.3.2"
