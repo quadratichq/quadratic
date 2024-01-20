@@ -8,6 +8,9 @@ const INDICATOR_SIZE = 4;
 const CODE_OFFSET = { x: 1, y: 1, width: 2 };
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
+const url = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+const triangles = url.has('triangles');
+
 interface Marker {
   bounds: Rectangle;
   codeCell: JsRenderCodeCell;
@@ -43,11 +46,20 @@ export class CellsMarkers extends Container {
 
   add(box: Rectangle, codeCell: JsRenderCodeCell, selected: boolean) {
     const isError = codeCell.state === 'RunError' || codeCell.state === 'SpillError';
-    if (isError) {
+    if (isError || triangles) {
       const sprite = this.addChild(new Sprite(this.triangle));
       sprite.scale.set(0.1);
       sprite.position.set(box.x, box.y);
       sprite.tint = colors.cellColorError;
+      if (triangles) {
+        if (!isError) {
+          if (codeCell.language === 'Python') {
+            sprite.tint = colors.cellColorUserPython;
+          } else if (codeCell.language === 'Formula') {
+            sprite.tint = colors.cellColorUserFormula;
+          }
+        }
+      }
     } else {
       const sprite = this.addChild(new Sprite(Texture.WHITE));
       sprite.position.set(box.x + CODE_OFFSET.x, box.y + CODE_OFFSET.y);
