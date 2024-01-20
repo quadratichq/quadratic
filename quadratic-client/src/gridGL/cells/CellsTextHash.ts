@@ -235,4 +235,8 @@ export class CellsTextHash extends Container<LabelMeshes> {
       this.dirtyBuffers = true;
     }
   }
+
+  isEmpty(): boolean {
+    return this.cellLabels.size === 0;
+  }
 }

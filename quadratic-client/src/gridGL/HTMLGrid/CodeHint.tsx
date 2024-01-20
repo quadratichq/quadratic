@@ -1,34 +1,40 @@
-import { useRef, useState } from 'react';
+import { sheets } from '@/grid/controller/Sheets';
+import { useEffect, useMemo, useState } from 'react';
+import { CURSOR_THICKNESS } from '../UI/Cursor';
+import { Coordinate } from '../types/size';
 
 export const CodeHint = () => {
-  const [hint, setHint] = useState(true);
-  const ref = useRef<HTMLDivElement>(null);
+  const [hint, setHint] = useState<Coordinate>(sheets.sheet.cursor.cursorPosition);
+
+  useEffect(() => {
+    const updateCursor = () => {
+      const cursor = sheets.sheet.cursor.cursorPosition;
+      setHint(cursor);
+    };
+    window.addEventListener('cursor-position', updateCursor);
+    window.addEventListener('change-sheet', updateCursor);
+    return () => {
+      window.removeEventListener('cursor-position', updateCursor);
+    };
+  });
+
+  const offsets = useMemo(() => {
+    return sheets.sheet.getCellOffsets(hint.x, hint.y);
+  }, [hint]);
 
   return (
     <div
-      ref={ref}
-      className="code-error-container"
       style={{
         position: 'absolute',
-        left: message?.x,
-        top: message?.y,
-        visibility: message ? 'visible' : 'hidden',
+        left: offsets.x + CURSOR_THICKNESS,
+        top: offsets.y,
         pointerEvents: 'none',
+        whiteSpace: 'nowrap',
+        opacity: 0.5,
+        fontSize: '14px',
       }}
     >
-      <div style={{ position: 'relative' }}>
-        <div
-          ref={textRef}
-          className={cn('w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none')}
-          style={{
-            position: 'absolute',
-            right: 0,
-            transformOrigin: `calc(${message?.x ?? 0}px + 100%) ${message?.y ?? 0}`,
-          }}
-        >
-          {text}
-        </div>
-      </div>
+      Press `=` to enter code
     </div>
   );
 };

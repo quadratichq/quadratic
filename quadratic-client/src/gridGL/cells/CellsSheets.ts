@@ -162,4 +162,8 @@ export class CellsSheets extends Container<CellsSheet> {
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in showLabel');
     cellsSheet.showLabel(x, y, show);
   }
+
+  gridIsEmpty(): boolean {
+    return this.current?.gridIsEmpty() ?? true;
+  }
 }

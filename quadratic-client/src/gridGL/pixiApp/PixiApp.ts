@@ -357,6 +357,10 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.multiplayerCursor.dirty = true;
   }
+
+  gridIsEmpty() {
+    return this.cellsSheets.gridIsEmpty();
+  }
 }
 
 export const pixiApp = new PixiApp();

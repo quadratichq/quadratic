@@ -1,7 +1,10 @@
+import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { MultiplayerCursors } from '@/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellInput } from './CellInput';
+import { CodeHint } from './CodeHint';
 import { CodeError } from './codeError/CodeError';
 import { CodeRunning } from './codeRunning/CodeRunning';
 import { HtmlCells } from './htmlCells/HtmlCells';
@@ -18,6 +21,7 @@ export interface HtmlGridContainerProps {
 
 export const HTMLGridContainer = (props: Props): ReactNode | null => {
   const { parent } = props;
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   const [container, setContainer] = useState<HTMLDivElement>();
   const containerRef = useCallback((node: HTMLDivElement) => {
@@ -30,6 +34,18 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
     window.addEventListener('change-input', changeInput);
     return () => window.removeEventListener('change-input', changeInput);
   }, []);
+
+  const [emptyGrid, setEmptyGrid] = useState(pixiApp.gridIsEmpty());
+  useEffect(() => {
+    const updateEmptyGrid = (e: any) => setEmptyGrid(e.detail);
+    window.addEventListener('grid-empty', updateEmptyGrid);
+    return () => window.removeEventListener('grid-empty', updateEmptyGrid);
+  }, []);
+  useEffect(() => {
+    if (editorInteractionState.showCodeEditor || showInput) {
+      setEmptyGrid(false);
+    }
+  }, [editorInteractionState.showCodeEditor, showInput]);
 
   useEffect(() => {
     if (!container || !parent) return;
@@ -90,6 +106,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
           <div style={{ position: 'relative' }}>
             {showInput && <CellInput />}
             <MultiplayerCellEdits />
+            {emptyGrid && <CodeHint />}
             <HtmlCells />
             <CodeRunning />
             <CodeError />

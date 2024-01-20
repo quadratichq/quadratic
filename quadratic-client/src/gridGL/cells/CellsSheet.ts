@@ -377,4 +377,8 @@ export class CellsSheet extends Container {
       }
     }
   }
+
+  gridIsEmpty(): boolean {
+    return this.cellsTextHash.size === 0 || !Array.from(this.cellsTextHash.values()).some((hash) => !hash.isEmpty());
+  }
 }

@@ -90,6 +90,7 @@ export const upgradeFileRust = async (
 export class Grid {
   private gridController!: GridController;
   thumbnailDirty = false;
+  empty = false;
 
   transactionResponse(summary: TransactionSummary) {
     if (summary.sheet_list_modified) {
@@ -144,6 +145,14 @@ export class Grid {
 
     if (summary.request_transactions) {
       multiplayer.sendGetTransactions(summary.request_transactions);
+    }
+
+    if (this.empty && !pixiApp.gridIsEmpty()) {
+      window.dispatchEvent(new CustomEvent('grid-empty', { detail: false }));
+      this.empty = false;
+    } else if (!this.empty && pixiApp.gridIsEmpty()) {
+      window.dispatchEvent(new CustomEvent('grid-empty', { detail: true }));
+      this.empty = true;
     }
 
     pixiApp.setViewportDirty();
