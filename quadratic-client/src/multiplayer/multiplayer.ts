@@ -197,7 +197,6 @@ export class Multiplayer {
         file_id: this.room!,
       };
       this.websocket!.send(JSON.stringify(heartbeat));
-      if (debugShowMultiplayer) console.log('[Multiplayer] Sending heartbeat...');
       this.lastHeartbeat = now;
     }
   }
