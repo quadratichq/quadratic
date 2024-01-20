@@ -96,19 +96,14 @@ async fn remove_stale_users_in_room(
     file_id: &Uuid,
     heartbeat_timeout_s: i64,
 ) -> Result<Option<JoinHandle<()>>> {
-    let (stale_users, num_remaining) = state
+    let (num_stale_users, num_remaining) = state
         .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
         .await?;
 
     tracing::trace!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
 
-    if stale_users.len() == 0 {
+    if num_stale_users == 0 {
         return Ok(None);
-    } else {
-        for user_id in stale_users.into_iter() {
-            // let connection_id = state.connections.lock().await.get(&user_id);
-            // state.connections.lock().await.remove(&user_id).await?;
-        }
     }
 
     if num_remaining == 0 {

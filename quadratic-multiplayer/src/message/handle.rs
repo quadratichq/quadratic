@@ -103,6 +103,7 @@ pub(crate) async fn handle_message(
             let user = User {
                 user_id,
                 session_id,
+                connection_id: connection.id,
                 first_name,
                 last_name,
                 email,

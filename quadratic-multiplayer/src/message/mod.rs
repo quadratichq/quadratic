@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::error::MpError;
 use crate::message::response::MessageResponse;
-use crate::state::{room, State};
+use crate::state::State;
 
 pub mod handle;
 pub mod request;

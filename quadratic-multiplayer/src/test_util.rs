@@ -39,6 +39,7 @@ pub(crate) fn new_user() -> User {
     User {
         session_id: Uuid::new_v4(),
         user_id: Uuid::new_v4().to_string(),
+        connection_id: Uuid::new_v4(),
         first_name: FirstName().fake(),
         last_name: LastName().fake(),
         email: FreeEmail().fake(),

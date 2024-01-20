@@ -15,6 +15,7 @@ use quadratic_rust_shared::quadratic_api::FilePermRole;
 pub(crate) struct User {
     pub session_id: Uuid,
     pub user_id: String,
+    pub connection_id: Uuid,
     pub first_name: String,
     pub last_name: String,
     pub email: String,
@@ -96,7 +97,7 @@ impl State {
         &self,
         file_id: Uuid,
         heartbeat_timeout_s: i64,
-    ) -> Result<(Vec<Uuid>, usize)> {
+    ) -> Result<(usize, usize)> {
         let mut num_active_users = 0;
         let stale_users = get_room!(self, file_id)?
             .users
@@ -111,16 +112,21 @@ impl State {
 
                 no_heartbeat
             })
-            .map(|user| user.key().to_owned())
-            .collect::<Vec<Uuid>>();
+            .map(|user| user.to_owned())
+            .collect::<Vec<User>>();
 
-        for user_id in stale_users.iter() {
-            tracing::info!("Removing stale user {} from room {}", user_id, file_id);
+        for user in stale_users.iter() {
+            tracing::info!(
+                "Removing stale user {} from room {}",
+                user.session_id,
+                file_id
+            );
 
-            self.leave_room(file_id, user_id).await?;
+            self.leave_room(file_id, &user.session_id).await?;
+            self.connections.lock().await.remove(&user.connection_id);
         }
 
-        Ok((stale_users, num_active_users))
+        Ok((stale_users.len(), num_active_users))
     }
 
     /// Updates a user's heartbeat in a room
