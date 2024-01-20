@@ -1,9 +1,15 @@
 import chalk from "chalk";
 import { Command } from "commander";
-import killPort from "kill-port";
+import killPortOriginal from "kill-port";
 import { spawn } from "node:child_process";
 
 const program = new Command();
+
+const killPort = async (port) => {
+  try {
+    await killPortOriginal(port);
+  } catch (e) {}
+};
 
 program
   .name("node dev")
@@ -61,11 +67,7 @@ const runTypes = async () => {
 };
 
 const runAPI = async () => {
-  try {
-    await killPort(8000);
-  } catch (e) {
-    // ignore errors related to there being no process on port
-  }
+  await killPort(8000);
   const api = spawn("npm", [
     "run",
     options.api ? "start" : "start-no-watch",
@@ -102,7 +104,8 @@ const runCore = () => {
 };
 
 const runMultiplayer = () => {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
+    await killPort(3001);
     const multiplayer = spawn("npm", [
       "run",
       options.multiplayer ? "dev" : "start",
@@ -117,7 +120,8 @@ const runMultiplayer = () => {
 };
 
 const runFiles = () => {
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
+    killPort(3002);
     const files = spawn("npm", [
       "run",
       options.files ? "dev" : "start",
