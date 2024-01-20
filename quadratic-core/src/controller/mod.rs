@@ -30,9 +30,6 @@ pub struct GridController {
 
 impl GridController {
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        crate::test_util::print_code_run_order(
-            grid.try_sheet_from_name("Sheet 1".to_string()).unwrap(),
-        );
         GridController {
             grid,
             transactions: ActiveTransactions::new(last_sequence_num),

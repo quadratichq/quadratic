@@ -16,7 +16,6 @@ interface CodeErrorInterface {
 
 export const CodeError = () => {
   const [message, setMessage] = useState<CodeErrorInterface | undefined>();
-  const [remove, setRemove] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
@@ -31,22 +30,20 @@ export const CodeError = () => {
         }
       } else {
         if (ref.current && !ref.current.classList.contains('code-error-fade-in')) {
-          ref.current?.classList.add('code-error-fade-in');
+          if (ref.current?.style.opacity !== '0') {
+            ref.current?.classList.add('code-error-fade-in-no-delay');
+          } else {
+            ref.current?.classList.add('code-error-fade-in');
+          }
           ref.current?.classList.remove('code-error-fade-out');
         }
         const offsets = sheets.sheet.getCellOffsets(e.detail.location.x, e.detail.location.y);
         setMessage({ ...e.detail, x: offsets.x, y: offsets.y });
-        setRemove((remove) => {
-          if (remove) {
-            window.clearTimeout(remove);
-          }
-          return 0;
-        });
       }
     };
     window.addEventListener('overlap-code-error', addError);
     return () => window.removeEventListener('overlap-code-error', addError);
-  }, [remove, message]);
+  }, [message]);
 
   useEffect(() => {
     const changeZoom = () => {

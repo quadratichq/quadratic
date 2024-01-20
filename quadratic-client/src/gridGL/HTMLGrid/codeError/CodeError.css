@@ -3,15 +3,6 @@
   opacity: 0;
 }
 
-.code-error {
-  /* position: absolute; */
-  /* right: 0.5rem;
-  background: white;
-  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25);
-  padding: 0.5rem;
-  font-size: 0.85rem; */
-}
-
 .code-error-header {
   margin-bottom: 0.5rem;
 }
@@ -27,6 +18,11 @@
 .code-error-fade-in {
   opacity: 1;
   transition: opacity 150ms linear 1s;
+}
+
+.code-error-fade-in-no-delay {
+  opacity: 1;
+  transition: opacity 150ms linear;
 }
 
 .code-error-fade-out {
