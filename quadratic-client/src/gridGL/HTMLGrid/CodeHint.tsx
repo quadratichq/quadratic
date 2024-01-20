@@ -34,7 +34,7 @@ export const CodeHint = () => {
         fontSize: '14px',
       }}
     >
-      Press `=` to enter code
+      Press '=' to enter code
     </div>
   );
 };
