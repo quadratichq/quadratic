@@ -70,11 +70,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/inv
     origin: String(req.headers.origin),
   };
 
-  // Look up the invited user by email in Auth0 and then 1 of 3 things will happen:
-  const auth0Users = await lookupUsersFromAuth0ByEmail(email);
-
-  // 1. Nobody with an account by that email, so create one and send an invite
-  if (auth0Users.length === 0) {
+  const createInviteAndSendEmail = async () => {
     const dbInvite = await dbClient.fileInvite.create({
       data: {
         email,
@@ -83,6 +79,15 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/inv
       },
     });
     await sendEmail(email, templates.inviteToFile(emailTemplateArgs));
+    return dbInvite;
+  };
+
+  // Look up the invited user by email in Auth0 and then 1 of 3 things will happen:
+  const auth0Users = await lookupUsersFromAuth0ByEmail(email);
+
+  // 1. Nobody with an account by that email, so create one and send an invite
+  if (auth0Users.length === 0) {
+    const dbInvite = await createInviteAndSendEmail();
     return res.status(201).json({ email, role, id: dbInvite.id });
   }
 
@@ -110,18 +115,12 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/inv
       },
     });
 
-    // If they don't exist in our database, but they do in auth0, that's strange
+    // If they exist in auth0 but aren't yet in our database that's a bit unexpected.
     // They need to go through the flow of coming into the app for the first time
-    // So we'll throw
+    // So we just create an invite — it'll turn into a user when they login for the 1st time
     if (!dbUser) {
-      throw new ApiError(400, 'User needs to sign in to the app before making changes to this file.');
-      Sentry.captureEvent({
-        message: 'User exists in Auth0 but not in the database and tried to make a change.',
-        level: 'warning',
-        extra: {
-          auth0Id,
-        },
-      });
+      const dbInvite = await createInviteAndSendEmail();
+      return res.status(201).json({ email, role, id: dbInvite.id });
     }
 
     // Are they already a member of this file?
