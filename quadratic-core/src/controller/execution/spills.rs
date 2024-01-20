@@ -26,12 +26,14 @@ impl GridController {
                     Operation::SetCodeRun {
                         sheet_pos,
                         code_run: Some(run.clone()),
+                        index,
                     },
                 );
                 run.spill_error = spill_error;
                 transaction.forward_operations.push(Operation::SetCodeRun {
                     sheet_pos,
                     code_run: Some(run.clone()),
+                    index,
                 });
             }
         }

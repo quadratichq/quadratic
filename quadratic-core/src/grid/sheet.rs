@@ -14,7 +14,7 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
-use crate::{Array, ArraySize, CellValue, IsBlank, Pos, Rect};
+use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
 pub mod cell_array;
@@ -342,38 +342,6 @@ impl Sheet {
         } else {
             None
         }
-    }
-
-    /// Determines whether an output array would cause a spill error because it
-    /// would overlap existing cell values or spills.
-    /// * cell_value_to_delete ignores this cell_value in this check (this allows operations to be created before the position is vacated)
-    pub fn has_spill_error(
-        &self,
-        pos: Pos,
-        size: ArraySize,
-        cell_value_to_delete: Option<Pos>,
-    ) -> bool {
-        let Pos { x, y } = pos;
-        let (w, h) = size.into();
-
-        // check if the output array would cause a spill
-        for i in 0..w {
-            let x = x + i;
-            if let Some(column) = self.columns.get(&x) {
-                for j in 0..h {
-                    let y = y + j;
-                    if let Some(value) = column.values.get(y) {
-                        if !value.is_blank() && Some(Pos { x, y }) != cell_value_to_delete {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // todo: need to check if it would spill over an existing code_cell output
-
-        false
     }
 }
 

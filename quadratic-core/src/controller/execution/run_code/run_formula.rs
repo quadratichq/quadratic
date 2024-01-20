@@ -30,7 +30,7 @@ impl GridController {
                             cells_accessed: transaction.cells_accessed.clone(),
                             result: CodeRunResult::Ok(value),
                         };
-                        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run));
+                        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
                     }
                     Err(error) => {
                         let msg = error.msg.to_string();
