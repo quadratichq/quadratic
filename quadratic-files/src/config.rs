@@ -7,6 +7,7 @@
 
 use crate::error::{FilesError, Result};
 use dotenv::dotenv;
+use quadratic_rust_shared::environment::Environment;
 use serde::Deserialize;
 
 #[allow(dead_code)]
@@ -14,9 +15,9 @@ use serde::Deserialize;
 pub(crate) struct Config {
     pub(crate) host: String,
     pub(crate) port: String,
-    pub(crate) password: String,
     pub(crate) file_check_s: i64,
     pub(crate) files_per_check: i64,
+    pub(crate) environment: Environment,
 
     pub(crate) pubsub_host: String,
     pub(crate) pubsub_port: String,

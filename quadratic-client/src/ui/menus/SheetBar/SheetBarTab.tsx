@@ -1,11 +1,10 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { hasPerissionToEditFile } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -31,7 +30,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = hasPerissionToEditFile(permissions) && !isMobile;
+  const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
   useEffect(() => {
     if (forceRename) {
@@ -334,7 +333,7 @@ function TabMultiplayer({ sheetId }: { sheetId: string }) {
       setUsers(
         multiplayer.getUsers().flatMap((user) => {
           if (user.sheet_id === sheetId) {
-            return [MULTIPLAYER_COLORS[user.color % MULTIPLAYER_COLORS.length]];
+            return [user.colorString];
           }
           return [];
         })

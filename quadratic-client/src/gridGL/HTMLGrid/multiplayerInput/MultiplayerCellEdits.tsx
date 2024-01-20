@@ -1,8 +1,7 @@
-// Displays when a multiplayer user is editing a cell
-
 import { sheets } from '@/grid/controller/Sheets';
+import { Coordinate } from '@/gridGL/types/size';
 import { useEffect, useState } from 'react';
-import { Coordinate } from '../types/size';
+import { MultiplayerCellEdit } from './MultiplayerCellEdit';
 
 export interface MultiplayerCell {
   sessionId: string;
@@ -15,7 +14,7 @@ export interface MultiplayerCell {
   playerColor: string;
 }
 
-export const useMultiplayerCellEdit = (): MultiplayerCell[] => {
+export const MultiplayerCellEdits = () => {
   const [multiplayerCellInput, setMultiplayerCellInput] = useState<MultiplayerCell[]>([]);
   useEffect(() => {
     const updateMultiplayerCellEdit = (e: any) => {
@@ -44,6 +43,13 @@ export const useMultiplayerCellEdit = (): MultiplayerCell[] => {
     return () => window.removeEventListener('sheet-change', updateTrigger);
   });
 
-  // only return users that are actively editing (ie, text !== undefined)
-  return multiplayerCellInput.filter((cell) => cell.text !== undefined && cell.sheetId === sheets.sheet.id);
+  return (
+    <div style={{ pointerEvents: 'none' }}>
+      {multiplayerCellInput
+        .filter((cell) => cell.sheetId === sheets.sheet.id)
+        .map((cell) => (
+          <MultiplayerCellEdit key={cell.sessionId} multiplayerCellInput={cell} />
+        ))}
+    </div>
+  );
 };

@@ -205,6 +205,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     });
 
   const disallowedEmails: string[] = [
+    ...(owner.type === 'user' ? [owner.email] : []),
     ...users.map((user) => user.email),
     ...invites.map((invite) => invite.email),
     ...pendingInvites.map((invite) => invite.email),
@@ -741,7 +742,7 @@ function ListItemPublicLink({
             variant="link"
             onClick={() => {
               mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
-              const url = `${window.location.origin}/files/${uuid}`;
+              const url = window.location.origin + ROUTES.FILE(uuid);
               navigator.clipboard
                 .writeText(url)
                 .then(() => {

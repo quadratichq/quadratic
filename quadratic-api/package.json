@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
+    "start-no-watch": "dotenv -e .env -- ts-node --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
     "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
     "build": "tsc && tsc ../quadratic-shared/*.ts",
@@ -20,7 +21,7 @@
     "docker:down": "docker-compose down",
     "docker:dev": "npm run docker:up && dotenv -e .env.docker -- prisma migrate deploy && dotenv -e .env.docker -- ts-node-dev --watch src --project ./tsconfig.json -- ./src/server.ts && npm run docker:down",
     "docker:test:dev": "npm run docker:up && dotenv -e .env.docker -- prisma migrate deploy && dotenv -e .env.docker -- jest --watch --detectOpenHandles && npm run docker:down",
-    "docker:test:ci": "npm run docker:up && dotenv -e .env.docker -- prisma migrate deploy && dotenv -e .env.docker -- jest && npm run docker:down",
+    "docker:test:ci": "npm run docker:up && dotenv -e .env.docker -- prisma migrate reset --force && dotenv -e .env.docker -- jest && npm run docker:down"
     "script:migrateFiles": "ts-node-dev --project ./tsconfig.json -- ./scripts/migrateFiles.ts",
     "script:listDuplicateUserEmails": "ts-node-dev --project ./tsconfig.json -- ./scripts/listDuplicateUserEmails.ts"
   },

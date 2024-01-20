@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { hasPerissionToEditFile } from '../../../../actions';
+import { hasPermissionToEditFile } from '../../../../actions';
 import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
@@ -14,14 +14,14 @@ const ListItems = () => {
     const items: Commands[] = [
       {
         label: 'Sheet: Create',
-        isAvailable: hasPerissionToEditFile,
+        isAvailable: hasPermissionToEditFile,
         Component: (props: any) => {
           return <CommandPaletteListItem {...props} action={() => sheets.createNew()} />;
         },
       },
       {
         label: 'Sheet: Delete',
-        isAvailable: hasPerissionToEditFile,
+        isAvailable: hasPermissionToEditFile,
         Component: (props: any) => {
           return (
             <CommandPaletteListItem
@@ -38,7 +38,7 @@ const ListItems = () => {
       },
       {
         label: 'Sheet: Duplicate',
-        isAvailable: hasPerissionToEditFile,
+        isAvailable: hasPermissionToEditFile,
         Component: (props: any) => {
           return <CommandPaletteListItem {...props} action={() => grid.duplicateSheet(sheets.sheet.id)} />;
         },

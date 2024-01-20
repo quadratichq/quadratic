@@ -1,5 +1,4 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { MULTIPLAYER_COLORS_TINT } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -40,8 +39,11 @@ export class UIMultiPlayerCursor extends Graphics {
 
     if (editing) {
       const cellEdit = document.querySelector(`.multiplayer-cell-edit-${sessionId}`) as HTMLDivElement;
-      if (cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
-        width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+      // it's possible that we run this before react creates the DOM element with this class
+      if (cellEdit) {
+        if (cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
+          width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+        }
       }
     }
 
@@ -83,7 +85,7 @@ export class UIMultiPlayerCursor extends Graphics {
       this.clear();
       const sheetId = sheets.sheet.id;
       multiplayer.users.forEach((player) => {
-        const color = MULTIPLAYER_COLORS_TINT[player.color];
+        const color = player.color;
         if (player.parsedSelection && player.sheet_id === sheetId) {
           this.drawCursor({
             color,

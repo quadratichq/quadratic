@@ -277,7 +277,6 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
             },
         );
     });
-
     Ok(code_runs)
 }
 

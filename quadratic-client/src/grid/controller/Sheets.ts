@@ -90,7 +90,7 @@ class Sheets {
       pixiApp.multiplayerCursor.dirty = true;
       pixiApp.boxCells.reset();
       pixiAppSettings.changeInput(false);
-      pixiApp.cellsSheets.show(sheets.sheet.id);
+      pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
       pixiApp.loadViewport();
     }

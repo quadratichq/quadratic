@@ -1,104 +1,61 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
-import { MULTIPLAYER_COLORS } from '@/multiplayer/multiplayerCursor/multiplayerColors';
 import { TooltipHint } from '@/ui/components/TooltipHint';
+import { displayInitials, displayName } from '@/utils/userUtil';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Avatar, AvatarGroup, IconButton, useTheme } from '@mui/material';
 import { Menu, MenuItem } from '@szhsin/react-menu';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
+import { useSetRecoilState } from 'recoil';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { useMultiplayerUsers } from './useMultiplayerUsers';
 
-const convertName = (
-  firstName: string | undefined,
-  lastName: string | undefined,
-  email: string | undefined,
-  you: boolean
-): string => {
-  let name = '';
-  if (firstName) {
-    name += firstName;
-  }
-  if (lastName) {
-    if (firstName) name += ' ';
-    name += lastName;
-  }
-  if (!firstName && !lastName && email) {
-    name = email;
-  }
-  if (you) {
-    if (name.length) {
-      name += ' (You)';
-    } else {
-      name += '(You)';
-    }
-  }
-  return name;
-};
-
-const convertInitial = (firstName?: string, lastName?: string, email?: string): string => {
-  if (!firstName && !lastName && email) {
-    return email[0];
-  }
-  return (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
-};
-
-// const getDeviceName = (): string => {
-//   let parser = new UAParser(window.navigator.userAgent);
-//   let result = parser.getResult();
-//   return result.device?.model || result.device?.type || '';
-// }
-
 export const TopBarUsers = () => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const follow = editorInteractionState.follow;
-
   const theme = useTheme();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const displayName = convertName(user?.given_name, user?.family_name, user?.email, true);
-  const initial = convertInitial(user?.given_name, user?.family_name);
-  // const device = getDeviceName();
-  // console.log(device)
-  // console.log(window.navigator.userAgent)
-  const multiplayerUsers = useMultiplayerUsers();
-
-  const users = multiplayerUsers.filter((user) => user.session_id !== follow);
-  const userFollow = (follow && multiplayerUsers.find((user) => user.session_id === follow)) || null;
-
-  // todo: black should be quadratic black
+  const { users, follow } = useMultiplayerUsers();
+  const usersWithoutFollow = users.filter((user) => user.session_id !== follow?.session_id);
 
   return (
     <>
       <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
-        {users.map((user) => {
+        {usersWithoutFollow.map((user) => {
           return (
             <UserAvatar
               key={user.session_id}
-              displayName={convertName(user.first_name, user.last_name, user.email, false)}
-              initial={convertInitial(user.first_name, user.last_name, user.email)}
+              displayName={displayName(user, false)}
+              initial={displayInitials(user)}
               picture={user.image}
-              border={MULTIPLAYER_COLORS[user.color]}
+              border={user.colorString}
               sessionId={user.session_id}
               follow={false}
               viewport={user.viewport}
+              bgColor={user.colorString}
             />
           );
         })}
       </AvatarGroup>
       <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
-        {userFollow && (
+        {follow && (
           <UserAvatar
-            displayName={convertName(userFollow.first_name, userFollow.last_name, userFollow.email, false)}
-            initial={convertInitial(userFollow.first_name, userFollow.last_name, userFollow.email)}
-            picture={userFollow.image || ''}
-            border={MULTIPLAYER_COLORS[userFollow.color]}
-            sessionId={userFollow.session_id}
+            displayName={displayName(follow, false)}
+            initial={displayInitials(follow)}
+            picture={follow.image || ''}
+            border={follow.colorString}
+            sessionId={follow.session_id}
             follow={true}
-            viewport={userFollow.viewport}
+            viewport={follow.viewport}
+            bgColor={follow.colorString}
           />
         )}
-        {user && <You displayName={displayName} initial={initial} picture={user.picture || ''} border={'black'} />}
+        {user && (
+          <You
+            displayName={displayName(user, true)}
+            initial={displayInitials(user)}
+            picture={user.picture || ''}
+            border={'black'}
+          />
+        )}
       </AvatarGroup>
     </>
   );
@@ -148,6 +105,7 @@ function UserAvatar({
   sessionId,
   follow,
   viewport,
+  bgColor,
 }: {
   displayName: string;
   initial: string;
@@ -156,6 +114,7 @@ function UserAvatar({
   sessionId: string;
   follow: boolean;
   viewport: string;
+  bgColor?: string;
 }) {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const handleFollow = () => {
@@ -175,7 +134,7 @@ function UserAvatar({
         <div style={{ position: 'relative' }}>
           <Avatar
             sx={{
-              bgcolor: colors.quadraticSecondary,
+              bgcolor: bgColor ?? colors.quadraticSecondary,
               width: 24,
               height: 24,
               fontSize: '0.8rem',

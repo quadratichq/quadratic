@@ -107,3 +107,25 @@ impl GridController {
         ops
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{controller::GridController, grid::SheetId, SheetPos};
+
+    #[test]
+    fn test() {
+        let mut client = GridController::test();
+        let sheet_id = SheetId::test();
+        client.sheet_mut(client.sheet_ids()[0]).id = sheet_id;
+        let summary = client.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "hello".to_string(),
+            None,
+        );
+        assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_rect\":{\"min\":{\"x\":1,\"y\":2},\"max\":{\"x\":1,\"y\":2},\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"size\":{\"w\":1,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"hello\"}]}}}]".to_string()));
+    }
+}

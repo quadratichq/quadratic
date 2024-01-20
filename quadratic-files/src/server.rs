@@ -59,7 +59,10 @@ pub(crate) async fn serve() -> Result<()> {
         .local_addr()
         .map_err(|e| FilesError::InternalServer(e.to_string()))?;
 
-    tracing::info!("listening on {local_addr}");
+    tracing::info!(
+        "listening on {local_addr}, environment={}",
+        config.environment
+    );
 
     // in a separate thread, process all files in the queue
     tokio::spawn({
