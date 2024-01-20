@@ -9,7 +9,7 @@ import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
-import { CellsMarkers } from './CellsMarker';
+import { CellsMarkers } from './CellsMarkers';
 import { CellsSheetPreloader } from './CellsSheetPreloader';
 import { CellsTextHash } from './CellsTextHash';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -135,7 +135,6 @@ export class CellsSheet extends Container {
       this.cellsArray.visible = false;
     }
     this.cellsFills.cheapCull(bounds);
-    this.cellsMarkers.cheapCull(bounds);
     if (debugShowCellsSheetCulling) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
     }
