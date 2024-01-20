@@ -229,7 +229,7 @@ mod tests {
         state.remove_stale_users_in_room(file_id, 0).await.unwrap();
         assert_eq!(
             get_room!(state, file_id).unwrap_err(),
-            MpError::Room(format!("Room {file_id} not found"))
+            MpError::RoomNotFound(file_id.to_string())
         );
     }
 

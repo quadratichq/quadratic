@@ -351,9 +351,8 @@ pub(crate) mod tests {
     }
 
     async fn assert_user_changes_state(update: UserStateUpdate) {
-        let (socket, _, _, file_id, _) = setup().await;
-        let new_user = new_user();
-        let session_id = new_user.session_id;
+        let (socket, _, _, file_id, user) = setup().await;
+        let session_id = user.session_id;
         let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
@@ -437,7 +436,7 @@ pub(crate) mod tests {
     async fn user_leaves_a_room() {
         let (socket, state, connection_id, file_id, user) = setup().await;
         let new_user = new_user();
-        let session_id = new_user.session_id;
+        let session_id = user.session_id;
         let request = MessageRequest::LeaveRoom {
             session_id,
             file_id,
@@ -523,9 +522,8 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn user_shares_operations() {
-        let (socket, _, _, file_id, _) = setup().await;
-        let new_user = new_user();
-        let session_id = new_user.session_id;
+        let (socket, _, _, file_id, user) = setup().await;
+        let session_id = user.session_id;
         let operations = vec![Operation::SetSheetName {
             sheet_id: SheetId::new(),
             name: "test".to_string(),

@@ -88,12 +88,7 @@ impl State {
     /// Returns true if the room still exists after the user leaves.
     #[tracing::instrument(level = "trace")]
     pub(crate) async fn leave_room(&self, file_id: Uuid, session_id: &Uuid) -> Result<bool> {
-        let user = get_mut_room!(self, file_id)?.users.remove(session_id);
-
-        if let Some((_, user)) = user {
-            drop(user.socket.unwrap().lock().await);
-        }
-
+        get_mut_room!(self, file_id)?.users.remove(session_id);
         let num_in_room = get_room!(self, file_id)?.users.len();
 
         tracing::info!(
