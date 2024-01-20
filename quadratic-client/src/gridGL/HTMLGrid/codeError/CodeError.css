@@ -1,0 +1,31 @@
+.code-error-container {
+  position: 'relative';
+  opacity: 0;
+}
+
+.code-error-header {
+  margin-bottom: 0.5rem;
+}
+
+.code-error-body {
+  font-size: 0.75rem;
+}
+
+.code-error-body > div:first-child {
+  margin-bottom: 0.5rem;
+}
+
+.code-error-fade-in {
+  opacity: 1;
+  transition: opacity 150ms linear 1s;
+}
+
+.code-error-fade-in-no-delay {
+  opacity: 1;
+  transition: opacity 150ms linear;
+}
+
+.code-error-fade-out {
+  opacity: 0;
+  transition: opacity 150ms linear;
+}

@@ -9,7 +9,6 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
@@ -87,12 +86,10 @@ export const CodeEditor = () => {
         editorInteractionState.selectedCell.y
       );
       if (codeCell) {
-        const codeString = codeCell.getCodeString();
-        setCodeString(codeString);
-        setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
-        if (updateEditorContent) setEditorContent(codeString);
-        setEvaluationResult(codeCell.getEvaluationResult());
-        codeCell.free();
+        setCodeString(codeCell.code_string);
+        setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
+        if (updateEditorContent) setEditorContent(codeCell.code_string);
+        setEvaluationResult(codeCell.evaluation_result);
       } else {
         setCodeString('');
         if (updateEditorContent) setEditorContent('');
@@ -146,12 +143,7 @@ export const CodeEditor = () => {
   }, [closeEditor, editorInteractionState.editorEscapePressed, unsaved]);
 
   const saveAndRunCell = async () => {
-    const language =
-      editorInteractionState.mode === 'PYTHON'
-        ? CodeCellLanguage.Python
-        : editorInteractionState.mode === 'FORMULA'
-        ? CodeCellLanguage.Formula
-        : undefined;
+    const language = editorInteractionState.mode;
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
     grid.setCodeCellValue({
@@ -292,7 +284,7 @@ export const CodeEditor = () => {
           height: `${consoleHeight}px`,
         }}
       >
-        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
+        {(editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
           <Console
             consoleOutput={out}
             editorMode={editorMode}

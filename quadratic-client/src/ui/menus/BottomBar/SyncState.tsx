@@ -1,4 +1,4 @@
-import { MultiplayerState } from '@/multiplayer/multiplayer';
+import { MultiplayerState, multiplayer } from '@/multiplayer/multiplayer';
 import { Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -7,7 +7,7 @@ import BottomBarItem from './BottomBarItem';
 export default function SyncState() {
   const theme = useTheme();
 
-  const [syncState, setSyncState] = useState<MultiplayerState>('not connected');
+  const [syncState, setSyncState] = useState<MultiplayerState>(multiplayer.state);
 
   useEffect(() => {
     const updateState = (e: any) => setSyncState(e.detail);

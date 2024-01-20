@@ -26,12 +26,14 @@ impl GridController {
                     Operation::SetCodeRun {
                         sheet_pos,
                         code_run: Some(run.clone()),
+                        index,
                     },
                 );
                 run.spill_error = spill_error;
                 transaction.forward_operations.push(Operation::SetCodeRun {
                     sheet_pos,
                     code_run: Some(run.clone()),
+                    index,
                 });
             }
         }
@@ -84,7 +86,10 @@ mod tests {
         controller::{
             active_transactions::pending_transaction::PendingTransaction, GridController,
         },
-        grid::{js_types::JsRenderCell, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult},
+        grid::{
+            js_types::{JsRenderCell, JsRenderCellSpecial},
+            CellAlign, CodeCellLanguage, CodeRun, CodeRunResult,
+        },
         Array, CellValue, Pos, Rect, SheetPos, Value,
     };
 
@@ -93,12 +98,13 @@ mod tests {
             x,
             y,
             language: Some(CodeCellLanguage::Formula),
-            value: " SPILL".into(),
+            value: "".into(),
             align: None,
             wrap: None,
             bold: None,
-            italic: Some(true),
-            text_color: Some("red".into()),
+            italic: None,
+            text_color: None,
+            special: Some(JsRenderCellSpecial::SpillError),
         }]
     }
 
@@ -118,6 +124,7 @@ mod tests {
             bold: None,
             italic: None,
             text_color: None,
+            special: None,
         }]
     }
 

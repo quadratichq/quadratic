@@ -10,13 +10,10 @@ import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
   BorderSelection,
   BorderStyle,
-  CodeCell,
-  CodeCellLanguage,
   GridController,
   JsCodeResult,
   JsComputeGetCells,
   JsRenderBorders,
-  JsRenderCodeCell,
   MinMax,
   Pos,
   Rect as RectInternal,
@@ -27,10 +24,13 @@ import {
   CellAlign,
   CellFormatSummary,
   CellWrap,
+  CodeCellLanguage,
   FormattingSummary,
   JsClipboard,
+  JsCodeCell,
   JsHtmlOutput,
   JsRenderCell,
+  JsRenderCodeCell,
   JsRenderFill,
   Rect,
   TransactionSummary,
@@ -455,7 +455,7 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  getCodeCell(sheetId: string, x: number, y: number): CodeCell | undefined {
+  getCodeCell(sheetId: string, x: number, y: number): JsCodeCell | undefined {
     return this.gridController.getCodeCell(sheetId, new Pos(x, y));
   }
 

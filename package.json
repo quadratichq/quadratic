@@ -51,7 +51,7 @@
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
     "heroku-postbuild": "npm run build --workspace=quadratic-api",
-    "kill": "killport 3000 && killport 3001 && killport 8001 && killport 8000",
+    "kill": "kill-port 3000 && kill-port 3001 && kill-port 8001 && kill-port 8000",
     "test:ts": "cd quadratic-client && vitest"
   },
   "dependencies": {

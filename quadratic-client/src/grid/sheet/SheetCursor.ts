@@ -110,6 +110,7 @@ export class SheetCursor {
     return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
   }
 
+  // Returns the Rust pos of the cursor
   getPos(): Pos {
     return new Pos(this.cursorPosition.x, this.cursorPosition.y);
   }

@@ -21,6 +21,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         new_code_run: Option<CodeRun>,
+        index: Option<usize>,
     ) {
         let sheet_id = sheet_pos.sheet_id;
         let Some(sheet) = self.try_sheet_mut(sheet_id) else {
@@ -28,11 +29,30 @@ impl GridController {
             return;
         };
         let pos: Pos = sheet_pos.into();
+
+        // index for SetCodeRun is either set by execute_set_code_run or calculated
+        let index = index.unwrap_or(
+            sheet
+                .code_runs
+                .iter()
+                .position(|(p, _)| p == &pos)
+                .unwrap_or(sheet.code_runs.len()),
+        );
+
         let old_code_run = if let Some(new_code_run) = &new_code_run {
             if new_code_run.is_html() {
                 transaction.summary.html.insert(sheet_id);
             }
-            sheet.code_runs.insert(pos, new_code_run.clone())
+            let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
+
+            // keep the orderings of the code runs consistent, particularly when undoing/redoing
+            let index = if index > sheet.code_runs.len() - 1 {
+                sheet.code_runs.len() - 1
+            } else {
+                index
+            };
+            sheet.code_runs.move_index(old_index, index);
+            old_code_run
         } else {
             sheet.code_runs.remove(&pos)
         };
@@ -66,6 +86,7 @@ impl GridController {
         transaction.forward_operations.push(Operation::SetCodeRun {
             sheet_pos,
             code_run: new_code_run,
+            index,
         });
 
         transaction.reverse_operations.insert(
@@ -73,6 +94,7 @@ impl GridController {
             Operation::SetCodeRun {
                 sheet_pos,
                 code_run: old_code_run,
+                index,
             },
         );
 
@@ -115,7 +137,12 @@ impl GridController {
                         current_sheet_pos,
                     );
 
-                    self.finalize_code_run(transaction, current_sheet_pos, Some(new_code_run));
+                    self.finalize_code_run(
+                        transaction,
+                        current_sheet_pos,
+                        Some(new_code_run),
+                        None,
+                    );
                     transaction.waiting_for_async = None;
                 }
                 _ => {
@@ -194,7 +221,7 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             },
         };
-        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run));
+        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
         transaction
             .summary
             .code_cells_modified
@@ -312,7 +339,7 @@ mod test {
             cells_accessed: HashSet::new(),
             spill_error: false,
         };
-        gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()));
+        gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -341,7 +368,7 @@ mod test {
             cells_accessed: HashSet::new(),
             spill_error: false,
         };
-        gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()));
+        gc.finalize_code_run(transaction, sheet_pos, Some(new_code_run.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -358,7 +385,7 @@ mod test {
 
         // remove the code_run
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_code_run(transaction, sheet_pos, None);
+        gc.finalize_code_run(transaction, sheet_pos, None, None);
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();

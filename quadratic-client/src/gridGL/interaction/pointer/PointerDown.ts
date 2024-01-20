@@ -1,7 +1,6 @@
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
-import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { doubleClickCell } from './doubleClickCell';
@@ -58,20 +57,13 @@ export class PointerDown {
           return;
         }
         const code = sheet.getCodeCell(column, row);
-        let mode: 'PYTHON' | 'FORMULA' | undefined = undefined;
         if (code) {
-          const language = code.getLanguage();
-          if (language === CodeCellLanguage.Python) {
-            mode = 'PYTHON';
-          } else if (language === CodeCellLanguage.Formula) {
-            mode = 'FORMULA';
-          } else {
-            throw new Error('CodeEditor does not support this language');
-          }
-          code.free();
+          doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
+        } else {
+          const cell = sheet.getEditCell(column, row);
+          doubleClickCell({ column, row, cell });
         }
-        const cell = sheet.getEditCell(column, row);
-        doubleClickCell({ column, row, mode, cell });
+
         this.active = false;
         event.preventDefault();
         return;

@@ -1,5 +1,5 @@
 import { Coordinate } from '@/gridGL/types/size';
-import { CellType } from '@/schemas';
+import { CodeCellLanguage } from '@/quadratic-core/types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
 
@@ -14,13 +14,13 @@ export interface EditorInteractionState {
   uuid: string;
   selectedCell: Coordinate;
   selectedCellSheet: string;
-  mode: CellType;
+  mode?: CodeCellLanguage;
   follow?: string;
   editorEscapePressed?: boolean;
   waitingForEditorClose?: {
     selectedCell: Coordinate;
     selectedCellSheet: string;
-    mode: CellType;
+    mode?: CodeCellLanguage;
     showCellTypeMenu: boolean;
   };
 }
@@ -36,7 +36,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
   selectedCellSheet: '',
-  mode: 'TEXT',
+  mode: undefined,
 };
 
 export const editorInteractionStateAtom = atom({

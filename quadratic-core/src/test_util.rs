@@ -1,6 +1,6 @@
 use crate::{
     controller::GridController,
-    grid::{Bold, FillColor, SheetId},
+    grid::{Bold, FillColor, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
 use std::collections::HashMap;
@@ -214,4 +214,13 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
     });
 
     println!("\nsheet: {}\n{}", sheet.id, table);
+}
+
+/// Prints the order of the code_runs to the console.
+pub fn print_code_run_order(sheet: &Sheet) {
+    dbgjs!(sheet
+        .code_runs
+        .iter()
+        .map(|(pos, _)| pos)
+        .collect::<Vec<_>>());
 }

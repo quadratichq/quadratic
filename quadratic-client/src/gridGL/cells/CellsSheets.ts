@@ -5,7 +5,7 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
-  private current?: CellsSheet;
+  current?: CellsSheet;
 
   async create(): Promise<void> {
     this.removeChildren();
@@ -134,6 +134,11 @@ export class CellsSheets extends Container<CellsSheet> {
         }
       }
     });
+  }
+
+  updateCellsArray(): void {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');
+    this.current.updateCellsArray();
   }
 
   updateBorders(borderSheets: SheetId[]): void {
