@@ -1,15 +1,15 @@
 .code-error-container {
-  transition: opacity 500ms linear 1s;
+  position: 'relative';
+  opacity: 0;
 }
 
 .code-error {
-  width: 10rem;
-  position: absolute;
-  right: 0.5rem;
+  /* position: absolute; */
+  /* right: 0.5rem;
   background: white;
   box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25);
   padding: 0.5rem;
-  font-size: 0.85rem;
+  font-size: 0.85rem; */
 }
 
 .code-error-header {
@@ -26,8 +26,10 @@
 
 .code-error-fade-in {
   opacity: 1;
+  transition: opacity 150ms linear 1s;
 }
 
 .code-error-fade-out {
   opacity: 0;
+  transition: opacity 150ms linear;
 }

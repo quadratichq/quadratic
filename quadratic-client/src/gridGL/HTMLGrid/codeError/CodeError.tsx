@@ -1,8 +1,9 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCellState } from '@/quadratic-core/types';
+import { cn } from '@/shadcn/utils';
 import { colors } from '@/theme/colors';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Coordinate } from '../../types/size';
 import './CodeError.css';
 
@@ -13,36 +14,28 @@ interface CodeErrorInterface {
   y?: number;
 }
 
-const FADE_TIME = 500;
-
 export const CodeError = () => {
   const [message, setMessage] = useState<CodeErrorInterface | undefined>();
   const [remove, setRemove] = useState(0);
-  const [overDialog, setOverDialog] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const addError = (e: any /* { detail: CodeErrorInterface } */) => {
       if (!e.detail) {
-        if (message && !remove) {
-          const timeout = window.setTimeout(() => {
-            setRemove(0);
-            setMessage(undefined);
-          }, FADE_TIME);
-          setRemove(timeout);
+        if (message) {
+          if (ref.current && !ref.current.classList.contains('code-error-fade-out')) {
+            ref.current?.classList.add('code-error-fade-out');
+            ref.current?.classList.remove('code-error-fade-in');
+          }
         }
       } else {
-        setMessage((error) => {
-          if (
-            !remove &&
-            error &&
-            error.location.x === e.detail.location.x &&
-            error.location.y === e.detail.location.y
-          ) {
-            return error;
-          }
-          const offsets = sheets.sheet.getCellOffsets(e.detail.location.x, e.detail.location.y);
-          return { ...e.detail, x: offsets.x, y: offsets.y };
-        });
+        if (ref.current && !ref.current.classList.contains('code-error-fade-in')) {
+          ref.current?.classList.add('code-error-fade-in');
+          ref.current?.classList.remove('code-error-fade-out');
+        }
+        const offsets = sheets.sheet.getCellOffsets(e.detail.location.x, e.detail.location.y);
+        setMessage({ ...e.detail, x: offsets.x, y: offsets.y });
         setRemove((remove) => {
           if (remove) {
             window.clearTimeout(remove);
@@ -54,6 +47,18 @@ export const CodeError = () => {
     window.addEventListener('overlap-code-error', addError);
     return () => window.removeEventListener('overlap-code-error', addError);
   }, [remove, message]);
+
+  useEffect(() => {
+    const changeZoom = () => {
+      if (textRef.current) {
+        textRef.current.style.transform = `scale(${1 / pixiApp.viewport.scale.x})`;
+      }
+    };
+    pixiApp.viewport.on('zoomed', changeZoom);
+    return () => {
+      pixiApp.viewport.off('zoomed', changeZoom);
+    };
+  }, []);
 
   let text: JSX.Element | undefined;
   if (message?.type === 'SpillError') {
@@ -88,35 +93,28 @@ export const CodeError = () => {
 
   return (
     <div
-      className={`code-error-container ${
-        message && !remove ? 'code-error-fade-in' : message && remove ? 'code-error-fade-out' : ''
-      }`}
+      ref={ref}
+      className="code-error-container"
       style={{
         position: 'absolute',
         left: message?.x,
         top: message?.y,
         visibility: message ? 'visible' : 'hidden',
-      }}
-      onPointerEnter={() => {
-        if (message && remove) {
-          window.clearTimeout(remove);
-          setRemove(0);
-          setOverDialog(true);
-        }
-      }}
-      onPointerLeave={() => {
-        if (overDialog) {
-          const timeout = window.setTimeout(() => {
-            setRemove(0);
-            setMessage(undefined);
-          }, FADE_TIME);
-          setOverDialog(false);
-          setRemove(timeout);
-        }
+        pointerEvents: 'none',
       }}
     >
-      <div className="code-error" style={{ border: `1px solid ${colors.error}`, left: '-100%' }}>
-        {text}
+      <div style={{ position: 'relative' }}>
+        <div
+          ref={textRef}
+          className={cn('w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none')}
+          style={{
+            position: 'absolute',
+            right: 0,
+            transformOrigin: `calc(${message?.x ?? 0}px + 100%) ${message?.y ?? 0}`,
+          }}
+        >
+          {text}
+        </div>
       </div>
     </div>
   );
