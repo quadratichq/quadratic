@@ -1,32 +1,22 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
-import { JsRenderCodeCellState } from '@/quadratic-core/types';
+import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { cn } from '@/shadcn/utils';
 import { colors } from '@/theme/colors';
 import { useEffect, useRef, useState } from 'react';
-import { Coordinate } from '../../types/size';
 import './CodeError.css';
 
-interface CodeErrorInterface {
-  location: Coordinate;
-  type: JsRenderCodeCellState;
-  x?: number;
-  y?: number;
-}
-
 export const CodeError = () => {
-  const [message, setMessage] = useState<CodeErrorInterface | undefined>();
+  const [codeCell, setCodeCell] = useState<JsRenderCodeCell | undefined>();
   const ref = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const addError = (e: any /* { detail: CodeErrorInterface } */) => {
+    const addError = (e: any /* { detail: CodeCell } */) => {
       if (!e.detail) {
-        if (message) {
-          if (ref.current && !ref.current.classList.contains('code-error-fade-out')) {
-            ref.current?.classList.add('code-error-fade-out');
-            ref.current?.classList.remove('code-error-fade-in');
-          }
+        if (ref.current && !ref.current.classList.contains('code-error-fade-out')) {
+          ref.current?.classList.add('code-error-fade-out');
+          ref.current?.classList.remove('code-error-fade-in');
         }
       } else {
         if (ref.current && !ref.current.classList.contains('code-error-fade-in')) {
@@ -37,13 +27,14 @@ export const CodeError = () => {
           }
           ref.current?.classList.remove('code-error-fade-out');
         }
-        const offsets = sheets.sheet.getCellOffsets(e.detail.location.x, e.detail.location.y);
-        setMessage({ ...e.detail, x: offsets.x, y: offsets.y });
+        setCodeCell(e.detail);
       }
     };
     window.addEventListener('overlap-code-error', addError);
     return () => window.removeEventListener('overlap-code-error', addError);
-  }, [message]);
+  }, []);
+
+  const offsets = codeCell ? sheets.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y)) : { x: 0, y: 0 };
 
   useEffect(() => {
     const changeZoom = () => {
@@ -58,7 +49,8 @@ export const CodeError = () => {
   }, []);
 
   let text: JSX.Element | undefined;
-  if (message?.type === 'SpillError') {
+  const code = codeCell ? sheets.sheet.getCodeCell(Number(codeCell.x), Number(codeCell.y)) : undefined;
+  if (codeCell?.state === 'SpillError') {
     text = (
       <>
         <div className="code-error-header">Spill Error</div>
@@ -68,8 +60,7 @@ export const CodeError = () => {
         </div>
       </>
     );
-  } else if (message?.type === 'RunError') {
-    const code = sheets.sheet.getCodeCell(message.location.x, message.location.y);
+  } else if (codeCell?.state === 'RunError') {
     if (code) {
       text = (
         <>
@@ -78,9 +69,18 @@ export const CodeError = () => {
             <div>There was an error running the code in this cell.</div>
             <div style={{ color: colors.error }}>{code.std_err}</div>
           </div>
+          <div className="code-error-header-space">{codeCell.language} Code</div>
+          <div className="code-body">{code?.code_string}</div>
         </>
       );
     }
+  } else if (codeCell) {
+    text = (
+      <>
+        <div className="code-error-header">{codeCell.language} Code</div>
+        <div className="code-body">{code?.code_string}</div>
+      </>
+    );
   }
 
   useEffect(() => {
@@ -94,9 +94,9 @@ export const CodeError = () => {
       className="code-error-container"
       style={{
         position: 'absolute',
-        left: message?.x,
-        top: message?.y,
-        visibility: message ? 'visible' : 'hidden',
+        left: offsets.x,
+        top: offsets.y,
+        visibility: codeCell ? 'visible' : 'hidden',
         pointerEvents: 'none',
       }}
     >
@@ -107,7 +107,7 @@ export const CodeError = () => {
           style={{
             position: 'absolute',
             right: 0,
-            transformOrigin: `calc(${message?.x ?? 0}px + 100%) ${message?.y ?? 0}`,
+            transformOrigin: `calc(${codeCell?.x ?? 0}px + 100%) ${codeCell?.y ?? 0}`,
           }}
         >
           {text}

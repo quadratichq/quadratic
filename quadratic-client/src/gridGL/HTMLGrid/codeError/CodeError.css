@@ -7,6 +7,10 @@
   margin-bottom: 0.5rem;
 }
 
+.code-error-header-space {
+  margin: 0.5rem 0;
+}
+
 .code-error-body {
   font-size: 0.75rem;
 }
@@ -28,4 +32,13 @@
 .code-error-fade-out {
   opacity: 0;
   transition: opacity 150ms linear;
+}
+
+.code-body {
+  font-family: monospace;
+  white-space: pre;
+  overflow: hidden;
+  font-size: 0.65rem;
+  max-height: 20rem;
+  background-color: rgba(0, 0, 0, 0.01);
 }

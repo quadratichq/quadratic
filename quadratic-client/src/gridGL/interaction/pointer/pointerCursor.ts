@@ -1,10 +1,10 @@
-import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
+import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { Point } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
 export class PointerCursor {
-  private lastCodeError?: Coordinate;
+  private lastCodeError?: JsRenderCodeCell;
 
   private checkCodeErrors(world: Point) {
     if (!pixiApp.cellsSheets.current) throw new Error('Expected cellsSheets.current to be defined in PointerCursor');
@@ -13,7 +13,7 @@ export class PointerCursor {
       if (this.lastCodeError?.x !== codeCell.x || this.lastCodeError?.y !== codeCell.y) {
         window.dispatchEvent(
           new CustomEvent('overlap-code-error', {
-            detail: { location: { x: codeCell.x, y: codeCell.y }, type: codeCell.type },
+            detail: codeCell,
           })
         );
         this.lastCodeError = codeCell;
