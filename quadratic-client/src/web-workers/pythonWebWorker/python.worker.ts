@@ -33,19 +33,16 @@ async function pythonWebWorker() {
     await pyodide.loadPackage('micropip');
 
     let micropip = await pyodide.pyimport('micropip');
-    await micropip.install(['numpy', 'pandas', 'pyodide-http', 'requests']);
+
     // patch requests https://github.com/koenvo/pyodide-http
+    await micropip.install(['pyodide-http']);
     await pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
 
-    // load and write fetch module so it can be imported by others
-    const fetch_module = await (await fetch("/quadratic_py/fetch.py")).text();
-    pyodide.FS.writeFile("fetch.py", fetch_module, { encoding: "utf8" });
-    await pyodide.runPython(fetch_module)
-    await pyodide.globals.get('prefetch_modules')()
+    // load our python code
+    await micropip.install("/quadratic_py-0.1.0-py3-none-any.whl");
 
-    // load main run_python script
-    const run_python_module = await (await fetch('/quadratic_py/run_python.py')).text();
-    await pyodide.runPython(run_python_module);
+    // make run_python easier to call later
+    await pyodide.runPython('from quadratic_py.run_python import run_python');
   } catch (e) {
     self.postMessage({ type: 'python-error' } as PythonMessage);
     console.warn(`[Python WebWorker] failed to load`, e);

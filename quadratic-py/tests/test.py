@@ -27,10 +27,7 @@ sys.modules["getCellsDB"] = mock_GetCellsDB
 sys.modules["pyodide"] = mock_pyodide
 sys.modules["micropip"] = mock_micropip
 
-# add path to import run_python
-sys.path.insert(1, "public/quadratic_py")
-
-import run_python, code_trace
+from quadratic_py import run_python, code_trace
 
 run_python.fetch_module = mock_fetch_module
 

@@ -1,10 +1,5 @@
-import asyncio
-import inspect
-import itertools
 import operator
-import os
 import re
-import sys
 import traceback
 from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
@@ -12,12 +7,11 @@ from io import StringIO
 
 import getCellsDB
 import micropip
-import numpy as np
 import pandas as pd
 import pyodide
 
-import code_trace
-import plotly_patch
+from quadratic_py import code_trace
+from quadratic_py import plotly_patch
 
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html

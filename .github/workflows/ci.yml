@@ -87,7 +87,6 @@ jobs:
 
     - name: Test python
       run: |
-        pip install -r requirements.txt
         cd quadratic-client
         npm run test:python
 

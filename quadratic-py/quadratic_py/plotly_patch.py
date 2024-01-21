@@ -1,6 +1,6 @@
 import micropip
 
-import code_trace
+from quadratic_py import code_trace
 
 
 class FigureDisplayError(Exception):
