@@ -4,34 +4,37 @@ import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { cn } from '@/shadcn/utils';
 import { colors } from '@/theme/colors';
 import { useEffect, useRef, useState } from 'react';
-import './CodeError.css';
+import './CodeInfo.css';
 
-export const CodeError = () => {
+export const CodeInfo = () => {
   const [codeCell, setCodeCell] = useState<JsRenderCodeCell | undefined>();
   const ref = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const addError = (e: any /* { detail: CodeCell } */) => {
+      const div = ref.current;
+      if (!div) return;
       if (!e.detail) {
-        if (ref.current && !ref.current.classList.contains('code-error-fade-out')) {
-          ref.current?.classList.add('code-error-fade-out');
-          ref.current?.classList.remove('code-error-fade-in');
+        if (!div.classList.contains('code-info-fade-out')) {
+          div.classList.add('code-info-fade-out');
+          div.classList.remove('code-info-fade-in');
+          div.classList.remove('code-info-fade-in-no-delay');
         }
       } else {
-        if (ref.current && !ref.current.classList.contains('code-error-fade-in')) {
-          if (ref.current?.style.opacity !== '0') {
-            ref.current?.classList.add('code-error-fade-in-no-delay');
+        if (!div.classList.contains('code-info-fade-in') && !div.classList.contains('code-info-fade-in-no-delay')) {
+          if (window.getComputedStyle(div).getPropertyValue('opacity') !== '0') {
+            div.classList.add('code-info-fade-in-no-delay');
           } else {
-            ref.current?.classList.add('code-error-fade-in');
+            div.classList.add('code-info-fade-in');
           }
-          ref.current?.classList.remove('code-error-fade-out');
+          div.classList.remove('code-info-fade-out');
         }
         setCodeCell(e.detail);
       }
     };
-    window.addEventListener('overlap-code-error', addError);
-    return () => window.removeEventListener('overlap-code-error', addError);
+    window.addEventListener('overlap-code-info', addError);
+    return () => window.removeEventListener('overlap-code-info', addError);
   }, []);
 
   const offsets = codeCell ? sheets.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y)) : { x: 0, y: 0 };
@@ -53,8 +56,8 @@ export const CodeError = () => {
   if (codeCell?.state === 'SpillError') {
     text = (
       <>
-        <div className="code-error-header">Spill Error</div>
-        <div className="code-error-body">
+        <div className="code-info-header">Spill Error</div>
+        <div className="code-info-body">
           <div>Array output could not expand because it would overwrite existing values.</div>
           <div>Select the cell and remove the red highlighted values to expand it.</div>
         </div>
@@ -64,12 +67,12 @@ export const CodeError = () => {
     if (code) {
       text = (
         <>
-          <div className="code-error-header">Run Error</div>
-          <div className="code-error-body">
+          <div className="code-info-header">Run Error</div>
+          <div className="code-info-body">
             <div>There was an error running the code in this cell.</div>
             <div style={{ color: colors.error }}>{code.std_err}</div>
           </div>
-          <div className="code-error-header-space">{codeCell.language} Code</div>
+          <div className="code-info-header-space">{codeCell.language} Code</div>
           <div className="code-body">{code?.code_string}</div>
         </>
       );
@@ -77,7 +80,7 @@ export const CodeError = () => {
   } else if (codeCell) {
     text = (
       <>
-        <div className="code-error-header">{codeCell.language} Code</div>
+        <div className="code-info-header">{codeCell.language} Code</div>
         <div className="code-body">{code?.code_string}</div>
       </>
     );
@@ -91,7 +94,7 @@ export const CodeError = () => {
   return (
     <div
       ref={ref}
-      className="code-error-container"
+      className="code-info-container"
       style={{
         position: 'absolute',
         left: offsets.x,

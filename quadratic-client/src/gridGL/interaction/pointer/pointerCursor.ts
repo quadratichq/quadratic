@@ -4,24 +4,24 @@ import { Point } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
 export class PointerCursor {
-  private lastCodeError?: JsRenderCodeCell;
+  private lastCodeInfo?: JsRenderCodeCell;
 
-  private checkCodeErrors(world: Point) {
+  private checkCodeInfo(world: Point) {
     if (!pixiApp.cellsSheets.current) throw new Error('Expected cellsSheets.current to be defined in PointerCursor');
-    const codeCell = pixiApp.cellsSheets.current.cellsMarkers.intersectsCodeError(world);
+    const codeCell = pixiApp.cellsSheets.current.cellsMarkers.intersectsCodeInfo(world);
     if (codeCell) {
-      if (this.lastCodeError?.x !== codeCell.x || this.lastCodeError?.y !== codeCell.y) {
+      if (this.lastCodeInfo?.x !== codeCell.x || this.lastCodeInfo?.y !== codeCell.y) {
         window.dispatchEvent(
-          new CustomEvent('overlap-code-error', {
+          new CustomEvent('overlap-code-info', {
             detail: codeCell,
           })
         );
-        this.lastCodeError = codeCell;
+        this.lastCodeInfo = codeCell;
       }
     } else {
-      if (this.lastCodeError) {
-        window.dispatchEvent(new CustomEvent('overlap-code-error'));
-        this.lastCodeError = undefined;
+      if (this.lastCodeInfo) {
+        window.dispatchEvent(new CustomEvent('overlap-code-info'));
+        this.lastCodeInfo = undefined;
       }
     }
   }
@@ -30,6 +30,6 @@ export class PointerCursor {
     const cursor = pixiApp.pointer.pointerHeading.cursor ?? pixiApp.pointer.pointerAutoComplete.cursor;
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
     multiplayer.sendMouseMove(world.x, world.y);
-    this.checkCodeErrors(world);
+    this.checkCodeInfo(world);
   }
 }

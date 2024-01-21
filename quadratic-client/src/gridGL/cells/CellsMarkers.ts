@@ -69,7 +69,7 @@ export class CellsMarkers extends Container {
     });
   }
 
-  intersectsCodeError(point: Point): JsRenderCodeCell | undefined {
+  intersectsCodeInfo(point: Point): JsRenderCodeCell | undefined {
     const marker = this.markers.find((marker) => marker.bounds.contains(point.x, point.y));
     if (marker?.codeCell) {
       return marker.codeCell;

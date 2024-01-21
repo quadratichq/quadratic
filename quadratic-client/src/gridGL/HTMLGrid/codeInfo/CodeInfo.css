@@ -1,35 +1,35 @@
-.code-error-container {
+.code-info-container {
   position: 'relative';
   opacity: 0;
 }
 
-.code-error-header {
+.code-info-header {
   margin-bottom: 0.5rem;
 }
 
-.code-error-header-space {
+.code-info-header-space {
   margin: 0.5rem 0;
 }
 
-.code-error-body {
+.code-info-body {
   font-size: 0.75rem;
 }
 
-.code-error-body > div:first-child {
+.code-info-body > div:first-child {
   margin-bottom: 0.5rem;
 }
 
-.code-error-fade-in {
+.code-info-fade-in {
   opacity: 1;
   transition: opacity 150ms linear 1s;
 }
 
-.code-error-fade-in-no-delay {
+.code-info-fade-in-no-delay {
   opacity: 1;
   transition: opacity 150ms linear;
 }
 
-.code-error-fade-out {
+.code-info-fade-out {
   opacity: 0;
   transition: opacity 150ms linear;
 }
