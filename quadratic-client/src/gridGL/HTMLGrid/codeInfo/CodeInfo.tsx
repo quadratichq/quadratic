@@ -37,8 +37,6 @@ export const CodeInfo = () => {
     return () => window.removeEventListener('overlap-code-info', addError);
   }, []);
 
-  const offsets = codeCell ? sheets.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y)) : { x: 0, y: 0 };
-
   useEffect(() => {
     const changeZoom = () => {
       if (textRef.current) {
@@ -87,9 +85,44 @@ export const CodeInfo = () => {
   }
 
   useEffect(() => {
-    const viewport = pixiApp.viewport;
-    viewport.on('zoom', () => {});
-  }, []);
+    const updatePosition = () => {
+      if (!codeCell) return;
+      const div = ref.current;
+      const textDiv = textRef.current;
+      if (!div || !textDiv) return;
+      const offsets = sheets.sheet.getCellOffsets(codeCell.x, codeCell.y);
+      const viewport = pixiApp.viewport;
+      const bounds = viewport.getVisibleBounds();
+      let transformOrigin: string;
+      if (Math.abs(bounds.left - offsets.left) > Math.abs(bounds.right - offsets.right)) {
+        // box to the left
+        div.style.left = `${offsets.left}px`;
+        textDiv.style.right = '0';
+        textDiv.style.left = 'unset';
+        transformOrigin = 'right';
+      } else {
+        // box to the right
+        div.style.left = `${offsets.right}px`;
+        textDiv.style.left = '0';
+        textDiv.style.right = 'unset';
+        transformOrigin = 'left';
+      }
+      if (Math.abs(bounds.top - offsets.top) < Math.abs(bounds.bottom - offsets.bottom)) {
+        // box going down
+        div.style.top = `${offsets.top}px`;
+        textDiv.style.bottom = 'unset';
+        transformOrigin += ' top';
+      } else {
+        // box going up
+        div.style.top = `${offsets.bottom}px`;
+        textDiv.style.bottom = `100%`;
+        transformOrigin += ' bottom';
+      }
+      textDiv.style.transformOrigin = transformOrigin;
+    };
+    updatePosition();
+    pixiApp.viewport.on('moved', updatePosition);
+  }, [codeCell]);
 
   return (
     <div
@@ -97,8 +130,6 @@ export const CodeInfo = () => {
       className="code-info-container"
       style={{
         position: 'absolute',
-        left: offsets.x,
-        top: offsets.y,
         visibility: codeCell ? 'visible' : 'hidden',
         pointerEvents: 'none',
       }}
@@ -107,11 +138,7 @@ export const CodeInfo = () => {
         <div
           ref={textRef}
           className={cn('w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none')}
-          style={{
-            position: 'absolute',
-            right: 0,
-            transformOrigin: `calc(${codeCell?.x ?? 0}px + 100%) ${codeCell?.y ?? 0}`,
-          }}
+          style={{ position: 'absolute' }}
         >
           {text}
         </div>
