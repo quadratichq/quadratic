@@ -92,8 +92,22 @@ impl From<Vec<Vec<String>>> for Array {
     }
 }
 
+// normalize rows lenght to the same size
+fn fill_blank_cels(v: Vec<Vec<CellValue>>) -> Vec<Vec<CellValue>> {
+    let max_width = v.iter().map(|r| r.len()).max().unwrap_or(0);
+    v.into_iter()
+        .map(|mut row| {
+            while row.len() < max_width {
+                row.push(CellValue::Blank)
+            }
+            row
+        })
+        .collect()
+}
+
 impl From<Vec<Vec<CellValue>>> for Array {
     fn from(v: Vec<Vec<CellValue>>) -> Self {
+        let v = fill_blank_cels(v);
         let w = v[0].len();
         let h = v.len();
         Array {
