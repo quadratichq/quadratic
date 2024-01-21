@@ -18,6 +18,17 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<TransactionSummary> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
+        let file = match String::from_utf8_lossy(file) {
+            std::borrow::Cow::Borrowed(_) => file,
+            std::borrow::Cow::Owned(_) => {
+                if let Some(ut16) = read_utf16(file) {
+                    let x: String = ut16.chars().filter(|&c| c.is_ascii()).collect();
+                    return self.import_csv(sheet_id, x.as_bytes(), file_name, insert_at, cursor);
+                }
+                file
+            }
+        };
+
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .flexible(true)
@@ -72,6 +83,15 @@ impl GridController {
     }
 }
 
+fn read_utf16(bytes: &[u8]) -> Option<String> {
+    let (front, slice, back) = unsafe { bytes.align_to::<u16>() };
+    if front.is_empty() && back.is_empty() {
+        String::from_utf16(slice).ok()
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -82,9 +102,27 @@ mod tests {
 
     use super::*;
 
-    fn read_test_csv_file(file_name: &str) -> String {
+    fn read_test_csv_file(file_name: &str) -> Vec<u8> {
         let path = format!("./tests/csv_import/{file_name}");
-        std::fs::read_to_string(path).expect(&format!("test csv file not found {}", file_name))
+        std::fs::read(path).expect(&format!("test csv file not found {}", file_name))
+    }
+
+    #[test]
+    fn should_import_with_invalid_utf8_character() {
+        let scv_file = read_test_csv_file("encoding_issue.csv");
+
+        let mut gc = GridController::new();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+
+        gc.import_csv(sheet_id, scv_file.as_slice(), "test.csv", pos, None)
+            .expect("import_csv");
+
+        print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 4 }));
+
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["issue", "test", "value"]);
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 1, vec!["0", "1", "Invalid"]);
+        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["0", "2", "Valid"]);
     }
 
     #[test]
@@ -95,10 +133,10 @@ mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        gc.import_csv(sheet_id, scv_file.as_bytes(), "test.csv", pos, None)
+        gc.import_csv(sheet_id, scv_file.as_slice(), "test.csv", pos, None)
             .expect("import_csv");
 
-        print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 6 }));
+        print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
 
         assert_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["Sample report", "", ""]);
 
@@ -121,7 +159,7 @@ mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
 
-        let _ = gc.import_csv(sheet_id, scv_file.as_bytes(), "smallpop.csv", pos, None);
+        let _ = gc.import_csv(sheet_id, scv_file.as_slice(), "smallpop.csv", pos, None);
 
         print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 10 }));
 
