@@ -140,7 +140,7 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRunResult, RenderSize},
+        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRunResult, RenderSize},
         Array, CodeCellValue, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
@@ -274,53 +274,36 @@ mod test {
     }
 
     #[test]
-    fn test_edit_code_value_spill() {
+    fn edit_code_value_spill() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_value(
-            Pos { x: 0, y: 0 },
-            CellValue::Code(CodeCellValue {
-                code: "=".to_string(),
-                language: CodeCellLanguage::Formula,
-            }),
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            "should cause spill".into(),
+            None,
         );
-        let code_run = CodeRun {
-            std_err: None,
-            std_out: None,
-            formatted_code_string: None,
-            cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3"]]))),
-            spill_error: false,
-            last_modified: Utc::now(),
-        };
-        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
-        assert_eq!(
-            sheet.edit_code_value(Pos { x: 0, y: 0 }),
-            Some(JsCodeCell {
+        gc.set_code_cell(
+            SheetPos {
                 x: 0,
                 y: 0,
-                code_string: "=".to_string(),
-                language: CodeCellLanguage::Formula,
-                std_err: None,
-                std_out: None,
-                evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
-                spill_error: None,
-            })
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3}".to_string(),
+            None,
         );
+        let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.edit_code_value(Pos { x: 1, y: 0 }),
-            Some(JsCodeCell {
-                x: 0,
-                y: 0,
-                code_string: "=".to_string(),
-                language: CodeCellLanguage::Formula,
-                std_err: None,
-                std_out: None,
-                evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
-                spill_error: None,
-            })
+            sheet.cell_value(Pos { x: 1, y: 0 }),
+            Some("should cause spill".into())
         );
-        assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
+        let render = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1));
+        assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
+        let code = sheet.edit_code_value(Pos { x: 0, y: 0 }).unwrap();
+        assert_eq!(code.spill_error, Some(vec![Pos { x: 1, y: 0 }]));
     }
 }
