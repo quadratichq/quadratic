@@ -14,9 +14,11 @@ impl GridController {
     ) {
         if let Operation::AddSheet { sheet } = op {
             let sheet_id = sheet.id;
-            self.grid
-                .add_sheet(Some(sheet.clone()))
-                .expect("Unexpected duplicate sheet name in Operation::AddSheet");
+            if self.grid.try_sheet(sheet_id).is_some() {
+                // sheet already exists (unlikely but possible if this operation is run twice)
+                return;
+            }
+            self.grid.add_sheet(Some(sheet.clone()));
             transaction.summary.sheet_list_modified = true;
             transaction.summary.html.insert(sheet_id);
             transaction
@@ -45,9 +47,7 @@ impl GridController {
                 let name = String::from("Sheet 1");
                 let order = self.grid.end_order();
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
-                self.grid
-                        .add_sheet(Some(new_first_sheet.clone()))
-                        .expect("This should not throw an error as we just deleted the last sheet and therefore there can be no sheet name conflicts");
+                self.grid.add_sheet(Some(new_first_sheet.clone()));
                 transaction
                     .forward_operations
                     .push(Operation::DeleteSheet { sheet_id });
