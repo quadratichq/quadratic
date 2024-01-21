@@ -5,7 +5,6 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
@@ -128,12 +127,8 @@ export class CellsSheet extends Container {
         cellsTextHash.hide();
       }
     });
-    if (pixiAppSettings.showCellTypeOutlines) {
-      this.cellsArray.visible = true;
-      this.cellsArray.cheapCull(bounds);
-    } else {
-      this.cellsArray.visible = false;
-    }
+    this.cellsArray.visible = true;
+    this.cellsArray.cheapCull(bounds);
     this.cellsFills.cheapCull(bounds);
     if (debugShowCellsSheetCulling) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
@@ -144,9 +139,9 @@ export class CellsSheet extends Container {
     this.visible = false;
   }
 
-  toggleOutlines(force?: boolean) {
-    this.cellsArray.visible = force ?? pixiAppSettings.showCellTypeOutlines;
-    this.cellsMarkers.visible = force ?? pixiAppSettings.showCellTypeOutlines;
+  toggleOutlines(off?: boolean) {
+    this.cellsArray.visible = off ?? true;
+    this.cellsMarkers.visible = off ?? true;
   }
 
   createBorders() {

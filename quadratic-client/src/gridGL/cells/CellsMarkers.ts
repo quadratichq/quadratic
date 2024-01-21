@@ -1,15 +1,12 @@
-import { CELL_HEIGHT } from '@/constants/gridConstants';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 
 const TRIANGLE_SIZE = 100;
 const INDICATOR_SIZE = 4;
-const CODE_OFFSET = { x: 1, y: 1, width: 2 };
-export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
-const url = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
-const triangles = url.has('triangles');
+export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
 interface Marker {
   bounds: Rectangle;
@@ -46,33 +43,14 @@ export class CellsMarkers extends Container {
 
   add(box: Rectangle, codeCell: JsRenderCodeCell, selected: boolean) {
     const isError = codeCell.state === 'RunError' || codeCell.state === 'SpillError';
-    if (isError || triangles) {
+    if (isError) {
       const sprite = this.addChild(new Sprite(this.triangle));
       sprite.scale.set(0.1);
       sprite.position.set(box.x, box.y);
       sprite.tint = colors.cellColorError;
-      if (triangles) {
-        if (!isError) {
-          if (codeCell.language === 'Python') {
-            sprite.tint = colors.cellColorUserPython;
-          } else if (codeCell.language === 'Formula') {
-            sprite.tint = colors.cellColorUserFormula;
-          }
-        }
-      }
-    } else {
-      const sprite = this.addChild(new Sprite(Texture.WHITE));
-      sprite.position.set(box.x + CODE_OFFSET.x, box.y + CODE_OFFSET.y);
-      sprite.height = Math.min(box.height - CODE_OFFSET.y * 2, CELL_HEIGHT - CODE_OFFSET.y * 2);
-      sprite.width = CODE_OFFSET.width;
-      if (codeCell.language === 'Python') {
-        sprite.tint = colors.cellColorUserPython;
-      } else if (codeCell.language === 'Formula') {
-        sprite.tint = colors.cellColorUserFormula;
-      }
     }
 
-    if (isError || selected) {
+    if (isError || selected || pixiAppSettings.showCellTypeOutlines) {
       const child = this.addChild(new Sprite());
       child.height = INDICATOR_SIZE;
       child.width = INDICATOR_SIZE;
