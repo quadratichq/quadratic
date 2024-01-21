@@ -1,5 +1,5 @@
 from contextlib import redirect_stderr, redirect_stdout
-from io import StringIO
+from io import BytesIO, StringIO
 from typing import Tuple
 
 import micropip
@@ -20,6 +20,7 @@ def error_result(
     return {
         "output_value": None,
         "array_output": None,
+        "bytes_output": None,
         "cells_accessed": cells_accessed,
         "std_out": sout.getvalue(),
         "success": False,
@@ -86,6 +87,7 @@ async def run_python(code: str, pos: Tuple[int, int]):
         # Process the output
         output = process_output.process_output_value(output_value)
         array_output = output["array_output"]
+        bytes_output = output["bytes_output"]
         output_value = output["output_value"]
         output_type = output["output_type"]
         output_size = output["output_size"]
@@ -93,7 +95,7 @@ async def run_python(code: str, pos: Tuple[int, int]):
 
         # Plotly HTML
         if plotly_html is not None and plotly_html.result is not None:
-            if output_value is not None or array_output is not None:
+            if output_value is not None or array_output is not None or bytes_output is not None:
                 err = RuntimeError(
                     "Cannot return result from cell that has displayed a figure "
                     f"(displayed on line {plotly_html.result_set_from_line})"
@@ -103,12 +105,16 @@ async def run_python(code: str, pos: Tuple[int, int]):
                     err, code, cells_accessed, sout, code_trace.get_return_line(code)
                 )
             else:
-                output_value = (plotly_html.result, 'text')
+                if isinstance(plotly_html.result, BytesIO):
+                    bytes_output = plotly_html.result.getvalue()
+                else:
+                    output_value = (plotly_html.result, 'text')
                 output_type = "Chart"
 
         return {
             "output": output_value,
             "array_output": typed_array_output,
+            "bytes_output": bytes_output,
             "output_type": output_type,
             "output_size": output_size,
             "cells_accessed": cells_accessed,

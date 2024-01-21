@@ -21,6 +21,9 @@ impl GridController {
                     if values.into_iter().any(|(_, _, value)| value.is_html()) {
                         transaction.summary.html.insert(sheet_pos.sheet_id);
                     };
+                    if values.into_iter().any(|(_, _, value)| value.is_image()) {
+                        transaction.summary.image.insert(sheet_pos.sheet_id);
+                    };
 
                     let min = sheet_pos.into();
                     let sheet_rect = SheetRect {

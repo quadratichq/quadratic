@@ -6,6 +6,7 @@ from .utils import to_quadratic_type
 def process_output_value(output_value):
     # return array_output if output is an array
     array_output = None
+    bytes_output = None
     output_type = type(output_value).__name__
     output_size = None
 
@@ -80,8 +81,11 @@ def process_output_value(output_value):
                     else:
                         typed_array_output[row][col] = to_quadratic_type(array_output[row][col])
 
-    # removes output_value if there's an array or None
-    if array_output is not None or output_value is None:
+    if isinstance(output_value, bytes):
+        bytes_output = output_value
+
+    # removes output_value if there's an array, bytes, or None
+    if array_output is not None or bytes_output is not None or output_value is None:
         output_value = None
     else:
         output_value = to_quadratic_type(output_value)
@@ -89,6 +93,7 @@ def process_output_value(output_value):
     return {
         "typed_array_output": typed_array_output,
         "array_output": array_output,
+        "bytes_output": bytes_output,
         "output_value": output_value,
         "output_type": output_type,
         "output_size": output_size,

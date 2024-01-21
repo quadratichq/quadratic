@@ -5,6 +5,7 @@ export interface PythonReturnType {
   input_python_std_out: string;
   output_value: string | null;
   output_type: string | null;
+  bytes_output: Uint8Array | null;
 }
 
 export interface CellRef {

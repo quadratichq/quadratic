@@ -74,6 +74,7 @@ impl GridController {
                 }
                 CellFmtArray::RenderSize(output_size) => {
                     transaction.summary.html.insert(sheet_rect.sheet_id);
+                    transaction.summary.image.insert(sheet_rect.sheet_id);
                     CellFmtArray::RenderSize(
                         self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
                     )

@@ -17,6 +17,7 @@ import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { HtmlPlaceholders } from '../UI/HtmlPlaceholders';
+import { ImagePlaceholders } from '../UI/ImagePlaceholders';
 import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
@@ -50,6 +51,7 @@ export class PixiApp {
   pointer!: Pointer;
   viewportContents!: Container;
   htmlPlaceholders!: HtmlPlaceholders;
+  imagePlaceholders!: ImagePlaceholders;
   renderer!: Renderer;
   stage = new Container();
   loading = true;
@@ -138,6 +140,7 @@ export class PixiApp {
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
+    this.imagePlaceholders = this.viewportContents.addChild(new ImagePlaceholders());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
@@ -222,6 +225,7 @@ export class PixiApp {
     this.headings.visible = false;
     this.boxCells.visible = false;
     this.htmlPlaceholders.prepare();
+    this.imagePlaceholders.prepare();
     this.cellsSheets.toggleOutlines(false);
     if (options?.cull) {
       this.cellsSheets.cull(options.cull);
@@ -237,6 +241,7 @@ export class PixiApp {
     this.headings.visible = true;
     this.boxCells.visible = true;
     this.htmlPlaceholders.hide();
+    this.imagePlaceholders.hide();
     this.cellsSheets.toggleOutlines();
     if (culled) {
       this.cellsSheets.cull(this.viewport.getVisibleBounds());

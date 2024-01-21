@@ -240,6 +240,7 @@ mod test {
             None,
             None,
             None,
+            None,
         );
         let mut transaction = PendingTransaction::default();
         let sheet_pos = SheetPos {
@@ -289,6 +290,7 @@ mod test {
             None,
             None,
             Some(array_output),
+            None,
             None,
             None,
             None,

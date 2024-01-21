@@ -3,6 +3,7 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { HTMLGridContainer } from './HTMLGrid/HTMLGridContainer';
+import { ImageCells } from './HTMLGrid/imageCells/ImageCells'; // TODO(jrice): Copy HTMLGridContainer pattern instead
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
 import { pixiApp } from './pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from './pixiApp/PixiAppSettings';
@@ -112,6 +113,7 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
+      <ImageCells />
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
     </div>
   );
