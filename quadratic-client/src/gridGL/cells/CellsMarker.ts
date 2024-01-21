@@ -87,7 +87,10 @@ export class CellsMarkers extends Container {
   }
 
   intersectsCodeError(point: Point): { x: number; y: number; type: JsRenderCodeCellState } | undefined {
-    const marker = this.markers.find((marker) => marker.bounds.contains(point.x, point.y));
+    const marker = this.markers.find(
+      (marker) =>
+        marker.bounds.contains(point.x, point.y) && (marker.type === 'SpillError' || marker.type === 'RunError')
+    );
     if (marker?.codeCell) {
       return { x: marker.codeCell.x, y: marker.codeCell.y, type: marker.type };
     }
