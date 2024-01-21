@@ -6,7 +6,7 @@ use crate::{
         code_run,
         js_types::{
             JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-            JsRenderCodeCellState, JsRenderFill,
+            JsRenderCodeCellState, JsRenderFill, JsImageOutput
         },
         CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
     },
@@ -47,6 +47,19 @@ impl Sheet {
                 italic: None,
                 text_color: None,
                 special: Some(JsRenderCellSpecial::Chart),
+            };
+        } else if let CellValue::Image(_) = value {
+            return JsRenderCell {
+                x,
+                y,
+                value: "".to_string(),
+                language,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Image),
             };
         } else if let CellValue::Error(error) = value {
             let spill_error = matches!(error.msg, RunErrorMsg::Spill);
@@ -272,6 +285,24 @@ impl Sheet {
             .collect()
     }
 
+    pub fn get_image_output(&self) -> Vec<JsImageOutput> {
+        self.code_runs
+            .iter()
+            .filter_map(|(pos, run)| {
+                let output = run.cell_value_at(0, 0)?;
+                if !output.is_image() {
+                    return None;
+                }
+                Some(JsImageOutput {
+                    sheet_id: self.id.to_string(),
+                    x: pos.x,
+                    y: pos.y,
+                    image: output.into_bytes(),
+                })
+            })
+            .collect()
+    }
+
     /// Returns all data for rendering cell fill color.
     pub fn get_all_render_fills(&self) -> Vec<JsRenderFill> {
         let mut ret = vec![];
@@ -375,7 +406,7 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial},
+            js_types::{JsHtmlOutput, JsImageOutput, JsRenderCell, JsRenderCellSpecial},
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
@@ -450,6 +481,7 @@ mod tests {
                 msg: RunErrorMsg::Spill,
             })),
         );
+        let _ = sheet.set_cell_value(Pos { x: 2, y: 7 }, CellValue::Image(vec![0x42, 0xAB]));
         let _ = sheet.set_cell_value(
             Pos { x: 3, y: 3 },
             CellValue::Error(Box::new(RunError {
@@ -462,7 +494,7 @@ mod tests {
             min: Pos { x: 0, y: 0 },
             max: Pos { x: 10, y: 10 },
         });
-        assert_eq!(render.len(), 6);
+        assert_eq!(render.len(), 7);
 
         let get = |x: i64, y: i64| -> Option<&JsRenderCell> {
             render.iter().find(|r| r.x == x && r.y == y)
@@ -546,6 +578,21 @@ mod tests {
             },
         );
         assert_eq!(
+            *get(2, 7).unwrap(),
+            JsRenderCell {
+                x: 2,
+                y: 7,
+                value: "".to_string(),
+                language: None,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Image),
+            },
+        );
+        assert_eq!(
             *get(3, 3).unwrap(),
             JsRenderCell {
                 x: 3,
@@ -584,6 +631,7 @@ mod tests {
             None,
             None,
             Some(vec!["<html></html>".into(), "text".into()]),
+            None,
             None,
             None,
             None,
@@ -629,6 +677,53 @@ mod tests {
                 html: "<html></html>".to_string(),
                 w: Some("1".into()),
                 h: Some("2".into()),
+            }
+        );
+    }
+
+
+    #[test]
+    fn test_get_image_output() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let image_contents = vec![0x01, 0x02, 0x1F, 0x1E];
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            r#"b'\x01\x02\x1F\x1E"#.to_string(),
+            None,
+        );
+        let transaction_id = gc.async_transactions()[0].id;
+        gc.calculation_complete(JsCodeResult::new(
+            transaction_id.to_string(),
+            true,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(image_contents.clone()),
+            None,
+            None,
+            None,
+        ))
+            .ok();
+        let sheet = gc.sheet(sheet_id);
+        let render_cells = sheet.get_image_output();
+        assert_eq!(render_cells.len(), 1);
+        assert_eq!(
+            render_cells[0],
+            JsImageOutput {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 2,
+                image: image_contents.clone(),
             }
         );
     }

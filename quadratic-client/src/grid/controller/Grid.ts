@@ -1,4 +1,5 @@
 import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { imageCellsHandler } from '@/gridGL/HTMLGrid/imageCells/ImageCellsHandler';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
@@ -30,6 +31,7 @@ import {
   JsClipboard,
   JsCodeCell,
   JsHtmlOutput,
+  JsImageOutput,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -111,6 +113,7 @@ export class Grid {
       sheets.updateOffsets(summary.offsets_modified);
       pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
       htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
+      imageCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
     }
@@ -130,6 +133,10 @@ export class Grid {
 
     if (summary.html) {
       window.dispatchEvent(new CustomEvent('html-update', { detail: summary.html }));
+    }
+
+    if (summary.image) {
+      window.dispatchEvent(new CustomEvent('image-update', { detail: summary.image }));
     }
 
     const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
@@ -484,6 +491,11 @@ export class Grid {
 
   getHtmlOutput(sheetId: string): JsHtmlOutput[] {
     const data = this.gridController.getHtmlOutput(sheetId);
+    return JSON.parse(data);
+  }
+
+  getImageOutput(sheetId: string): JsImageOutput[] {
+    const data = this.gridController.getImageOutput(sheetId);
     return JSON.parse(data);
   }
 

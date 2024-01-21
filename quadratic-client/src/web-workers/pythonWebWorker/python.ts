@@ -88,6 +88,7 @@ class PythonWebWorker {
             pythonResult.std_out,
             pythonResult.output,
             JSON.stringify(pythonResult.array_output),
+            pythonResult.bytes_output,
             pythonResult.lineno,
             outputType,
             pythonResult.cancel_compute
@@ -221,6 +222,7 @@ class PythonWebWorker {
       false,
       undefined,
       'Python execution cancelled by user',
+      undefined,
       undefined,
       undefined,
       undefined,

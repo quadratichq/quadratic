@@ -43,6 +43,9 @@ impl GridController {
             if new_code_run.is_html() {
                 transaction.summary.html.insert(sheet_id);
             }
+            if new_code_run.is_image() {
+                transaction.summary.image.insert(sheet_id);
+            }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
 
             // keep the orderings of the code runs consistent, particularly when undoing/redoing
@@ -60,6 +63,9 @@ impl GridController {
         if let Some(old_code_run) = &old_code_run {
             if old_code_run.is_html() {
                 transaction.summary.html.insert(sheet_id);
+            }
+            if old_code_run.is_image() {
+                transaction.summary.image.insert(sheet_id);
             }
         }
 
@@ -274,6 +280,9 @@ impl GridController {
                 } else {
                     Value::Single("".into())
                 }
+            } else if let Some(bytes_output) = js_code_result.bytes_output() {
+                // TODO(jrice): Parse and tag the output here with the proper image type
+                Value::Single(CellValue::Image(bytes_output))
             } else if let Some(output_value) = js_code_result.output_value() {
                 let (cell_value, ops) =
                     CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)

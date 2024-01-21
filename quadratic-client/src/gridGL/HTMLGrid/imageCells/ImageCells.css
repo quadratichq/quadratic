@@ -1,0 +1,12 @@
+.image-cells {
+    position: relative;
+    left: 0;
+    pointer-events: none;
+}
+
+.image-cell {
+    background: white;
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: none;
+}

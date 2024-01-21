@@ -158,6 +158,7 @@ class TestErrorMessaging(TestCase):
         assert run_python.error_result(err, code, cells_accessed, sout, line_number) == {
             "output_value": None,
             "array_output": None,
+            "bytes_output": None,
             "cells_accessed": cells_accessed,
             "std_out": sout.getvalue.return_value,
             "success": False,

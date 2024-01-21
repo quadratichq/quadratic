@@ -21,6 +21,7 @@ impl GridController {
             self.grid.add_sheet(Some(sheet.clone()));
             transaction.summary.sheet_list_modified = true;
             transaction.summary.html.insert(sheet_id);
+            transaction.summary.image.insert(sheet_id);
             transaction
                 .forward_operations
                 .push(Operation::AddSheet { sheet });

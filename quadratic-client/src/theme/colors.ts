@@ -20,6 +20,8 @@ export const colors = {
   boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
   htmlPlaceholderThumbnailColor: 0xeeeeee,
   htmlPlaceholderThumbnailBorderColor: 0,
+  imagePlaceholderThumbnailColor: 0xeeeeee,
+  imagePlaceholderThumbnailBorderColor: 0,
   boxCellsColor: 0x6cd4ff,
   boxCellsAlpha: 0.333,
   gridHeadingLabel: 0x233143, // same as gridLines, no alpha

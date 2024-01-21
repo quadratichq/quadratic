@@ -13,6 +13,7 @@ pub struct JsCodeResult {
     input_python_std_out: Option<String>,
     output_value: Option<Vec<String>>,
     array_output: Option<Vec<Vec<Vec<String>>>>,
+    bytes_output: Option<Vec<u8>>,
     line_number: Option<u32>,
     output_type: Option<String>,
     pub cancel_compute: Option<bool>,
@@ -30,6 +31,9 @@ impl JsCodeResult {
     }
     pub fn array_output(&self) -> Option<Vec<Vec<Vec<String>>>> {
         self.array_output.clone()
+    }
+    pub fn bytes_output(&self) -> Option<Vec<u8>> {
+        self.bytes_output.clone()
     }
     pub fn error_msg(&self) -> Option<String> {
         self.error_msg.clone()
@@ -57,6 +61,7 @@ impl JsCodeResult {
         input_python_std_out: Option<String>,
         output_value: Option<Vec<String>>,
         array_output: Option<Vec<Vec<Vec<String>>>>,
+        bytes_output: Option<Vec<u8>>,
         line_number: Option<u32>,
         output_type: Option<String>,
         cancel_compute: Option<bool>,
@@ -69,6 +74,7 @@ impl JsCodeResult {
             input_python_std_out,
             output_value,
             array_output,
+            bytes_output,
             line_number,
             output_type,
             cancel_compute,
@@ -88,6 +94,7 @@ impl JsCodeResult {
         input_python_std_out: Option<String>,
         output_value: Option<Vec<String>>,
         array_output: Option<String>,
+        bytes_output: Option<Vec<u8>>,
         line_number: Option<u32>,
         output_type: Option<String>,
         cancel_compute: Option<bool>,
@@ -115,6 +122,7 @@ impl JsCodeResult {
             input_python_std_out,
             output_value,
             array_output,
+            bytes_output,
             line_number,
             output_type,
             cancel_compute: cancel_compute.or(Some(false)),

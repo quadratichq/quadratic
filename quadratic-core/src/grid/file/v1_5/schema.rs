@@ -158,6 +158,7 @@ pub enum CellValue {
     Text(String),
     Number(String),
     Html(String),
+    Image(Vec<u8>),
     Code(CodeCell),
     Logical(bool),
     Instant(String),
