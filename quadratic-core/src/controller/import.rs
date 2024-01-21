@@ -108,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn should_import_with_invalid_utf8_character() {
+    fn should_import_utf16_with_invalid_characters() {
         let scv_file = read_test_csv_file("encoding_issue.csv");
 
         let mut gc = GridController::new();
@@ -118,7 +118,7 @@ mod tests {
         gc.import_csv(sheet_id, scv_file.as_slice(), "test.csv", pos, None)
             .expect("import_csv");
 
-        print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 4 }));
+        print_table(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
 
         assert_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["issue", "test", "value"]);
         assert_cell_value_row(&gc, sheet_id, 0, 2, 1, vec!["0", "1", "Invalid"]);
