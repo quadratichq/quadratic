@@ -4,6 +4,7 @@ import { ClipboardEvent, useCallback, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
+import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { getCursorLocation, isCursorAtEnd, isCursorAtStart } from '../interaction/contentEditableHelper';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -93,30 +94,35 @@ export const CellInput = () => {
   const transform = `translate(${cellOffsets.x + CURSOR_THICKNESS}px, ${cellOffsets.y + CURSOR_THICKNESS}px)`;
 
   // need this variable to cancel second closeInput call from blur after pressing Escape (this happens before the state can update)
-  // let closed = false;
+  let closed = false;
 
   // When done editing with the input
   const closeInput = async (transpose = { x: 0, y: 0 } as Coordinate, cancel = false) => {
-    // if (closed || !textInput) return;
-    // closed = true;
-    // const value = textInput.innerText;
-    // if (!cancel && (value.trim() || cell)) {
-    //   sheet.setCellValue(cellLocation.x, cellLocation.y, value);
-    //   setTemporaryBold(undefined);
-    //   setTemporaryItalic(undefined);
-    //   textInput.innerText = '';
-    // }
-    // // Update Grid Interaction state, reset input value state
-    // const position = sheet.cursor.cursorPosition;
-    // sheet.cursor.changePosition({
-    //   cursorPosition: {
-    //     x: position.x + transpose.x,
-    //     y: position.y + transpose.y,
-    //   },
-    // });
-    // pixiAppSettings.changeInput(false);
-    // // Set focus back to Grid
-    // focusGrid();
+    if (closed || !textInput) return;
+    closed = true;
+
+    const value = textInput.innerText;
+
+    if (!cancel && (value.trim() || cell)) {
+      sheet.setCellValue(cellLocation.x, cellLocation.y, value);
+      setTemporaryBold(undefined);
+      setTemporaryItalic(undefined);
+      textInput.innerText = '';
+    }
+
+    // Update Grid Interaction state, reset input value state
+    const position = sheet.cursor.cursorPosition;
+    sheet.cursor.changePosition({
+      cursorPosition: {
+        x: position.x + transpose.x,
+        y: position.y + transpose.y,
+      },
+    });
+
+    pixiAppSettings.changeInput(false);
+
+    // Set focus back to Grid
+    focusGrid();
   };
 
   const handlePaste = (event: ClipboardEvent) => {
