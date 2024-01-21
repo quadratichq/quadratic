@@ -1,35 +1,35 @@
-.code-info-container {
+.hover-cell-container {
   position: 'relative';
   opacity: 0;
 }
 
-.code-info-header {
+.hover-cell-header {
   margin-bottom: 0.5rem;
 }
 
-.code-info-header-space {
+.hover-cell-header-space {
   margin: 0.5rem 0;
 }
 
-.code-info-body {
+.hover-cell-body {
   font-size: 0.75rem;
 }
 
-.code-info-body > div:first-child {
+.hover-cell-body > div:first-child {
   margin-bottom: 0.5rem;
 }
 
-.code-info-fade-in {
+.hover-cell-fade-in {
   opacity: 1;
   transition: opacity 150ms linear 1s;
 }
 
-.code-info-fade-in-no-delay {
+.hover-cell-fade-in-no-delay {
   opacity: 1;
   transition: opacity 150ms linear;
 }
 
-.code-info-fade-out {
+.hover-cell-fade-out {
   opacity: 0;
   transition: opacity 150ms linear;
 }

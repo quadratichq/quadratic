@@ -1,3 +1,4 @@
+import { sheets } from '@/grid/controller/Sheets';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { Point } from 'pixi.js';
@@ -8,11 +9,19 @@ export class PointerCursor {
 
   private checkCodeInfo(world: Point) {
     if (!pixiApp.cellsSheets.current) throw new Error('Expected cellsSheets.current to be defined in PointerCursor');
+    const cell = sheets.sheet.getColumnRow(world.x, world.y);
+    const editingCell = multiplayer.cellIsBeingEdited(cell.x, cell.y, sheets.sheet.id);
     const codeCell = pixiApp.cellsSheets.current.cellsMarkers.intersectsCodeInfo(world);
-    if (codeCell) {
+    if (editingCell) {
+      window.dispatchEvent(
+        new CustomEvent('hover-cell', {
+          detail: { x: cell.x, y: cell.y, user: editingCell.user, codeEditor: editingCell.codeEditor },
+        })
+      );
+    } else if (codeCell) {
       if (this.lastCodeInfo?.x !== codeCell.x || this.lastCodeInfo?.y !== codeCell.y) {
         window.dispatchEvent(
-          new CustomEvent('overlap-code-info', {
+          new CustomEvent('hover-cell', {
             detail: codeCell,
           })
         );
@@ -20,7 +29,7 @@ export class PointerCursor {
       }
     } else {
       if (this.lastCodeInfo) {
-        window.dispatchEvent(new CustomEvent('overlap-code-info'));
+        window.dispatchEvent(new CustomEvent('hover-cell'));
         this.lastCodeInfo = undefined;
       }
     }

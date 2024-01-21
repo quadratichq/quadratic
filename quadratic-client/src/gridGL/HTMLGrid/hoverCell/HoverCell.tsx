@@ -4,37 +4,44 @@ import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { cn } from '@/shadcn/utils';
 import { colors } from '@/theme/colors';
 import { useEffect, useRef, useState } from 'react';
-import './CodeInfo.css';
+import './HoverCell.css';
 
-export const CodeInfo = () => {
-  const [codeCell, setCodeCell] = useState<JsRenderCodeCell | undefined>();
+export interface EditingCell {
+  x: number;
+  y: number;
+  user: string;
+  codeEditor: boolean;
+}
+
+export const HoverCell = () => {
+  const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | undefined>();
   const ref = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const addError = (e: any /* { detail: CodeCell } */) => {
+    const addCell = (e: any /* { detail: JsRenderCodeCell | EditingCell | undefined } */) => {
       const div = ref.current;
       if (!div) return;
       if (!e.detail) {
-        if (!div.classList.contains('code-info-fade-out')) {
-          div.classList.add('code-info-fade-out');
-          div.classList.remove('code-info-fade-in');
-          div.classList.remove('code-info-fade-in-no-delay');
+        if (!div.classList.contains('hover-cell-fade-out')) {
+          div.classList.add('hover-cell-fade-out');
+          div.classList.remove('hover-cell-fade-in');
+          div.classList.remove('hover-cell-fade-in-no-delay');
         }
       } else {
-        if (!div.classList.contains('code-info-fade-in') && !div.classList.contains('code-info-fade-in-no-delay')) {
+        if (!div.classList.contains('hover-cell-fade-in') && !div.classList.contains('hover-cell-fade-in-no-delay')) {
           if (window.getComputedStyle(div).getPropertyValue('opacity') !== '0') {
-            div.classList.add('code-info-fade-in-no-delay');
+            div.classList.add('hover-cell-fade-in-no-delay');
           } else {
-            div.classList.add('code-info-fade-in');
+            div.classList.add('hover-cell-fade-in');
           }
-          div.classList.remove('code-info-fade-out');
+          div.classList.remove('hover-cell-fade-out');
         }
-        setCodeCell(e.detail);
+        setCell(e.detail);
       }
     };
-    window.addEventListener('overlap-code-info', addError);
-    return () => window.removeEventListener('overlap-code-info', addError);
+    window.addEventListener('hover-cell', addCell);
+    return () => window.removeEventListener('hover-cell', addCell);
   }, []);
 
   useEffect(() => {
@@ -50,13 +57,15 @@ export const CodeInfo = () => {
   }, []);
 
   let text: JSX.Element | undefined;
-  const code = codeCell ? sheets.sheet.getCodeCell(Number(codeCell.x), Number(codeCell.y)) : undefined;
-  const spillError = codeCell ? codeCell.spill_error : undefined;
+  const code = cell ? sheets.sheet.getCodeCell(Number(cell.x), Number(cell.y)) : undefined;
+  const renderCodeCell = cell as JsRenderCodeCell | undefined;
+  const editingCell = cell as EditingCell | undefined;
+  const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;
   if (spillError) {
     text = (
       <>
-        <div className="code-info-header">Spill Error</div>
-        <div className="code-info-body">
+        <div className="hover-cell-header">Spill Error</div>
+        <div className="hover-cell-body">
           <div>Array output could not expand because it would overwrite existing values.</div>
           <div>
             To fix this, remove content in cell{spillError.length > 1 ? 's' : ''}{' '}
@@ -70,36 +79,45 @@ export const CodeInfo = () => {
         </div>
       </>
     );
-  } else if (codeCell?.state === 'RunError') {
+  } else if (renderCodeCell?.state === 'RunError') {
     if (code) {
       text = (
         <>
-          <div className="code-info-header">Run Error</div>
-          <div className="code-info-body">
+          <div className="hover-cell-header">Run Error</div>
+          <div className="hover-cell-body">
             <div>There was an error running the code in this cell.</div>
             <div style={{ color: colors.error }}>{code.std_err}</div>
           </div>
-          <div className="code-info-header-space">{codeCell.language} Code</div>
+          <div className="hover-cell-header-space">{renderCodeCell.language} Code</div>
           <div className="code-body">{code?.code_string}</div>
         </>
       );
     }
-  } else if (codeCell) {
+  } else if (renderCodeCell?.state) {
     text = (
       <>
-        <div className="code-info-header">{codeCell.language} Code</div>
+        <div className="hover-cell-header">{renderCodeCell?.language} Code</div>
         <div className="code-body">{code?.code_string}</div>
+      </>
+    );
+  } else if (editingCell?.user) {
+    text = (
+      <>
+        <div className="hover-cell-header">Multiplayer Edit</div>
+        <div className="hover-cell-body">
+          {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
+        </div>
       </>
     );
   }
 
   useEffect(() => {
     const updatePosition = () => {
-      if (!codeCell) return;
+      if (!cell) return;
       const div = ref.current;
       const textDiv = textRef.current;
       if (!div || !textDiv) return;
-      const offsets = sheets.sheet.getCellOffsets(codeCell.x, codeCell.y);
+      const offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
       const viewport = pixiApp.viewport;
       const bounds = viewport.getVisibleBounds();
       let transformOrigin: string;
@@ -131,15 +149,15 @@ export const CodeInfo = () => {
     };
     updatePosition();
     pixiApp.viewport.on('moved', updatePosition);
-  }, [codeCell]);
+  }, [cell]);
 
   return (
     <div
       ref={ref}
-      className="code-info-container"
+      className="hover-cell-container"
       style={{
         position: 'absolute',
-        visibility: codeCell ? 'visible' : 'hidden',
+        visibility: cell ? 'visible' : 'hidden',
         pointerEvents: 'none',
       }}
     >
