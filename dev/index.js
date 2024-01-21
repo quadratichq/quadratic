@@ -25,7 +25,8 @@ program
   .option(
     "-p, --perf",
     "Run quadratic-core in perf mode (slower linking but faster runtime)"
-  );
+  )
+  .showHelpAfterError();
 
 program.parse();
 const options = program.opts();
