@@ -30,6 +30,7 @@
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings"
   },
   "devDependencies": {
-    "concurrently": "^6.5.1"
+    "concurrently": "^6.5.1",
+    "jest": "^29.7.0"
   }
 }

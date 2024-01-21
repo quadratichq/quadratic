@@ -10,11 +10,23 @@ If you have any problems getting the project to run locally, please create an is
 
 ## Setup
 
-1. Install NPM
+1. Install NPM (>=18.0.0)
 2. Install [rustup](https://www.rust-lang.org/tools/install)
 3. Install [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 4. `rustup target add wasm32-unknown-unknown` to install the WASM toolchain
 5. Install cargo watch `cargo install cargo-watch`
+6. Install Docker (optional)
+
+## Repository structure
+- `quadratic-api` - nodejs (express) application server
+- `quadratic-client` - web (react) client
+- `quadratic-core` - rust (wasm) spreadsheet liblary
+- `tests-e2e` - playwright e2e tests
+- `tests-python` - python tests
+
+## Third-party systems
+- Amazon S3
+- Auth0 - Single Page Application (SPA)
 
 ## Run Quadratic
 
@@ -26,8 +38,12 @@ In order to run the front-end and/or the server locally, you must have all the e
 
 1. `cd quadratic-client`
 2. `npm i` to install dependencies
-3. Configure `.env.local` values
-4. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
+3. Configure `.env.local` values (auth0, quadratic-api-url)
+4. Build quadratic-core `npm run build:wasm`
+5. Start application options:
+   - `npm start` to run in browser or `npm run dev` to run with Electron;
+   - `npm run watch:front-end` to run in browser with automatic wasm rebuilding
+   - `npx vite` start Vite dev server
 
 #### Note:
 To rebuild the rust types after `npm start`, you need to either manually call `npm run build:wasm:types`, or restart the `npm start" script.
@@ -45,6 +61,7 @@ To rebuild the rust types after `npm start`, you need to either manually call `n
          - `# CREATE DATABASE "quadratic-api" WITH OWNER = username;`
          - `# GRANT ALL PRIVILEGES ON DATABASE "quadratic-api" TO username;`
          - `# ALTER ROLE username CREATEDB;`
+   3. Run in Docker `docker compose up`
 4. Create two environment files `.env.local` & `quadratic-api/.env.local`.
 
    - Note: Linux users may need to call it `quadratic-api/.env` instead.
@@ -67,6 +84,18 @@ To rebuild the rust types after `npm start`, you need to either manually call `n
 
 1. `cd quadratic-core`
 2. `cargo test --workspace`
+
+### Auth0 - Dev Tenant Setup (Optional)
+Single Page Application - Settings
+
+       Allowed Callback URLs - http://localhost:3000/login-result
+       Allowed Logout URLs - http://localhost:3000/
+       Allowed Web Origins - http://localhost:3000, http://localhost:8000
+
+Advanced Settings > Grant Types: `Authorization Code`, `Refresh Token`
+
+__Warning__
+> For `quadratic-api` use default `Auth0 Account Management API Management Client` credentials (Client ID and Client Secret).
 
 ## Feature requests and bugs
 

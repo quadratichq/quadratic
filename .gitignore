@@ -36,6 +36,7 @@ venv/*
 # Generated Rust files
 quadratic-core/target/
 quadratic-core/tmp.txt
+quadratic-client/src/quadratic-core
 
 # Generated JS files
 quadratic-api/node_modules/
