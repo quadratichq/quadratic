@@ -196,6 +196,7 @@ pub struct JsCodeCell {
     pub std_out: Option<String>,
     pub std_err: Option<String>,
     pub evaluation_result: Option<String>,
+    pub spill_error: Option<Vec<Pos>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

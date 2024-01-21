@@ -99,6 +99,14 @@ impl Sheet {
                 if let Some(code_run) = self.code_run(code_pos) {
                     let evaluation_result =
                         serde_json::to_string(&code_run.result).unwrap_or("".to_string());
+                    let spill_error = if code_run.spill_error {
+                        Some(self.find_spill_error_reasons(
+                            &code_run.output_rect(code_pos, true),
+                            code_pos,
+                        ))
+                    } else {
+                        None
+                    };
                     Some(JsCodeCell {
                         x: code_pos.x,
                         y: code_pos.y,
@@ -107,6 +115,7 @@ impl Sheet {
                         std_err: code_run.std_err.clone(),
                         std_out: code_run.std_out.clone(),
                         evaluation_result: Some(evaluation_result),
+                        spill_error,
                     })
                 } else {
                     Some(JsCodeCell {
@@ -117,6 +126,7 @@ impl Sheet {
                         std_err: None,
                         std_out: None,
                         evaluation_result: None,
+                        spill_error: None,
                     })
                 }
             }
@@ -244,6 +254,7 @@ mod test {
                 std_err: None,
                 std_out: None,
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
+                spill_error: None,
             })
         );
         assert_eq!(
@@ -256,6 +267,58 @@ mod test {
                 std_err: None,
                 std_out: None,
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
+                spill_error: None,
+            })
+        );
+        assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
+    }
+
+    #[test]
+    fn test_edit_code_value_spill() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(
+            Pos { x: 0, y: 0 },
+            CellValue::Code(CodeCellValue {
+                code: "=".to_string(),
+                language: CodeCellLanguage::Formula,
+            }),
+        );
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3"]]))),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        assert_eq!(
+            sheet.edit_code_value(Pos { x: 0, y: 0 }),
+            Some(JsCodeCell {
+                x: 0,
+                y: 0,
+                code_string: "=".to_string(),
+                language: CodeCellLanguage::Formula,
+                std_err: None,
+                std_out: None,
+                evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
+                spill_error: None,
+            })
+        );
+        assert_eq!(
+            sheet.edit_code_value(Pos { x: 1, y: 0 }),
+            Some(JsCodeCell {
+                x: 0,
+                y: 0,
+                code_string: "=".to_string(),
+                language: CodeCellLanguage::Formula,
+                std_err: None,
+                std_out: None,
+                evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
+                spill_error: None,
             })
         );
         assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);

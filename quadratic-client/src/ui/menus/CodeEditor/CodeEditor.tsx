@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
+import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,8 +25,11 @@ export const CodeEditor = () => {
   // update code cell
   const [codeString, setCodeString] = useState('');
 
+  // code info
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
+  const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
+
   const [editorWidth, setEditorWidth] = useState<number>(
     window.innerWidth * 0.35 // default to 35% of the window width
   );
@@ -90,6 +94,7 @@ export const CodeEditor = () => {
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
         if (updateEditorContent) setEditorContent(codeCell.code_string);
         setEvaluationResult(codeCell.evaluation_result);
+        setSpillError(codeCell.spill_error?.map((c) => ({ x: Number(c.x), y: Number(c.y) })));
       } else {
         setCodeString('');
         if (updateEditorContent) setEditorContent('');
@@ -290,6 +295,7 @@ export const CodeEditor = () => {
             editorMode={editorMode}
             editorContent={editorContent}
             evaluationResult={evaluationResult}
+            spillError={spillError}
           />
         )}
       </div>

@@ -51,13 +51,22 @@ export const CodeInfo = () => {
 
   let text: JSX.Element | undefined;
   const code = codeCell ? sheets.sheet.getCodeCell(Number(codeCell.x), Number(codeCell.y)) : undefined;
-  if (codeCell?.state === 'SpillError') {
+  const spillError = codeCell ? codeCell.spill_error : undefined;
+  if (spillError) {
     text = (
       <>
         <div className="code-info-header">Spill Error</div>
         <div className="code-info-body">
           <div>Array output could not expand because it would overwrite existing values.</div>
-          <div>Select the cell and remove the red highlighted values to expand it.</div>
+          <div>
+            To fix this, remove content in cell{spillError.length > 1 ? 's' : ''}{' '}
+            {spillError.map(
+              (pos, index) =>
+                `(${pos.x}, ${pos.y})${
+                  index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'
+                }`
+            )}
+          </div>
         </div>
       </>
     );
