@@ -55,7 +55,7 @@ export const debugShowCellHashesInfo = debug && false;
 // Misc.
 // --------
 
-export const debugShowFileIO = debug && true;
+export const debugShowFileIO = debug && false;
 
 export const debugGridSettings = debug && false;
 

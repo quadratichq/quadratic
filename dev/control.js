@@ -113,6 +113,10 @@ export class Control {
             start: "> quadratic-client@",
         }));
     }
+    togglePerf() {
+        this.cli.options.perf = !this.cli.options.perf;
+        this.restartCore();
+    }
     runCore() {
         this.ui.run("core");
         return new Promise((resolve) => {

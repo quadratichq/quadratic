@@ -19,10 +19,10 @@ interface CharRenderData {
 }
 
 // magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
-const OPEN_SANS_FIX = { x: 1.8, y: -1 };
-const SPILL_ERROR_TEXT = ' #SPILL';
-const RUN_ERROR_TEXT = ' #ERROR';
-const CHART_TEXT = ' CHART';
+const OPEN_SANS_FIX = { x: 5, y: -1 };
+const SPILL_ERROR_TEXT = '#SPILL';
+const RUN_ERROR_TEXT = '#ERROR';
+const CHART_TEXT = 'CHART';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 

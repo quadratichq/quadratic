@@ -6,6 +6,7 @@ import { offline } from '@/grid/controller/offline';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { SheetPos } from '@/gridGL/types/size';
+import { displayName } from '@/utils/userUtil';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
@@ -26,7 +27,7 @@ import {
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
-const HEARTBEAT_TIME = 1000 * 15;
+const HEARTBEAT_TIME = 1000 * 10;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 
 export type MultiplayerState =
@@ -40,6 +41,7 @@ export type MultiplayerState =
 export class Multiplayer {
   private websocket?: WebSocket;
   private _state: MultiplayerState = 'startup';
+  private updateId?: number;
   private sessionId;
   private room?: string;
   private user?: User;
@@ -116,6 +118,10 @@ export class Multiplayer {
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
         window.addEventListener('change-sheet', this.sendChangeSheet);
+
+        if (!this.updateId) {
+          this.updateId = window.setInterval(multiplayer.update, UPDATE_TIME);
+        }
       });
     });
   }
@@ -176,10 +182,9 @@ export class Multiplayer {
   }
 
   // called by Update.ts
-  async update() {
+  private update = () => {
     if (this.state !== 'connected') return;
     const now = performance.now();
-    if (now - this.lastTime < UPDATE_TIME) return;
 
     if (Object.keys(this.userUpdate.update).length > 0) {
       this.websocket!.send(JSON.stringify(this.userUpdate));
@@ -199,7 +204,7 @@ export class Multiplayer {
       this.websocket!.send(JSON.stringify(heartbeat));
       this.lastHeartbeat = now;
     }
-  }
+  };
 
   // used to pre-populate useMultiplayerUsers.tsx
   getUsers(): MultiplayerUser[] {
@@ -207,15 +212,15 @@ export class Multiplayer {
   }
 
   // whether a multiplayer user is already editing a cell
-  cellIsBeingEdited(x: number, y: number, sheetId: string): boolean {
+  cellIsBeingEdited(x: number, y: number, sheetId: string): { codeEditor: boolean; user: string } | undefined {
     for (const player of this.users.values()) {
       if (player.sheet_id === sheetId && player.cell_edit.active && player.parsedSelection) {
         if (player.parsedSelection.cursor.x === x && player.parsedSelection.cursor.y === y) {
-          return true;
+          const user = displayName(player, false);
+          return { codeEditor: player.cell_edit.code_editor, user };
         }
       }
     }
-    return false;
   }
 
   //#region send messages
@@ -420,26 +425,28 @@ export class Multiplayer {
 
     if (update.cell_edit) {
       player.cell_edit = update.cell_edit;
-      if (player.parsedSelection) {
-        // hide the label if the player is editing the cell
-        pixiApp.cellsSheets.showLabel(
-          player.parsedSelection.cursor.x,
-          player.parsedSelection.cursor.y,
-          player.sheet_id,
-          !player.cell_edit.active
+      if (!update.cell_edit.code_editor) {
+        if (player.parsedSelection) {
+          // hide the label if the player is editing the cell
+          pixiApp.cellsSheets.showLabel(
+            player.parsedSelection.cursor.x,
+            player.parsedSelection.cursor.y,
+            player.sheet_id,
+            !player.cell_edit.active
+          );
+        }
+        window.dispatchEvent(
+          new CustomEvent('multiplayer-cell-edit', {
+            detail: {
+              ...update.cell_edit,
+              playerColor: player.color,
+              sessionId: data.session_id,
+              sheetId: player.sheet_id,
+              cell: player.parsedSelection?.cursor,
+            },
+          })
         );
       }
-      window.dispatchEvent(
-        new CustomEvent('multiplayer-cell-edit', {
-          detail: {
-            ...update.cell_edit,
-            playerColor: player.color,
-            sessionId: data.session_id,
-            sheetId: player.sheet_id,
-            cell: player.parsedSelection?.cursor,
-          },
-        })
-      );
       pixiApp.multiplayerCursor.dirty = true;
     }
 
