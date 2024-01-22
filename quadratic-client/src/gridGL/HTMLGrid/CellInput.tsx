@@ -229,7 +229,7 @@ export const CellInput = () => {
             waitingForEditorClose: {
               selectedCell: { x: cellLocation.x, y: cellLocation.y },
               selectedCellSheet: sheets.sheet.id,
-              mode: 'PYTHON',
+              mode: 'Python',
               showCellTypeMenu: true,
             },
           });

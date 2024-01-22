@@ -4,6 +4,7 @@ import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { doubleClickCell } from '../pointer/doubleClickCell';
 import { isAllowedFirstChar } from './keyboardCellChars';
 
 function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: SheetCursor): boolean {
@@ -61,33 +62,14 @@ export function keyboardCell(options: {
   }
 
   if (event.key === 'Enter') {
-    const x = cursorPosition.x;
-    const y = cursorPosition.y;
-    const cell = sheet.getRenderCell(x, y);
-    if (cell) {
-      if (cell.language) {
-        const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
-        if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
-        // Open code editor, or move code editor if already open.
-        setEditorInteractionState({
-          ...editorInteractionState,
-          showCellTypeMenu: false,
-          showCodeEditor: true,
-          selectedCell: { x: x, y: y },
-          selectedCellSheet: sheets.sheet.id,
-          mode,
-        });
-      } else {
-        if (hasPermission) {
-          // open single line
-          const edit = sheet.getEditCell(x, y);
-          pixiAppSettings.changeInput(true, edit);
-        }
-      }
+    const column = cursorPosition.x;
+    const row = cursorPosition.y;
+    const code = sheet.getCodeCell(column, row);
+    if (code) {
+      doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
     } else {
-      if (hasPermission) {
-        pixiAppSettings.changeInput(true);
-      }
+      const cell = sheet.getEditCell(column, row);
+      doubleClickCell({ column, row, cell });
     }
     event.preventDefault();
   }
@@ -117,32 +99,27 @@ export function keyboardCell(options: {
     const y = cursorPosition.y;
     const cell = sheet.getRenderCell(x, y);
     if (cell?.language) {
-      if (cell.language) {
-        const mode = cell.language === 'Python' ? 'PYTHON' : cell.language === 'Formula' ? 'FORMULA' : undefined;
-        if (!mode) throw new Error(`Unhandled cell.language ${cell.language} in keyboardCell`);
-
-        if (editorInteractionState.showCodeEditor) {
-          // Open code editor, or move change editor if already open.
-          setEditorInteractionState({
-            ...editorInteractionState,
-            showCellTypeMenu: false,
-            waitingForEditorClose: {
-              selectedCell: { x: x, y: y },
-              selectedCellSheet: sheets.sheet.id,
-              mode,
-              showCellTypeMenu: false,
-            },
-          });
-        } else {
-          setEditorInteractionState({
-            ...editorInteractionState,
-            showCellTypeMenu: false,
+      if (editorInteractionState.showCodeEditor) {
+        // Open code editor, or move change editor if already open.
+        setEditorInteractionState({
+          ...editorInteractionState,
+          showCellTypeMenu: false,
+          waitingForEditorClose: {
             selectedCell: { x: x, y: y },
             selectedCellSheet: sheets.sheet.id,
-            mode,
-            showCodeEditor: true,
-          });
-        }
+            mode: cell.language,
+            showCellTypeMenu: false,
+          },
+        });
+      } else {
+        setEditorInteractionState({
+          ...editorInteractionState,
+          showCellTypeMenu: false,
+          selectedCell: { x: x, y: y },
+          selectedCellSheet: sheets.sheet.id,
+          mode: cell.language,
+          showCodeEditor: true,
+        });
       }
     } else if (editorInteractionState.showCodeEditor) {
       // code editor is already open, so check it for save before closing
@@ -152,7 +129,7 @@ export function keyboardCell(options: {
           showCellTypeMenu: true,
           selectedCell: { x: x, y: y },
           selectedCellSheet: sheets.sheet.id,
-          mode: 'PYTHON',
+          mode: 'Python',
         },
       });
     } else {
@@ -162,13 +139,22 @@ export function keyboardCell(options: {
         showCellTypeMenu: true,
         selectedCell: { x: x, y: y },
         selectedCellSheet: sheets.sheet.id,
+        mode: undefined,
       });
     }
     event.preventDefault();
   }
 
-  if (isAllowedFirstChar(event.key) && !inCodeEditor(editorInteractionState, cursor)) {
-    pixiAppSettings.changeInput(true, event.key);
+  if (isAllowedFirstChar(event.key)) {
+    const cursorPosition = cursor.cursorPosition;
+    const code = sheet.getCodeCell(cursorPosition.x, cursorPosition.y);
+
+    // open code cell unless this is the actual code cell. In this case we can overwrite it
+    if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {
+      doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
+    } else {
+      pixiAppSettings.changeInput(true, event.key);
+    }
     event.preventDefault();
   }
 

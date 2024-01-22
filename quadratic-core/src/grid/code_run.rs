@@ -9,7 +9,6 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use strum_macros::{Display, EnumString};
-use wasm_bindgen::prelude::wasm_bindgen;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeRun {
@@ -71,8 +70,8 @@ impl CodeRun {
 
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
-    pub fn output_rect(&self, pos: Pos) -> Rect {
-        if self.spill_error {
+    pub fn output_rect(&self, pos: Pos, ignore_spill: bool) -> Rect {
+        if !ignore_spill && self.spill_error {
             Rect::from_pos_and_size(pos, ArraySize::_1X1)
         } else {
             Rect::from_pos_and_size(pos, self.output_size())
@@ -89,7 +88,6 @@ impl CodeRun {
 }
 
 #[derive(Serialize, Deserialize, Display, Debug, Copy, Clone, PartialEq, Eq, Hash, EnumString)]
-#[wasm_bindgen]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CodeCellLanguage {
     Python,

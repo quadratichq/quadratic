@@ -1,16 +1,21 @@
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
-import { CodeCellLanguage, JsRenderCodeCellState } from '../../quadratic-core/quadratic_core';
+import { JsRenderCodeCell, JsRenderCodeCellState } from '@/quadratic-core/types';
+import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { intersects } from '../helpers/intersects';
+import { Coordinate } from '../types/size';
 
-const triangleSize = 100;
-const triangleColor = 'red';
+const TRIANGLE_SIZE = 100;
+const TRIANGLE_COLOR = 'red';
+const INDICATOR_SIZE = 4;
 
 export type CellsMarkerTypes = 'CodeIcon' | 'FormulaIcon' | 'AIIcon' | 'ErrorIcon';
 
 interface Marker {
   sprite: Sprite;
+  bounds: Rectangle;
   rectangle: Rectangle;
+  codeCell: Coordinate;
+  type: JsRenderCodeCellState;
 }
 
 export class CellsMarkers extends Container {
@@ -18,19 +23,19 @@ export class CellsMarkers extends Container {
   private triangle: Texture;
 
   constructor() {
-    super(); //, { vertices: true, tint: true });
+    super();
     this.triangle = this.createTriangle();
   }
 
   private createTriangle(): Texture {
     const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = triangleSize;
+    canvas.width = canvas.height = TRIANGLE_SIZE;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Expected context to be defined in createTriangle');
-    context.fillStyle = triangleColor;
+    context.fillStyle = TRIANGLE_COLOR;
     context.moveTo(0, 0);
-    context.lineTo(triangleSize, 0);
-    context.lineTo(0, triangleSize);
+    context.lineTo(TRIANGLE_SIZE, 0);
+    context.lineTo(0, TRIANGLE_SIZE);
     context.closePath();
     context.fill();
     return Texture.from(canvas);
@@ -45,36 +50,50 @@ export class CellsMarkers extends Container {
     this.markers.forEach((marker) => (marker.sprite.visible = intersects.rectangleRectangle(bounds, marker.rectangle)));
   }
 
-  add(x: number, y: number, type: CodeCellLanguage | string, state?: JsRenderCodeCellState | string): void {
-    let error: Sprite | undefined;
-    if (
-      state === JsRenderCodeCellState.RunError ||
-      state === 'RunError' ||
-      state === JsRenderCodeCellState.SpillError ||
-      state === 'SpillError'
-    ) {
-      error = this.addChild(new Sprite(this.triangle));
+  addTriangle(box: Rectangle, codeCell: JsRenderCodeCell): Sprite | undefined {
+    if (codeCell.state === 'RunError' || codeCell.state === 'SpillError') {
+      const error = this.addChild(new Sprite(this.triangle));
       error.alpha = 0.5;
       error.scale.set(0.1);
-      error.position.set(x, y);
+      error.position.set(box.x, box.y);
+      return error;
     }
+  }
 
-    const child = this.addChild(new Sprite());
-    child.height = 4;
-    child.width = 4;
-    child.position.set(x + 1.25, y + 1.25);
-    if (type === CodeCellLanguage.Python || type === 'Python') {
-      child.texture = Texture.from('/images/python-icon.png');
-      child.tint = error ? 0xffffff : colors.cellColorUserPython;
-    } else if (type === CodeCellLanguage.Formula || type === 'Formula') {
-      child.texture = Texture.from('/images/formula-fx-icon.png');
-      child.tint = error ? 0xffffff : colors.cellColorUserFormula;
+  add(box: Rectangle, codeCell: JsRenderCodeCell, selected: boolean) {
+    const error = this.addTriangle(box, codeCell);
+
+    if (error || selected) {
+      const child = this.addChild(new Sprite());
+      child.height = INDICATOR_SIZE;
+      child.width = INDICATOR_SIZE;
+      child.position.set(box.x + 1.25, box.y + 1.25);
+      if (codeCell.language === 'Python') {
+        child.texture = Texture.from('/images/python-icon.png');
+        child.tint = error ? 0xffffff : colors.cellColorUserPython;
+      } else if (codeCell.language === 'Formula') {
+        child.texture = Texture.from('/images/formula-fx-icon.png');
+        child.tint = error ? 0xffffff : colors.cellColorUserFormula;
+      }
+
+      this.markers.push({
+        sprite: child,
+        bounds: new Rectangle(box.x, box.y, box.width, box.height),
+        rectangle: new Rectangle(child.x, child.y, 4, 4),
+        codeCell: { x: Number(codeCell.x), y: Number(codeCell.y) },
+        type: codeCell.state,
+      });
     }
+  }
 
-    this.markers.push({
-      sprite: child,
-      rectangle: new Rectangle(child.x, child.y, 4, 4),
-    });
+  intersectsCodeError(point: Point): { x: number; y: number; type: JsRenderCodeCellState } | undefined {
+    const marker = this.markers.find(
+      (marker) =>
+        marker.bounds.contains(point.x, point.y) && (marker.type === 'SpillError' || marker.type === 'RunError')
+    );
+    if (marker?.codeCell) {
+      return { x: marker.codeCell.x, y: marker.codeCell.y, type: marker.type };
+    }
   }
 
   debugShowCachedCounts(): void {

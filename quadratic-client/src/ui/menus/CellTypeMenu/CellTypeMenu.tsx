@@ -1,3 +1,4 @@
+import { CodeCellLanguage } from '@/quadratic-core/types';
 import {
   Chip,
   Dialog,
@@ -16,8 +17,6 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { useRootRouteLoaderData } from '../../../router';
-import { CellType } from '../../../schemas';
 import { colors } from '../../../theme/colors';
 import focusInput from '../../../utils/focusInput';
 import { LinkNewTab } from '../../components/LinkNewTab';
@@ -26,7 +25,7 @@ import '../../styles/floating-dialog.css';
 
 export interface CellTypeOption {
   name: string;
-  mode: CellType;
+  mode: CodeCellLanguage;
   icon: any;
   description: string | JSX.Element;
   disabled?: boolean;
@@ -36,7 +35,7 @@ export interface CellTypeOption {
 let CELL_TYPE_OPTIONS = [
   {
     name: 'Formula',
-    mode: 'FORMULA',
+    mode: 'Formula',
     icon: <Formula sx={{ color: colors.languageFormula }} />,
     description: (
       <>
@@ -47,7 +46,7 @@ let CELL_TYPE_OPTIONS = [
   },
   {
     name: 'Python',
-    mode: 'PYTHON',
+    mode: 'Python',
     icon: <Python sx={{ color: colors.languagePython }} />,
     description: (
       <>
@@ -56,16 +55,18 @@ let CELL_TYPE_OPTIONS = [
       </>
     ),
   },
+
+  // todo: create CodeCellLanguage for these types in Rust (when ready to implement)
   {
     name: 'SQL Query',
-    mode: 'SQL',
+    mode: '',
     icon: <Sql color="disabled" />,
     description: 'Import your data with queries.',
     disabled: true,
   },
   {
     name: 'JavaScript',
-    mode: 'JAVASCRIPT',
+    mode: '',
     icon: <JavaScript color="disabled" />,
     description: 'The world’s most popular programming language.',
     disabled: true,
@@ -76,13 +77,7 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
-  const { isAuthenticated } = useRootRouteLoaderData();
   const searchlabel = 'Choose a cell type…';
-
-  if (!isAuthenticated) {
-    // remove the AI option if not authenticated
-    CELL_TYPE_OPTIONS = CELL_TYPE_OPTIONS.filter((option) => option.mode !== 'AI');
-  }
 
   const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
 
@@ -99,14 +94,12 @@ export default function CellTypeMenu() {
   }, [editorInteractionState, setEditorInteractionState]);
 
   const openEditor = useCallback(
-    (mode: CellType) => {
+    (mode: CodeCellLanguage) => {
       setEditorInteractionState({
         ...editorInteractionState,
-        ...{
-          showCodeEditor: true,
-          showCellTypeMenu: false,
-          mode,
-        },
+        showCodeEditor: true,
+        showCellTypeMenu: false,
+        mode,
       });
     },
     [editorInteractionState, setEditorInteractionState]

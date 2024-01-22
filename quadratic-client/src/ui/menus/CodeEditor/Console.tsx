@@ -51,7 +51,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             }
             iconPosition="end"
           ></Tab>
-          {editorMode === 'PYTHON' && isAuthenticated && (
+          {editorMode === 'Python' && isAuthenticated && (
             <Tab
               style={{ minHeight: '32px' }}
               label="AI Assistant"
@@ -95,7 +95,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
               </>
             ) : (
               <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
-                {editorMode === 'PYTHON'
+                {editorMode === 'Python'
                   ? 'Print statements, standard out, and errors will show here.'
                   : 'Errors will show here.'}
               </div>

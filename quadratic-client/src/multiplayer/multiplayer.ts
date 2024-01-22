@@ -65,7 +65,7 @@ export class Multiplayer {
     this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
   }
 
-  private get state() {
+  get state() {
     return this._state;
   }
   private set state(state: MultiplayerState) {
@@ -188,13 +188,15 @@ export class Multiplayer {
     }
     this.lastTime = now;
     if (now - this.lastHeartbeat > HEARTBEAT_TIME) {
+      if (debugShowMultiplayer) {
+        console.log('[Multiplayer] Sending heartbeat to the server...');
+      }
       const heartbeat: Heartbeat = {
         type: 'Heartbeat',
         session_id: this.sessionId,
         file_id: this.room!,
       };
       this.websocket!.send(JSON.stringify(heartbeat));
-      if (debugShowMultiplayer) console.log('[Multiplayer] Sending heartbeat...');
       this.lastHeartbeat = now;
     }
   }
@@ -473,7 +475,6 @@ export class Multiplayer {
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
   private async receiveTransactions(data: ReceiveTransactions) {
-    console.log(data.transactions)
     grid.receiveMultiplayerTransactions(data.transactions);
     if (await offline.unsentTransactionsCount()) {
       this.state = 'syncing';

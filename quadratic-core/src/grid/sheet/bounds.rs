@@ -28,7 +28,7 @@ impl Sheet {
             }
         }
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
-            let output_rect = code_cell_value.output_rect(*pos);
+            let output_rect = code_cell_value.output_rect(*pos, false);
             self.data_bounds.add(output_rect.min);
             self.data_bounds.add(output_rect.max);
             self.format_bounds.add(output_rect.min);
