@@ -13,6 +13,7 @@ import {
   Link,
   LoaderFunctionArgs,
   isRouteErrorResponse,
+  redirect,
   useLoaderData,
   useRouteError,
   useRouteLoaderData,
@@ -21,7 +22,7 @@ import { MutableSnapshot, RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
-import { ROUTE_LOADER_IDS } from '../constants/routes';
+import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
 import { grid } from '../grid/controller/Grid';
 import init, { hello } from '../quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
@@ -35,11 +36,21 @@ export type FileData = {
   permissions: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['filePermissions'];
 };
 
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
+export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
 
-  // Fetch the file
-  const data = await apiClient.files.get(uuid);
+  // Fetch the file. If it fails because of permissions, redirect to login.
+  // TODO: clean this up someday by moving errors in error boundary up here
+  // (as if this was a proper server/client relationship)
+  let data;
+  try {
+    data = await apiClient.files.get(uuid);
+  } catch (error: any) {
+    if (error.status === 403) {
+      return redirect(`/login?from=${ROUTES.FILE(uuid)}&signup`);
+    }
+    throw error;
+  }
   if (debugShowMultiplayer)
     console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
 
