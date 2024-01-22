@@ -1,8 +1,9 @@
 import { UserFileRole } from 'quadratic-shared/typesAndSchemas';
 import { Bold, Button, Layout, Link, Paragraph } from './components';
 
-// TODO: strategy for testing these emails ourselves
-// POST {data} /api/v0/emails/invite-to-file
+// Test any of these emails by doing a get with the template name to our
+// internal endpoing: /v0/emails/:templateName
+// e.g. `GET /v0/emails/inviteToFile`
 
 export const templates = {
   inviteToFile: ({
@@ -26,7 +27,7 @@ export const templates = {
     const verb = fileRole === 'EDITOR' ? 'edit' : 'view';
     const html = Layout(/*html*/ `
       ${Paragraph(/*html*/ `
-        ${Bold(senderName ? senderName : senderEmail)} has invited you to ${verb} the spreadsheet “${Bold(
+        ${Bold(senderName ? senderName : senderEmail)} has invited you to ${Bold(verb)} the spreadsheet “${Bold(
         Link(fileName, { to: fileUrl })
       )}”.
       `)}
