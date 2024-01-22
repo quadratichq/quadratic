@@ -298,7 +298,9 @@ async def run_python(code):
     class CellFunc:
         @staticmethod
         def __call__(p0_x, p0_y, sheet=None):
-            return getCell(p0_x, p0_y, sheet)
+            if type(p0_x) == int and type(p0_y) == int:
+                return getCell(p0_x, p0_y, sheet)
+            return getCells(p0_x, p0_y, sheet)
 
     class CellsFunc:
         @staticmethod
