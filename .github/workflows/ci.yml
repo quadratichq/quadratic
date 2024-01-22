@@ -81,7 +81,7 @@ jobs:
           RUSTFLAGS: -Cinstrument-coverage
         run: |
           cd quadratic-multiplayer
-          cargo test # hangs forever
+          npm run docker:test
 
       - name: Generate coverage quadratic-multiplayer
         run: |
