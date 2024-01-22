@@ -1,11 +1,12 @@
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { useWindowsSizeGreaterThan } from '@/hooks/windowsSize';
 import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
-import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon, FilePlusIcon } from '@radix-ui/react-icons';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
@@ -60,6 +61,8 @@ export const Component = () => {
 
 function Navbar() {
   const { user } = useRootRouteLoaderData();
+  const isBigScreen = useWindowsSizeGreaterThan("width", 1024);
+  const hiddenClass = isBigScreen ? "display-none" : undefined;
 
   return (
     <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
@@ -74,6 +77,10 @@ function Navbar() {
         </div>
 
         <div className="mt-4 grid gap-1">
+          <SidebarNavLink className={hiddenClass} to={ROUTES.CREATE_FILE}>
+            <FilePlusIcon className="h-5 w-5" />
+            Create file
+          </SidebarNavLink>
           <SidebarNavLink to={ROUTES.FILES}>
             <FileIcon className="h-5 w-5" />
             My files
@@ -104,7 +111,7 @@ function Navbar() {
           </div>
         </SidebarNavLink>
       </div>
-    </nav>
+    </nav >
   );
 }
 

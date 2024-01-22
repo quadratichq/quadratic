@@ -54,7 +54,12 @@ a {
 .szh-menu__divider {
   margin: 0.25rem 0 !important;
 }
-.szh-menu__submenu > .szh-menu__item::after {
+
+.szh-menu__submenu>.szh-menu__item::after {
   content: '›' !important;
   font-size: 1.125rem !important;
+}
+
+.display-none {
+  display: none;
 }
