@@ -6,11 +6,11 @@ use crate::error::MpError;
 use crate::state::user::UserStateUpdate;
 use crate::state::{room::Room, user::User};
 use dashmap::DashMap;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub(crate) enum MessageResponse {
     UsersInRoom {

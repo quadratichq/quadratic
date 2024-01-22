@@ -83,6 +83,7 @@ pub async fn get_file_checkpoint(
     file_id: &Uuid,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
+    println!("url: {}", url);
     let response = if jwt.is_empty() {
         reqwest::Client::new().get(url).send()
     } else {
@@ -139,12 +140,12 @@ fn handle_response(response: &Response) -> Result<()> {
 }
 
 /// Validate that role allows viewing a file
-pub fn can_view(role: &Vec<FilePermRole>) -> bool {
+pub fn can_view(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileView)
 }
 
 /// Validate that role allows editing a file
-pub fn can_edit(role: &Vec<FilePermRole>) -> bool {
+pub fn can_edit(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileEdit)
 }
 

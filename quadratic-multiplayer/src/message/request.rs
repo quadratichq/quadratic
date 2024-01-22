@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::state::user::{CellEdit, UserStateUpdate};
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(tag = "type")]
 pub(crate) enum MessageRequest {
     EnterRoom {

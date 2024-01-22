@@ -20,6 +20,7 @@ use uuid::Uuid;
 
 use crate::config::config;
 use crate::message::request::MessageRequest;
+use crate::state::connection::Connection;
 use crate::state::user::{User, UserState};
 use crate::state::State;
 
@@ -38,6 +39,7 @@ pub(crate) fn new_user() -> User {
     User {
         session_id: Uuid::new_v4(),
         user_id: Uuid::new_v4().to_string(),
+        connection_id: Uuid::new_v4(),
         first_name: FirstName().fake(),
         last_name: LastName().fake(),
         email: FreeEmail().fake(),
@@ -58,25 +60,17 @@ pub(crate) fn new_user() -> User {
     }
 }
 
-pub(crate) async fn add_user_to_room(
-    file_id: Uuid,
-    user: User,
-    state: Arc<State>,
-    connection_id: Uuid,
-) -> User {
+pub(crate) async fn add_user_to_room(file_id: Uuid, user: User, state: Arc<State>) -> User {
+    let connection = Connection::new(Some(user.session_id), None);
     state
-        .enter_room(file_id, &user, connection_id, 0)
+        .enter_room(file_id, &user, connection.id, connection, 0)
         .await
         .unwrap();
     user
 }
 
-pub(crate) async fn add_new_user_to_room(
-    file_id: Uuid,
-    state: Arc<State>,
-    connection_id: Uuid,
-) -> User {
-    add_user_to_room(file_id, new_user(), state, connection_id).await
+pub(crate) async fn add_new_user_to_room(file_id: Uuid, state: Arc<State>) -> User {
+    add_user_to_room(file_id, new_user(), state).await
 }
 
 pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {
@@ -110,7 +104,22 @@ pub(crate) async fn integration_test_send_and_receive(
     socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     request: MessageRequest,
     expect_response: bool,
+    response_num: usize,
 ) -> Option<String> {
+    // send the message
+    integration_test_send(socket, request).await;
+
+    if !expect_response {
+        return None;
+    }
+
+    integration_test_receive(socket, response_num).await
+}
+
+pub(crate) async fn integration_test_send(
+    socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    request: MessageRequest,
+) {
     // send the message
     socket
         .lock()
@@ -120,21 +129,26 @@ pub(crate) async fn integration_test_send_and_receive(
         ))
         .await
         .unwrap();
-
-    if !expect_response {
-        return None;
-    }
-
-    integration_test_receive(socket).await
 }
 
 pub(crate) async fn integration_test_receive(
     socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    response_num: usize,
 ) -> Option<String> {
-    let response = match socket.lock().await.next().await.unwrap().unwrap() {
-        tungstenite::Message::Text(msg) => msg,
-        other => panic!("expected a text message but got {other:?}"),
-    };
+    let mut last_response = None;
+    let mut count = 0;
 
-    Some(response)
+    while let Some(Ok(msg)) = socket.lock().await.next().await {
+        count += 1;
+        last_response = match msg {
+            tungstenite::Message::Text(msg) => Some(msg),
+            other => panic!("expected a text message but got {other:?}"),
+        };
+
+        if count >= response_num {
+            break;
+        }
+    }
+
+    last_response
 }
