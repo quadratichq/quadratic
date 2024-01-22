@@ -364,7 +364,10 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 1).await;
+        // add a second user to the room so that we receive the broadcast
+        add_user_via_ws(file_id, socket.clone()).await;
+
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
 

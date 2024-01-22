@@ -11,6 +11,8 @@ use crate::state::State;
 use crate::{get_mut_room, get_room};
 use quadratic_rust_shared::quadratic_api::FilePermRole;
 
+pub(crate) type UserSocket = Arc<Mutex<SplitSink<WebSocket, Message>>>;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct User {
     pub session_id: Uuid,
@@ -24,7 +26,7 @@ pub(crate) struct User {
     #[serde(flatten)]
     pub state: UserState,
     #[serde(skip)]
-    pub socket: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
+    pub socket: Option<UserSocket>,
     #[serde(skip)]
     pub last_heartbeat: DateTime<Utc>,
 }
