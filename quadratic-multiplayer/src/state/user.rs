@@ -11,10 +11,13 @@ use crate::state::State;
 use crate::{get_mut_room, get_room};
 use quadratic_rust_shared::quadratic_api::FilePermRole;
 
-#[derive(Serialize, Debug, Clone)]
+pub(crate) type UserSocket = Arc<Mutex<SplitSink<WebSocket, Message>>>;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct User {
     pub session_id: Uuid,
     pub user_id: String,
+    pub connection_id: Uuid,
     pub first_name: String,
     pub last_name: String,
     pub email: String,
@@ -22,9 +25,9 @@ pub(crate) struct User {
     pub permissions: Vec<FilePermRole>,
     #[serde(flatten)]
     pub state: UserState,
-    #[serde(skip_serializing)]
-    pub socket: Option<Arc<Mutex<SplitSink<WebSocket, Message>>>>,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
+    pub socket: Option<UserSocket>,
+    #[serde(skip)]
     pub last_heartbeat: DateTime<Utc>,
 }
 
@@ -97,7 +100,7 @@ impl State {
         file_id: Uuid,
         heartbeat_timeout_s: i64,
     ) -> Result<(usize, usize)> {
-        let mut active_users = 0;
+        let mut num_active_users = 0;
         let stale_users = get_room!(self, file_id)?
             .users
             .iter()
@@ -106,21 +109,26 @@ impl State {
                     user.last_heartbeat.timestamp() + heartbeat_timeout_s < Utc::now().timestamp();
 
                 if !no_heartbeat {
-                    active_users += 1;
+                    num_active_users += 1;
                 }
 
                 no_heartbeat
             })
-            .map(|user| user.key().to_owned())
-            .collect::<Vec<Uuid>>();
+            .map(|user| user.to_owned())
+            .collect::<Vec<User>>();
 
-        for user_id in stale_users.iter() {
-            tracing::info!("Removing stale user {} from room {}", user_id, file_id);
+        for user in stale_users.iter() {
+            tracing::info!(
+                "Removing stale user {} from room {}",
+                user.session_id,
+                file_id
+            );
 
-            self.leave_room(file_id, user_id).await?;
+            self.leave_room(file_id, &user.session_id).await?;
+            self.connections.lock().await.remove(&user.connection_id);
         }
 
-        Ok((stale_users.len(), active_users))
+        Ok((stale_users.len(), num_active_users))
     }
 
     /// Updates a user's heartbeat in a room
@@ -185,33 +193,34 @@ impl State {
 mod tests {
     use crate::{
         error::MpError,
+        state::connection::Connection,
         test_util::{new_state, new_user},
     };
 
-    async fn setup() -> (State, Uuid, Uuid, User) {
+    async fn setup() -> (State, Connection, Uuid, User) {
         let state = new_state().await;
-        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
+        let connection = Connection::new(Some(user.session_id), None);
 
         state
-            .enter_room(file_id, &user, connection_id, 0)
+            .enter_room(file_id, &user, connection.id, connection.clone(), 0)
             .await
             .unwrap();
 
-        (state, connection_id, file_id, user)
+        (state, connection, file_id, user)
     }
 
     use super::*;
     #[tokio::test]
     async fn removes_stale_users_in_room() {
-        let (state, connection_id, file_id, _) = setup().await;
+        let (state, connection, file_id, _) = setup().await;
 
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
         let new_user = new_user();
         state
-            .enter_room(file_id, &new_user, connection_id, 0)
+            .enter_room(file_id, &new_user, connection.id, connection, 0)
             .await
             .unwrap();
         state.remove_stale_users_in_room(file_id, 0).await.unwrap();
@@ -222,7 +231,7 @@ mod tests {
         state.remove_stale_users_in_room(file_id, 0).await.unwrap();
         assert_eq!(
             get_room!(state, file_id).unwrap_err(),
-            MpError::Room(format!("Room {file_id} not found"))
+            MpError::RoomNotFound(file_id.to_string())
         );
     }
 
