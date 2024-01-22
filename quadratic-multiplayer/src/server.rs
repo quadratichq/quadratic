@@ -292,8 +292,8 @@ pub(crate) mod tests {
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{
-        integration_test_receive, integration_test_send_and_receive, integration_test_setup,
-        new_arc_state, new_user,
+        integration_test_receive, integration_test_receive_many, integration_test_send,
+        integration_test_send_and_receive, integration_test_setup, new_arc_state, new_user,
     };
     use axum::{
         body::Body,
@@ -311,6 +311,14 @@ pub(crate) mod tests {
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     ) -> User {
         let user = new_user();
+        add_existing_user_via_ws(file_id, socket, user).await
+    }
+
+    async fn add_existing_user_via_ws(
+        file_id: Uuid,
+        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+        user: User,
+    ) -> User {
         let session_id = user.session_id;
         let request = MessageRequest::EnterRoom {
             session_id,
@@ -333,6 +341,20 @@ pub(crate) mod tests {
         user
     }
 
+    async fn new_connection(
+        state: Arc<State>,
+        file_id: Uuid,
+        user: User,
+    ) -> (Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>, Uuid) {
+        let connection_id = Uuid::new_v4();
+        let socket = integration_test_setup(state.clone()).await;
+        let socket = Arc::new(Mutex::new(socket));
+
+        add_existing_user_via_ws(file_id, socket.clone(), user).await;
+
+        (socket.clone(), connection_id)
+    }
+
     async fn setup() -> (
         Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
         Arc<State>,
@@ -341,11 +363,9 @@ pub(crate) mod tests {
         User,
     ) {
         let state = new_arc_state().await;
-        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
-        let socket = integration_test_setup(state.clone()).await;
-        let socket = Arc::new(Mutex::new(socket));
-        let user = add_user_via_ws(file_id, socket.clone()).await;
+        let user = new_user();
+        let (socket, connection_id) = new_connection(state.clone(), file_id, user.clone()).await;
 
         (socket.clone(), state, connection_id, file_id, user)
     }
@@ -458,6 +478,85 @@ pub(crate) mod tests {
         let response = serde_json::from_str::<MessageResponse>(&response.unwrap()).unwrap();
 
         assert_eq!(response, expected);
+    }
+
+    #[tokio::test]
+    async fn user_is_idle_in_a_room() {
+        let (socket, state, _, file_id, user_1) = setup().await;
+
+        // add a second user to the room
+        let user_2 = add_user_via_ws(file_id, socket.clone()).await;
+
+        loop {
+            match state.remove_stale_users_in_room(file_id, 1).await {
+                Ok((num_stale_users, num_active_users)) => {
+                    println!(
+                        "num_stale_users: {}, num_active_users: {}",
+                        num_stale_users, num_active_users
+                    );
+                }
+                Err(e) => match e {
+                    MpError::RoomNotFound(_) => {
+                        println!("room not found");
+
+                        // add user_1 back
+                        let (socket_1, _) =
+                            new_connection(state.clone(), file_id, user_1.clone()).await;
+
+                        // add user_2 back
+                        let (socket_2, _) =
+                            new_connection(state.clone(), file_id, user_2.clone()).await;
+
+                        // send an update on user_1
+                        let request = MessageRequest::UserUpdate {
+                            session_id: user_1.session_id,
+                            file_id,
+                            update: UserStateUpdate {
+                                selection: None,
+                                sheet_id: None,
+                                x: None,
+                                y: None,
+                                visible: None,
+                                cell_edit: None,
+                                code_running: None,
+                                viewport: Some("new_viewport".to_string()),
+                            },
+                        };
+                        let response =
+                            integration_test_send_and_receive(&socket_2, request.clone(), true, 1)
+                                .await;
+                        // println!("response: {:?}", response);
+
+                        // send an update on user_2
+                        let request = MessageRequest::UserUpdate {
+                            session_id: user_2.session_id,
+                            file_id,
+                            update: UserStateUpdate {
+                                selection: None,
+                                sheet_id: None,
+                                x: None,
+                                y: None,
+                                visible: None,
+                                cell_edit: None,
+                                code_running: None,
+                                viewport: Some("new_viewport".to_string()),
+                            },
+                        };
+                        let response =
+                            integration_test_send_and_receive(&socket_1, request.clone(), true, 1)
+                                .await;
+                        // println!("response: {:?}", response);
+                    }
+                    _ => {
+                        println!("error: {:?}", e);
+                    }
+                },
+            }
+
+            tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+        }
+
+        // assert_eq!(response, expected);
     }
 
     #[tokio::test]

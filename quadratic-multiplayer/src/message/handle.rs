@@ -275,6 +275,7 @@ pub(crate) async fn handle_message(
             state
                 .update_user_state(&file_id, &session_id, &update)
                 .await?;
+
             let response = MessageResponse::UserUpdate {
                 session_id,
                 file_id,
