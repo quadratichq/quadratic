@@ -114,6 +114,7 @@ export class Grid {
 
     if (summary.code_cells_modified.length) {
       pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+      window.dispatchEvent(new CustomEvent('code-cells-update'));
     }
 
     if (summary.border_sheets_modified.length) {

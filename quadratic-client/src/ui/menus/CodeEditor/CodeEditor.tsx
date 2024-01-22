@@ -49,7 +49,6 @@ export const CodeEditor = () => {
     editorInteractionState.selectedCellSheet,
   ]);
 
-  // update code cell
   const unsaved = useMemo(() => {
     return editorContent !== codeString;
   }, [codeString, editorContent]);
@@ -111,6 +110,12 @@ export const CodeEditor = () => {
 
   useEffect(() => {
     updateCodeCell(true);
+
+    const update = () => updateCodeCell(false);
+    window.addEventListener('code-cells-update', update);
+    return () => {
+      window.removeEventListener('code-cells-update', update);
+    };
   }, [updateCodeCell]);
 
   useEffect(() => {
