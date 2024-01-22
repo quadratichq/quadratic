@@ -5,7 +5,6 @@ import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
-// import { CodeCellValue } from '../../../quadratic-core/types';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
@@ -58,11 +57,11 @@ export const CodeEditorBody = (props: Props) => {
       if (didMount) return;
       // Only register language once
 
-      monaco.languages.register({ id: 'formula' });
-      monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
-      monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
-      monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
-      monaco.languages.registerHoverProvider('formula', { provideHover });
+      monaco.languages.register({ id: 'Formula' });
+      monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
+      monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
+      monaco.languages.registerCompletionItemProvider('Formula', { provideCompletionItems });
+      monaco.languages.registerHoverProvider('Formula', { provideHover });
 
       setDidMount(true);
     },
@@ -94,7 +93,7 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={language}
+        language={language === 'Python' ? 'python' : language}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}

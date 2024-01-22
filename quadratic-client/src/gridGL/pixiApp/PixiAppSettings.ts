@@ -63,7 +63,7 @@ class PixiAppSettings {
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
-      pixiApp.cellsSheets.toggleOutlines();
+      pixiApp.cellsSheets.updateCellsArray();
       pixiApp.viewport.dirty = true;
     }
     this.lastSettings = this.settings;
