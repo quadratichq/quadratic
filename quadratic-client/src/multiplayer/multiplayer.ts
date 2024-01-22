@@ -27,7 +27,7 @@ import {
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
-const HEARTBEAT_TIME = 1000 * 1;
+const HEARTBEAT_TIME = 1000 * 10;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 
 export type MultiplayerState =
