@@ -15,24 +15,18 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     include: {
       ownerTeam: {
         include: {
-          UserTeamRole:
-            userId !== undefined
-              ? {
-                  where: {
-                    userId: userId,
-                  },
-                }
-              : undefined,
+          UserTeamRole: {
+            where: {
+              userId: userId,
+            },
+          },
         },
       },
-      UserFileRole:
-        userId !== undefined
-          ? {
-              where: {
-                userId,
-              },
-            }
-          : undefined,
+      UserFileRole: {
+        where: {
+          userId,
+        },
+      },
     },
   });
 
@@ -44,15 +38,22 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     throw new ApiError(400, 'File has been deleted');
   }
 
+  // FYI: the included relational data is not always filtered on the `where`
+  // clause because `userId` is possibly `undefined`
   const isFileOwner = !file.ownerTeamId && file.ownerUserId === userId;
-  const teamRole = file.ownerTeam && file.ownerTeam.UserTeamRole[0] ? file.ownerTeam.UserTeamRole[0].role : undefined;
-  const fileRole = file.UserFileRole[0] ? file.UserFileRole[0].role : undefined;
+  const teamRole =
+    file.ownerTeam && file.ownerTeam.UserTeamRole[0] && file.ownerTeam.UserTeamRole[0].userId === userId
+      ? file.ownerTeam.UserTeamRole[0].role
+      : undefined;
+  const fileRole =
+    file.UserFileRole[0] && file.UserFileRole[0].userId === userId ? file.UserFileRole[0].role : undefined;
 
   const filePermissions = getFilePermissions({
     fileRole,
     teamRole,
     publicLinkAccess: file.publicLinkAccess,
     isFileOwner,
+    isLoggedIn: Boolean(userId),
   });
 
   if (!filePermissions.includes('FILE_VIEW')) {
