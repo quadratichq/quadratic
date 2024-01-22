@@ -332,7 +332,7 @@ fn test_sheet_references() {
     let name1 = "MySheet".to_string();
     g.sheets_mut()[0].name = name1.clone();
 
-    let id2 = g.add_sheet(None).unwrap();
+    let id2 = g.add_sheet(None);
     let name2 = "My Other Sheet".to_string();
     g.sheets_mut()[1].name = name2.clone();
 

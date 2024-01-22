@@ -49,7 +49,7 @@ impl Default for Grid {
 impl Grid {
     pub fn new() -> Self {
         let mut ret = Grid { sheets: vec![] };
-        ret.add_sheet(None).expect("error adding initial sheet");
+        ret.add_sheet(None);
         ret
     }
 
