@@ -35,7 +35,7 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   }
 
   if (file.deleted) {
-    throw new ApiError(400, 'File has been deleted');
+    throw new ApiError(410, 'File has been deleted');
   }
 
   // FYI: the included relational data is not always filtered on the `where`
