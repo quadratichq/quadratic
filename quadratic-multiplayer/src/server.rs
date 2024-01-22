@@ -158,7 +158,7 @@ async fn ws_handler(
         }
     }
 
-    let connection = Connection::new(jwt);
+    let connection = Connection::new(None, jwt);
 
     tracing::info!(
         "`{user_agent}` at {addr} connected: connection_id={}",
@@ -204,6 +204,10 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
                     }
                     // kill the ws connection for file permission errors
                     MpError::FilePermissions(_) => {
+                        break;
+                    }
+                    // kill the ws connection for room not found errors
+                    MpError::RoomNotFound(_) => {
                         break;
                     }
                     // noop
@@ -323,8 +327,8 @@ pub(crate) mod tests {
         };
 
         // UsersInRoom and EnterRoom are sent to the client when they enter a room
-        integration_test_send_and_receive(&socket, request, true).await;
-        integration_test_receive(&socket).await;
+        integration_test_send_and_receive(&socket, request, true, 1).await;
+        integration_test_receive(&socket, 1).await;
 
         user
     }
@@ -347,9 +351,8 @@ pub(crate) mod tests {
     }
 
     async fn assert_user_changes_state(update: UserStateUpdate) {
-        let (socket, _, _, file_id, _) = setup().await;
-        let new_user = new_user();
-        let session_id = new_user.session_id;
+        let (socket, _, _, file_id, user) = setup().await;
+        let session_id = user.session_id;
         let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
@@ -361,8 +364,10 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true).await;
+        // add a second user to the room so that we receive the broadcast
+        add_user_via_ws(file_id, socket.clone()).await;
 
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
 
@@ -408,9 +413,10 @@ pub(crate) mod tests {
             file_id,
             sequence_num: 0,
         };
-        let received_enter_room = &integration_test_send_and_receive(&socket, request, true)
+        let received_enter_room = &integration_test_send_and_receive(&socket, request, true, 1)
             .await
             .unwrap();
+
         assert_eq!(
             &serde_json::to_string(&expected_enter_room).unwrap(),
             received_enter_room
@@ -422,7 +428,7 @@ pub(crate) mod tests {
             users: vec![user, new_user],
         };
         assert_eq!(
-            integration_test_receive(&socket).await.map(|s| s.len()),
+            integration_test_receive(&socket, 1).await.map(|s| s.len()),
             serde_json::to_string(&users_in_room_response)
                 .ok()
                 .map(|s| s.len())
@@ -431,25 +437,27 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn user_leaves_a_room() {
-        let (socket, state, connection_id, file_id, user) = setup().await;
-        let new_user = new_user();
-        let session_id = new_user.session_id;
+        let (socket, _, _, file_id, user) = setup().await;
+
+        // add a second user to the room
+        let user_2 = add_user_via_ws(file_id, socket.clone()).await;
+        let session_id = user_2.session_id;
+
+        // user_2 leaves the room
         let request = MessageRequest::LeaveRoom {
             session_id,
             file_id,
         };
+
+        // only the initial user is left in the room
         let expected = MessageResponse::UsersInRoom {
             users: vec![user.clone()],
         };
 
-        state
-            .enter_room(file_id, &new_user, connection_id, 0)
-            .await
-            .unwrap();
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = serde_json::from_str::<MessageResponse>(&response.unwrap()).unwrap();
 
-        let response = integration_test_send_and_receive(&socket, request, true).await;
-
-        assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
+        assert_eq!(response, expected);
     }
 
     #[tokio::test]
@@ -518,9 +526,8 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn user_shares_operations() {
-        let (socket, _, _, file_id, _) = setup().await;
-        let new_user = new_user();
-        let session_id = new_user.session_id;
+        let (socket, _, _, file_id, user) = setup().await;
+        let session_id = user.session_id;
         let operations = vec![Operation::SetSheetName {
             sheet_id: SheetId::new(),
             name: "test".to_string(),
@@ -536,11 +543,11 @@ pub(crate) mod tests {
         let expected = MessageResponse::Transaction {
             id,
             file_id,
-            operations: operations,
+            operations,
             sequence_num: 1,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 1).await;
 
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }

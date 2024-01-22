@@ -103,6 +103,7 @@ pub(crate) async fn handle_message(
             let user = User {
                 user_id,
                 session_id,
+                connection_id: connection.id,
                 first_name,
                 last_name,
                 email,
@@ -128,7 +129,13 @@ pub(crate) async fn handle_message(
             };
 
             let is_new = state
-                .enter_room(file_id, &user, connection.id, sequence_num)
+                .enter_room(
+                    file_id,
+                    &user,
+                    connection.id,
+                    connection.clone(),
+                    sequence_num,
+                )
                 .await?;
 
             // direct response to user w/sequence_num after logging in
@@ -245,9 +252,7 @@ pub(crate) async fn handle_message(
                 .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string())
                 .await?
                 .iter()
-                .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
-                .flatten()
-                .map(|transaction| transaction.into())
+                .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
                 .collect::<Vec<TransactionServer>>();
 
             let response = MessageResponse::Transactions {
@@ -308,9 +313,8 @@ pub(crate) mod tests {
 
     async fn setup() -> (Arc<State>, Uuid, User) {
         let state = new_arc_state().await;
-        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
-        let user_1 = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let user_1 = add_new_user_to_room(file_id, state.clone()).await;
 
         (state, file_id, user_1)
     }

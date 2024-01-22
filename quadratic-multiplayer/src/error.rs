@@ -44,6 +44,9 @@ pub(crate) enum MpError {
     #[error("Room error: {0}")]
     Room(String),
 
+    #[error("Room {0} not found")]
+    RoomNotFound(String),
+
     #[error("Error in S3: {0}")]
     S3(String),
 

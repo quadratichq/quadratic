@@ -17,12 +17,11 @@ export class UI {
     cli;
     control;
     spin = 0;
-    showing = false;
+    showing = 0;
     help = false;
     constructor(cli, control) {
         this.cli = cli;
         this.control = control;
-        // from https://stackoverflow.com/a/12506613
         process.stdin.setRawMode(true);
         process.stdin.resume();
         process.stdin.setEncoding("utf8");
@@ -49,6 +48,9 @@ export class UI {
                 case "f": // toggle files
                     control.restartFiles();
                     break;
+                case "p":
+                    control.togglePerf();
+                    break;
                 case "a": // toggle API
                     control.restartApi();
                     break;
@@ -63,53 +65,65 @@ export class UI {
         }, ANIMATION_INTERVAL);
         this.prompt();
     }
-    displayStatus(name, alwaysWatch) {
-        if (this.control.status[name] === "x")
-            return BROKEN + SPACE;
-        if (!this.control.status[name])
-            return chalk.gray(" " + WORKING_CHARACTERS[this.spin]) + SPACE;
-        if (this.cli.options[name] || alwaysWatch)
-            return WATCH + SPACE;
-        return DONE + SPACE;
-    }
     clear() {
-        process.stdout.clearLine(-1);
-        process.stdout.cursorTo(0);
-        this.showing = false;
+        if (this.showing) {
+            const width = process.stdout.getWindowSize()[0];
+            const lines = Math.floor(this.showing / width);
+            for (let i = 0; i < lines + 1; i++) {
+                process.stdout.clearLine(0);
+                process.stdout.moveCursor(0, -1);
+            }
+            process.stdout.cursorTo(0);
+            this.showing = 0;
+        }
     }
-    showName(name) {
+    write(text, color) {
+        process.stdout.write(color ? chalk[color](text) : text);
+        return text.length;
+    }
+    statusItem(name, alwaysWatch) {
+        let status = "";
         if (this.control.status[name] === "x") {
-            return chalk.red(name);
+            status = BROKEN + SPACE;
+        }
+        else if (!this.control.status[name]) {
+            status = chalk.gray(" " + WORKING_CHARACTERS[this.spin]) + SPACE;
+        }
+        else if (this.cli.options[name] || alwaysWatch) {
+            status = WATCH + SPACE;
         }
         else {
-            return chalk[COMPONENTS[name].color](name);
+            status = DONE + SPACE;
         }
+        const error = this.control.status[name] === "x";
+        return this.write(name + status, error ? "red" : COMPONENTS[name].color);
     }
     run(component) {
-        const showing = this.showing;
-        if (showing)
-            this.clear();
+        this.clear();
         const { name, color } = COMPONENTS[component];
         process.stdout.write(`[${chalk[color](name)}] running...\n`);
-        if (showing)
-            this.prompt();
+        this.prompt();
     }
     prompt() {
         this.clear();
-        process.stdout.write(chalk.underline("Quadratic Dev") + SPACE);
-        process.stdout.write(this.showName("client") + this.displayStatus("client", true));
-        process.stdout.write(this.showName("api") + this.displayStatus("api"));
-        process.stdout.write(this.showName("core") + this.displayStatus("core"));
-        process.stdout.write(this.showName("multiplayer") + this.displayStatus("multiplayer"));
-        process.stdout.write(this.showName("files") + this.displayStatus("files"));
-        process.stdout.write(this.showName("types") + this.displayStatus("types"));
+        this.write("\n");
+        let characters = this.write("Quadratic Dev", "underline") +
+            this.write(SPACE) +
+            this.statusItem("client", true) +
+            this.statusItem("api") +
+            this.statusItem("core") +
+            this.statusItem("multiplayer") +
+            this.statusItem("files") +
+            this.statusItem("types");
         if (this.help) {
-            process.stdout.write("(press t to toggle types | c to (un)watch core | a to (un)watch API | m to (un)watch multiplayer | f to (un)watch files | h to toggle help | q to quit)");
+            this.write("\n");
+            // characters += process.stdout.getWindowSize()[0] - 1;
+            characters += this.write("(press t to toggle types | c to (un)watch core | a to (un)watch API | m to (un)watch multiplayer | f to (un)watch files | p to toggle perf for core | h to toggle help | q to quit)");
         }
         else {
-            process.stdout.write(`(press h for help | q to quit)`);
+            characters += this.write(` (press h for help | q to quit)`);
         }
-        this.showing = true;
+        this.showing = characters;
     }
     printOutput(command, name, color, callback) {
         command.stdout.on("data", (data) => {
