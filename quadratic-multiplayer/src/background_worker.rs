@@ -48,7 +48,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                     tracing::trace!("Processing room {}", file_id);
 
                     // broadcast sequence number to all users in the room
-                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), &file_id).await;
+                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), file_id).await;
 
                     if let Err(error) = broadcasted {
                         tracing::warn!("Error broadcasting sequence number: {:?}", error);
@@ -57,7 +57,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                     // remove stale users in the room
                     let removed = remove_stale_users_in_room(
                         Arc::clone(&state),
-                        &file_id,
+                        file_id,
                         heartbeat_timeout_s,
                     )
                     .await;

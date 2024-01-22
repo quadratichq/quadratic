@@ -42,7 +42,7 @@ impl Room {
     pub fn get_user(&self, session_id: &Uuid) -> Result<User> {
         let user = self
             .users
-            .get(&session_id)
+            .get(session_id)
             .ok_or(MpError::UserNotFound(*session_id, self.file_id))?;
 
         Ok(user.to_owned())

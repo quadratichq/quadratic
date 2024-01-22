@@ -252,9 +252,7 @@ pub(crate) async fn handle_message(
                 .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string())
                 .await?
                 .iter()
-                .map(|(_, message)| serde_json::from_str::<TransactionServer>(&message))
-                .flatten()
-                .map(|transaction| transaction.into())
+                .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
                 .collect::<Vec<TransactionServer>>();
 
             let response = MessageResponse::Transactions {

@@ -37,7 +37,14 @@ pub(crate) fn broadcast(
                             .await
                             .map_err(|e| MpError::SendingMessage(e.to_string()));
 
-                        if let Err(_) = sent {
+                        if let Err(error) = sent {
+                            tracing::warn!(
+                                "Error removing stale user {} from room {}: {:?}",
+                                user.session_id,
+                                file_id,
+                                error,
+                            );
+
                             state.leave_room(file_id, &user.session_id).await?;
                         }
                     }

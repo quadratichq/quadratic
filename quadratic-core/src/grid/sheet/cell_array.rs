@@ -105,7 +105,7 @@ impl Sheet {
                 break;
             }
             if code_run.output_rect(*pos, true).intersects(*spill_rect) {
-                results.insert(pos.clone());
+                results.insert(*pos);
             }
         }
 

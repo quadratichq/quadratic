@@ -543,7 +543,7 @@ pub(crate) mod tests {
         let expected = MessageResponse::Transaction {
             id,
             file_id,
-            operations: operations,
+            operations,
             sequence_num: 1,
         };
 
