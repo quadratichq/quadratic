@@ -8,7 +8,6 @@ use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::GridController;
 use quadratic_core::{Array, CellValue, SheetRect};
 use quadratic_rust_shared::quadratic_api::FilePermRole;
-use reqwest::Response;
 use std::sync::Arc;
 use std::{
     future::IntoFuture,
@@ -154,26 +153,4 @@ pub(crate) async fn integration_test_receive(
     }
 
     last_response
-}
-
-pub(crate) async fn integration_test_receive_many(
-    socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
-    response_num: usize,
-) -> Vec<Option<String>> {
-    let mut response = vec![];
-    let mut count = 0;
-
-    while let Some(Ok(msg)) = socket.lock().await.next().await {
-        count += 1;
-        match msg {
-            tungstenite::Message::Text(msg) => response.push(Some(msg)),
-            other => panic!("expected a text message but got {other:?}"),
-        };
-
-        if count >= response_num {
-            break;
-        }
-    }
-
-    response
 }

@@ -15,7 +15,11 @@ use crate::{
 ///   * Broadcast sequence number to all users in the room
 ///   * Check for stale users in rooms and remove them.
 #[tracing::instrument(level = "trace")]
-pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_timeout_s: i64) {
+pub(crate) async fn start(
+    state: Arc<State>,
+    heartbeat_check_s: i64,
+    heartbeat_timeout_s: i64,
+) -> JoinHandle<()> {
     let state = Arc::clone(&state);
 
     tokio::spawn(async move {
@@ -74,7 +78,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
 
             interval.tick().await;
         }
-    });
+    })
 }
 
 // broadcast sequence number to all users in the room

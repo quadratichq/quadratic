@@ -219,7 +219,12 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
 
     // websocket is closed, remove the user from any rooms they were in and broadcast
     if let Ok(rooms) = state.clear_connections(&connection).await {
-        tracing::info!("Removing stale users from rooms: {:?}", rooms);
+        if !rooms.is_empty() {
+            tracing::info!(
+                "Removing stale users from rooms upon connection close: {:?}",
+                rooms
+            );
+        }
 
         for file_id in rooms.into_iter() {
             // only broadcast if the room still exists
@@ -292,8 +297,8 @@ pub(crate) mod tests {
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{
-        integration_test_receive, integration_test_receive_many, integration_test_send,
-        integration_test_send_and_receive, integration_test_setup, new_arc_state, new_user,
+        integration_test_receive, integration_test_send_and_receive, integration_test_setup,
+        new_arc_state, new_user,
     };
     use axum::{
         body::Body,
@@ -342,17 +347,15 @@ pub(crate) mod tests {
     }
 
     async fn new_connection(
-        state: Arc<State>,
+        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
         file_id: Uuid,
         user: User,
-    ) -> (Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>, Uuid) {
+    ) -> Uuid {
         let connection_id = Uuid::new_v4();
-        let socket = integration_test_setup(state.clone()).await;
-        let socket = Arc::new(Mutex::new(socket));
 
         add_existing_user_via_ws(file_id, socket.clone(), user).await;
 
-        (socket.clone(), connection_id)
+        connection_id
     }
 
     async fn setup() -> (
@@ -363,9 +366,11 @@ pub(crate) mod tests {
         User,
     ) {
         let state = new_arc_state().await;
+        let socket = integration_test_setup(state.clone()).await;
+        let socket = Arc::new(Mutex::new(socket));
         let file_id = Uuid::new_v4();
         let user = new_user();
-        let (socket, connection_id) = new_connection(state.clone(), file_id, user.clone()).await;
+        let connection_id = new_connection(socket.clone(), file_id, user.clone()).await;
 
         (socket.clone(), state, connection_id, file_id, user)
     }
@@ -389,6 +394,23 @@ pub(crate) mod tests {
 
         let response = integration_test_send_and_receive(&socket, request, true, 2).await;
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
+    }
+
+    fn new_user_state_update(user: User, file_id: Uuid) -> MessageRequest {
+        MessageRequest::UserUpdate {
+            session_id: user.session_id,
+            file_id,
+            update: UserStateUpdate {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: None,
+                cell_edit: None,
+                code_running: None,
+                viewport: Some("new_viewport".to_string()),
+            },
+        }
     }
 
     #[tokio::test]
@@ -481,82 +503,60 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn user_is_idle_in_a_room() {
+    async fn user_is_idle_in_a_room_get_removed_and_reconnect() {
         let (socket, state, _, file_id, user_1) = setup().await;
 
         // add a second user to the room
         let user_2 = add_user_via_ws(file_id, socket.clone()).await;
 
+        // both users should be in the room
+        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+        assert_eq!(num_users_in_room, 2);
+
+        // kick off the background worker and wait for the stale users to be removed
+        let handle = background_worker::start(Arc::clone(&state), 1, 0).await;
+
+        // expect a RoomNotFound error when trying to get the room
         loop {
-            match state.remove_stale_users_in_room(file_id, 1).await {
-                Ok((num_stale_users, num_active_users)) => {
-                    println!(
-                        "num_stale_users: {}, num_active_users: {}",
-                        num_stale_users, num_active_users
-                    );
+            match state.get_room(&file_id).await {
+                Ok(_) => {} // do nothing
+                Err(error) => {
+                    assert!(matches!(error, MpError::RoomNotFound(_)));
+                    break;
                 }
-                Err(e) => match e {
-                    MpError::RoomNotFound(_) => {
-                        println!("room not found");
-
-                        // add user_1 back
-                        let (socket_1, _) =
-                            new_connection(state.clone(), file_id, user_1.clone()).await;
-
-                        // add user_2 back
-                        let (socket_2, _) =
-                            new_connection(state.clone(), file_id, user_2.clone()).await;
-
-                        // send an update on user_1
-                        let request = MessageRequest::UserUpdate {
-                            session_id: user_1.session_id,
-                            file_id,
-                            update: UserStateUpdate {
-                                selection: None,
-                                sheet_id: None,
-                                x: None,
-                                y: None,
-                                visible: None,
-                                cell_edit: None,
-                                code_running: None,
-                                viewport: Some("new_viewport".to_string()),
-                            },
-                        };
-                        let response =
-                            integration_test_send_and_receive(&socket_2, request.clone(), true, 1)
-                                .await;
-                        // println!("response: {:?}", response);
-
-                        // send an update on user_2
-                        let request = MessageRequest::UserUpdate {
-                            session_id: user_2.session_id,
-                            file_id,
-                            update: UserStateUpdate {
-                                selection: None,
-                                sheet_id: None,
-                                x: None,
-                                y: None,
-                                visible: None,
-                                cell_edit: None,
-                                code_running: None,
-                                viewport: Some("new_viewport".to_string()),
-                            },
-                        };
-                        let response =
-                            integration_test_send_and_receive(&socket_1, request.clone(), true, 1)
-                                .await;
-                        // println!("response: {:?}", response);
-                    }
-                    _ => {
-                        println!("error: {:?}", e);
-                    }
-                },
-            }
-
-            tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            };
         }
 
-        // assert_eq!(response, expected);
+        // stop the background worker
+        handle.abort();
+
+        // room should be closed, add user_1 back
+        new_connection(socket.clone(), file_id, user_1.clone()).await;
+        integration_test_send_and_receive(
+            &socket.clone(),
+            new_user_state_update(user_1.clone(), file_id),
+            true,
+            4,
+        )
+        .await;
+
+        // expect 1 user to be in the room
+        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+        assert_eq!(num_users_in_room, 1);
+
+        // add user_2 back
+        new_connection(socket.clone(), file_id, user_2.clone()).await;
+        integration_test_send_and_receive(
+            &socket.clone(),
+            new_user_state_update(user_2.clone(), file_id),
+            true,
+            1,
+        )
+        .await;
+
+        // expect 2 users to be in the room
+        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+        assert_eq!(num_users_in_room, 2);
     }
 
     #[tokio::test]

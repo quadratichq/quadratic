@@ -79,8 +79,6 @@ impl State {
             .await
             .insert(connection_id, connection);
 
-        tracing::info!("User {:?} entered room {:?}", user.session_id, file_id);
-
         Ok(is_new)
     }
 

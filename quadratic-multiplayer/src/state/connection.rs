@@ -41,9 +41,8 @@ impl State {
     pub(crate) async fn clear_connections(&self, connection: &Connection) -> Result<Vec<Uuid>> {
         let connection_id = connection.id;
         let mut affected_rooms = vec![];
-        let rooms = self.rooms.lock().await.clone();
 
-        for room in rooms.iter() {
+        for room in self.rooms.lock().await.iter() {
             let (file_id, room) = room.pair();
             let connection = self.get_connection(connection_id).await?;
 

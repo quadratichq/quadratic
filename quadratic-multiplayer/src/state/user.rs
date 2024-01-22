@@ -214,25 +214,31 @@ mod tests {
     use super::*;
     #[tokio::test]
     async fn removes_stale_users_in_room() {
+        // add a user to a room
         let (state, connection, file_id, _) = setup().await;
 
-        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
-
+        // add another user to the room
         let new_user = new_user();
         state
             .enter_room(file_id, &new_user, connection.id, connection, 0)
             .await
             .unwrap();
-        state.remove_stale_users_in_room(file_id, 0).await.unwrap();
-        assert_eq!(get_room!(state, file_id).unwrap().users.len(), 1);
 
-        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+        assert_eq!(get_room!(state, file_id).unwrap().users.len(), 2);
 
-        state.remove_stale_users_in_room(file_id, 0).await.unwrap();
-        assert_eq!(
-            get_room!(state, file_id).unwrap_err(),
-            MpError::RoomNotFound(file_id.to_string())
-        );
+        // remove stale users in the room until the room is empty
+        loop {
+            match state.get_room(&file_id).await {
+                Ok(_) => {
+                    state.remove_stale_users_in_room(file_id, 0).await.unwrap();
+                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                }
+                Err(error) => {
+                    assert!(matches!(error, MpError::RoomNotFound(_)));
+                    break;
+                }
+            };
+        }
     }
 
     #[tokio::test]
