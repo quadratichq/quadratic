@@ -27,7 +27,7 @@ import {
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
-const HEARTBEAT_TIME = 1000 * 15;
+const HEARTBEAT_TIME = 1000 * 10;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 
 export type MultiplayerState =
@@ -41,6 +41,7 @@ export type MultiplayerState =
 export class Multiplayer {
   private websocket?: WebSocket;
   private _state: MultiplayerState = 'startup';
+  private updateId?: number;
   private sessionId;
   private room?: string;
   private user?: User;
@@ -117,6 +118,10 @@ export class Multiplayer {
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
         window.addEventListener('change-sheet', this.sendChangeSheet);
+
+        if (!this.updateId) {
+          this.updateId = window.setInterval(multiplayer.update, UPDATE_TIME);
+        }
       });
     });
   }
@@ -177,10 +182,9 @@ export class Multiplayer {
   }
 
   // called by Update.ts
-  async update() {
+  private update = () => {
     if (this.state !== 'connected') return;
     const now = performance.now();
-    if (now - this.lastTime < UPDATE_TIME) return;
 
     if (Object.keys(this.userUpdate.update).length > 0) {
       this.websocket!.send(JSON.stringify(this.userUpdate));
@@ -200,7 +204,7 @@ export class Multiplayer {
       this.websocket!.send(JSON.stringify(heartbeat));
       this.lastHeartbeat = now;
     }
-  }
+  };
 
   // used to pre-populate useMultiplayerUsers.tsx
   getUsers(): MultiplayerUser[] {
