@@ -11,6 +11,14 @@ use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub enum JsRenderCellSpecial {
+    Chart,
+    SpillError,
+    RunError,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
     pub x: i64,
@@ -32,6 +40,8 @@ pub struct JsRenderCell {
     pub italic: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text_color: Option<String>,
+
+    pub special: Option<JsRenderCellSpecial>,
 }
 
 #[cfg(test)]
@@ -47,6 +57,7 @@ impl JsRenderCell {
             bold: None,
             italic: None,
             text_color: None,
+            special: None,
         }
     }
 }
@@ -63,6 +74,7 @@ impl From<Pos> for JsRenderCell {
             bold: None,
             italic: None,
             text_color: None,
+            special: None,
         }
     }
 }
@@ -174,15 +186,29 @@ impl BitOrAssign for FormattingSummary {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[wasm_bindgen]
-pub struct JsRenderCodeCell {
+#[derive(Serialize, PartialEq, Debug)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsCodeCell {
     pub x: i64,
     pub y: i64,
+    pub code_string: String,
+    pub language: CodeCellLanguage,
+    pub std_out: Option<String>,
+    pub std_err: Option<String>,
+    pub evaluation_result: Option<String>,
+    pub spill_error: Option<Vec<Pos>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsRenderCodeCell {
+    pub x: i32,
+    pub y: i32,
     pub w: u32,
     pub h: u32,
     pub language: CodeCellLanguage,
     pub state: JsRenderCodeCellState,
+    pub spill_error: Option<Vec<Pos>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -197,7 +223,7 @@ pub struct JsHtmlOutput {
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum JsRenderCodeCellState {
     NotYetRun,
     RunError,

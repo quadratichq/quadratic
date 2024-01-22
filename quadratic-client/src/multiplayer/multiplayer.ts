@@ -6,6 +6,7 @@ import { offline } from '@/grid/controller/offline';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { SheetPos } from '@/gridGL/types/size';
+import { displayName } from '@/utils/userUtil';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
@@ -65,7 +66,7 @@ export class Multiplayer {
     this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
   }
 
-  private get state() {
+  get state() {
     return this._state;
   }
   private set state(state: MultiplayerState) {
@@ -188,13 +189,15 @@ export class Multiplayer {
     }
     this.lastTime = now;
     if (now - this.lastHeartbeat > HEARTBEAT_TIME) {
+      if (debugShowMultiplayer) {
+        console.log('[Multiplayer] Sending heartbeat to the server...');
+      }
       const heartbeat: Heartbeat = {
         type: 'Heartbeat',
         session_id: this.sessionId,
         file_id: this.room!,
       };
       this.websocket!.send(JSON.stringify(heartbeat));
-      if (debugShowMultiplayer) console.log('[Multiplayer] Sending heartbeat...');
       this.lastHeartbeat = now;
     }
   }
@@ -205,15 +208,15 @@ export class Multiplayer {
   }
 
   // whether a multiplayer user is already editing a cell
-  cellIsBeingEdited(x: number, y: number, sheetId: string): boolean {
+  cellIsBeingEdited(x: number, y: number, sheetId: string): { codeEditor: boolean; user: string } | undefined {
     for (const player of this.users.values()) {
       if (player.sheet_id === sheetId && player.cell_edit.active && player.parsedSelection) {
         if (player.parsedSelection.cursor.x === x && player.parsedSelection.cursor.y === y) {
-          return true;
+          const user = displayName(player, false);
+          return { codeEditor: player.cell_edit.code_editor, user };
         }
       }
     }
-    return false;
   }
 
   //#region send messages
@@ -418,26 +421,28 @@ export class Multiplayer {
 
     if (update.cell_edit) {
       player.cell_edit = update.cell_edit;
-      if (player.parsedSelection) {
-        // hide the label if the player is editing the cell
-        pixiApp.cellsSheets.showLabel(
-          player.parsedSelection.cursor.x,
-          player.parsedSelection.cursor.y,
-          player.sheet_id,
-          !player.cell_edit.active
+      if (!update.cell_edit.code_editor) {
+        if (player.parsedSelection) {
+          // hide the label if the player is editing the cell
+          pixiApp.cellsSheets.showLabel(
+            player.parsedSelection.cursor.x,
+            player.parsedSelection.cursor.y,
+            player.sheet_id,
+            !player.cell_edit.active
+          );
+        }
+        window.dispatchEvent(
+          new CustomEvent('multiplayer-cell-edit', {
+            detail: {
+              ...update.cell_edit,
+              playerColor: player.color,
+              sessionId: data.session_id,
+              sheetId: player.sheet_id,
+              cell: player.parsedSelection?.cursor,
+            },
+          })
         );
       }
-      window.dispatchEvent(
-        new CustomEvent('multiplayer-cell-edit', {
-          detail: {
-            ...update.cell_edit,
-            playerColor: player.color,
-            sessionId: data.session_id,
-            sheetId: player.sheet_id,
-            cell: player.parsedSelection?.cursor,
-          },
-        })
-      );
       pixiApp.multiplayerCursor.dirty = true;
     }
 
@@ -473,7 +478,6 @@ export class Multiplayer {
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
   private async receiveTransactions(data: ReceiveTransactions) {
-    console.log(data.transactions)
     grid.receiveMultiplayerTransactions(data.transactions);
     if (await offline.unsentTransactionsCount()) {
       this.state = 'syncing';

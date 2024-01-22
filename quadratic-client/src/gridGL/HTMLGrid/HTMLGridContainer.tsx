@@ -3,6 +3,7 @@ import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellInput } from './CellInput';
 import { CodeRunning } from './codeRunning/CodeRunning';
+import { HoverCell } from './hoverCell/HoverCell';
 import { HtmlCells } from './htmlCells/HtmlCells';
 import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
 
@@ -91,6 +92,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
             <MultiplayerCellEdits />
             <HtmlCells />
             <CodeRunning />
+            <HoverCell />
             <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
           </div>
         </div>

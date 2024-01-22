@@ -6,6 +6,7 @@ use strum_macros::Display;
 pub enum Environment {
     Local,
     Docker,
+    Test,
     Development,
     Production,
 }

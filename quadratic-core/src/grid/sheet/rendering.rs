@@ -5,8 +5,8 @@ use crate::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
         js_types::{
-            JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCodeCell, JsRenderCodeCellState,
-            JsRenderFill,
+            JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+            JsRenderCodeCellState, JsRenderFill,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
     },
@@ -37,30 +37,32 @@ impl Sheet {
             return JsRenderCell {
                 x,
                 y,
-                value: " CHART".to_string(),
+                value: "".to_string(),
                 language,
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                // from colors.ts: colors.languagePython
-                text_color: Some(String::from("#3776ab")),
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Chart),
             };
         } else if let CellValue::Error(error) = value {
-            let value = match error.msg {
-                RunErrorMsg::Spill => " SPILL",
-                _ => " ERROR",
-            };
+            let spill_error = matches!(error.msg, RunErrorMsg::Spill);
             return JsRenderCell {
                 x,
                 y,
-                value: value.into(),
+                value: "".into(),
                 language,
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                text_color: Some(String::from("red")),
+                italic: None,
+                text_color: None,
+                special: Some(if spill_error {
+                    JsRenderCellSpecial::SpillError
+                } else {
+                    JsRenderCellSpecial::RunError
+                }),
             };
         }
 
@@ -81,6 +83,7 @@ impl Sheet {
                     bold: None,
                     italic: None,
                     text_color: None,
+                    special: None,
                 }
             }
             Some(column) => {
@@ -115,6 +118,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
+                    special: None,
                 }
             }
         }
@@ -295,28 +299,37 @@ impl Sheet {
                 if let Some(code) = self.cell_value(*pos) {
                     match &code {
                         CellValue::Code(code) => {
-                            let (state, w, h) = if run.spill_error {
-                                (JsRenderCodeCellState::SpillError, 1, 1)
+                            let output_size = run.output_size();
+                            let (state, w, h, spill_error) = if run.spill_error {
+                                let reasons = self
+                                    .find_spill_error_reasons(&run.output_rect(*pos, true), *pos);
+                                (
+                                    JsRenderCodeCellState::SpillError,
+                                    output_size.w.get(),
+                                    output_size.h.get(),
+                                    Some(reasons),
+                                )
                             } else {
-                                let output_size = run.output_size();
                                 match run.result {
                                     CodeRunResult::Ok(_) => (
                                         JsRenderCodeCellState::Success,
                                         output_size.w.get(),
                                         output_size.h.get(),
+                                        None,
                                     ),
                                     CodeRunResult::Err(_) => {
-                                        (JsRenderCodeCellState::RunError, 1, 1)
+                                        (JsRenderCodeCellState::RunError, 1, 1, None)
                                     }
                                 }
                             };
                             Some(JsRenderCodeCell {
-                                x: pos.x,
-                                y: pos.y,
+                                x: pos.x as i32,
+                                y: pos.y as i32,
                                 w,
                                 h,
                                 language: code.language,
                                 state,
+                                spill_error,
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -348,7 +361,7 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            js_types::{JsHtmlOutput, JsRenderCell},
+            js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial},
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
@@ -452,6 +465,7 @@ mod tests {
                 bold: Some(true),
                 italic: None,
                 text_color: None,
+                special: None,
             },
         );
         assert_eq!(
@@ -466,6 +480,7 @@ mod tests {
                 bold: None,
                 italic: Some(true),
                 text_color: None,
+                special: None,
             },
         );
         assert_eq!(
@@ -473,13 +488,14 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 4,
-                value: " CHART".to_string(),
+                value: "".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                text_color: Some("#3776ab".to_string()),
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Chart),
             },
         );
         assert_eq!(
@@ -494,6 +510,7 @@ mod tests {
                 bold: None,
                 italic: None,
                 text_color: None,
+                special: None,
             },
         );
         assert_eq!(
@@ -501,13 +518,14 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 6,
-                value: " SPILL".to_string(),
+                value: "".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                text_color: Some("red".to_string()),
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::SpillError),
             },
         );
         assert_eq!(
@@ -515,13 +533,14 @@ mod tests {
             JsRenderCell {
                 x: 3,
                 y: 3,
-                value: " ERROR".to_string(),
+                value: "".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
-                italic: Some(true),
-                text_color: Some("red".to_string()),
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::RunError),
             },
         );
     }
@@ -681,6 +700,7 @@ mod tests {
                 bold: None,
                 italic: None,
                 text_color: None,
+                special: None,
             }]
         );
     }

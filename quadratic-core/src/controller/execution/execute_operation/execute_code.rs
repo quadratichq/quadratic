@@ -72,7 +72,7 @@ impl GridController {
             })
             .collect();
         code_runs_to_delete.iter().for_each(|pos| {
-            self.finalize_code_run(transaction, pos.to_sheet_pos(sheet_id), None);
+            self.finalize_code_run(transaction, pos.to_sheet_pos(sheet_id), None, None);
         });
     }
 
@@ -84,9 +84,10 @@ impl GridController {
         if let Operation::SetCodeRun {
             sheet_pos,
             code_run,
+            index,
         } = op
         {
-            self.finalize_code_run(transaction, sheet_pos, code_run);
+            self.finalize_code_run(transaction, sheet_pos, code_run, Some(index));
         }
     }
 

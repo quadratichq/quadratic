@@ -15,6 +15,7 @@ pub enum Operation {
     SetCodeRun {
         sheet_pos: SheetPos,
         code_run: Option<CodeRun>,
+        index: usize,
     },
     ComputeCode {
         sheet_pos: SheetPos,
@@ -78,10 +79,11 @@ impl fmt::Display for Operation {
             Operation::SetCodeRun {
                 sheet_pos,
                 code_run: run,
+                index,
             } => write!(
                 fmt,
-                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} }}",
-                sheet_pos, run
+                "SetCellRun {{ sheet_pos: {} code_cell_value: {:?} index: {} }}",
+                sheet_pos, run, index
             ),
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),

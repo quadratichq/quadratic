@@ -1,4 +1,6 @@
-import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { Switch } from '@/shadcn/ui/switch';
+import { cn } from '@/shadcn/utils';
+import { Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -9,7 +11,7 @@ import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { TopBarCodeOutlinesSwitch } from './TopBarCodeOutlinesSwitch';
+import { useGridSettings } from './SubMenus/useGridSettings';
 import { TopBarFileMenu } from './TopBarFileMenu';
 import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
@@ -20,7 +22,7 @@ export const TopBar = () => {
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { permissions } = editorInteractionState;
-
+  const { showCellTypeOutlines, setShowCellTypeOutlines } = useGridSettings();
   return (
     <Box
       onContextMenu={(event) => {
@@ -78,18 +80,20 @@ export const TopBar = () => {
           // @ts-expect-error
           WebkitAppRegion: 'no-drag',
           display: 'flex',
-          alignItems: 'stretch',
+          alignItems: 'center',
           justifyContent: 'flex-end',
           gap: theme.spacing(),
           color: theme.palette.text.primary,
           ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
-        {isDesktop && (
+        {isDesktop && !isEmbed && (
           <>
-            <TopBarCodeOutlinesSwitch />
-            {!isEmbed && <TopBarUsers />}
-            {!isEmbed && <TopBarShareButton />}
+            <Tooltip title={`Code cell outlines ${showCellTypeOutlines ? 'visible' : 'hidden'}`}>
+              <Switch className={cn('br-0')} checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
+            </Tooltip>
+            <TopBarUsers />
+            <TopBarShareButton />
           </>
         )}
         <TopBarZoomMenu />

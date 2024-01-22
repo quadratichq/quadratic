@@ -322,7 +322,7 @@ mod tests {
             transaction_types::{JsCodeResult, JsComputeGetCells},
             GridController,
         },
-        grid::CodeCellLanguage,
+        grid::{CodeCellLanguage, Sheet},
         CellValue, CodeCellValue, Pos, Rect, SheetPos,
     };
     use bigdecimal::BigDecimal;
@@ -1004,7 +1004,7 @@ mod tests {
     }
 
     #[test]
-    fn test_python_multiple_calculations_receive_back_afterwards() {
+    fn python_multiple_calculations_receive_back_afterwards() {
         let mut gc = GridController::test();
         let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
         assert_eq!(gc.active_transactions().unsaved_transactions.len(), 1);
@@ -1120,5 +1120,82 @@ mod tests {
             receive.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("test".to_string()))
         );
+    }
+
+    #[test]
+    fn ensure_code_run_ordering_is_maintained_for_undo() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "1".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "2".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 2,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "3".to_string(),
+            None,
+        );
+        let find_index = |sheet: &Sheet, x: i64, y: i64| {
+            sheet
+                .code_runs
+                .iter()
+                .position(|(code_pos, _)| *code_pos == Pos { x, y })
+                .unwrap()
+        };
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(find_index(sheet, 0, 0), 0);
+        assert_eq!(find_index(sheet, 1, 0), 1);
+        assert_eq!(find_index(sheet, 2, 0), 2);
+
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            "".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(find_index(sheet, 0, 0), 0);
+        assert_eq!(find_index(sheet, 2, 0), 1);
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(find_index(sheet, 0, 0), 0);
+        assert_eq!(find_index(sheet, 1, 0), 1);
+        assert_eq!(find_index(sheet, 2, 0), 2);
+
+        gc.redo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(find_index(sheet, 0, 0), 0);
+        assert_eq!(find_index(sheet, 2, 0), 1);
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(find_index(sheet, 0, 0), 0);
+        assert_eq!(find_index(sheet, 1, 0), 1);
+        assert_eq!(find_index(sheet, 2, 0), 2);
     }
 }
