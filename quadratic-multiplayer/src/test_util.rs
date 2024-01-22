@@ -104,6 +104,7 @@ pub(crate) async fn integration_test_send_and_receive(
     socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     request: MessageRequest,
     expect_response: bool,
+    response_num: usize,
 ) -> Option<String> {
     // send the message
     socket
@@ -119,16 +120,33 @@ pub(crate) async fn integration_test_send_and_receive(
         return None;
     }
 
-    integration_test_receive(socket).await
+    integration_test_receive(socket, response_num).await
 }
 
 pub(crate) async fn integration_test_receive(
     socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    response_num: usize,
 ) -> Option<String> {
-    let response = match socket.lock().await.next().await.unwrap().unwrap() {
-        tungstenite::Message::Text(msg) => msg,
-        other => panic!("expected a text message but got {other:?}"),
-    };
+    let mut last_response = "".to_string();
+    let mut count = 0;
 
-    Some(response)
+    while let Some(Ok(msg)) = socket.lock().await.next().await {
+        println!("received message: {:?}", msg);
+        count += 1;
+        last_response = match msg {
+            tungstenite::Message::Text(msg) => msg,
+            other => panic!("expected a text message but got {other:?}"),
+        };
+
+        if count >= response_num {
+            break;
+        }
+    }
+
+    // let response = match socket.lock().await.next().await.unwrap().unwrap() {
+    //     tungstenite::Message::Text(msg) => msg,
+    //     other => panic!("expected a text message but got {other:?}"),
+    // };
+
+    Some(last_response)
 }
