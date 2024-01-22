@@ -1,6 +1,7 @@
 use std::{fmt, str::FromStr};
 
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
@@ -13,6 +14,10 @@ use crate::{
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
+
+lazy_static::lazy_static! {
+    pub static ref NUMBER_REGEX: Regex = Regex::new("^[0-9,]+$").unwrap();
+}
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -236,12 +241,20 @@ impl CellValue {
 
         for char in CURRENCY_SYMBOLS.chars() {
             if let Some(stripped) = s.strip_prefix(char) {
-                if let Ok(bd) = BigDecimal::from_str(stripped) {
+                if let Some(bd) = CellValue::create_number(stripped) {
                     return Some((char.to_string(), bd));
                 }
             }
         }
         None
+    }
+
+    pub fn create_number(value: &str) -> Option<BigDecimal> {
+        if NUMBER_REGEX.is_match(&value) {
+            let value = value.replace(",", ".");
+            return BigDecimal::from_str(&value).ok();
+        }
+        BigDecimal::from_str(value).ok()
     }
 
     pub fn strip_currency(value: &str) -> &str {
@@ -384,22 +397,22 @@ impl CellValue {
 
     /// Converts a string to a CellValue, updates number formatting, and returns reverse Ops
     pub fn from_string(
-        s: &String,
+        s: &str,
         cell_ref: CellRef,
         sheet: &mut Sheet,
     ) -> (CellValue, Vec<Operation>) {
         let mut ops = vec![];
         let value: CellValue;
-        // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(s) {
+
+        if s.is_empty() {
+            value = CellValue::Blank;
+        } else if let Some((currency, number)) = CellValue::unpack_currency(s) {
             value = CellValue::Number(number);
             let numeric_format = NumericFormat {
                 kind: NumericFormatKind::Currency,
                 symbol: Some(currency),
             };
             if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-
                 ops.push(Operation::SetCellFormats {
                     region: cell_ref.into(),
                     attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
@@ -410,14 +423,13 @@ impl CellValue {
 
                 // only change decimals if it hasn't already been set
                 if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                    sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
                     ops.push(Operation::SetCellFormats {
                         region: cell_ref.into(),
                         attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
                     });
                 }
             }
-        } else if let Ok(bd) = BigDecimal::from_str(s) {
+        } else if let Some(bd) = CellValue::create_number(s) {
             value = CellValue::Number(bd);
         } else if let Some(percent) = CellValue::unpack_percentage(s) {
             value = CellValue::Number(percent);
@@ -425,9 +437,6 @@ impl CellValue {
                 kind: NumericFormatKind::Percentage,
                 symbol: None,
             };
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-            }
             ops.push(Operation::SetCellFormats {
                 region: cell_ref.into(),
                 attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(

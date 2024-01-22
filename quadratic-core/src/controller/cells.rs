@@ -1,11 +1,6 @@
-use std::str::FromStr;
-
-use bigdecimal::BigDecimal;
-
 use crate::{
     grid::{
-        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, NumericDecimals,
-        NumericFormat, NumericFormatKind, RegionRef, SheetId,
+        generate_borders, BorderSelection, CodeCellLanguage, CodeCellValue, RegionRef, SheetId,
     },
     util::date_string,
     Array, CellValue, Pos, Rect, RunLengthEncoding,
@@ -53,52 +48,10 @@ impl GridController {
     ) -> CellValue {
         let sheet = self.grid.sheet_mut_from_id(sheet_id);
         let cell_ref = sheet.get_or_create_cell_ref(pos);
-        let region = RegionRef::from(cell_ref);
-
-        // strip whitespace
-        let value = value.trim();
-
-        if value.is_empty() {
-            CellValue::Blank
-        } else if let Some((currency, number)) = CellValue::unpack_currency(value) {
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some(currency),
-            };
-            formatting_ops.push(Operation::SetCellFormats {
-                region: region.clone(),
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
-            // only change decimal places if decimals have not been set
-            if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                formatting_ops.push(Operation::SetCellFormats {
-                    region,
-                    attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                });
-            }
-            CellValue::Number(number)
-        } else if let Ok(bd) = BigDecimal::from_str(value) {
-            CellValue::Number(bd)
-        } else if let Some(percent) = CellValue::unpack_percentage(value) {
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            };
-            formatting_ops.push(Operation::SetCellFormats {
-                region,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
-
-            CellValue::Number(percent)
-        } else {
-            CellValue::Text(value.into())
-        }
+        let value = value.trim(); // strip whitespace
+        let (value, operations) = CellValue::from_string(value, cell_ref, sheet);
+        formatting_ops.extend(operations);
+        value
     }
 
     pub fn set_cell_code(
@@ -386,5 +339,46 @@ mod test {
         // array
         gc.set_cell_value(sheet_id, pos, "[1,2,3]".into(), None);
         assert_eq!(get_cell_value(&gc), CellValue::Text("[1,2,3]".into()));
+    }
+
+    #[test]
+    fn test_parse_cell_value() {
+        let mut gc = GridController::new();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+        let mut ops = Vec::with_capacity(0);
+
+        assert_eq!(
+            CellValue::Blank,
+            gc.string_to_cell_value(sheet_id, pos, " ", &mut ops)
+        );
+        assert_eq!(
+            CellValue::Text("OK".into()),
+            gc.string_to_cell_value(sheet_id, pos, "OK", &mut ops)
+        );
+        assert_eq!(
+            CellValue::Number(10.into()),
+            gc.string_to_cell_value(sheet_id, pos, "10", &mut ops)
+        );
+        assert_eq!(
+            CellValue::Number(BigDecimal::from_str("10.223").unwrap()),
+            gc.string_to_cell_value(sheet_id, pos, "10.223", &mut ops)
+        );
+        assert_eq!(
+            CellValue::Number(BigDecimal::from_str("10.223").unwrap()),
+            gc.string_to_cell_value(sheet_id, pos, "$10.223", &mut ops)
+        );
+        assert_eq!(
+            CellValue::Number(BigDecimal::from_str("0.11").unwrap()),
+            gc.string_to_cell_value(sheet_id, pos, "11%", &mut ops)
+        );
+        assert_eq!(
+            CellValue::Number(BigDecimal::from_str("1.001").unwrap()),
+            gc.string_to_cell_value(sheet_id, pos, "1,001", &mut ops)
+        );
+        assert_eq!(
+            CellValue::Number(BigDecimal::from_str("1.001").unwrap()),
+            gc.string_to_cell_value(sheet_id, pos, "$1,001", &mut ops)
+        );
     }
 }
