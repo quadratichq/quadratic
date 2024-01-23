@@ -131,7 +131,8 @@ export function CodeEditorPlaceholder({
           >
             {snippet.label}
           </a>
-          {i === snippets.length - 1 ? '.' : i < snippets.length - 2 ? ', ' : ', or '}
+          <br />
+          {i === snippets.length - 1 ? '.' : ix < snippets.length - 2}
         </Fragment>
       ))}
       <br />
