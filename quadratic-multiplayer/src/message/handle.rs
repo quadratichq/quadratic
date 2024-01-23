@@ -300,9 +300,11 @@ pub(crate) mod tests {
 
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
+    use tokio::net::TcpStream;
+    use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
     use super::*;
-    use crate::state::user::{CellEdit, UserStateUpdate};
+    use crate::state::user::{self, CellEdit, UserStateUpdate};
     use crate::test_util::{
         add_new_user_to_room, add_user_via_ws, integration_test_receive,
         integration_test_receive_typed, integration_test_setup, new_arc_state, new_connection,
@@ -310,8 +312,37 @@ pub(crate) mod tests {
     };
     use uuid::Uuid;
 
+    async fn test_handle(
+        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+        state: Arc<State>,
+        file_id: Uuid,
+        user: User,
+        request: MessageRequest,
+        response: Option<MessageResponse>,
+        broadcast_response: MessageResponse,
+    ) {
+        // add another user so that we can test broadcasting
+        let user_2 = add_user_via_ws(file_id, socket.clone()).await;
+        new_connection(socket.clone(), file_id, user_2.clone()).await;
+
+        let stream = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap()
+            .socket
+            .unwrap();
+
+        let handled = handle_message(request, state.clone(), stream, PreConnection::new(None))
+            .await
+            .unwrap();
+        assert_eq!(handled, response);
+
+        let received = integration_test_receive_typed(&socket, 1).await.unwrap();
+        assert_eq!(received, broadcast_response);
+    }
+
     #[tokio::test]
-    async fn test_update_state() {
+    async fn handle_user_update() {
         let (socket, state, _, file_id, user) = setup().await;
 
         let request = MessageRequest::UserUpdate {
@@ -344,196 +375,34 @@ pub(crate) mod tests {
             },
         };
 
-        let user_2 = add_user_via_ws(file_id, socket.clone()).await;
-        new_connection(socket.clone(), file_id, user_2.clone()).await;
-
-        let stream = state
-            ._get_user_in_room(&file_id, &user.session_id)
-            .await
-            .unwrap()
-            .socket
-            .unwrap();
-
-        let handled = handle_message(request, state.clone(), stream, PreConnection::new(None))
-            .await
-            .unwrap();
-        assert!(handled.is_none());
-
-        let received = integration_test_receive_typed(&socket, 1).await.unwrap();
-        assert_eq!(received, response);
-
-        // TODO(ddimaria): mock the splitsink sender to test the actual sending
+        test_handle(socket, state, file_id, user, request, None, response).await;
     }
 
-    // #[tokio::test]
-    // async fn test_change_selection() {
-    //     let (state, file_id, user_1) = setup().await;
-    //     let message = MessageResponse::UserUpdate {
-    //         session_id: user_1.session_id,
-    //         file_id,
-    //         update: UserStateUpdate {
-    //             selection: Some("test".to_string()),
-    //             sheet_id: None,
-    //             x: None,
-    //             y: None,
-    //             visible: None,
-    //             cell_edit: None,
-    //             viewport: None,
-    //             code_running: None,
-    //         },
-    //     };
-    //     broadcast(vec![user_1.session_id], file_id, state, message)
-    //         .await
-    //         .unwrap();
+    #[tokio::test]
+    async fn handle_transaction() {
+        let (socket, state, _, file_id, user) = setup().await;
+        let id = Uuid::new_v4();
+        let session_id = user.session_id;
+        let operations = serde_json::to_string(&vec![Operation::SetSheetColor {
+            sheet_id: SheetId::new(),
+            color: Some("red".to_string()),
+        }])
+        .unwrap();
 
-    //     // TODO(ddimaria): mock the splitsink sender to test the actual sending
-    // }
+        let request = MessageRequest::Transaction {
+            id,
+            file_id,
+            session_id,
+            operations: operations.clone(),
+        };
 
-    // #[tokio::test]
-    // async fn test_change_visibility() {
-    //     let (state, file_id, user_1) = setup().await;
-    //     let message = MessageResponse::UserUpdate {
-    //         session_id: user_1.session_id,
-    //         file_id,
-    //         update: UserStateUpdate {
-    //             selection: None,
-    //             sheet_id: None,
-    //             x: None,
-    //             y: None,
-    //             visible: Some(false),
-    //             cell_edit: None,
-    //             viewport: None,
-    //             code_running: None,
-    //         },
-    //     };
-    //     broadcast(vec![user_1.session_id], file_id, state, message)
-    //         .await
-    //         .unwrap();
+        let response = MessageResponse::Transaction {
+            id,
+            file_id,
+            operations,
+            sequence_num: 1,
+        };
 
-    //     // TODO(ddimaria): mock the splitsink sender to test the actual sending
-    // }
-
-    // #[tokio::test]
-    // async fn test_change_sheet() {
-    //     let (state, file_id, user_1) = setup().await;
-    //     let message = MessageResponse::UserUpdate {
-    //         session_id: user_1.session_id,
-    //         file_id,
-    //         update: UserStateUpdate {
-    //             selection: None,
-    //             sheet_id: Some(Uuid::new_v4()),
-    //             x: None,
-    //             y: None,
-    //             visible: None,
-    //             cell_edit: None,
-    //             viewport: None,
-    //             code_running: None,
-    //         },
-    //     };
-    //     broadcast(vec![user_1.session_id], file_id, state, message)
-    //         .await
-    //         .unwrap();
-
-    //     // TODO(ddimaria): mock the splitsink sender to test the actual sending
-    // }
-
-    // #[tokio::test]
-    // async fn test_change_cell_edit() {
-    //     let (state, file_id, user_1) = setup().await;
-    //     let message = MessageResponse::UserUpdate {
-    //         session_id: user_1.session_id,
-    //         file_id,
-    //         update: UserStateUpdate {
-    //             selection: None,
-    //             sheet_id: None,
-    //             x: None,
-    //             y: None,
-    //             visible: None,
-    //             cell_edit: Some(CellEdit {
-    //                 text: "test".to_string(),
-    //                 cursor: 0,
-    //                 active: true,
-    //                 code_editor: false,
-    //                 bold: None,
-    //                 italic: None,
-    //             }),
-    //             viewport: None,
-    //             code_running: None,
-    //         },
-    //     };
-    //     broadcast(vec![user_1.session_id], file_id, state, message)
-    //         .await
-    //         .unwrap();
-
-    //     // TODO(ddimaria): mock the splitsink sender to test the actual sending
-    // }
-
-    // #[tokio::test]
-    // async fn test_change_viewport() {
-    //     let (state, file_id, user_1) = setup().await;
-    //     let message = MessageResponse::UserUpdate {
-    //         session_id: user_1.session_id,
-    //         file_id,
-    //         update: UserStateUpdate {
-    //             selection: None,
-    //             sheet_id: None,
-    //             x: None,
-    //             y: None,
-    //             visible: None,
-    //             cell_edit: None,
-    //             viewport: Some("viewport".to_string()),
-    //             code_running: None,
-    //         },
-    //     };
-    //     broadcast(vec![user_1.session_id], file_id, state, message)
-    //         .await
-    //         .unwrap();
-
-    //     // TODO(ddimaria): mock the splitsink sender to test the actual sending
-    // }
-
-    // #[tokio::test]
-    // async fn test_change_code_running() {
-    //     let (state, file_id, user_1) = setup().await;
-    //     let message = MessageResponse::UserUpdate {
-    //         session_id: user_1.session_id,
-    //         file_id,
-    //         update: UserStateUpdate {
-    //             selection: None,
-    //             sheet_id: None,
-    //             x: None,
-    //             y: None,
-    //             visible: None,
-    //             cell_edit: None,
-    //             viewport: None,
-    //             code_running: Some("code running".to_string()),
-    //         },
-    //     };
-    //     broadcast(vec![user_1.session_id], file_id, state, message)
-    //         .await
-    //         .unwrap();
-
-    //     // TODO(ddimaria): mock the splitsink sender to test the actual sending
-    // }
-
-    // #[tokio::test]
-    // async fn test_transaction() {
-    //     let (state, file_id, user_1) = setup().await;
-    //     let id = Uuid::new_v4();
-    //     let message = MessageResponse::Transaction {
-    //         id,
-    //         file_id,
-    //         operations: serde_json::to_string(&vec![Operation::SetSheetColor {
-    //             sheet_id: SheetId::new(),
-    //             color: Some("red".to_string()),
-    //         }])
-    //         .unwrap(),
-    //         sequence_num: 1,
-    //     };
-    //     broadcast(vec![user_1.session_id], file_id, state, message)
-    //         .await
-    //         .unwrap();
-
-    //     // TODO(ddimaria): mock the splitsink sender to test the actual sending
-    // }
+        test_handle(socket, state, file_id, user, request, None, response).await;
+    }
 }
