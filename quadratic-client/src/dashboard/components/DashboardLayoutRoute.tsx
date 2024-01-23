@@ -6,13 +6,14 @@ import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
-import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon, FilePlusIcon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, FileIcon, FilePlusIcon, MixIcon, PersonIcon, UploadIcon } from '@radix-ui/react-icons';
 import { ReactNode, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import QuadraticLogo from './quadratic-logo.svg';
 import QuadraticLogotype from './quadratic-logotype.svg';
+import { useInitGridImportJs } from './CreateFileButton';
 
 const drawerWidth = 264;
 
@@ -22,8 +23,6 @@ export const Component = () => {
   const isLoading = navigation.state !== 'idle';
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const navbar = <Navbar />;
-
   // When the location changes, close the menu (if it's already open)
   useEffect(() => {
     setIsOpen((prevIsOpen) => (prevIsOpen ? false : prevIsOpen));
@@ -32,7 +31,7 @@ export const Component = () => {
   return (
     <div className={`h-full lg:flex lg:flex-row`}>
       <div className={`hidden flex-shrink-0 border-r border-r-border lg:block`} style={{ width: drawerWidth }}>
-        {navbar}
+        <Navbar isSidebar={false} />
       </div>
       <div
         className={cn(
@@ -49,7 +48,7 @@ export const Component = () => {
               </Button>
             </SheetTrigger>
             <SheetContent className="p-0" style={{ width: drawerWidth }}>
-              {navbar}
+              <Navbar isSidebar={true} />
             </SheetContent>
           </Sheet>
         </div>
@@ -59,10 +58,11 @@ export const Component = () => {
   );
 };
 
-function Navbar() {
+function Navbar(props: {isSidebar: boolean}) {
   const { user } = useRootRouteLoaderData();
   const isBigScreen = useWindowsSizeGreaterThan("width", 1024);
-  const hiddenClass = isBigScreen ? "display-none" : undefined;
+  const hiddenClass = isBigScreen && !props.isSidebar ? "display-none" : undefined;
+  const importGrid = useInitGridImportJs();
 
   return (
     <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
@@ -81,6 +81,12 @@ function Navbar() {
             <FilePlusIcon className="h-5 w-5" />
             Create file
           </SidebarNavLink>
+          <label onClick={importGrid}>
+            <SidebarNavLink className={hiddenClass} to={"#"}>
+              <UploadIcon className="h-5 w-5" />
+              Import file
+            </SidebarNavLink>
+          </label>
           <SidebarNavLink to={ROUTES.FILES}>
             <FileIcon className="h-5 w-5" />
             My files

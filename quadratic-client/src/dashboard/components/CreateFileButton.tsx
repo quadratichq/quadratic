@@ -5,9 +5,7 @@ import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 
-// TODO this will need props when it becomes a button that can be used
-// on the team page as well as the user's files page
-export default function CreateFileButton() {
+export const useInitGridImportJs = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const submit = useSubmit();
 
@@ -35,19 +33,35 @@ export default function CreateFileButton() {
       contents: validFile.version === '1.3' ? JSON.stringify(validFile) : validFile.contents,
     };
     submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
+  }
+
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.name = 'content';
+  input.accept = '.grid';
+  input.onchange = handleImport as any;
+  
+  return (e: React.MouseEvent<HTMLElement>) => {
+    input.click();
+    e.preventDefault()
   };
+}
+
+// TODO this will need props when it becomes a button that can be used
+// on the team page as well as the user's files page
+export default function CreateFileButton() {
+  const importGrid = useInitGridImportJs();
 
   return (
     <div className="flex gap-2">
-      <Button asChild variant="outline">
+      <Button onClick={importGrid} asChild variant="outline">
         <label className="cursor-pointer">
           Import file
-          <input type="file" name="content" accept=".grid" onChange={handleImport} hidden />
         </label>
       </Button>
       <Button asChild>
         <Link to={ROUTES.CREATE_FILE}>Create file</Link>
       </Button>
-    </div>
+    </div >
   );
 }
