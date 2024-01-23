@@ -64,6 +64,7 @@ jobs:
             --ignore "/*" \
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
+            --ignore "./../docker/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov
@@ -97,6 +98,7 @@ jobs:
             --ignore "/*" \
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
+            --ignore "./../docker/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-multiplayer
