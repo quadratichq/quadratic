@@ -4,13 +4,13 @@ import { Point, Rectangle } from 'pixi.js';
 import { debugMockLargeData } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Coordinate } from '../../gridGL/types/size';
 import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
   BorderSelection,
   BorderStyle,
   CodeCell,
   CodeCellLanguage,
+  ColumnRow,
   GridController,
   JsCodeResult,
   JsComputeGetCells,
@@ -616,14 +616,21 @@ export class Grid {
 
   //#region Imports
 
-  async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
+  async import(type: "csv" | "excel" ,sheetId: string, file: File, insertAtCellLocation: ColumnRow, reportError: (error: string) => void) {
     debugTimeReset();
-    const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
+    const pos = new Pos(insertAtCellLocation.column, insertAtCellLocation.row);
     const file_bytes = await readFileAsArrayBuffer(file);
 
     try {
-      const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
-      this.transactionResponse(summary);
+
+      if (type === "csv") {
+        const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
+        this.transactionResponse(summary);
+      } else {
+        const summary = this.gridController.importExcel(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
+        this.transactionResponse(summary);
+      }
+
     } catch (error) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
       // type in the UI.
