@@ -1,7 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import * as Sentry from '@sentry/node';
 
-const apiKey = String(process.env.SENDGRID_API_KEY);
+const apiKey = process.env.SENDGRID_API_KEY || '';
 sgMail.setApiKey(apiKey);
 
 const from = 'support@quadratichq.com';
