@@ -239,14 +239,20 @@ async fn handle_socket(
                     tracing::info!("Broadcasting room {file_id} after connection close");
 
                     let message = MessageResponse::from(room.to_owned());
-                    broadcast(
+
+                    if let Err(error) = broadcast(
                         vec![connection.session_id],
                         file_id,
                         Arc::clone(&state),
                         message,
                     )
                     .await
-                    .unwrap();
+                    {
+                        tracing::warn!(
+                            "Error broadcasting room {file_id} after connection close: {:?}",
+                            error
+                        );
+                    }
                 }
             }
             Err(error) => {
