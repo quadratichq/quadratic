@@ -17,6 +17,6 @@
     "coverage:view": "open coverage/html/index.html",
     "docker:up": "docker compose up -d --wait",
     "docker:down": "docker compose down",
-    "docker:test": "npm run docker:up && npm run test && npm run docker:down"
+    "docker:test": "npm run docker:down && npm run docker:up && npm run test && npm run docker:down"
   }
 }
