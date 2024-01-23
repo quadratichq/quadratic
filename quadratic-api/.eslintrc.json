@@ -5,7 +5,8 @@
   "root": true,
   "rules": {
     "@typescript-eslint/no-explicit-any": "off",
-    "@typescript-eslint/ban-ts-comment": "off"
+    "@typescript-eslint/ban-ts-comment": "off",
+    "prefer-const": "off"
   },
   "ignorePatterns": ["node_modules/*"]
 }
