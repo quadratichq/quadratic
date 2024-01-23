@@ -17,10 +17,6 @@ jobs:
       checks: write
       contents: write
     steps:
-      - name: Chown user
-        run: |
-          sudo chown -R $USER:$USER $GITHUB_WORKSPACE
-
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:

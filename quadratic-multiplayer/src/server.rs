@@ -323,8 +323,8 @@ pub(crate) mod tests {
     use super::*;
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{
-        integration_test_receive, integration_test_send_and_receive, integration_test_setup,
-        new_arc_state, new_user,
+        add_user_via_ws, integration_test_receive, integration_test_send_and_receive,
+        integration_test_setup, new_arc_state, new_connection, new_user, setup,
     };
     use axum::{
         body::Body,
@@ -336,70 +336,6 @@ pub(crate) mod tests {
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use tower::ServiceExt;
     use uuid::Uuid;
-
-    async fn add_user_via_ws(
-        file_id: Uuid,
-        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
-    ) -> User {
-        let user = new_user();
-        add_existing_user_via_ws(file_id, socket, user).await
-    }
-
-    async fn add_existing_user_via_ws(
-        file_id: Uuid,
-        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
-        user: User,
-    ) -> User {
-        let session_id = user.session_id;
-        let request = MessageRequest::EnterRoom {
-            session_id,
-            user_id: user.user_id.clone(),
-            file_id,
-            sheet_id: user.state.sheet_id,
-            selection: String::new(),
-            first_name: user.first_name.clone(),
-            last_name: user.last_name.clone(),
-            email: user.email.clone(),
-            image: user.image.clone(),
-            cell_edit: CellEdit::default(),
-            viewport: "initial viewport".to_string(),
-        };
-
-        // UsersInRoom and EnterRoom are sent to the client when they enter a room
-        integration_test_send_and_receive(&socket, request, true, 1).await;
-        integration_test_receive(&socket, 1).await;
-
-        user
-    }
-
-    async fn new_connection(
-        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
-        file_id: Uuid,
-        user: User,
-    ) -> Uuid {
-        let connection_id = Uuid::new_v4();
-
-        add_existing_user_via_ws(file_id, socket.clone(), user).await;
-
-        connection_id
-    }
-
-    async fn setup() -> (
-        Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
-        Arc<State>,
-        Uuid,
-        Uuid,
-        User,
-    ) {
-        let state = new_arc_state().await;
-        let socket = integration_test_setup(state.clone()).await;
-        let socket = Arc::new(Mutex::new(socket));
-        let file_id = Uuid::new_v4();
-        let user = new_user();
-        let connection_id = new_connection(socket.clone(), file_id, user.clone()).await;
-
-        (socket.clone(), state, connection_id, file_id, user)
-    }
 
     async fn assert_user_changes_state(update: UserStateUpdate) {
         let (socket, _, _, file_id, user) = setup().await;
