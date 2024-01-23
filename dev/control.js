@@ -234,9 +234,11 @@ export class Control {
         this.db.once("exit", (code) => {
             if (code === 0) {
                 this.ui.print("db", "completed");
+                this.status.db = true;
             }
             else {
                 this.ui.print("db", "failed");
+                this.status.db = "x";
             }
         });
     }
@@ -246,9 +248,11 @@ export class Control {
         this.npm.on("close", (code) => {
             if (code === 0) {
                 this.ui.print("npm", "completed");
+                this.status.npm = true;
             }
             else {
                 this.ui.print("npm", "failed");
+                this.status.npm = "x";
             }
         });
     }
@@ -258,9 +262,11 @@ export class Control {
         this.rust.on("close", (code) => {
             if (code === 0) {
                 this.ui.print("rust", "completed");
+                this.status.rust = true;
             }
             else {
                 this.ui.print("rust", "failed");
+                this.status.rust = "x";
             }
         });
     }

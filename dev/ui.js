@@ -7,15 +7,15 @@ const WORKING_CHARACTERS = ["◐", "◓", "◑", "◒"];
 const WATCH = chalk.gray(" 👀");
 const ANIMATION_INTERVAL = 100;
 const COMPONENTS = {
-    client: { color: "magenta", name: "Client" },
-    api: { color: "blue", name: "API" },
-    core: { color: "cyan", name: "Core" },
-    multiplayer: { color: "green", name: "Multiplayer" },
-    files: { color: "yellow", name: "Files" },
-    types: { color: "magenta", name: "Types" },
-    db: { color: "gray", name: "Database", hide: true },
-    npm: { color: "gray", name: "npm install" },
-    rust: { color: "gray", name: "rustup upgrade" },
+    client: { color: "magenta", name: "React", shortcut: "r" },
+    api: { color: "blue", name: "API", shortcut: "a" },
+    core: { color: "cyan", name: "Core", shortcut: "c" },
+    multiplayer: { color: "green", name: "Multiplayer", shortcut: "m" },
+    files: { color: "yellow", name: "Files", shortcut: "f" },
+    types: { color: "magenta", name: "Types", shortcut: "t" },
+    db: { color: "gray", name: "Database", shortcut: "d" },
+    npm: { color: "gray", name: "npm install", shortcut: "n" },
+    rust: { color: "gray", name: "rustup upgrade", shortcut: "r" },
 };
 export class UI {
     cli;
@@ -85,22 +85,23 @@ export class UI {
         process.stdout.write(color ? chalk[color](text) : text);
         return text.length;
     }
-    statusItem(name, alwaysWatch) {
+    statusItem(component, alwaysWatch) {
         let status = "";
-        if (this.control.status[name] === "x") {
+        if (this.control.status[component] === "x") {
             status = BROKEN + SPACE;
         }
-        else if (!this.control.status[name]) {
+        else if (!this.control.status[component]) {
             status = chalk.gray(" " + WORKING_CHARACTERS[this.spin]) + SPACE;
         }
-        else if (this.cli.options[name] || alwaysWatch) {
+        else if (this.cli.options[component] || alwaysWatch) {
             status = WATCH + SPACE;
         }
         else {
             status = DONE + SPACE;
         }
-        const error = this.control.status[name] === "x";
-        return this.write(name + status, error ? "red" : COMPONENTS[name].color);
+        const error = this.control.status[component] === "x";
+        const { name, color } = COMPONENTS[component];
+        return this.write(name + status, error ? "red" : color);
     }
     print(component, text = "starting...") {
         this.clear();
@@ -118,7 +119,10 @@ export class UI {
             this.statusItem("core") +
             this.statusItem("multiplayer") +
             this.statusItem("files") +
-            this.statusItem("types");
+            this.statusItem("types") +
+            this.statusItem("npm") +
+            this.statusItem("db") +
+            this.statusItem("rust");
         if (this.help) {
             this.write("\n");
             characters += process.stdout.getWindowSize()[0] - 1;
