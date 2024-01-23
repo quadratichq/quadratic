@@ -17,6 +17,13 @@ jobs:
       checks: write
       contents: write
     steps:
+      - name: Remove docker data
+        run: |
+          pwd
+          rm -rf ./docker/localstack/data
+          rm -rf ./docker/postgres/data
+          rm -rf ./docker/redis/data
+
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
