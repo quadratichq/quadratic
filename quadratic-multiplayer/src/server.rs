@@ -324,7 +324,7 @@ pub(crate) mod tests {
     use crate::state::user::{CellEdit, User, UserStateUpdate};
     use crate::test_util::{
         add_user_via_ws, integration_test_receive, integration_test_send_and_receive,
-        integration_test_setup, new_arc_state, new_connection, new_user, setup,
+        new_arc_state, new_connection, new_user, setup,
     };
     use axum::{
         body::Body,
@@ -332,8 +332,6 @@ pub(crate) mod tests {
     };
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
-    use tokio::net::TcpStream;
-    use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
     use tower::ServiceExt;
     use uuid::Uuid;
 

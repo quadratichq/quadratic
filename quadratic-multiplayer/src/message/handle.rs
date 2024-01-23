@@ -298,17 +298,17 @@ pub(crate) async fn handle_message(
 #[cfg(test)]
 pub(crate) mod tests {
 
+    use std::cell;
+
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
     use super::*;
-    use crate::state::user::{self, CellEdit, UserStateUpdate};
+    use crate::state::user::{CellEdit, UserStateUpdate};
     use crate::test_util::{
-        add_new_user_to_room, add_user_via_ws, integration_test_receive,
-        integration_test_receive_typed, integration_test_setup, new_arc_state, new_connection,
-        setup,
+        add_user_via_ws, integration_test_receive_typed, new_connection, setup,
     };
     use uuid::Uuid;
 
@@ -344,19 +344,27 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn handle_user_update() {
         let (socket, state, _, file_id, user) = setup().await;
+        let sheet_id = Some(Uuid::new_v4());
+        let selection = Some("selection".to_string());
+        let x = Some(1.0);
+        let y = Some(1.0);
+        let visible = Some(true);
+        let cell_edit = Some(CellEdit::default());
+        let viewport = Some("viewport".to_string());
+        let code_running = Some("code_running".to_string());
 
         let request = MessageRequest::UserUpdate {
             session_id: user.session_id,
             file_id,
             update: UserStateUpdate {
-                sheet_id: None,
-                selection: Some("selection".to_string()),
-                x: Some(1.0),
-                y: Some(2.0),
-                visible: Some(true),
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                sheet_id,
+                selection: selection.clone(),
+                x,
+                y,
+                visible,
+                cell_edit: cell_edit.clone(),
+                viewport: viewport.clone(),
+                code_running: code_running.clone(),
             },
         };
 
@@ -364,14 +372,14 @@ pub(crate) mod tests {
             session_id: user.session_id,
             file_id,
             update: UserStateUpdate {
-                sheet_id: None,
-                selection: Some("selection".to_string()),
-                x: Some(1.0),
-                y: Some(2.0),
-                visible: Some(true),
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                sheet_id,
+                selection: selection.clone(),
+                x,
+                y,
+                visible,
+                cell_edit,
+                viewport,
+                code_running,
             },
         };
 

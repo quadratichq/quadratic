@@ -150,26 +150,6 @@ pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) 
     Operation::SetCellValues { sheet_rect, values }
 }
 
-// pub(crate) async fn mock_stream() -> UserSocket {
-//     let listener = tokio::net::TcpListener::bind(SocketAddr::from((Ipv4Addr::UNSPECIFIED, 0)))
-//         .await
-//         .unwrap();
-//     let addr = listener.local_addr().unwrap();
-//     let tcp = TcpStream::connect("{addr}")
-//         .await
-//         .expect("Failed to connect");
-//     let url = format!("ws://{addr}/ws");
-//     let stream = tokio_tungstenite::client_async(url, tcp).await.unwrap();
-
-//     let (socket, _response) = tokio_tungstenite::connect_async(format!("ws://{addr}/ws"))
-//         .await
-//         .unwrap();
-
-//     let (mut tx, _rx) = stream.split();
-
-//     Arc::new(Mutex::new(tx.into()))
-// }
-
 pub(crate) async fn integration_test_setup(
     state: Arc<State>,
 ) -> WebSocketStream<MaybeTlsStream<TcpStream>> {
