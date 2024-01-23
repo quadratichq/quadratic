@@ -56,23 +56,27 @@ impl State {
     /// Removes a connection from the state.  If the connection is in a room, leave the room.
     #[tracing::instrument(level = "trace")]
     pub(crate) async fn remove_connection(&self, connection: &Connection) -> Result<Option<Uuid>> {
-        let connection_id = connection.id;
-        let session_id = connection.session_id;
-        let file_id = connection.file_id;
+        let Connection {
+            id,
+            session_id,
+            file_id,
+            ..
+        } = connection;
+
         let mut removed_from_room = None;
 
-        tracing::info!("Removing connection_id {connection_id} from room {file_id}");
+        tracing::info!("Removing connection_id {id} from room {file_id}");
 
-        if let Err(error) = self.leave_room(file_id, &session_id).await {
+        if let Err(error) = self.leave_room(*file_id, session_id).await {
             tracing::warn!(
-                "Error removing connection_id {connection_id} from room {file_id}: {:?}",
+                "Error removing connection_id {id} from room {file_id}: {:?}",
                 error
             );
         } else {
-            removed_from_room = Some(file_id);
+            removed_from_room = Some(*file_id);
         }
 
-        self.connections.lock().await.remove(&connection_id);
+        self.connections.lock().await.remove(id);
         Ok(removed_from_room)
     }
 }
