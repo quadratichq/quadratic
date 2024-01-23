@@ -81,7 +81,7 @@ export class UI {
     if (this.showing) {
       const width = process.stdout.getWindowSize()[0];
       const lines = Math.floor(this.showing / width);
-      for (let i = 0; i < lines + 1; i++) {
+      for (let i = 0; i < Math.max(lines, 1); i++) {
         process.stdout.clearLine(0);
         process.stdout.moveCursor(0, -1);
       }
@@ -132,7 +132,7 @@ export class UI {
 
     if (this.help) {
       this.write("\n");
-      // characters += process.stdout.getWindowSize()[0] - 1;
+      characters += process.stdout.getWindowSize()[0] - 1;
       characters += this.write(
         "(press t to toggle types | c to (un)watch core | a to (un)watch API | m to (un)watch multiplayer | f to (un)watch files | p to toggle perf for core | h to toggle help | q to quit)"
       );
