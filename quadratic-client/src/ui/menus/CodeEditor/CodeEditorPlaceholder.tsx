@@ -5,10 +5,10 @@ import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 export const snippets = [
   {
-    label: 'fetch data',
+    label: '- query API',
     // prettier-ignore
     code:
-`import requests 
+      `import requests 
 import pandas as pd 
 
 # Fetch data
@@ -22,20 +22,20 @@ df
 `,
   },
   {
-    label: 'reference cells',
-    // prettier-ignore
-    code: 
-`# Reference a value from the sheet
-myCell = cell(x, y)
-
-# Or reference a range of cells (returns a Pandas DataFrame)
-cells((x1, y1), (x2, y2))`,
-  },
-  {
-    label: 'create a chart',
+    label: '- reference cells',
     // prettier-ignore
     code:
-`# install plotly 
+      `# Reference a value from the sheet
+value = cell(x, y)
+
+# Or reference a range of cells (returns a Pandas DataFrame)
+df = cells((x1, y1), (x2, y2))`,
+  },
+  {
+    label: '- create a chart',
+    // prettier-ignore
+    code:
+      `# install plotly 
 import micropip
 await micropip.install('plotly')
 
@@ -46,11 +46,12 @@ import plotly.express as px
 df = px.data.gapminder().query("country=='Canada'")
 
 # create your chart type, for more chart types: https://plotly.com/python/
-fig = px.line(df, x="year", y="lifeExp", title='Life expectancy in Canada')
+fig = px.line(df, x="year", y="lifeExp", title='Life expectancy in Canada', width=450, height=300)
 
 # make chart prettier
 fig.update_layout(
     plot_bgcolor="White",
+    margin=dict(l=30, r=33, t=50, b=28),
 )
 
 # display chart 
@@ -58,10 +59,10 @@ fig.show()
 `,
   },
   {
-    label: 'return data to the sheet',
+    label: '- return data to the sheet',
     // prettier-ignore
-    code: 
-`out = []
+    code:
+      `out = []
 for x in range(10):
     out.append(x)
 
@@ -114,7 +115,9 @@ export function CodeEditorPlaceholder({
         ...codeEditorCommentStyles,
       }}
     >
-      Start with a code snippet to{' '}
+      Start with a code snippet to:
+      <br />
+      {' '}
       {snippets.map((snippet, i: number) => (
         <Fragment key={i}>
           <a
