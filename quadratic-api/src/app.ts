@@ -7,7 +7,6 @@ import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
 import ai_chat_router from './routes/ai_chat';
-import feedback_router from './routes/feedback';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 
@@ -59,7 +58,6 @@ app.use((req, res, next) => {
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
 app.use('/ai', ai_chat_router);
-app.use('/v0/feedback', feedback_router);
 // Internal routes
 app.use('/v0/internal', internal_router);
 
