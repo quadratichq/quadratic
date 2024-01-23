@@ -114,6 +114,8 @@ jobs:
         with:
           channel: "nightly"
 
+      - uses: jetli/wasm-pack-action@v0.4.0
+
       - name: Build quadratic-core
         run: |
           npm run build:wasm:javascript
