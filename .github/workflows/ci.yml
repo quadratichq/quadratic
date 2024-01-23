@@ -116,8 +116,7 @@ jobs:
 
       - name: Build quadratic-core
         run: |
-          cd quadratic-core
-          cargo build
+          npm run build:wasm:javascript
 
       - name: Run npm test:ts in quadratic-client
         run: |
