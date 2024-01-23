@@ -22,7 +22,7 @@ export const useInitGridImportJs = () => {
     // check file extension
     const extension = file.name?.split('.')?.pop() ?? "unknown";
     if (extension !== "grid") {
-      const message = `Whoops! Unsupported file format '${extension}'. Please pick a file with a '.grid' extension. 😊`
+      const message = `Whoops! Unsupported file format '.${extension}'. Please pick a file with a '.grid' extension. 😊`
       addGlobalSnackbar(message, { severity: 'warning' });
       return;
     }
