@@ -33,7 +33,6 @@ venv/*
 
 .env
 .env.local
-.env.docker
 
 # Generated Rust files
 /target
