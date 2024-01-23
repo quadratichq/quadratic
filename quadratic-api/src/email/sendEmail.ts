@@ -22,7 +22,7 @@ export const sendEmail = async (to: string, template: { subject: string; html: s
 
   // Don't try to send an email if we don't have the API key
   if (!apiKey) {
-    console.log('Skip sending email');
+    console.log('[Development] console logging email:');
     console.log('  to: %s', to);
     console.log('  subject: %s', subject);
     console.log('  html: %s', html.slice(0, 10) + '...');
