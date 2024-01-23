@@ -64,6 +64,7 @@ lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
+calamine = "0.23.1"
 indexmap = "2.0.2"
 
 [dev-dependencies]

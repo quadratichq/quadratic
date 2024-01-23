@@ -14,6 +14,7 @@ pub mod export;
 pub mod formatting;
 pub mod formula;
 pub mod import;
+pub mod excel;
 pub mod operation;
 pub mod operations;
 pub mod sheet_offsets;
