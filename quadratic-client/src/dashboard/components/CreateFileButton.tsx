@@ -19,6 +19,14 @@ export const useInitGridImportJs = () => {
     const file: File = e.target.files[0];
     const contents = await file.text().catch((e) => null);
 
+    // check file extension
+    const extension = file.name?.split('.')?.pop() ?? "unknown";
+    if (extension !== "grid") {
+      const message = `Whoops! Unsupported file format '${extension}'. Please pick a file with a '.grid' extension. 😊`
+      addGlobalSnackbar(message, { severity: 'warning' });
+      return;
+    }
+
     // Ensure it's a valid Quadratic grid file
     const validFile = await validateAndUpgradeGridFile(contents);
     if (!validFile) {
@@ -40,7 +48,7 @@ export const useInitGridImportJs = () => {
   input.name = 'content';
   input.accept = '.grid';
   input.onchange = handleImport as any;
-  
+
   return (e: React.MouseEvent<HTMLElement>) => {
     input.click();
     e.preventDefault()
