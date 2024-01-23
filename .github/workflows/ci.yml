@@ -13,8 +13,13 @@ on:
 jobs:
   test_rust:
     runs-on: ubuntu-latest-8-cores
+    permissions:
+      checks: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
@@ -61,6 +66,7 @@ jobs:
             --ignore "/*" \
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov
@@ -81,7 +87,14 @@ jobs:
           RUSTFLAGS: -Cinstrument-coverage
         run: |
           cd quadratic-multiplayer
-          cargo test # hangs forever
+          npm run docker:test
+
+      - name: Remove docker data
+        run: |
+          pwd
+          rm -rf ./docker/localstack/data
+          rm -rf ./docker/postgres/data
+          rm -rf ./docker/redis/data
 
       - name: Generate coverage quadratic-multiplayer
         run: |
@@ -94,6 +107,8 @@ jobs:
             --ignore "/*" \
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
+            --ignore "./../docker/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-multiplayer

@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:15
     restart: always
-    container_name: postgres
+    container_name: postgres_for_api
     ports:
       - '5433:5432'
     environment:
