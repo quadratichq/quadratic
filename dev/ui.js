@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { createScreen } from "./terminal.js";
 const SPACE = "     ";
 const DONE = chalk.green(" ✓");
 const BROKEN = chalk.red(" ✗");
@@ -12,6 +13,7 @@ const COMPONENTS = {
     multiplayer: { color: "green", name: "Multiplayer" },
     files: { color: "yellow", name: "Files" },
     types: { color: "magenta", name: "Types" },
+    db: { color: "gray", name: "Database" },
 };
 export class UI {
     cli;
@@ -63,7 +65,7 @@ export class UI {
                 this.prompt();
             }
         }, ANIMATION_INTERVAL);
-        this.prompt();
+        createScreen();
     }
     clear() {
         if (this.showing) {
@@ -125,25 +127,39 @@ export class UI {
         }
         this.showing = characters;
     }
-    printOutput(command, name, color, callback) {
+    printOutput(command, name, color, callback, hide) {
         command.stdout.on("data", (data) => {
-            this.clear();
-            process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
-            this.prompt();
-            if (callback) {
+            if (hide) {
+                if (callback) {
+                    callback(data);
+                }
+            }
+            else {
                 this.clear();
-                callback(data);
+                process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
                 this.prompt();
+                if (callback) {
+                    this.clear();
+                    callback(data);
+                    this.prompt();
+                }
             }
         });
         command.stderr.on("data", (data) => {
-            this.clear();
-            process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`);
-            this.prompt();
-            if (callback) {
+            if (hide) {
+                if (callback) {
+                    callback(data);
+                }
+            }
+            else {
                 this.clear();
-                callback(data);
+                process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`);
                 this.prompt();
+                if (callback) {
+                    this.clear();
+                    callback(data);
+                    this.prompt();
+                }
             }
         });
     }

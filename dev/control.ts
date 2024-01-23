@@ -1,6 +1,7 @@
 import killPortOriginal from "kill-port";
 import { ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import { CLI } from "./cli.js";
+import { destroyScreen } from "./terminal.js";
 import { UI } from "./ui.js";
 
 const killPort = async (port: number) => {
@@ -19,6 +20,7 @@ export class Control {
   private client?: ChildProcessWithoutNullStreams;
   private multiplayer?: ChildProcessWithoutNullStreams;
   private files?: ChildProcessWithoutNullStreams;
+  private db?: ChildProcessWithoutNullStreams;
 
   status = {
     client: false,
@@ -27,6 +29,7 @@ export class Control {
     multiplayer: false,
     files: false,
     types: false,
+    db: false,
   };
 
   constructor(cli: CLI) {
@@ -35,9 +38,10 @@ export class Control {
 
   quit() {
     if (this.api) this.api.kill("SIGKILL");
-    if (this.files) this.files.kill("SIGKILL");
-    if (this.multiplayer) this.multiplayer.kill("SIGKILL");
-    this.ui.clear();
+    if (this.files) this.files.kill("SIGTERM");
+    if (this.multiplayer) this.multiplayer.kill("SIGTERM");
+    if (this.client) this.client.kill("SIGTERM");
+    destroyScreen();
     process.exit(0);
   }
 
@@ -45,14 +49,18 @@ export class Control {
     name: string,
     data: string,
     options: {
-      success: string;
+      success: string | string[];
       error: string | string[];
       start: string | string[];
     },
     successCallback?: () => void
   ) {
     const response = data.toString();
-    if (response.includes(options.success)) {
+    if (
+      Array.isArray(options.success)
+        ? (options.success as string[]).some((s) => response.includes(s))
+        : response.includes(options.success as string)
+    ) {
       this.status[name] = true;
       if (successCallback) {
         successCallback();
@@ -257,12 +265,39 @@ export class Control {
     this.runFiles();
   }
 
+  runDb() {
+    this.ui.run("db");
+    if (this.db) {
+      this.db.kill("SIGTERM");
+    }
+    this.db = spawn("npm", [
+      "run",
+      "prisma:migrate",
+      "--workspace=quadratic-api",
+    ]);
+    this.ui.printOutput(this.db, "DB", "blue", (data) => {
+      this.handleResponse(
+        "db",
+        data,
+        {
+          success: ["Already in sync"],
+          error: "error[",
+          start: "Prisma Migrate",
+        },
+        undefined
+      ),
+        undefined,
+        true;
+    });
+  }
+
   async start(ui: UI) {
     this.ui = ui;
     this.runApi();
-    await this.runTypes();
-    await this.runCore();
-    await this.runMultiplayer();
-    await this.runFiles();
+    this.runDb();
+    // await this.runTypes();
+    // await this.runCore();
+    // await this.runMultiplayer();
+    // await this.runFiles();
   }
 }

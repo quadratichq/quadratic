@@ -1,5 +1,6 @@
 import killPortOriginal from "kill-port";
 import { spawn } from "node:child_process";
+import { destroyScreen } from "./terminal.js";
 const killPort = async (port) => {
     try {
         await killPortOriginal(port);
@@ -15,6 +16,7 @@ export class Control {
     client;
     multiplayer;
     files;
+    db;
     status = {
         client: false,
         api: false,
@@ -22,6 +24,7 @@ export class Control {
         multiplayer: false,
         files: false,
         types: false,
+        db: false,
     };
     constructor(cli) {
         this.cli = cli;
@@ -30,15 +33,19 @@ export class Control {
         if (this.api)
             this.api.kill("SIGKILL");
         if (this.files)
-            this.files.kill("SIGKILL");
+            this.files.kill("SIGTERM");
         if (this.multiplayer)
-            this.multiplayer.kill("SIGKILL");
-        this.ui.clear();
+            this.multiplayer.kill("SIGTERM");
+        if (this.client)
+            this.client.kill("SIGTERM");
+        destroyScreen();
         process.exit(0);
     }
     handleResponse(name, data, options, successCallback) {
         const response = data.toString();
-        if (response.includes(options.success)) {
+        if (Array.isArray(options.success)
+            ? options.success.some((s) => response.includes(s))
+            : response.includes(options.success)) {
             this.status[name] = true;
             if (successCallback) {
                 successCallback();
@@ -210,12 +217,33 @@ export class Control {
         this.cli.options.files = !this.cli.options.files;
         this.runFiles();
     }
+    runDb() {
+        this.ui.run("db");
+        if (this.db) {
+            this.db.kill("SIGTERM");
+        }
+        this.db = spawn("npm", [
+            "run",
+            "prisma:migrate",
+            "--workspace=quadratic-api",
+        ]);
+        this.ui.printOutput(this.db, "DB", "blue", (data) => {
+            this.handleResponse("db", data, {
+                success: ["Already in sync"],
+                error: "error[",
+                start: "Prisma Migrate",
+            }, undefined),
+                undefined,
+                true;
+        });
+    }
     async start(ui) {
         this.ui = ui;
         this.runApi();
-        await this.runTypes();
-        await this.runCore();
-        await this.runMultiplayer();
-        await this.runFiles();
+        this.runDb();
+        // await this.runTypes();
+        // await this.runCore();
+        // await this.runMultiplayer();
+        // await this.runFiles();
     }
 }
