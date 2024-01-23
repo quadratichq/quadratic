@@ -228,7 +228,7 @@ async fn handle_socket(
 
     // websocket is closed, remove the user from any rooms they were in and broadcast
     if let Ok(connection) = state.get_connection(connection_id).await {
-        match state.clear_connections(&connection).await {
+        match state.remove_connection(&connection).await {
             Ok(Some(file_id)) => {
                 tracing::info!(
                     "Removing user {} from room {file_id} after connection close",

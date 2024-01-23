@@ -73,7 +73,7 @@ impl State {
             .insert(user.session_id.to_owned(), user.to_owned())
             .is_none();
 
-        let connection = Connection::new_with_id(
+        let connection = Connection::new(
             pre_connection.id,
             user.session_id,
             file_id,

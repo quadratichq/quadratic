@@ -27,16 +27,7 @@ pub(crate) struct Connection {
 }
 
 impl Connection {
-    pub(crate) fn new(session_id: Uuid, file_id: Uuid, jwt: Option<String>) -> Self {
-        Self::new_with_id(Uuid::new_v4(), session_id, file_id, jwt)
-    }
-
-    pub(crate) fn new_with_id(
-        id: Uuid,
-        session_id: Uuid,
-        file_id: Uuid,
-        jwt: Option<String>,
-    ) -> Self {
+    pub(crate) fn new(id: Uuid, session_id: Uuid, file_id: Uuid, jwt: Option<String>) -> Self {
         Self {
             id,
             session_id,
@@ -64,7 +55,7 @@ impl State {
 
     /// Removes a connection from the state.  If the connection is in a room, leave the room.
     #[tracing::instrument(level = "trace")]
-    pub(crate) async fn clear_connections(&self, connection: &Connection) -> Result<Option<Uuid>> {
+    pub(crate) async fn remove_connection(&self, connection: &Connection) -> Result<Option<Uuid>> {
         let connection_id = connection.id;
         let session_id = connection.session_id;
         let file_id = connection.file_id;
@@ -109,9 +100,10 @@ mod tests {
 
     async fn setup() -> (State, Uuid, Connection) {
         let state = new_state().await;
+        let id = Uuid::new_v4();
         let session_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
-        let connection = Connection::new(session_id, file_id, None);
+        let connection = Connection::new(id, session_id, file_id, None);
 
         state
             .connections
@@ -134,7 +126,7 @@ mod tests {
     async fn clears_connections() {
         let (state, _, connection) = setup().await;
         let connection_id = connection.id;
-        state.clear_connections(&connection).await.unwrap();
+        state.remove_connection(&connection).await.unwrap();
         let result = state.get_connection(connection_id).await;
         let expected = format!("connection_id {connection_id} not found");
 
