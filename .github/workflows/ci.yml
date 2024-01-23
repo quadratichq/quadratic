@@ -89,9 +89,10 @@ jobs:
 
       - name: Remove docker data
         run: |
-          rm -rf ./../docker/localstack/data
-          rm -rf ./../docker/postgres/data
-          rm -rf ./../docker/redis/data
+          pwd
+          rm -rf ./docker/localstack/data
+          rm -rf ./docker/postgres/data
+          rm -rf ./docker/redis/data
 
       - name: Generate coverage quadratic-multiplayer
         run: |
