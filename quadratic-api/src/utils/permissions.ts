@@ -41,13 +41,11 @@ export const getFilePermissions = ({
   teamRole,
   publicLinkAccess,
   isFileOwner,
-  isLoggedIn,
 }: {
   fileRole?: UserFileRole;
   teamRole?: UserTeamRole;
   publicLinkAccess: PublicLinkAccess;
   isFileOwner: boolean;
-  isLoggedIn: boolean;
 }) => {
   const permissions = new Set<FilePermission>();
 
@@ -58,11 +56,7 @@ export const getFilePermissions = ({
 
   // Based on public link access
   if (publicLinkAccess === 'EDIT') {
-    permissions.add(FILE_VIEW);
-    // Only allow them to edit, however, if they are logged in
-    if (isLoggedIn) {
-      permissions.add(FILE_EDIT);
-    }
+    permissions.add(FILE_EDIT).add(FILE_VIEW);
   } else if (publicLinkAccess === 'READONLY') {
     permissions.add(FILE_VIEW);
   }
