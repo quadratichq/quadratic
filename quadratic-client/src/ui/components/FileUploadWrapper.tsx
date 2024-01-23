@@ -3,7 +3,6 @@ import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Coordinate } from '../../gridGL/types/size';
 
 export const FileUploadWrapper = (props: PropsWithChildren) => {
   // drag state
@@ -43,26 +42,39 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     }
   };
 
+  const csvTypes = ["text/csv", "text/tab-separated-values"]
+  const excelTypes = [
+    "application/vnd.ms-excel",
+    "application/excel",
+    "application/x-excel",
+    "application/x-msexcel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ]
+
   // triggers when file is dropped
   const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type === 'text/csv' || file.type === 'text/tab-separated-values') {
-        const clientBoudingRect = divRef?.current?.getBoundingClientRect();
-        const world = pixiApp.viewport.toWorld(
-          e.pageX - (clientBoudingRect?.left || 0),
-          e.pageY - (clientBoudingRect?.top || 0)
-        );
-        const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
-        const insertAtCellLocation = { x: column, y: row } as Coordinate;
-        grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
-      } else {
-        addGlobalSnackbar('File type not supported. Please upload a CSV file.');
-      }
+    const file = e.dataTransfer.files.item(0);
+    if (!file) {
+      return
+    }
+
+    const clientBoudingRect = divRef?.current?.getBoundingClientRect();
+    const world = pixiApp.viewport.toWorld(
+      e.pageX - (clientBoudingRect?.left || 0),
+      e.pageY - (clientBoudingRect?.top || 0)
+    );
+    const insertAtCellLocation = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
+    if (csvTypes.includes(file.type)) {
+      grid.import("csv", sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+    } else if (excelTypes.includes(file.type)) {
+      grid.import("excel", sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+    } else {
+      const extension = file.name?.split('.')?.pop() ?? file.type;
+      addGlobalSnackbar(`File type not supported (${extension}). Please upload a Excel or CSV file.`);
     }
   };
 

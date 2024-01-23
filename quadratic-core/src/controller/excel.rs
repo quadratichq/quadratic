@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn imports_excel_as_csv() {
-        let excel_file = read_test_excel_file("file_example.xls");
+        let excel_file = read_test_excel_file("file_example.xlsx");
         let mut gc = GridController::new();
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
