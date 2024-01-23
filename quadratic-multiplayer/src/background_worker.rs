@@ -15,7 +15,7 @@ use crate::{
 ///   * Broadcast sequence number to all users in the room
 ///   * Check for stale users in rooms and remove them.
 #[tracing::instrument(level = "trace")]
-pub(crate) async fn start(
+pub(crate) fn start(
     state: Arc<State>,
     heartbeat_check_s: i64,
     heartbeat_timeout_s: i64,

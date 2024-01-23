@@ -193,18 +193,18 @@ impl State {
 mod tests {
     use crate::{
         error::MpError,
-        state::connection::Connection,
+        state::connection::PreConnection,
         test_util::{new_state, new_user},
     };
 
-    async fn setup() -> (State, Connection, Uuid, User) {
+    async fn setup() -> (State, PreConnection, Uuid, User) {
         let state = new_state().await;
         let file_id = Uuid::new_v4();
         let user = new_user();
-        let connection = Connection::new(Some(user.session_id), None);
+        let connection = PreConnection::new(None);
 
         state
-            .enter_room(file_id, &user, connection.id, connection.clone(), 0)
+            .enter_room(file_id, &user, connection.clone(), 0)
             .await
             .unwrap();
 
@@ -220,7 +220,7 @@ mod tests {
         // add another user to the room
         let new_user = new_user();
         state
-            .enter_room(file_id, &new_user, connection.id, connection, 0)
+            .enter_room(file_id, &new_user, connection, 0)
             .await
             .unwrap();
 

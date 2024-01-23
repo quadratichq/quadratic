@@ -20,7 +20,7 @@ use uuid::Uuid;
 
 use crate::config::config;
 use crate::message::request::MessageRequest;
-use crate::state::connection::Connection;
+use crate::state::connection::PreConnection;
 use crate::state::user::{User, UserState};
 use crate::state::State;
 
@@ -61,9 +61,9 @@ pub(crate) fn new_user() -> User {
 }
 
 pub(crate) async fn add_user_to_room(file_id: Uuid, user: User, state: Arc<State>) -> User {
-    let connection = Connection::new(Some(user.session_id), None);
+    let connection = PreConnection::new(None);
     state
-        .enter_room(file_id, &user, connection.id, connection, 0)
+        .enter_room(file_id, &user, connection, 0)
         .await
         .unwrap();
     user

@@ -14,7 +14,7 @@ use crate::permissions::{
     validate_can_edit_or_view_file, validate_user_can_edit_file,
     validate_user_can_edit_or_view_file,
 };
-use crate::state::connection::Connection;
+use crate::state::connection::PreConnection;
 use crate::state::transaction_queue::GROUP_NAME;
 use crate::state::user::UserState;
 use crate::state::{user::User, State};
@@ -33,7 +33,7 @@ pub(crate) async fn handle_message(
     request: MessageRequest,
     state: Arc<State>,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
-    connection: &Connection,
+    pre_connection: PreConnection,
 ) -> Result<Option<MessageResponse>> {
     tracing::trace!("Handling message {:?}", request);
 
@@ -56,7 +56,7 @@ pub(crate) async fn handle_message(
             let base_url = &state.settings.quadratic_api_uri;
 
             // anonymous users can log in without a jwt
-            let jwt = connection.jwt.to_owned().unwrap_or_default();
+            let jwt = pre_connection.jwt.to_owned().unwrap_or_default();
 
             // default to all roles for tests
             let (permissions, sequence_num) = if cfg!(test) {
@@ -103,7 +103,7 @@ pub(crate) async fn handle_message(
             let user = User {
                 user_id,
                 session_id,
-                connection_id: connection.id,
+                connection_id: pre_connection.id,
                 first_name,
                 last_name,
                 email,
@@ -129,13 +129,7 @@ pub(crate) async fn handle_message(
             };
 
             let is_new = state
-                .enter_room(
-                    file_id,
-                    &user,
-                    connection.id,
-                    connection.clone(),
-                    sequence_num,
-                )
+                .enter_room(file_id, &user, pre_connection, sequence_num)
                 .await?;
 
             // direct response to user w/sequence_num after logging in

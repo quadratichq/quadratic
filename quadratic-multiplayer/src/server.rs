@@ -31,7 +31,7 @@ use crate::{
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::{connection::Connection, State},
+    state::{connection::PreConnection, State},
 };
 
 /// Construct the application router.  This is separated out so that it can be
@@ -89,8 +89,7 @@ pub(crate) async fn serve() -> Result<()> {
         Arc::clone(&state),
         config.heartbeat_check_s,
         config.heartbeat_timeout_s,
-    )
-    .await;
+    );
 
     axum::serve(
         listener,
@@ -158,27 +157,37 @@ async fn ws_handler(
         }
     }
 
-    let connection = Connection::new(None, jwt);
+    let pre_connection = PreConnection::new(jwt);
 
     tracing::info!(
-        "`{user_agent}` at {addr} connected: connection_id={}",
-        connection.id
+        "New connection {}, `{user_agent}` at {addr}",
+        pre_connection.id
     );
 
     // upgrade the connection
-    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, connection))
+    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, pre_connection))
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
 #[tracing::instrument(level = "trace")]
-async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, connection: Connection) {
+async fn handle_socket(
+    socket: WebSocket,
+    state: Arc<State>,
+    addr: String,
+    pre_connection: PreConnection,
+) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
-    let connection_id = connection.id;
+    let connection_id = pre_connection.id;
 
     while let Some(Ok(msg)) = receiver.next().await {
-        let response =
-            process_message(msg, Arc::clone(&sender), Arc::clone(&state), &connection).await;
+        let response = process_message(
+            msg,
+            Arc::clone(&sender),
+            Arc::clone(&state),
+            pre_connection.to_owned(),
+        )
+        .await;
 
         match response {
             Ok(ControlFlow::Continue(_)) => {}
@@ -218,22 +227,32 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
     }
 
     // websocket is closed, remove the user from any rooms they were in and broadcast
-    if let Ok(rooms) = state.clear_connections(&connection).await {
-        if !rooms.is_empty() {
-            tracing::info!(
-                "Removing stale users from rooms upon connection close: {:?}",
-                rooms
-            );
-        }
+    if let Ok(connection) = state.get_connection(connection_id).await {
+        match state.clear_connections(&connection).await {
+            Ok(Some(file_id)) => {
+                tracing::info!(
+                    "Removing user {} from room {file_id} after connection close",
+                    connection.session_id
+                );
 
-        for file_id in rooms.into_iter() {
-            // only broadcast if the room still exists
-            if let Ok(room) = state.get_room(&file_id).await {
-                tracing::info!("Broadcasting room {file_id} after removing stale users");
+                if let Ok(room) = state.get_room(&file_id).await {
+                    tracing::info!("Broadcasting room {file_id} after connection close");
 
-                let message = MessageResponse::from(room.to_owned());
-                broadcast(vec![], file_id, Arc::clone(&state), message);
+                    let message = MessageResponse::from(room.to_owned());
+                    broadcast(
+                        vec![connection.session_id],
+                        file_id,
+                        Arc::clone(&state),
+                        message,
+                    )
+                    .await
+                    .unwrap();
+                }
             }
+            Err(error) => {
+                tracing::warn!("Error clearing connections: {:?}", error);
+            }
+            _ => {}
         }
     }
 
@@ -247,13 +266,14 @@ async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
     state: Arc<State>,
-    connection: &Connection,
+    pre_connection: PreConnection,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
             let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
-                handle_message(messsage_request, state, Arc::clone(&sender), connection).await?;
+                handle_message(messsage_request, state, Arc::clone(&sender), pre_connection)
+                    .await?;
 
             if let Some(message_response) = message_response {
                 let response = Message::Text(serde_json::to_string(&message_response)?);
@@ -514,7 +534,7 @@ pub(crate) mod tests {
         assert_eq!(num_users_in_room, 2);
 
         // kick off the background worker and wait for the stale users to be removed
-        let handle = background_worker::start(Arc::clone(&state), 1, 0).await;
+        let handle = background_worker::start(Arc::clone(&state), 1, 0);
 
         // expect a RoomNotFound error when trying to get the room
         loop {
