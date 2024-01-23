@@ -109,6 +109,16 @@ jobs:
         with:
           node-version: 18
 
+      - name: Set up Rust
+        uses: moonrepo/setup-rust@v1
+        with:
+          channel: "nightly"
+
+      - name: Build quadratic-core
+        run: |
+          cd quadratic-core
+          cargo build
+
       - name: Run npm test:ts in quadratic-client
         run: |
           npm install
