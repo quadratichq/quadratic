@@ -17,6 +17,8 @@ export class Control {
     multiplayer;
     files;
     db;
+    npm;
+    rust;
     status = {
         client: false,
         api: false,
@@ -25,6 +27,7 @@ export class Control {
         files: false,
         types: false,
         db: false,
+        npm: false,
     };
     constructor(cli) {
         this.cli = cli;
@@ -63,14 +66,14 @@ export class Control {
         }
     }
     async runApi() {
-        this.ui.run("api");
+        this.ui.print("api");
         await killPort(8000);
         this.api = spawn("npm", [
             "run",
             this.cli.options.api ? "start" : "start-no-watch",
             "--workspace=quadratic-api",
         ]);
-        this.ui.printOutput(this.api, "API", "blue", (data) => this.handleResponse("api", data, {
+        this.ui.printOutput("api", (data) => this.handleResponse("api", data, {
             success: "Server running on port",
             error: "npm ERR!",
             start: "> quadratic-api",
@@ -84,11 +87,11 @@ export class Control {
         this.runApi();
     }
     async runTypes() {
-        this.ui.run("types");
+        this.ui.print("types");
         return new Promise((resolve) => {
             if (!this.cli.options.skipTypes) {
                 this.types = spawn("npm", ["run", "build:wasm:types"]);
-                this.ui.printOutput(this.types, "WASM Types", "magenta", (data) => {
+                this.ui.printOutput("types", (data) => {
                     this.handleResponse("types", data, {
                         success: "Running ",
                         error: "error:",
@@ -109,12 +112,12 @@ export class Control {
         }
     }
     runClient() {
-        this.ui.run("client");
+        this.ui.print("client");
         if (this.client) {
             this.client.kill("SIGKILL");
         }
         this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
-        this.ui.printOutput(this.client, "Client", "magenta", (data) => this.handleResponse("client", data, {
+        this.ui.printOutput("client", (data) => this.handleResponse("client", data, {
             success: "Found 0 errors.",
             error: ["ERROR(", "npm ERR!"],
             start: "> quadratic-client@",
@@ -125,7 +128,7 @@ export class Control {
         this.restartCore();
     }
     runCore() {
-        this.ui.run("core");
+        this.ui.print("core");
         return new Promise((resolve) => {
             if (this.cli.options.core) {
                 this.core = spawn("npm", [
@@ -134,7 +137,7 @@ export class Control {
                         ? "watch:wasm:perf:javascript"
                         : "watch:wasm:javascript",
                 ]);
-                this.ui.printOutput(this.core, "Core", "cyan", (data) => this.handleResponse("core", data, {
+                this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
                     success: "[Finished running. Exit status: 0",
                     error: "error[",
                     start: ["> quadratic", "[Running "],
@@ -150,7 +153,7 @@ export class Control {
                         ? "build:wasm:perf:javascript"
                         : "build:wasm:javascript",
                 ]);
-                this.ui.printOutput(this.core, "Core", "magenta", (data) => this.handleResponse("core", data, {
+                this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
                     success: "Your wasm pkg is ready to publish",
                     error: "error[",
                     start: "[Running ",
@@ -170,7 +173,7 @@ export class Control {
         this.runCore();
     }
     runMultiplayer() {
-        this.ui.run("multiplayer");
+        this.ui.print("multiplayer");
         return new Promise(async (resolve) => {
             await killPort(3001);
             this.multiplayer = spawn("npm", [
@@ -178,7 +181,7 @@ export class Control {
                 this.cli.options.multiplayer ? "dev" : "start",
                 "--workspace=quadratic-multiplayer",
             ]);
-            this.ui.printOutput(this.multiplayer, "Multiplayer", "green", (data) => this.handleResponse("multiplayer", data, {
+            this.ui.printOutput("multiplayer", (data) => this.handleResponse("multiplayer", data, {
                 success: "listening on",
                 error: "error[",
                 start: "    Compiling",
@@ -193,7 +196,7 @@ export class Control {
         this.runMultiplayer();
     }
     runFiles() {
-        this.ui.run("files");
+        this.ui.print("files");
         return new Promise(async (resolve) => {
             await killPort(3002);
             this.files = spawn("npm", [
@@ -201,7 +204,7 @@ export class Control {
                 this.cli.options.files ? "dev" : "start",
                 "--workspace=quadratic-files",
             ]);
-            this.ui.printOutput(this.files, "Files", "yellow", (data) => {
+            this.ui.printOutput("files", (data) => {
                 this.handleResponse("files", data, {
                     success: "listening on",
                     error: ["error[", "npm ERR!"],
@@ -218,7 +221,7 @@ export class Control {
         this.runFiles();
     }
     runDb() {
-        this.ui.run("db");
+        this.ui.print("db", "checking migration...");
         if (this.db) {
             this.db.kill("SIGTERM");
         }
@@ -227,23 +230,49 @@ export class Control {
             "prisma:migrate",
             "--workspace=quadratic-api",
         ]);
-        this.ui.printOutput(this.db, "DB", "blue", (data) => {
-            this.handleResponse("db", data, {
-                success: ["Already in sync"],
-                error: "error[",
-                start: "Prisma Migrate",
-            }, undefined),
-                undefined,
-                true;
+        this.ui.printOutput("db");
+        this.db.once("exit", (code) => {
+            if (code === 0) {
+                this.ui.print("db", "completed");
+            }
+            else {
+                this.ui.print("db", "failed");
+            }
+        });
+    }
+    runNpmInstall() {
+        this.ui.print("npm", "installing...");
+        this.npm = spawn("npm", ["install"]);
+        this.npm.on("close", (code) => {
+            if (code === 0) {
+                this.ui.print("npm", "completed");
+            }
+            else {
+                this.ui.print("npm", "failed");
+            }
+        });
+    }
+    runRust() {
+        this.ui.print("rust", "upgrading...");
+        this.rust = spawn("rustup", ["upgrade"]);
+        this.rust.on("close", (code) => {
+            if (code === 0) {
+                this.ui.print("rust", "completed");
+            }
+            else {
+                this.ui.print("rust", "failed");
+            }
         });
     }
     async start(ui) {
         this.ui = ui;
+        this.runRust();
         this.runApi();
         this.runDb();
-        // await this.runTypes();
-        // await this.runCore();
-        // await this.runMultiplayer();
-        // await this.runFiles();
+        this.runNpmInstall();
+        await this.runTypes();
+        await this.runCore();
+        await this.runMultiplayer();
+        await this.runFiles();
     }
 }

@@ -1,5 +1,4 @@
 import chalk from "chalk";
-import { ChildProcessWithoutNullStreams } from "node:child_process";
 import { CLI } from "./cli.js";
 import { Control } from "./control.js";
 import { createScreen } from "./terminal.js";
@@ -18,7 +17,9 @@ const COMPONENTS = {
   multiplayer: { color: "green", name: "Multiplayer" },
   files: { color: "yellow", name: "Files" },
   types: { color: "magenta", name: "Types" },
-  db: { color: "gray", name: "Database" },
+  db: { color: "gray", name: "Database", hide: true },
+  npm: { color: "gray", name: "npm install" },
+  rust: { color: "gray", name: "rustup upgrade" },
 };
 
 export class UI {
@@ -112,7 +113,7 @@ export class UI {
     return this.write(name + status, error ? "red" : COMPONENTS[name].color);
   }
 
-  run(component: string, text = "running...") {
+  print(component: string, text = "starting...") {
     this.clear();
     const { name, color } = COMPONENTS[component];
     process.stdout.write(`[${chalk[color](name)}] ${text}\n`);
@@ -144,13 +145,9 @@ export class UI {
     this.showing = characters;
   }
 
-  printOutput(
-    command: ChildProcessWithoutNullStreams,
-    name: string,
-    color: string,
-    callback?: (data: string) => void,
-    hide?: boolean
-  ) {
+  printOutput(name: string, callback?: (data: string) => void) {
+    const command = this.control[name];
+    const { color, hide } = COMPONENTS[name];
     command.stdout.on("data", (data) => {
       if (hide) {
         if (callback) {

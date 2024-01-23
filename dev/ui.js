@@ -13,7 +13,9 @@ const COMPONENTS = {
     multiplayer: { color: "green", name: "Multiplayer" },
     files: { color: "yellow", name: "Files" },
     types: { color: "magenta", name: "Types" },
-    db: { color: "gray", name: "Database" },
+    db: { color: "gray", name: "Database", hide: true },
+    npm: { color: "gray", name: "npm install" },
+    rust: { color: "gray", name: "rustup upgrade" },
 };
 export class UI {
     cli;
@@ -100,10 +102,10 @@ export class UI {
         const error = this.control.status[name] === "x";
         return this.write(name + status, error ? "red" : COMPONENTS[name].color);
     }
-    run(component) {
+    print(component, text = "starting...") {
         this.clear();
         const { name, color } = COMPONENTS[component];
-        process.stdout.write(`[${chalk[color](name)}] running...\n`);
+        process.stdout.write(`[${chalk[color](name)}] ${text}\n`);
         this.prompt();
     }
     prompt() {
@@ -127,7 +129,9 @@ export class UI {
         }
         this.showing = characters;
     }
-    printOutput(command, name, color, callback, hide) {
+    printOutput(name, callback) {
+        const command = this.control[name];
+        const { color, hide } = COMPONENTS[name];
         command.stdout.on("data", (data) => {
             if (hide) {
                 if (callback) {
