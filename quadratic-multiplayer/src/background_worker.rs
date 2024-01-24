@@ -147,8 +147,9 @@ mod tests {
             .transaction_queue
             .lock()
             .await
-            .push_pending(transaction_id_1, file_id, vec![operations_1.clone()], 1)
-            .await;
+            .push(transaction_id_1, file_id, vec![operations_1.clone()], 1)
+            .await
+            .unwrap();
 
         super::broadcast_sequence_num(state, &file_id)
             .await

@@ -193,16 +193,16 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
-            // tracing::info!(
-            //     "Transaction received for room {} from user {}",
-            //     file_id,
-            //     session_id
-            // );
+            tracing::trace!(
+                "Transaction received for room {} from user {}",
+                file_id,
+                session_id
+            );
 
             // unpack the operations or return an error
             let operations_unpacked: Vec<Operation> = serde_json::from_str(&operations)?;
 
-            // get the room's sequence_num
+            // get and increment the room's sequence_num
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
 
             // add the transaction to the transaction queue
@@ -210,8 +210,8 @@ pub(crate) async fn handle_message(
                 .transaction_queue
                 .lock()
                 .await
-                .push_pending(id, file_id, operations_unpacked, room_sequence_num)
-                .await;
+                .push(id, file_id, operations_unpacked, room_sequence_num)
+                .await?;
 
             // broadcast the transaction to all users in the room
             let response = MessageResponse::Transaction {

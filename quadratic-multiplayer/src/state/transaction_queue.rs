@@ -77,13 +77,13 @@ impl TransactionQueue {
         }
     }
 
-    async fn push(
+    pub(crate) async fn push(
         &mut self,
         id: Uuid,
         file_id: Uuid,
         operations: Vec<Operation>,
         sequence_num: u64,
-    ) -> u64 {
+    ) -> Result<u64> {
         let transaction = TransactionServer {
             id,
             file_id,
@@ -91,7 +91,7 @@ impl TransactionQueue {
             sequence_num,
         };
 
-        let transaction = serde_json::to_string(&transaction).unwrap();
+        let transaction = serde_json::to_string(&transaction)?;
         let active_channels = match self.pubsub.config {
             PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
             _ => "active_channels",
@@ -105,20 +105,9 @@ impl TransactionQueue {
                 &transaction,
                 Some(active_channels),
             )
-            .await
-            .unwrap();
+            .await?;
 
-        sequence_num
-    }
-
-    pub(crate) async fn push_pending(
-        &mut self,
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<Operation>,
-        room_sequence_num: u64,
-    ) -> u64 {
-        self.push(id, file_id, operations, room_sequence_num).await
+        Ok(sequence_num)
     }
 
     /// Returns latest sequence number for a given file (if any are in the transaction_queue)
@@ -166,8 +155,9 @@ mod tests {
             .transaction_queue
             .lock()
             .await
-            .push_pending(transaction_id_1, file_id, vec![operations_1.clone()], 1)
-            .await;
+            .push(transaction_id_1, file_id, vec![operations_1.clone()], 1)
+            .await
+            .unwrap();
 
         // let mut transaction_queue = state.transaction_queue.lock().await;
         // let transactions = transaction_queue.get_pending(file_id).unwrap();

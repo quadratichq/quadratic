@@ -81,21 +81,6 @@ impl State {
     }
 }
 
-#[macro_export]
-macro_rules! get_mut_connection {
-    ( $self:ident, $connection_id:ident ) => {
-        $self
-            .connections
-            .lock()
-            .await
-            .get_mut(&$connection_id)
-            .ok_or(MpError::Connection(format!(
-                "connection_id {} not found",
-                &$connection_id
-            )))
-    };
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{error::MpError, test_util::new_state};
