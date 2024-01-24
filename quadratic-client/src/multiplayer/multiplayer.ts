@@ -32,6 +32,7 @@ const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 
 export type MultiplayerState =
   | 'startup'
+  | 'no internet'
   | 'not connected'
   | 'connecting'
   | 'connected'
@@ -43,7 +44,7 @@ export class Multiplayer {
   private _state: MultiplayerState = 'startup';
   private updateId?: number;
   private sessionId;
-  private room?: string;
+  private fileId?: string;
   private user?: User;
   private anonymous?: boolean;
   private jwt?: string | void;
@@ -53,7 +54,6 @@ export class Multiplayer {
 
   // queue of items waiting to be sent to the server on the next tick
   private userUpdate: MessageUserUpdate;
-  private lastTime = 0;
   private lastHeartbeat = 0;
 
   // next player's color index
@@ -65,6 +65,16 @@ export class Multiplayer {
   constructor() {
     this.sessionId = uuid();
     this.userUpdate = { type: 'UserUpdate', session_id: this.sessionId, file_id: '', update: {} };
+    window.addEventListener('online', () => {
+      if (this.state === 'no internet') {
+        this.state = 'not connected';
+        this.init();
+      }
+    });
+    window.addEventListener('offline', () => {
+      this.state = 'no internet';
+      this.websocket?.close();
+    });
   }
 
   get state() {
@@ -72,6 +82,9 @@ export class Multiplayer {
   }
   private set state(state: MultiplayerState) {
     this._state = state;
+    if (state === 'no internet' || state === 'waiting to reconnect') {
+      this.clearAllUsers();
+    }
     window.dispatchEvent(new CustomEvent('multiplayer-state', { detail: state }));
   }
 
@@ -90,8 +103,15 @@ export class Multiplayer {
     }
   }
 
-  private async init() {
+  async init(file_id?: string, user?: User, anonymous?: boolean) {
     if (this.state === 'connected') return;
+
+    if (file_id) {
+      this.fileId = file_id;
+      this.user = user;
+      this.anonymous = anonymous;
+      this.userUpdate.file_id = file_id;
+    }
 
     if (!this.anonymous) {
       await this.addJwtCookie();
@@ -107,13 +127,20 @@ export class Multiplayer {
       this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
       this.websocket.addEventListener('message', this.receiveMessage);
 
-      this.websocket.addEventListener('close', this.reconnect);
-      this.websocket.addEventListener('error', this.reconnect);
-
+      this.websocket.addEventListener('close', () => {
+        if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
+        this.state = 'waiting to reconnect';
+        this.reconnect();
+      });
+      this.websocket.addEventListener('error', (e) => {
+        if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
+        this.state = 'waiting to reconnect';
+        this.reconnect();
+      });
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket connected.');
         this.state = 'connected';
-        resolve(0);
+        this.enterFileRoom();
         this.waitingForConnection.forEach((resolve) => resolve(0));
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
@@ -127,37 +154,27 @@ export class Multiplayer {
   }
 
   private reconnect = () => {
-    if (this.state === 'waiting to reconnect') return;
+    if (this.state === 'waiting to reconnect' || this.state === 'no internet') return;
     console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
     setTimeout(async () => {
       this.state = 'not connected';
       await this.init();
-      if (this.room) {
-        // need the room to rejoin, but clear it so enterFileRoom succeeds
-        const room = this.room;
-        this.room = undefined;
-        await this.enterFileRoom(room, this.user);
-      }
     }, RECONNECT_AFTER_ERROR_TIMEOUT);
   };
 
   // multiplayer for a file
-  async enterFileRoom(file_id: string, user?: User, anonymous?: boolean) {
-    this.anonymous = anonymous;
-    if (!user?.sub) throw new Error('User must be defined to enter a multiplayer room.');
-    this.userUpdate.file_id = file_id;
-    await this.init();
+  async enterFileRoom() {
     if (!this.websocket) throw new Error('Expected websocket to be defined in enterFileRoom');
-    this.user = user;
+    if (!this.fileId) throw new Error('Expected fileId to be defined in enterFileRoom');
+    const user = this.user;
+    if (!user?.sub) throw new Error('Expected user to be defined in enterFileRoom');
     // ensure the user doesn't join a room twice
-    if (this.room === file_id) return;
-    this.room = file_id;
     const enterRoom: SendEnterRoom = {
       type: 'EnterRoom',
       session_id: this.sessionId,
       user_id: user.sub,
-      file_id,
+      file_id: this.fileId,
       sheet_id: sheets.sheet.id,
       selection: sheets.getMultiplayerSelection(),
       first_name: user.given_name ?? '',
@@ -178,11 +195,12 @@ export class Multiplayer {
     };
     this.websocket.send(JSON.stringify(enterRoom));
     offline.loadTransactions();
-    if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${file_id}.`);
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${this.fileId}.`);
   }
 
   // called by Update.ts
   private update = () => {
+    if (!navigator.onLine || this.state === 'no internet') return;
     if (this.state !== 'connected') return;
     const now = performance.now();
 
@@ -191,7 +209,6 @@ export class Multiplayer {
       this.userUpdate.update = {};
       this.lastHeartbeat = now;
     }
-    this.lastTime = now;
     if (now - this.lastHeartbeat > HEARTBEAT_TIME) {
       if (debugShowMultiplayer) {
         console.log('[Multiplayer] Sending heartbeat to the server...');
@@ -199,7 +216,7 @@ export class Multiplayer {
       const heartbeat: Heartbeat = {
         type: 'Heartbeat',
         session_id: this.sessionId,
-        file_id: this.room!,
+        file_id: this.fileId!,
       };
       this.websocket!.send(JSON.stringify(heartbeat));
       this.lastHeartbeat = now;
@@ -231,7 +248,7 @@ export class Multiplayer {
       this.userUpdate = {
         type: 'UserUpdate',
         session_id: this.sessionId,
-        file_id: this.room!,
+        file_id: this.fileId!,
         update: {},
       };
     }
@@ -295,12 +312,12 @@ export class Multiplayer {
     await this.init();
 
     // it's possible that we try to send a transaction before we've entered a room (eg, unsent_transactions)
-    if (!this.room) return;
+    if (!this.fileId) return;
     const message: SendTransaction = {
       type: 'Transaction',
       id,
       session_id: this.sessionId,
-      file_id: this.room,
+      file_id: this.fileId,
       operations,
     };
     this.state = 'syncing';
@@ -314,7 +331,7 @@ export class Multiplayer {
     const message: SendGetTransactions = {
       type: 'GetTransactions',
       session_id: this.sessionId,
-      file_id: this.room!,
+      file_id: this.fileId!,
       min_sequence_num,
     };
     if (debugShowMultiplayer) console.log(`[Multiplayer] Requesting transactions starting from ${min_sequence_num}.`);
@@ -379,6 +396,15 @@ export class Multiplayer {
     pixiApp.multiplayerCursor.dirty = true;
   }
 
+  private clearAllUsers() {
+    if (debugShowMultiplayer) console.log('[Multiplayer] Clearing all users.');
+    this.users.clear();
+    pixiApp.multiplayerCursor.dirty = true;
+    window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: this.getUsers() }));
+    window.dispatchEvent(new CustomEvent('multiplayer-change-sheet'));
+    window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+  }
+
   private receiveUserUpdate(data: MessageUserUpdate) {
     // this eventually will not be necessarily
     if (data.session_id === this.sessionId) return;
@@ -387,7 +413,7 @@ export class Multiplayer {
     // it's possible we get the UserUpdate before the EnterRoom response. No big deal if we do.
     if (!player) return;
 
-    if (data.file_id !== this.room) {
+    if (data.file_id !== this.fileId) {
       throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
     }
     const update = data.update;
@@ -468,7 +494,7 @@ export class Multiplayer {
 
   // Receives a new transaction from the server
   private async receiveTransaction(data: ReceiveTransaction) {
-    if (data.file_id !== this.room) {
+    if (data.file_id !== this.fileId) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
     grid.multiplayerTransaction(data.id, data.sequence_num, data.operations);
@@ -493,7 +519,7 @@ export class Multiplayer {
   // Receives the current transaction number from the server when entering a room.
   // Note: this may be different than the one provided by the api as there may be unsaved Transactions.
   private receiveEnterRoom(data: ReceiveEnterRoom) {
-    if (data.file_id !== this.room) {
+    if (data.file_id !== this.fileId) {
       throw new Error("Expected file_id to match room before receiving a message of type 'EnterRoom'");
     }
     grid.receiveSequenceNum(data.sequence_num);

@@ -386,26 +386,29 @@ export function InviteForm({
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // If there's an exisiting error, don't submit
-    if (error) {
-      return;
-    }
-
     // Get the data from the form
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData);
+    const email = String(formData.get('email')).trim();
+    const roleIndex = Number(formData.get('roleIndex'));
 
     // Validate email
+    if (disallowedEmails.includes(email)) {
+      setError('This email has already been invited.');
+      return;
+    }
     try {
-      emailSchema.parse(data.email);
+      emailSchema.parse(email);
     } catch (e) {
-      setError('Invalid email');
+      setError('Invalid email.');
       return;
     }
 
     // Submit the data
-    // @ts-expect-error fix types
-    submit(data, { method: 'POST', action, encType: 'application/json', navigate: false });
+    // TODO: (enhancement) enhance types so it knows which its submitting to
+    submit(
+      { intent, email: email, role: roles[roleIndex] },
+      { method: 'POST', action, encType: 'application/json', navigate: false }
+    );
 
     // Reset the email input & focus it
     if (inputRef.current) {
@@ -432,12 +435,7 @@ export function InviteForm({
           autoFocus
           ref={inputRef}
           onChange={(e) => {
-            const email = e.target.value;
-            if (disallowedEmails.includes(email)) {
-              setError('This email has already been invited.');
-            } else {
-              setError('');
-            }
+            setError('');
           }}
         />
         {error && (
@@ -448,13 +446,13 @@ export function InviteForm({
       </div>
 
       <div className="flex-shrink-0">
-        <Select defaultValue={roles[0]} name="role">
+        <Select defaultValue={'0'} name="roleIndex">
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {roles.map((role) => (
-              <SelectItem key={role} value={role}>
+            {roles.map((role, i) => (
+              <SelectItem key={role} value={String(i)}>
                 {getRoleLabel(role)}
               </SelectItem>
             ))}
@@ -462,8 +460,14 @@ export function InviteForm({
         </Select>
       </div>
 
-      <input type="hidden" name="intent" value={intent} />
-      <Button type="submit">Invite</Button>
+      <Button
+        type="submit"
+        onClick={() => {
+          inputRef.current?.focus();
+        }}
+      >
+        Invite
+      </Button>
     </form>
   );
 }

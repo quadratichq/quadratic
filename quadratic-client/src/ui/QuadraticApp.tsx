@@ -83,8 +83,8 @@ export default function QuadraticApp() {
         multiplayerUser = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
         anonymous = true;
       }
-      pixiApp.init().then(() => {
-        multiplayer.enterFileRoom(uuid, multiplayerUser, anonymous);
+      pixiApp.init().then(async () => {
+        multiplayer.init(uuid, multiplayerUser, anonymous);
         setLoading(false);
       });
     }

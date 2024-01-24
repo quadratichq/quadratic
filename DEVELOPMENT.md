@@ -10,12 +10,8 @@ Let's get everything setup to develop on Quadratic!
   - [Installing Redis](#installing-redis)
     - [Mac](#mac-1)
   - [Using node dev](#using-node-dev)
-    - [Development](#development-1)
-    - [Develop on the Frontend](#develop-on-the-frontend-1)
-    - [Develop on Quadratic API](#develop-on-quadratic-api-1)
-    - [Develop on Quadratic Core](#develop-on-quadratic-core-1)
-    - [Develop on Quadratic MultiPlayer](#develop-on-quadratic-multiplayer-1)
-    - [Develop on Quadratic Files](#develop-on-quadratic-files-1)
+    - [Commands while `node dev` is running](#commands-while-node-dev-is-running)
+    - [Running for React-only development](#running-for-react-only-development)
 
 
 ## Install Dependencies
@@ -101,7 +97,7 @@ You can also develop Quadratic without using docker
 
 ## Using node dev
 
-Call `node dev` from the /quadratic directory.
+Call `node dev` from the /quadratic directory. This script handles fixing most common problems. You do need to ensure your system is properly set up with the correct `.env` files and the database and redis setup and available.
 
 ```
 Usage: node dev [options]
@@ -109,40 +105,38 @@ Usage: node dev [options]
 Runs the Quadratic dev server. By default, only React runs in watch mode.
 
 Options:
-  -p, --api          Watch the quadratic-api directory
-  -c, --core         Watch the quadratic-core directory
-  -m, --multiplayer  Watch the quadratic-multiplayer directory
-  -f, --files        Watch the quadratic-files directory
-  -s, --skipTypes    Skip WASM types compilation
-  -a, --all          Watch all directories
-  -p, --perf         Run quadratic-core in perf mode (slower linking but faster runtime)
-  -h, --help         display help for command
-  ```
+  -a, --api              Watch the quadratic-api directory
+  -c, --core             Watch the quadratic-core directory
+  -m, --multiplayer      Watch the quadratic-multiplayer directory
+  -f, --files            Watch the quadratic-files directory
+  -a, --all              Watch all directories
+  -s, --skipTypes        Skip WASM types compilation
+  -p, --perf             Run quadratic-core in perf mode (slower to link but faster runtime)
+  -R, --hideReact        Hide React output
+  -A, --hideAPI          Hide React output
+  -C, --hideCore         Hide React output
+  -T, --hideTypes        Hide Types output
+  -M, --hideMultiplayer  Hide Multiplayer output
+  -F, --hideFiles        Hide Files output
+  -d, --dark             Use dark theme
+  -h, --help             display help for command
+```
 
-### Development
+### Commands while `node dev` is running
 
-Use any combination of flags based on the components you are developing. This has the advantage of not recompiling rust components that should not be impacted by your work. For example, if you're only working on Core, your changes may force multiplayer and files to recompile. But if those should not be impacted, then it's better not to run those components in watch mode.
+Press `h` while running to see this help menu. Press `H` while running to see the CLI commands.
 
-`--skipTypes`` is useful to skip running the WASM type generator when first starting the script. This will speed up the start of the script.
+```
+Press:
+     a c   m f - Toggle watch for component
+   R A C T M F - Toggle showing logs for component
+             p - Toggle performance build for Core
+             r - Restart React
+             t - Rebuild WASM types from Core for React
+             d - Toggle dark theme
+             H - Show CLI options
+```
 
-`--perf`` is useful to experience the app w/Rust running at full production speed. Core normally runs with --dev on, which significantly impacts performance.
+### Running for React-only development
 
-### Develop on the Frontend
-
-If you are only working on the react front-end, you can run `node dev` without any options.
-
-### Develop on Quadratic API
-
-Use `node dev -p` if you are developing the API. Only React and the API will be in watch mode.
-
-### Develop on Quadratic Core
-
-Use `node dev -c` if you are developing Core. Only React and Core will be in watch mode.
-
-### Develop on Quadratic MultiPlayer
-
-Use `node dev -m` if you are developing Multiplayer. Only React and the Multiplayer server will be in watch mode.
-
-### Develop on Quadratic Files
-
-Use `node dev -f` if you are developing Files. Only React and the Multiplayer server will be in watch mode.
+After you successfully run the app the first time, use `node dev -ACTMF` if only developing in React. This will hide output from Rust and server components.

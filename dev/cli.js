@@ -6,14 +6,20 @@ export class CLI {
         program
             .name("node dev")
             .description("Runs the Quadratic dev server. By default, only React runs in watch mode.")
-            .option("-p, --api", "Watch the quadratic-api directory")
+            .option("-a, --api", "Watch the quadratic-api directory")
             .option("-c, --core", "Watch the quadratic-core directory")
             .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
             .option("-f, --files", "Watch the quadratic-files directory")
-            .option("-s, --skipTypes", "Skip WASM types compilation")
             .option("-a, --all", "Watch all directories")
-            .option("-d, --darkmode", "View the output in dark mode")
-            .option("-p, --perf", "Run quadratic-core in perf mode (slower linking but faster runtime)")
+            .option("-s, --skipTypes", "Skip WASM types compilation")
+            .option("-p, --perf", "Run quadratic-core in perf mode (slower to link but faster runtime)")
+            .option("-R, --hideReact", "Hide React output")
+            .option("-A, --hideAPI", "Hide React output")
+            .option("-C, --hideCore", "Hide React output")
+            .option("-T, --hideTypes", "Hide Types output")
+            .option("-M, --hideMultiplayer", "Hide Multiplayer output")
+            .option("-F, --hideFiles", "Hide Files output")
+            .option("-d, --dark", "Use dark theme")
             .showHelpAfterError();
         program.parse();
         this.options = program.opts();
