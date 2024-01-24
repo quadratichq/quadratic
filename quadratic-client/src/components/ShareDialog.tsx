@@ -404,6 +404,7 @@ export function InviteForm({
     }
 
     // Submit the data
+    // TODO: (enhancement) enhance types so it knows which its submitting to
     submit(
       { intent, email: email, role: roles[roleIndex] },
       { method: 'POST', action, encType: 'application/json', navigate: false }
