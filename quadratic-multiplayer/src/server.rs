@@ -349,7 +349,7 @@ pub(crate) mod tests {
         };
 
         let response = integration_test_send_and_receive(&socket, request, true, 1).await;
-        assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
+        assert_eq!(response, Some(expected));
     }
 
     fn new_user_state_update(user: User, file_id: Uuid) -> MessageRequest {
@@ -413,9 +413,8 @@ pub(crate) mod tests {
         };
 
         let response = integration_test_send_and_receive(&socket, request, true, 1).await;
-        let response = serde_json::from_str::<MessageResponse>(&response.unwrap()).unwrap();
 
-        assert_eq!(response, expected);
+        assert_eq!(response, Some(expected));
     }
 
     #[tokio::test]
@@ -561,6 +560,6 @@ pub(crate) mod tests {
 
         let response = integration_test_send_and_receive(&socket, request, true, 1).await;
 
-        assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
+        assert_eq!(response, Some(expected));
     }
 }

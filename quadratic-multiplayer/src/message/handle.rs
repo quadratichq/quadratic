@@ -303,7 +303,7 @@ pub(crate) mod tests {
 
     use super::*;
     use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::{integration_test_receive_typed, setup};
+    use crate::test_util::{integration_test_receive, setup};
 
     async fn test_handle(
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
@@ -326,7 +326,7 @@ pub(crate) mod tests {
             .unwrap();
         assert_eq!(handled, response);
 
-        let received = integration_test_receive_typed(&socket, 1).await.unwrap();
+        let received = integration_test_receive(&socket, 1).await.unwrap();
         assert_eq!(received, broadcast_response);
     }
 

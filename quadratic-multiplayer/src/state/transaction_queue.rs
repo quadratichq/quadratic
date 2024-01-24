@@ -4,20 +4,11 @@ use quadratic_core::controller::{
 use quadratic_rust_shared::pubsub::{
     redis_streams::RedisConnection, Config as PubSubConfig, PubSub as PubSubTrait,
 };
-use serde::Serialize;
 use uuid::Uuid;
 
 use crate::error::Result;
 
 pub static GROUP_NAME: &str = "quadratic-multiplayer-1";
-
-#[derive(Serialize, Debug, PartialEq, Clone)]
-pub(crate) struct Transaction {
-    pub(crate) id: Uuid,
-    pub(crate) file_id: Uuid,
-    pub(crate) operations: Vec<Operation>,
-    pub(crate) sequence_num: u64,
-}
 
 #[derive(Debug)]
 pub(crate) struct PubSub {

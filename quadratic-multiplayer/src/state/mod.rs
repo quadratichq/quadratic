@@ -19,7 +19,6 @@ use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::Result;
-use crate::get_room;
 use crate::state::room::Room;
 use crate::state::settings::Settings;
 
@@ -49,10 +48,5 @@ impl State {
             pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
             settings: Settings::new(config, jwks).await,
         })
-    }
-
-    /// Get a room's current sequence number.
-    pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
-        Ok(get_room!(self, file_id)?.sequence_num)
     }
 }

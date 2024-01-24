@@ -116,6 +116,11 @@ impl State {
 
         tracing::info!("Room {file_id} removed");
     }
+
+    /// Get a room's current sequence number.
+    pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
+        Ok(get_room!(self, file_id)?.sequence_num)
+    }
 }
 
 #[macro_export]

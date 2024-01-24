@@ -185,7 +185,7 @@ pub(crate) async fn integration_test_send_and_receive(
     request: MessageRequest,
     expect_response: bool,
     response_num: usize,
-) -> Option<String> {
+) -> Option<MessageResponse> {
     // send the message
     integration_test_send(socket, request).await;
 
@@ -214,28 +214,6 @@ pub(crate) async fn integration_test_send(
 }
 
 pub(crate) async fn integration_test_receive(
-    socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
-    response_num: usize,
-) -> Option<String> {
-    let mut last_response = None;
-    let mut count = 0;
-
-    while let Some(Ok(msg)) = socket.lock().await.next().await {
-        count += 1;
-        last_response = match msg {
-            tungstenite::Message::Text(msg) => Some(msg),
-            other => panic!("expected a text message but got {other:?}"),
-        };
-
-        if count >= response_num {
-            break;
-        }
-    }
-
-    last_response
-}
-
-pub(crate) async fn integration_test_receive_typed(
     socket: &Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     response_num: usize,
 ) -> Option<MessageResponse> {
