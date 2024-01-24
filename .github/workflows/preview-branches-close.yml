@@ -1,3 +1,5 @@
+name: Destroy Preview Branch
+
 on:
   pull_request:
     types: [closed]
@@ -17,6 +19,8 @@ jobs:
       working-directory: infra
       run: |
         npm ci
+
+        pulumi org set-default quadratic
         
         STACK_NAME="preview-pr-${{ env.PR_ID }}"
         pulumi stack select $STACK_NAME
