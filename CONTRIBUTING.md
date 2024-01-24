@@ -1,12 +1,18 @@
 # Quadratic Contribution Guide
 
-Thank you for considering contributing to the data science spreadsheet :sparkles:
+Thank you for considering contributing to Quadratic, the infinite data science spreadsheet :sparkles:
+
+**Before contributing**, please respond to the issue you'd like to work on; someone on the team will get in touch to help. Alternatively, feel free to reach out to the team via careers@gmail.com to get in touch and discuss contributing. 
 
 Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approachable and respectable.
 
 In this guide, you will get an overview of the contribution workflow from opening an issue, creating a PR, reviewing, and merging the PR.
 
 If you have any problems getting the project to run locally, please create an issue to document the problem. See ["Create an issue"](#create-an-issue) below.
+
+## Quadratic is hiring
+
+Check out our open roles ⟶ [careers.quadratichq.com](https://careers.quadratichq.com)
 
 ## Setup
 
@@ -110,7 +116,3 @@ We review all PRs quickly, so we will give you feedback in short order!
 Congratulations! :tada::tada: Quadratic is better because of you. :sparkles:
 
 Once your PR is merged, contributors will be publicly visible on the GitHub Page.
-
-## Quadratic is hiring
-
-Check out our open roles ⟶ [careers.quadratichq.com](https://careers.quadratichq.com)
