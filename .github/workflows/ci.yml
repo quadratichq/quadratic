@@ -38,12 +38,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config
 
-      - name: Build quadratic-core
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-        run: |
-          cd quadratic-core
-          cargo build
+      # - name: Build quadratic-core
+      #   env:
+      #     RUSTFLAGS: -Cinstrument-coverage
+      #   run: |
+      #     cd quadratic-core
+      #     cargo build
 
       # - name: Test quadratic-core
       #   env:
@@ -72,12 +72,12 @@ jobs:
       #   env:
       #     CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Build quadratic-multiplayer
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-        run: |
-          cd quadratic-multiplayer
-          cargo build
+      # - name: Build quadratic-multiplayer
+      #   env:
+      #     RUSTFLAGS: -Cinstrument-coverage
+      #   run: |
+      #     cd quadratic-multiplayer
+      #     cargo build
 
       - name: Test quadratic-multiplayer
         env:
