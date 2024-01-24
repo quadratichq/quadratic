@@ -22,20 +22,20 @@ use crate::error::Result;
 use crate::get_room;
 use crate::state::room::Room;
 use crate::state::settings::Settings;
-use crate::state::transaction_queue::TransactionQueue;
 
 use self::connection::Connection;
+use self::transaction_queue::PubSub;
 
 #[derive(Debug)]
 pub(crate) struct State {
     pub(crate) rooms: Mutex<DashMap<Uuid, Room>>,
     pub(crate) connections: Mutex<HashMap<Uuid, Connection>>,
-    pub(crate) transaction_queue: Mutex<TransactionQueue>,
+    pub(crate) pubsub: Mutex<PubSub>,
     pub(crate) settings: Settings,
 }
 
 impl State {
-    pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
+    pub(crate) async fn new(config: &Config, jwks: Option<JwkSet>) -> Result<Self> {
         let pubsub_config = PubSubConfig::RedisStreams(RedisStreamsConfig {
             host: config.pubsub_host.to_owned(),
             port: config.pubsub_port.to_owned(),
@@ -43,27 +43,16 @@ impl State {
             active_channels: config.pubsub_active_channels.to_owned(),
         });
 
-        State {
+        Ok(State {
             rooms: Mutex::new(DashMap::new()),
             connections: Mutex::new(HashMap::new()),
-            transaction_queue: Mutex::new(TransactionQueue::new(pubsub_config).await),
+            pubsub: Mutex::new(PubSub::new(pubsub_config).await?),
             settings: Settings::new(config, jwks).await,
-        }
+        })
     }
 
     /// Get a room's current sequence number.
     pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
-        // First, check the transaction queue for the sequence number
-        if let Some(sequence_num) = self
-            .transaction_queue
-            .lock()
-            .await
-            .get_sequence_num(file_id.to_owned())
-        {
-            Ok(sequence_num)
-        } else {
-            // otherwise get it from the room (which has the last loaded file's sequence_num)
-            Ok(get_room!(self, file_id)?.sequence_num)
-        }
+        Ok(get_room!(self, file_id)?.sequence_num)
     }
 }

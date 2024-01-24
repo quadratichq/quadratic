@@ -70,10 +70,9 @@ pub(crate) async fn handle_message(
 
                 // TODO(ddimaria): break out any pubsub work into a separate file
                 if let Ok(pubsub_sequence_num) = state
-                    .transaction_queue
+                    .pubsub
                     .lock()
                     .await
-                    .pubsub
                     .connection
                     .last_message(&file_id.to_string())
                     .await
@@ -117,10 +116,9 @@ pub(crate) async fn handle_message(
             // subscribe to the file's pubsub channel
             // TODO(ddimaria): break out any pubsub work into a separate file
             if let Err(error) = state
-                .transaction_queue
+                .pubsub
                 .lock()
                 .await
-                .pubsub
                 .connection
                 .subscribe(&file_id.to_string(), GROUP_NAME)
                 .await
@@ -207,7 +205,7 @@ pub(crate) async fn handle_message(
 
             // add the transaction to the transaction queue
             let sequence_num = state
-                .transaction_queue
+                .pubsub
                 .lock()
                 .await
                 .push(id, file_id, operations_unpacked, room_sequence_num)
@@ -238,10 +236,9 @@ pub(crate) async fn handle_message(
 
             // TODO(ddimaria): break out any pubsub work into a separate file
             let transactions = state
-                .transaction_queue
+                .pubsub
                 .lock()
                 .await
-                .pubsub
                 .connection
                 .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string())
                 .await?

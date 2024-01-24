@@ -32,7 +32,7 @@ pub(crate) const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjFa
 
 pub(crate) async fn new_state() -> State {
     let config = config().unwrap();
-    State::new(&config, None).await
+    State::new(&config, None).await.unwrap()
 }
 
 pub(crate) async fn new_arc_state() -> Arc<State> {

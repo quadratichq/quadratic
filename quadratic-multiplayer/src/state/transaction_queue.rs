@@ -5,12 +5,19 @@ use quadratic_rust_shared::pubsub::{
     redis_streams::RedisConnection, Config as PubSubConfig, PubSub as PubSubTrait,
 };
 use serde::Serialize;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::error::Result;
 
 pub static GROUP_NAME: &str = "quadratic-multiplayer-1";
+
+#[derive(Serialize, Debug, PartialEq, Clone)]
+pub(crate) struct Transaction {
+    pub(crate) id: Uuid,
+    pub(crate) file_id: Uuid,
+    pub(crate) operations: Vec<Operation>,
+    pub(crate) sequence_num: u64,
+}
 
 #[derive(Debug)]
 pub(crate) struct PubSub {
@@ -33,6 +40,38 @@ impl PubSub {
         Ok(connection)
     }
 
+    pub(crate) async fn push(
+        &mut self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+        sequence_num: u64,
+    ) -> Result<u64> {
+        let transaction = TransactionServer {
+            id,
+            file_id,
+            operations,
+            sequence_num,
+        };
+
+        let transaction = serde_json::to_string(&transaction)?;
+        let active_channels = match self.config {
+            PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
+            _ => "active_channels",
+        };
+
+        self.connection
+            .publish(
+                &file_id.to_string(),
+                &sequence_num.to_string(),
+                &transaction,
+                Some(active_channels),
+            )
+            .await?;
+
+        Ok(sequence_num)
+    }
+
     /// Check if the connection is healthy and attempt to reconnect if not
     pub(crate) async fn reconnect_if_unhealthy(&mut self) {
         let is_healthy = self.connection.is_healthy().await;
@@ -53,68 +92,6 @@ impl PubSub {
     }
 }
 
-#[derive(Serialize, Debug, PartialEq, Clone)]
-pub(crate) struct Transaction {
-    pub(crate) id: Uuid,
-    pub(crate) file_id: Uuid,
-    pub(crate) operations: Vec<Operation>,
-    pub(crate) sequence_num: u64,
-}
-
-pub(crate) type Queue = HashMap<Uuid, (u64, Vec<TransactionServer>)>;
-
-#[derive(Debug)]
-pub(crate) struct TransactionQueue {
-    pending: Queue,
-    pub(crate) pubsub: PubSub,
-}
-
-impl TransactionQueue {
-    pub(crate) async fn new(pubsub_config: PubSubConfig) -> Self {
-        TransactionQueue {
-            pending: HashMap::new(),
-            pubsub: PubSub::new(pubsub_config).await.unwrap(),
-        }
-    }
-
-    pub(crate) async fn push(
-        &mut self,
-        id: Uuid,
-        file_id: Uuid,
-        operations: Vec<Operation>,
-        sequence_num: u64,
-    ) -> Result<u64> {
-        let transaction = TransactionServer {
-            id,
-            file_id,
-            operations,
-            sequence_num,
-        };
-
-        let transaction = serde_json::to_string(&transaction)?;
-        let active_channels = match self.pubsub.config {
-            PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
-            _ => "active_channels",
-        };
-
-        self.pubsub
-            .connection
-            .publish(
-                &file_id.to_string(),
-                &sequence_num.to_string(),
-                &transaction,
-                Some(active_channels),
-            )
-            .await?;
-
-        Ok(sequence_num)
-    }
-
-    /// Returns latest sequence number for a given file (if any are in the transaction_queue)
-    pub(crate) fn get_sequence_num(&mut self, file_id: Uuid) -> Option<u64> {
-        self.pending.get(&file_id).map(|o| o.0)
-    }
-}
 #[cfg(test)]
 mod tests {
     use quadratic_core::controller::GridController;
@@ -129,10 +106,9 @@ mod tests {
         let file_id = Uuid::new_v4();
 
         state
-            .transaction_queue
+            .pubsub
             .lock()
             .await
-            .pubsub
             .connection
             .subscribe(&file_id.to_string(), GROUP_NAME)
             .await
@@ -152,7 +128,7 @@ mod tests {
         let _operations_2 = operation(&mut grid, 1, 0, "2");
 
         state
-            .transaction_queue
+            .pubsub
             .lock()
             .await
             .push(transaction_id_1, file_id, vec![operations_1.clone()], 1)

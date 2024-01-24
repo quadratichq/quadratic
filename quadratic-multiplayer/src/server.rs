@@ -64,7 +64,7 @@ pub(crate) async fn serve() -> Result<()> {
 
     let config = config()?;
     let jwks = get_jwks(&config.auth0_jwks_uri).await?;
-    let state = Arc::new(State::new(&config, Some(jwks)).await);
+    let state = Arc::new(State::new(&config, Some(jwks)).await?);
     let app = app(Arc::clone(&state));
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
@@ -321,10 +321,9 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 pub(crate) mod tests {
 
     use super::*;
-    use crate::state::user::{CellEdit, User, UserStateUpdate};
+    use crate::state::user::{User, UserStateUpdate};
     use crate::test_util::{
-        add_user_via_ws, integration_test_receive, integration_test_send_and_receive,
-        new_arc_state, new_connection, new_user, setup,
+        integration_test_send_and_receive, new_arc_state, new_connection, setup,
     };
     use axum::{
         body::Body,
@@ -349,10 +348,7 @@ pub(crate) mod tests {
             update,
         };
 
-        // add a second user to the room so that we receive the broadcast
-        add_user_via_ws(file_id, socket.clone()).await;
-
-        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 1).await;
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
     }
 
@@ -394,69 +390,29 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn test_user_enters_a_room() {
-        let (socket, _, _, file_id, user, _) = setup().await;
+        // user_2 is created using the MessageRequest::EnterRoom message
+        let (_, state, _, file_id, _, _) = setup().await;
 
-        let new_user = new_user();
-        let session_id = new_user.session_id;
-        let request = MessageRequest::EnterRoom {
-            session_id,
-            user_id: new_user.user_id.clone(),
-            file_id,
-            sheet_id: new_user.state.sheet_id,
-            selection: String::new(),
-            first_name: new_user.first_name.clone(),
-            last_name: new_user.last_name.clone(),
-            email: new_user.email.clone(),
-            image: new_user.image.clone(),
-            cell_edit: CellEdit::default(),
-            viewport: "initial viewport".to_string(),
-        };
-        let expected_enter_room = MessageResponse::EnterRoom {
-            file_id,
-            sequence_num: 0,
-        };
-        let received_enter_room = &integration_test_send_and_receive(&socket, request, true, 1)
-            .await
-            .unwrap();
-
-        assert_eq!(
-            &serde_json::to_string(&expected_enter_room).unwrap(),
-            received_enter_room
-        );
-
-        // This is not the best test, but the ordering of the users is somewhat random in the UsersInRoom message.
-        // Since we can't deserialize easily (b/c of Vec), we instead compare the length of the stringified output.
-        let users_in_room_response = MessageResponse::UsersInRoom {
-            users: vec![user, new_user],
-        };
-        assert_eq!(
-            integration_test_receive(&socket, 1).await.map(|s| s.len()),
-            serde_json::to_string(&users_in_room_response)
-                .ok()
-                .map(|s| s.len())
-        );
+        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+        assert_eq!(num_users_in_room, 2);
     }
 
     #[tokio::test]
     async fn user_leaves_a_room() {
-        let (socket, _, _, file_id, user, _) = setup().await;
-
-        // add a second user to the room
-        let user_2 = add_user_via_ws(file_id, socket.clone()).await;
-        let session_id = user_2.session_id;
+        let (socket, _, _, file_id, user_1, user_2) = setup().await;
 
         // user_2 leaves the room
         let request = MessageRequest::LeaveRoom {
-            session_id,
+            session_id: user_2.session_id,
             file_id,
         };
 
         // only the initial user is left in the room
         let expected = MessageResponse::UsersInRoom {
-            users: vec![user.clone()],
+            users: vec![user_1.clone()],
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 1).await;
         let response = serde_json::from_str::<MessageResponse>(&response.unwrap()).unwrap();
 
         assert_eq!(response, expected);
@@ -464,10 +420,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn user_is_idle_in_a_room_get_removed_and_reconnect() {
-        let (socket, state, _, file_id, user_1, _) = setup().await;
-
-        // add a second user to the room
-        let user_2 = add_user_via_ws(file_id, socket.clone()).await;
+        let (socket, state, _, file_id, user_1, user_2) = setup().await;
 
         // both users should be in the room
         let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();

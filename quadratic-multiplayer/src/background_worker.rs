@@ -27,13 +27,7 @@ pub(crate) fn start(
 
         loop {
             // reconnect if pubsub connection is unhealthy
-            state
-                .transaction_queue
-                .lock()
-                .await
-                .pubsub
-                .reconnect_if_unhealthy()
-                .await;
+            state.pubsub.lock().await.reconnect_if_unhealthy().await;
 
             // get all room ids
             let rooms = state
@@ -144,7 +138,7 @@ mod tests {
         let operations_1 = operation(&mut grid, 0, 0, "1");
 
         state
-            .transaction_queue
+            .pubsub
             .lock()
             .await
             .push(transaction_id_1, file_id, vec![operations_1.clone()], 1)
