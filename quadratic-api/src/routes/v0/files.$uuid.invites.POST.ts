@@ -70,18 +70,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/inv
     origin: String(req.headers.origin),
   };
 
-  const createInviteAndSendEmail = async () => {
-    const dbInvite = await dbClient.fileInvite.create({
-      data: {
-        email,
-        role,
-        fileId,
-      },
-    });
-    await sendEmail(email, templates.inviteToFile(emailTemplateArgs));
-    return dbInvite;
-  };
-
   // Look up the invited user by email in Auth0 and then 1 of 3 things will happen:
   const auth0Users = await lookupUsersFromAuth0ByEmail(email);
 
@@ -102,7 +90,14 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/inv
   // If there are 0 users, somebody who doesn't have a Quadratic account is
   // being invited. So we create an invite and send an email.
   if (auth0Users.length === 0) {
-    const dbInvite = await createInviteAndSendEmail();
+    const dbInvite = await dbClient.fileInvite.create({
+      data: {
+        email,
+        role,
+        fileId,
+      },
+    });
+    await sendEmail(email, templates.inviteToFile(emailTemplateArgs));
     return res.status(201).json([{ email, role, id: dbInvite.id }]);
   }
 
@@ -138,7 +133,13 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/inv
     // They need to go through the flow of coming into the app for the first time
     // So we create an invite — it'll turn into a user when they login for the 1st time
     if (!dbUser) {
-      const dbInvite = await createInviteAndSendEmail();
+      const dbInvite = await dbClient.fileInvite.create({
+        data: {
+          email,
+          role,
+          fileId,
+        },
+      });
       invitesOrUsers.push({ email, role, id: dbInvite.id });
     } else {
       // Otherwise associate them as a user of the file. But:
