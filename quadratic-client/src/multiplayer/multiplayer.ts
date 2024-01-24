@@ -127,9 +127,14 @@ export class Multiplayer {
       this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
       this.websocket.addEventListener('message', this.receiveMessage);
 
-      this.websocket.addEventListener('close', this.reconnect);
-      this.websocket.addEventListener('error', this.reconnect);
-
+      this.websocket.addEventListener('close', () => {
+        this.state = 'waiting to reconnect';
+        this.reconnect();
+      });
+      this.websocket.addEventListener('error', () => {
+        this.state = 'waiting to reconnect';
+        this.reconnect();
+      });
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket connected.');
         this.state = 'connected';
