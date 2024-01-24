@@ -69,6 +69,9 @@ export class Input {
       case "T": // toggle showing React
         this.cli.options.hideTypes = !this.cli.options.hideTypes;
         break;
+      case "d": // toggle dark theme
+        this.cli.options.dark = !this.cli.options.dark;
+        break;
     }
   };
 }

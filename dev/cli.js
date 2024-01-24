@@ -19,6 +19,7 @@ export class CLI {
             .option("-T, --hideTypes", "Hide Types output")
             .option("-M, --hideMultiplayer", "Hide Multiplayer output")
             .option("-F, --hideFiles", "Hide Files output")
+            .option("-d, --dark", "Use dark theme")
             .showHelpAfterError();
         program.parse();
         this.options = program.opts();

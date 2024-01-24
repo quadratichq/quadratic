@@ -243,7 +243,7 @@ export class Control {
         this.ui.printOutput("db");
         this.db.once("exit", (code) => {
             if (code === 0) {
-                this.ui.print("db", "completed");
+                this.ui.print("db", "migration completed");
                 this.status.db = true;
             }
             else {
@@ -258,11 +258,11 @@ export class Control {
         this.npm = spawn("npm", ["install"]);
         this.npm.on("close", (code) => {
             if (code === 0) {
-                this.ui.print("npm", "completed");
+                this.ui.print("npm", "installation completed");
                 this.status.npm = true;
             }
             else {
-                this.ui.print("npm", "failed");
+                this.ui.print("npm", "installation failed");
                 this.status.npm = "x";
             }
             this.runClient();

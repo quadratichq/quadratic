@@ -1,29 +1,18 @@
 import chalk from "chalk";
 import { CLI } from "./cli.js";
+import {
+  ANIMATE_STATUS,
+  ANIMATION_INTERVAL,
+  BROKEN,
+  COMPONENTS,
+  DONE,
+  NO_LOGS,
+  SPACE,
+  WATCH,
+} from "./constants.js";
 import { Control } from "./control.js";
 import { help, helpCLI, helpKeyboard } from "./help.js";
 import { createScreen } from "./terminal.js";
-
-const SPACE = "     ";
-const DONE = "✓";
-const BROKEN = "✗";
-const ANIMATE_STATUS = ["◐", "◓", "◑", "◒"];
-const WATCH = "👀";
-const NO_LOGS = "🙈"; // AI picked this awesome character
-
-const ANIMATION_INTERVAL = 100;
-
-const COMPONENTS = {
-  client: { color: "magenta", name: "React", shortcut: "r" },
-  api: { color: "blue", name: "API", shortcut: "a" },
-  core: { color: "cyan", name: "Core", shortcut: "c" },
-  multiplayer: { color: "green", name: "Multiplayer", shortcut: "m" },
-  files: { color: "yellow", name: "Files", shortcut: "f" },
-  types: { color: "magenta", name: "Types", shortcut: "t" },
-  db: { color: "gray", name: "Database", shortcut: "d", hide: true },
-  npm: { color: "gray", name: "npm install", shortcut: "n", hide: true },
-  rust: { color: "gray", name: "rustup upgrade", shortcut: "r", hide: true },
-};
 
 export class UI {
   private cli: CLI;
@@ -99,9 +88,9 @@ export class UI {
 
   statusItem(component: string, alwaysWatch?: boolean) {
     const error = this.control.status[component] === "x";
-    const { name, color, shortcut } = COMPONENTS[component];
+    const { name, color, dark, shortcut } = COMPONENTS[component];
     const index = name.toLowerCase().indexOf(shortcut.toLowerCase());
-    const writeColor = error ? "red" : color;
+    const writeColor = error ? "red" : this.cli.options.dark ? dark : color;
     this.write(name.substring(0, index), writeColor);
     this.write(name[index], writeColor, true);
     this.write(name.substring(index + 1), writeColor);
@@ -123,8 +112,9 @@ export class UI {
   print(component: string, text = "starting...") {
     if (this.getHideOption(component)) return;
     this.clear();
-    const { name, color } = COMPONENTS[component];
-    process.stdout.write(`[${chalk[color](name)}] ${text}\n`);
+    const { name, color, dark } = COMPONENTS[component];
+    const displayColor = this.cli.options.dark ? dark : color;
+    process.stdout.write(`[${chalk[displayColor](name)}] ${text}\n`);
     this.prompt();
   }
 
@@ -159,7 +149,7 @@ export class UI {
   printOutput(name: string, callback?: (data: string) => void) {
     const command = this.control[name];
     const component = COMPONENTS[name];
-    const color = component.color;
+    const color = this.cli.options.dark ? component.dark : component.color;
     const hide = component.hide || this.getHideOption(name);
     const displayName = component.name;
     command.stdout.on("data", (data: string) => {
