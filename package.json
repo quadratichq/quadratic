@@ -30,6 +30,9 @@
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings"
   },
   "devDependencies": {
-    "concurrently": "^6.5.1"
+    "@playwright/test": "^1.41.1",
+    "@types/node": "^20.11.6",
+    "concurrently": "^6.5.1",
+    "dotenv": "^16.4.0"
   }
 }
