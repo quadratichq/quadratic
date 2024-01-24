@@ -21,8 +21,8 @@ export const helpCLI =
 
 export const helpKeyboard =
   "\n\nPress:" +
-  "\n       a c m f - Toggle watch for component" +
-  "\n     R A C M F - Toggle showing logs for component" +
+  "\n     a c   m f - Toggle watch for component" +
+  "\n     A C T M F - Toggle showing logs for component" +
   "\n             p - Toggle performance build for Core" +
   "\n             t - Rebuild WASM types from Core for React" +
   "\n             H - Show CLI options" +

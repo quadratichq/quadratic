@@ -109,7 +109,7 @@ export class Control {
     }
     restartTypes() {
         if (this.types) {
-            this.types.kill("SIGKILL");
+            this.types.kill();
             this.runTypes(true);
         }
     }

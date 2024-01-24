@@ -12,6 +12,7 @@ export class CLI {
     hideReact: boolean;
     hideAPI: boolean;
     hideCore: boolean;
+    hideTypes: boolean;
     hideMultiplayer: boolean;
     hideFiles: boolean;
   };
@@ -36,6 +37,7 @@ export class CLI {
       .option("-R, --hideReact", "Hide React output")
       .option("-A, --hideAPI", "Hide React output")
       .option("-C, --hideCore", "Hide React output")
+      .option("-T, --hideTypes", "Hide Types output")
       .option("-M, --hideMultiplayer", "Hide Multiplayer output")
       .option("-F, --hideFiles", "Hide Files output")
       .showHelpAfterError();

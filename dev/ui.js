@@ -4,8 +4,9 @@ import { createScreen } from "./terminal.js";
 const SPACE = "     ";
 const DONE = "✓";
 const BROKEN = "✗";
-const WORKING_CHARACTERS = ["◐", "◓", "◑", "◒"];
+const ANIMATE_STATUS = ["◐", "◓", "◑", "◒"];
 const WATCH = "👀";
+const NO_LOGS = "🙈"; // AI picked this awesome character
 const ANIMATION_INTERVAL = 100;
 const COMPONENTS = {
     client: { color: "magenta", name: "React", shortcut: "r" },
@@ -31,7 +32,7 @@ export class UI {
         this.cli = cli;
         this.control = control;
         setInterval(() => {
-            this.spin = (this.spin + 1) % WORKING_CHARACTERS.length;
+            this.spin = (this.spin + 1) % ANIMATE_STATUS.length;
             if (this.showing) {
                 this.clear();
                 this.prompt();
@@ -86,11 +87,14 @@ export class UI {
         this.write(name.substring(0, index), writeColor);
         this.write(name[index], writeColor, true);
         this.write(name.substring(index + 1), writeColor);
+        if (this.getHideOption(component)) {
+            this.write(" " + NO_LOGS);
+        }
         if (this.control.status[component] === "x") {
             this.write(" " + BROKEN, "red");
         }
         else if (!this.control.status[component]) {
-            this.write(" " + WORKING_CHARACTERS[this.spin], "gray");
+            this.write(" " + ANIMATE_STATUS[this.spin], "gray");
         }
         else if (this.cli.options[component] || alwaysWatch) {
             this.write(" " + WATCH, "gray");
@@ -101,6 +105,8 @@ export class UI {
         this.write(SPACE);
     }
     print(component, text = "starting...") {
+        if (this.getHideOption(component))
+            return;
         this.clear();
         const { name, color } = COMPONENTS[component];
         process.stdout.write(`[${chalk[color](name)}] ${text}\n`);
@@ -128,9 +134,20 @@ export class UI {
         }
         this.showing = true;
     }
+    getHideOption(name) {
+        if (name === "client")
+            name = "react";
+        if (name === "api")
+            name = "API";
+        const option = `hide${name[0].toUpperCase() + name.substring(1)}`;
+        return !!this.cli.options[option];
+    }
     printOutput(name, callback) {
         const command = this.control[name];
-        const { color, hide } = COMPONENTS[name];
+        const component = COMPONENTS[name];
+        const color = component.color;
+        const hide = component.hide || this.getHideOption(name);
+        const displayName = component.name;
         command.stdout.on("data", (data) => {
             if (hide) {
                 if (callback) {
@@ -139,7 +156,7 @@ export class UI {
             }
             else {
                 this.clear();
-                process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
+                process.stdout.write(`[${chalk[color](displayName)}] ${chalk[color](data)}`);
                 this.prompt();
                 if (callback) {
                     this.clear();
@@ -157,10 +174,10 @@ export class UI {
             else {
                 this.clear();
                 if (data.includes("[ESLint] Found 0 error and 0 warning")) {
-                    process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
+                    process.stdout.write(`[${chalk[color](displayName)}] ${chalk[color](data)}`);
                 }
                 else {
-                    process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`);
+                    process.stdout.write(`[${chalk[color](displayName)}] ${chalk.red(data)}`);
                 }
                 this.prompt();
                 if (callback) {

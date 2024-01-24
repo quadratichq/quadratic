@@ -10,16 +10,16 @@ export const helpCLI = "\n\nOptions:" +
     "\n     -s, --skipTypes     Skip WASM types compilation" +
     "\n     -l, --all           Watch all directories" +
     "\n     -p, --perf          Run quadratic-core in perf mode (slower linking but faster runtime)" +
-    "\n     -R, --noReact       Hide React output" +
-    "\n     -A, --noApi         Hide API output" +
-    "\n     -P, --noMultiplayer Hide Multiplayer output" +
-    "\n     -F, --noFiles       Hide Files output" +
-    "\n     -C, --noCore        Hide Core output" +
+    "\n     -R, --hideReact       Hide React output" +
+    "\n     -A, --hideApi         Hide API output" +
+    "\n     -C, --hideCore        Hide Core output" +
+    "\n     -P, --hideMultiplayer Hide Multiplayer output" +
+    "\n     -F, --hideFiles       Hide Files output" +
     "\n     -h, --help          Display help for command" +
     "\n     \n(press h to hide help. press q to quit)";
 export const helpKeyboard = "\n\nPress:" +
-    "\n       a c m f - Toggle watch for component" +
-    "\n     R A C M F - Toggle showing logs for component" +
+    "\n     a c   m f - Toggle watch for component" +
+    "\n     A C T M F - Toggle showing logs for component" +
     "\n             p - Toggle performance build for Core" +
     "\n             t - Rebuild WASM types from Core for React" +
     "\n             H - Show CLI options" +
