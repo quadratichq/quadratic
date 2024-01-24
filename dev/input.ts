@@ -26,6 +26,9 @@ export class Input {
       case "h": // help
         this.ui.showHelp();
         break;
+      case "H": // CLI help
+        this.ui.showHelp(true);
+        break;
       case "t": // toggle types
         this.control.restartTypes();
         break;

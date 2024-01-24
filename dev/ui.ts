@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { CLI } from "./cli.js";
 import { Control } from "./control.js";
+import { help, helpCLI, helpKeyboard } from "./help.js";
 import { createScreen } from "./terminal.js";
 
 const SPACE = "     ";
@@ -26,7 +27,7 @@ export class UI {
   private cli: CLI;
   private control: Control;
   private spin = 0;
-  private help = false;
+  private help: boolean | "cli" = false;
 
   // keep track of cursor when drawing the menu
   private showing = false;
@@ -77,6 +78,8 @@ export class UI {
 
     const width = process.stdout.getWindowSize()[0];
 
+    // keep track of the cursor and wraps to remove the menu bar when writing logs
+
     // use an array to turn utf8 characters into 1 character
     for (const char of [...text]) {
       if (char === "\n") {
@@ -85,7 +88,7 @@ export class UI {
       } else {
         this.characters++;
       }
-      if (this.characters === width) {
+      if (this.characters > width) {
         this.lines++;
         this.characters = 0;
       }
@@ -130,12 +133,12 @@ export class UI {
     this.statusItem("multiplayer");
     this.statusItem("files");
     this.statusItem("types");
-    if (this.help) {
-      this.write(
-        "(press t to toggle types | c to (un)watch core | a to (un)watch API | m to (un)watch multiplayer | f to (un)watch files | p to toggle perf for core | h to toggle help | q to quit)"
-      );
+    if (this.help === "cli") {
+      this.write(helpCLI);
+    } else if (this.help) {
+      this.write(helpKeyboard);
     } else {
-      this.write(` (press h for help | q to quit)`);
+      this.write(help);
     }
     this.showing = true;
   }
@@ -166,7 +169,11 @@ export class UI {
         }
       } else {
         this.clear();
-        process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`);
+        if (data.includes("[ESLint] Found 0 error and 0 warning")) {
+          process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
+        } else {
+          process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`);
+        }
         this.prompt();
         if (callback) {
           this.clear();
@@ -177,8 +184,12 @@ export class UI {
     });
   }
 
-  showHelp() {
-    this.help = !this.help;
+  showHelp(cli?: boolean) {
+    if (cli) {
+      this.help = "cli";
+    } else {
+      this.help = !this.help;
+    }
     this.clear();
     this.prompt();
   }
