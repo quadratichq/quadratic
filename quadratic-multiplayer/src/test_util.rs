@@ -130,15 +130,27 @@ pub(crate) async fn setup() -> (
     Uuid,
     Uuid,
     User,
+    User,
 ) {
     let state = new_arc_state().await;
     let socket = integration_test_setup(state.clone()).await;
     let socket = Arc::new(Mutex::new(socket));
     let file_id = Uuid::new_v4();
-    let user = new_user();
-    let connection_id = new_connection(socket.clone(), file_id, user.clone()).await;
+    let user_1 = new_user();
+    let connection_id = new_connection(socket.clone(), file_id, user_1.clone()).await;
 
-    (socket.clone(), state, connection_id, file_id, user)
+    // add another user so that we can test broadcasting
+    let user_2 = add_user_via_ws(file_id, socket.clone()).await;
+    new_connection(socket.clone(), file_id, user_2.clone()).await;
+
+    (
+        socket.clone(),
+        state,
+        connection_id,
+        file_id,
+        user_1,
+        user_2,
+    )
 }
 
 pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {

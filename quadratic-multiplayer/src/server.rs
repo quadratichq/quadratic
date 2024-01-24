@@ -336,7 +336,7 @@ pub(crate) mod tests {
     use uuid::Uuid;
 
     async fn assert_user_changes_state(update: UserStateUpdate) {
-        let (socket, _, _, file_id, user) = setup().await;
+        let (socket, _, _, file_id, user, _) = setup().await;
         let session_id = user.session_id;
         let request = MessageRequest::UserUpdate {
             session_id,
@@ -394,7 +394,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn test_user_enters_a_room() {
-        let (socket, _, _, file_id, user) = setup().await;
+        let (socket, _, _, file_id, user, _) = setup().await;
 
         let new_user = new_user();
         let session_id = new_user.session_id;
@@ -439,7 +439,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn user_leaves_a_room() {
-        let (socket, _, _, file_id, user) = setup().await;
+        let (socket, _, _, file_id, user, _) = setup().await;
 
         // add a second user to the room
         let user_2 = add_user_via_ws(file_id, socket.clone()).await;
@@ -464,7 +464,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn user_is_idle_in_a_room_get_removed_and_reconnect() {
-        let (socket, state, _, file_id, user_1) = setup().await;
+        let (socket, state, _, file_id, user_1, _) = setup().await;
 
         // add a second user to the room
         let user_2 = add_user_via_ws(file_id, socket.clone()).await;
@@ -585,7 +585,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn user_shares_operations() {
-        let (socket, _, _, file_id, user) = setup().await;
+        let (socket, _, _, file_id, user, _) = setup().await;
         let session_id = user.session_id;
         let operations = vec![Operation::SetSheetName {
             sheet_id: SheetId::new(),

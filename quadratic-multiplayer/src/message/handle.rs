@@ -298,35 +298,27 @@ pub(crate) async fn handle_message(
 #[cfg(test)]
 pub(crate) mod tests {
 
-    use std::cell;
-
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
+    use uuid::Uuid;
 
     use super::*;
     use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::{
-        add_user_via_ws, integration_test_receive_typed, new_connection, setup,
-    };
-    use uuid::Uuid;
+    use crate::test_util::{integration_test_receive_typed, setup};
 
     async fn test_handle(
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
         state: Arc<State>,
         file_id: Uuid,
-        user: User,
+        user_1: User,
         request: MessageRequest,
         response: Option<MessageResponse>,
         broadcast_response: MessageResponse,
     ) {
-        // add another user so that we can test broadcasting
-        let user_2 = add_user_via_ws(file_id, socket.clone()).await;
-        new_connection(socket.clone(), file_id, user_2.clone()).await;
-
         let stream = state
-            ._get_user_in_room(&file_id, &user.session_id)
+            ._get_user_in_room(&file_id, &user_1.session_id)
             .await
             .unwrap()
             .socket
@@ -343,7 +335,8 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn handle_user_update() {
-        let (socket, state, _, file_id, user) = setup().await;
+        let (socket, state, _, file_id, user_1, _) = setup().await;
+        let session_id = user_1.session_id;
         let sheet_id = Some(Uuid::new_v4());
         let selection = Some("selection".to_string());
         let x = Some(1.0);
@@ -354,7 +347,7 @@ pub(crate) mod tests {
         let code_running = Some("code_running".to_string());
 
         let request = MessageRequest::UserUpdate {
-            session_id: user.session_id,
+            session_id,
             file_id,
             update: UserStateUpdate {
                 sheet_id,
@@ -369,7 +362,7 @@ pub(crate) mod tests {
         };
 
         let response = MessageResponse::UserUpdate {
-            session_id: user.session_id,
+            session_id,
             file_id,
             update: UserStateUpdate {
                 sheet_id,
@@ -383,14 +376,31 @@ pub(crate) mod tests {
             },
         };
 
-        test_handle(socket, state, file_id, user, request, None, response).await;
+        test_handle(socket, state, file_id, user_1, request, None, response).await;
+    }
+
+    #[tokio::test]
+    async fn handle_leave_room() {
+        let (socket, state, _, file_id, user_1, user_2) = setup().await;
+        let session_id = user_1.session_id;
+
+        let request = MessageRequest::LeaveRoom {
+            file_id,
+            session_id,
+        };
+
+        let response = MessageResponse::UsersInRoom {
+            users: vec![user_2.clone()],
+        };
+
+        test_handle(socket, state, file_id, user_1, request, None, response).await;
     }
 
     #[tokio::test]
     async fn handle_transaction() {
-        let (socket, state, _, file_id, user) = setup().await;
+        let (socket, state, _, file_id, user_1, _) = setup().await;
         let id = Uuid::new_v4();
-        let session_id = user.session_id;
+        let session_id = user_1.session_id;
         let operations = serde_json::to_string(&vec![Operation::SetSheetColor {
             sheet_id: SheetId::new(),
             color: Some("red".to_string()),
@@ -411,6 +421,6 @@ pub(crate) mod tests {
             sequence_num: 1,
         };
 
-        test_handle(socket, state, file_id, user, request, None, response).await;
+        test_handle(socket, state, file_id, user_1, request, None, response).await;
     }
 }
