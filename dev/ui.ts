@@ -109,11 +109,11 @@ export class UI {
     this.write(SPACE);
   }
 
-  print(component: string, text = "starting...") {
+  print(component: string, text = "starting...", forceColor?: string) {
     if (this.getHideOption(component)) return;
     this.clear();
     const { name, color, dark } = COMPONENTS[component];
-    const displayColor = this.cli.options.dark ? dark : color;
+    const displayColor = forceColor ?? this.cli.options.dark ? dark : color;
     process.stdout.write(`[${chalk[displayColor](name)}] ${text}\n`);
     this.prompt();
   }
@@ -177,7 +177,12 @@ export class UI {
         }
       } else {
         this.clear();
-        if (data.includes("[ESLint] Found 0 error and 0 warning")) {
+        if (
+          data.includes("[ESLint] Found 0 error and 0 warning") ||
+          data.includes(
+            "[TypeScript] Found 0 errors. Watching for file changes."
+          )
+        ) {
           process.stdout.write(
             `[${chalk[color](displayName)}] ${chalk[color](data)}`
           );

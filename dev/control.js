@@ -122,11 +122,17 @@ export class Control {
         const clean = exec("rm -rf node_modules/.vite");
         clean.on("close", (code) => {
             this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
-            this.ui.printOutput("client", (data) => this.handleResponse("client", data, {
-                success: "Found 0 errors.",
-                error: ["ERROR(", "npm ERR!"],
-                start: "> quadratic-client@",
-            }));
+            this.ui.printOutput("client", (data) => {
+                this.handleResponse("client", data, {
+                    success: "Found 0 errors.",
+                    error: ["ERROR(", "npm ERR!"],
+                    start: "> quadratic-client@",
+                });
+                if (data.includes("Killed: 9")) {
+                    this.ui.print("client", "React failed to run. Trying again...", "red");
+                    this.runClient();
+                }
+            });
         });
     }
     togglePerf() {

@@ -64,6 +64,9 @@ export class Input {
             case "d": // toggle dark theme
                 this.cli.options.dark = !this.cli.options.dark;
                 break;
+            case "r": // restart React
+                this.control.runClient();
+                break;
         }
     };
 }
