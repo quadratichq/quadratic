@@ -13,8 +13,6 @@ on:
 jobs:
   test_rust:
     runs-on: ubuntu-latest-8-cores
-    permissions:
-      checks: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,13 +86,6 @@ jobs:
         run: |
           cd quadratic-multiplayer
           npm run docker:test
-
-      - name: Remove docker data
-        run: |
-          pwd
-          rm -rf ./docker/localstack/data
-          rm -rf ./docker/postgres/data
-          rm -rf ./docker/redis/data
 
       - name: Generate coverage quadratic-multiplayer
         run: |
