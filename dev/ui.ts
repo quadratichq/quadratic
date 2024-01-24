@@ -1,177 +1,217 @@
 import chalk from "chalk";
-import { ChildProcessWithoutNullStreams } from "node:child_process";
 import { CLI } from "./cli.js";
 import { Control } from "./control.js";
+import { help, helpCLI, helpKeyboard } from "./help.js";
+import { createScreen } from "./terminal.js";
 
 const SPACE = "     ";
-const DONE = chalk.green(" ✓");
-const BROKEN = chalk.red(" ✗");
-const WORKING_CHARACTERS = ["◐", "◓", "◑", "◒"];
-const WATCH = chalk.gray(" 👀");
+const DONE = "✓";
+const BROKEN = "✗";
+const ANIMATE_STATUS = ["◐", "◓", "◑", "◒"];
+const WATCH = "👀";
+const NO_LOGS = "🙈"; // AI picked this awesome character
+
 const ANIMATION_INTERVAL = 100;
 
 const COMPONENTS = {
-  client: { color: "magenta", name: "Client" },
-  api: { color: "blue", name: "API" },
-  core: { color: "cyan", name: "Core" },
-  multiplayer: { color: "green", name: "Multiplayer" },
-  files: { color: "yellow", name: "Files" },
-  types: { color: "magenta", name: "Types" },
+  client: { color: "magenta", name: "React", shortcut: "r" },
+  api: { color: "blue", name: "API", shortcut: "a" },
+  core: { color: "cyan", name: "Core", shortcut: "c" },
+  multiplayer: { color: "green", name: "Multiplayer", shortcut: "m" },
+  files: { color: "yellow", name: "Files", shortcut: "f" },
+  types: { color: "magenta", name: "Types", shortcut: "t" },
+  db: { color: "gray", name: "Database", shortcut: "d", hide: true },
+  npm: { color: "gray", name: "npm install", shortcut: "n", hide: true },
+  rust: { color: "gray", name: "rustup upgrade", shortcut: "r", hide: true },
 };
 
 export class UI {
   private cli: CLI;
   private control: Control;
   private spin = 0;
-  private showing = 0;
-  private help = false;
+  private help: boolean | "cli" = false;
+
+  // keep track of cursor when drawing the menu
+  private showing = false;
+  private characters = 0;
+  private lines = 0;
 
   constructor(cli: CLI, control: Control) {
     this.cli = cli;
     this.control = control;
 
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding("utf8");
-
-    process.stdin.on("data", (key) => {
-      switch (key.toString()) {
-        case "q":
-          control.quit();
-          break;
-        case "\u0003":
-          control.quit();
-          break; // ctrl + x
-        case "h": // help
-          this.showHelp();
-          break;
-        case "t": // toggle types
-          control.restartTypes();
-          break;
-        case "c": // toggle core
-          control.restartCore();
-          break;
-        case "m": // toggle multiplayer
-          control.restartMultiplayer();
-          break;
-        case "f": // toggle files
-          control.restartFiles();
-          break;
-        case "p":
-          control.togglePerf();
-          break;
-        case "a": // toggle API
-          control.restartApi();
-          break;
-      }
-    });
-
     setInterval(() => {
-      this.spin = (this.spin + 1) % WORKING_CHARACTERS.length;
+      this.spin = (this.spin + 1) % ANIMATE_STATUS.length;
       if (this.showing) {
         this.clear();
         this.prompt();
       }
     }, ANIMATION_INTERVAL);
 
-    this.prompt();
+    createScreen();
   }
 
   clear() {
     if (this.showing) {
-      const width = process.stdout.getWindowSize()[0];
-      const lines = Math.floor(this.showing / width);
-      for (let i = 0; i < Math.max(lines, 1); i++) {
-        process.stdout.clearLine(0);
+      // reset the current line
+      process.stdout.clearLine(0);
+      this.characters = 0;
+
+      for (let i = 0; i < this.lines; i++) {
         process.stdout.moveCursor(0, -1);
+        process.stdout.clearLine(0);
       }
+      this.lines = 0;
+
+      // move cursor to start of line
       process.stdout.cursorTo(0);
-      this.showing = 0;
+      this.showing = false;
     }
   }
 
-  write(text: string, color?: string): number {
-    process.stdout.write(color ? chalk[color](text) : text);
-    return text.length;
-  }
-
-  statusItem(name: string, alwaysWatch?: boolean): number {
-    let status = "";
-    if (this.control.status[name] === "x") {
-      status = BROKEN + SPACE;
-    } else if (!this.control.status[name]) {
-      status = chalk.gray(" " + WORKING_CHARACTERS[this.spin]) + SPACE;
-    } else if (this.cli.options[name] || alwaysWatch) {
-      status = WATCH + SPACE;
+  write(text: string, color?: string, underline?: boolean) {
+    if (underline) {
+      process.stdout.write(
+        color ? chalk[color].underline(text) : chalk.underline(text)
+      );
     } else {
-      status = DONE + SPACE;
+      process.stdout.write(color ? chalk[color](text) : text);
     }
-    const error = this.control.status[name] === "x";
-    return this.write(name + status, error ? "red" : COMPONENTS[name].color);
+
+    const width = process.stdout.getWindowSize()[0];
+
+    // keep track of the cursor and wraps to remove the menu bar when writing logs
+
+    // use an array to turn utf8 characters into 1 character
+    for (const char of [...text]) {
+      if (char === "\n") {
+        this.lines++;
+        this.characters = 0;
+      } else {
+        this.characters++;
+      }
+      if (this.characters > width) {
+        this.lines++;
+        this.characters = 0;
+      }
+    }
   }
 
-  run(component: string) {
+  statusItem(component: string, alwaysWatch?: boolean) {
+    const error = this.control.status[component] === "x";
+    const { name, color, shortcut } = COMPONENTS[component];
+    const index = name.toLowerCase().indexOf(shortcut.toLowerCase());
+    const writeColor = error ? "red" : color;
+    this.write(name.substring(0, index), writeColor);
+    this.write(name[index], writeColor, true);
+    this.write(name.substring(index + 1), writeColor);
+    if (this.getHideOption(component)) {
+      this.write(" " + NO_LOGS);
+    }
+    if (this.control.status[component] === "x") {
+      this.write(" " + BROKEN, "red");
+    } else if (!this.control.status[component]) {
+      this.write(" " + ANIMATE_STATUS[this.spin], "gray");
+    } else if (this.cli.options[component] || alwaysWatch) {
+      this.write(" " + WATCH, "gray");
+    } else {
+      this.write(" " + DONE, "green");
+    }
+    this.write(SPACE);
+  }
+
+  print(component: string, text = "starting...") {
+    if (this.getHideOption(component)) return;
     this.clear();
     const { name, color } = COMPONENTS[component];
-    process.stdout.write(`[${chalk[color](name)}] running...\n`);
+    process.stdout.write(`[${chalk[color](name)}] ${text}\n`);
     this.prompt();
   }
 
   prompt() {
     this.clear();
     this.write("\n");
-    let characters =
-      this.write("Quadratic Dev", "underline") +
-      this.write(SPACE) +
-      this.statusItem("client", true) +
-      this.statusItem("api") +
-      this.statusItem("core") +
-      this.statusItem("multiplayer") +
-      this.statusItem("files") +
-      this.statusItem("types");
-
-    if (this.help) {
-      this.write("\n");
-      characters += process.stdout.getWindowSize()[0] - 1;
-      characters += this.write(
-        "(press t to toggle types | c to (un)watch core | a to (un)watch API | m to (un)watch multiplayer | f to (un)watch files | p to toggle perf for core | h to toggle help | q to quit)"
-      );
+    this.write("Quadratic Dev", "underline");
+    this.write(SPACE);
+    this.statusItem("client", true);
+    this.statusItem("api");
+    this.statusItem("core");
+    this.statusItem("multiplayer");
+    this.statusItem("files");
+    this.statusItem("types");
+    if (this.help === "cli") {
+      this.write(helpCLI);
+    } else if (this.help) {
+      this.write(helpKeyboard);
     } else {
-      characters += this.write(` (press h for help | q to quit)`);
+      this.write(help);
     }
-    this.showing = characters;
+    this.showing = true;
   }
 
-  printOutput(
-    command: ChildProcessWithoutNullStreams,
-    name: string,
-    color: string,
-    callback?: (data: string) => void
-  ) {
-    command.stdout.on("data", (data) => {
-      this.clear();
-      process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
-      this.prompt();
-      if (callback) {
+  getHideOption(name: string): boolean {
+    if (name === "client") name = "react";
+    if (name === "api") name = "API";
+    const option = `hide${name[0].toUpperCase() + name.substring(1)}`;
+    return !!this.cli.options[option];
+  }
+
+  printOutput(name: string, callback?: (data: string) => void) {
+    const command = this.control[name];
+    const component = COMPONENTS[name];
+    const color = component.color;
+    const hide = component.hide || this.getHideOption(name);
+    const displayName = component.name;
+    command.stdout.on("data", (data: string) => {
+      if (hide) {
+        if (callback) {
+          callback(data);
+        }
+      } else {
         this.clear();
-        callback(data);
+        process.stdout.write(
+          `[${chalk[color](displayName)}] ${chalk[color](data)}`
+        );
         this.prompt();
+        if (callback) {
+          this.clear();
+          callback(data);
+          this.prompt();
+        }
       }
     });
-    command.stderr.on("data", (data) => {
-      this.clear();
-      process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`);
-      this.prompt();
-      if (callback) {
+    command.stderr.on("data", (data: string) => {
+      if (hide) {
+        if (callback) {
+          callback(data);
+        }
+      } else {
         this.clear();
-        callback(data);
+        if (data.includes("[ESLint] Found 0 error and 0 warning")) {
+          process.stdout.write(
+            `[${chalk[color](displayName)}] ${chalk[color](data)}`
+          );
+        } else {
+          process.stdout.write(
+            `[${chalk[color](displayName)}] ${chalk.red(data)}`
+          );
+        }
         this.prompt();
+        if (callback) {
+          this.clear();
+          callback(data);
+          this.prompt();
+        }
       }
     });
   }
 
-  showHelp() {
-    this.help = !this.help;
+  showHelp(cli?: boolean) {
+    if (cli) {
+      this.help = "cli";
+    } else {
+      this.help = !this.help;
+    }
     this.clear();
     this.prompt();
   }
