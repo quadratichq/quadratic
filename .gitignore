@@ -45,3 +45,9 @@ quadratic-api/dist
 
 # Code Coverage
 quadratic-core/coverage
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
