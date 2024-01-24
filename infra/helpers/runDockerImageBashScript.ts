@@ -85,7 +85,7 @@ sudo docker run -d \
 echo 'Setting up Datadog agent'
 docker run -d --name datadog-agent \
            --env-file .env \
-           -e DD_HOSTNAME=${imageRepositoryName}-${imageTag} \
+           -e DD_HOSTNAME=${imageTag} \
            -v /var/run/docker.sock:/var/run/docker.sock:ro \
            -v /proc/:/host/proc/:ro \
            -v /opt/datadog-agent/run:/opt/datadog-agent/run:rw \
