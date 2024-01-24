@@ -18,6 +18,8 @@ async function mergeDuplicateUsers() {
   // Loop through duplicate emails,
   for (const [email, users] of duplicate_users) {
     console.log(`Processing users with email ${email}`);
+    const google_auth0_user = users.find((user) => user.user_id.includes('google-oauth2|'));
+
     const db_users = await dbClient.user.findMany({
       where: {
         auth0_id: {
@@ -42,6 +44,17 @@ async function mergeDuplicateUsers() {
       console.log('Skip: dry run');
       continue;
     }
+
+    // Copy name and avatar from secondary (Google) to primary in Auth0
+    await auth0.updateUser(
+      {
+        id: primary_user.auth0_id,
+      },
+      {
+        name: google_auth0_user.name,
+        picture: google_auth0_user.picture,
+      }
+    );
 
     // Link the secondary user to the primary user in Auth0
     auth0.linkUsers(primary_user.auth0_id, {
