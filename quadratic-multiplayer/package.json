@@ -16,7 +16,7 @@
     "coverage:html": "grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore '/*' -o coverage/html",
     "coverage:view": "open coverage/html/index.html",
     "docker:up": "docker compose up -d --wait",
-    "docker:down": "docker-compose down -v",
+    "docker:down": "docker compose down -v",
     "docker:test": "docker compose kill && npm run docker:up && npm run test && npm run docker:down"
   }
 }
