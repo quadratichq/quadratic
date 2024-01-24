@@ -44,6 +44,7 @@ export const CodeEditorBody = (props: Props) => {
     }
   }, [editorInteractionState.showCodeEditor]);
 
+  const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run()
   const onMount = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
       editorRef.current = editor;
@@ -63,8 +64,10 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
       monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
       monaco.languages.registerHoverProvider('formula', { provideHover });
+      window.addEventListener("runEditorAction", runEditorAction as any);
 
       setDidMount(true);
+      return () => window.removeEventListener("runEditorAction", runEditorAction as any);
     },
     [didMount]
   );
