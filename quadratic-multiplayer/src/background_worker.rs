@@ -105,7 +105,7 @@ async fn remove_stale_users_in_room(
     }
 
     if num_remaining == 0 {
-        tracing::info!("No users remaining in room {file_id}",);
+        tracing::trace!("No users remaining in room {file_id}",);
         return Ok(None);
     }
 

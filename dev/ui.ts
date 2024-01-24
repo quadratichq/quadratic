@@ -25,10 +25,12 @@ export class UI {
   private spin = 0;
   private showing = 0;
   private help = false;
+  private outputColor = "red";
 
   constructor(cli: CLI, control: Control) {
     this.cli = cli;
     this.control = control;
+    this.outputColor = cli.options.darkmode ? "white" : "red";
 
     process.stdin.setRawMode(true);
     process.stdin.resume();
@@ -150,7 +152,8 @@ export class UI {
   ) {
     command.stdout.on("data", (data) => {
       this.clear();
-      process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
+      let dataColor = this.cli.options.darkmode ? "white" : color;
+      process.stdout.write(`[${chalk[color](name)}] ${chalk[dataColor](data)}`);
       this.prompt();
       if (callback) {
         this.clear();
@@ -160,7 +163,9 @@ export class UI {
     });
     command.stderr.on("data", (data) => {
       this.clear();
-      process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`);
+      process.stdout.write(
+        `[${chalk[color](name)}] ${chalk[this.outputColor](data)}`
+      );
       this.prompt();
       if (callback) {
         this.clear();

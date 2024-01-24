@@ -19,9 +19,11 @@ export class UI {
     spin = 0;
     showing = 0;
     help = false;
+    outputColor = "red";
     constructor(cli, control) {
         this.cli = cli;
         this.control = control;
+        this.outputColor = cli.options.darkmode ? "white" : "red";
         process.stdin.setRawMode(true);
         process.stdin.resume();
         process.stdin.setEncoding("utf8");
@@ -128,7 +130,8 @@ export class UI {
     printOutput(command, name, color, callback) {
         command.stdout.on("data", (data) => {
             this.clear();
-            process.stdout.write(`[${chalk[color](name)}] ${chalk[color](data)}`);
+            let dataColor = this.cli.options.darkmode ? "white" : color;
+            process.stdout.write(`[${chalk[color](name)}] ${chalk[dataColor](data)}`);
             this.prompt();
             if (callback) {
                 this.clear();
@@ -138,7 +141,7 @@ export class UI {
         });
         command.stderr.on("data", (data) => {
             this.clear();
-            process.stdout.write(`[${chalk[color](name)}] ${chalk.red(data)}`);
+            process.stdout.write(`[${chalk[color](name)}] ${chalk[this.outputColor](data)}`);
             this.prompt();
             if (callback) {
                 this.clear();

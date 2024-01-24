@@ -9,6 +9,7 @@ export class CLI {
     skipTypes: boolean;
     all: boolean;
     perf: boolean;
+    darkmode: boolean;
   };
 
   constructor() {
@@ -24,6 +25,7 @@ export class CLI {
       .option("-f, --files", "Watch the quadratic-files directory")
       .option("-s, --skipTypes", "Skip WASM types compilation")
       .option("-a, --all", "Watch all directories")
+      .option("-d, --darkmode", "View the output in dark mode")
       .option(
         "-p, --perf",
         "Run quadratic-core in perf mode (slower linking but faster runtime)"
