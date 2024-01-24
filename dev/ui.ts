@@ -4,10 +4,10 @@ import { Control } from "./control.js";
 import { createScreen } from "./terminal.js";
 
 const SPACE = "     ";
-const DONE = chalk.green(" ✓");
-const BROKEN = chalk.red(" ✗");
+const DONE = "✓";
+const BROKEN = "✗";
 const WORKING_CHARACTERS = ["◐", "◓", "◑", "◒"];
-const WATCH = chalk.gray(" 👀");
+const WATCH = "👀";
 const ANIMATION_INTERVAL = 100;
 
 const COMPONENTS = {
@@ -17,57 +17,25 @@ const COMPONENTS = {
   multiplayer: { color: "green", name: "Multiplayer", shortcut: "m" },
   files: { color: "yellow", name: "Files", shortcut: "f" },
   types: { color: "magenta", name: "Types", shortcut: "t" },
-  db: { color: "gray", name: "Database", shortcut: "d" },
-  npm: { color: "gray", name: "npm install", shortcut: "n" },
-  rust: { color: "gray", name: "rustup upgrade", shortcut: "r" },
+  db: { color: "gray", name: "Database", shortcut: "d", hide: true },
+  npm: { color: "gray", name: "npm install", shortcut: "n", hide: true },
+  rust: { color: "gray", name: "rustup upgrade", shortcut: "r", hide: true },
 };
 
 export class UI {
   private cli: CLI;
   private control: Control;
   private spin = 0;
-  private showing = 0;
   private help = false;
+
+  // keep track of cursor when drawing the menu
+  private showing = false;
+  private characters = 0;
+  private lines = 0;
 
   constructor(cli: CLI, control: Control) {
     this.cli = cli;
     this.control = control;
-
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding("utf8");
-
-    process.stdin.on("data", (key) => {
-      switch (key.toString()) {
-        case "q":
-          control.quit();
-          break;
-        case "\u0003":
-          control.quit();
-          break; // ctrl + x
-        case "h": // help
-          this.showHelp();
-          break;
-        case "t": // toggle types
-          control.restartTypes();
-          break;
-        case "c": // toggle core
-          control.restartCore();
-          break;
-        case "m": // toggle multiplayer
-          control.restartMultiplayer();
-          break;
-        case "f": // toggle files
-          control.restartFiles();
-          break;
-        case "p":
-          control.togglePerf();
-          break;
-        case "a": // toggle API
-          control.restartApi();
-          break;
-      }
-    });
 
     setInterval(() => {
       this.spin = (this.spin + 1) % WORKING_CHARACTERS.length;
@@ -82,36 +50,66 @@ export class UI {
 
   clear() {
     if (this.showing) {
-      const width = process.stdout.getWindowSize()[0];
-      const lines = Math.floor(this.showing / width);
-      for (let i = 0; i < Math.max(lines, 1); i++) {
-        process.stdout.clearLine(0);
+      // reset the current line
+      process.stdout.clearLine(0);
+      this.characters = 0;
+
+      for (let i = 0; i < this.lines; i++) {
         process.stdout.moveCursor(0, -1);
+        process.stdout.clearLine(0);
       }
+      this.lines = 0;
+
+      // move cursor to start of line
       process.stdout.cursorTo(0);
-      this.showing = 0;
+      this.showing = false;
     }
   }
 
-  write(text: string, color?: string): number {
-    process.stdout.write(color ? chalk[color](text) : text);
-    return text.length;
-  }
-
-  statusItem(component: string, alwaysWatch?: boolean): number {
-    let status = "";
-    if (this.control.status[component] === "x") {
-      status = BROKEN + SPACE;
-    } else if (!this.control.status[component]) {
-      status = chalk.gray(" " + WORKING_CHARACTERS[this.spin]) + SPACE;
-    } else if (this.cli.options[component] || alwaysWatch) {
-      status = WATCH + SPACE;
+  write(text: string, color?: string, underline?: boolean) {
+    if (underline) {
+      process.stdout.write(
+        color ? chalk[color].underline(text) : chalk.underline(text)
+      );
     } else {
-      status = DONE + SPACE;
+      process.stdout.write(color ? chalk[color](text) : text);
     }
+
+    const width = process.stdout.getWindowSize()[0];
+
+    // use an array to turn utf8 characters into 1 character
+    for (const char of [...text]) {
+      if (char === "\n") {
+        this.lines++;
+        this.characters = 0;
+      } else {
+        this.characters++;
+      }
+      if (this.characters === width) {
+        this.lines++;
+        this.characters = 0;
+      }
+    }
+  }
+
+  statusItem(component: string, alwaysWatch?: boolean) {
     const error = this.control.status[component] === "x";
-    const { name, color } = COMPONENTS[component];
-    return this.write(name + status, error ? "red" : color);
+    const { name, color, shortcut } = COMPONENTS[component];
+    const index = name.toLowerCase().indexOf(shortcut.toLowerCase());
+    const writeColor = error ? "red" : color;
+    this.write(name.substring(0, index), writeColor);
+    this.write(name[index], writeColor, true);
+    this.write(name.substring(index + 1), writeColor);
+    if (this.control.status[component] === "x") {
+      this.write(" " + BROKEN, "red");
+    } else if (!this.control.status[component]) {
+      this.write(" " + WORKING_CHARACTERS[this.spin], "gray");
+    } else if (this.cli.options[component] || alwaysWatch) {
+      this.write(" " + WATCH, "gray");
+    } else {
+      this.write(" " + DONE, "green");
+    }
+    this.write(SPACE);
   }
 
   print(component: string, text = "starting...") {
@@ -124,29 +122,22 @@ export class UI {
   prompt() {
     this.clear();
     this.write("\n");
-    let characters =
-      this.write("Quadratic Dev", "underline") +
-      this.write(SPACE) +
-      this.statusItem("client", true) +
-      this.statusItem("api") +
-      this.statusItem("core") +
-      this.statusItem("multiplayer") +
-      this.statusItem("files") +
-      this.statusItem("types") +
-      this.statusItem("npm") +
-      this.statusItem("db") +
-      this.statusItem("rust");
-
+    this.write("Quadratic Dev", "underline");
+    this.write(SPACE);
+    this.statusItem("client", true);
+    this.statusItem("api");
+    this.statusItem("core");
+    this.statusItem("multiplayer");
+    this.statusItem("files");
+    this.statusItem("types");
     if (this.help) {
-      this.write("\n");
-      characters += process.stdout.getWindowSize()[0] - 1;
-      characters += this.write(
+      this.write(
         "(press t to toggle types | c to (un)watch core | a to (un)watch API | m to (un)watch multiplayer | f to (un)watch files | p to toggle perf for core | h to toggle help | q to quit)"
       );
     } else {
-      characters += this.write(` (press h for help | q to quit)`);
+      this.write(` (press h for help | q to quit)`);
     }
-    this.showing = characters;
+    this.showing = true;
   }
 
   printOutput(name: string, callback?: (data: string) => void) {

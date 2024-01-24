@@ -1,5 +1,5 @@
 import killPortOriginal from "kill-port";
-import { spawn } from "node:child_process";
+import { exec, spawn, } from "node:child_process";
 import { destroyScreen } from "./terminal.js";
 const killPort = async (port) => {
     try {
@@ -86,29 +86,31 @@ export class Control {
         this.cli.options.api = !this.cli.options.api;
         this.runApi();
     }
-    async runTypes() {
+    async runTypes(restart) {
         this.ui.print("types");
-        return new Promise((resolve) => {
-            if (!this.cli.options.skipTypes) {
-                this.types = spawn("npm", ["run", "build:wasm:types"]);
-                this.ui.printOutput("types", (data) => {
-                    this.handleResponse("types", data, {
-                        success: "Running ",
-                        error: "error:",
-                        start: ["Compiling", "> quadratic"],
-                    });
+        if (this.cli.options.skipTypes && !restart) {
+            this.runCore();
+        }
+        else {
+            this.types = spawn("npm", ["run", "build:wasm:types"]);
+            this.ui.printOutput("types", (data) => {
+                this.handleResponse("types", data, {
+                    success: "Running ",
+                    error: "error:",
+                    start: ["Compiling", "> quadratic"],
                 });
-                this.types.on("exit", resolve);
-            }
-            else {
-                resolve(undefined);
-            }
-        });
+            });
+            this.types.on("exit", () => {
+                if (!restart) {
+                    this.runCore();
+                }
+            });
+        }
     }
     restartTypes() {
         if (this.types) {
             this.types.kill("SIGKILL");
-            this.runTypes();
+            this.runTypes(true);
         }
     }
     runClient() {
@@ -116,54 +118,60 @@ export class Control {
         if (this.client) {
             this.client.kill("SIGKILL");
         }
-        this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
-        this.ui.printOutput("client", (data) => this.handleResponse("client", data, {
-            success: "Found 0 errors.",
-            error: ["ERROR(", "npm ERR!"],
-            start: "> quadratic-client@",
-        }));
+        // clean the node_modules/.vite directory to avoid client errors
+        const clean = exec("rm -rf node_modules/.vite");
+        clean.on("close", (code) => {
+            this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
+            this.ui.printOutput("client", (data) => this.handleResponse("client", data, {
+                success: "Found 0 errors.",
+                error: ["ERROR(", "npm ERR!"],
+                start: "> quadratic-client@",
+            }));
+        });
     }
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;
         this.restartCore();
     }
-    runCore() {
+    runCore(restart) {
         this.ui.print("core");
-        return new Promise((resolve) => {
-            if (this.cli.options.core) {
-                this.core = spawn("npm", [
-                    "run",
-                    this.cli.options.perf
-                        ? "watch:wasm:perf:javascript"
-                        : "watch:wasm:javascript",
-                ]);
-                this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
-                    success: "[Finished running. Exit status: 0",
-                    error: "error[",
-                    start: ["> quadratic", "[Running "],
-                }, () => {
-                    this.runClient();
-                    resolve(undefined);
-                }));
-            }
-            else {
-                this.core = spawn("npm", [
-                    "run",
-                    this.cli.options.perf
-                        ? "build:wasm:perf:javascript"
-                        : "build:wasm:javascript",
-                ]);
-                this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
-                    success: "Your wasm pkg is ready to publish",
-                    error: "error[",
-                    start: "[Running ",
-                }));
-                this.core.on("exit", () => {
-                    this.runClient();
-                    resolve(undefined);
-                });
-            }
-        });
+        if (this.cli.options.core) {
+            this.core = spawn("npm", [
+                "run",
+                this.cli.options.perf
+                    ? "watch:wasm:perf:javascript"
+                    : "watch:wasm:javascript",
+            ]);
+            this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
+                success: "[Finished running. Exit status: 0",
+                error: "error[",
+                start: ["> quadratic", "[Running "],
+            }, () => {
+                if (!restart) {
+                    this.runNpmInstall();
+                    this.runMultiplayer();
+                }
+            }));
+        }
+        else {
+            this.core = spawn("npm", [
+                "run",
+                this.cli.options.perf
+                    ? "build:wasm:perf:javascript"
+                    : "build:wasm:javascript",
+            ]);
+            this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
+                success: "Your wasm pkg is ready to publish",
+                error: "error[",
+                start: "[Running ",
+            }));
+            this.core.on("exit", () => {
+                if (!restart) {
+                    this.runNpmInstall();
+                    this.runMultiplayer();
+                }
+            });
+        }
     }
     restartCore() {
         if (this.core) {
@@ -172,21 +180,23 @@ export class Control {
         this.cli.options.core = !this.cli.options.core;
         this.runCore();
     }
-    runMultiplayer() {
+    async runMultiplayer(restart) {
         this.ui.print("multiplayer");
-        return new Promise(async (resolve) => {
-            await killPort(3001);
-            this.multiplayer = spawn("npm", [
-                "run",
-                this.cli.options.multiplayer ? "dev" : "start",
-                "--workspace=quadratic-multiplayer",
-            ]);
-            this.ui.printOutput("multiplayer", (data) => this.handleResponse("multiplayer", data, {
-                success: "listening on",
-                error: "error[",
-                start: "    Compiling",
-            }, () => resolve(undefined)));
-        });
+        await killPort(3001);
+        this.multiplayer = spawn("npm", [
+            "run",
+            this.cli.options.multiplayer ? "dev" : "start",
+            "--workspace=quadratic-multiplayer",
+        ]);
+        this.ui.printOutput("multiplayer", (data) => this.handleResponse("multiplayer", data, {
+            success: "listening on",
+            error: "error[",
+            start: "    Compiling",
+        }, () => {
+            if (!restart) {
+                this.runFiles();
+            }
+        }));
     }
     restartMultiplayer() {
         if (this.multiplayer) {
@@ -240,6 +250,7 @@ export class Control {
                 this.ui.print("db", "failed");
                 this.status.db = "x";
             }
+            this.runApi();
         });
     }
     runNpmInstall() {
@@ -254,6 +265,7 @@ export class Control {
                 this.ui.print("npm", "failed");
                 this.status.npm = "x";
             }
+            this.runClient();
         });
     }
     runRust() {
@@ -268,17 +280,12 @@ export class Control {
                 this.ui.print("rust", "failed");
                 this.status.rust = "x";
             }
+            this.runTypes();
         });
     }
     async start(ui) {
         this.ui = ui;
         this.runRust();
-        this.runApi();
         this.runDb();
-        this.runNpmInstall();
-        await this.runTypes();
-        await this.runCore();
-        await this.runMultiplayer();
-        await this.runFiles();
     }
 }
