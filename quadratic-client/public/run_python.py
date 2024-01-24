@@ -167,10 +167,25 @@ def _get_user_frames() -> list[inspect.FrameInfo] | None:
     except:
         return None
 
-def _line_number_from_traceback() -> int:
+
+__err_pattern = re.compile(r'File "<exec>", line (\d+), in <module>', re.MULTILINE)
+def _get_stack_error_line_and_stacktrace() -> (int, list):
     cl, exc, tb = sys.exc_info()
-    line_number = traceback.extract_tb(tb)[-1].lineno
-    return line_number
+    stack = traceback.format_exception(cl, exc, tb)
+    error_nr = traceback.extract_tb(tb)[-1].lineno
+    return error_nr, stack
+
+def _line_number_from_traceback(code: str) -> int:
+    source_lines = len(code.splitlines())
+    error_line, stacktrace = _get_stack_error_line_and_stacktrace()
+
+    if error_line > source_lines:
+        error_str = "".join(stacktrace)
+        match = re.search(__err_pattern, error_str)
+        if match:
+            return int(match.group(1))
+
+    return error_line
 
 def _get_return_line(code: str) -> int:
     code = code.rstrip()
@@ -385,7 +400,7 @@ async def run_python(code):
     except SyntaxError as err:
         return _error_result(err, code, cells_accessed, sout, err.lineno)
     except Exception as err:
-        return _error_result(err, code, cells_accessed, sout, _line_number_from_traceback())
+        return _error_result(err, code, cells_accessed, sout, _line_number_from_traceback(code))
     else:
         # Successfully Created a Result
         await micropip.install(
