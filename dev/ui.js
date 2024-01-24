@@ -38,6 +38,10 @@ export class UI {
             this.showing = false;
         }
     }
+    writeWarning(text) {
+        process.stdout.write(chalk.yellow.bgRed(text));
+        this.trackPromptTextSize(text);
+    }
     write(text, color, underline) {
         if (underline) {
             process.stdout.write(color ? chalk[color].underline(text) : chalk.underline(text));
@@ -45,6 +49,9 @@ export class UI {
         else {
             process.stdout.write(color ? chalk[color](text) : text);
         }
+        this.trackPromptTextSize(text);
+    }
+    trackPromptTextSize(text) {
         const width = process.stdout.getWindowSize()[0];
         // keep track of the cursor and wraps to remove the menu bar when writing logs
         // use an array to turn utf8 characters into 1 character
@@ -90,13 +97,16 @@ export class UI {
         }
         this.write(SPACE);
     }
-    print(component, text = "starting...", forceColor) {
+    print(component, text = "starting...", textColor) {
         if (this.getHideOption(component))
             return;
         this.clear();
         const { name, color, dark } = COMPONENTS[component];
-        const displayColor = forceColor ?? this.cli.options.dark ? dark : color;
-        process.stdout.write(`[${chalk[displayColor](name)}] ${text}\n`);
+        const displayColor = this.cli.options.dark ? dark : color;
+        process.stdout.write(`[${chalk[displayColor](name)}] `);
+        process.stdout.write(textColor ? chalk[textColor](text) : text);
+        process.stdout.write("\n");
+        process.stdout.write(JSON.stringify(textColor) ?? "not here");
         this.prompt();
     }
     prompt() {
@@ -118,6 +128,11 @@ export class UI {
         }
         else {
             this.write(help);
+        }
+        const postgresError = this.control.status.postgres === "error";
+        const redisError = this.control.status.redis === "error";
+        if (postgresError || redisError) {
+            this.writeWarning(`\n\n ${postgresError ? "postgres is NOT running " : ""}${postgresError && redisError ? SPACE : ""}${redisError ? "redis is NOT running" : ""}`);
         }
         this.showing = true;
     }

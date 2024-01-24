@@ -31,6 +31,16 @@ export const COMPONENTS = {
         shortcut: "r",
         hide: true,
     },
+    postgres: {
+        color: "gray",
+        dark: "white",
+        name: "Postgres",
+    },
+    redis: {
+        color: "gray",
+        dark: "white",
+        name: "Redis",
+    },
 };
 export const SPACE = "     ";
 export const DONE = "✓";

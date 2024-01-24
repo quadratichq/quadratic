@@ -59,6 +59,11 @@ export class UI {
     }
   }
 
+  writeWarning(text: string) {
+    process.stdout.write(chalk.yellow.bgRed(text));
+    this.trackPromptTextSize(text);
+  }
+
   write(text: string, color?: string, underline?: boolean) {
     if (underline) {
       process.stdout.write(
@@ -67,7 +72,10 @@ export class UI {
     } else {
       process.stdout.write(color ? chalk[color](text) : text);
     }
+    this.trackPromptTextSize(text);
+  }
 
+  trackPromptTextSize(text: string) {
     const width = process.stdout.getWindowSize()[0];
 
     // keep track of the cursor and wraps to remove the menu bar when writing logs
@@ -112,12 +120,15 @@ export class UI {
     this.write(SPACE);
   }
 
-  print(component: string, text = "starting...", forceColor?: string) {
+  print(component: string, text = "starting...", textColor?: string) {
     if (this.getHideOption(component)) return;
     this.clear();
     const { name, color, dark } = COMPONENTS[component];
-    const displayColor = forceColor ?? this.cli.options.dark ? dark : color;
-    process.stdout.write(`[${chalk[displayColor](name)}] ${text}\n`);
+    const displayColor = this.cli.options.dark ? dark : color;
+    process.stdout.write(`[${chalk[displayColor](name)}] `);
+    process.stdout.write(textColor ? chalk[textColor](text) : text);
+    process.stdout.write("\n");
+    process.stdout.write(JSON.stringify(textColor) ?? "not here");
     this.prompt();
   }
 
@@ -138,6 +149,16 @@ export class UI {
       this.write(helpKeyboard);
     } else {
       this.write(help);
+    }
+    const postgresError = this.control.status.postgres === "error";
+    const redisError = this.control.status.redis === "error";
+
+    if (postgresError || redisError) {
+      this.writeWarning(
+        `\n\n ${postgresError ? "postgres is NOT running " : ""}${
+          postgresError && redisError ? SPACE : ""
+        }${redisError ? "redis is NOT running" : ""}`
+      );
     }
     this.showing = true;
   }
