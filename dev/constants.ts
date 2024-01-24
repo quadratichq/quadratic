@@ -36,6 +36,7 @@ export const COMPONENTS = {
 export const SPACE = "     ";
 export const DONE = "✓";
 export const BROKEN = "✗";
+export const KILLED = "☠";
 export const ANIMATE_STATUS = ["◐", "◓", "◑", "◒"];
 export const WATCH = "👀";
 export const NO_LOGS = "🙈"; // AI picked this awesome character

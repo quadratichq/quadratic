@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { ANIMATE_STATUS, ANIMATION_INTERVAL, BROKEN, COMPONENTS, DONE, NO_LOGS, SPACE, WATCH, } from "./constants.js";
+import { ANIMATE_STATUS, ANIMATION_INTERVAL, BROKEN, COMPONENTS, DONE, KILLED, NO_LOGS, SPACE, WATCH, } from "./constants.js";
 import { help, helpCLI, helpKeyboard } from "./help.js";
 import { createScreen } from "./terminal.js";
 export class UI {
@@ -63,7 +63,7 @@ export class UI {
         }
     }
     statusItem(component, alwaysWatch) {
-        const error = this.control.status[component] === "x";
+        const error = this.control.status[component] === "error";
         const { name, color, dark, shortcut } = COMPONENTS[component];
         const index = name.toLowerCase().indexOf(shortcut.toLowerCase());
         const writeColor = error ? "red" : this.cli.options.dark ? dark : color;
@@ -73,8 +73,11 @@ export class UI {
         if (this.getHideOption(component)) {
             this.write(" " + NO_LOGS);
         }
-        if (this.control.status[component] === "x") {
+        if (this.control.status[component] === "error") {
             this.write(" " + BROKEN, "red");
+        }
+        else if (this.control.status[component] === "killed") {
+            this.write(" " + KILLED);
         }
         else if (!this.control.status[component]) {
             this.write(" " + ANIMATE_STATUS[this.spin], "gray");

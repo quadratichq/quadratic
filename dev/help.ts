@@ -28,6 +28,8 @@ export const helpKeyboard =
   "\n             p - Toggle performance build for Core" +
   "\n             r - Restart React" +
   "\n             t - Rebuild WASM types from Core for React" +
+  "\n        ctrl+m - Kill/Resurrect multiplayer" +
+  "\n        ctrl+f - Kill/Resurrect files" +
   "\n             d - Toggle dark theme" +
   "\n             H - Show CLI options" +
   "\n     \n(press h to hide help. press q to quit)";

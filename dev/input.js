@@ -11,8 +11,11 @@ export class Input {
         process.stdin.setEncoding("utf8");
         process.stdin.on("data", this.handleKey);
     }
-    handleKey = (key) => {
-        switch (key.toString()) {
+    handleKey = (data) => {
+        // uncomment to capture ctrl+letter keystroke values
+        // console.log(JSON.stringify(data));
+        // process.exit(0);
+        switch (data.toString()) {
             case "q":
                 this.control.quit();
                 break;
@@ -32,9 +35,15 @@ export class Input {
                 this.control.restartCore();
                 break;
             case "m": // toggle multiplayer
+                if (this.control.status.multiplayer === "killed") {
+                    this.control.status.multiplayer = false;
+                }
                 this.control.restartMultiplayer();
                 break;
             case "f": // toggle files
+                if (this.control.status.files === "killed") {
+                    this.control.status.files = false;
+                }
                 this.control.restartFiles();
                 break;
             case "p":
@@ -66,6 +75,12 @@ export class Input {
                 break;
             case "r": // restart React
                 this.control.runClient();
+                break;
+            case "\u0006": // ctrl + f
+                this.control.killFiles();
+                break;
+            case "\r": // ctrl + m
+                this.control.killMultiplayer();
                 break;
         }
     };

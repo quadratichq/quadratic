@@ -57,7 +57,7 @@ export class Control {
         else if (Array.isArray(options.error)
             ? options.error.some((s) => response.includes(s))
             : response.includes(options.error)) {
-            this.status[name] = "x";
+            this.status[name] = "error";
         }
         else if (Array.isArray(options.start)
             ? options.start.some((s) => response.includes(s))
@@ -155,7 +155,12 @@ export class Control {
             }, () => {
                 if (!restart) {
                     this.runNpmInstall();
-                    this.runMultiplayer();
+                    if (this.status.multiplayer !== "killed") {
+                        this.runMultiplayer();
+                    }
+                    else {
+                        this.runFiles();
+                    }
                 }
             }));
         }
@@ -174,9 +179,27 @@ export class Control {
             this.core.on("exit", () => {
                 if (!restart) {
                     this.runNpmInstall();
-                    this.runMultiplayer();
+                    if (this.status.multiplayer !== "killed") {
+                        this.runMultiplayer();
+                    }
+                    else {
+                        this.runFiles();
+                    }
                 }
             });
+        }
+    }
+    killMultiplayer() {
+        if (this.status.multiplayer === "killed") {
+            this.status.multiplayer = false;
+            this.ui.print("multiplayer", "resurrecting...");
+        }
+        else {
+            if (this.multiplayer) {
+                this.multiplayer.kill("SIGKILL");
+                this.ui.print("multiplayer", "killed", "red");
+            }
+            this.status.multiplayer = "killed";
         }
     }
     restartCore() {
@@ -187,6 +210,8 @@ export class Control {
         this.runCore();
     }
     async runMultiplayer(restart) {
+        if (this.status.multiplayer === "killed")
+            return;
         this.ui.print("multiplayer");
         await killPort(3001);
         this.multiplayer = spawn("npm", [
@@ -212,6 +237,8 @@ export class Control {
         this.runMultiplayer();
     }
     runFiles() {
+        if (this.status.files === "killed")
+            return;
         this.ui.print("files");
         return new Promise(async (resolve) => {
             await killPort(3002);
@@ -236,6 +263,19 @@ export class Control {
         this.cli.options.files = !this.cli.options.files;
         this.runFiles();
     }
+    killFiles() {
+        if (this.status.files === "killed") {
+            this.status.files = false;
+            this.ui.print("files", "restarting...");
+        }
+        else {
+            if (this.files) {
+                this.files.kill("SIGKILL");
+                this.ui.print("files", "killed", "red");
+            }
+            this.status.files = "killed";
+        }
+    }
     runDb() {
         this.ui.print("db", "checking migration...");
         if (this.db) {
@@ -254,7 +294,7 @@ export class Control {
             }
             else {
                 this.ui.print("db", "failed");
-                this.status.db = "x";
+                this.status.db = "error";
             }
             this.runApi();
         });
@@ -269,7 +309,7 @@ export class Control {
             }
             else {
                 this.ui.print("npm", "installation failed");
-                this.status.npm = "x";
+                this.status.npm = "error";
             }
             this.runClient();
         });
@@ -284,7 +324,7 @@ export class Control {
             }
             else {
                 this.ui.print("rust", "failed");
-                this.status.rust = "x";
+                this.status.rust = "error";
             }
             this.runTypes();
         });

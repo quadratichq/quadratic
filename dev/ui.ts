@@ -6,6 +6,7 @@ import {
   BROKEN,
   COMPONENTS,
   DONE,
+  KILLED,
   NO_LOGS,
   SPACE,
   WATCH,
@@ -87,7 +88,7 @@ export class UI {
   }
 
   statusItem(component: string, alwaysWatch?: boolean) {
-    const error = this.control.status[component] === "x";
+    const error = this.control.status[component] === "error";
     const { name, color, dark, shortcut } = COMPONENTS[component];
     const index = name.toLowerCase().indexOf(shortcut.toLowerCase());
     const writeColor = error ? "red" : this.cli.options.dark ? dark : color;
@@ -97,8 +98,10 @@ export class UI {
     if (this.getHideOption(component)) {
       this.write(" " + NO_LOGS);
     }
-    if (this.control.status[component] === "x") {
+    if (this.control.status[component] === "error") {
       this.write(" " + BROKEN, "red");
+    } else if (this.control.status[component] === "killed") {
+      this.write(" " + KILLED);
     } else if (!this.control.status[component]) {
       this.write(" " + ANIMATE_STATUS[this.spin], "gray");
     } else if (this.cli.options[component] || alwaysWatch) {
