@@ -128,10 +128,12 @@ export class Multiplayer {
       this.websocket.addEventListener('message', this.receiveMessage);
 
       this.websocket.addEventListener('close', () => {
+        if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
         this.state = 'waiting to reconnect';
         this.reconnect();
       });
-      this.websocket.addEventListener('error', () => {
+      this.websocket.addEventListener('error', (e) => {
+        if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
         this.state = 'waiting to reconnect';
         this.reconnect();
       });
