@@ -11,6 +11,7 @@ import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguage
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
+import useEventListener from '@/hooks/useEventListener';
 
 // todo: fix types
 
@@ -45,6 +46,7 @@ export const CodeEditorBody = (props: Props) => {
   }, [editorInteractionState.showCodeEditor]);
 
   const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run()
+  useEventListener('run-editor-action', runEditorAction);
   const onMount = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
       editorRef.current = editor;
@@ -64,10 +66,8 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
       monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
       monaco.languages.registerHoverProvider('formula', { provideHover });
-      window.addEventListener("runEditorAction", runEditorAction as any);
 
       setDidMount(true);
-      return () => window.removeEventListener("runEditorAction", runEditorAction as any);
     },
     [didMount]
   );

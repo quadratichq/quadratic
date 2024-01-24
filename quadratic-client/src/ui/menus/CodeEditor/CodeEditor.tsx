@@ -17,7 +17,7 @@ import { ResizeControl } from './ResizeControl';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
 export const dispatchEditorAction = (name: string) => {
-  window.dispatchEvent(new CustomEvent("runEditorAction", {detail: name}))
+  window.dispatchEvent(new CustomEvent("run-editor-action", {detail: name}))
 }
 
 export const CodeEditor = () => {
