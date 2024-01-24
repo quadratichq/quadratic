@@ -337,43 +337,28 @@ pub(crate) mod tests {
     async fn handle_user_update() {
         let (socket, state, _, file_id, user_1, _) = setup().await;
         let session_id = user_1.session_id;
-        let sheet_id = Some(Uuid::new_v4());
-        let selection = Some("selection".to_string());
-        let x = Some(1.0);
-        let y = Some(1.0);
-        let visible = Some(true);
-        let cell_edit = Some(CellEdit::default());
-        let viewport = Some("viewport".to_string());
-        let code_running = Some("code_running".to_string());
+
+        let update = UserStateUpdate {
+            sheet_id: Some(Uuid::new_v4()),
+            selection: Some("selection".to_string()),
+            x: Some(1.0),
+            y: Some(2.0),
+            visible: Some(true),
+            cell_edit: Some(CellEdit::default()),
+            viewport: Some("viewport".to_string()),
+            code_running: Some("code_running".to_string()),
+        };
 
         let request = MessageRequest::UserUpdate {
             session_id,
             file_id,
-            update: UserStateUpdate {
-                sheet_id,
-                selection: selection.clone(),
-                x,
-                y,
-                visible,
-                cell_edit: cell_edit.clone(),
-                viewport: viewport.clone(),
-                code_running: code_running.clone(),
-            },
+            update: update.clone(),
         };
 
         let response = MessageResponse::UserUpdate {
             session_id,
             file_id,
-            update: UserStateUpdate {
-                sheet_id,
-                selection: selection.clone(),
-                x,
-                y,
-                visible,
-                cell_edit,
-                viewport,
-                code_running,
-            },
+            update,
         };
 
         test_handle(socket, state, file_id, user_1, request, None, response).await;
@@ -393,7 +378,22 @@ pub(crate) mod tests {
             users: vec![user_2.clone()],
         };
 
-        test_handle(socket, state, file_id, user_1, request, None, response).await;
+        let users_in_room = state.get_room(&file_id).await.unwrap().users;
+        assert_eq!(users_in_room.len(), 2);
+
+        test_handle(
+            socket,
+            state.clone(),
+            file_id,
+            user_1,
+            request,
+            None,
+            response,
+        )
+        .await;
+
+        let users_in_room = state.get_room(&file_id).await.unwrap().users;
+        assert_eq!(users_in_room.len(), 1);
     }
 
     #[tokio::test]
