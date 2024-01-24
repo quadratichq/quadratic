@@ -20,7 +20,7 @@ async function mergeDuplicateUsers() {
     console.log(`Processing users with email ${email}`);
     const db_users = await dbClient.user.findMany({
       where: {
-        auth0Id: {
+        auth0_id: {
           in: users.map((user) => user.user_id),
         },
       },
@@ -33,10 +33,10 @@ async function mergeDuplicateUsers() {
     }
 
     // Assign the google user as the primary user
-    const primary_user = db_users.find((user) => user.auth0Id.includes('google-oauth2|'));
-    const secondary_user = db_users.find((user) => user.auth0Id.includes('auth0|'));
+    const primary_user = db_users.find((user) => user.auth0_id.includes('auth0|'));
+    const secondary_user = db_users.find((user) => user.auth0_id.includes('google-oauth2|'));
 
-    console.log(`Merging users ${primary_user} and ${secondary_user}`);
+    console.log(`Merging users ${primary_user.auth0_id} and ${secondary_user.auth0_id}`);
 
     if (!commit) {
       console.log('Skip: dry run');
@@ -44,38 +44,39 @@ async function mergeDuplicateUsers() {
     }
 
     // Link the secondary user to the primary user in Auth0
-    auth0.linkUsers(primary_user.auth0Id, {
-      user_id: secondary_user.auth0Id,
+    auth0.linkUsers(primary_user.auth0_id, {
+      user_id: secondary_user.auth0_id,
+      provider: 'google-oauth2',
     });
 
     // Then copy the files to the primary user in Prisma
-    dbClient.file.updateMany({
+    await dbClient.file.updateMany({
       where: {
-        id: secondary_user.id,
+        ownerUserId: secondary_user.id,
       },
       data: {
-        id: primary_user.id,
+        ownerUserId: primary_user.id,
       },
     });
 
     // Then copy the feedback to the primary user in Prisma
-    dbClient.qFeedback.updateMany({
+    await dbClient.qFeedback.updateMany({
       where: {
-        id: secondary_user.id,
+        userId: secondary_user.id,
       },
       data: {
-        id: primary_user.id,
+        userId: primary_user.id,
       },
     });
 
     // Then delete the secondary user in Prisma
-    dbClient.user.delete({
+    await dbClient.user.delete({
       where: {
         id: secondary_user.id,
       },
     });
 
-    console.log(`Merged users ${primary_user} and ${secondary_user}`);
+    console.log(`Merged users ${primary_user.auth0_id} and ${secondary_user.auth0_id}`);
   }
   console.log('Done');
 }
