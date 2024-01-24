@@ -104,7 +104,7 @@ export class Multiplayer {
   }
 
   async init(file_id?: string, user?: User, anonymous?: boolean) {
-    if (this.state === 'connected') return;
+    if (this.state === 'connected' || this.state === 'syncing') return;
 
     if (file_id) {
       this.fileId = file_id;
