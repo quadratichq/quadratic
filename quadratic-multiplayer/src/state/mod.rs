@@ -4,9 +4,9 @@
 //! struct.  All access and mutations to state should be performed here.
 
 pub mod connection;
+pub mod pubsub;
 pub mod room;
 pub mod settings;
-pub mod transaction_queue;
 pub mod user;
 
 use dashmap::DashMap;
@@ -23,7 +23,7 @@ use crate::state::room::Room;
 use crate::state::settings::Settings;
 
 use self::connection::Connection;
-use self::transaction_queue::PubSub;
+use self::pubsub::PubSub;
 
 #[derive(Debug)]
 pub(crate) struct State {

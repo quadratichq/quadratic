@@ -5,6 +5,15 @@
 //! socket information is stored in the global state, we can broadcast
 //! to all users in a room.
 
+use axum::extract::ws::{Message, WebSocket};
+use futures_util::stream::SplitSink;
+use quadratic_core::controller::operations::operation::Operation;
+use quadratic_core::controller::transaction::TransactionServer;
+use quadratic_rust_shared::pubsub::PubSub;
+use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 use crate::error::{MpError, Result};
 use crate::get_mut_room;
 use crate::message::{
@@ -14,18 +23,12 @@ use crate::permissions::{
     validate_can_edit_or_view_file, validate_user_can_edit_file,
     validate_user_can_edit_or_view_file,
 };
-use crate::state::connection::PreConnection;
-use crate::state::transaction_queue::GROUP_NAME;
-use crate::state::user::UserState;
-use crate::state::{user::User, State};
-use axum::extract::ws::{Message, WebSocket};
-use futures_util::stream::SplitSink;
-use quadratic_core::controller::operations::operation::Operation;
-use quadratic_core::controller::transaction::TransactionServer;
-use quadratic_rust_shared::pubsub::PubSub;
-use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use crate::state::{
+    connection::PreConnection,
+    pubsub::GROUP_NAME,
+    user::{User, UserState},
+    State,
+};
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
 #[tracing::instrument(level = "trace")]

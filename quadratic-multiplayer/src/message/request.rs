@@ -1,6 +1,6 @@
 //! Websocket Message Requests
 //!
-//! A central place for storing websocket messages requests.
+//! A central place for websocket messages requests.
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

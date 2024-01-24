@@ -1,6 +1,6 @@
 //! Websocket Message Responses
 //!
-//! A central place for storing websocket messages responses.
+//! A central place for websocket messages responses.
 
 use crate::error::MpError;
 use crate::state::user::UserStateUpdate;
