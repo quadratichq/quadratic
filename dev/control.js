@@ -19,6 +19,7 @@ export class Control {
     db;
     npm;
     rust;
+    docker;
     status = {
         client: false,
         api: false,
@@ -30,6 +31,7 @@ export class Control {
         npm: false,
         postgres: false,
         redis: false,
+        docker: false,
     };
     constructor(cli) {
         this.cli = cli;
@@ -152,7 +154,7 @@ export class Control {
         }
         // clean the node_modules/.vite directory to avoid client errors
         const clean = exec("rm -rf node_modules/.vite");
-        clean.on("close", (code) => {
+        clean.on("close", () => {
             this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
             this.ui.printOutput("client", (data) => {
                 this.handleResponse("client", data, {
@@ -253,7 +255,7 @@ export class Control {
         ]);
         this.ui.printOutput("multiplayer", (data) => this.handleResponse("multiplayer", data, {
             success: "listening on",
-            error: "error[",
+            error: ["error[", " npm ERR!"],
             start: "    Compiling",
         }, () => {
             if (!restart) {
@@ -387,8 +389,31 @@ export class Control {
             });
         });
     }
+    runDockerServices() {
+        this.ui.print("docker", "starting...");
+        const docker = spawn("docker-compose", [
+            "up",
+            "-d",
+            "redis",
+            "-d",
+            "postgres",
+            "-d",
+            "localstack",
+        ]);
+        docker.on("close", (code) => {
+            if (code === 0) {
+                this.ui.print("docker", "completed");
+                this.status.docker = true;
+            }
+            else {
+                this.ui.print("docker", "failed");
+                this.status.docker = false;
+            }
+        });
+    }
     async start(ui) {
         this.ui = ui;
+        this.runDockerServices();
         this.runRust();
         this.runDb();
     }

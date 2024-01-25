@@ -147,6 +147,7 @@ export class UI {
         this.statusItem("multiplayer");
         this.statusItem("files");
         this.statusItem("types");
+        this.statusItem("docker");
         if (this.help === "cli") {
             this.write(helpCLI);
         }
@@ -173,6 +174,8 @@ export class UI {
         const color = this.cli.options.dark ? component.dark : component.color;
         const hide = component.hide || this.getHideOption(name);
         const displayName = component.name;
+        if (!command)
+            return;
         command.stdout.on("data", (data) => {
             if (hide) {
                 if (callback) {

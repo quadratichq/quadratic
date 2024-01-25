@@ -59,15 +59,6 @@ export class UI {
     }
   }
 
-  writeWarning(text: string, highlight: boolean) {
-    if (highlight) {
-      process.stdout.write(chalk.yellow.bgRed(text));
-    } else {
-      process.stdout.write(chalk.red(text));
-    }
-    this.trackPromptTextSize(text);
-  }
-
   write(text: string, color?: string, underline?: boolean) {
     if (underline) {
       process.stdout.write(
@@ -135,29 +126,6 @@ export class UI {
     this.prompt();
   }
 
-  promptExternal() {
-    const postgresError = this.control.status.postgres;
-    const redisError = this.control.status.redis;
-
-    if (postgresError || redisError) {
-      let s = "\n\n ";
-      if (postgresError === "error") {
-        s += "postgres is NOT running";
-      } else if (postgresError === "killed") {
-        s += "pg_isready not found in path";
-      }
-      if (redisError) {
-        s += SPACE;
-      }
-      if (redisError === "error") {
-        s += "redis is NOT running";
-      } else if (redisError === "killed") {
-        s += "redis-server not found in path";
-      }
-      this.writeWarning(s, postgresError === "error" || redisError === "error");
-    }
-  }
-
   prompt() {
     this.clear();
     this.write("\n");
@@ -169,6 +137,7 @@ export class UI {
     this.statusItem("multiplayer");
     this.statusItem("files");
     this.statusItem("types");
+    this.statusItem("docker");
     if (this.help === "cli") {
       this.write(helpCLI);
     } else if (this.help) {
@@ -176,7 +145,6 @@ export class UI {
     } else {
       this.write(help);
     }
-    this.promptExternal();
     this.showing = true;
   }
 
@@ -193,6 +161,7 @@ export class UI {
     const color = this.cli.options.dark ? component.dark : component.color;
     const hide = component.hide || this.getHideOption(name);
     const displayName = component.name;
+    if (!command) return;
     command.stdout.on("data", (data: string) => {
       if (hide) {
         if (callback) {

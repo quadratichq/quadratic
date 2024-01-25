@@ -41,6 +41,12 @@ export const COMPONENTS = {
         dark: "white",
         name: "Redis",
     },
+    docker: {
+        color: "gray",
+        dark: "white",
+        name: "Docker",
+        shortcut: "d",
+    },
 };
 export const SPACE = "     ";
 export const DONE = "✓";
