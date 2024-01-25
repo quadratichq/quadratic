@@ -54,7 +54,11 @@ export class Pointer {
 
   // check if more than one touch point (let the viewport handle the event)
   private isMoreThanOneTouch(e: InteractionEvent): boolean {
-    return e.data.pointerType === 'touch' && (e.data.originalEvent as TouchEvent).touches.length > 1;
+    return (
+      e.data.pointerType === 'touch' &&
+      (e.data.originalEvent as TouchEvent).touches &&
+      (e.data.originalEvent as TouchEvent).touches.length > 1
+    );
   }
 
   private isOverCodeEditor(e: InteractionEvent): boolean {
