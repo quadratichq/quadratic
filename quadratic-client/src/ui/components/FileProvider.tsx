@@ -76,6 +76,17 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
     [setLatestSync, isOwner]
   );
 
+  // before unload check
+  const beforeunloadHandler = (e: BeforeUnloadEvent) => {
+    if (syncState === 'syncing') {
+      e.returnValue = `We're saving your progress. Are you sure you want to leave?`;
+    }
+  }
+  useEffect(() => {
+    window.addEventListener('beforeunload', beforeunloadHandler);
+    return () => window.removeEventListener('beforeunload', beforeunloadHandler);
+  });
+
   // When the file name changes, update document title and sync to server
   useEffect(() => {
     document.title = `${name} - Quadratic`;
