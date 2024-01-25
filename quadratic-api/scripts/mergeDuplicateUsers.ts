@@ -9,7 +9,18 @@ const auth0 = new ManagementClient({
   scope: 'read:users',
 });
 
-const commit = false;
+// Inside mergeDuplicateUsers.ts
+const args = process.argv.slice(2); // slice(2) to remove the first two default entries
+let commit = false;
+
+args.forEach((arg) => {
+  const [key] = arg.split('=');
+  if (key === '--commit') {
+    commit = true;
+  }
+});
+
+console.log(`Commit: ${commit}`);
 
 async function mergeDuplicateUsers() {
   // Get duplicate emails
