@@ -13,9 +13,6 @@ on:
 jobs:
   test_rust:
     runs-on: ubuntu-latest-8-cores
-    permissions:
-      checks: write
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,13 +37,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config
-
-      - name: Build quadratic-core
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-        run: |
-          cd quadratic-core
-          cargo build
 
       - name: Test quadratic-core
         env:
@@ -75,13 +65,6 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Build quadratic-multiplayer
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-        run: |
-          cd quadratic-multiplayer
-          cargo build
-
       - name: Test quadratic-multiplayer
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
@@ -89,13 +72,6 @@ jobs:
         run: |
           cd quadratic-multiplayer
           npm run docker:test
-
-      - name: Remove docker data
-        run: |
-          pwd
-          rm -rf ./docker/localstack/data
-          rm -rf ./docker/postgres/data
-          rm -rf ./docker/redis/data
 
       - name: Generate coverage quadratic-multiplayer
         run: |

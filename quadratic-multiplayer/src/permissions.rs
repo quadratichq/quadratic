@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub(crate) fn validate_can_edit_or_view_file(roles: &[FilePermRole]) -> Result<()> {
-    if !can_view(roles) || !can_edit(roles) {
+    if !(can_view(roles) || can_edit(roles)) {
         return Err(MpError::FilePermissions(
             "You do not have permission to access this file".to_string(),
         ));

@@ -35,7 +35,11 @@ export class Control {
         this.cli = cli;
         this.isRedisRunning().then((running) => {
             this.ui.print("redis", "checking whether redis is running...");
-            if (running) {
+            if (running === "not found") {
+                this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
+                this.ui.print("redis", "redis-cli not found", "red");
+            }
+            else if (running === true) {
                 this.status.redis = true;
                 this.ui.print("redis", "is running", "green");
             }
@@ -46,7 +50,11 @@ export class Control {
         });
         this.isPostgresRunning().then((running) => {
             this.ui.print("redis", "checking whether postgres is running...");
-            if (running) {
+            if (running === "not found") {
+                this.status.postgres = "killed"; // use killed to indicate that redis-cli was not found
+                this.ui.print("postgres", "pg_isready not found", "red");
+            }
+            else if (running === true) {
                 this.status.postgres = true;
                 this.ui.print("postgres", "is running", "green");
             }
@@ -144,7 +152,7 @@ export class Control {
         }
         // clean the node_modules/.vite directory to avoid client errors
         const clean = exec("rm -rf node_modules/.vite");
-        clean.on("close", (code) => {
+        clean.on("close", () => {
             this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
             this.ui.printOutput("client", (data) => {
                 this.handleResponse("client", data, {
@@ -356,6 +364,11 @@ export class Control {
     isRedisRunning() {
         return new Promise((resolve) => {
             const redis = spawn("redis-cli", ["ping"]);
+            redis.on("error", (e) => {
+                if (e.code === "ENOENT") {
+                    resolve("not found");
+                }
+            });
             redis.on("close", (code) => {
                 resolve(code === 0);
             });
@@ -364,6 +377,11 @@ export class Control {
     isPostgresRunning() {
         return new Promise((resolve) => {
             const postgres = spawn("pg_isready");
+            postgres.on("error", (e) => {
+                if (e.code === "ENOENT") {
+                    resolve("not found");
+                }
+            });
             postgres.on("close", (code) => {
                 resolve(code === 0);
             });

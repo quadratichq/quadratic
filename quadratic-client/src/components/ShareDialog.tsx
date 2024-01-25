@@ -388,7 +388,7 @@ export function InviteForm({
 
     // Get the data from the form
     const formData = new FormData(e.currentTarget);
-    const email = String(formData.get('email')).trim();
+    const email = String(formData.get('email_search')).trim();
     const roleIndex = Number(formData.get('roleIndex'));
 
     // Validate email
@@ -429,9 +429,12 @@ export function InviteForm({
       <div className="flex flex-grow flex-col">
         <Input
           autoComplete="off"
+          spellCheck="false"
           aria-label="Email"
           placeholder="Email"
-          name="email"
+          // We have to put the `search` in the name because Safari
+          // https://bytes.grubhub.com/disabling-safari-autofill-for-a-single-line-address-input-b83137b5b1c7
+          name="email_search"
           autoFocus
           ref={inputRef}
           onChange={(e) => {

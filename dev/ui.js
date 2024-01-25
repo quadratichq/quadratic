@@ -38,8 +38,13 @@ export class UI {
             this.showing = false;
         }
     }
-    writeWarning(text) {
-        process.stdout.write(chalk.yellow.bgRed(text));
+    writeWarning(text, highlight) {
+        if (highlight) {
+            process.stdout.write(chalk.yellow.bgRed(text));
+        }
+        else {
+            process.stdout.write(chalk.red(text));
+        }
         this.trackPromptTextSize(text);
     }
     write(text, color, underline) {
@@ -106,8 +111,30 @@ export class UI {
         process.stdout.write(`[${chalk[displayColor](name)}] `);
         process.stdout.write(textColor ? chalk[textColor](text) : text);
         process.stdout.write("\n");
-        process.stdout.write(JSON.stringify(textColor) ?? "not here");
         this.prompt();
+    }
+    promptExternal() {
+        const postgres = this.control.status.postgres;
+        const redis = this.control.status.redis;
+        if (postgres !== true || redis !== true) {
+            let s = "\n\n ";
+            if (postgres === "error") {
+                s += "postgres is NOT running";
+            }
+            else if (postgres === "killed") {
+                s += "pg_isready not found in path";
+            }
+            if (redis) {
+                s += SPACE;
+            }
+            if (redis === "error") {
+                s += "redis is NOT running";
+            }
+            else if (redis === "killed") {
+                s += "redis-server not found in path";
+            }
+            this.writeWarning(s, postgres === "error" || redis === "error");
+        }
     }
     prompt() {
         this.clear();
@@ -129,11 +156,7 @@ export class UI {
         else {
             this.write(help);
         }
-        const postgresError = this.control.status.postgres === "error";
-        const redisError = this.control.status.redis === "error";
-        if (postgresError || redisError) {
-            this.writeWarning(`\n\n ${postgresError ? "postgres is NOT running " : ""}${postgresError && redisError ? SPACE : ""}${redisError ? "redis is NOT running" : ""}`);
-        }
+        this.promptExternal();
         this.showing = true;
     }
     getHideOption(name) {
