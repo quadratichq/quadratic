@@ -175,7 +175,7 @@ export class Control {
     }
     // clean the node_modules/.vite directory to avoid client errors
     const clean = exec("rm -rf node_modules/.vite");
-    clean.on("close", (code) => {
+    clean.on("close", () => {
       this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
       this.ui.printOutput("client", (data) => {
         this.handleResponse("client", data, {
