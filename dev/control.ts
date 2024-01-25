@@ -409,7 +409,7 @@ export class Control {
 
   isRedisRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
-      const redis = spawn("redis-cliasdf", ["ping"]);
+      const redis = spawn("redis-cli", ["ping"]);
       redis.on("error", (e: any) => {
         if (e.code === "ENOENT") {
           resolve("not found");
