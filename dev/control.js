@@ -152,7 +152,7 @@ export class Control {
         }
         // clean the node_modules/.vite directory to avoid client errors
         const clean = exec("rm -rf node_modules/.vite");
-        clean.on("close", (code) => {
+        clean.on("close", () => {
             this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
             this.ui.printOutput("client", (data) => {
                 this.handleResponse("client", data, {
@@ -363,7 +363,7 @@ export class Control {
     }
     isRedisRunning() {
         return new Promise((resolve) => {
-            const redis = spawn("redis-cliasdf", ["ping"]);
+            const redis = spawn("redis-cli", ["ping"]);
             redis.on("error", (e) => {
                 if (e.code === "ENOENT") {
                     resolve("not found");
