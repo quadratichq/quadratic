@@ -3,15 +3,20 @@
 
 Let's get everything setup to develop on Quadratic!
 
-- [Developing without Docker](#developing-without-docker)
-  - [Installing PostgreSQL](#installing-postgresql)
-    - [Mac](#mac)
-    - [Create Database](#create-database)
-  - [Installing Redis](#installing-redis)
-    - [Mac](#mac-1)
-  - [Using node dev](#using-node-dev)
-    - [Commands while `node dev` is running](#commands-while-node-dev-is-running)
-    - [Running for React-only development](#running-for-react-only-development)
+- [Install Dependencies](#install-dependencies)
+- [Local Environment Setup](#local-environment-setup)
+  - [Docker](#docker)
+    - [Docker Compose](#docker-compose)
+    - [Building Images Manually](#building-images-manually)
+  - [Developing without Docker](#developing-without-docker)
+    - [Installing PostgreSQL](#installing-postgresql)
+      - [Mac](#mac)
+      - [Create Database](#create-database)
+    - [Installing Redis](#installing-redis)
+      - [Mac](#mac-1)
+- [Using node dev](#using-node-dev)
+  - [Commands while `node dev` is running](#commands-while-node-dev-is-running)
+  - [Running for React-only development](#running-for-react-only-development)
 
 
 ## Install Dependencies
@@ -36,7 +41,36 @@ rustup target add wasm32-unknown-unknown
 cargo install cargo-watch
 ```
 
-## Docker Compose
+## Local Environment Setup
+
+Now that dependencies are installed, all you need to do is run `node dev` to 
+bring up the all services.  INvoke `node run --help` for information on how
+to use this script, as you can use it to watch individual (or groups of)
+services during development. See the [Using node dev](Using-node-dev) section
+for more more information.
+
+### Docker
+
+#### Docker Compose
+
+Docker Compose is a utility that's built into Docker Desktop and is a compact 
+infrastructure-as-code framework.  Services (e.g. running Docker containers) are
+defined, along with configuration information, in the `docker-compose.yml` file.
+Service can talk together and can communicate with services in the user's host
+network.
+
+To pull up the network with just the required depedencies (Redis, Postgres, Localstack):
+
+```shell
+npm run docker:up
+```
+
+Along with the dependent services, scripts are executed that create S3 buckets and
+migrate the database.  Docker is run in the background in this script.
+
+
+
+#### Building Images Manually
 
 To build images for individual services (from project root):
 
@@ -46,51 +80,27 @@ docker-compose build quadratic-files
 docker-compose build quadratic-multiplayer
 ```
 
-
-To pull up the network with just the required depedencies (Redis, Postgres, Localstack):
-
-```shell
-docker compose up
-```
-
-To run the network in the background, add the `-d` command to the end:
-
-```shell
-docker compose up -d
-```
-
-## Develop on the Frontend
-
-## Develop on Quadratic API
-
-## Develop on Quadratic Core
-
-## Develop on Quadratic MultiPlayer
-
-## Develop on Quadratic Files
-
-# Developing without Docker
+### Developing without Docker
 
 You can also develop Quadratic without using docker
 
-- [Install Dependencies](#install-dependencies)
-- Set up .env in quadratic-client, quadratic-api, quadratic-multiplayer, and quadratic-files. (todo: better description of how to do this)
+* Set up .env in quadratic-client, quadratic-api, quadratic-multiplayer, and quadratic-files. (todo: better description of how to do this)
 
-## Installing PostgreSQL
+#### Installing PostgreSQL
 
-### Mac
+##### Mac
 
 `brew install postgresql` (Mac)
 `brew services start postgresql`
 
-### Create Database
+##### Create Database
 
-- Create a database for use with postgres
-- Add database to quadratic-api/.env
+* Create a database for use with postgres
+* Add database to quadratic-api/.env
 
-## Installing Redis
+#### Installing Redis
 
-### Mac
+##### Mac
 
 `brew install redis`
 `brew services start redis`
