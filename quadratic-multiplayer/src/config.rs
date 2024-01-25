@@ -26,7 +26,7 @@ pub(crate) struct Config {
 
     pub(crate) auth0_jwks_uri: String,
     pub(crate) quadratic_api_uri: String,
-    pub(crate) quadratic_api_jwt: String,
+    pub(crate) m2m_auth_token: String,
 }
 
 /// Load the global configuration from the environment into Config.

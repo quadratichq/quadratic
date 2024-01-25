@@ -152,7 +152,7 @@ macro_rules! get_or_create_room {
                     0
                 } else {
                     let url = &$self.settings.quadratic_api_uri;
-                    let jwt = &$self.settings.quadratic_api_jwt;
+                    let jwt = &$self.settings.m2m_auth_token;
                     quadratic_rust_shared::quadratic_api::get_file_checkpoint(url, jwt, &$file_id)
                         .await?
                         .sequence_number
