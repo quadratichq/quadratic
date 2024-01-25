@@ -162,7 +162,7 @@ function UserAvatar({
   return (
     <Menu menuButton={avatar}>
       <MenuItem onClick={handleFollow} style={{ fontSize: '.875rem' }}>
-        {follow ? `Stop following ${displayName}` : `Follow ${displayName}`}
+        {follow ? `Stop following` : `Follow`}
       </MenuItem>
     </Menu>
   );
