@@ -7,7 +7,7 @@ pub(crate) struct Settings {
     pub(crate) jwks: Option<JwkSet>,
     pub(crate) authenticate_jwt: bool,
     pub(crate) quadratic_api_uri: String,
-    pub(crate) quadratic_api_jwt: String,
+    pub(crate) m2m_auth_token: String,
 }
 
 impl Settings {
@@ -16,7 +16,7 @@ impl Settings {
             jwks,
             authenticate_jwt: config.authenticate_jwt,
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
-            quadratic_api_jwt: config.quadratic_api_jwt.to_owned(),
+            m2m_auth_token: config.m2m_auth_token.to_owned(),
         }
     }
 }

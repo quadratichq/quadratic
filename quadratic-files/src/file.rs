@@ -107,12 +107,12 @@ pub(crate) async fn process_queue_for_room(
         aws_client,
         aws_s3_bucket_name,
         quadratic_api_uri,
-        quadratic_api_jwt,
+        m2m_auth_token,
         ..
     } = &state.settings;
 
     let checkpoint_sequence_num =
-        match get_file_checkpoint(quadratic_api_uri, quadratic_api_jwt, file_id).await {
+        match get_file_checkpoint(quadratic_api_uri, m2m_auth_token, file_id).await {
             Ok(last_checkpoint) => last_checkpoint.sequence_number,
             Err(_) => 0,
         };
@@ -198,7 +198,7 @@ pub(crate) async fn process_queue_for_room(
     let key = &key(*file_id, last_sequence_num);
     set_file_checkpoint(
         quadratic_api_uri,
-        quadratic_api_jwt,
+        m2m_auth_token,
         file_id,
         last_sequence_num,
         CURRENT_VERSION.into(),
@@ -300,7 +300,7 @@ mod tests {
         //     aws_client,
         //     aws_s3_bucket_name,
         //     quadratic_api_uri,
-        //     quadratic_api_jwt,
+        //     m2m_auth_token,
         //     ..
         // } = &state.settings;
 
