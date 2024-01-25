@@ -56,6 +56,11 @@ app.use((req, res, next) => {
   return next();
 });
 
+// Health-check
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'OK' });
+});
+
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
 app.use('/ai', ai_chat_router);
