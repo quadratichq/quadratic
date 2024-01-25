@@ -54,13 +54,10 @@ export const TopBar = () => {
       }}
     >
       <div
+        className="flex items-stretch lg:basis-1/3"
         style={{
           //@ts-expect-error
           WebkitAppRegion: 'no-drag',
-          display: 'flex',
-          alignItems: 'stretch',
-          color: theme.palette.text.primary,
-          ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
         <QuadraticMenu />
@@ -76,23 +73,18 @@ export const TopBar = () => {
       <TopBarFileMenu />
 
       <div
+        className="flex items-center justify-end gap-4 lg:basis-1/3"
         style={{
           // @ts-expect-error
           WebkitAppRegion: 'no-drag',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: theme.spacing(),
-          color: theme.palette.text.primary,
-          ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
         {isDesktop && !isEmbed && (
           <>
+            <TopBarUsers />
             <Tooltip title={`Code cell outlines ${showCellTypeOutlines ? 'visible' : 'hidden'}`}>
               <Switch className={cn('br-0')} checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
             </Tooltip>
-            <TopBarUsers />
             <TopBarShareButton />
           </>
         )}

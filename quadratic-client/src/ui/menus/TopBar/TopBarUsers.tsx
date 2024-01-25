@@ -2,8 +2,8 @@ import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { TooltipHint } from '@/ui/components/TooltipHint';
 import { displayInitials, displayName } from '@/utils/userUtil';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Avatar, AvatarGroup, IconButton, useTheme } from '@mui/material';
+import { Avatar, AvatarGroup, IconButton } from '@mui/material';
+import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { Menu, MenuItem } from '@szhsin/react-menu';
 import { useSetRecoilState } from 'recoil';
 import { useRootRouteLoaderData } from '../../../router';
@@ -11,14 +11,13 @@ import { colors } from '../../../theme/colors';
 import { useMultiplayerUsers } from './useMultiplayerUsers';
 
 export const TopBarUsers = () => {
-  const theme = useTheme();
   const { loggedInUser: user } = useRootRouteLoaderData();
   const { users, follow } = useMultiplayerUsers();
   const usersWithoutFollow = users.filter((user) => user.session_id !== follow?.session_id);
 
   return (
     <>
-      <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
+      <AvatarGroup sx={{ alignSelf: 'center' }}>
         {usersWithoutFollow.map((user) => {
           return (
             <UserAvatar
@@ -34,8 +33,6 @@ export const TopBarUsers = () => {
             />
           );
         })}
-      </AvatarGroup>
-      <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
         {follow && (
           <UserAvatar
             displayName={displayName(follow, false)}
@@ -73,27 +70,27 @@ function You({
   border: string;
 }) {
   return (
-    // IconButton was necessary for the tooltip to work
-    <IconButton>
+    <div className="flex items-center px-2">
       <TooltipHint title={displayName}>
-        <Avatar
-          sx={{
-            bgcolor: colors.quadraticSecondary,
-            width: 24,
-            height: 24,
-            fontSize: '0.8rem',
-          }}
-          variant="square"
-          alt={displayName}
-          src={picture}
-          style={{
-            border: `2px solid ${border}`,
-          }}
-        >
-          {initial}
-        </Avatar>
+        <div>
+          <Avatar
+            sx={{
+              bgcolor: colors.quadraticSecondary,
+              width: 24,
+              height: 24,
+              fontSize: '0.8rem',
+            }}
+            alt={displayName}
+            src={picture}
+            style={{
+              border: `2px solid ${border}`,
+            }}
+          >
+            {initial}
+          </Avatar>
+        </div>
       </TooltipHint>
-    </IconButton>
+    </div>
   );
 }
 
@@ -129,41 +126,44 @@ function UserAvatar({
 
   const name = follow ? `Following ${displayName}` : displayName;
   const avatar = (
-    <IconButton style={{ borderRadius: 0 }}>
-      <TooltipHint title={name} sx={{}}>
-        <div style={{ position: 'relative' }}>
-          <Avatar
-            sx={{
-              bgcolor: bgColor ?? colors.quadraticSecondary,
-              width: 24,
-              height: 24,
-              fontSize: '0.8rem',
-              pointerEvents: 'auto',
-              cursor: 'pointer',
-              position: 'relative',
-            }}
-            variant="square"
-            alt={displayName}
-            src={picture}
-            style={{
-              border: `2px solid ${border}`,
-            }}
-          >
-            {initial}
-          </Avatar>
-          {follow && (
-            <VisibilityIcon
-              sx={{ position: 'absolute', top: '-8px', left: '50%', width: '16px', height: '16px', color: 'black' }}
-            />
-          )}
-        </div>
+    <div className="relative">
+      <TooltipHint title={name}>
+        <IconButton style={{ borderRadius: 0 }}>
+          <div>
+            <Avatar
+              sx={{
+                bgcolor: bgColor ?? colors.quadraticSecondary,
+                width: 24,
+                height: 24,
+                fontSize: '0.8rem',
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                position: 'relative',
+              }}
+              alt={displayName}
+              src={picture}
+              style={{
+                border: `2px solid ${border}`,
+              }}
+            >
+              {initial}
+            </Avatar>
+          </div>
+        </IconButton>
       </TooltipHint>
-    </IconButton>
+      {follow && (
+        <div className="pointer-events-none absolute bottom-1 left-1/2 flex h-5  w-5 items-center justify-center rounded-full bg-white">
+          <EyeOpenIcon />
+        </div>
+      )}
+    </div>
   );
 
   return (
     <Menu menuButton={avatar}>
-      <MenuItem onClick={handleFollow}>{follow ? `Stop following ${displayName}` : `Follow ${displayName}`}</MenuItem>
+      <MenuItem onClick={handleFollow} style={{ fontSize: '.875rem' }}>
+        {follow ? `Stop following ${displayName}` : `Follow ${displayName}`}
+      </MenuItem>
     </Menu>
   );
 }
