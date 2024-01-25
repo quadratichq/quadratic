@@ -37,7 +37,9 @@
     "kill": "kill-port 3000 && kill-port 3001 && kill-port 8001 && kill-port 8000",
     "test:ts": "cd quadratic-client && vitest",
     "prisma:migrate": "cd quadratic-api && npm run prisma:migrate",
-    "docker:start": "docker compose up -d --wait && cd quadratic-api && npm run prisma:migrate"
+    "docker:up": "docker compose up -d --wait && cd quadratic-api && npm run prisma:migrate",
+    "docker:down": "docker compose down",
+    "docker:down:kill-volumes": "docker compose down -v"
   },
   "dependencies": {
     "zod": "^3.22.4"
