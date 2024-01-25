@@ -38,15 +38,6 @@ export class UI {
             this.showing = false;
         }
     }
-    writeWarning(text, highlight) {
-        if (highlight) {
-            process.stdout.write(chalk.yellow.bgRed(text));
-        }
-        else {
-            process.stdout.write(chalk.red(text));
-        }
-        this.trackPromptTextSize(text);
-    }
     write(text, color, underline) {
         if (underline) {
             process.stdout.write(color ? chalk[color].underline(text) : chalk.underline(text));
@@ -113,29 +104,6 @@ export class UI {
         process.stdout.write("\n");
         this.prompt();
     }
-    promptExternal() {
-        const postgresError = this.control.status.postgres;
-        const redisError = this.control.status.redis;
-        if (postgresError || redisError) {
-            let s = "\n\n ";
-            if (postgresError === "error") {
-                s += "postgres is NOT running";
-            }
-            else if (postgresError === "killed") {
-                s += "pg_isready not found in path";
-            }
-            if (redisError) {
-                s += SPACE;
-            }
-            if (redisError === "error") {
-                s += "redis is NOT running";
-            }
-            else if (redisError === "killed") {
-                s += "redis-server not found in path";
-            }
-            this.writeWarning(s, postgresError === "error" || redisError === "error");
-        }
-    }
     prompt() {
         this.clear();
         this.write("\n");
@@ -157,7 +125,6 @@ export class UI {
         else {
             this.write(help);
         }
-        this.promptExternal();
         this.showing = true;
     }
     getHideOption(name) {

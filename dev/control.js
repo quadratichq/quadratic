@@ -29,42 +29,10 @@ export class Control {
         types: false,
         db: false,
         npm: false,
-        postgres: false,
-        redis: false,
         docker: false,
     };
     constructor(cli) {
         this.cli = cli;
-        this.isRedisRunning().then((running) => {
-            this.ui.print("redis", "checking whether redis is running...");
-            if (running === "not found") {
-                this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
-                this.ui.print("redis", "redis-cli not found", "red");
-            }
-            else if (running === true) {
-                this.status.redis = true;
-                this.ui.print("redis", "is running", "green");
-            }
-            else {
-                this.status.redis = "error";
-                this.ui.print("redis", "is NOT running!", "red");
-            }
-        });
-        this.isPostgresRunning().then((running) => {
-            this.ui.print("redis", "checking whether postgres is running...");
-            if (running === "not found") {
-                this.status.postgres = "killed"; // use killed to indicate that redis-cli was not found
-                this.ui.print("postgres", "pg_isready not found", "red");
-            }
-            else if (running === true) {
-                this.status.postgres = true;
-                this.ui.print("postgres", "is running", "green");
-            }
-            else {
-                this.status.postgres = "error";
-                this.ui.print("postgres", "is NOT running!", "red");
-            }
-        });
     }
     quit() {
         if (this.api)
@@ -361,32 +329,6 @@ export class Control {
                 this.status.rust = "error";
             }
             this.runTypes();
-        });
-    }
-    isRedisRunning() {
-        return new Promise((resolve) => {
-            const redis = spawn("redis-cliasdf", ["ping"]);
-            redis.on("error", (e) => {
-                if (e.code === "ENOENT") {
-                    resolve("not found");
-                }
-            });
-            redis.on("close", (code) => {
-                resolve(code === 0);
-            });
-        });
-    }
-    isPostgresRunning() {
-        return new Promise((resolve) => {
-            const postgres = spawn("pg_isready");
-            postgres.on("error", (e) => {
-                if (e.code === "ENOENT") {
-                    resolve("not found");
-                }
-            });
-            postgres.on("close", (code) => {
-                resolve(code === 0);
-            });
         });
     }
     runDockerServices() {
