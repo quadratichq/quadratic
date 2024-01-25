@@ -42,7 +42,7 @@ export function ShareDialog({ onClose, title, description, children }: any) {
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader className={`mr-6 overflow-hidden`}>
-          <DialogTitle className={`truncate`}>{title}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className={`flex flex-col gap-4`}>{children}</div>
