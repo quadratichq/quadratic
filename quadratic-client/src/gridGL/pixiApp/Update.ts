@@ -113,7 +113,6 @@ export class Update {
       debugTimeReset();
       pixiApp.viewport.dirty = false;
       pixiApp.renderer.render(pixiApp.stage);
-      console.log('rendered...');
       debugTimeCheck('[Update] render');
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
