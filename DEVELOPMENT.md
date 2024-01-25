@@ -18,7 +18,8 @@ Let's get everything setup to develop on Quadratic!
   - [Commands while `node dev` is running](#commands-while-node-dev-is-running)
   - [Running for React-only development](#running-for-react-only-development)
 - [Testing](#testing)
-  - [Testing JavaScript Services](#testing-javascript-services)
+  - [Testing Quadratic Client](#testing-quadratic-client)
+  - [Testing Quadratic API](#testing-quadratic-api)
   - [Testing Rust Crates](#testing-rust-crates)
     - [Rust Coverage](#rust-coverage)
 - [Linting](#linting)
@@ -159,7 +160,21 @@ After you successfully run the app the first time, use `node dev -ACTMF` if only
 
 ## Testing
 
-### Testing JavaScript Services
+### Testing Quadratic Client
+
+To test quadratic-client, enter the following command from the root of the project:
+
+```shell
+npm run test:ts
+```
+
+### Testing Quadratic API
+
+To test quadratic-api, close the existing docker network (`docker compose down`), and enter the following command from the root of the project:
+
+```shell
+npm run test:api
+```
 
 ### Testing Rust Crates
 
