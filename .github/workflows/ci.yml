@@ -14,10 +14,6 @@ jobs:
   test_rust:
     runs-on: ubuntu-latest-8-cores
     steps:
-      - name: Set owner of working dir recurively (Linux)
-        if: ${{ inputs.build_platform == 'linux' }}
-        run: sudo chown -R $(whoami) .
-
       # - uses: actions/checkout@v4
       # - uses: actions/setup-node@v4
       #   with:
