@@ -1,4 +1,3 @@
-import { User } from 'auth0';
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
@@ -33,12 +32,14 @@ beforeEach(async () => {
       uuid: '00000000-0000-4000-8000-000000000001',
       creatorUserId: userOwner.id,
       ownerUserId: userOwner.id,
-      // teamId: team.id,
       UserFileRole: {
         create: [
           { userId: userEditor.id, role: 'EDITOR' },
           { userId: userViewer.id, role: 'VIEWER' },
         ],
+      },
+      FileInvite: {
+        create: [{ email: 'invitedPerson@example.com', role: 'EDITOR' }],
       },
     },
   });
@@ -54,44 +55,51 @@ afterEach(async () => {
   ]);
 });
 
-// Mock Auth0 getUsersByEmail
-jest.mock('auth0', () => {
-  return {
-    ManagementClient: jest.fn().mockImplementation(() => {
-      return {
-        getUsersByEmail: jest.fn().mockImplementation((email: string) => {
-          const users: User[] = [
-            {
-              user_id: 'userOwner',
-              email: 'userOwner@example.com',
-            },
-            {
-              user_id: 'userEditor',
-              email: 'userEditor@example.com',
-            },
-            {
-              user_id: 'userViewer',
-              email: 'userViewer@example.com',
-            },
-            {
-              user_id: 'userNoRole',
-              email: 'userNoRole@example.com',
-            },
-            {
-              user_id: 'duplicate_emails_user_1',
-              email: 'duplciate@example.com',
-            },
-            {
-              user_id: 'duplicate_emails_user_2',
-              email: 'duplicate@example.com',
-            },
-          ];
-          return users.filter((user) => user.email === email);
-        }),
-      };
+// Mock auth0 client calls
+const auth0Users = [
+  {
+    user_id: 'userOwner',
+    email: 'userOwner@example.com',
+  },
+  {
+    user_id: 'userEditor',
+    email: 'userEditor@example.com',
+  },
+  {
+    user_id: 'userViewer',
+    email: 'userViewer@example.com',
+  },
+  {
+    user_id: 'userNoRole',
+    email: 'userNoRole@example.com',
+  },
+  {
+    user_id: 'duplicate_emails_user_1',
+    email: 'duplicate@example.com',
+  },
+  {
+    user_id: 'duplicate_emails_user_2',
+    email: 'duplicate@example.com',
+  },
+  {
+    user_id: 'userNotYetInDb',
+    email: 'userNotYetInDb@example.com',
+  },
+  {
+    email: 'userWithoutId@example.com',
+  },
+];
+jest.mock('auth0', () => ({
+  ManagementClient: jest.fn().mockImplementation(() => ({
+    getUsers: jest.fn().mockImplementation(({ q }: { q: string }) => {
+      // example value for `q`: "user_id:(user1 OR user2)"
+      return auth0Users.filter(({ user_id }) => user_id && q.includes(user_id));
     }),
-  };
-});
+    getUsersByEmail: jest.fn().mockImplementation((email: string) => {
+      return auth0Users.filter(({ email: userEmail }) => email === userEmail);
+    }),
+  })),
+}));
 
 const expectUser = (res: request.Response) => {
   expect(typeof res.body.userId).toBe('number');
@@ -104,226 +112,106 @@ const expectInvite = (res: request.Response) => {
   expect(typeof res.body.id).toBe('number');
 };
 
+const invite = (payload: any, user: string, url = '/v0/files/00000000-0000-4000-8000-000000000001/invites') => {
+  return request(app)
+    .post(url)
+    .send(payload)
+    .set('Accept', 'application/json')
+    .set('Authorization', `Bearer ValidToken ${user}`)
+    .expect('Content-Type', /json/);
+};
+
 describe('POST /v0/files/:uuid/invites', () => {
   describe('sending a bad request', () => {
-    it('responds with a 400 for failing schema validation on the file UUID', async () => {
-      await request(app)
-        .post('/v0/files/foo/invites')
-        .send({ email: 'test@example.com', role: 'OWNER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
+    it('rejects for failing schema validation on the file UUID', async () => {
+      await invite({ email: 'test@example.com', role: 'OWNER' }, 'userOwner', '/v0/files/foo/invites')
         .expect(400)
         .expect(expectError);
     });
-    it('responds with a 400 for failing schema validation on the payload', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(400)
-        .expect(expectError);
+    it('rejects for failing schema validation on the payload', async () => {
+      await invite({ role: 'EDITOR' }, 'userOwner').expect(400).expect(expectError);
     });
-    it('responds with a 400 for a bad role', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'test@gmail.com', role: 'OWNER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(400)
-        .expect(expectError);
+    it('rejects for sending a bad email', async () => {
+      await invite({ email: ' blahgmail.com ', role: 'EDITOR' }, 'userOwner').expect(400).expect(expectError);
+    });
+    it('rejects for sending a bad role', async () => {
+      await invite({ email: 'test@gmail.com', role: 'OWNER' }, 'userOwner').expect(400).expect(expectError);
     });
   });
 
-  // TODO: tests for inviting to files public/private or in a team, etc.
-  // review all the tests below
-
-  describe('inviting people who are already associated with the file', () => {
-    describe('as the file owner', () => {
-      it.todo('responds with a 400 when inviting yourself as owner');
-      it.todo('responds with a 400 when inviting an exisiting EDITOR');
-      it.todo('responds with a 400 when inviting an exisiting VIEWER');
-      it.todo('responds with a 400 when inviting an exisiting invite');
-    });
-    describe('as an EDITOR', () => {
-      it.todo('responds with a 400 when inviting the owner');
-      it.todo('responds with a 400 when inviting yourself as EDITOR');
-      it.todo('responds with a 400 when inviting an exisiting EDITOR');
-      it.todo('responds with a 400 when inviting an exisiting invite');
-    });
-    describe('as a VIEWER', () => {
-      it.todo('responds with a 403 when inviting the owner');
-      it.todo('responds with a 403 when inviting yourself as EDITOR');
-      it.todo('responds with a 403 when inviting an exisiting EDITOR');
-      it.todo('responds with a 403 when inviting an exisiting invite');
-    });
-    describe('as a user with no role and the public link is NOT_SHARED', () => {
-      it.todo('responds with a 403');
-    });
-    describe('as a user with no role and the public link is VIEWER', () => {
-      it.todo('responds with a 403');
-    });
-    describe('as a user with no role and the public link is EDITOR', () => {
-      it.todo('responds with a 400 when inviting the owner');
-      it.todo('responds with a 201 when inviting yourself as EDITOR');
-      it.todo('responds with a 201 when inviting yourself as VIEWER');
-      it.todo('responds with a 403 when inviting an exisiting EDITOR');
-      it.todo('responds with a 403 when inviting an exisiting VIEWER');
-      it.todo('responds with a 403 when inviting an exisiting invite');
-    });
-
-    it('responds with 400 for inviting someone who is already a a user', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'userEditor@example.com', role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(400)
-        .expect(expectError);
-    });
-  });
-
-  describe('adding users who already have a Quadratic account but aren’t yet in the database', () => {
-    it.todo("adds a user who exists in auth0 but doesn't exist yet in the database");
-  });
-
-  describe('inviting users who already have a Quadratic account', () => {
-    it('adds an EDITOR invited by file owner', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'userNoRole@example.com', role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(expectUser);
-    });
-    it('adds a VIEWER invited by file owner', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'userNoRole@example.com', role: 'VIEWER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(expectUser);
-    });
-
-    it('adds an EDITOR invited by an EDITOR', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'userNoRole@example.com', role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userEditor`)
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(expectUser);
-    });
-    it('adds a VIEWER invited by an EDITOR', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'userNoRole@example.com', role: 'VIEWER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userEditor`)
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(expectUser);
-    });
-
-    it('rejects an EDITOR invited by a VIEWER', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'userNoRole@example.com', role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userViewer`)
-        .expect('Content-Type', /json/)
+  describe('permissioning', () => {
+    it('rejects inviting someone if you don’t have permission', async () => {
+      await invite({ email: 'someRandomPerson@example.com', role: 'EDITOR' }, 'userViewer')
         .expect(403)
         .expect(expectError);
     });
-    it('rejects a VIEWER invited by a VIEWER', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email: 'userNoRole@example.com', role: 'VIEWER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userViewer`)
-        .expect('Content-Type', /json/)
-        .expect(403)
-        .expect(expectError);
+    it('creates an invite for someone if you have permission', async () => {
+      await invite({ email: 'someRandomPerson@example.com', role: 'EDITOR' }, 'userEditor')
+        .expect(201)
+        .expect(expectInvite);
+    });
+    it('adds a user to the file if you have permission', async () => {
+      await invite({ email: 'userNoRole@example.com', role: 'EDITOR' }, 'userOwner').expect(200).expect(expectUser);
+    });
+
+    describe('publicly editable file', () => {
+      beforeEach(async () => {
+        await dbClient.file.update({
+          where: { uuid: '00000000-0000-4000-8000-000000000001' },
+          data: { publicLinkAccess: 'EDIT' },
+        });
+      });
+      it('adds yourself if the file is publicly editable', async () => {
+        await invite({ email: 'userNoRole@example.com', role: 'EDITOR' }, 'userNoRole').expect(200).expect(expectUser);
+      });
+      it('creates an invite for someone even if you’re just a viewer', async () => {
+        await invite({ email: 'someRandomPerson@example.com', role: 'EDITOR' }, 'userViewer')
+          .expect(201)
+          .expect(expectInvite);
+      });
     });
   });
 
-  describe('adding users who don’t have a Quadratic account', () => {
-    const email = 'jane_doe@example.com';
-    it('adds an EDITOR invited by file owner', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email, role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(expectInvite);
+  describe('inviting people already associated with the file', () => {
+    it('rejects inviting yourself as the file owner', async () => {
+      await invite({ email: 'userOwner@example.com', role: 'EDITOR' }, 'userOwner').expect(400).expect(expectError);
     });
-    it('adds VIEWER invited by OWNER', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email, role: 'VIEWER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(expectInvite);
+    it('rejects inviting the file owner', async () => {
+      await invite({ email: 'userOwner@example.com', role: 'EDITOR' }, 'userEditor').expect(400).expect(expectError);
     });
-
-    it('adds EDITOR invited by EDITOR', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email, role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userEditor`)
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(expectInvite);
+    it('rejects inviting yourself as an exisiting user', async () => {
+      await invite({ email: 'userEditor@example.com', role: 'EDITOR' }, 'userEditor').expect(409).expect(expectError);
     });
-    it('adds VIEWER invited by EDITOR', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email, role: 'VIEWER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userEditor`)
-        .expect('Content-Type', /json/)
-        .expect(201)
-        .expect(expectInvite);
+    it('rejects inviting another exisiting user', async () => {
+      await invite({ email: 'userEditor@example.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
-
-    it('rejects EDITOR invited by VIEWER', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email, role: 'EDITOR' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userViewer`)
-        .expect('Content-Type', /json/)
-        .expect(403)
-        .expect(expectError);
+    it('rejects inviting an email associated with an exisiting invite', async () => {
+      await invite({ email: 'invitedPerson@example.com', role: 'VIEWER' }, 'userOwner').expect(409).expect(expectError);
     });
-    it('rejects VIEWER invited by VIEWER', async () => {
-      await request(app)
-        .post('/v0/files/00000000-0000-4000-8000-000000000001/invites')
-        .send({ email, role: 'VIEWER' })
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userViewer`)
-        .expect('Content-Type', /json/)
-        .expect(403)
-        .expect(expectError);
+    it('rejects inviting an email associated with multiple accounts', async () => {
+      await invite({ email: 'duplicate@example.com', role: 'VIEWER' }, 'userOwner').expect(500).expect(expectError);
     });
   });
 
-  // TODO add users who have duplicate emails
-  describe('adding users who have duplicate emails', () => {
-    it.todo('what do we do?');
+  describe('inviting people who already have a Quadratic account', () => {
+    it('creates an invite for a user who exists in auth0 but not yet our database', async () => {
+      await invite({ email: 'userNotYetInDb@example.com', role: 'VIEWER' }, 'userOwner')
+        .expect(201)
+        .expect(expectInvite);
+    });
+    it('adds a user to the file', async () => {
+      await invite({ email: 'userNoRole@example.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
+    });
+    it('rejects for a user in auth0 without an ID', async () => {
+      await invite({ email: 'userNoRole@example.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
+    });
+  });
+
+  describe('inviting people who don’t have a Quadratic account', () => {
+    it('creates an invite', async () => {
+      await invite({ email: 'userWithoutAccount@example.com', role: 'EDITOR' }, 'userOwner')
+        .expect(201)
+        .expect(expectInvite);
+    });
   });
 });
