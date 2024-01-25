@@ -1,5 +1,5 @@
 import { UserFileRole } from 'quadratic-shared/typesAndSchemas';
-import { Bold, Button, Layout, Link, Paragraph } from './components';
+import { Button, Layout, Link, Paragraph } from './components';
 
 // Test any of these emails by doing a get with the template name to our
 // internal endpoing: /v0/emails/:templateName
@@ -27,9 +27,9 @@ export const templates = {
     const verb = fileRole === 'EDITOR' ? 'edit' : 'view';
     const html = Layout(/*html*/ `
       ${Paragraph(/*html*/ `
-        ${Bold(senderName ? senderName : senderEmail)} has invited you to ${Bold(verb)} the spreadsheet “${Bold(
-        Link(fileName, { to: fileUrl })
-      )}”.
+        ${senderName ? senderName : senderEmail} invited you to ${verb} the spreadsheet: ${Link(fileName, {
+        to: fileUrl,
+      })}.
       `)}
       ${Button('Open in Quadratic', { to: fileUrl })} 
     `);
