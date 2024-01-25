@@ -17,6 +17,12 @@ Let's get everything setup to develop on Quadratic!
 - [Using node dev](#using-node-dev)
   - [Commands while `node dev` is running](#commands-while-node-dev-is-running)
   - [Running for React-only development](#running-for-react-only-development)
+- [Testing](#testing)
+  - [Testing JavaScript Services](#testing-javascript-services)
+  - [Testing Rust Crates](#testing-rust-crates)
+    - [Rust Coverage](#rust-coverage)
+- [Linting](#linting)
+  - [Linting Rust Crates](#linting-rust-crates)
 
 
 ## Install Dependencies
@@ -150,3 +156,64 @@ Press:
 ### Running for React-only development
 
 After you successfully run the app the first time, use `node dev -ACTMF` if only developing in React. This will hide output from Rust and server components.
+
+## Testing
+
+### Testing JavaScript Services
+
+### Testing Rust Crates
+
+To test an individual crate, navigate to the root of the crate and enter:
+
+```shell
+cargo test
+
+// npm alternative
+npm run test
+
+// watcher
+RUST_LOG=info cargo watch -x 'test'
+
+// npm alternative
+npm run test:watch
+```
+
+Alternatively, to run all rust test, simply enter `cargo test` at the project root.
+
+See the README in each crate for more information.
+
+#### Rust Coverage
+
+In CI, coverage is automatically collected and sent to CodeCov.  
+
+For local coverage information, you'll need to install some dependencies first:
+
+
+```shell
+cargo install grcov
+rustup component add llvm-tools-preview
+```
+
+To run coverage and generate HTML reports, navigate to the individual crate 
+and enter:
+
+```shell
+npm run coverage
+```
+
+Coverage infomration will be available in the generated `coverage` folder located at `coverage/html/index.html`.
+
+## Linting
+
+### Linting Rust Crates
+
+To lint an individual crate, navigate to the root of the crate and enter:
+
+```shell
+cargo clippy --all-targets --all-features -- -D warnings
+
+// npm alternative
+npm run lint
+```
+
+Alternatively, to run all rust test, simply enter `cargo clippy --all-targets --all-features -- -D warnings` at the project root.
