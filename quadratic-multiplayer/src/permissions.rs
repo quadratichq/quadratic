@@ -61,6 +61,14 @@ pub(crate) mod tests {
         let result = validate_can_edit_or_view_file(&roles);
         assert!(result.is_ok());
 
+        let roles = vec![FilePermRole::FileView];
+        let result = validate_can_edit_or_view_file(&roles);
+        assert!(result.is_ok());
+
+        let roles = vec![FilePermRole::FileEdit];
+        let result = validate_can_edit_or_view_file(&roles);
+        assert!(result.is_ok());
+
         let roles = vec![FilePermRole::FileDelete];
         let result = validate_can_edit_or_view_file(&roles);
         assert!(matches!(result, Err(MpError::FilePermissions(_))));
