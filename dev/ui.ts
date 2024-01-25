@@ -136,25 +136,24 @@ export class UI {
   }
 
   promptExternal() {
-    const postgresError = this.control.status.postgres;
-    const redisError = this.control.status.redis;
-
-    if (postgresError || redisError) {
+    const postgres = this.control.status.postgres;
+    const redis = this.control.status.redis;
+    if (postgres !== true || redis !== true) {
       let s = "\n\n ";
-      if (postgresError === "error") {
+      if (postgres === "error") {
         s += "postgres is NOT running";
-      } else if (postgresError === "killed") {
+      } else if (postgres === "killed") {
         s += "pg_isready not found in path";
       }
-      if (redisError) {
+      if (redis) {
         s += SPACE;
       }
-      if (redisError === "error") {
+      if (redis === "error") {
         s += "redis is NOT running";
-      } else if (redisError === "killed") {
+      } else if (redis === "killed") {
         s += "redis-server not found in path";
       }
-      this.writeWarning(s, postgresError === "error" || redisError === "error");
+      this.writeWarning(s, postgres === "error" || redis === "error");
     }
   }
 
