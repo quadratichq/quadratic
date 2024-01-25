@@ -265,7 +265,6 @@ export class PixiApp {
   async rebuild() {
     sheets.create();
     await this.cellsSheets.create();
-
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
@@ -274,11 +273,10 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.multiplayerCursor.dirty = true;
     this.boxCells.reset();
-
-    this.viewport.dirty = true;
     this.paused = false;
     this.reset();
     this.setViewportDirty();
+    console.log('rebuilt');
   }
 
   loadViewport(): void {
