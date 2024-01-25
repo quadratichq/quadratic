@@ -171,6 +171,7 @@ services:
 
 volumes:
   docker:
+    name: docker
 
 networks:
   host:
