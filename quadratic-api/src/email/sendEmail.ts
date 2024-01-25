@@ -7,7 +7,10 @@ if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 }
 
-const from = 'notify@email.quadratichq.com';
+const from = {
+  email: 'notify@email.quadratichq.com',
+  name: 'Quadratic',
+};
 
 export const sendEmail = async (to: string, template: { subject: string; html: string }) => {
   const { subject, html } = template;
