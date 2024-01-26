@@ -38,6 +38,7 @@ const instance = new aws.ec2.Instance("files-instance", {
     )
   ),
 });
+// TODO: Give it a public ip and use that for a domain...or don't do a healthcheck over port 80
 
 // const domain = config.require("domain");
 // // Get the hosted zone ID for domain
