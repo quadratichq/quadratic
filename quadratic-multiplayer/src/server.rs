@@ -326,7 +326,7 @@ pub(crate) mod tests {
     use super::*;
     use crate::state::user::{User, UserStateUpdate};
     use crate::test_util::{
-        integration_test_send_and_receive, new_arc_state, new_connection, setup,
+        add_user_via_ws, integration_test_send_and_receive, new_arc_state, setup,
     };
     use axum::{
         body::Body,
@@ -351,7 +351,7 @@ pub(crate) mod tests {
             update,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 1).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
         assert_eq!(response, Some(expected));
     }
 
@@ -415,7 +415,7 @@ pub(crate) mod tests {
             users: vec![user_1.clone()],
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 1).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
 
         assert_eq!(response, Some(expected));
     }
@@ -446,7 +446,7 @@ pub(crate) mod tests {
         handle.abort();
 
         // room should be closed, add user_1 back
-        new_connection(socket.clone(), file_id, user_1.clone()).await;
+        add_user_via_ws(file_id, socket.clone(), user_1.clone()).await;
         integration_test_send_and_receive(
             &socket.clone(),
             new_user_state_update(user_1.clone(), file_id),
@@ -460,7 +460,7 @@ pub(crate) mod tests {
         assert_eq!(num_users_in_room, 1);
 
         // add user_2 back
-        new_connection(socket.clone(), file_id, user_2.clone()).await;
+        add_user_via_ws(file_id, socket.clone(), user_2.clone()).await;
         integration_test_send_and_receive(
             &socket.clone(),
             new_user_state_update(user_2.clone(), file_id),
@@ -561,7 +561,7 @@ pub(crate) mod tests {
             sequence_num: 1,
         };
 
-        let response = integration_test_send_and_receive(&socket, request, true, 1).await;
+        let response = integration_test_send_and_receive(&socket, request, true, 2).await;
 
         assert_eq!(response, Some(expected));
     }

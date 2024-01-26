@@ -329,7 +329,7 @@ pub(crate) mod tests {
             .unwrap();
         assert_eq!(handled, response);
 
-        let received = integration_test_receive(&socket, 1).await.unwrap();
+        let received = integration_test_receive(&socket, 2).await.unwrap();
         assert_eq!(received, broadcast_response);
     }
 

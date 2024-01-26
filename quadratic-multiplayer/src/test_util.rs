@@ -49,11 +49,12 @@ pub(crate) async fn setup() -> (
     let socket = Arc::new(Mutex::new(socket));
     let file_id = Uuid::new_v4();
     let user_1 = new_user();
-    let connection_id = new_connection(socket.clone(), file_id, user_1.clone()).await;
+    let connection_id =
+        new_connection(socket.clone(), state.clone(), file_id, user_1.clone()).await;
 
     // add another user so that we can test broadcasting
-    let user_2 = add_user_via_ws(file_id, socket.clone()).await;
-    new_connection(socket.clone(), file_id, user_2.clone()).await;
+    let user_2 = new_user();
+    new_connection(socket.clone(), state.clone(), file_id, user_2.clone()).await;
 
     (
         socket.clone(),
@@ -102,19 +103,9 @@ pub(crate) fn new_user() -> User {
     }
 }
 
-/// Create a new user with fake values and add them to a room via the WebSocket.
-/// Returns a reference to the user's `receiver` WebSocket.
-pub(crate) async fn add_user_via_ws(
-    file_id: Uuid,
-    socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
-) -> User {
-    let user = new_user();
-    add_existing_user_via_ws(file_id, socket, user).await
-}
-
 /// Add an existing to a room via the WebSocket.
 /// Returns a reference to the user's `receiver` WebSocket.
-pub(crate) async fn add_existing_user_via_ws(
+pub(crate) async fn add_user_via_ws(
     file_id: Uuid,
     socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     user: User,
@@ -162,14 +153,17 @@ pub(crate) async fn add_user_to_room(file_id: Uuid, user: User, state: Arc<State
 /// Returns the id of the connection.
 pub(crate) async fn new_connection(
     socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+    state: Arc<State>,
     file_id: Uuid,
     user: User,
 ) -> Uuid {
-    let connection_id = Uuid::new_v4();
+    add_user_via_ws(file_id, socket.clone(), user.clone()).await;
 
-    add_existing_user_via_ws(file_id, socket.clone(), user).await;
-
-    connection_id
+    state
+        ._get_user_in_room(&file_id, &user.session_id)
+        .await
+        .unwrap()
+        .connection_id
 }
 
 /// Create a new operation for testing
