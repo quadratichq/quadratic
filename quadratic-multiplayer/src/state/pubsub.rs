@@ -8,6 +8,8 @@ use uuid::Uuid;
 
 use crate::error::Result;
 
+use super::State;
+
 pub static GROUP_NAME: &str = "quadratic-multiplayer-1";
 
 #[derive(Debug)]
@@ -83,6 +85,62 @@ impl PubSub {
     }
 }
 
+impl State {
+    /// Subscribe to the PubSub channel for a file
+    pub(crate) async fn subscribe_pubsub(&self, file_id: &Uuid, group_name: &str) -> Result<()> {
+        self.pubsub
+            .lock()
+            .await
+            .connection
+            .subscribe(&file_id.to_string(), group_name)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Push a transaction to the transaction queue
+    pub(crate) async fn push_pubsub(
+        &self,
+        id: Uuid,
+        file_id: Uuid,
+        operations: Vec<Operation>,
+        sequence_num: u64,
+    ) -> Result<u64> {
+        self.pubsub
+            .lock()
+            .await
+            .push(id, file_id, operations, sequence_num)
+            .await
+    }
+
+    pub(crate) async fn get_messages_from_pubsub(
+        &self,
+        file_id: &Uuid,
+        min_sequence_num: u64,
+    ) -> Result<Vec<TransactionServer>> {
+        Ok(self
+            .pubsub
+            .lock()
+            .await
+            .connection
+            .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string())
+            .await?
+            .iter()
+            .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
+            .collect::<Vec<TransactionServer>>())
+    }
+
+    pub(crate) async fn get_last_message_pubsub(&self, file_id: &Uuid) -> Result<(String, String)> {
+        Ok(self
+            .pubsub
+            .lock()
+            .await
+            .connection
+            .last_message(&file_id.to_string())
+            .await?)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use quadratic_core::controller::GridController;
@@ -91,6 +149,8 @@ mod tests {
         state::State,
         test_util::{new_state, operation},
     };
+
+    pub static GROUP_NAME_TEST: &str = "quadratic-multiplayer-test-1";
 
     async fn setup() -> (State, Uuid) {
         let state = new_state().await;
@@ -101,7 +161,7 @@ mod tests {
             .lock()
             .await
             .connection
-            .subscribe(&file_id.to_string(), GROUP_NAME)
+            .subscribe(&file_id.to_string(), GROUP_NAME_TEST)
             .await
             .unwrap();
 
@@ -126,14 +186,14 @@ mod tests {
             .await
             .unwrap();
 
-        // let mut transaction_queue = state.transaction_queue.lock().await;
-        // let transactions = transaction_queue.get_pending(file_id).unwrap();
+        let mut pubsub = state.pubsub.lock().await;
+        // let transactions = pubsub.get_pending(file_id).unwrap();
         // assert_eq!(transactions.len(), 1);
-        // assert_eq!(transaction_queue.get_sequence_num(file_id).unwrap(), 1);
+        // assert_eq!(pubsub.get_sequence_num(file_id).unwrap(), 1);
         // assert_eq!(transactions[0].operations, vec![operations_1.clone()]);
         // assert_eq!(transactions[0].sequence_num, 1);
 
-        // std::mem::drop(transaction_queue);
+        // std::mem::drop(pubsub);
 
         // state
         //     .transaction_queue
