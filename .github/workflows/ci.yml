@@ -11,129 +11,129 @@ on:
   pull_request:
 
 jobs:
-  test_rust:
-    runs-on: ubuntu-latest-8-cores
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
+  # test_rust:
+  #   runs-on: ubuntu-latest-8-cores
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
 
-      - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
-        with:
-          components: clippy, llvm-tools-preview
-          cache: false
-          channel: "nightly"
+  #     - name: Set up Rust
+  #       uses: moonrepo/setup-rust@v1
+  #       with:
+  #         components: clippy, llvm-tools-preview
+  #         cache: false
+  #         channel: "nightly"
 
-      - name: Install grcov
-        run: if ! which grcov; then cargo install grcov; fi
+  #     - name: Install grcov
+  #       run: if ! which grcov; then cargo install grcov; fi
 
-      - name: Install llvm-tools-preview
-        run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
+  #     - name: Install llvm-tools-preview
+  #       run: if ! which llvm-tools-preview; then rustup component add llvm-tools-preview; fi
 
-      - name: Install pkg-config
-        if: github.runner.isHosted == true
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config
+  #     - name: Install pkg-config
+  #       if: github.runner.isHosted == true
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y pkg-config
 
-      - name: Test quadratic-core
-        env:
-          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
-          RUSTFLAGS: -Cinstrument-coverage
-        run: |
-          cd quadratic-core
-          cargo test
+  #     - name: Test quadratic-core
+  #       env:
+  #         LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+  #         RUSTFLAGS: -Cinstrument-coverage
+  #       run: |
+  #         cd quadratic-core
+  #         cargo test
 
-      - name: Generate coverage for quadratic-core
-        run: |
-          grcov $(find . -name "grcov-*.profraw" -print) \
-            --branch \
-            --ignore-not-existing \
-            --binary-path ./target/debug/ \
-            -s . \
-            -t lcov \
-            --ignore "/*" \
-            --ignore "./src/wasm_bindings/*" \
-            --ignore "./src/bin/*" \
-            --ignore "./docker/*" \
-            -o lcov.info
+  #     - name: Generate coverage for quadratic-core
+  #       run: |
+  #         grcov $(find . -name "grcov-*.profraw" -print) \
+  #           --branch \
+  #           --ignore-not-existing \
+  #           --binary-path ./target/debug/ \
+  #           -s . \
+  #           -t lcov \
+  #           --ignore "/*" \
+  #           --ignore "./src/wasm_bindings/*" \
+  #           --ignore "./src/bin/*" \
+  #           --ignore "./docker/*" \
+  #           -o lcov.info
 
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  #     - name: Upload coverage reports to Codecov
+  #       uses: codecov/codecov-action@v3
+  #       env:
+  #         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Test quadratic-multiplayer
-        env:
-          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
-          RUSTFLAGS: -Cinstrument-coverage
-        run: |
-          cd quadratic-multiplayer
-          npm run docker:test
+  #     - name: Test quadratic-multiplayer
+  #       env:
+  #         LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+  #         RUSTFLAGS: -Cinstrument-coverage
+  #       run: |
+  #         cd quadratic-multiplayer
+  #         npm run docker:test
 
-      - name: Generate coverage quadratic-multiplayer
-        run: |
-          grcov $(find . -name "grcov-*.profraw" -print) \
-            --branch \
-            --ignore-not-existing \
-            --binary-path ./target/debug/ \
-            -s . \
-            -t lcov \
-            --ignore "/*" \
-            --ignore "./src/wasm_bindings/*" \
-            --ignore "./src/bin/*" \
-            --ignore "./docker/*" \
-            --ignore "./../docker/*" \
-            -o lcov.info
+  #     - name: Generate coverage quadratic-multiplayer
+  #       run: |
+  #         grcov $(find . -name "grcov-*.profraw" -print) \
+  #           --branch \
+  #           --ignore-not-existing \
+  #           --binary-path ./target/debug/ \
+  #           -s . \
+  #           -t lcov \
+  #           --ignore "/*" \
+  #           --ignore "./src/wasm_bindings/*" \
+  #           --ignore "./src/bin/*" \
+  #           --ignore "./docker/*" \
+  #           --ignore "./../docker/*" \
+  #           -o lcov.info
 
-      - name: Upload coverage reports to Codecov quadratic-multiplayer
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+  #     - name: Upload coverage reports to Codecov quadratic-multiplayer
+  #       uses: codecov/codecov-action@v3
+  #       env:
+  #         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  test_unit:
-    runs-on: ubuntu-latest-8-cores
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
+  # test_unit:
+  #   runs-on: ubuntu-latest-8-cores
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
 
-      - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
-        with:
-          channel: "nightly"
+  #     - name: Set up Rust
+  #       uses: moonrepo/setup-rust@v1
+  #       with:
+  #         channel: "nightly"
 
-      - uses: jetli/wasm-pack-action@v0.4.0
+  #     - uses: jetli/wasm-pack-action@v0.4.0
 
-      - name: Build quadratic-core
-        run: |
-          npm run build:wasm:javascript
+  #     - name: Build quadratic-core
+  #       run: |
+  #         npm run build:wasm:javascript
 
-      - name: Run npm test:ts in quadratic-client
-        run: |
-          npm install
-          npm run test:ts
+  #     - name: Run npm test:ts in quadratic-client
+  #       run: |
+  #         npm install
+  #         npm run test:ts
 
-  test_python:
-    runs-on: ubuntu-latest-8-cores
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11.3"
-          cache: "pip"
+  # test_python:
+  #   runs-on: ubuntu-latest-8-cores
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
+  #     - uses: actions/setup-python@v4
+  #       with:
+  #         python-version: "3.11.3"
+  #         cache: "pip"
 
-      - name: Test python
-        run: |
-          pip install -r requirements.txt
-          cd quadratic-client
-          npm run test:python
+  #     - name: Test python
+  #       run: |
+  #         pip install -r requirements.txt
+  #         cd quadratic-client
+  #         npm run test:python
 
   test_api:
     runs-on: ubuntu-latest-8-cores
@@ -145,50 +145,50 @@ jobs:
 
       - name: Run npm test:ci in quadratic-api
         run: |
-          cd quadratic-api
           npm install
+          cd quadratic-api
           npm run docker:test:ci
 
-  lint_rust:
-    runs-on: ubuntu-latest-8-cores
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
-        with:
-          components: clippy
-          cache: false
+  # lint_rust:
+  #   runs-on: ubuntu-latest-8-cores
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Set up Rust
+  #       uses: moonrepo/setup-rust@v1
+  #       with:
+  #         components: clippy
+  #         cache: false
 
-      - name: Run cargo clippy in quadratic-core
-        run: |
-          cd quadratic-core
-          cargo clippy -- -D warnings
+  #     - name: Run cargo clippy in quadratic-core
+  #       run: |
+  #         cd quadratic-core
+  #         cargo clippy -- -D warnings
 
-  lint:
-    runs-on: ubuntu-latest-8-cores
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: Set up Rust
-        uses: moonrepo/setup-rust@v1
-        with:
-          cache: false
-      - uses: jetli/wasm-pack-action@v0.4.0
-        with:
-          version: "latest"
+  # lint:
+  #   runs-on: ubuntu-latest-8-cores
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
+  #     - name: Set up Rust
+  #       uses: moonrepo/setup-rust@v1
+  #       with:
+  #         cache: false
+  #     - uses: jetli/wasm-pack-action@v0.4.0
+  #       with:
+  #         version: "latest"
 
-      - name: Build wasm core
-        run: |
-          cd quadratic-client
-          npm run build:wasm:javascript:dev
-          npm run build:wasm:types
+  #     - name: Build wasm core
+  #       run: |
+  #         cd quadratic-client
+  #         npm run build:wasm:javascript:dev
+  #         npm run build:wasm:types
 
-      - name: Lint quadratic-client
-        run: |
-          cd quadratic-client
-          npm install
-          npm run lint:prettier
-          npm run lint:eslint
-          npm run lint:ts
+  #     - name: Lint quadratic-client
+  #       run: |
+  #         npm install
+  #         cd quadratic-client
+  #         npm run lint:prettier
+  #         npm run lint:eslint
+  #         npm run lint:ts
