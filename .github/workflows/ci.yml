@@ -187,12 +187,8 @@ jobs:
 
       - name: Lint quadratic-client
         run: |
-          cd quadratic-shared
           npm install
-          cd ../quadratic-api
-          npm install
-          cd ../quadratic-client
-          npm install
+          cd quadratic-client
           npm run lint:prettier
           npm run lint:eslint
           npm run lint:ts
