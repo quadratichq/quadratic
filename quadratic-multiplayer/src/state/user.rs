@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::error::{MpError, Result};
 use crate::state::State;
 use crate::{get_mut_room, get_room};
-use quadratic_rust_shared::quadratic_api::{FilePermRole, FilePerms};
+use quadratic_rust_shared::quadratic_api::FilePermRole;
 
 pub(crate) type UserSocket = Arc<Mutex<SplitSink<WebSocket, Message>>>;
 
@@ -207,39 +207,13 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        error::MpError,
-        state::connection::PreConnection,
-        test_util::{new_state, new_user},
-    };
-
-    async fn setup() -> (State, PreConnection, Uuid, User) {
-        let state = new_state().await;
-        let file_id = Uuid::new_v4();
-        let user = new_user();
-        let connection = PreConnection::new(None);
-
-        state
-            .enter_room(file_id, &user, connection.clone(), 0)
-            .await
-            .unwrap();
-
-        (state, connection, file_id, user)
-    }
+    use crate::{error::MpError, test_util::setup};
 
     use super::*;
     #[tokio::test]
     async fn removes_stale_users_in_room() {
-        // add a user to a room
-        let (state, connection, file_id, _) = setup().await;
-
-        // add another user to the room
-        let new_user = new_user();
-        state
-            .enter_room(file_id, &new_user, connection, 0)
-            .await
-            .unwrap();
-
+        // add 2 users to a room
+        let (_, state, _, file_id, _, _) = setup().await;
         assert_eq!(get_room!(state, file_id).unwrap().users.len(), 2);
 
         // remove stale users in the room until the room is empty
@@ -259,7 +233,7 @@ mod tests {
 
     #[tokio::test]
     async fn updates_a_users_heartbeat() {
-        let (state, _, file_id, user) = setup().await;
+        let (_, state, _, file_id, user, _) = setup().await;
 
         let old_heartbeat = state
             ._get_user_in_room(&file_id, &user.session_id)
