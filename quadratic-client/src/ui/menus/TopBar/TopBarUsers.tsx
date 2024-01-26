@@ -4,7 +4,6 @@ import { TooltipHint } from '@/ui/components/TooltipHint';
 import { displayInitials, displayName } from '@/utils/userUtil';
 import { Avatar, AvatarGroup, IconButton } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
-import { Menu, MenuItem } from '@szhsin/react-menu';
 import { useSetRecoilState } from 'recoil';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
@@ -124,11 +123,10 @@ function UserAvatar({
     });
   };
 
-  const name = follow ? `Following ${displayName}` : displayName;
-  const avatar = (
+  return (
     <div className="relative">
-      <TooltipHint title={name}>
-        <IconButton style={{ borderRadius: 0 }}>
+      <TooltipHint title={displayName} shortcut={`Click to ${follow ? 'unfollow' : 'follow'}`}>
+        <IconButton style={{ borderRadius: 0 }} onClick={handleFollow}>
           <div>
             <Avatar
               sx={{
@@ -157,13 +155,5 @@ function UserAvatar({
         </div>
       )}
     </div>
-  );
-
-  return (
-    <Menu menuButton={avatar}>
-      <MenuItem onClick={handleFollow} style={{ fontSize: '.875rem' }}>
-        {follow ? `Stop following` : `Follow`}
-      </MenuItem>
-    </Menu>
   );
 }
