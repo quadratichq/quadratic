@@ -149,6 +149,12 @@ export const HoverCell = () => {
     };
     updatePosition();
     pixiApp.viewport.on('moved', updatePosition);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      pixiApp.viewport.off('moved', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
   }, [cell]);
 
   return (
