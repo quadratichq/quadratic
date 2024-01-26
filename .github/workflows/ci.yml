@@ -171,19 +171,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      # - name: Set up Rust
-      #   uses: moonrepo/setup-rust@v1
-      #   with:
-      #     cache: false
-      # - uses: jetli/wasm-pack-action@v0.4.0
-      #   with:
-      #     version: "latest"
+      - name: Set up Rust
+        uses: moonrepo/setup-rust@v1
+        with:
+          cache: false
+      - uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "latest"
 
-      # - name: Build wasm core
-      #   run: |
-      #     cd quadratic-client
-      #     npm run build:wasm:javascript:dev
-      #     npm run build:wasm:types
+      - name: Build wasm core
+        run: |
+          cd quadratic-client
+          npm run build:wasm:javascript:dev
+          npm run build:wasm:types
 
       - name: Lint quadratic-client
         run: |
