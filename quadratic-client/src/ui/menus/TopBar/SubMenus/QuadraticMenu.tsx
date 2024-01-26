@@ -44,7 +44,7 @@ export const QuadraticMenu = () => {
   const submit = useSubmit();
   const { uuid } = useParams() as { uuid: string };
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { name } = useFileContext();
+  const { name, syncState } = useFileContext();
   const { isAuthenticated } = useRootRouteLoaderData();
   const { permission } = editorInteractionState;
 
@@ -68,7 +68,7 @@ export const QuadraticMenu = () => {
       >
         {isViewerOrAbove(permission) && (
           <>
-            <MenuItem href={ROUTES.FILES} style={{ textDecoration: 'none' }}>
+            <MenuItem disabled={syncState === 'syncing'} href={ROUTES.FILES} style={{ textDecoration: 'none' }}>
               <MenuLineItem primary="Back to files" />
             </MenuItem>
             <MenuDivider />
