@@ -276,7 +276,6 @@ export class PixiApp {
     this.paused = false;
     this.reset();
     this.setViewportDirty();
-    console.log('rebuilt');
   }
 
   loadViewport(): void {
