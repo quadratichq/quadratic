@@ -165,10 +165,7 @@ mod tests {
             .push_pubsub(transaction_id_1, file_id, transaction_1.clone(), 1)
             .await
             .unwrap();
-
-        let transaction: Vec<TransactionServer> =
-            state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
-
+        let transaction = state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
         let expected_transaction_1 = TransactionServer {
             id: transaction_id_1,
             file_id,
@@ -181,10 +178,7 @@ mod tests {
             .push_pubsub(transaction_id_2, file_id, transaction_2.clone(), 2)
             .await
             .unwrap();
-
-        let transaction: Vec<TransactionServer> =
-            state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
-
+        let transaction = state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
         let expected_transaction_2 = TransactionServer {
             id: transaction_id_2,
             file_id,
@@ -193,7 +187,14 @@ mod tests {
         };
         assert_eq!(
             transaction,
-            vec![expected_transaction_1, expected_transaction_2]
+            vec![expected_transaction_1, expected_transaction_2.clone()]
+        );
+
+        let last_transaction = state.get_last_message_pubsub(&file_id).await.unwrap();
+        assert_eq!(last_transaction.0, "2".to_string());
+        assert_eq!(
+            last_transaction.1,
+            serde_json::to_string(&expected_transaction_2).unwrap()
         );
     }
 }
