@@ -58,13 +58,15 @@ pub(crate) fn new_user() -> User {
         permissions: vec![FilePermRole::FileEdit, FilePermRole::FileView],
         socket: None,
         last_heartbeat: chrono::Utc::now(),
+        index: 0,
     }
 }
 
 pub(crate) async fn add_user_to_room(file_id: Uuid, user: User, state: Arc<State>) -> User {
     let connection = PreConnection::new(None);
+    let mut user = user.clone();
     state
-        .enter_room(file_id, &user, connection, 0)
+        .enter_room(file_id, &mut user, connection, 0)
         .await
         .unwrap();
     user

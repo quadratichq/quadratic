@@ -110,7 +110,7 @@ pub(crate) async fn handle_message(
                 follow,
             };
 
-            let user = User {
+            let mut user = User {
                 user_id,
                 session_id,
                 connection_id: pre_connection.id,
@@ -122,6 +122,9 @@ pub(crate) async fn handle_message(
                 state: user_state,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
+
+                // this will be properly set in the enter_room function
+                index: 0,
             };
 
             // subscribe to the file's pubsub channel
@@ -139,7 +142,7 @@ pub(crate) async fn handle_message(
             };
 
             let is_new = state
-                .enter_room(file_id, &user, pre_connection, sequence_num)
+                .enter_room(file_id, &mut user, pre_connection, sequence_num)
                 .await?;
 
             // direct response to user w/sequence_num after logging in

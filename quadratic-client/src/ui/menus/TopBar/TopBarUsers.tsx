@@ -16,7 +16,7 @@ export const TopBarUsers = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { users, followers } = useMultiplayerUsers();
-
+  const youMultiplayer = users.find((u) => u.session_id === multiplayer.sessionId);
   return (
     <>
       <AvatarGroup
@@ -37,7 +37,7 @@ export const TopBarUsers = () => {
               displayName={displayName(user, true)}
               initial={displayInitials(user)}
               picture={user.picture || ''}
-              border={'black'}
+              border={youMultiplayer ? youMultiplayer.colorString : 'black'}
             />
           </div>
         )}

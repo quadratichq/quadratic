@@ -58,9 +58,6 @@ export class Multiplayer {
   private userUpdate: MessageUserUpdate;
   private lastHeartbeat = 0;
 
-  // next player's color index
-  private nextColor = 0;
-
   // users currently logged in to the room
   users: Map<string, MultiplayerUser> = new Map();
 
@@ -386,8 +383,8 @@ export class Multiplayer {
             cell_edit: user.cell_edit,
             x: 0,
             y: 0,
-            color: MULTIPLAYER_COLORS_TINT[this.nextColor],
-            colorString: MULTIPLAYER_COLORS[this.nextColor],
+            color: MULTIPLAYER_COLORS_TINT[user.index % MULTIPLAYER_COLORS_TINT.length],
+            colorString: MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length],
             visible: false,
             index: this.users.size,
             viewport: user.viewport,
@@ -396,10 +393,10 @@ export class Multiplayer {
             follow: user.follow,
           };
           this.users.set(user.session_id, player);
-          this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
           if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
       }
+      console.log(user.index, user.session_id);
     }
     remaining.forEach((sessionId) => {
       if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);

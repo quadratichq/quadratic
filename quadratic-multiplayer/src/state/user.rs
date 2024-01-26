@@ -22,6 +22,7 @@ pub(crate) struct User {
     pub last_name: String,
     pub email: String,
     pub image: String,
+    pub index: usize,
     pub permissions: Vec<FilePermRole>,
     #[serde(flatten)]
     pub state: UserState,
@@ -217,11 +218,11 @@ mod tests {
     async fn setup() -> (State, PreConnection, Uuid, User) {
         let state = new_state().await;
         let file_id = Uuid::new_v4();
-        let user = new_user();
+        let mut user = new_user();
         let connection = PreConnection::new(None);
 
         state
-            .enter_room(file_id, &user, connection.clone(), 0)
+            .enter_room(file_id, &mut user, connection.clone(), 0)
             .await
             .unwrap();
 
@@ -235,9 +236,9 @@ mod tests {
         let (state, connection, file_id, _) = setup().await;
 
         // add another user to the room
-        let new_user = new_user();
+        let mut new_user = new_user();
         state
-            .enter_room(file_id, &new_user, connection, 0)
+            .enter_room(file_id, &mut new_user, connection, 0)
             .await
             .unwrap();
 
