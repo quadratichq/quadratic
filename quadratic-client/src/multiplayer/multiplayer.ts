@@ -51,6 +51,9 @@ export class Multiplayer {
   private jwt?: string | void;
   private lastMouseMove: { x: number; y: number } | undefined;
 
+  // server-assigned index of current user
+  index?: number;
+
   // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
 
@@ -356,8 +359,11 @@ export class Multiplayer {
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
     const remaining = new Set(this.users.keys());
+    console.log(room.users);
     for (const user of room.users) {
-      if (user.session_id !== this.sessionId) {
+      if (user.session_id === this.sessionId) {
+        this.index = user.index;
+      } else {
         let player = this.users.get(user.session_id);
         if (player) {
           player.first_name = user.first_name;
@@ -396,7 +402,6 @@ export class Multiplayer {
           if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
       }
-      console.log(user.index, user.session_id);
     }
     remaining.forEach((sessionId) => {
       if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);
