@@ -130,6 +130,8 @@ impl State {
             .collect::<Vec<TransactionServer>>())
     }
 
+    /// Get the last message from the PubSub channel
+    /// Returns a tuple of (sequence number, last message)
     pub(crate) async fn get_last_message_pubsub(&self, file_id: &Uuid) -> Result<(String, String)> {
         Ok(self
             .pubsub
@@ -145,70 +147,53 @@ impl State {
 mod tests {
     use quadratic_core::controller::GridController;
 
-    use crate::{
-        state::State,
-        test_util::{new_state, operation},
-    };
-
-    pub static GROUP_NAME_TEST: &str = "quadratic-multiplayer-test-1";
-
-    async fn setup() -> (State, Uuid) {
-        let state = new_state().await;
-        let file_id = Uuid::new_v4();
-
-        state
-            .pubsub
-            .lock()
-            .await
-            .connection
-            .subscribe(&file_id.to_string(), GROUP_NAME_TEST)
-            .await
-            .unwrap();
-
-        (state, file_id)
-    }
+    use crate::test_util::{operation, setup};
 
     use super::*;
     #[tokio::test]
-    async fn add_operations_to_the_transaction_queue() {
-        let (state, file_id) = setup().await;
+    async fn add_operations_to_pubsub() {
+        let (_, state, _, file_id, _, _) = setup().await;
         let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
-        let _transaction_id_2 = Uuid::new_v4();
-        let _operations_2 = operation(&mut grid, 1, 0, "2");
+        let transaction_1 = vec![operations_1.clone()];
+        let transaction_id_2 = Uuid::new_v4();
+        let operations_2 = operation(&mut grid, 1, 0, "2");
+        let transaction_2 = vec![operations_2.clone()];
 
         state
-            .pubsub
-            .lock()
-            .await
-            .push(transaction_id_1, file_id, vec![operations_1.clone()], 1)
+            .push_pubsub(transaction_id_1, file_id, transaction_1.clone(), 1)
             .await
             .unwrap();
 
-        let mut pubsub = state.pubsub.lock().await;
-        // let transactions = pubsub.get_pending(file_id).unwrap();
-        // assert_eq!(transactions.len(), 1);
-        // assert_eq!(pubsub.get_sequence_num(file_id).unwrap(), 1);
-        // assert_eq!(transactions[0].operations, vec![operations_1.clone()]);
-        // assert_eq!(transactions[0].sequence_num, 1);
+        let transaction: Vec<TransactionServer> =
+            state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
 
-        // std::mem::drop(pubsub);
+        let expected_transaction_1 = TransactionServer {
+            id: transaction_id_1,
+            file_id,
+            operations: transaction_1,
+            sequence_num: 1,
+        };
+        assert_eq!(transaction[0], expected_transaction_1);
 
-        // state
-        //     .transaction_queue
-        //     .lock()
-        //     .await
-        //     .push_pending(transaction_id_2, file_id, vec![operations_2.clone()], 0)
-        //     .await;
+        state
+            .push_pubsub(transaction_id_2, file_id, transaction_2.clone(), 2)
+            .await
+            .unwrap();
 
-        // let mut transaction_queue = state.transaction_queue.lock().await;
-        // let transactions = transaction_queue.get_pending(file_id).unwrap();
-        // assert_eq!(transactions.len(), 2);
-        // assert_eq!(transaction_queue.get_sequence_num(file_id).unwrap(), 2);
-        // assert_eq!(transactions[0].operations, vec![operations_1.clone()]);
-        // assert_eq!(transactions[0].sequence_num, 1);
-        // assert_eq!(transactions[1].operations, vec![operations_2.clone()]);
-        // assert_eq!(transactions[1].sequence_num, 2);
+        let transaction: Vec<TransactionServer> =
+            state.get_messages_from_pubsub(&file_id, 0).await.unwrap();
+
+        let expected_transaction_2 = TransactionServer {
+            id: transaction_id_2,
+            file_id,
+            operations: transaction_2,
+            sequence_num: 2,
+        };
+        assert_eq!(
+            transaction,
+            vec![expected_transaction_1, expected_transaction_2]
+        );
     }
 }

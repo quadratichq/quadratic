@@ -29,6 +29,7 @@ use crate::state::user::{CellEdit, User, UserState};
 use crate::state::State;
 
 pub(crate) const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjFaNTdkX2k3VEU2S1RZNTdwS3pEeSJ9.eyJpc3MiOiJodHRwczovL2Rldi1kdXp5YXlrNC5ldS5hdXRoMC5jb20vIiwic3ViIjoiNDNxbW44c281R3VFU0U1N0Fkb3BhN09jYTZXeVNidmRAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vZGV2LWR1enlheWs0LmV1LmF1dGgwLmNvbS9hcGkvdjIvIiwiaWF0IjoxNjIzNTg1MzAxLCJleHAiOjE2MjM2NzE3MDEsImF6cCI6IjQzcW1uOHNvNUd1RVNFNTdBZG9wYTdPY2E2V3lTYnZkIiwic2NvcGUiOiJyZWFkOnVzZXJzIiwiZ3R5IjoiY2xpZW50LWNyZWRlbnRpYWxzIn0.0MpewU1GgvRqn4F8fK_-Eu70cUgWA5JJrdbJhkCPCxXP-8WwfI-qx1ZQg2a7nbjXICYAEl-Z6z4opgy-H5fn35wGP0wywDqZpqL35IPqx6d0wRvpPMjJM75zVXuIjk7cEhDr2kaf1LOY9auWUwGzPiDB_wM-R0uvUMeRPMfrHaVN73xhAuQWVjCRBHvNscYS5-i6qBQKDMsql87dwR72DgHzMlaC8NnaGREBC-xiSamesqhKPVyGzSkFSaF3ZKpGrSDapqmHkNW9RDBE3GQ9OHM33vzUdVKOjU1g9Leb9PDt0o1U4p3NQoGJPShQ6zgWSUEaqvUZTfkbpD_DoYDRxA";
+pub static GROUP_NAME_TEST: &str = "quadratic-multiplayer-test-1";
 
 /// General setup to be used for tests.  It creates:
 /// - Global State
@@ -36,6 +37,7 @@ pub(crate) const TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjFa
 /// - A Room (file_id)
 /// - 2 Users (user_1, user_2) in the Room
 /// - A Connection (connection_id) for the User
+/// - A Subscription to the Room in PubSub
 pub(crate) async fn setup() -> (
     Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     Arc<State>,
@@ -48,6 +50,12 @@ pub(crate) async fn setup() -> (
     let socket = integration_test_setup(state.clone()).await;
     let socket = Arc::new(Mutex::new(socket));
     let file_id = Uuid::new_v4();
+
+    state
+        .subscribe_pubsub(&file_id, GROUP_NAME_TEST)
+        .await
+        .unwrap();
+
     let user_1 = new_user();
     let connection_id =
         new_connection(socket.clone(), state.clone(), file_id, user_1.clone()).await;
