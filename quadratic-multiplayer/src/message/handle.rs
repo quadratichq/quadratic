@@ -61,7 +61,7 @@ pub(crate) async fn handle_message(
 
             // default to all roles for tests
             let (permissions, sequence_num) = if cfg!(test) {
-                (vec![FilePermRole::FileEdit, FilePermRole::FileView], 0)
+                (vec![FilePermRole::FileView, FilePermRole::FileEdit], 0)
             } else {
                 // get permission and sequence_num from the quadratic api
                 let (permissions, mut sequence_num) =

@@ -254,4 +254,29 @@ mod tests {
 
         assert!(old_heartbeat < new_heartbeat);
     }
+
+    #[tokio::test]
+    async fn updates_a_users_permissions() {
+        let (_, state, _, file_id, user, _) = setup().await;
+        let get_user_perms = || async {
+            state
+                ._get_user_in_room(&file_id, &user.session_id)
+                .await
+                .unwrap()
+                .permissions
+        };
+        let expected = vec![FilePermRole::FileView, FilePermRole::FileEdit];
+        assert_eq!(get_user_perms().await, expected);
+
+        let perms = vec![
+            FilePermRole::FileView,
+            FilePermRole::FileEdit,
+            FilePermRole::FileDelete,
+        ];
+        state
+            .update_user_permissions(file_id, &user.session_id, perms.clone())
+            .await
+            .unwrap();
+        assert_eq!(get_user_perms().await, perms);
+    }
 }
