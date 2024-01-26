@@ -204,6 +204,15 @@ mod tests {
         assert_eq!(state.rooms.lock().await.len(), 1);
         assert_eq!(room.users.len(), 1);
 
+        let sequence_num = state.get_sequence_num(&file_id).await.unwrap();
+        assert_eq!(sequence_num, 0);
+
+        get_mut_room!(state, file_id)
+            .unwrap()
+            .increment_sequence_num();
+        let sequence_num = state.get_sequence_num(&file_id).await.unwrap();
+        assert_eq!(sequence_num, 1);
+
         // leave the room of 2 users
         state
             .enter_room(file_id, &user2, connection2, 0)
