@@ -36,7 +36,7 @@ First, follow the instructions to install:
 1. [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
 1. [Docker Desktop](https://docs.docker.com/desktop/)
 
-Start Docker Desktop after installing.  Now install the depedencies:
+Start Docker Desktop after installing required software.  Now install the depedencies:
 
 ```shell
 # install node version 18
@@ -52,7 +52,7 @@ cargo install cargo-watch
 ## Local Environment Setup
 
 Now that dependencies are installed, all you need to do is run `node dev` to 
-bring up the all services.  INvoke `node run --help` for information on how
+bring up the all services.  Invoke `node run --help` for information on how
 to use this script, as you can use it to watch individual (or groups of)
 services during development. See the [Using node dev](Using-node-dev) section
 for more more information.
@@ -64,7 +64,7 @@ for more more information.
 Docker Compose is a utility that's built into Docker Desktop and is a compact 
 infrastructure-as-code framework.  Services (e.g. running Docker containers) are
 defined, along with configuration information, in the `docker-compose.yml` file.
-Service can talk together and can communicate with services in the user's host
+Service can talk to each other and can communicate with services in the user's host
 network.
 
 To pull up the network with just the required depedencies (Redis, Postgres, Localstack):
