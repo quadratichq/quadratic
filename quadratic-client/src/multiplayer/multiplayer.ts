@@ -48,6 +48,7 @@ export class Multiplayer {
   private user?: User;
   private anonymous?: boolean;
   private jwt?: string | void;
+  private lastMouseMove: { x: number; y: number } | undefined;
 
   // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
@@ -256,6 +257,8 @@ export class Multiplayer {
   }
 
   async sendMouseMove(x?: number, y?: number) {
+    if (this.lastMouseMove === undefined && x === undefined) return;
+    if (this.lastMouseMove && this.lastMouseMove.x === x && this.lastMouseMove.y === y) return;
     const userUpdate = this.getUserUpdate().update;
     if (x === undefined || y === undefined) {
       userUpdate.visible = false;
@@ -264,6 +267,7 @@ export class Multiplayer {
       userUpdate.y = y;
       userUpdate.visible = true;
     }
+    this.lastMouseMove = x === undefined || y === undefined ? undefined : { x, y };
   }
 
   async sendSelection(selection: string) {

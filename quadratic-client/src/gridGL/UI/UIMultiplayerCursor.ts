@@ -1,7 +1,6 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { pixiApp } from '../pixiApp/PixiApp';
 import { Coordinate } from '../types/size';
 import { CELL_INPUT_PADDING } from './Cursor';
 
@@ -101,7 +100,6 @@ export class UIMultiPlayerCursor extends Graphics {
           }
         }
       });
-      pixiApp.setViewportDirty();
     }
   }
 }
