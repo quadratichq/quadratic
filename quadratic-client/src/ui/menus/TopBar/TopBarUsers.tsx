@@ -9,6 +9,8 @@ import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { useMultiplayerUsers } from './useMultiplayerUsers';
 
+const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
+
 export const TopBarUsers = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
   const { users, follow } = useMultiplayerUsers();
@@ -16,7 +18,40 @@ export const TopBarUsers = () => {
 
   return (
     <>
-      <AvatarGroup sx={{ alignSelf: 'center' }}>
+      <AvatarGroup
+        spacing={16}
+        componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
+        sx={{
+          alignSelf: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+          // Styles for the "+2" avatar
+          '& > .MuiAvatar-root': { marginRight: '.25rem', backgroundColor: '#aaa', border: `2px solid #aaa` },
+        }}
+        max={5}
+      >
+        {user && (
+          <div className={`ml-2`}>
+            <You
+              displayName={displayName(user, true)}
+              initial={displayInitials(user)}
+              picture={user.picture || ''}
+              border={'black'}
+            />
+          </div>
+        )}
+        {follow && (
+          <UserAvatar
+            displayName={displayName(follow, false)}
+            initial={displayInitials(follow)}
+            picture={follow.image || ''}
+            border={follow.colorString}
+            sessionId={follow.session_id}
+            follow={true}
+            viewport={follow.viewport}
+            bgColor={follow.colorString}
+          />
+        )}
         {usersWithoutFollow.map((user) => {
           return (
             <UserAvatar
@@ -32,26 +67,6 @@ export const TopBarUsers = () => {
             />
           );
         })}
-        {follow && (
-          <UserAvatar
-            displayName={displayName(follow, false)}
-            initial={displayInitials(follow)}
-            picture={follow.image || ''}
-            border={follow.colorString}
-            sessionId={follow.session_id}
-            follow={true}
-            viewport={follow.viewport}
-            bgColor={follow.colorString}
-          />
-        )}
-        {user && (
-          <You
-            displayName={displayName(user, true)}
-            initial={displayInitials(user)}
-            picture={user.picture || ''}
-            border={'black'}
-          />
-        )}
       </AvatarGroup>
     </>
   );
@@ -69,27 +84,21 @@ function You({
   border: string;
 }) {
   return (
-    <div className="flex items-center px-2">
-      <TooltipHint title={displayName}>
-        <div>
-          <Avatar
-            sx={{
-              bgcolor: colors.quadraticSecondary,
-              width: 24,
-              height: 24,
-              fontSize: '0.8rem',
-            }}
-            alt={displayName}
-            src={picture}
-            style={{
-              border: `2px solid ${border}`,
-            }}
-          >
-            {initial}
-          </Avatar>
-        </div>
-      </TooltipHint>
-    </div>
+    <TooltipHint title={displayName}>
+      <Avatar
+        sx={{
+          bgcolor: colors.quadraticSecondary,
+          ...sharedAvatarSxProps,
+        }}
+        alt={displayName}
+        src={picture}
+        style={{
+          border: `2px solid ${border}`,
+        }}
+      >
+        {initial}
+      </Avatar>
+    </TooltipHint>
   );
 }
 
@@ -126,14 +135,12 @@ function UserAvatar({
   return (
     <div className="relative">
       <TooltipHint title={displayName} shortcut={`Click to ${follow ? 'unfollow' : 'follow'}`}>
-        <IconButton style={{ borderRadius: 0 }} onClick={handleFollow}>
+        <IconButton sx={{ borderRadius: 0, px: '.25rem' }} onClick={handleFollow}>
           <div>
             <Avatar
               sx={{
                 bgcolor: bgColor ?? colors.quadraticSecondary,
-                width: 24,
-                height: 24,
-                fontSize: '0.8rem',
+                ...sharedAvatarSxProps,
                 pointerEvents: 'auto',
                 cursor: 'pointer',
                 position: 'relative',
