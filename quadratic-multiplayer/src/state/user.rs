@@ -2,7 +2,6 @@ use axum::extract::ws::{Message, WebSocket};
 use chrono::{DateTime, Utc};
 use futures_util::stream::SplitSink;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -191,8 +190,10 @@ impl State {
                         user.state.follow = None;
                     } else {
                         user.state.follow = if let Ok(uuid) = Uuid::parse_str(&follow) {
+                            dbg!("got follow id");
                             Some(uuid)
                         } else {
+                            dbg!("failed to get follow id");
                             None
                         };
                     }

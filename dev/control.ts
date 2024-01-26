@@ -310,7 +310,7 @@ export class Control {
       this.multiplayer.kill("SIGKILL");
     }
     this.cli.options.multiplayer = !this.cli.options.multiplayer;
-    this.runMultiplayer();
+    this.runMultiplayer(true);
   }
 
   runFiles() {

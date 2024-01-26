@@ -348,6 +348,7 @@ export class Multiplayer {
   sendFollow(follow: string) {
     const userUpdate = this.getUserUpdate().update;
     userUpdate.follow = follow;
+    console.log(userUpdate);
   }
 
   //#endregion
@@ -392,6 +393,7 @@ export class Multiplayer {
             viewport: user.viewport,
             code_running: user.code_running,
             parsedCodeRunning: user.code_running ? JSON.parse(user.code_running) : [],
+            follow: user.follow,
           };
           this.users.set(user.session_id, player);
           this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
@@ -502,9 +504,9 @@ export class Multiplayer {
       dispatchEvent(new CustomEvent('python-change'));
     }
 
-    if (update.follow !== undefined) {
+    if (update.follow !== null) {
       player.follow = update.follow;
-      console.log(update);
+      window.dispatchEvent(new CustomEvent('multiplayer-follow'));
     }
   }
 

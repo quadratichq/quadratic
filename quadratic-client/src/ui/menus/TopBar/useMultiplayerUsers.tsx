@@ -11,6 +11,14 @@ export const useMultiplayerUsers = (): { users: MultiplayerUser[]; followers: st
   const [followers, setFollowers] = useState<string[]>([]);
 
   useEffect(() => {
+    const updateFollowers = () => {
+      setFollowers(users.filter((user) => user.follow === multiplayer.sessionId).map((user) => user.session_id));
+    };
+    window.addEventListener('multiplayer-follow', updateFollowers);
+    return () => window.removeEventListener('multiplayer-follow', updateFollowers);
+  });
+
+  useEffect(() => {
     const users = multiplayer.getUsers();
     setUsers(users);
     setFollowers(users.filter((user) => user.follow === multiplayer.sessionId).map((user) => user.session_id));

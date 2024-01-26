@@ -91,10 +91,12 @@ pub(crate) async fn handle_message(
 
             validate_can_edit_or_view_file(&permissions)?;
 
-            let follow = follow.map(|follow| match Uuid::parse_str(&follow) {
-                Ok(uuid) => Some(uuid),
-                _ => None,
-            }).flatten();
+            let follow = follow
+                .map(|follow| match Uuid::parse_str(&follow) {
+                    Ok(uuid) => Some(uuid),
+                    _ => None,
+                })
+                .flatten();
 
             let user_state = UserState {
                 sheet_id,

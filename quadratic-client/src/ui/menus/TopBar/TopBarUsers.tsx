@@ -4,7 +4,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import { TooltipHint } from '@/ui/components/TooltipHint';
 import { displayInitials, displayName } from '@/utils/userUtil';
 import { Avatar, AvatarGroup, IconButton } from '@mui/material';
-import { EyeClosedIcon, EyeOpenIcon } from '@radix-ui/react-icons';
+import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
@@ -132,7 +132,7 @@ function UserAvatar({
     <div className="relative">
       <TooltipHint
         title={displayName}
-        shortcut={follower ? 'User is following you' : `Click to ${follow ? 'unfollow' : 'follow'}`}
+        shortcut={follower ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`}
       >
         <IconButton sx={{ borderRadius: 0, px: '.25rem' }} onClick={handleFollow}>
           <div>
@@ -162,7 +162,7 @@ function UserAvatar({
       )}
       {follower && (
         <div className="pointer-events-none absolute left-1/2 top-1 flex h-5  w-5 items-center justify-center rounded-full bg-white">
-          <EyeClosedIcon />
+          <EyeOpenIcon />
         </div>
       )}
     </div>
