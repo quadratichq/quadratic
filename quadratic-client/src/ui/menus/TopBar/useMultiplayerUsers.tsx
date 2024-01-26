@@ -4,24 +4,20 @@ import { MultiplayerUser } from '@/multiplayer/multiplayerTypes';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const useMultiplayerUsers = (): { users: MultiplayerUser[]; follow?: MultiplayerUser } => {
+export const useMultiplayerUsers = (): { users: MultiplayerUser[]; followers: string[] } => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   const [users, setUsers] = useState<MultiplayerUser[]>([]);
-  const [follow, setFollow] = useState<MultiplayerUser | undefined>(undefined);
+  const [followers, setFollowers] = useState<string[]>([]);
 
   useEffect(() => {
     const users = multiplayer.getUsers();
     setUsers(users);
-    if (editorInteractionState.follow) {
-      setFollow(users.find((user) => user.session_id === editorInteractionState.follow));
-    } else {
-      setFollow(undefined);
-    }
+    setFollowers(users.filter((user) => user.follow === multiplayer.sessionId).map((user) => user.session_id));
     const handleUpdate = (e: any) => setUsers(e.detail);
     window.addEventListener('multiplayer-update', handleUpdate);
     return () => window.removeEventListener('multiplayer-update', handleUpdate);
   }, [editorInteractionState.follow]);
 
-  return { users, follow };
+  return { users, followers };
 };

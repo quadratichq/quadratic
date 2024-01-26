@@ -26,6 +26,7 @@ use quadratic_rust_shared::pubsub::PubSub;
 use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
 #[tracing::instrument(level = "trace")]
@@ -51,6 +52,7 @@ pub(crate) async fn handle_message(
             selection,
             cell_edit,
             viewport,
+            follow,
         } => {
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
@@ -89,6 +91,11 @@ pub(crate) async fn handle_message(
 
             validate_can_edit_or_view_file(&permissions)?;
 
+            let follow = follow.map(|follow| match Uuid::parse_str(&follow) {
+                Ok(uuid) => Some(uuid),
+                _ => None,
+            }).flatten();
+
             let user_state = UserState {
                 sheet_id,
                 selection,
@@ -98,6 +105,7 @@ pub(crate) async fn handle_message(
                 visible: false,
                 code_running: "".to_string(),
                 viewport,
+                follow,
             };
 
             let user = User {
@@ -297,7 +305,6 @@ pub(crate) async fn handle_message(
 
 #[cfg(test)]
 pub(crate) mod tests {
-
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
 
@@ -321,14 +328,11 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                sheet_id: None,
                 selection: Some("selection".to_string()),
                 x: Some(1.0),
                 y: Some(2.0),
                 visible: Some(true),
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -346,13 +350,7 @@ pub(crate) mod tests {
             file_id,
             update: UserStateUpdate {
                 selection: Some("test".to_string()),
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -369,14 +367,8 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
                 visible: Some(false),
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -393,14 +385,8 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
                 sheet_id: Some(Uuid::new_v4()),
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -417,11 +403,6 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
                 cell_edit: Some(CellEdit {
                     text: "test".to_string(),
                     cursor: 0,
@@ -430,8 +411,7 @@ pub(crate) mod tests {
                     bold: None,
                     italic: None,
                 }),
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -448,14 +428,8 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
                 viewport: Some("viewport".to_string()),
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -472,14 +446,8 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
                 code_running: Some("code running".to_string()),
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)

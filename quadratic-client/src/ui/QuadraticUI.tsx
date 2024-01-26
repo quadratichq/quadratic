@@ -29,7 +29,10 @@ export default function QuadraticUI() {
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
   const { name } = useFileContext();
-  const { follow } = useMultiplayerUsers();
+  const { users } = useMultiplayerUsers();
+  const follow = editorInteractionState.follow
+    ? users.find((user) => user.session_id === editorInteractionState.follow)
+    : undefined;
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {

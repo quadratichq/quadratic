@@ -40,10 +40,11 @@ export type MultiplayerState =
   | 'syncing';
 
 export class Multiplayer {
+  sessionId;
+
   private websocket?: WebSocket;
   private _state: MultiplayerState = 'startup';
   private updateId?: number;
-  private sessionId;
   private fileId?: string;
   private user?: User;
   private anonymous?: boolean;
@@ -193,6 +194,7 @@ export class Multiplayer {
       visible: false,
       viewport: pixiApp.saveMultiplayerViewport(),
       code_running: JSON.stringify(pythonWebWorker.getCodeRunning()),
+      follow: pixiAppSettings.editorInteractionState.follow,
     };
     this.websocket.send(JSON.stringify(enterRoom));
     offline.loadTransactions();
@@ -341,6 +343,11 @@ export class Multiplayer {
     if (debugShowMultiplayer) console.log(`[Multiplayer] Requesting transactions starting from ${min_sequence_num}.`);
     this.websocket!.send(JSON.stringify(message));
     this.state = 'syncing';
+  }
+
+  sendFollow(follow: string) {
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.follow = follow;
   }
 
   //#endregion
@@ -493,6 +500,11 @@ export class Multiplayer {
 
       // trigger changes in CodeRunning.tsx
       dispatchEvent(new CustomEvent('python-change'));
+    }
+
+    if (update.follow !== undefined) {
+      player.follow = update.follow;
+      console.log(update);
     }
   }
 

@@ -2,6 +2,7 @@ use axum::extract::ws::{Message, WebSocket};
 use chrono::{DateTime, Utc};
 use futures_util::stream::SplitSink;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -61,9 +62,10 @@ pub(crate) struct UserState {
     pub y: f64,
     pub visible: bool,
     pub viewport: String,
+    pub follow: Option<Uuid>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub(crate) struct UserStateUpdate {
     pub sheet_id: Option<Uuid>,
     pub selection: Option<String>,
@@ -73,6 +75,9 @@ pub(crate) struct UserStateUpdate {
     pub y: Option<f64>,
     pub visible: Option<bool>,
     pub viewport: Option<String>,
+
+    // empty string signifies removing follow; otherwise we'll parse the string for the Uuid
+    pub follow: Option<String>,
 }
 
 impl State {
@@ -180,6 +185,17 @@ impl State {
                 }
                 if let Some(viewport) = user_state.viewport.to_owned() {
                     user.state.viewport = viewport;
+                }
+                if let Some(follow) = user_state.follow.to_owned() {
+                    if follow.is_empty() {
+                        user.state.follow = None;
+                    } else {
+                        user.state.follow = if let Ok(uuid) = Uuid::parse_str(&follow) {
+                            Some(uuid)
+                        } else {
+                            None
+                        };
+                    }
                 }
 
                 user.last_heartbeat = Utc::now();
