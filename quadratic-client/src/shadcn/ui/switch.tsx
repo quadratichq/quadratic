@@ -44,8 +44,8 @@ const SwitchApp = React.forwardRef<
     />
 
     {props.checked ? (
-      <span className={`pointer-events-none absolute left-[.333rem] top-1/2 -mt-[7.5px] flex cursor-pointer`}>
-        <CaretLeftIcon className={`-mr-0.5 text-primary`} />
+      <span className={`pointer-events-none absolute left-[.35rem] top-1/2 -mt-[7.5px] flex cursor-pointer`}>
+        <CaretLeftIcon className={`-mr-1 text-primary`} />
         <CaretRightIcon className={`-ml-1 text-primary`} />
       </span>
     ) : (
