@@ -24,6 +24,7 @@ Let's get everything setup to develop on Quadratic!
     - [Rust Coverage](#rust-coverage)
 - [Linting](#linting)
   - [Linting Rust Crates](#linting-rust-crates)
+- [Load Testing](#load-testing)
 
 
 ## Install Dependencies
@@ -170,7 +171,7 @@ npm run test:ts
 
 ### Testing Quadratic API
 
-To test quadratic-api, close the existing docker network (`docker compose down`), and enter the following command from the root of the project:
+To test quadratic-api, close the existing docker network (`npm run docker:down`), and enter the following command from the root of the project:
 
 ```shell
 npm run test:api
@@ -178,18 +179,18 @@ npm run test:api
 
 ### Testing Rust Crates
 
-To test an individual crate, navigate to the root of the crate and enter:
+To test an individual crate, bring up the docker network (`npm run docker:up`) and navigate to the root of the crate and enter:
 
 ```shell
 cargo test
 
-// npm alternative
+# npm alternative
 npm run test
 
-// watcher
+# watcher
 RUST_LOG=info cargo watch -x 'test'
 
-// npm alternative
+# npm alternative
 npm run test:watch
 ```
 
@@ -209,8 +210,8 @@ cargo install grcov
 rustup component add llvm-tools-preview
 ```
 
-To run coverage and generate HTML reports, navigate to the individual crate 
-and enter:
+To run coverage and generate HTML reports, bring up the docker network 
+(`npm run docker:up`) and navigate to the individual crate and enter:
 
 ```shell
 npm run coverage
@@ -227,8 +228,38 @@ To lint an individual crate, navigate to the root of the crate and enter:
 ```shell
 cargo clippy --all-targets --all-features -- -D warnings
 
-// npm alternative
+# npm alternative
 npm run lint
 ```
 
 Alternatively, to run all rust test, simply enter `cargo clippy --all-targets --all-features -- -D warnings` at the project root.
+
+## Load Testing
+
+Local load testing is performed by [JMeter](https://jmeter.apache.org/).  First, install JMeter by either [downloading it it](https://jmeter.apache.org/download_jmeter.cgi) or installing via your favorite package manager (e.g. brew):
+
+```shell
+brew install jmeter
+```
+
+Load tests are located in the `/tests/load` directory.  Run run jmeter: 
+
+```shell
+bash jmeter
+
+# or for some
+bash /opt/homebrew/Cellar/jmeter/5.6.3/bin/jmeter
+```
+
+Select `file -> open` and navigate to the `/tests/load` directory and pick a load test file to edit.  See the [user manual](https://jmeter.apache.org/usermanual/index.html) for more information.
+
+To run a jmter test, bring up all relevant services and invoke:
+
+```
+bash jmeter  -n -t PATH_TO_JMX_FILE
+
+# alternative if you're having issues locating your JDK
+JAVA_HOME="/opt/homebrew/opt/openjdk" bash /opt/homebrew/Cellar/jmeter/5.6.3/libexec/bin/jmeter -n -t test/load/load-test-quadratic-multiplayer.jmx
+```
+
+Output will be located in the terminal.
