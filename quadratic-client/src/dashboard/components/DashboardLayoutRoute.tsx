@@ -121,7 +121,7 @@ function Navbar() {
           </SidebarNavLink>
         </div>
 
-        {window.location.hostname !== 'app.quadratichq.com' && (
+        {false && (
           <>
             <Type as="h3" className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}>
               <span className={`${TYPE.overline}`}>Teams</span>{' '}
