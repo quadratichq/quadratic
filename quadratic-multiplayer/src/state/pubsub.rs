@@ -151,7 +151,7 @@ mod tests {
 
     use super::*;
     #[tokio::test]
-    async fn add_operations_to_pubsub() {
+    async fn all_pubsub_functionality() {
         let (_, state, _, file_id, _, _) = setup().await;
         let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
