@@ -90,12 +90,58 @@ pub(crate) mod tests {
         let (_, state, _, file_id, user, _) = setup().await;
         let session_id = user.session_id;
 
-        let roles = vec![FilePermRole::FileView, FilePermRole::FileEdit];
+        let perms = vec![FilePermRole::FileView, FilePermRole::FileEdit];
+        state
+            .update_user_permissions(file_id, &session_id, perms)
+            .await
+            .unwrap();
         let result = validate_user_can_edit_or_view_file(state.clone(), file_id, session_id).await;
-        // assert!(result.is_ok());
+        assert!(result.is_ok());
 
-        // let roles = vec![FilePermRole::FileDelete];
-        // let result = validate_user_can_edit_or_view_file(&roles);
-        // assert!(matches!(result, Err(MpError::FilePermissions(_))));
+        let perms = vec![FilePermRole::FileEdit];
+        state
+            .update_user_permissions(file_id, &session_id, perms)
+            .await
+            .unwrap();
+        let result = validate_user_can_edit_or_view_file(state.clone(), file_id, session_id).await;
+        assert!(result.is_ok());
+
+        let perms = vec![FilePermRole::FileView];
+        state
+            .update_user_permissions(file_id, &session_id, perms)
+            .await
+            .unwrap();
+        let result = validate_user_can_edit_or_view_file(state.clone(), file_id, session_id).await;
+        assert!(result.is_ok());
+
+        let perms = vec![FilePermRole::FileDelete];
+        state
+            .update_user_permissions(file_id, &session_id, perms)
+            .await
+            .unwrap();
+        let result = validate_user_can_edit_or_view_file(state.clone(), file_id, session_id).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn validates_user_can_edit_file() {
+        let (_, state, _, file_id, user, _) = setup().await;
+        let session_id = user.session_id;
+
+        let perms = vec![FilePermRole::FileView, FilePermRole::FileEdit];
+        state
+            .update_user_permissions(file_id, &session_id, perms)
+            .await
+            .unwrap();
+        let result = validate_user_can_edit_file(state.clone(), file_id, session_id).await;
+        assert!(result.is_ok());
+
+        let perms = vec![FilePermRole::FileView];
+        state
+            .update_user_permissions(file_id, &session_id, perms)
+            .await
+            .unwrap();
+        let result = validate_user_can_edit_file(state.clone(), file_id, session_id).await;
+        assert!(result.is_err());
     }
 }

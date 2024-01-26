@@ -64,10 +64,10 @@ for more more information.
 Docker Compose is a utility that's built into Docker Desktop and is a compact 
 infrastructure-as-code framework.  Services (e.g. running Docker containers) are
 defined, along with configuration information, in the `docker-compose.yml` file.
-Service can talk to each other and can communicate with services in the user's host
+Services can talk to each other and can communicate with services in the user's host
 network.
 
-To pull up the network with just the required depedencies (Redis, Postgres, Localstack):
+To pull up the Docker network with just the required depedencies (Redis, Postgres, Localstack):
 
 ```shell
 npm run docker:up

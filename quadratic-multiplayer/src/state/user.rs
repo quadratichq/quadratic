@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::error::{MpError, Result};
 use crate::state::State;
 use crate::{get_mut_room, get_room};
-use quadratic_rust_shared::quadratic_api::FilePermRole;
+use quadratic_rust_shared::quadratic_api::{FilePermRole, FilePerms};
 
 pub(crate) type UserSocket = Arc<Mutex<SplitSink<WebSocket, Message>>>;
 
@@ -145,6 +145,22 @@ impl State {
                 user.last_heartbeat = Utc::now();
                 tracing::trace!("Updating heartbeat for {session_id}");
             });
+
+        Ok(())
+    }
+
+    /// Updates a user's permissions in a room
+    #[tracing::instrument(level = "trace")]
+    pub(crate) async fn update_user_permissions(
+        &self,
+        file_id: Uuid,
+        session_id: &Uuid,
+        permissions: Vec<FilePermRole>,
+    ) -> Result<()> {
+        get_mut_room!(self, file_id)?
+            .users
+            .entry(session_id.to_owned())
+            .and_modify(|user| user.permissions = permissions);
 
         Ok(())
     }
