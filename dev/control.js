@@ -291,11 +291,6 @@ export class Control {
         if (this.multiplayer) {
             this.runMultiplayer(true);
         }
-<<<<<<< HEAD
-        this.cli.options.multiplayer = !this.cli.options.multiplayer;
-        this.runMultiplayer(true);
-=======
->>>>>>> a-team
     }
     async runFiles() {
         if (this.quitting)
@@ -303,21 +298,18 @@ export class Control {
         if (this.status.files === "killed")
             return;
         await this.kill("files");
-        // await killPort(3002);
         this.signals.files = new AbortController();
         this.ui.print("files");
-        return new Promise(async (resolve) => {
-            this.files = spawn("cargo", this.cli.options.files ? ["watch", "-x", "'run'"] : ["run"], {
-                signal: this.signals.files.signal,
-                cwd: "quadratic-files",
-                env: { ...process.env, RUST_LOG: "info" },
-            });
-            this.ui.printOutput("files", (data) => {
-                this.handleResponse("files", data, {
-                    success: "listening on",
-                    error: ["error[", "npm ERR!"],
-                    start: "    Compiling",
-                });
+        this.files = spawn("cargo", this.cli.options.files ? ["watch", "-x", "'run'"] : ["run"], {
+            signal: this.signals.files.signal,
+            cwd: "quadratic-files",
+            env: { ...process.env, RUST_LOG: "info" },
+        });
+        this.ui.printOutput("files", (data) => {
+            this.handleResponse("files", data, {
+                success: "listening on",
+                error: ["error[", "npm ERR!"],
+                start: "    Compiling",
             });
         });
     }
