@@ -5,7 +5,7 @@ describe('getTeamPermissions', () => {
 });
 
 describe('getFilePermissions', () => {
-  // ved: v = read, e = edit, d = delete
+  // ved: v = view, e = edit, d = delete
   // prettier-ignore
   const tests: [Parameters<typeof getFilePermissions>[0], ('ved' | 've-' | 'v--' | '---')][] = [
     [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],    
