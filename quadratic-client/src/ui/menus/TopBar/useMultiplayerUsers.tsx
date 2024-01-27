@@ -20,7 +20,7 @@ export const useMultiplayerUsers = (): { users: MultiplayerUser[]; followers: st
 
   useEffect(() => {
     const users = multiplayer.getUsers();
-    setUsers(users);
+    setUsers(users.sort((a, b) => a.index - b.index));
     setFollowers(users.filter((user) => user.follow === multiplayer.sessionId).map((user) => user.session_id));
     const handleUpdate = (e: any) => setUsers(e.detail);
     window.addEventListener('multiplayer-update', handleUpdate);
