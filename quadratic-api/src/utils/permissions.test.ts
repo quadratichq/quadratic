@@ -1,137 +1,86 @@
+import { getFilePermissions } from './permissions';
+
 describe('getTeamPermissions', () => {
   it.todo('to come...');
-  /*
-  it('should allow full access for team owners', () => {
-    const res = getTeamPermissions('OWNER');
-    expect(res).toContain('TEAM_VIEW');
-    expect(res).toContain('TEAM_EDIT');
-    expect(res).toContain('TEAM_DELETE');
-    expect(res).toContain('TEAM_BILLING_EDIT');
-    expect(res).toContain('FILE_VIEW');
-    expect(res).toContain('FILE_EDIT');
-    expect(res).toContain('FILE_DELETE');
-  });
-
-  it('should allow partial access for team editors', () => {
-    const res = getTeamPermissions('EDITOR');
-    expect(res).toContain('TEAM_VIEW');
-    expect(res).toContain('TEAM_EDIT');
-    expect(res).not.toContain('TEAM_DELETE');
-    expect(res).not.toContain('TEAM_BILLING_EDIT');
-    expect(res).toContain('FILE_VIEW');
-    expect(res).toContain('FILE_EDIT');
-    expect(res).toContain('FILE_DELETE');
-  });
-
-  it('should allow limited access for team viewers', () => {
-    const res = getTeamPermissions('VIEWER');
-    expect(res).toContain('TEAM_VIEW');
-    expect(res).not.toContain('TEAM_EDIT');
-    expect(res).not.toContain('TEAM_DELETE');
-    expect(res).not.toContain('TEAM_BILLING_EDIT');
-    expect(res).toContain('FILE_VIEW');
-    expect(res).not.toContain('FILE_EDIT');
-    expect(res).not.toContain('FILE_DELETE');
-  });
-  */
 });
 
 describe('getFilePermissions', () => {
-  it.todo('to come...');
-  /*
-  const tests = [
-    // File owners
+  // ved: v = read, e = edit, d = delete
+  // prettier-ignore
+  const tests: [Parameters<typeof getFilePermissions>[0], ('ved' | 've-' | 'v--' | '---')][] = [
+    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],    
+    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],
+    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],
 
-    [{ roleFile: 'OWNER', roleTeam: 'OWNER', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: 'OWNER', roleTeam: 'OWNER', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: 'OWNER', roleTeam: 'OWNER', publicLinkAccess: 'NOT_SHARED' }, 'full'],
+    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
 
-    [{ roleFile: 'OWNER', roleTeam: 'EDITOR', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: 'OWNER', roleTeam: 'EDITOR', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: 'OWNER', roleTeam: 'EDITOR', publicLinkAccess: 'NOT_SHARED' }, 'full'],
+    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 'v--'],
 
-    [{ roleFile: 'OWNER', roleTeam: 'VIEWER', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: 'OWNER', roleTeam: 'VIEWER', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: 'OWNER', roleTeam: 'VIEWER', publicLinkAccess: 'NOT_SHARED' }, 'full'],
 
-    [{ roleFile: 'OWNER', roleTeam: undefined, publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: 'OWNER', roleTeam: undefined, publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: 'OWNER', roleTeam: undefined, publicLinkAccess: 'NOT_SHARED' }, 'full'],
+    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, '---'],
+    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, '---'],
+    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, '---'],
 
-    // File editors
+    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'v--'],
 
-    [{ roleFile: 'EDITOR', roleTeam: 'OWNER', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: 'EDITOR', roleTeam: 'OWNER', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: 'EDITOR', roleTeam: 'OWNER', publicLinkAccess: 'NOT_SHARED' }, 'full'],
+    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'v--'],
 
-    [{ roleFile: 'EDITOR', roleTeam: 'EDITOR', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: 'EDITOR', roleTeam: 'EDITOR', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: 'EDITOR', roleTeam: 'EDITOR', publicLinkAccess: 'NOT_SHARED' }, 'full'],
 
-    [{ roleFile: 'EDITOR', roleTeam: 'VIEWER', publicLinkAccess: 'EDIT' }, 'partial'],
-    [{ roleFile: 'EDITOR', roleTeam: 'VIEWER', publicLinkAccess: 'READONLY' }, 'partial'],
-    [{ roleFile: 'EDITOR', roleTeam: 'VIEWER', publicLinkAccess: 'NOT_SHARED' }, 'partial'],
 
-    [{ roleFile: 'EDITOR', roleTeam: undefined, publicLinkAccess: 'EDIT' }, 'partial'],
-    [{ roleFile: 'EDITOR', roleTeam: undefined, publicLinkAccess: 'READONLY' }, 'partial'],
-    [{ roleFile: 'EDITOR', roleTeam: undefined, publicLinkAccess: 'NOT_SHARED' }, 'partial'],
+    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],    
+    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, 've-'],
 
-    // File viewers
+    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
+    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 've-'],
 
-    [{ roleFile: 'VIEWER', roleTeam: 'OWNER', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: 'VIEWER', roleTeam: 'OWNER', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: 'VIEWER', roleTeam: 'OWNER', publicLinkAccess: 'NOT_SHARED' }, 'full'],
+    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 've-'],
+    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 've-'],
+    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 've-'],
 
-    [{ roleFile: 'VIEWER', roleTeam: 'EDITOR', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: 'VIEWER', roleTeam: 'EDITOR', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: 'VIEWER', roleTeam: 'EDITOR', publicLinkAccess: 'NOT_SHARED' }, 'full'],
+    
+    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, 'ved'],
+    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, 'ved'],
+    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, 'ved'],
 
-    [{ roleFile: 'VIEWER', roleTeam: 'VIEWER', publicLinkAccess: 'EDIT' }, 'partial'],
-    [{ roleFile: 'VIEWER', roleTeam: 'VIEWER', publicLinkAccess: 'READONLY' }, 'limited'],
-    [{ roleFile: 'VIEWER', roleTeam: 'VIEWER', publicLinkAccess: 'NOT_SHARED' }, 'limited'],
+    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'ved'],
+    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'ved'],
+    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'ved'],
 
-    [{ roleFile: 'VIEWER', roleTeam: undefined, publicLinkAccess: 'EDIT' }, 'partial'],
-    [{ roleFile: 'VIEWER', roleTeam: undefined, publicLinkAccess: 'READONLY' }, 'limited'],
-    [{ roleFile: 'VIEWER', roleTeam: undefined, publicLinkAccess: 'NOT_SHARED' }, 'limited'],
-
-    // No file role
-
-    [{ roleFile: undefined, roleTeam: 'OWNER', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: undefined, roleTeam: 'OWNER', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: undefined, roleTeam: 'OWNER', publicLinkAccess: 'NOT_SHARED' }, 'full'],
-
-    [{ roleFile: undefined, roleTeam: 'EDITOR', publicLinkAccess: 'EDIT' }, 'full'],
-    [{ roleFile: undefined, roleTeam: 'EDITOR', publicLinkAccess: 'READONLY' }, 'full'],
-    [{ roleFile: undefined, roleTeam: 'EDITOR', publicLinkAccess: 'NOT_SHARED' }, 'full'],
-
-    [{ roleFile: undefined, roleTeam: 'VIEWER', publicLinkAccess: 'EDIT' }, 'partial'],
-    [{ roleFile: undefined, roleTeam: 'VIEWER', publicLinkAccess: 'READONLY' }, 'limited'],
-    [{ roleFile: undefined, roleTeam: 'VIEWER', publicLinkAccess: 'NOT_SHARED' }, 'limited'],
-
-    [{ roleFile: undefined, roleTeam: undefined, publicLinkAccess: 'EDIT' }, 'partial'],
-    [{ roleFile: undefined, roleTeam: undefined, publicLinkAccess: 'READONLY' }, 'limited'],
-    [{ roleFile: undefined, roleTeam: undefined, publicLinkAccess: 'NOT_SHARED' }, 'none'],
+    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'ved'],
+    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'ved'],
+    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'ved'],
   ];
 
-  tests.forEach(([input, access]: any) => {
+  tests.forEach(([input, access]) => {
     it(`should allow "${access}" access for ${JSON.stringify(input)}`, () => {
       const res = getFilePermissions(input);
-      if (access === 'full') {
+      if (access === 'ved') {
         expect(res).toContain('FILE_VIEW');
         expect(res).toContain('FILE_EDIT');
         expect(res).toContain('FILE_DELETE');
-      } else if (access === 'partial') {
+      } else if (access === 've-') {
         expect(res).toContain('FILE_VIEW');
         expect(res).toContain('FILE_EDIT');
         expect(res).not.toContain('FILE_DELETE');
-      } else if (access === 'limited') {
+      } else if (access === 'v--') {
         expect(res).toContain('FILE_VIEW');
         expect(res).not.toContain('FILE_EDIT');
         expect(res).not.toContain('FILE_DELETE');
-      } else if (access === 'none') {
+      } else if (access === '---') {
         expect(res.length).toBe(0);
+      } else {
+        throw new Error(`Invalid access type: ${access}`);
       }
     });
   });
-  */
 });
