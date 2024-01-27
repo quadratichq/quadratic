@@ -14,6 +14,8 @@ const quadraticApiUri = config.require("quadratic-api-uri");
 
 // Configuration from Pulumi ESC
 const instanceSize = config.require("files-instance-size");
+const domain = config.require("domain");
+
 
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
@@ -38,31 +40,23 @@ const instance = new aws.ec2.Instance("files-instance", {
     )
   ),
 });
-// TODO: Give it a public ip and use that for a domain...or don't do a healthcheck over port 80
 
-// const domain = config.require("domain");
-// // Get the hosted zone ID for domain
-// const hostedZone = pulumi.output(
-//   aws.route53.getZone(
-//     {
-//       name: domain,
-//     },
-//     { async: true }
-//   )
-// );
+// Get the hosted zone ID for domain
+const hostedZone = pulumi.output(
+  aws.route53.getZone(
+    {
+      name: domain,
+    },
+    { async: true }
+  )
+);
 
-// // Create a Route 53 record pointing to EC2 instance
-// const dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
-//   zoneId: hostedZone.id,
-//   name: `${filesSubdomain}.${domain}`, // subdomain you want to use
-//   type: "A",
-//   aliases: [
-//     {
-//       name: instance.arn,
-//       zoneId: instance.availabilityZone.apply((az) => az),
-//       evaluateTargetHealth: true,
-//     },
-//   ],
-// });
+// Create a Route 53 record pointing to EC2 instance
+const dnsRecord = new aws.route53.Record("files-r53-record", {
+  zoneId: hostedZone.id,
+  name: `${filesSubdomain}.${domain}`, // subdomain you want to use
+  type: "A",
+  records: [instance.publicIp],
+});
 
-export const filesPublicDns = instance.publicDns;
+export const filesPublicDns = dnsRecord.fqdn;
