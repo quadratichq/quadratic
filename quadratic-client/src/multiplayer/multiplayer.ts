@@ -54,6 +54,7 @@ export class Multiplayer {
 
   // server-assigned index of current user
   index?: number;
+  colorString?: string;
 
   // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
@@ -349,7 +350,6 @@ export class Multiplayer {
   sendFollow(follow: string) {
     const userUpdate = this.getUserUpdate().update;
     userUpdate.follow = follow;
-    console.log(userUpdate);
   }
 
   //#endregion
@@ -360,10 +360,10 @@ export class Multiplayer {
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
     const remaining = new Set(this.users.keys());
-    console.log(room.users);
     for (const user of room.users) {
       if (user.session_id === this.sessionId) {
         this.index = user.index;
+        this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
       } else {
         let player = this.users.get(user.session_id);
         if (player) {

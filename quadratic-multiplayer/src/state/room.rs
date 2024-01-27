@@ -72,7 +72,6 @@ impl State {
             Ok(room) => room.users.len(),
             Err(_) => 0,
         };
-
         let is_new = get_or_create_room!(self, file_id, sequence_num)
             .users
             .insert(user.session_id.to_owned(), user.to_owned())

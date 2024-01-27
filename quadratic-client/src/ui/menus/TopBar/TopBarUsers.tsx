@@ -1,10 +1,8 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { MultiplayerUser } from '@/multiplayer/multiplayerTypes';
 import { TooltipHint } from '@/ui/components/TooltipHint';
 import { displayInitials, displayName } from '@/utils/userUtil';
-import { User } from '@auth0/auth0-spa-js';
 import { Avatar, AvatarGroup, IconButton } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -18,8 +16,7 @@ export const TopBarUsers = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { users, followers } = useMultiplayerUsers();
-  const you = users.length === 0 ? user : users.find((u) => u.session_id === multiplayer.sessionId);
-  console.log(you);
+
   return (
     <>
       <AvatarGroup
@@ -37,10 +34,10 @@ export const TopBarUsers = () => {
         {
           <div className={`ml-2`}>
             <You
-              displayName={displayName(you, true)}
-              initial={displayInitials(you)}
-              picture={(you as MultiplayerUser)?.image ?? (you as User)?.picture ?? ''}
-              border={you?.colorString ?? 'black'}
+              displayName={displayName(user, true)}
+              initial={displayInitials(user)}
+              picture={user?.picture ?? ''}
+              border={multiplayer.colorString ?? 'black'}
             />
           </div>
         }
