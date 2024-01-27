@@ -13,6 +13,11 @@ on:
 # it will automatically back up to using GitHub hosted runners.
 
 
+# Require previous builds and deployments to finish before starting a new one
+concurrency:
+  group: production
+
+
 jobs:
 
   infra_production:
@@ -36,6 +41,10 @@ jobs:
         pulumi org set-default quadratic
         pulumi stack select production
 
+        pulumi config set multiplayer-pulumi-esc-environment-name quadratic-multiplayer-production
+        pulumi config set multiplayer-ecr-repo-name quadratic-multiplayer-production
+        pulumi config set files-pulumi-esc-environment-name quadratic-files-production
+        pulumi config set files-ecr-repo-name quadratic-files-production
         pulumi config set multiplayer-subdomain multiplayer
         pulumi config set files-subdomain files
         pulumi config set docker-image-tag ${{ github.sha }}
