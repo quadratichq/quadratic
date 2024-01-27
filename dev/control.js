@@ -287,11 +287,6 @@ export class Control {
         if (this.multiplayer) {
             this.runMultiplayer(true);
         }
-<<<<<<< HEAD
-        this.cli.options.multiplayer = !this.cli.options.multiplayer;
-        this.runMultiplayer(true);
-=======
->>>>>>> a-team
     }
     async runFiles() {
         if (this.status.files === "killed")
