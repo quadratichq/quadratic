@@ -11,10 +11,11 @@ export class UI {
     showing = false;
     characters = 0;
     lines = 0;
+    interval;
     constructor(cli, control) {
         this.cli = cli;
         this.control = control;
-        setInterval(() => {
+        this.interval = setInterval(() => {
             this.spin = (this.spin + 1) % ANIMATE_STATUS.length;
             if (this.showing) {
                 this.clear();
@@ -22,6 +23,11 @@ export class UI {
             }
         }, ANIMATION_INTERVAL);
         createScreen();
+    }
+    quit() {
+        this.clear();
+        clearInterval(this.interval);
+        process.stdin.pause();
     }
     clear() {
         if (this.showing) {

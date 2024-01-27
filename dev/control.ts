@@ -1,22 +1,17 @@
-import killPortOriginal from "kill-port";
 import {
   ChildProcessWithoutNullStreams,
   exec,
   spawn,
 } from "node:child_process";
+import treeKill from "tree-kill";
 import { CLI } from "./cli.js";
 import { destroyScreen } from "./terminal.js";
 import { UI } from "./ui.js";
 
-const killPort = async (port: number) => {
-  try {
-    await killPortOriginal(port);
-  } catch (e) {}
-};
-
 export class Control {
   private cli: CLI;
   private ui: UI;
+  private quitting = false;
 
   api?: ChildProcessWithoutNullStreams;
   types?: ChildProcessWithoutNullStreams;
@@ -74,12 +69,17 @@ export class Control {
   }
 
   async quit() {
-    await this.kill("api");
-    await this.kill("types");
-    await this.kill("core");
-    await this.kill("client");
-    await this.kill("multiplayer");
-    await this.kill("files");
+    if (this.quitting) return;
+    this.quitting = true;
+    this.ui.quit();
+    await Promise.all([
+      this.kill("api"),
+      this.kill("types"),
+      this.kill("core"),
+      this.kill("client"),
+      this.kill("multiplayer"),
+      this.kill("files"),
+    ]);
     destroyScreen();
     process.exit(0);
   }
@@ -120,8 +120,9 @@ export class Control {
   }
 
   async runApi() {
+    if (this.quitting) return;
     this.ui.print("api");
-    await killPort(8000);
+    // await killPort(8000);
     this.signals.api = new AbortController();
     this.api = spawn(
       "npm",
@@ -176,6 +177,7 @@ export class Control {
   }
 
   async runClient() {
+    if (this.quitting) return;
     this.ui.print("client");
     await this.kill("client");
     this.signals.client = new AbortController();
@@ -209,6 +211,7 @@ export class Control {
   }
 
   async runCore(restart?: boolean) {
+    if (this.quitting) return;
     this.ui.print("core");
     await this.kill("core");
     this.signals.core = new AbortController();
@@ -280,17 +283,12 @@ export class Control {
     if (!this[name]) return;
     this.ui.print(name, "killing...");
     return new Promise((resolve) => {
-      if (this.signals[name]) {
-        this[name].once("error", () => {
-          resolve(undefined);
-        });
-        this.signals[name].abort();
-      } else {
-        this[name].once("exit", () => {
-          resolve(undefined);
-        });
-        this[name].kill();
-      }
+      this[name].stdout?.pause();
+      this[name].stderr?.pause();
+      treeKill(this[name].pid, "SIGTERM", () => {
+        this.ui.print(name, "successfully killed");
+        resolve(undefined);
+      });
     });
   }
 
@@ -298,6 +296,7 @@ export class Control {
     if (this.status.multiplayer === "killed") {
       this.status.multiplayer = false;
       this.ui.print("multiplayer", "resurrecting...");
+      this.runMultiplayer(true);
     } else {
       if (this.multiplayer) {
         await this.kill("multiplayer");
@@ -314,19 +313,20 @@ export class Control {
   }
 
   async runMultiplayer(restart?: boolean) {
+    if (this.quitting) return;
     if (this.status.multiplayer === "killed") return;
     await this.kill("multiplayer");
-    await killPort(3001);
+    // await killPort(3001);
     this.signals.multiplayer = new AbortController();
     this.ui.print("multiplayer");
     this.multiplayer = spawn(
-      "npm",
-      [
-        "run",
-        this.cli.options.multiplayer ? "dev" : "start",
-        "--workspace=quadratic-multiplayer",
-      ],
-      { signal: this.signals.multiplayer.signal }
+      "cargo",
+      this.cli.options.multiplayer ? ["watch", "-x", "'run'"] : ["run"],
+      {
+        signal: this.signals.multiplayer.signal,
+        cwd: "quadratic-multiplayer",
+        env: { ...process.env, RUST_LOG: "info" },
+      }
     );
     this.ui.printOutput("multiplayer", (data) =>
       this.handleResponse(
@@ -354,27 +354,25 @@ export class Control {
   }
 
   async runFiles() {
+    if (this.quitting) return;
     if (this.status.files === "killed") return;
     await this.kill("files");
-    await killPort(3002);
     this.signals.files = new AbortController();
     this.ui.print("files");
-    return new Promise(async (resolve) => {
-      this.files = spawn(
-        "npm",
-        [
-          "run",
-          this.cli.options.files ? "dev" : "start",
-          "--workspace=quadratic-files",
-        ],
-        { signal: this.signals.files.signal }
-      );
-      this.ui.printOutput("files", (data) => {
-        this.handleResponse("files", data, {
-          success: "listening on",
-          error: ["error[", "npm ERR!"],
-          start: "    Compiling",
-        });
+    this.files = spawn(
+      "cargo",
+      this.cli.options.files ? ["watch", "-x", "'run'"] : ["run"],
+      {
+        signal: this.signals.files.signal,
+        cwd: "quadratic-files",
+        env: { ...process.env, RUST_LOG: "info" },
+      }
+    );
+    this.ui.printOutput("files", (data) => {
+      this.handleResponse("files", data, {
+        success: "listening on",
+        error: ["error[", "npm ERR!"],
+        start: "    Compiling",
       });
     });
   }
@@ -401,6 +399,7 @@ export class Control {
   }
 
   async runDb() {
+    if (this.quitting) return;
     this.ui.print("db", "checking migration...");
     await this.kill("db");
     this.db = spawn("npm", [
@@ -422,6 +421,7 @@ export class Control {
   }
 
   runNpmInstall() {
+    if (this.quitting) return;
     this.ui.print("npm", "installing...");
     this.npm = spawn("npm", ["install"]);
     this.npm.on("close", (code) => {
@@ -437,6 +437,7 @@ export class Control {
   }
 
   runRust() {
+    if (this.quitting) return;
     this.ui.print("rust", "upgrading...");
     this.rust = spawn("rustup", ["upgrade"]);
     this.rust.on("close", (code) => {
@@ -453,6 +454,7 @@ export class Control {
 
   isRedisRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
+      if (this.quitting) resolve(false);
       const redis = spawn("redis-cli", ["ping"]);
       redis.on("error", (e: any) => {
         if (e.code === "ENOENT") {
@@ -467,6 +469,7 @@ export class Control {
 
   isPostgresRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
+      if (this.quitting) resolve(false);
       const postgres = spawn("pg_isready");
       postgres.on("error", (e: any) => {
         if (e.code === "ENOENT") {
