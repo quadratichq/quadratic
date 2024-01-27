@@ -56,6 +56,7 @@ const dnsRecord = new aws.route53.Record("files-r53-record", {
   zoneId: hostedZone.id,
   name: `${filesSubdomain}.${domain}`, // subdomain you want to use
   type: "A",
+  ttl: "300",
   records: [instance.publicIp],
 });
 
