@@ -66,12 +66,14 @@ export class Control {
         });
     }
     async quit() {
-        await this.kill("api");
-        await this.kill("types");
-        await this.kill("core");
-        await this.kill("client");
-        await this.kill("multiplayer");
-        await this.kill("files");
+        await Promise.all([
+            this.kill("api"),
+            this.kill("types"),
+            this.kill("core"),
+            this.kill("client"),
+            this.kill("multiplayer"),
+            this.kill("files"),
+        ]);
         destroyScreen();
         process.exit(0);
     }
@@ -98,7 +100,7 @@ export class Control {
     }
     async runApi() {
         this.ui.print("api");
-        await killPort(8000);
+        // await killPort(8000);
         this.signals.api = new AbortController();
         this.api = spawn("npm", [
             "run",
@@ -228,24 +230,27 @@ export class Control {
             return;
         this.ui.print(name, "killing...");
         return new Promise((resolve) => {
-            if (this.signals[name]) {
-                this[name].once("error", () => {
-                    resolve(undefined);
-                });
-                this.signals[name].abort();
-            }
-            else {
-                this[name].once("exit", () => {
-                    resolve(undefined);
-                });
-                this[name].kill();
-            }
+            // if (this.signals[name]) {
+            //   this[name].once("error", (e) => {
+            //     console.log(e);
+            //     this[name] = undefined;
+            //     resolve(undefined);
+            //   });
+            //   this.signals[name].abort();
+            // } else {
+            this[name].once("exit", () => {
+                this[name] = undefined;
+                resolve(undefined);
+            });
+            this[name].kill();
+            // }
         });
     }
     async killMultiplayer() {
         if (this.status.multiplayer === "killed") {
             this.status.multiplayer = false;
             this.ui.print("multiplayer", "resurrecting...");
+            this.runMultiplayer(true);
         }
         else {
             if (this.multiplayer) {
@@ -264,14 +269,14 @@ export class Control {
         if (this.status.multiplayer === "killed")
             return;
         await this.kill("multiplayer");
-        await killPort(3001);
+        // await killPort(3001);
         this.signals.multiplayer = new AbortController();
         this.ui.print("multiplayer");
-        this.multiplayer = spawn("npm", [
-            "run",
-            this.cli.options.multiplayer ? "dev" : "start",
-            "--workspace=quadratic-multiplayer",
-        ], { signal: this.signals.multiplayer.signal });
+        this.multiplayer = spawn("cargo", this.cli.options.multiplayer ? ["watch", "-x", "'run'"] : ["run"], {
+            signal: this.signals.multiplayer.signal,
+            cwd: "quadratic-multiplayer",
+            env: { ...process.env, RUST_LOG: "info" },
+        });
         this.ui.printOutput("multiplayer", (data) => this.handleResponse("multiplayer", data, {
             success: "listening on",
             error: "error[",
@@ -292,15 +297,15 @@ export class Control {
         if (this.status.files === "killed")
             return;
         await this.kill("files");
-        await killPort(3002);
+        // await killPort(3002);
         this.signals.files = new AbortController();
         this.ui.print("files");
         return new Promise(async (resolve) => {
-            this.files = spawn("npm", [
-                "run",
-                this.cli.options.files ? "dev" : "start",
-                "--workspace=quadratic-files",
-            ], { signal: this.signals.files.signal });
+            this.files = spawn("cargo", this.cli.options.files ? ["watch", "-x", "'run'"] : ["run"], {
+                signal: this.signals.files.signal,
+                cwd: "quadratic-files",
+                env: { ...process.env, RUST_LOG: "info" },
+            });
             this.ui.printOutput("files", (data) => {
                 this.handleResponse("files", data, {
                     success: "listening on",

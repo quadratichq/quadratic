@@ -17,6 +17,7 @@ const killPort = async (port: number) => {
 export class Control {
   private cli: CLI;
   private ui: UI;
+  private quitting = false;
 
   api?: ChildProcessWithoutNullStreams;
   types?: ChildProcessWithoutNullStreams;
@@ -74,12 +75,17 @@ export class Control {
   }
 
   async quit() {
-    await this.kill("api");
-    await this.kill("types");
-    await this.kill("core");
-    await this.kill("client");
-    await this.kill("multiplayer");
-    await this.kill("files");
+    if (this.quitting) return;
+    this.quitting = true;
+    this.ui.clear();
+    await Promise.all([
+      this.kill("api", () => this.ui.print("api", "killed")),
+      this.kill("types", () => this.ui.print("types", "killed")),
+      this.kill("core", () => this.ui.print("core", "killed")),
+      this.kill("client", () => this.ui.print("client", "killed")),
+      this.kill("multiplayer", () => this.ui.print("multiplayer", "killed")),
+      this.kill("files", () => this.ui.print("files", "killed")),
+    ]);
     destroyScreen();
     process.exit(0);
   }
@@ -121,7 +127,7 @@ export class Control {
 
   async runApi() {
     this.ui.print("api");
-    await killPort(8000);
+    // await killPort(8000);
     this.signals.api = new AbortController();
     this.api = spawn(
       "npm",
@@ -276,21 +282,25 @@ export class Control {
     }
   }
 
-  kill(name: string) {
+  kill(name: string, callback?: () => void) {
     if (!this[name]) return;
     this.ui.print(name, "killing...");
     return new Promise((resolve) => {
-      if (this.signals[name]) {
-        this[name].once("error", () => {
-          resolve(undefined);
-        });
-        this.signals[name].abort();
-      } else {
-        this[name].once("exit", () => {
-          resolve(undefined);
-        });
-        this[name].kill();
-      }
+      // if (this.signals[name]) {
+      //   this[name].once("error", (e) => {
+      //     console.log(e);
+      //     this[name] = undefined;
+      //     resolve(undefined);
+      //   });
+      //   this.signals[name].abort();
+      // } else {
+      this[name].once("exit", () => {
+        this[name] = undefined;
+        callback?.();
+        resolve(undefined);
+      });
+      this[name].kill();
+      // }
     });
   }
 
@@ -298,6 +308,7 @@ export class Control {
     if (this.status.multiplayer === "killed") {
       this.status.multiplayer = false;
       this.ui.print("multiplayer", "resurrecting...");
+      this.runMultiplayer(true);
     } else {
       if (this.multiplayer) {
         await this.kill("multiplayer");
@@ -316,17 +327,17 @@ export class Control {
   async runMultiplayer(restart?: boolean) {
     if (this.status.multiplayer === "killed") return;
     await this.kill("multiplayer");
-    await killPort(3001);
+    // await killPort(3001);
     this.signals.multiplayer = new AbortController();
     this.ui.print("multiplayer");
     this.multiplayer = spawn(
-      "npm",
-      [
-        "run",
-        this.cli.options.multiplayer ? "dev" : "start",
-        "--workspace=quadratic-multiplayer",
-      ],
-      { signal: this.signals.multiplayer.signal }
+      "cargo",
+      this.cli.options.multiplayer ? ["watch", "-x", "'run'"] : ["run"],
+      {
+        signal: this.signals.multiplayer.signal,
+        cwd: "quadratic-multiplayer",
+        env: { ...process.env, RUST_LOG: "info" },
+      }
     );
     this.ui.printOutput("multiplayer", (data) =>
       this.handleResponse(
@@ -356,18 +367,18 @@ export class Control {
   async runFiles() {
     if (this.status.files === "killed") return;
     await this.kill("files");
-    await killPort(3002);
+    // await killPort(3002);
     this.signals.files = new AbortController();
     this.ui.print("files");
     return new Promise(async (resolve) => {
       this.files = spawn(
-        "npm",
-        [
-          "run",
-          this.cli.options.files ? "dev" : "start",
-          "--workspace=quadratic-files",
-        ],
-        { signal: this.signals.files.signal }
+        "cargo",
+        this.cli.options.files ? ["watch", "-x", "'run'"] : ["run"],
+        {
+          signal: this.signals.files.signal,
+          cwd: "quadratic-files",
+          env: { ...process.env, RUST_LOG: "info" },
+        }
       );
       this.ui.printOutput("files", (data) => {
         this.handleResponse("files", data, {
