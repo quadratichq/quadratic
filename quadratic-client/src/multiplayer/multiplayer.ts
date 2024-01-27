@@ -156,7 +156,7 @@ export class Multiplayer {
   }
 
   private reconnect = () => {
-    if (this.state === 'waiting to reconnect' || this.state === 'no internet') return;
+    if (this.state === 'no internet') return;
     console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
     setTimeout(async () => {

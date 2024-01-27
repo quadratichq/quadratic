@@ -12,7 +12,16 @@
 }
 
 .hover-cell-body {
-  font-size: 0.75rem;
+  @apply text-xs;
+}
+
+.hover-cell-code {
+  @apply text-nowrap rounded-md bg-gray-100 p-0.5;
+}
+
+.hover-cell-error-msg {
+  @apply font-mono text-destructive;
+  font-size: 0.65rem;
 }
 
 .hover-cell-body > div:first-child {
@@ -35,10 +44,8 @@
 }
 
 .code-body {
-  font-family: monospace;
+  @apply max-h-48 rounded-md bg-gray-50 p-1 font-mono;
   white-space: pre;
   overflow: hidden;
   font-size: 0.65rem;
-  max-height: 20rem;
-  background-color: rgba(0, 0, 0, 0.01);
 }

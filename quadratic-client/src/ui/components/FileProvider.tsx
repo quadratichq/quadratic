@@ -30,13 +30,13 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   // We can guarantee this is in the URL when it runs, so cast as string
   const { uuid } = useParams() as { uuid: string };
   const initialFileData = useFileRouteLoaderData();
-  const [name, setName] = useState<FileContextType['name']>(initialFileData.name);
+  const [name, setName] = useState<FileContextType['name']>(initialFileData.file.name);
   let isFirstUpdate = useRef(true);
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const [latestSync, setLatestSync] = useState<Sync>({ id: 0, state: 'idle' });
 
   const syncState = latestSync.state;
-  const canEdit = hasPermissionToEditFile(initialFileData.permissions);
+  const canEdit = hasPermissionToEditFile(initialFileData.userMakingRequest.filePermissions);
 
   const renameFile: FileContextType['renameFile'] = useCallback(
     (newName) => {
@@ -79,8 +79,8 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
   // TODO figure out a way to set this in RecoilRoot (if possible)
   //      or let it flow if we go with react-router's loaders for this
   useEffect(() => {
-    setEditorInteractionState((prev) => ({ ...prev, permission: initialFileData.permissions }));
-  }, [initialFileData.permissions, setEditorInteractionState]);
+    setEditorInteractionState((prev) => ({ ...prev, permission: initialFileData.userMakingRequest.filePermissions }));
+  }, [initialFileData.userMakingRequest.filePermissions, setEditorInteractionState]);
 
   // Keep track of lifecycle so we can run things at a specific time
   useEffect(() => {

@@ -28,6 +28,8 @@ export class Control {
   npm?: ChildProcessWithoutNullStreams;
   rust?: ChildProcessWithoutNullStreams;
 
+  signals: Record<string, AbortController> = {};
+
   status: Record<string, boolean | "error" | "killed"> = {
     client: false,
     api: false,
@@ -71,11 +73,13 @@ export class Control {
     });
   }
 
-  quit() {
-    if (this.api) this.api.kill("SIGKILL");
-    if (this.files) this.files.kill("SIGTERM");
-    if (this.multiplayer) this.multiplayer.kill("SIGTERM");
-    if (this.client) this.client.kill("SIGTERM");
+  async quit() {
+    await this.kill("api");
+    await this.kill("types");
+    await this.kill("core");
+    await this.kill("client");
+    await this.kill("multiplayer");
+    await this.kill("files");
     destroyScreen();
     process.exit(0);
   }
@@ -118,11 +122,16 @@ export class Control {
   async runApi() {
     this.ui.print("api");
     await killPort(8000);
-    this.api = spawn("npm", [
-      "run",
-      this.cli.options.api ? "start" : "start-no-watch",
-      "--workspace=quadratic-api",
-    ]);
+    this.signals.api = new AbortController();
+    this.api = spawn(
+      "npm",
+      [
+        "run",
+        this.cli.options.api ? "start" : "start-no-watch",
+        "--workspace=quadratic-api",
+      ],
+      { signal: this.signals.api.signal }
+    );
     this.ui.printOutput("api", (data) =>
       this.handleResponse("api", data, {
         success: "Server running on port",
@@ -132,10 +141,8 @@ export class Control {
     );
   }
 
-  restartApi() {
-    if (this.api) {
-      this.api.kill("SIGKILL");
-    }
+  async restartApi() {
+    await this.kill("api");
     this.cli.options.api = !this.cli.options.api;
     this.runApi();
   }
@@ -157,26 +164,27 @@ export class Control {
         if (!restart) {
           this.runCore();
         }
+        this.types = undefined;
+        this.ui.print("types", "completed.");
       });
     }
   }
 
-  restartTypes() {
-    if (this.types) {
-      this.types.kill();
-      this.runTypes(true);
-    }
+  async restartTypes() {
+    await this.kill("types");
+    this.runTypes(true);
   }
 
-  runClient() {
+  async runClient() {
     this.ui.print("client");
-    if (this.client) {
-      this.client.kill("SIGKILL");
-    }
+    await this.kill("client");
+    this.signals.client = new AbortController();
     // clean the node_modules/.vite directory to avoid client errors
     const clean = exec("rm -rf quadratic-client/node_modules/.vite");
     clean.on("close", () => {
-      this.client = spawn("npm", ["start", "--workspace=quadratic-client"]);
+      this.client = spawn("npm", ["start", "--workspace=quadratic-client"], {
+        signal: this.signals.client.signal,
+      });
       this.ui.printOutput("client", (data) => {
         this.handleResponse("client", data, {
           success: "Found 0 errors.",
@@ -200,15 +208,21 @@ export class Control {
     this.restartCore();
   }
 
-  runCore(restart?: boolean) {
+  async runCore(restart?: boolean) {
     this.ui.print("core");
+    await this.kill("core");
+    this.signals.core = new AbortController();
     if (this.cli.options.core) {
-      this.core = spawn("npm", [
-        "run",
-        this.cli.options.perf
-          ? "watch:wasm:perf:javascript"
-          : "watch:wasm:javascript",
-      ]);
+      this.core = spawn(
+        "npm",
+        [
+          "run",
+          this.cli.options.perf
+            ? "watch:wasm:perf:javascript"
+            : "watch:wasm:javascript",
+        ],
+        { signal: this.signals.core.signal }
+      );
       this.ui.printOutput("core", (data) =>
         this.handleResponse(
           "core",
@@ -221,7 +235,7 @@ export class Control {
           () => {
             if (!restart) {
               this.runNpmInstall();
-              if (this.status.multiplayer !== "killed") {
+              if (this.status.multiplayer !== "killed" && !this.multiplayer) {
                 this.runMultiplayer();
               } else {
                 this.runFiles();
@@ -231,12 +245,16 @@ export class Control {
         )
       );
     } else {
-      this.core = spawn("npm", [
-        "run",
-        this.cli.options.perf
-          ? "build:wasm:perf:javascript"
-          : "build:wasm:javascript",
-      ]);
+      this.core = spawn(
+        "npm",
+        [
+          "run",
+          this.cli.options.perf
+            ? "build:wasm:perf:javascript"
+            : "build:wasm:javascript",
+        ],
+        { signal: this.signals.core.signal }
+      );
       this.ui.printOutput("core", (data) =>
         this.handleResponse("core", data, {
           success: "Your wasm pkg is ready to publish",
@@ -246,6 +264,7 @@ export class Control {
       );
       this.core.on("exit", () => {
         if (!restart) {
+          this.core = undefined;
           this.runNpmInstall();
           if (this.status.multiplayer !== "killed") {
             this.runMultiplayer();
@@ -257,36 +276,58 @@ export class Control {
     }
   }
 
-  killMultiplayer() {
+  kill(name: string) {
+    if (!this[name]) return;
+    this.ui.print(name, "killing...");
+    return new Promise((resolve) => {
+      if (this.signals[name]) {
+        this[name].once("error", () => {
+          resolve(undefined);
+        });
+        this.signals[name].abort();
+      } else {
+        this[name].once("exit", () => {
+          resolve(undefined);
+        });
+        this[name].kill();
+      }
+    });
+  }
+
+  async killMultiplayer() {
     if (this.status.multiplayer === "killed") {
       this.status.multiplayer = false;
       this.ui.print("multiplayer", "resurrecting...");
     } else {
       if (this.multiplayer) {
-        this.multiplayer.kill("SIGKILL");
+        await this.kill("multiplayer");
         this.ui.print("multiplayer", "killed", "red");
       }
       this.status.multiplayer = "killed";
     }
   }
 
-  restartCore() {
-    if (this.core) {
-      this.core.kill("SIGKILL");
-    }
+  async restartCore() {
+    await this.kill("core");
     this.cli.options.core = !this.cli.options.core;
     this.runCore();
   }
 
   async runMultiplayer(restart?: boolean) {
     if (this.status.multiplayer === "killed") return;
-    this.ui.print("multiplayer");
+    await this.kill("multiplayer");
     await killPort(3001);
-    this.multiplayer = spawn("npm", [
-      "run",
-      this.cli.options.multiplayer ? "dev" : "start",
-      "--workspace=quadratic-multiplayer",
-    ]);
+    this.signals.multiplayer = new AbortController();
+    this.ui.print("multiplayer");
+    this.multiplayer = spawn(
+      "npm",
+      [
+        "run",
+        this.cli.options.multiplayer ? "dev" : "start",
+        "--workspace=quadratic-multiplayer",
+      ],
+      { signal: this.signals.multiplayer.signal }
+    );
     this.ui.printOutput("multiplayer", (data) =>
       this.handleResponse(
         "multiplayer",
@@ -305,24 +346,29 @@ export class Control {
     );
   }
 
-  restartMultiplayer() {
-    if (this.multiplayer) {
-      this.multiplayer.kill("SIGKILL");
-    }
+  async restartMultiplayer() {
     this.cli.options.multiplayer = !this.cli.options.multiplayer;
-    this.runMultiplayer(true);
+    if (this.multiplayer) {
+      this.runMultiplayer(true);
+    }
   }
 
-  runFiles() {
+  async runFiles() {
     if (this.status.files === "killed") return;
+    await this.kill("files");
+    await killPort(3002);
+    this.signals.files = new AbortController();
     this.ui.print("files");
     return new Promise(async (resolve) => {
-      await killPort(3002);
-      this.files = spawn("npm", [
-        "run",
-        this.cli.options.files ? "dev" : "start",
-        "--workspace=quadratic-files",
-      ]);
+      this.files = spawn(
+        "npm",
+        [
+          "run",
+          this.cli.options.files ? "dev" : "start",
+          "--workspace=quadratic-files",
+        ],
+        { signal: this.signals.files.signal }
+      );
       this.ui.printOutput("files", (data) => {
         this.handleResponse("files", data, {
           success: "listening on",
@@ -333,32 +379,30 @@ export class Control {
     });
   }
 
-  restartFiles() {
-    if (this.files) {
-      this.files.kill("SIGKILL");
-    }
+  async restartFiles() {
     this.cli.options.files = !this.cli.options.files;
-    this.runFiles();
+    if (this.files) {
+      this.runFiles();
+    }
   }
 
-  killFiles() {
+  async killFiles() {
     if (this.status.files === "killed") {
       this.status.files = false;
       this.ui.print("files", "restarting...");
+      this.runFiles();
     } else {
       if (this.files) {
-        this.files.kill("SIGKILL");
+        await this.kill("files");
         this.ui.print("files", "killed", "red");
       }
       this.status.files = "killed";
     }
   }
 
-  runDb() {
+  async runDb() {
     this.ui.print("db", "checking migration...");
-    if (this.db) {
-      this.db.kill("SIGTERM");
-    }
+    await this.kill("db");
     this.db = spawn("npm", [
       "run",
       "prisma:migrate",
@@ -436,6 +480,7 @@ export class Control {
   }
 
   async start(ui: UI) {
+    exec("rm -rf quadratic-client/src/quadratic-core");
     this.ui = ui;
     this.runRust();
     this.runDb();
