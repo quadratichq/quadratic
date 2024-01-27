@@ -197,9 +197,9 @@ export class UI {
     const command = this.control[name];
     const component = COMPONENTS[name];
     const color = this.cli.options.dark ? component.dark : component.color;
-    const hide = component.hide || this.getHideOption(name);
     const displayName = component.name;
     command.stdout.on("data", (data: string) => {
+      const hide = COMPONENTS[name].hide || this.getHideOption(name);
       if (hide) {
         if (callback) {
           callback(data);
@@ -218,6 +218,7 @@ export class UI {
       }
     });
     command.stderr.on("data", (data: string) => {
+      const hide = COMPONENTS[name].hide || this.getHideOption(name);
       if (hide) {
         if (callback) {
           callback(data);
