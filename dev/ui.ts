@@ -25,12 +25,13 @@ export class UI {
   private showing = false;
   private characters = 0;
   private lines = 0;
+  private interval: NodeJS.Timeout;
 
   constructor(cli: CLI, control: Control) {
     this.cli = cli;
     this.control = control;
 
-    setInterval(() => {
+    this.interval = setInterval(() => {
       this.spin = (this.spin + 1) % ANIMATE_STATUS.length;
       if (this.showing) {
         this.clear();
@@ -39,6 +40,12 @@ export class UI {
     }, ANIMATION_INTERVAL);
 
     createScreen();
+  }
+
+  quit() {
+    this.clear();
+    clearInterval(this.interval);
+    process.stdin.pause();
   }
 
   clear() {

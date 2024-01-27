@@ -1,18 +1,12 @@
-import killPortOriginal from "kill-port";
 import {
   ChildProcessWithoutNullStreams,
   exec,
   spawn,
 } from "node:child_process";
+import treeKill from "tree-kill";
 import { CLI } from "./cli.js";
 import { destroyScreen } from "./terminal.js";
 import { UI } from "./ui.js";
-
-const killPort = async (port: number) => {
-  try {
-    await killPortOriginal(port);
-  } catch (e) {}
-};
 
 export class Control {
   private cli: CLI;
@@ -77,14 +71,14 @@ export class Control {
   async quit() {
     if (this.quitting) return;
     this.quitting = true;
-    this.ui.clear();
+    this.ui.quit();
     await Promise.all([
-      this.kill("api", () => this.ui.print("api", "killed")),
-      this.kill("types", () => this.ui.print("types", "killed")),
-      this.kill("core", () => this.ui.print("core", "killed")),
-      this.kill("client", () => this.ui.print("client", "killed")),
-      this.kill("multiplayer", () => this.ui.print("multiplayer", "killed")),
-      this.kill("files", () => this.ui.print("files", "killed")),
+      this.kill("api"),
+      this.kill("types"),
+      this.kill("core"),
+      this.kill("client"),
+      this.kill("multiplayer"),
+      this.kill("files"),
     ]);
     destroyScreen();
     process.exit(0);
@@ -126,6 +120,7 @@ export class Control {
   }
 
   async runApi() {
+    if (this.quitting) return;
     this.ui.print("api");
     // await killPort(8000);
     this.signals.api = new AbortController();
@@ -182,6 +177,7 @@ export class Control {
   }
 
   async runClient() {
+    if (this.quitting) return;
     this.ui.print("client");
     await this.kill("client");
     this.signals.client = new AbortController();
@@ -215,6 +211,7 @@ export class Control {
   }
 
   async runCore(restart?: boolean) {
+    if (this.quitting) return;
     this.ui.print("core");
     await this.kill("core");
     this.signals.core = new AbortController();
@@ -282,25 +279,16 @@ export class Control {
     }
   }
 
-  kill(name: string, callback?: () => void) {
+  kill(name: string) {
     if (!this[name]) return;
     this.ui.print(name, "killing...");
     return new Promise((resolve) => {
-      // if (this.signals[name]) {
-      //   this[name].once("error", (e) => {
-      //     console.log(e);
-      //     this[name] = undefined;
-      //     resolve(undefined);
-      //   });
-      //   this.signals[name].abort();
-      // } else {
-      this[name].once("exit", () => {
-        this[name] = undefined;
-        callback?.();
+      this[name].stdout?.pause();
+      this[name].stderr?.pause();
+      treeKill(this[name].pid, "SIGTERM", () => {
+        this.ui.print(name, "successfully killed");
         resolve(undefined);
       });
-      this[name].kill();
-      // }
     });
   }
 
@@ -325,6 +313,7 @@ export class Control {
   }
 
   async runMultiplayer(restart?: boolean) {
+    if (this.quitting) return;
     if (this.status.multiplayer === "killed") return;
     await this.kill("multiplayer");
     // await killPort(3001);
@@ -365,27 +354,25 @@ export class Control {
   }
 
   async runFiles() {
+    if (this.quitting) return;
     if (this.status.files === "killed") return;
     await this.kill("files");
-    // await killPort(3002);
     this.signals.files = new AbortController();
     this.ui.print("files");
-    return new Promise(async (resolve) => {
-      this.files = spawn(
-        "cargo",
-        this.cli.options.files ? ["watch", "-x", "'run'"] : ["run"],
-        {
-          signal: this.signals.files.signal,
-          cwd: "quadratic-files",
-          env: { ...process.env, RUST_LOG: "info" },
-        }
-      );
-      this.ui.printOutput("files", (data) => {
-        this.handleResponse("files", data, {
-          success: "listening on",
-          error: ["error[", "npm ERR!"],
-          start: "    Compiling",
-        });
+    this.files = spawn(
+      "cargo",
+      this.cli.options.files ? ["watch", "-x", "'run'"] : ["run"],
+      {
+        signal: this.signals.files.signal,
+        cwd: "quadratic-files",
+        env: { ...process.env, RUST_LOG: "info" },
+      }
+    );
+    this.ui.printOutput("files", (data) => {
+      this.handleResponse("files", data, {
+        success: "listening on",
+        error: ["error[", "npm ERR!"],
+        start: "    Compiling",
       });
     });
   }
@@ -412,6 +399,7 @@ export class Control {
   }
 
   async runDb() {
+    if (this.quitting) return;
     this.ui.print("db", "checking migration...");
     await this.kill("db");
     this.db = spawn("npm", [
@@ -433,6 +421,7 @@ export class Control {
   }
 
   runNpmInstall() {
+    if (this.quitting) return;
     this.ui.print("npm", "installing...");
     this.npm = spawn("npm", ["install"]);
     this.npm.on("close", (code) => {
@@ -448,6 +437,7 @@ export class Control {
   }
 
   runRust() {
+    if (this.quitting) return;
     this.ui.print("rust", "upgrading...");
     this.rust = spawn("rustup", ["upgrade"]);
     this.rust.on("close", (code) => {
@@ -464,6 +454,7 @@ export class Control {
 
   isRedisRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
+      if (this.quitting) resolve(false);
       const redis = spawn("redis-cli", ["ping"]);
       redis.on("error", (e: any) => {
         if (e.code === "ENOENT") {
@@ -478,6 +469,7 @@ export class Control {
 
   isPostgresRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
+      if (this.quitting) resolve(false);
       const postgres = spawn("pg_isready");
       postgres.on("error", (e: any) => {
         if (e.code === "ENOENT") {

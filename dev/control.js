@@ -1,15 +1,10 @@
-import killPortOriginal from "kill-port";
 import { exec, spawn, } from "node:child_process";
+import treeKill from "tree-kill";
 import { destroyScreen } from "./terminal.js";
-const killPort = async (port) => {
-    try {
-        await killPortOriginal(port);
-    }
-    catch (e) { }
-};
 export class Control {
     cli;
     ui;
+    quitting = false;
     api;
     types;
     core;
@@ -66,6 +61,10 @@ export class Control {
         });
     }
     async quit() {
+        if (this.quitting)
+            return;
+        this.quitting = true;
+        this.ui.quit();
         await Promise.all([
             this.kill("api"),
             this.kill("types"),
@@ -99,6 +98,8 @@ export class Control {
         }
     }
     async runApi() {
+        if (this.quitting)
+            return;
         this.ui.print("api");
         // await killPort(8000);
         this.signals.api = new AbortController();
@@ -146,6 +147,8 @@ export class Control {
         this.runTypes(true);
     }
     async runClient() {
+        if (this.quitting)
+            return;
         this.ui.print("client");
         await this.kill("client");
         this.signals.client = new AbortController();
@@ -173,6 +176,8 @@ export class Control {
         this.restartCore();
     }
     async runCore(restart) {
+        if (this.quitting)
+            return;
         this.ui.print("core");
         await this.kill("core");
         this.signals.core = new AbortController();
@@ -230,20 +235,12 @@ export class Control {
             return;
         this.ui.print(name, "killing...");
         return new Promise((resolve) => {
-            // if (this.signals[name]) {
-            //   this[name].once("error", (e) => {
-            //     console.log(e);
-            //     this[name] = undefined;
-            //     resolve(undefined);
-            //   });
-            //   this.signals[name].abort();
-            // } else {
-            this[name].once("exit", () => {
-                this[name] = undefined;
+            this[name].stdout?.pause();
+            this[name].stderr?.pause();
+            treeKill(this[name].pid, "SIGTERM", () => {
+                this.ui.print(name, "successfully killed");
                 resolve(undefined);
             });
-            this[name].kill();
-            // }
         });
     }
     async killMultiplayer() {
@@ -266,6 +263,8 @@ export class Control {
         this.runCore();
     }
     async runMultiplayer(restart) {
+        if (this.quitting)
+            return;
         if (this.status.multiplayer === "killed")
             return;
         await this.kill("multiplayer");
@@ -294,6 +293,8 @@ export class Control {
         }
     }
     async runFiles() {
+        if (this.quitting)
+            return;
         if (this.status.files === "killed")
             return;
         await this.kill("files");
@@ -336,6 +337,8 @@ export class Control {
         }
     }
     async runDb() {
+        if (this.quitting)
+            return;
         this.ui.print("db", "checking migration...");
         await this.kill("db");
         this.db = spawn("npm", [
@@ -357,6 +360,8 @@ export class Control {
         });
     }
     runNpmInstall() {
+        if (this.quitting)
+            return;
         this.ui.print("npm", "installing...");
         this.npm = spawn("npm", ["install"]);
         this.npm.on("close", (code) => {
@@ -372,6 +377,8 @@ export class Control {
         });
     }
     runRust() {
+        if (this.quitting)
+            return;
         this.ui.print("rust", "upgrading...");
         this.rust = spawn("rustup", ["upgrade"]);
         this.rust.on("close", (code) => {
@@ -388,6 +395,8 @@ export class Control {
     }
     isRedisRunning() {
         return new Promise((resolve) => {
+            if (this.quitting)
+                resolve(false);
             const redis = spawn("redis-cli", ["ping"]);
             redis.on("error", (e) => {
                 if (e.code === "ENOENT") {
@@ -401,6 +410,8 @@ export class Control {
     }
     isPostgresRunning() {
         return new Promise((resolve) => {
+            if (this.quitting)
+                resolve(false);
             const postgres = spawn("pg_isready");
             postgres.on("error", (e) => {
                 if (e.code === "ENOENT") {
