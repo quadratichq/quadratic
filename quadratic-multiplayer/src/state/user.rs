@@ -191,10 +191,8 @@ impl State {
                         user.state.follow = None;
                     } else {
                         user.state.follow = if let Ok(uuid) = Uuid::parse_str(&follow) {
-                            dbg!("got follow id");
                             Some(uuid)
                         } else {
-                            dbg!("failed to get follow id");
                             None
                         };
                     }
@@ -281,5 +279,183 @@ mod tests {
             .last_heartbeat;
 
         assert!(old_heartbeat < new_heartbeat);
+    }
+
+    #[tokio::test]
+    async fn follow_updates() {
+        let (state, _, file_id, user) = setup().await;
+
+        let mut user_state = UserStateUpdate::default();
+        user_state.follow = Some(user.session_id.to_string());
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.follow, Some(user.session_id));
+
+        let mut user_state = UserStateUpdate::default();
+        user_state.follow = Some("".to_string());
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.follow, None);
+    }
+
+    #[tokio::test]
+    async fn follow_updates_invalid_uuid() {
+        let (state, _, file_id, user) = setup().await;
+
+        let mut user_state = UserStateUpdate::default();
+        user_state.follow = Some("invalid".to_string());
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.follow, None);
+    }
+
+    #[tokio::test]
+    async fn user_visible_update() {
+        let (state, _, file_id, user) = setup().await;
+
+        let mut user_state = UserStateUpdate::default();
+        user_state.visible = Some(false);
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.visible, false);
+
+        let mut user_state = UserStateUpdate::default();
+        user_state.visible = Some(true);
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.visible, true);
+    }
+
+    #[tokio::test]
+    async fn user_sheet_id_update() {
+        let (state, _, file_id, user) = setup().await;
+
+        let mut user_state = UserStateUpdate::default();
+        let sheet_id = Uuid::new_v4();
+        user_state.sheet_id = Some(sheet_id);
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.sheet_id, sheet_id);
+
+        let mut user_state = UserStateUpdate::default();
+        let sheet_id = Uuid::new_v4();
+        user_state.sheet_id = Some(sheet_id);
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.sheet_id, sheet_id);
+    }
+
+    #[tokio::test]
+    async fn user_cell_edit_update() {
+        let (state, _, file_id, user) = setup().await;
+
+        let mut user_state = UserStateUpdate::default();
+        let cell_edit = CellEdit {
+            active: true,
+            text: "hello".to_string(),
+            cursor: 0,
+            code_editor: false,
+            bold: None,
+            italic: None,
+        };
+        user_state.cell_edit = Some(cell_edit.clone());
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.cell_edit, cell_edit);
+
+        let mut user_state = UserStateUpdate::default();
+        let cell_edit = CellEdit {
+            active: false,
+            text: "hello".to_string(),
+            cursor: 0,
+            code_editor: false,
+            bold: None,
+            italic: None,
+        };
+        user_state.cell_edit = Some(cell_edit.clone());
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert_eq!(user.state.cell_edit, cell_edit);
     }
 }
