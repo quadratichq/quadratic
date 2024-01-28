@@ -51,6 +51,7 @@ export class Multiplayer {
   private lastMouseMove: { x: number; y: number } | undefined;
 
   private connectionTimeout: number | undefined;
+  brokenConnection = false;
 
   // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
@@ -78,6 +79,13 @@ export class Multiplayer {
       this.state = 'no internet';
       this.websocket?.close();
     });
+
+    const alertUser = (e: BeforeUnloadEvent) => {
+      if (this.state === 'syncing') {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', alertUser);
   }
 
   get state() {
@@ -132,23 +140,27 @@ export class Multiplayer {
 
       this.websocket.addEventListener('close', () => {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
+        this.brokenConnection = true;
         this.state = 'waiting to reconnect';
+        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('error', (e) => {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
+        this.brokenConnection = true;
         this.state = 'waiting to reconnect';
+        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket connected.');
+        this.brokenConnection = false;
         this.state = 'connected';
         this.enterFileRoom();
         this.waitingForConnection.forEach((resolve) => resolve(0));
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
         window.addEventListener('change-sheet', this.sendChangeSheet);
-
         if (!this.updateId) {
           this.updateId = window.setInterval(multiplayer.update, UPDATE_TIME);
         }

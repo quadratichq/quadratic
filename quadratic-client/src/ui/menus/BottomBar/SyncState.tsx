@@ -19,7 +19,12 @@ export default function SyncState() {
   let icon: JSX.Element;
   let message: string | JSX.Element;
 
-  if (['not connected', 'connecting', 'waiting to reconnect', 'startup'].includes(syncState)) {
+  if (['waiting to reconnect', 'connecting'].includes(syncState) && multiplayer.brokenConnection) {
+    icon = <CircularProgress size="0.5rem" />;
+    message = <span style={{ color: theme.palette.error.main }}>Reconnecting…</span>;
+    tooltip =
+      'Attempting to connect to the Quadratic server after losing connection. Your changes may only be saved locally…';
+  } else if (['not connected', 'connecting', 'waiting to reconnect', 'startup'].includes(syncState)) {
     icon = <CircularProgress size="0.5rem" />;
     message = <span>Connecting…</span>;
     tooltip = 'Connecting to the Quadratic server…';
