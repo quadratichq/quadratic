@@ -80,6 +80,8 @@ export class Multiplayer {
       this.websocket?.close();
     });
 
+    // this is only a partial solution mostly for desktop
+    // see https://www.igvita.com/2015/11/20/dont-lose-user-and-app-state-use-page-visibility/ for a further discussion
     const alertUser = (e: BeforeUnloadEvent) => {
       if (this.state === 'syncing') {
         e.preventDefault();
