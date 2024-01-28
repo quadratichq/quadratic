@@ -482,4 +482,52 @@ pub(crate) mod tests {
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
     }
+
+    #[tokio::test]
+    async fn enter_room_follow() {
+        let (state, file_id, user_1) = setup().await;
+        let user_2 = add_new_user_to_room(file_id, state.clone()).await;
+
+        let _enter_room = MessageRequest::EnterRoom {
+            session_id: user_2.session_id,
+            user_id: user_2.user_id,
+            file_id,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test".to_string(),
+            image: "test".to_string(),
+            sheet_id: Uuid::new_v4(),
+            selection: "test".to_string(),
+            cell_edit: CellEdit {
+                text: "test".to_string(),
+                cursor: 0,
+                active: true,
+                code_editor: false,
+                bold: None,
+                italic: None,
+            },
+            viewport: "test".to_string(),
+            follow: Some(user_1.session_id.to_string()),
+        };
+
+        // todo: need to create a mock? socket to call the rest of this
+
+        // handle_message(
+        //     enter_room,
+        //     Arc::clone(&state),
+        //     Arc::clone(&user_2.socket.unwrap()),
+        //     PreConnection {
+        //         id: Uuid::new_v4(),
+        //         jwt: None,
+        //     },
+        // )
+        // .await
+        // .unwrap();
+
+        // let room = state.get_room(&file_id).await.unwrap();
+        // assert_eq!(
+        //     room.users.get(&user_2.session_id).unwrap().state.follow,
+        //     Some(user_1.session_id)
+        // );
+    }
 }
