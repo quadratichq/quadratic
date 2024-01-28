@@ -364,6 +364,7 @@ export class Multiplayer {
       if (user.session_id === this.sessionId) {
         this.index = user.index;
         this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
+        console.log(this.index);
       } else {
         let player = this.users.get(user.session_id);
         if (player) {
@@ -393,7 +394,7 @@ export class Multiplayer {
             color: MULTIPLAYER_COLORS_TINT[user.index % MULTIPLAYER_COLORS_TINT.length],
             colorString: MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length],
             visible: false,
-            index: this.users.size,
+            index: user.index,
             viewport: user.viewport,
             code_running: user.code_running,
             parsedCodeRunning: user.code_running ? JSON.parse(user.code_running) : [],

@@ -22,8 +22,13 @@ export const useMultiplayerUsers = (): { users: MultiplayerUser[]; followers: st
     const users = multiplayer.getUsers();
     setUsers(users.sort((a, b) => a.index - b.index));
     setFollowers(users.filter((user) => user.follow === multiplayer.sessionId).map((user) => user.session_id));
-    const handleUpdate = (e: any) => setUsers(e.detail);
+
+    const handleUpdate = (e: any) => {
+      const users = e.detail as MultiplayerUser[];
+      setUsers(users.sort((a, b) => a.index - b.index));
+    };
     window.addEventListener('multiplayer-update', handleUpdate);
+
     return () => window.removeEventListener('multiplayer-update', handleUpdate);
   }, [editorInteractionState.follow]);
 

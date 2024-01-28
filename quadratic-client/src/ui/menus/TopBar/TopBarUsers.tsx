@@ -1,4 +1,5 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { TooltipHint } from '@/ui/components/TooltipHint';
@@ -17,6 +18,13 @@ export const TopBarUsers = () => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { users, followers } = useMultiplayerUsers();
 
+  const anonymous = !user
+    ? {
+        index: multiplayer.index,
+        colorString: MULTIPLAYER_COLORS[(multiplayer.index ?? 0) % MULTIPLAYER_COLORS.length],
+      }
+    : undefined;
+
   return (
     <>
       <AvatarGroup
@@ -34,10 +42,11 @@ export const TopBarUsers = () => {
         {
           <div className={`ml-2`}>
             <You
-              displayName={displayName(user, true)}
-              initial={displayInitials(user)}
+              displayName={displayName(user ?? anonymous, true)}
+              initial={displayInitials(user ?? anonymous)}
               picture={user?.picture ?? ''}
               border={multiplayer.colorString ?? 'black'}
+              bgColor={multiplayer.colorString}
             />
           </div>
         }
@@ -67,17 +76,19 @@ function You({
   initial,
   picture,
   border,
+  bgColor,
 }: {
   displayName: string;
   initial: string;
   picture: string;
   border: string;
+  bgColor?: string;
 }) {
   return (
     <TooltipHint title={displayName}>
       <Avatar
         sx={{
-          bgcolor: colors.quadraticSecondary,
+          bgcolor: bgColor ?? colors.quadraticSecondary,
           ...sharedAvatarSxProps,
         }}
         alt={displayName}
