@@ -1,5 +1,4 @@
-import { Switch } from '@/shadcn/ui/switch';
-import { cn } from '@/shadcn/utils';
+import { SwitchApp } from '@/shadcn/ui/switch';
 import { Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -82,8 +81,8 @@ export const TopBar = () => {
         {isDesktop && !isEmbed && (
           <>
             <TopBarUsers />
-            <Tooltip title={`Code cell outlines ${showCellTypeOutlines ? 'visible' : 'hidden'}`}>
-              <Switch className={cn('br-0')} checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
+            <Tooltip title={`${showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
+              <SwitchApp checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
             </Tooltip>
             <TopBarShareButton />
           </>

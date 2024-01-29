@@ -50,6 +50,8 @@ export class Multiplayer {
   private jwt?: string | void;
   private lastMouseMove: { x: number; y: number } | undefined;
 
+  private connectionTimeout: number | undefined;
+
   // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
 
@@ -155,11 +157,12 @@ export class Multiplayer {
   }
 
   private reconnect = () => {
-    if (this.state === 'waiting to reconnect' || this.state === 'no internet') return;
+    if (this.state === 'no internet' || this.connectionTimeout) return;
     console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
-    setTimeout(async () => {
+    this.connectionTimeout = window.setTimeout(async () => {
       this.state = 'not connected';
+      this.connectionTimeout = undefined;
       await this.init();
     }, RECONNECT_AFTER_ERROR_TIMEOUT);
   };
@@ -201,8 +204,7 @@ export class Multiplayer {
 
   // called by Update.ts
   private update = () => {
-    if (!navigator.onLine || this.state === 'no internet') return;
-    if (this.state !== 'connected') return;
+    if (!navigator.onLine || this.state !== 'connected') return;
     const now = performance.now();
 
     if (Object.keys(this.userUpdate.update).length > 0) {
@@ -314,7 +316,7 @@ export class Multiplayer {
 
   async sendTransaction(id: string, operations: string) {
     await this.init();
-
+    if (!this.websocket) throw new Error('Expected websocket to be defined in sendTransaction');
     // it's possible that we try to send a transaction before we've entered a room (eg, unsent_transactions)
     if (!this.fileId) return;
     const message: SendTransaction = {
@@ -325,13 +327,13 @@ export class Multiplayer {
       operations,
     };
     this.state = 'syncing';
-    if (this.websocket?.OPEN) {
-      this.websocket.send(JSON.stringify(message));
-      if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
-    }
+    this.websocket.send(JSON.stringify(message));
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
   }
 
-  sendGetTransactions(min_sequence_num: bigint) {
+  async sendGetTransactions(min_sequence_num: bigint) {
+    await this.init();
+    if (!this.websocket) throw new Error('Expected websocket to be defined in sendGetTransactions');
     const message: SendGetTransactions = {
       type: 'GetTransactions',
       session_id: this.sessionId,
@@ -339,7 +341,7 @@ export class Multiplayer {
       min_sequence_num,
     };
     if (debugShowMultiplayer) console.log(`[Multiplayer] Requesting transactions starting from ${min_sequence_num}.`);
-    this.websocket!.send(JSON.stringify(message));
+    this.websocket.send(JSON.stringify(message));
     this.state = 'syncing';
   }
 

@@ -82,6 +82,7 @@ sudo docker run -d \
             --env-file .env \
             ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
 
+# TODO: In preview environments we should disable datadog
 echo 'Setting up Datadog agent'
 docker run -d --name datadog-agent \
            --env-file .env \

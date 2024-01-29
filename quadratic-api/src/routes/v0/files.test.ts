@@ -136,7 +136,6 @@ describe('READ - GET /v0/files/:uuid file shared, no auth', () => {
       .expect((res) => {
         expect(res.body.file.uuid).toBe('00000000-0000-4000-8000-000000000001');
         expect(res.body.file.name).toBe('test_file_2');
-        expect(res.body).toHaveProperty('owner');
         expect(res.body).toHaveProperty('userMakingRequest');
         expect(res.body.userMakingRequest).toHaveProperty('filePermissions');
       });
@@ -168,7 +167,7 @@ describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
         expect(res.body).toHaveProperty('file');
         expect(res.body).toHaveProperty('userMakingRequest');
         expect(res.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE']);
-        expect(res.body.owner.type).toBe('self');
+        expect(res.body.userMakingRequest.isFileOwner).toBe(true);
       }); // OK
   });
 });
@@ -185,7 +184,7 @@ describe('READ - GET /v0/files/:uuid with auth and another users file shared rea
         expect(res.body).toHaveProperty('file');
         expect(res.body).toHaveProperty('userMakingRequest');
         expect(res.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW']);
-        expect(res.body.owner.type).toBe('user');
+        expect(res.body.userMakingRequest.isFileOwner).toBe(false);
       });
   });
 });
@@ -449,7 +448,7 @@ describe('DELETE - DELETE /v0/files/:uuid with auth and owned file', () => {
       .set('Accept', 'application/json')
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
-      .expect(400); // Not Found
+      .expect(410);
 
     expect(res2.body).toMatchObject({ error: { message: 'File has been deleted' } });
   });
