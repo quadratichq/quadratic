@@ -1,11 +1,10 @@
-import { v4 as uuid } from 'uuid';
-
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { v4 as uuid } from 'uuid';
 import { downloadQuadraticFile } from '../helpers/downloadFileInBrowser';
 import { generateKeyBetween } from '../utils/fractionalIndexing';
 import { fetchFromApi } from './fetchFromApi';
-import { ApiSchemas, ApiTypes } from './types';
 
 const DEFAULT_FILE: any = {
   sheets: [
@@ -27,97 +26,191 @@ const DEFAULT_FILE: any = {
 };
 
 export const apiClient = {
-  async getFiles() {
-    return fetchFromApi<ApiTypes['/v0/files.GET.response']>(
-      `/v0/files`,
-      { method: 'GET' },
-      ApiSchemas['/v0/files.GET.response']
-    );
-  },
-
-  async getFile(uuid: string) {
-    return fetchFromApi<ApiTypes['/v0/files/:uuid.GET.response']>(
-      `/v0/files/${uuid}`,
-      { method: 'GET' },
-      ApiSchemas['/v0/files/:uuid.GET.response']
-    );
-  },
-
-  async createFile(
-    body: ApiTypes['/v0/files.POST.request'] = {
-      name: 'Untitled',
-      contents: JSON.stringify(DEFAULT_FILE),
-      version: DEFAULT_FILE.version,
-    }
-  ) {
-    return fetchFromApi<ApiTypes['/v0/files.POST.response']>(
-      `/v0/files/`,
-      { method: 'POST', body: JSON.stringify(body) },
-      ApiSchemas['/v0/files.POST.response']
-    );
-  },
-
-  async downloadFile(uuid: string) {
-    mixpanel.track('[Files].downloadFile', { id: uuid });
-    return this.getFile(uuid).then((json) => downloadQuadraticFile(json.file.name, json.file.contents));
-  },
-
-  async deleteFile(uuid: string) {
-    mixpanel.track('[Files].deleteFile', { id: uuid });
-    return fetchFromApi<ApiTypes['/v0/files/:uuid.DELETE.response']>(
-      `/v0/files/${uuid}`,
-      { method: 'DELETE' },
-      ApiSchemas['/v0/files/:uuid.DELETE.response']
-    );
-  },
-
-  async updateFile(uuid: string, body: ApiTypes['/v0/files/:uuid.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/files/:uuid.POST.response']>(
-      `/v0/files/${uuid}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
+  teams: {
+    async list() {
+      return fetchFromApi(`/v0/teams`, { method: 'GET' }, ApiSchemas['/v0/teams.GET.response']);
+    },
+    async get(uuid: string) {
+      return fetchFromApi(`/v0/teams/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
+    },
+    async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.POST.request']) {
+      return fetchFromApi(
+        `/v0/teams/${uuid}`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/teams/:uuid.POST.response']
+      );
+    },
+    async create(body: ApiTypes['/v0/teams.POST.request']) {
+      return fetchFromApi(
+        `/v0/teams`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/teams.POST.response']
+      );
+    },
+    invites: {
+      async create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/invites`,
+          {
+            method: 'POST',
+            body: JSON.stringify(body),
+          },
+          ApiSchemas['/v0/teams/:uuid/invites.POST.response']
+        );
       },
-      ApiSchemas['/v0/files/:uuid.POST.response']
-    );
+      async delete(uuid: string, inviteId: string) {
+        console.log(`DELETE to /v0/teams/${uuid}/invites/${inviteId}`);
+        return fetchFromApi(
+          `/v0/teams/${uuid}/invites/${inviteId}`,
+          {
+            method: 'DELETE',
+          },
+          ApiSchemas['/v0/teams/:uuid/invites/:inviteId.DELETE.response']
+        );
+      },
+    },
+    users: {
+      async update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request']) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/users/${userId}`,
+          { method: 'POST', body: JSON.stringify(body) },
+          ApiSchemas['/v0/teams/:uuid/users/:userId.POST.response']
+        );
+      },
+      async delete(uuid: string, userId: string) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/users/${userId}`,
+          { method: 'DELETE' },
+          ApiSchemas['/v0/teams/:uuid/users/:userId.DELETE.response']
+        );
+      },
+    },
   },
 
-  async updateFileThumbnail(uuid: string, thumbnail: Blob) {
-    const formData = new FormData();
-    formData.append('thumbnail', thumbnail, 'thumbnail.png');
+  files: {
+    async list({ shared }: { shared?: 'with-me' } = {}) {
+      const url = `/v0/files${shared ? `?shared=${shared}` : ''}`;
+      return fetchFromApi(url, { method: 'GET' }, ApiSchemas['/v0/files.GET.response']);
+    },
+    async get(uuid: string) {
+      return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
+    },
+    async create(
+      body: ApiTypes['/v0/files.POST.request'] = {
+        name: 'Untitled',
+        contents: JSON.stringify(DEFAULT_FILE),
+        version: DEFAULT_FILE.version,
+      }
+    ) {
+      return fetchFromApi(
+        `/v0/files/`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/files.POST.response']
+      );
+    },
+    async delete(uuid: string) {
+      mixpanel.track('[Files].deleteFile', { id: uuid });
+      return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
+    },
+    async download(uuid: string) {
+      mixpanel.track('[Files].downloadFile', { id: uuid });
+      const { file } = await this.get(uuid);
+      const checkpointUrl = file.lastCheckpointDataUrl;
+      const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
+      downloadQuadraticFile(file.name, checkpointData);
+    },
+    async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
+      return fetchFromApi(
+        `/v0/files/${uuid}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        },
+        ApiSchemas['/v0/files/:uuid.PATCH.response']
+      );
+    },
+    thumbnail: {
+      async update(uuid: string, thumbnail: Blob) {
+        const formData = new FormData();
+        formData.append('thumbnail', thumbnail, 'thumbnail.png');
 
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/thumbnail.POST.response']>(
-      `/v0/files/${uuid}/thumbnail`,
-      {
-        method: 'POST',
-        body: formData,
+        return fetchFromApi(
+          `/v0/files/${uuid}/thumbnail`,
+          {
+            method: 'POST',
+            body: formData,
+          },
+          ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
+        );
       },
-      ApiSchemas['/v0/files/:uuid/thumbnail.POST.response']
-    );
-  },
-
-  async getFileSharing(uuid: string) {
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.GET.response']>(
-      `/v0/files/${uuid}/sharing`,
-      {
-        method: 'GET',
+    },
+    sharing: {
+      async get(uuid: string) {
+        return fetchFromApi(
+          `/v0/files/${uuid}/sharing`,
+          {
+            method: 'GET',
+          },
+          ApiSchemas['/v0/files/:uuid/sharing.GET.response']
+        );
       },
-      ApiSchemas['/v0/files/:uuid/sharing.GET.response']
-    );
-  },
-  async updateFileSharing(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/files/:uuid/sharing.POST.response']>(
-      `/v0/files/${uuid}/sharing`,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
+      async update(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
+        mixpanel.track('[FileSharing].publicLinkAccess.update', { value: body.publicLinkAccess });
+        return fetchFromApi(
+          `/v0/files/${uuid}/sharing`,
+          {
+            method: 'PATCH',
+            body: JSON.stringify(body),
+          },
+          ApiSchemas['/v0/files/:uuid/sharing.PATCH.response']
+        );
       },
-      ApiSchemas['/v0/files/:uuid/sharing.POST.response']
-    );
+    },
+    invites: {
+      async create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
+        mixpanel.track('[FileSharing].invite.create');
+        return fetchFromApi(
+          `/v0/files/${uuid}/invites`,
+          {
+            method: 'POST',
+            body: JSON.stringify(body),
+          },
+          ApiSchemas['/v0/files/:uuid/invites.POST.response']
+        );
+      },
+      async delete(uuid: string, inviteId: string) {
+        mixpanel.track('[FileSharing].invite.delete');
+        return fetchFromApi(
+          `/v0/files/${uuid}/invites/${inviteId}`,
+          {
+            method: 'DELETE',
+          },
+          ApiSchemas['/v0/files/:uuid/invites/:inviteId.DELETE.response']
+        );
+      },
+    },
+    users: {
+      async update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
+        mixpanel.track('[FileSharing].users.updateRole');
+        return fetchFromApi(
+          `/v0/files/${uuid}/users/${userId}`,
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/files/:uuid/users/:userId.PATCH.response']
+        );
+      },
+      async delete(uuid: string, userId: string) {
+        mixpanel.track('[FileSharing].users.remove');
+        return fetchFromApi(
+          `/v0/files/${uuid}/users/${userId}`,
+          { method: 'DELETE' },
+          ApiSchemas['/v0/files/:uuid/users/:userId.DELETE.response']
+        );
+      },
+    },
   },
 
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
-    return fetchFromApi<ApiTypes['/v0/feedback.POST.response']>(
+    return fetchFromApi(
       `/v0/feedback`,
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/feedback.POST.response']

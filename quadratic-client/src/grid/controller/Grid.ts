@@ -1,7 +1,8 @@
-import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
+import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
-import { debugMockLargeData } from '../../debugFlags';
+import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -9,13 +10,10 @@ import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
   BorderSelection,
   BorderStyle,
-  CodeCell,
-  CodeCellLanguage,
   GridController,
   JsCodeResult,
   JsComputeGetCells,
   JsRenderBorders,
-  JsRenderCodeCell,
   MinMax,
   Pos,
   Rect as RectInternal,
@@ -26,10 +24,13 @@ import {
   CellAlign,
   CellFormatSummary,
   CellWrap,
+  CodeCellLanguage,
   FormattingSummary,
   JsClipboard,
+  JsCodeCell,
   JsHtmlOutput,
   JsRenderCell,
+  JsRenderCodeCell,
   JsRenderFill,
   Rect,
   TransactionSummary,
@@ -68,14 +69,15 @@ export const rectToPoint = (rect: Rect): Point => {
 };
 
 export const upgradeFileRust = async (
-  grid: GridFile
+  grid: GridFile,
+  lastSequenceNum: number
 ): Promise<{
   contents: string;
   version: string;
 } | null> => {
   await init();
   try {
-    const gc = GridController.newFromFile(JSON.stringify(grid));
+    const gc = GridController.newFromFile(JSON.stringify(grid), lastSequenceNum);
     const contents = gc.exportToFile();
     return { contents: contents, version: gc.getVersion() };
   } catch (e) {
@@ -87,7 +89,6 @@ export const upgradeFileRust = async (
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;
-  private _dirty = false;
   thumbnailDirty = false;
 
   transactionResponse(summary: TransactionSummary) {
@@ -107,18 +108,17 @@ export class Grid {
       sheets.updateOffsets(summary.offsets_modified);
       pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
       htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
+      pixiApp.cursor.dirty = true;
+      pixiApp.multiplayerCursor.dirty = true;
     }
 
     if (summary.code_cells_modified.length) {
       pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+      window.dispatchEvent(new CustomEvent('code-cells-update'));
     }
 
     if (summary.border_sheets_modified.length) {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
-    }
-
-    if (summary.transaction_busy) {
-      window.dispatchEvent(new CustomEvent('transaction-busy'));
     }
 
     if (summary.generate_thumbnail) {
@@ -135,38 +135,36 @@ export class Grid {
       sheets.sheet.cursor.load(cursor);
     }
     if (summary.save) {
-      this.dirty = true;
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
+
+    // multiplayer transactions
+    if (summary.operations) {
+      multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
+    }
+
+    if (summary.request_transactions) {
+      multiplayer.sendGetTransactions(summary.request_transactions);
+    }
+
+    // todo: this should not be necessary as Update.ts should take care of it; right now
+    //       it renders every time it receives a heartbeat. not a big deal but worth fixing.
     pixiApp.setViewportDirty();
   }
 
-  get dirty(): boolean {
-    // the sheet is never dirty when mocking large data (to stop it from saving over an actual file)
-    return debugMockLargeData ? false : this._dirty;
-  }
-  set dirty(value: boolean) {
-    this._dirty = value;
-  }
-
-  // this cannot be called in the constructor as Rust is not yet loaded
-  init() {
-    this.gridController = new GridController();
+  test() {
+    this.gridController = GridController.test();
   }
 
   // import/export
-  openFromContents(contents: string): boolean {
+  openFromContents(contents: string, lastSequenceNum: number): boolean {
     try {
-      this.gridController = GridController.newFromFile(contents);
+      this.gridController = GridController.newFromFile(contents, lastSequenceNum);
       return true;
     } catch (e) {
       console.warn(e);
       return false;
     }
-  }
-
-  populateWithRandomFloats(sheetId: string, width: number, height: number) {
-    this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
   }
 
   export(): string {
@@ -267,7 +265,7 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
-    return !summary.transaction_busy;
+    return summary.complete;
   }
 
   deleteCellValues(sheetId: string, rectangle: Rectangle) {
@@ -407,8 +405,8 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
-  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
-    const summary = await this.gridController.setRegionBorders(
+  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    const summary = this.gridController.setRegionBorders(
       sheetId,
       rectangleToRect(rectangle),
       selection,
@@ -416,7 +414,6 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
-    this.dirty = true;
   }
 
   setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number) {
@@ -461,7 +458,7 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  getCodeCell(sheetId: string, x: number, y: number): CodeCell | undefined {
+  getCodeCell(sheetId: string, x: number, y: number): JsCodeCell | undefined {
     return this.gridController.getCodeCell(sheetId, new Pos(x, y));
   }
 
@@ -690,42 +687,32 @@ export class Grid {
   //#region Compute
 
   calculationComplete(result: JsCodeResult) {
-    const summary = this.gridController.calculationComplete(result);
-    this.transactionResponse(summary);
-  }
-
-  getTransactionResponse(): TransactionSummary | undefined {
-    return this.gridController.getCalculationTransactionSummary();
+    const summaryResult = this.gridController.calculationComplete(result);
+    if (summaryResult.Ok) {
+      this.transactionResponse(summaryResult.Ok);
+    } else {
+      throw new Error(summaryResult.Err);
+    }
   }
 
   // returns undefined if there was an error fetching cells (eg, invalid sheet name)
   calculationGetCells(
+    transactionId: string,
     rect: RectInternal,
     sheetName: string | undefined,
     lineNumber: number | undefined
   ): { x: number; y: number; value: string }[] | undefined {
-    const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
-    const array = this.gridController.calculationGetCells(getCells);
-    if (array) {
-      // indication that getCells resulted in an error
-      // we get the transactionResponse via a rust call b/c of the way types are converted :(
-      if (array.transaction_response) {
-        const transactionSummary = this.getTransactionResponse();
-        if (transactionSummary) {
-          this.transactionResponse(transactionSummary);
-        }
-        return;
-      }
-      let cell = array.next();
-      const results: { x: number; y: number; value: string }[] = [];
-      while (cell) {
-        const pos = cell.getPos();
-        const value = cell.getValue();
-        results.push({ x: Number(pos.x), y: Number(pos.y), value: value });
-        cell = array.next();
-      }
-      array.free();
-      return results;
+    const getCells = new JsComputeGetCells(
+      transactionId,
+      rect,
+      sheetName,
+      lineNumber === undefined ? undefined : BigInt(lineNumber)
+    );
+    const result = this.gridController.calculationGetCells(getCells);
+    if (result.Err) {
+      this.transactionResponse(result.Err);
+    } else if (result.response) {
+      return result.response;
     }
   }
 
@@ -743,17 +730,53 @@ export class Grid {
   }
 
   //#endregion
+
+  //#region Multiplayer
+  //-----------------
+
+  multiplayerTransaction(transactionId: string, sequenceNum: number, operations: string) {
+    const summary = this.gridController.multiplayerTransaction(transactionId, sequenceNum, operations);
+    this.transactionResponse(summary);
+  }
+
+  setMultiplayerSequenceNum(sequenceNum: number) {
+    this.gridController.setMultiplayerSequenceNum(sequenceNum);
+  }
+
+  receiveSequenceNum(sequenceNum: number) {
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Server is at sequence_num ${sequenceNum}.`);
+    const summary = this.gridController.receiveSequenceNum(sequenceNum);
+    this.transactionResponse(summary);
+  }
+
+  receiveMultiplayerTransactions(transactions: string) {
+    if (debugShowMultiplayer) console.log('[Multiplayer] Received catch-up transactions.');
+    const summaryResponse = this.gridController.receiveMultiplayerTransactions(transactions);
+    if (summaryResponse.Ok) {
+      this.transactionResponse(summaryResponse.Ok);
+    } else {
+      console.error(summaryResponse.Err);
+      throw new Error(summaryResponse.Err);
+    }
+  }
+
+  applyOfflineUnsavedTransaction(transactionId: string, transaction: string) {
+    if (debugShowMultiplayer) console.log('[Multiplayer] Applying an offline unsaved transaction.');
+    const summaryResponse = this.gridController.applyOfflineUnsavedTransaction(transactionId, transaction);
+    this.transactionResponse(summaryResponse);
+  }
+
+  //#endregion
 }
 
 //#end
 
-export const grid = GridPerformanceProxy(new Grid());
+let gridCreate: Grid;
 
-// workaround so Rust can import TS functions
-declare global {
-  interface Window {
-    transactionSummary: any;
-  }
+if (debugDisableProxy) {
+  gridCreate = new Grid();
+} else {
+  gridCreate = GridPerformanceProxy(new Grid());
 }
 
-window.transactionSummary = grid.transactionResponse.bind(grid);
+export const grid = gridCreate;

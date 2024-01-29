@@ -19,7 +19,7 @@ import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szh
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { downloadSelectionAsCsvAction, isEditorOrAbove } from '../../../actions';
+import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
@@ -89,7 +89,6 @@ export const FloatingContextMenu = (props: Props) => {
     let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
 
     const menuHeight = menuDiv.current?.clientHeight || 0;
-    // const menuwidth = menuDiv.current?.clientWidth || 0;
 
     let x = cell_offset_scaled.x + container.offsetLeft - 20;
     let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
@@ -118,7 +117,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (pixiAppSettings.presentationMode) visibility = 'hidden';
 
     // Hide if you don't have edit access
-    if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
+    if (!hasPermissionToEditFile(editorInteractionState.permissions)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheet.getCellOffsets(
@@ -162,7 +161,7 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [container, showContextMenu, editorInteractionState.permission, moreMenuToggle]);
+  }, [container, showContextMenu, editorInteractionState.permissions, moreMenuToggle]);
 
   useEffect(() => {
     const { viewport } = pixiApp;
@@ -171,11 +170,13 @@ export const FloatingContextMenu = (props: Props) => {
     viewport.on('moved', updateContextMenuCSSTransform);
     viewport.on('moved-end', updateContextMenuCSSTransform);
     document.addEventListener('pointerup', updateContextMenuCSSTransform);
+    window.addEventListener('resize', updateContextMenuCSSTransform);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
       viewport.removeListener('moved-end', updateContextMenuCSSTransform);
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
+      window.removeEventListener('resize', updateContextMenuCSSTransform);
     };
   }, [updateContextMenuCSSTransform]);
 

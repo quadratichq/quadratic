@@ -1,19 +1,41 @@
+import { apiClient } from '@/api/apiClient';
+import { AvatarWithLetters } from '@/components/AvatarWithLetters';
+import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { TeamAction } from '@/routes/teams.$uuid';
 import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
-import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
+import * as Sentry from '@sentry/react';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigation } from 'react-router-dom';
+import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import QuadraticLogo from './quadratic-logo.svg';
 import QuadraticLogotype from './quadratic-logotype.svg';
 
 const drawerWidth = 264;
+
+type LoaderData = {
+  teams: ApiTypes['/v0/teams.GET.response'];
+  hasError: boolean;
+};
+
+export const loader = async (): Promise<LoaderData> => {
+  let hasError = false;
+  const teams = await apiClient.teams.list().catch((err) => {
+    Sentry.captureException(err);
+
+    hasError = true;
+    return [];
+  });
+  return { teams, hasError };
+};
 
 export const Component = () => {
   const navigation = useNavigation();
@@ -59,41 +81,101 @@ export const Component = () => {
 };
 
 function Navbar() {
-  const { user } = useRootRouteLoaderData();
+  const { teams, hasError } = useLoaderData() as LoaderData;
+  const { loggedInUser: user } = useRootRouteLoaderData();
+  const fetchers = useFetchers();
+  const navigation = useNavigation();
+  const classNameIcons = `h-5 w-5 mx-0.5`;
 
   return (
-    <nav className={`flex h-full flex-col justify-between px-4 pb-2 pt-4`}>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div className={`flex items-center justify-between`}>
-          <SidebarNavLink to="/" className={`pr-3`} isLogo={true}>
+    <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
+      <div className={`flex flex-col`}>
+        <div className={`flex items-center lg:justify-between`}>
+          <SidebarNavLink to="/files" className={`pr-3`} isLogo={true}>
             <div className={`flex w-5 items-center justify-center`}>
               <img src={QuadraticLogo} alt="Quadratic logo glyph" />
             </div>
             <img src={QuadraticLogotype} alt="Quadratic logotype" />
           </SidebarNavLink>
+          {navigation.state === 'loading' && <CircularProgress size={18} className="mr-3" />}
         </div>
 
-        <div className="mt-4 grid gap-1">
+        <Type
+          as="h3"
+          variant="overline"
+          className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
+        >
+          Files
+        </Type>
+
+        <div className="grid gap-1">
           <SidebarNavLink to={ROUTES.FILES}>
-            <FileIcon className="h-5 w-5" />
-            My files
+            <FileIcon className={classNameIcons} />
+            Mine
+          </SidebarNavLink>
+          <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
+            <PersonIcon className={classNameIcons} />
+            Shared with me
           </SidebarNavLink>
           <SidebarNavLink to={ROUTES.EXAMPLES}>
-            <MixIcon className="h-5 w-5" />
+            <MixIcon className={classNameIcons} />
             Examples
           </SidebarNavLink>
         </div>
 
-        <p className={`${TYPE.overline} mt-6 text-muted-foreground`}>Teams</p>
-        <SidebarNavLink to={ROUTES.TEAMS}>
-          <PersonIcon className="h-5 w-5" />
-          My team
-        </SidebarNavLink>
+        {false && (
+          <>
+            <Type as="h3" className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}>
+              <span className={`${TYPE.overline}`}>Teams</span>{' '}
+              {hasError && (
+                <span className="text-xs text-destructive">
+                  Failed to load,{' '}
+                  <a href="." className="underline">
+                    refresh
+                  </a>
+                </span>
+              )}
+            </Type>
+            <div className="grid gap-1">
+              {teams.map(({ uuid, name, picture }) => {
+                // TODO: can we refine this?
+                // See if this team has an inflight fetcher that's updating team info
+                const inFlightFetcher = fetchers.find(
+                  (fetcher) =>
+                    fetcher.state !== 'idle' &&
+                    fetcher.formAction?.includes(uuid) &&
+                    fetcher.json &&
+                    typeof fetcher.json === 'object' &&
+                    (fetcher.json as TeamAction['request.update-team']).intent === 'update-team'
+                );
+                // If it does, use its data
+                if (inFlightFetcher) {
+                  const data = inFlightFetcher.json as TeamAction['request.update-team'];
+                  if (data.name) name = data.name;
+                  if (data.picture) picture = data.picture;
+                }
+
+                return (
+                  <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
+                    <AvatarWithLetters size="small" src={picture}>
+                      {name}
+                    </AvatarWithLetters>
+                    {name}
+                  </SidebarNavLink>
+                );
+              })}
+              <SidebarNavLink to={ROUTES.CREATE_TEAM}>
+                <PlusIcon className={classNameIcons} />
+                Create
+              </SidebarNavLink>
+            </div>
+          </>
+        )}
       </div>
       <div>
         <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>
           Docs
-          <ExternalLinkIcon className="ml-auto h-5 w-5 text-inherit opacity-50" />
+          <ExternalLinkIcon className={cn(classNameIcons, `ml-auto text-inherit opacity-50`)} />
         </SidebarNavLink>
         <Separator className="my-2" />
         <SidebarNavLink to={ROUTES.ACCOUNT}>
@@ -135,16 +217,13 @@ function SidebarNavLink({
       {...(target ? { target } : {})}
       to={to}
       className={cn(
-        isActive && 'bg-muted',
+        isActive && !isLogo && 'bg-muted',
         TYPE.body2,
         `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,
         className
       )}
     >
       {children}
-      {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
-        <CircularProgress size={18} sx={{ ml: 'auto' }} />
-      )}
     </NavLink>
   );
 }

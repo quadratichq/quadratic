@@ -15,7 +15,9 @@ export class Update {
   private raf?: number;
   private fps?: FPS;
   private lastViewportPosition: Point = new Point();
-  private lastViewportScale = 1;
+
+  // setting this to 0 ensures that on initial render, the viewport is properly scaled and updated
+  private lastViewportScale = 0;
 
   constructor() {
     if (debugShowFPS) {
@@ -78,13 +80,16 @@ export class Update {
       pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
+      pixiApp.multiplayerCursor.dirty ||
       pixiApp.cursor.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
         `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}${
           pixiApp.axesLines.dirty ? 'axesLines ' : ''
-        }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}`
+        }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}${
+          pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''
+        }`
       );
     }
 
@@ -99,7 +104,8 @@ export class Update {
     debugTimeCheck('[Update] boxCells');
     pixiApp.cursor.update();
     debugTimeCheck('[Update] cursor');
-    debugTimeReset();
+    pixiApp.multiplayerCursor.update();
+    debugTimeCheck('[Update] multiplayerCursor');
     pixiApp.cellsSheets.update();
     debugTimeCheck('[Update] cellsSheets');
 
@@ -108,7 +114,6 @@ export class Update {
       pixiApp.viewport.dirty = false;
       pixiApp.renderer.render(pixiApp.stage);
       debugTimeCheck('[Update] render');
-
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
       debugShowCachedCounts();

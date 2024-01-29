@@ -2,110 +2,107 @@ use std::{self};
 
 use std::collections::HashSet;
 
-use crate::grid::{CellRef, RegionRef};
+use crate::{SheetPos, SheetRect};
 
 use super::GridController;
 
 impl GridController {
-    pub fn get_dependent_cells(&self, cell: CellRef) -> Option<HashSet<CellRef>> {
+    /// Searches all code_runs in all sheets for cells that are dependent on the given sheet_rect.
+    pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
         let mut dependent_cells = HashSet::new();
 
         self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_cells.iter().for_each(|(cell_ref, code_cell)| {
-                if let Some(output) = code_cell.output.as_ref() {
-                    if let Some(cells_accessed) = output.cells_accessed() {
-                        cells_accessed.iter().for_each(|cell_accessed| {
-                            if *cell_accessed == cell {
-                                dependent_cells.insert(*cell_ref);
-                            }
-                        });
+            sheet.code_runs.iter().for_each(|(pos, code_run)| {
+                code_run.cells_accessed.iter().for_each(|cell_accessed| {
+                    if sheet_rect.intersects(*cell_accessed) {
+                        dependent_cells.insert(pos.to_sheet_pos(sheet.id));
                     }
-                }
+                });
             });
         });
 
         if dependent_cells.is_empty() {
-            return None;
+            None
+        } else {
+            Some(dependent_cells)
         }
-
-        Some(dependent_cells)
-    }
-
-    pub fn get_dependent_cells_for_region(&self, region: RegionRef) -> Option<HashSet<CellRef>> {
-        let mut dependent_cells = HashSet::new();
-
-        self.grid.sheets().iter().for_each(|sheet| {
-            sheet.code_cells.iter().for_each(|(cell_ref, code_cell)| {
-                if let Some(output) = code_cell.output.as_ref() {
-                    if let Some(cells_accessed) = output.cells_accessed() {
-                        cells_accessed.iter().for_each(|cell_accessed| {
-                            if region.contains(cell_accessed) {
-                                dependent_cells.insert(*cell_ref);
-                            }
-                        });
-                    }
-                }
-            });
-        });
-
-        if dependent_cells.is_empty() {
-            return None;
-        }
-
-        Some(dependent_cells)
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
+
+    use chrono::Utc;
+
     use crate::{
         controller::GridController,
-        grid::{CodeCellRunOutput, CodeCellValue},
-        CellValue, Pos, Value,
+        grid::{CodeRun, CodeRunResult},
+        CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
     #[test]
     fn test_graph() {
-        let mut gc = GridController::new();
-        let cdc = gc.grid_mut();
-        let sheet_id = cdc.sheet_ids()[0];
-        let sheet = cdc.sheet_mut_from_id(sheet_id);
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
-        sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
-        let mut cells_accessed = vec![];
-        let cell_ref00 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 0 });
-        let cell_ref01 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 1 });
-        cells_accessed.push(cell_ref00);
-        cells_accessed.push(cell_ref01);
-        sheet.set_code_cell_value(
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
+        let mut cells_accessed = HashSet::new();
+        let sheet_pos_00 = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        let sheet_pos_01 = SheetPos {
+            x: 0,
+            y: 1,
+            sheet_id,
+        };
+        let sheet_rect = SheetRect {
+            min: sheet_pos_00.into(),
+            max: sheet_pos_01.into(),
+            sheet_id,
+        };
+        cells_accessed.insert(sheet_rect);
+        sheet.set_code_run(
             Pos { x: 0, y: 2 },
-            Some(CodeCellValue {
-                code_string: "1".to_string(),
-                language: crate::grid::CodeCellLanguage::Python,
+            Some(CodeRun {
                 formatted_code_string: None,
-                last_modified: String::default(),
-                output: Some(CodeCellRunOutput {
-                    std_err: None,
-                    std_out: None,
-                    result: crate::grid::CodeCellRunResult::Ok {
-                        output_value: Value::Single(CellValue::Text("test".to_string())),
-                        cells_accessed: cells_accessed.clone(),
-                    },
-                    spill: false,
-                }),
+                last_modified: Utc::now(),
+                std_err: None,
+                std_out: None,
+                spill_error: false,
+                result: CodeRunResult::Ok(Value::Single(CellValue::Text("test".to_string()))),
+                cells_accessed: cells_accessed.clone(),
             }),
         );
-        let cell_ref02 = sheet.get_or_create_cell_ref(Pos { x: 0, y: 2 });
+        let sheet_pos_02 = SheetPos {
+            x: 0,
+            y: 2,
+            sheet_id,
+        };
 
-        assert_eq!(gc.get_dependent_cells(cell_ref00).unwrap().len(), 1);
         assert_eq!(
-            gc.get_dependent_cells(cell_ref00).unwrap().iter().next(),
-            Some(&cell_ref02)
+            gc.get_dependent_code_cells(&sheet_pos_00.into())
+                .unwrap()
+                .len(),
+            1
         );
         assert_eq!(
-            gc.get_dependent_cells(cell_ref01).unwrap().iter().next(),
-            Some(&cell_ref02)
+            gc.get_dependent_code_cells(&sheet_pos_00.into())
+                .unwrap()
+                .iter()
+                .next(),
+            Some(&sheet_pos_02)
         );
-        assert_eq!(gc.get_dependent_cells(cell_ref02), None);
+        assert_eq!(
+            gc.get_dependent_code_cells(&sheet_pos_01.into())
+                .unwrap()
+                .iter()
+                .next(),
+            Some(&sheet_pos_02)
+        );
+        assert_eq!(gc.get_dependent_code_cells(&sheet_pos_02.into()), None);
     }
 }

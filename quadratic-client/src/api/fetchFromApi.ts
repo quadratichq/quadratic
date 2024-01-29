@@ -17,7 +17,11 @@ export class ApiError extends Error {
   }
 }
 
-export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
+export async function fetchFromApi<T>(
+  path: string,
+  init: RequestInit,
+  schema: z.Schema<T>
+): Promise<z.infer<typeof schema>> {
   // We'll automatically inject additional headers to the request, starting with auth
   const isAuthenticated = await authClient.isAuthenticated();
   const headers = new Headers(init.headers);

@@ -56,8 +56,10 @@ impl GridController {
     /// Returns the order string for a sheet.
     #[wasm_bindgen(js_name = "getSheetOrder")]
     pub fn js_sheet_order(&self, sheet_id: String) -> String {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let sheet = self.grid().sheet_from_id(sheet_id);
+        // todo: should return a Result
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return "a0".to_string();
+        };
         sheet.order.clone()
     }
     /// Returns the ID of the sheet at the given index.
@@ -78,15 +80,19 @@ impl GridController {
 
     #[wasm_bindgen(js_name = "getSheetName")]
     pub fn js_sheet_name(&self, sheet_id: String) -> String {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let sheet = self.grid().sheet_from_id(sheet_id);
+        // todo: should return a Result
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return "Sheet".into();
+        };
         sheet.name.clone()
     }
 
     #[wasm_bindgen(js_name = "getSheetColor")]
     pub fn js_sheet_color(&self, sheet_id: String) -> String {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let sheet = self.grid().sheet_from_id(sheet_id);
+        // todo: should return a Result
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return "".to_string();
+        };
         sheet.color.clone().unwrap_or_default()
     }
 

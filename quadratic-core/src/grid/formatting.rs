@@ -4,7 +4,24 @@ use std::ops::{BitOr, BitOrAssign};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
+use crate::RunLengthEncoding;
+
 use super::{block::SameValue, Column, ColumnData};
+
+/// Array of a single cell formatting attribute.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum CellFmtArray {
+    Align(RunLengthEncoding<Option<CellAlign>>),
+    Wrap(RunLengthEncoding<Option<CellWrap>>),
+    NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
+    NumericDecimals(RunLengthEncoding<Option<i16>>),
+    NumericCommas(RunLengthEncoding<Option<bool>>),
+    Bold(RunLengthEncoding<Option<bool>>),
+    Italic(RunLengthEncoding<Option<bool>>),
+    TextColor(RunLengthEncoding<Option<String>>),
+    FillColor(RunLengthEncoding<Option<String>>),
+    RenderSize(RunLengthEncoding<Option<RenderSize>>),
+}
 
 /// Cell formatting attribute.
 pub trait CellFmtAttr {

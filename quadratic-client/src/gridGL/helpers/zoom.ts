@@ -2,6 +2,7 @@ import { Point, Rectangle } from 'pixi.js';
 import { ZOOM_ANIMATION_TIME_MS, ZOOM_BUFFER } from '../../constants/gridConstants';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { intersects } from './intersects';
 
 export function zoomToFit(): void {
   const viewport = pixiApp.viewport;
@@ -34,9 +35,16 @@ export function zoomToFit(): void {
 }
 
 export function zoomInOut(scale: number): void {
+  const cursorPosition = sheets.sheet.cursor.getRectangle();
+  const visibleBounds = pixiApp.viewport.getVisibleBounds();
+
+  // If the center of the cell cursor's position is visible, then zoom to that point
+  const cursorWorld = sheets.sheet.getCellOffsets(cursorPosition.x, cursorPosition.y);
+  const center = new Point(cursorWorld.x + cursorWorld.width / 2, cursorWorld.y + cursorWorld.height / 2);
   pixiApp.viewport.animate({
     time: ZOOM_ANIMATION_TIME_MS,
     scale,
+    position: intersects.rectanglePoint(visibleBounds, center) ? center : undefined,
   });
 }
 
