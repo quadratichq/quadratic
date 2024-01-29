@@ -120,9 +120,11 @@ export const BottomBar = () => {
             {provideFeedbackAction.label}
           </BottomBarItem>
         )}
-        <BottomBarItem icon={<Commit fontSize="inherit" />}>
-          Quadratic {import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)
-        </BottomBarItem>
+        {showOnDesktop && (
+          <BottomBarItem icon={<Commit fontSize="inherit" />}>
+            Quadratic {import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)
+          </BottomBarItem>
+        )}
       </Stack>
     </div>
   );

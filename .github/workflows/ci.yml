@@ -15,6 +15,9 @@ jobs:
     runs-on: ubuntu-latest-8-cores
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
@@ -35,13 +38,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pkg-config
 
-      - name: Build quadratic-core
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-        run: |
-          cd quadratic-core
-          cargo build
-
       - name: Test quadratic-core
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
@@ -61,6 +57,7 @@ jobs:
             --ignore "/*" \
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov
@@ -68,20 +65,13 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Build quadratic-multiplayer
-        env:
-          RUSTFLAGS: -Cinstrument-coverage
-        run: |
-          cd quadratic-multiplayer
-          cargo build
-
       - name: Test quadratic-multiplayer
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
         run: |
           cd quadratic-multiplayer
-          cargo test # hangs forever
+          npm run docker:test
 
       - name: Generate coverage quadratic-multiplayer
         run: |
@@ -94,6 +84,8 @@ jobs:
             --ignore "/*" \
             --ignore "./src/wasm_bindings/*" \
             --ignore "./src/bin/*" \
+            --ignore "./docker/*" \
+            --ignore "./../docker/*" \
             -o lcov.info
 
       - name: Upload coverage reports to Codecov quadratic-multiplayer
@@ -109,11 +101,21 @@ jobs:
         with:
           node-version: 18
 
-      - name: Run npm test:unit:ci in quadratic-client
+      - name: Set up Rust
+        uses: moonrepo/setup-rust@v1
+        with:
+          channel: "nightly"
+
+      - uses: jetli/wasm-pack-action@v0.4.0
+
+      - name: Build quadratic-core
         run: |
-          cd quadratic-client
+          npm run build:wasm:javascript
+
+      - name: Run npm test:ts in quadratic-client
+        run: |
           npm install
-          npm run test:unit:ci
+          npm run test:ts
 
   test_python:
     runs-on: ubuntu-latest-8-cores
@@ -143,8 +145,8 @@ jobs:
 
       - name: Run npm test:ci in quadratic-api
         run: |
-          cd quadratic-api
           npm install
+          cd quadratic-api
           npm run docker:test:ci
 
   lint_rust:
@@ -185,8 +187,8 @@ jobs:
 
       - name: Lint quadratic-client
         run: |
-          cd quadratic-client
           npm install
+          cd quadratic-client
           npm run lint:prettier
           npm run lint:eslint
           npm run lint:ts

@@ -55,6 +55,11 @@ app.use((req, res, next) => {
   return next();
 });
 
+// Health-check
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'OK' });
+});
+
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
 app.use('/ai', ai_chat_router);
@@ -75,9 +80,11 @@ if (SENTRY_DSN) {
 registerRoutes().then(() => {
   // Error-logging middleware
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    if (err.status >= 500) {
-      console.error(`[${new Date().toISOString()}] ${err.message}`);
-      if (process.env.NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
+    if (process.env.NODE_ENV !== 'test') {
+      if (err.status >= 500) {
+        console.error(`[${new Date().toISOString()}] ${err.message}`);
+        if (process.env.NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
+      }
     }
     next(err);
   });

@@ -31,7 +31,7 @@ use crate::{
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
-    state::{connection::Connection, State},
+    state::{connection::PreConnection, State},
 };
 
 /// Construct the application router.  This is separated out so that it can be
@@ -63,7 +63,11 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
+
+    // TODO(ddimaria): we do this check for every WS connection.  Does this
+    // data change ofter or can it be cached?
     let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+
     let state = Arc::new(State::new(&config, Some(jwks)).await);
     let app = app(Arc::clone(&state));
 
@@ -89,8 +93,7 @@ pub(crate) async fn serve() -> Result<()> {
         Arc::clone(&state),
         config.heartbeat_check_s,
         config.heartbeat_timeout_s,
-    )
-    .await;
+    );
 
     axum::serve(
         listener,
@@ -158,27 +161,37 @@ async fn ws_handler(
         }
     }
 
-    let connection = Connection::new(None, jwt);
+    let pre_connection = PreConnection::new(jwt);
 
     tracing::info!(
-        "`{user_agent}` at {addr} connected: connection_id={}",
-        connection.id
+        "New connection {}, `{user_agent}` at {addr}",
+        pre_connection.id
     );
 
     // upgrade the connection
-    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, connection))
+    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, pre_connection))
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
 #[tracing::instrument(level = "trace")]
-async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, connection: Connection) {
+async fn handle_socket(
+    socket: WebSocket,
+    state: Arc<State>,
+    addr: String,
+    pre_connection: PreConnection,
+) {
     let (sender, mut receiver) = socket.split();
     let sender = Arc::new(Mutex::new(sender));
-    let connection_id = connection.id;
+    let connection_id = pre_connection.id;
 
     while let Some(Ok(msg)) = receiver.next().await {
-        let response =
-            process_message(msg, Arc::clone(&sender), Arc::clone(&state), &connection).await;
+        let response = process_message(
+            msg,
+            Arc::clone(&sender),
+            Arc::clone(&state),
+            pre_connection.to_owned(),
+        )
+        .await;
 
         match response {
             Ok(ControlFlow::Continue(_)) => {}
@@ -218,17 +231,38 @@ async fn handle_socket(socket: WebSocket, state: Arc<State>, addr: String, conne
     }
 
     // websocket is closed, remove the user from any rooms they were in and broadcast
-    if let Ok(rooms) = state.clear_connections(&connection).await {
-        tracing::info!("Removing stale users from rooms: {:?}", rooms);
+    if let Ok(connection) = state.get_connection(connection_id).await {
+        match state.remove_connection(&connection).await {
+            Ok(Some(file_id)) => {
+                tracing::info!(
+                    "Removing user {} from room {file_id} after connection close",
+                    connection.session_id
+                );
 
-        for file_id in rooms.into_iter() {
-            // only broadcast if the room still exists
-            if let Ok(room) = state.get_room(&file_id).await {
-                tracing::info!("Broadcasting room {file_id} after removing stale users");
+                if let Ok(room) = state.get_room(&file_id).await {
+                    tracing::info!("Broadcasting room {file_id} after connection close");
 
-                let message = MessageResponse::from(room.to_owned());
-                broadcast(vec![], file_id, Arc::clone(&state), message);
+                    let message = MessageResponse::from(room.to_owned());
+
+                    if let Err(error) = broadcast(
+                        vec![connection.session_id],
+                        file_id,
+                        Arc::clone(&state),
+                        message,
+                    )
+                    .await
+                    {
+                        tracing::warn!(
+                            "Error broadcasting room {file_id} after connection close: {:?}",
+                            error
+                        );
+                    }
+                }
             }
+            Err(error) => {
+                tracing::warn!("Error clearing connections: {:?}", error);
+            }
+            _ => {}
         }
     }
 
@@ -242,13 +276,14 @@ async fn process_message(
     msg: Message,
     sender: Arc<Mutex<SplitSink<WebSocket, Message>>>,
     state: Arc<State>,
-    connection: &Connection,
+    pre_connection: PreConnection,
 ) -> Result<ControlFlow<Option<MessageResponse>, ()>> {
     match msg {
         Message::Text(text) => {
             let messsage_request = serde_json::from_str::<MessageRequest>(&text)?;
             let message_response =
-                handle_message(messsage_request, state, Arc::clone(&sender), connection).await?;
+                handle_message(messsage_request, state, Arc::clone(&sender), pre_connection)
+                    .await?;
 
             if let Some(message_response) = message_response {
                 let response = Message::Text(serde_json::to_string(&message_response)?);
@@ -311,6 +346,14 @@ pub(crate) mod tests {
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
     ) -> User {
         let user = new_user();
+        add_existing_user_via_ws(file_id, socket, user).await
+    }
+
+    async fn add_existing_user_via_ws(
+        file_id: Uuid,
+        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+        user: User,
+    ) -> User {
         let session_id = user.session_id;
         let request = MessageRequest::EnterRoom {
             session_id,
@@ -333,6 +376,18 @@ pub(crate) mod tests {
         user
     }
 
+    async fn new_connection(
+        socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
+        file_id: Uuid,
+        user: User,
+    ) -> Uuid {
+        let connection_id = Uuid::new_v4();
+
+        add_existing_user_via_ws(file_id, socket.clone(), user).await;
+
+        connection_id
+    }
+
     async fn setup() -> (
         Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
         Arc<State>,
@@ -341,11 +396,11 @@ pub(crate) mod tests {
         User,
     ) {
         let state = new_arc_state().await;
-        let connection_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
         let socket = integration_test_setup(state.clone()).await;
         let socket = Arc::new(Mutex::new(socket));
-        let user = add_user_via_ws(file_id, socket.clone()).await;
+        let file_id = Uuid::new_v4();
+        let user = new_user();
+        let connection_id = new_connection(socket.clone(), file_id, user.clone()).await;
 
         (socket.clone(), state, connection_id, file_id, user)
     }
@@ -369,6 +424,23 @@ pub(crate) mod tests {
 
         let response = integration_test_send_and_receive(&socket, request, true, 2).await;
         assert_eq!(response, Some(serde_json::to_string(&expected).unwrap()));
+    }
+
+    fn new_user_state_update(user: User, file_id: Uuid) -> MessageRequest {
+        MessageRequest::UserUpdate {
+            session_id: user.session_id,
+            file_id,
+            update: UserStateUpdate {
+                selection: None,
+                sheet_id: None,
+                x: None,
+                y: None,
+                visible: None,
+                cell_edit: None,
+                code_running: None,
+                viewport: Some("new_viewport".to_string()),
+            },
+        }
     }
 
     #[tokio::test]
@@ -458,6 +530,63 @@ pub(crate) mod tests {
         let response = serde_json::from_str::<MessageResponse>(&response.unwrap()).unwrap();
 
         assert_eq!(response, expected);
+    }
+
+    #[tokio::test]
+    async fn user_is_idle_in_a_room_get_removed_and_reconnect() {
+        let (socket, state, _, file_id, user_1) = setup().await;
+
+        // add a second user to the room
+        let user_2 = add_user_via_ws(file_id, socket.clone()).await;
+
+        // both users should be in the room
+        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+        assert_eq!(num_users_in_room, 2);
+
+        // kick off the background worker and wait for the stale users to be removed
+        let handle = background_worker::start(Arc::clone(&state), 1, 0);
+
+        // expect a RoomNotFound error when trying to get the room
+        loop {
+            match state.get_room(&file_id).await {
+                Ok(_) => {} // do nothing
+                Err(error) => {
+                    assert!(matches!(error, MpError::RoomNotFound(_)));
+                    break;
+                }
+            };
+        }
+
+        // stop the background worker
+        handle.abort();
+
+        // room should be closed, add user_1 back
+        new_connection(socket.clone(), file_id, user_1.clone()).await;
+        integration_test_send_and_receive(
+            &socket.clone(),
+            new_user_state_update(user_1.clone(), file_id),
+            true,
+            4,
+        )
+        .await;
+
+        // expect 1 user to be in the room
+        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+        assert_eq!(num_users_in_room, 1);
+
+        // add user_2 back
+        new_connection(socket.clone(), file_id, user_2.clone()).await;
+        integration_test_send_and_receive(
+            &socket.clone(),
+            new_user_state_update(user_2.clone(), file_id),
+            true,
+            1,
+        )
+        .await;
+
+        // expect 2 users to be in the room
+        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
+        assert_eq!(num_users_in_room, 2);
     }
 
     #[tokio::test]

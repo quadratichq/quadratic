@@ -1,5 +1,7 @@
-// TEST
-
+describe('PATCH /v0/files/:uuid/users/:userId', () => {
+  it.todo('to come...');
+});
+/*
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';

@@ -45,10 +45,12 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
     viewport.on('moved', updateTransform);
     viewport.on('moved-end', updateTransform);
     viewport.on('zoomed', updateTransform);
+    window.addEventListener('resize', updateTransform);
     return () => {
       viewport.off('moved', updateTransform);
       viewport.off('moved-end', updateTransform);
       viewport.off('zoomed', updateTransform);
+      window.removeEventListener('resize', updateTransform);
     };
   }, [parent, container]);
 

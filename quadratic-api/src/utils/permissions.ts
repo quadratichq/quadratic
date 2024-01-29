@@ -41,30 +41,44 @@ export const getFilePermissions = ({
   teamRole,
   publicLinkAccess,
   isFileOwner,
+  isLoggedIn,
 }: {
   fileRole?: UserFileRole;
   teamRole?: UserTeamRole;
   publicLinkAccess: PublicLinkAccess;
   isFileOwner: boolean;
+  isLoggedIn: boolean;
 }) => {
   const permissions = new Set<FilePermission>();
 
-  // Based on whether you are the individual owner of the file
-  if (isFileOwner) {
-    permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
-  }
-
-  // Based on public link access
+  // First look at public link access
   if (publicLinkAccess === 'EDIT') {
-    permissions.add(FILE_EDIT).add(FILE_VIEW);
+    permissions.add(FILE_VIEW);
+    // Only allow them to edit if they are logged in
+    if (isLoggedIn) {
+      permissions.add(FILE_EDIT);
+    }
   } else if (publicLinkAccess === 'READONLY') {
     permissions.add(FILE_VIEW);
+  }
+
+  // If they're not logged in, we're done. Nothing else applies.
+  if (!isLoggedIn) {
+    return Array.from(permissions);
+  }
+
+  // Are they personal owner of the file? We'll return early cause they get full permissions
+  if (isFileOwner) {
+    permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+    return Array.from(permissions);
   }
 
   // Based on user's explicitly-assigned role in the file's team (if applicable)
   if (teamRole) {
     if (teamRole === UserTeamRoleSchema.enum.OWNER || teamRole === UserTeamRoleSchema.enum.EDITOR) {
       permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+      // Return because they already have full access now
+      return Array.from(permissions);
     } else if (teamRole === UserTeamRoleSchema.enum.VIEWER) {
       permissions.add(FILE_VIEW);
     }
@@ -81,7 +95,6 @@ export const getFilePermissions = ({
 
   // Note: it's possible there are 0 permissions
   const out = Array.from(permissions);
-
   return out;
 };
 

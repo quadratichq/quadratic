@@ -1,12 +1,12 @@
 import express, { Response } from 'express';
-import { header, param, validationResult } from 'express-validator';
+import { param, validationResult } from 'express-validator';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { Request } from '../../types/Request';
+import { validateM2MAuth } from '../../internal/validateM2MAuth';
 
 export const validateUUID = () => param('uuid').isUUID(4);
-export const validateM2MAuth = () => header('Authorization').equals('Bearer ADD_TOKEN_HERE'); // TODO: validate Service to Service Auth,
 
 const router = express.Router();
 

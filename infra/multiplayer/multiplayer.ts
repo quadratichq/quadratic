@@ -14,6 +14,10 @@ const config = new pulumi.Config();
 const multiplayerSubdomain = config.require("multiplayer-subdomain");
 const quadraticApiUri = config.require("quadratic-api-uri");
 const dockerImageTag = config.require("docker-image-tag");
+const multiplayerECRName = config.require("multiplayer-ecr-repo-name");
+const multiplayerPulumiEscEnvironmentName = config.require(
+  "multiplayer-pulumi-esc-environment-name"
+);
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
@@ -35,9 +39,9 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(
-      "quadratic-multiplayer-development",
+      multiplayerECRName,
       dockerImageTag,
-      "quadratic-multiplayer-development",
+      multiplayerPulumiEscEnvironmentName,
       {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
@@ -116,5 +120,4 @@ const dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
   ],
 });
 
-export const multiplayerInstanceDns = instance.publicDns;
 export const multiplayerPublicDns = dnsRecord.name;

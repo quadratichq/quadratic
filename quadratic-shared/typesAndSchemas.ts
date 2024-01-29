@@ -107,13 +107,11 @@ export const ApiSchemas = {
    */
   '/v0/files/:uuid.GET.response': z.object({
     file: FileSchema,
-    owner: z.discriminatedUnion('type', [
-      TeamSchema.pick({ name: true, uuid: true }).extend({ type: z.literal('team') }),
-      z.object({ type: z.literal('user') }),
-      z.object({ type: z.literal('self') }),
-    ]),
+    team: TeamSchema.pick({ uuid: true, name: true }).optional(),
     userMakingRequest: z.object({
       filePermissions: z.array(FilePermissionSchema),
+      isFileOwner: z.boolean(),
+      fileRole: UserFileRoleSchema.optional(),
     }),
   }),
   '/v0/files/:uuid.DELETE.response': z.object({

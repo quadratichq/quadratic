@@ -28,12 +28,7 @@ import { VersionComparisonResult, compareVersions } from '../schemas/compareVers
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
-export type FileData = {
-  name: string;
-  uuid: string;
-  owner: ApiTypes['/v0/files/:uuid.GET.response']['owner'];
-  permissions: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['filePermissions'];
-};
+export type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
   const { uuid } = params as { uuid: string };
@@ -86,22 +81,21 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
   }
-  return {
-    name: data.file.name,
-    uuid: data.file.uuid,
-    owner: data.owner,
-    permissions: data.userMakingRequest.filePermissions,
-  };
+
+  return data;
 };
 
 export const Component = () => {
   // Initialize recoil with the file's permission we get from the server
-  const { permissions, uuid } = useLoaderData() as FileData;
+  const {
+    userMakingRequest: { filePermissions },
+    file: { uuid },
+  } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
       uuid,
-      permissions,
+      permissions: filePermissions,
     }));
   };
 

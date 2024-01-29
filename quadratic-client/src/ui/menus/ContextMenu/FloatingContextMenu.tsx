@@ -89,7 +89,6 @@ export const FloatingContextMenu = (props: Props) => {
     let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
 
     const menuHeight = menuDiv.current?.clientHeight || 0;
-    // const menuwidth = menuDiv.current?.clientWidth || 0;
 
     let x = cell_offset_scaled.x + container.offsetLeft - 20;
     let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
@@ -171,11 +170,13 @@ export const FloatingContextMenu = (props: Props) => {
     viewport.on('moved', updateContextMenuCSSTransform);
     viewport.on('moved-end', updateContextMenuCSSTransform);
     document.addEventListener('pointerup', updateContextMenuCSSTransform);
+    window.addEventListener('resize', updateContextMenuCSSTransform);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
       viewport.removeListener('moved-end', updateContextMenuCSSTransform);
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
+      window.removeEventListener('resize', updateContextMenuCSSTransform);
     };
   }, [updateContextMenuCSSTransform]);
 

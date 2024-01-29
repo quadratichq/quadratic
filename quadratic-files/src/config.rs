@@ -25,7 +25,7 @@ pub(crate) struct Config {
     pub(crate) pubsub_active_channels: String,
 
     pub(crate) quadratic_api_uri: String,
-    pub(crate) quadratic_api_jwt: String,
+    pub(crate) m2m_auth_token: String,
 
     pub(crate) aws_s3_region: String,
     pub(crate) aws_s3_bucket_name: String,

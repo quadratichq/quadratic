@@ -21,6 +21,13 @@ pub(crate) fn broadcast(
     state: Arc<State>,
     message: MessageResponse,
 ) -> JoinHandle<()> {
+    tracing::trace!(
+        "Broadcasting message to room {}, exluding {:?}: {:?}",
+        file_id,
+        exclude,
+        message
+    );
+
     tokio::spawn(async move {
         if let Ok(room) = state.get_room(&file_id).await {
             let result = async {
@@ -39,12 +46,13 @@ pub(crate) fn broadcast(
 
                         if let Err(error) = sent {
                             tracing::warn!(
-                                "Error removing stale user {} from room {}: {:?}",
+                                "Error broadcasting to user {} in room {}: {:?}",
                                 user.session_id,
                                 file_id,
                                 error,
                             );
 
+                            // the user's socket is stale, so remove them from the room
                             state.leave_room(file_id, &user.session_id).await?;
                         }
                     }

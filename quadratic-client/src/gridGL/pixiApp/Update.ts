@@ -1,4 +1,3 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
 import { Point } from 'pixi.js';
 import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
@@ -16,7 +15,9 @@ export class Update {
   private raf?: number;
   private fps?: FPS;
   private lastViewportPosition: Point = new Point();
-  private lastViewportScale = 1;
+
+  // setting this to 0 ensures that on initial render, the viewport is properly scaled and updated
+  private lastViewportScale = 0;
 
   constructor() {
     if (debugShowFPS) {
@@ -86,7 +87,9 @@ export class Update {
       console.log(
         `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}${
           pixiApp.axesLines.dirty ? 'axesLines ' : ''
-        }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}`
+        }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}${
+          pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''
+        }`
       );
     }
 
@@ -111,7 +114,6 @@ export class Update {
       pixiApp.viewport.dirty = false;
       pixiApp.renderer.render(pixiApp.stage);
       debugTimeCheck('[Update] render');
-
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
       debugShowCachedCounts();
@@ -120,8 +122,6 @@ export class Update {
       debugRendererLight(false);
       thumbnail.check();
     }
-
-    multiplayer.update();
 
     this.raf = requestAnimationFrame(this.update);
     this.fps?.update();

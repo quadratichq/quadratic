@@ -2,23 +2,56 @@ import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { TooltipHint } from '@/ui/components/TooltipHint';
 import { displayInitials, displayName } from '@/utils/userUtil';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Avatar, AvatarGroup, IconButton, useTheme } from '@mui/material';
-import { Menu, MenuItem } from '@szhsin/react-menu';
+import { Avatar, AvatarGroup, IconButton } from '@mui/material';
+import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { useSetRecoilState } from 'recoil';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { useMultiplayerUsers } from './useMultiplayerUsers';
 
+const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
+
 export const TopBarUsers = () => {
-  const theme = useTheme();
   const { loggedInUser: user } = useRootRouteLoaderData();
   const { users, follow } = useMultiplayerUsers();
   const usersWithoutFollow = users.filter((user) => user.session_id !== follow?.session_id);
 
   return (
     <>
-      <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
+      <AvatarGroup
+        spacing={16}
+        componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
+        sx={{
+          alignSelf: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+          // Styles for the "+2" avatar
+          '& > .MuiAvatar-root': { marginRight: '.25rem', backgroundColor: '#aaa', border: `2px solid #aaa` },
+        }}
+        max={5}
+      >
+        {user && (
+          <div className={`ml-2`}>
+            <You
+              displayName={displayName(user, true)}
+              initial={displayInitials(user)}
+              picture={user.picture || ''}
+              border={'black'}
+            />
+          </div>
+        )}
+        {follow && (
+          <UserAvatar
+            displayName={displayName(follow, false)}
+            initial={displayInitials(follow)}
+            picture={follow.image || ''}
+            border={follow.colorString}
+            sessionId={follow.session_id}
+            follow={true}
+            viewport={follow.viewport}
+            bgColor={follow.colorString}
+          />
+        )}
         {usersWithoutFollow.map((user) => {
           return (
             <UserAvatar
@@ -34,28 +67,6 @@ export const TopBarUsers = () => {
             />
           );
         })}
-      </AvatarGroup>
-      <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
-        {follow && (
-          <UserAvatar
-            displayName={displayName(follow, false)}
-            initial={displayInitials(follow)}
-            picture={follow.image || ''}
-            border={follow.colorString}
-            sessionId={follow.session_id}
-            follow={true}
-            viewport={follow.viewport}
-            bgColor={follow.colorString}
-          />
-        )}
-        {user && (
-          <You
-            displayName={displayName(user, true)}
-            initial={displayInitials(user)}
-            picture={user.picture || ''}
-            border={'black'}
-          />
-        )}
       </AvatarGroup>
     </>
   );
@@ -73,27 +84,21 @@ function You({
   border: string;
 }) {
   return (
-    // IconButton was necessary for the tooltip to work
-    <IconButton>
-      <TooltipHint title={displayName}>
-        <Avatar
-          sx={{
-            bgcolor: colors.quadraticSecondary,
-            width: 24,
-            height: 24,
-            fontSize: '0.8rem',
-          }}
-          variant="square"
-          alt={displayName}
-          src={picture}
-          style={{
-            border: `2px solid ${border}`,
-          }}
-        >
-          {initial}
-        </Avatar>
-      </TooltipHint>
-    </IconButton>
+    <TooltipHint title={displayName}>
+      <Avatar
+        sx={{
+          bgcolor: colors.quadraticSecondary,
+          ...sharedAvatarSxProps,
+        }}
+        alt={displayName}
+        src={picture}
+        style={{
+          border: `2px solid ${border}`,
+        }}
+      >
+        {initial}
+      </Avatar>
+    </TooltipHint>
   );
 }
 
@@ -127,43 +132,35 @@ function UserAvatar({
     });
   };
 
-  const name = follow ? `Following ${displayName}` : displayName;
-  const avatar = (
-    <IconButton style={{ borderRadius: 0 }}>
-      <TooltipHint title={name} sx={{}}>
-        <div style={{ position: 'relative' }}>
-          <Avatar
-            sx={{
-              bgcolor: bgColor ?? colors.quadraticSecondary,
-              width: 24,
-              height: 24,
-              fontSize: '0.8rem',
-              pointerEvents: 'auto',
-              cursor: 'pointer',
-              position: 'relative',
-            }}
-            variant="square"
-            alt={displayName}
-            src={picture}
-            style={{
-              border: `2px solid ${border}`,
-            }}
-          >
-            {initial}
-          </Avatar>
-          {follow && (
-            <VisibilityIcon
-              sx={{ position: 'absolute', top: '-8px', left: '50%', width: '16px', height: '16px', color: 'black' }}
-            />
-          )}
-        </div>
-      </TooltipHint>
-    </IconButton>
-  );
-
   return (
-    <Menu menuButton={avatar}>
-      <MenuItem onClick={handleFollow}>{follow ? `Stop following ${displayName}` : `Follow ${displayName}`}</MenuItem>
-    </Menu>
+    <div className="relative">
+      <TooltipHint title={displayName} shortcut={`Click to ${follow ? 'unfollow' : 'follow'}`}>
+        <IconButton sx={{ borderRadius: 0, px: '.25rem' }} onClick={handleFollow}>
+          <div>
+            <Avatar
+              sx={{
+                bgcolor: bgColor ?? colors.quadraticSecondary,
+                ...sharedAvatarSxProps,
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                position: 'relative',
+              }}
+              alt={displayName}
+              src={picture}
+              style={{
+                border: `2px solid ${border}`,
+              }}
+            >
+              {initial}
+            </Avatar>
+          </div>
+        </IconButton>
+      </TooltipHint>
+      {follow && (
+        <div className="pointer-events-none absolute bottom-1 left-1/2 flex h-5  w-5 items-center justify-center rounded-full bg-white">
+          <EyeOpenIcon />
+        </div>
+      )}
+    </div>
   );
 }
