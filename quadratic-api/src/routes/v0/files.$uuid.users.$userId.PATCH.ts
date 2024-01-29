@@ -7,6 +7,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 import { firstRoleIsHigherThanSecond } from '../../utils/permissions';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
@@ -17,7 +18,7 @@ export default [
         uuid: z.string().uuid(),
         userId: z.coerce.number(),
       }),
-      body: ApiSchemas['/v0/teams/:uuid/users/:userId.POST.request'],
+      body: ApiSchemas['/v0/files/:uuid/users/:userId.PATCH.request'],
     })
   ),
   validateAccessToken,
@@ -25,31 +26,36 @@ export default [
   handler,
 ];
 
-async function handler(req: Request, res: Response) {
+async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/users/:userId.PATCH.response']>) {
   const {
-    user: { id: userMakingChangeId },
+    user: { id: userMakingRequestId },
     params: { uuid, userId },
   } = req as RequestWithUser;
   const { role: newRole } = req.body as ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request'];
   const {
-    file: { id: fileId },
+    file: { id: fileId, ownerUserId, publicLinkAccess },
     userMakingRequest,
-  } = await getFile({ uuid, userId: userMakingChangeId });
+  } = await getFile({ uuid, userId: userMakingRequestId });
   const userBeingChangedId = Number(userId);
 
-  // User is trying to update their own role
-  if (userBeingChangedId === userMakingChangeId) {
+  // Updating yourself?
+  if (userBeingChangedId === userMakingRequestId) {
     const currentRole = userMakingRequest.fileRole;
+
+    // Can’t update your own role as file owner (not possible through the UI, but just in case)
+    if (userMakingRequestId === ownerUserId) {
+      throw new ApiError(400, 'Cannot change your own role as the file owner');
+    }
 
     // To the same role
     if (newRole === currentRole) {
       return res.status(200).json({ role: newRole });
     }
 
-    // TODO: is this still necessary?
     // Upgrading role
-    if (firstRoleIsHigherThanSecond(newRole, currentRole)) {
-      return res.status(403).json({ error: { message: 'Cannot upgrade to a role higher than your own' } });
+    // (e.g. a VIEWER could upgrade to EDITOR if the public link access is EDIT)
+    if (firstRoleIsHigherThanSecond(newRole, currentRole) && publicLinkAccess !== 'EDIT') {
+      throw new ApiError(403, 'Cannot upgrade to a role higher than your own');
     }
 
     // Make the change!
@@ -73,9 +79,7 @@ async function handler(req: Request, res: Response) {
   // First, can they do this?
 
   if (!userMakingRequest.filePermissions.includes(FILE_EDIT)) {
-    return res.status(403).json({
-      error: { message: 'You do not have permission to edit others' },
-    });
+    throw new ApiError(403, 'You do not have permission to edit others');
   }
 
   // Lookup the user that's being changed and their current role
@@ -88,7 +92,7 @@ async function handler(req: Request, res: Response) {
     },
   });
   if (userBeingChanged === null) {
-    return res.status(404).json({ error: { message: `The user you’re trying to change could not found.` } });
+    throw new ApiError(404, 'The user you’re trying to change could not found.');
   }
   const userBeingChangedRole = userBeingChanged.role;
 
@@ -110,6 +114,5 @@ async function handler(req: Request, res: Response) {
     },
   });
 
-  const data: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.response'] = { role: newUserFileRole.role };
-  return res.status(200).json(data);
+  return res.status(200).json({ role: newUserFileRole.role });
 }
