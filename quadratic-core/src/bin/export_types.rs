@@ -62,6 +62,7 @@ fn main() {
         Rect,
         Span,
         SheetPos,
+        controller::user_actions::clipboard::PasteSpecial,
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core").is_ok() {

@@ -1,6 +1,8 @@
 import {
   AttachMoneyOutlined,
   BorderAll,
+  ContentPasteGoOutlined,
+  ContentPasteSearchOutlined,
   Download,
   FormatAlignCenter,
   FormatAlignLeft,
@@ -15,14 +17,18 @@ import {
   Percent,
 } from '@mui/icons-material';
 import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
-import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
+import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
+import {
+  copySelectionToPNG,
+  fullClipboardSupport,
+  pasteFromClipboard,
+} from '../../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
@@ -67,6 +73,21 @@ export const FloatingContextMenu = (props: Props) => {
 
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
+
+  // close the more menu on escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (moreMenuProps.state === 'open' && e.key === 'Escape') {
+        moreMenuToggle();
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [moreMenuProps.state, moreMenuToggle]);
 
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
@@ -140,7 +161,7 @@ export const FloatingContextMenu = (props: Props) => {
      * Menu positioning
      */
 
-    // if ouside of viewport keep it inside
+    // if outside of viewport keep it inside
     if (x < container.offsetLeft + 35) {
       x = container.offsetLeft + 35;
     } // left
@@ -263,7 +284,7 @@ export const FloatingContextMenu = (props: Props) => {
           />
         </Menu>
 
-        <MenuDivider />
+        <MenuDividerVertical />
 
         <TooltipHint title="Align left">
           <IconButton size="small" onClick={() => setAlignment('left')}>
@@ -281,7 +302,7 @@ export const FloatingContextMenu = (props: Props) => {
           </IconButton>
         </TooltipHint>
 
-        <MenuDivider />
+        <MenuDividerVertical />
 
         <Menu
           className="color-picker-submenu"
@@ -323,7 +344,7 @@ export const FloatingContextMenu = (props: Props) => {
           {borders}
         </Menu>
 
-        <MenuDivider />
+        <MenuDividerVertical />
 
         <TooltipHint title="Format as automatic">
           <IconButton size="small" onClick={() => removeCellNumericFormat()} color="inherit">
@@ -361,13 +382,13 @@ export const FloatingContextMenu = (props: Props) => {
           </IconButton>
         </TooltipHint>
 
-        <MenuDivider />
+        <MenuDividerVertical />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
           <IconButton size="small" onClick={clearFormattingAndBorders} color="inherit">
             <FormatClear fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
-        {fullClipboardSupport() && <MenuDivider />}
+        {fullClipboardSupport() && <MenuDividerVertical />}
         {fullClipboardSupport() && (
           <TooltipHint title="More commands…">
             <IconButton size="small" onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
@@ -380,6 +401,25 @@ export const FloatingContextMenu = (props: Props) => {
           menuStyle={{ padding: '2px 0', color: 'inherit' }}
           anchorRef={moreMenuButtonRef}
         >
+          <MenuItem
+            onClick={() => {
+              pasteFromClipboard('Values');
+              moreMenuToggle();
+            }}
+          >
+            <MenuLineItem
+              primary="Paste values only"
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'V'}
+              Icon={ContentPasteGoOutlined}
+            />
+          </MenuItem>
+          <MenuItem onClick={() => {
+            pasteFromClipboard('Formats');
+            moreMenuToggle();
+          }}>
+            <MenuLineItem primary="Paste formatting only" Icon={ContentPasteSearchOutlined} />
+          </MenuItem>
+          <MenuDivider />
           <MenuItem
             onClick={async () => {
               await copySelectionToPNG(addGlobalSnackbar);
@@ -410,7 +450,7 @@ export const FloatingContextMenu = (props: Props) => {
   );
 };
 
-function MenuDivider() {
+function MenuDividerVertical() {
   return (
     <Divider
       orientation="vertical"
