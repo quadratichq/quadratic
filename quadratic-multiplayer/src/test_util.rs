@@ -51,7 +51,8 @@ pub(crate) async fn setup() -> (
     let socket = Arc::new(Mutex::new(socket));
     let file_id = Uuid::new_v4();
 
-    let subscriber = tracing_subscriber::fmt().finish();
+    let filter = "quadratic_multiplayer=debug";
+    let subscriber = tracing_subscriber::fmt().with_env_filter(filter).finish();
     let _ = tracing::subscriber::set_global_default(subscriber);
 
     state
