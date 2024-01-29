@@ -145,8 +145,8 @@ jobs:
 
       - name: Run npm test:ci in quadratic-api
         run: |
-          cd quadratic-api
           npm install
+          cd quadratic-api
           npm run docker:test:ci
 
   lint_rust:
@@ -187,8 +187,8 @@ jobs:
 
       - name: Lint quadratic-client
         run: |
-          cd quadratic-client
           npm install
+          cd quadratic-client
           npm run lint:prettier
           npm run lint:eslint
           npm run lint:ts

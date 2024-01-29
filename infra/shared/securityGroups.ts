@@ -4,7 +4,7 @@ import * as aws from "@pulumi/aws";
 export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
   ingress: [
     // TODO: remove SSH Access
-    { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
+    // { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
     {
       protocol: "tcp",
       fromPort: 80,
@@ -41,7 +41,7 @@ export const multiplayerEc2SecurityGroup = new aws.ec2.SecurityGroup(
   {
     ingress: [
       // TODO: remove SSH Access
-      { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
+      // { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
       {
         protocol: "tcp",
         fromPort: 80,
