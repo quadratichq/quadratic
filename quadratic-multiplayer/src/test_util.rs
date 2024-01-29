@@ -51,6 +51,9 @@ pub(crate) async fn setup() -> (
     let socket = Arc::new(Mutex::new(socket));
     let file_id = Uuid::new_v4();
 
+    let subscriber = tracing_subscriber::fmt().finish();
+    let _ = tracing::subscriber::set_global_default(subscriber);
+
     state
         .subscribe_pubsub(&file_id, GROUP_NAME_TEST)
         .await
