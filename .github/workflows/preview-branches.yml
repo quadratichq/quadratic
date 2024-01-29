@@ -8,9 +8,10 @@ on:
 # Our runners pick up jobs first, and if all our runners are being used or are down
 # it will automatically back up to using GitHub hosted runners.
 
+# Require previous builds and deployments to finish before starting a new one
+# Not sure how Pulumi would handle being terminated when changing a stack.
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 
 jobs:
 

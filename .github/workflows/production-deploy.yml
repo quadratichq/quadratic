@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main 
+      - a-team # TODO: REMOVE
     paths:
       - 'quadratic-multiplayer/**'
       - 'quadratic-files/**'
@@ -16,6 +17,7 @@ on:
 
 
 # Require previous builds and deployments to finish before starting a new one
+# Not sure how Pulumi would handle being terminated when changing a stack.
 concurrency:
   group: production
 
