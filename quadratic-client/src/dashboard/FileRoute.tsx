@@ -1,4 +1,4 @@
-import { ApiError } from '@/api/fetchFromApi';
+import { authClient } from '@/auth';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
 import { isEmbed } from '@/helpers/isEmbed';
@@ -8,11 +8,11 @@ import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ReactElement } from 'react';
 import {
   Link,
   LoaderFunctionArgs,
   isRouteErrorResponse,
+  redirect,
   useLoaderData,
   useRouteError,
   useRouteLoaderData,
@@ -21,7 +21,7 @@ import { MutableSnapshot, RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
-import { ROUTE_LOADER_IDS } from '../constants/routes';
+import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
 import { grid } from '../grid/controller/Grid';
 import init, { hello } from '../quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
@@ -30,11 +30,20 @@ import QuadraticApp from '../ui/QuadraticApp';
 
 export type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
+export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
 
-  // Fetch the file
-  const data = await apiClient.files.get(uuid);
+  // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
+  let data;
+  try {
+    data = await apiClient.files.get(uuid);
+  } catch (error: any) {
+    const isLoggedIn = await authClient.isAuthenticated();
+    if (error.status === 403 && !isLoggedIn) {
+      return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
+    }
+    throw new Response('Failed to load file from server.', { status: error.status });
+  }
   if (debugShowMultiplayer)
     console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
 
@@ -53,7 +62,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
         message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
         level: 'error',
       });
-      throw new Response('File validation failed.');
+      throw new Response('File validation failed.', { status: 200 });
     }
     checkpointContents = file.contents;
     version = file.version;
@@ -67,7 +76,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
       level: 'error',
     });
-    throw new Response('File validation failed.');
+    throw new Response('File validation failed.', { status: 200 });
   }
   grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
 
@@ -128,37 +137,30 @@ export const ErrorBoundary = () => {
     </div>
   );
 
-  // Handle specific errors
+  if (isRouteErrorResponse(error)) {
+    let title = '';
+    let description: string = '';
 
-  let title = '';
-  let description: string | ReactElement = '';
-
-  if (error instanceof ApiError) {
     if (error.status === 404) {
       title = 'File not found';
-      description = 'This file may have been deleted, moved, or made unavailable. Try reaching out to the file owner.';
-    } else if (error.status >= 400 && error.status < 500) {
-      title = 'Failed to retrieve file';
-      description = (
-        <>
-          This file could not be loaded from the server. Additional details:
-          <pre className="mt-4">{error.details}</pre>
-        </>
-      );
+      description = 'This file may have been moved or made unavailable. Try reaching out to the file owner.';
+    } else if (error.status === 400) {
+      title = 'Bad file request';
+      description = 'Check the URL and try again.';
+    } else if (error.status === 403) {
+      title = 'Permission denied';
+      description = 'You do not have permission to view this file. Try reaching out to the file owner.';
+    } else if (error.status === 410) {
+      title = 'File deleted';
+      description = 'This file no longer exists. Try reaching out to the file owner.';
+    } else if (error.status === 200) {
+      title = 'File validation failed';
+      description =
+        'The file was retrieved from the server but failed to load into the app. Try again or contact us for help.';
+    } else {
+      title = 'Failed to load file';
+      description = 'There was an error retrieving and loading this file.';
     }
-  }
-
-  if (isRouteErrorResponse(error)) {
-    title = 'Failed to load file';
-    description = (
-      <>
-        The file was retrieved from the server but could not be loaded. Additional details:
-        <pre className="mt-4">{error.data}</pre>
-      </>
-    );
-  }
-
-  if (title && description) {
     return <Empty title={title} description={description} Icon={ExclamationTriangleIcon} actions={actions} />;
   }
 
