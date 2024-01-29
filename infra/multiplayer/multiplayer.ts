@@ -120,5 +120,4 @@ const dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
   ],
 });
 
-export const multiplayerInstanceDns = instance.publicDns;
 export const multiplayerPublicDns = dnsRecord.name;
