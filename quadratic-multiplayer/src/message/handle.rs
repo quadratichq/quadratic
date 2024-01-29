@@ -277,7 +277,7 @@ pub(crate) mod tests {
 
     use super::*;
     use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::{integration_test_receive, setup};
+    use crate::test_util::{integration_test_receive, new_user, setup};
 
     async fn test_handle(
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
@@ -333,6 +333,48 @@ pub(crate) mod tests {
         };
 
         test_handle(socket, state, file_id, user_1, request, None, response).await;
+    }
+
+    #[tokio::test]
+    async fn handle_enter_room() {
+        let (socket, state, _, file_id, user_1, user_2) = setup().await;
+        let user = new_user();
+
+        let request = MessageRequest::EnterRoom {
+            file_id,
+            session_id: user.session_id,
+            user_id: user.user_id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email,
+            image: user.image,
+            sheet_id: Uuid::new_v4(),
+            selection: "selection".into(),
+            cell_edit: CellEdit::default(),
+            viewport: "viewport".into(),
+        };
+
+        let response = MessageResponse::EnterRoom {
+            file_id,
+            sequence_num: 0,
+        };
+
+        let users_in_room = state.get_room(&file_id).await.unwrap().users;
+        assert_eq!(users_in_room.len(), 2);
+
+        test_handle(
+            socket,
+            state.clone(),
+            file_id,
+            user_1,
+            request,
+            None,
+            response,
+        )
+        .await;
+
+        let users_in_room = state.get_room(&file_id).await.unwrap().users;
+        assert_eq!(users_in_room.len(), 3);
     }
 
     #[tokio::test]
