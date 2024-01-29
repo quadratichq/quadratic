@@ -72,7 +72,7 @@ impl GridController {
     }
 
     /// Reruns all code cells in a Sheet.
-    pub fn rerun_code_cells_operations(&self, sheet_id: SheetId) -> Vec<Operation> {
+    pub fn rerun_sheet_code_cells_operations(&self, sheet_id: SheetId) -> Vec<Operation> {
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return vec![];
         };

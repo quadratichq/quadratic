@@ -1,3 +1,5 @@
+use crate::controller::transaction_summary::TransactionSummary;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -56,5 +58,26 @@ impl GridController {
             code_string,
             cursor,
         ))?)
+    }
+
+    /// Reruns all code cells in grid.
+    ///
+    /// Returns [`TransactionSummary`]
+    #[wasm_bindgen(js_name = "rerunAllCodeCells")]
+    pub fn js_rerun_code_cells(&mut self) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(&self.rerun_all_code_cells())?)
+    }
+
+    /// Reruns all code cells in a sheet.
+    ///
+    /// Returns [`TransactionSummary`]
+    #[wasm_bindgen(js_name = "rerunSheetCodeCells")]
+    pub fn js_rerun_sheet_code_cells(&mut self, sheet_id: String) -> Result<JsValue, JsValue> {
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            return Ok(serde_wasm_bindgen::to_value(&TransactionSummary::default())?);
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self.rerun_sheet_code_cells(sheet_id),
+        )?)
     }
 }
