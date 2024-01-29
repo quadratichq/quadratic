@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - main 
-      - a-team-prod-infra # TODO: REMOVE
     paths:
-      - '**' # TODO: Remove after deploy
       - 'quadratic-multiplayer/**'
       - 'quadratic-files/**'
       - 'quadratic-core/**'
