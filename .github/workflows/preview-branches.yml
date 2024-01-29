@@ -45,7 +45,7 @@ jobs:
           pulumi stack select $STACK_NAME
         fi
 
-        # Create a file pointing at the correct Pulumi ESC Environment
+        # Point to the Pulumi ESC Environment
         cat <<EOF | tee Pulumi.$STACK_NAME.yaml
         environment:
           - aws-infra-development

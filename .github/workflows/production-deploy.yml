@@ -46,6 +46,12 @@ jobs:
         pulumi org set-default quadratic
         pulumi stack select production
 
+        # Point to the Pulumi ESC Environment
+        cat <<EOF | tee Pulumi.$STACK_NAME.yaml
+        environment:
+          - aws-infra-production
+        EOF
+
         pulumi config set docker-image-tag ${{ github.sha }}
 
         pulumi up -y
