@@ -37,6 +37,14 @@ use crate::{
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
 pub(crate) fn app(state: Arc<State>) -> Router {
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "quadratic_multiplayer=debug,tower_http=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
     Router::new()
         // handle websockets
         .route("/ws", get(ws_handler))
@@ -54,14 +62,6 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 /// Start the websocket server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "quadratic_multiplayer=debug,tower_http=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
     let config = config()?;
 
     // TODO(ddimaria): we do this check for every WS connection.  Does this

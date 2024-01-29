@@ -16,6 +16,7 @@ pub(crate) struct Room {
     pub(crate) checkpoint_sequence_num: u64,
 }
 
+#[cfg(test)]
 impl PartialEq for Room {
     fn eq(&self, other: &Self) -> bool {
         self.file_id == other.file_id
