@@ -60,9 +60,12 @@ export class Cursor extends Graphics {
 
     // showInput changes after cellEdit is removed from DOM
     const cellEdit = document.querySelector('#cell-edit') as HTMLDivElement;
-    if (showInput && cellEdit) {
-      if (cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
+    if (showInput) {
+      if (cellEdit && cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
         width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+      } else {
+        // we have to wait until react renders #cell-edit to properly calculate the width
+        setTimeout(() => (this.dirty = true), 0);
       }
     } else {
       if (
