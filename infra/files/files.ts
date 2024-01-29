@@ -11,6 +11,10 @@ const config = new pulumi.Config();
 const filesSubdomain = config.require("files-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
+const filesECRName = config.require("files-ecr-repo-name");
+const filesPulumiEscEnvironmentName = config.require(
+  "files-pulumi-esc-environment-name"
+);
 
 // Configuration from Pulumi ESC
 const instanceSize = config.require("files-instance-size");
@@ -28,9 +32,9 @@ const instance = new aws.ec2.Instance("files-instance", {
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(
-      "quadratic-files-development",
+      filesECRName,
       dockerImageTag,
-      "quadratic-files-development",
+      filesPulumiEscEnvironmentName,
       {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
