@@ -1,3 +1,4 @@
+import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import {
   AttachMoneyOutlined,
   BorderAll,
@@ -403,7 +404,7 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <MenuItem
             onClick={() => {
-              pasteFromClipboard('Values');
+              pasteFromClipboard(PasteSpecial.Values);
               moreMenuToggle();
             }}
           >
@@ -413,10 +414,12 @@ export const FloatingContextMenu = (props: Props) => {
               Icon={ContentPasteGoOutlined}
             />
           </MenuItem>
-          <MenuItem onClick={() => {
-            pasteFromClipboard('Formats');
-            moreMenuToggle();
-          }}>
+          <MenuItem
+            onClick={() => {
+              pasteFromClipboard(PasteSpecial.Formats);
+              moreMenuToggle();
+            }}
+          >
             <MenuLineItem primary="Paste formatting only" Icon={ContentPasteSearchOutlined} />
           </MenuItem>
           <MenuDivider />

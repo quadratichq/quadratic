@@ -1,4 +1,4 @@
-import { PasteSpecial } from '@/quadratic-core/types';
+import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
@@ -78,7 +78,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
       y: cursor.y,
       plainText,
       html,
-      special: 'None',
+      special: PasteSpecial.None,
     });
     debugTimeCheck('[Clipboard] paste to clipboard');
   }
@@ -155,7 +155,7 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
   }
 };
 
-export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
+export const pasteFromClipboard = async (special: PasteSpecial = PasteSpecial.None) => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   const target = sheets.sheet.cursor.originPosition;
 

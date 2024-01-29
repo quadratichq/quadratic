@@ -49,11 +49,10 @@ impl GridController {
         pos: Pos,
         plain_text: Option<String>,
         html: Option<String>,
-        special: String,
+        special: PasteSpecial,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let special = serde_json::from_str::<PasteSpecial>(&special).unwrap_or(PasteSpecial::None);
         let output = self.paste_from_clipboard(
             pos.to_sheet_pos(sheet_id),
             plain_text,

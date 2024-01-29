@@ -5,9 +5,10 @@ use crate::Rect;
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use htmlescape;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[wasm_bindgen]
 pub enum PasteSpecial {
     None,
     Values,

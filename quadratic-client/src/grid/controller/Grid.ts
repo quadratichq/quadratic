@@ -15,6 +15,7 @@ import init, {
   JsComputeGetCells,
   JsRenderBorders,
   MinMax,
+  PasteSpecial,
   Pos,
   Rect as RectInternal,
   SheetOffsets,
@@ -32,7 +33,6 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  PasteSpecial,
   Rect,
   TransactionSummary,
 } from '../../quadratic-core/types';
