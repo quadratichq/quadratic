@@ -40,10 +40,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
   }
 
   // Then edit!
-  await dbClient.file.update({
+  const newFile = await dbClient.file.update({
     where: { uuid },
     data: { publicLinkAccess },
   });
 
-  return res.status(200).json({ publicLinkAccess });
+  return res.status(200).json({ publicLinkAccess: newFile.publicLinkAccess });
 }
