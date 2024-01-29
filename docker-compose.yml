@@ -39,11 +39,12 @@ services:
     restart: "always"
     ports:
       - "3000:3000"
-    command: "npm run start"
+    command: "npm start --workspace=quadratic-client -- --host"
     depends_on:
       postgres:
         condition: service_healthy
     profiles:
+      - client
       - frontend
       - all
     networks:
@@ -54,16 +55,17 @@ services:
       context: .
       dockerfile: quadratic-api/Dockerfile
     env_file:
-      - quadratic-api/.env
-      # - quadratic-api/.env.docker
+      # - quadratic-api/.env
+      - quadratic-api/.env.docker
     restart: "always"
     ports:
       - "8000:8000"
-    command: "node dist/server.js"
+    command: "npm start --workspace=quadratic-api"
     depends_on:
       postgres:
         condition: service_healthy
     profiles:
+      - api
       - backend
       - all
     networks:
