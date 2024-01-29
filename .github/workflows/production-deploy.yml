@@ -50,7 +50,7 @@ jobs:
         pulumi stack select production
 
         # Point to the Pulumi ESC Environment
-        cat <<EOF | tee Pulumi.$STACK_NAME.yaml
+        cat <<EOF | tee Pulumi.production.yaml
         environment:
           - aws-infra-production
         EOF
