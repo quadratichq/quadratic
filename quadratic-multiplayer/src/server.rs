@@ -241,7 +241,7 @@ async fn handle_socket(
                 if let Ok(room) = state.get_room(&file_id).await {
                     tracing::info!("Broadcasting room {file_id} after connection close");
 
-                    let message = MessageResponse::from(room.to_owned());
+                    let message = MessageResponse::from(room.users);
 
                     if let Err(error) = broadcast(
                         vec![connection.session_id],

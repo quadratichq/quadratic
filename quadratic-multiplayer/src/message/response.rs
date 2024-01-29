@@ -3,8 +3,7 @@
 //! A central place for websocket messages responses.
 
 use crate::error::MpError;
-use crate::state::user::UserStateUpdate;
-use crate::state::{room::Room, user::User};
+use crate::state::user::{User, UserStateUpdate};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -40,14 +39,6 @@ pub(crate) enum MessageResponse {
     Error {
         error: MpError,
     },
-}
-
-impl From<Room> for MessageResponse {
-    fn from(room: Room) -> Self {
-        MessageResponse::UsersInRoom {
-            users: room.users.into_iter().map(|user| (user.1)).collect(),
-        }
-    }
 }
 
 impl From<DashMap<Uuid, User>> for MessageResponse {

@@ -131,7 +131,7 @@ pub(crate) async fn handle_message(
             // only broadcast if the user is new to the room
             if is_new {
                 let room = state.get_room(&file_id).await?;
-                let response = MessageResponse::from(room.to_owned());
+                let response = MessageResponse::from(room.users);
 
                 broadcast(vec![], file_id, Arc::clone(&state), response)
                     .await
@@ -157,7 +157,7 @@ pub(crate) async fn handle_message(
             let room = state.get_room(&file_id).await?;
 
             if is_not_empty {
-                let response = MessageResponse::from(room.to_owned());
+                let response = MessageResponse::from(room.users);
                 broadcast(vec![session_id], file_id, Arc::clone(&state), response);
             }
 
