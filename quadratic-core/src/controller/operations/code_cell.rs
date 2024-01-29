@@ -115,6 +115,11 @@ impl GridController {
             })
             .collect()
     }
+
+    /// Reruns a code cell
+    pub fn rerun_code_cell_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
+        vec![Operation::ComputeCode { sheet_pos }]
+    }
 }
 
 #[cfg(test)]

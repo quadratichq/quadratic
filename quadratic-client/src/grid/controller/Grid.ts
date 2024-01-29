@@ -716,6 +716,23 @@ export class Grid {
     }
   }
 
+  rerunAllCodeCells() {
+    const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
+  rerunSheetCodeCells() {
+    const sheetId = sheets.sheet.id;
+    const summary = this.gridController.rerunSheetCodeCells(sheetId, sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
+  rerunCodeCell() {
+    const pos = sheets.sheet.cursor.getPos();
+    const summary = this.gridController.rerunCodeCell(sheets.sheet.id, pos, sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
   //#endregion
 
   //#region Summarize

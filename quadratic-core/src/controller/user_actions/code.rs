@@ -22,16 +22,32 @@ impl GridController {
     /// Reruns code cells in grid.
     ///
     /// Returns a [`TransactionSummary`].
-    pub fn rerun_all_code_cells(&mut self) -> TransactionSummary {
+    pub fn rerun_all_code_cells(&mut self, cursor: Option<String>) -> TransactionSummary {
         let ops = self.rerun_all_code_cells_operations();
-        self.start_user_transaction(ops, None)
+        self.start_user_transaction(ops, cursor)
     }
 
     /// Reruns code cells in a sheet.
     ///
     /// Returns a [`TransactionSummary`].
-    pub fn rerun_sheet_code_cells(&mut self, sheet_id: SheetId) -> TransactionSummary {
+    pub fn rerun_sheet_code_cells(
+        &mut self,
+        sheet_id: SheetId,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
         let ops = self.rerun_sheet_code_cells_operations(sheet_id);
-        self.start_user_transaction(ops, None)
+        self.start_user_transaction(ops, cursor)
+    }
+
+    /// Reruns one code cell
+    ///
+    /// Returns a [`TransactionSummary`].
+    pub fn rerun_code_cell(
+        &mut self,
+        sheet_pos: SheetPos,
+        cursor: Option<String>,
+    ) -> TransactionSummary {
+        let ops = self.rerun_code_cell_operations(sheet_pos);
+        self.start_user_transaction(ops, cursor)
     }
 }

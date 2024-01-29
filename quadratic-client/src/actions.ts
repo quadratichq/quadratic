@@ -142,6 +142,21 @@ export const copyAction = {
   label: 'Copy',
 };
 
+export const rerunCellAction = {
+  label: 'Run this code cell',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const rerunAction = {
+  label: 'Run all code cells in the file',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const rerunSheetAction = {
+  label: 'Run all code cells in the current sheet',
+  isAvailable: hasPermissionToEditFile,
+};
+
 export const downloadSelectionAsCsvAction = {
   label: 'Download selection as CSV',
   run({ fileName }: { fileName: string }) {

@@ -64,20 +64,44 @@ impl GridController {
     ///
     /// Returns [`TransactionSummary`]
     #[wasm_bindgen(js_name = "rerunAllCodeCells")]
-    pub fn js_rerun_code_cells(&mut self) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.rerun_all_code_cells())?)
+    pub fn js_rerun_code_cells(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.rerun_all_code_cells(cursor),
+        )?)
     }
 
     /// Reruns all code cells in a sheet.
     ///
     /// Returns [`TransactionSummary`]
     #[wasm_bindgen(js_name = "rerunSheetCodeCells")]
-    pub fn js_rerun_sheet_code_cells(&mut self, sheet_id: String) -> Result<JsValue, JsValue> {
+    pub fn js_rerun_sheet_code_cells(
+        &mut self,
+        sheet_id: String,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
         let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
             return Ok(serde_wasm_bindgen::to_value(&TransactionSummary::default())?);
         };
         Ok(serde_wasm_bindgen::to_value(
-            &self.rerun_sheet_code_cells(sheet_id),
+            &self.rerun_sheet_code_cells(sheet_id, cursor),
+        )?)
+    }
+
+    /// Reruns one code cell
+    ///
+    /// Returns [`TransactionSummary`]
+    #[wasm_bindgen(js_name = "rerunCodeCell")]
+    pub fn js_rerun_code_cell(
+        &mut self,
+        sheet_id: String,
+        pos: Pos,
+        cursor: Option<String>,
+    ) -> Result<JsValue, JsValue> {
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            return Ok(serde_wasm_bindgen::to_value(&TransactionSummary::default())?);
+        };
+        Ok(serde_wasm_bindgen::to_value(
+            &self.rerun_code_cell(pos.to_sheet_pos(sheet_id), cursor),
         )?)
     }
 }
