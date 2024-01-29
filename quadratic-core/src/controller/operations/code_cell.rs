@@ -23,39 +23,33 @@ impl GridController {
     }
 
     // Returns whether a code_cell is dependent on another code_cell.
-    fn is_dependent_on(&self, current_pos: SheetPos, other: &CodeRun) -> bool {
-        let sheet_current = self.try_sheet(current.sheet_id);
-        let sheet_other = self.try_sheet(other.sheet_id);
-        if let (Some(sheet_current), Some(sheet_other)) = (sheet_current, sheet_other) {
-            let current = sheet_current.cell_value(current.into());
-            let other = sheet_other.cell_value(other.into());
-            if let (Some(other), Some(current)) = (other, current) {
-                if let (CellValue::Code(other), CellValue::Code(current)) = (other, current) {
-                    // todo
-                    return other.language == current.language;
-                }
-            }
-        }
-        false
+    fn is_dependent_on(&self, current: &CodeRun, other_pos: SheetPos) -> bool {
+        current
+            .cells_accessed
+            .iter()
+            .any(|sheet_rect| sheet_rect.contains(other_pos))
     }
 
+    /// Orders code cells to ensure earlier computes do not depend on later computes.
     fn order_code_cells(&self, code_cell_positions: &mut Vec<(SheetPos, &CodeRun)>) {
         // Change the ordering of code_cell_positions to ensure earlier operations do not depend on later operations.
         //
         // Algorithm: iterate through all code cells and check if they are dependent on later code cells. If they are,
-        // move them to the position after the later code cell and restart the iteration at the next code cell. Note:
-        // this is different from sorting as we need to compare all code cells against every other code cell to find
-        // the ordering.
+        // move them to the position after the later code cell and restart the iteration. Note: this is different from
+        // sorting as we need to compare all code cells against every other code cell to find the ordering.
+        let mut protect_infinite = 0;
         let mut i = 0;
         loop {
             let current = code_cell_positions[i];
             let mut changed = false;
             for j in (i + 1)..code_cell_positions.len() {
                 let other = code_cell_positions[j];
-                if self.is_dependent_on(other.0, current.1) {
+                if self.is_dependent_on(current.1, other.0) {
                     // move the current code cell to the position after the other code cell
                     code_cell_positions.remove(i);
-                    code_cell_positions.insert(j + 1, current);
+
+                    // we want to place it after j, but since we removed i, we can use index = j instead of index = j + 1
+                    code_cell_positions.insert(j, current);
                     changed = true;
                     break;
                 }
@@ -65,6 +59,12 @@ impl GridController {
 
                 // only iterate to the second to last element as the last element will always be in the correct position
                 if i == code_cell_positions.len() - 1 {
+                    break;
+                }
+            } else {
+                protect_infinite += 1;
+                if protect_infinite > 100000 {
+                    println!("Infinite loop in order_code_cells");
                     break;
                 }
             }
@@ -86,7 +86,7 @@ impl GridController {
 
         code_cell_positions
             .iter()
-            .map(|sheet_pos| Operation::ComputeCode {
+            .map(|(sheet_pos, _)| Operation::ComputeCode {
                 sheet_pos: *sheet_pos,
             })
             .collect()
@@ -102,7 +102,7 @@ impl GridController {
                 sheet
                     .code_runs
                     .iter()
-                    .map(|(pos, _)| pos.to_sheet_pos(sheet.id))
+                    .map(|(pos, code_run)| (pos.to_sheet_pos(sheet.id), code_run))
             })
             .collect::<Vec<_>>();
 
@@ -110,7 +110,7 @@ impl GridController {
 
         code_cell_positions
             .iter()
-            .map(|sheet_pos| Operation::ComputeCode {
+            .map(|(sheet_pos, _)| Operation::ComputeCode {
                 sheet_pos: *sheet_pos,
             })
             .collect()
@@ -119,6 +119,8 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use bigdecimal::BigDecimal;
+
     use super::*;
     use crate::{Pos, SheetRect};
 
@@ -155,5 +157,185 @@ mod test {
     }
 
     #[test]
-    fn rerun_all_code_cells_operations() {}
+    fn rerun_all_code_cells_operations() {
+        let mut gc = GridController::default();
+        gc.add_sheet(None);
+
+        // (0, 0) = 1 + 1
+        let first = |gc: &mut GridController| {
+            let sheet_id = gc.sheet_ids()[0];
+            gc.set_code_cell(
+                SheetPos {
+                    x: 0,
+                    y: 0,
+                    sheet_id,
+                },
+                CodeCellLanguage::Formula,
+                "1 + 1".to_string(),
+                None,
+            )
+        };
+
+        // (1, 1) = A0
+        let second = |gc: &mut GridController| {
+            let sheet_id = gc.sheet_ids()[0];
+            gc.set_code_cell(
+                SheetPos {
+                    x: 1,
+                    y: 1,
+                    sheet_id,
+                },
+                CodeCellLanguage::Formula,
+                "A0".to_string(),
+                None,
+            )
+        };
+
+        // (0, 0, sheet 2) = sheet 1:A1
+        let third = |gc: &mut GridController| {
+            let sheet_id_2 = gc.sheet_ids()[1];
+            gc.set_code_cell(
+                SheetPos {
+                    x: 0,
+                    y: 0,
+                    sheet_id: sheet_id_2,
+                },
+                CodeCellLanguage::Formula,
+                "'Sheet 1'!A0".to_string(),
+                None,
+            )
+        };
+
+        let check_operations = |gc: &GridController| {
+            let sheet_id = gc.sheet_ids()[0];
+            let sheet_id_2 = gc.sheet_ids()[1];
+            let operations = gc.rerun_all_code_cells_operations();
+            assert_eq!(operations.len(), 3);
+            assert_eq!(
+                operations[0],
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos {
+                        x: 0,
+                        y: 0,
+                        sheet_id,
+                    },
+                }
+            );
+            assert_eq!(
+                operations[1],
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos {
+                        x: 1,
+                        y: 1,
+                        sheet_id,
+                    },
+                }
+            );
+            assert_eq!(
+                operations[2],
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos {
+                        x: 0,
+                        y: 0,
+                        sheet_id: sheet_id_2,
+                    },
+                }
+            );
+        };
+
+        first(&mut gc);
+        second(&mut gc);
+        third(&mut gc);
+
+        // sanity check that everything is set properly
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_id_2 = gc.sheet_ids()[1];
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        let sheet_2 = gc.sheet(sheet_id_2);
+        assert_eq!(
+            sheet_2.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+
+        check_operations(&gc);
+
+        // test same operations in different orders
+        let mut gc = GridController::default();
+        gc.add_sheet(None);
+
+        second(&mut gc);
+        third(&mut gc);
+        first(&mut gc);
+        check_operations(&gc);
+
+        // test same operations in different orders
+        let mut gc = GridController::default();
+        gc.add_sheet(None);
+        first(&mut gc);
+        third(&mut gc);
+        second(&mut gc);
+        check_operations(&gc);
+
+        // test same operations in different orders
+        let mut gc = GridController::default();
+        gc.add_sheet(None);
+        third(&mut gc);
+        second(&mut gc);
+        first(&mut gc);
+        check_operations(&gc);
+
+        // test same operations in different orders
+        let mut gc = GridController::default();
+        gc.add_sheet(None);
+        third(&mut gc);
+        first(&mut gc);
+        second(&mut gc);
+        check_operations(&gc);
+
+        let check_sheet_operations = |gc: &GridController| {
+            let sheet_id = gc.sheet_ids()[0];
+            let operations = gc.rerun_all_code_cells_operations();
+            assert_eq!(operations.len(), 2);
+            assert_eq!(
+                operations[0],
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos {
+                        x: 0,
+                        y: 0,
+                        sheet_id,
+                    },
+                }
+            );
+            assert_eq!(
+                operations[1],
+                Operation::ComputeCode {
+                    sheet_pos: SheetPos {
+                        x: 1,
+                        y: 1,
+                        sheet_id,
+                    },
+                }
+            );
+        };
+
+        // test the operations without the second sheet
+        let mut gc = GridController::default();
+        first(&mut gc);
+        second(&mut gc);
+        check_sheet_operations(&gc);
+
+        // test same operations in different orders
+        let mut gc = GridController::default();
+        second(&mut gc);
+        first(&mut gc);
+        check_sheet_operations(&gc);
+    }
 }
