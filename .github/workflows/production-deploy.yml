@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main 
-      - a-team # TODO: REMOVE
+      - a-team-prod-infra # TODO: REMOVE
     paths:
       - 'quadratic-multiplayer/**'
       - 'quadratic-files/**'
