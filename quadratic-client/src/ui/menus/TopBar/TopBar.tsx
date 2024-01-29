@@ -1,5 +1,4 @@
-import { Switch } from '@/shadcn/ui/switch';
-import { cn } from '@/shadcn/utils';
+import { SwitchApp } from '@/shadcn/ui/switch';
 import { Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -54,13 +53,10 @@ export const TopBar = () => {
       }}
     >
       <div
+        className="flex items-stretch lg:basis-1/3"
         style={{
           //@ts-expect-error
           WebkitAppRegion: 'no-drag',
-          display: 'flex',
-          alignItems: 'stretch',
-          color: theme.palette.text.primary,
-          ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
         <QuadraticMenu />
@@ -76,23 +72,18 @@ export const TopBar = () => {
       <TopBarFileMenu />
 
       <div
+        className="flex items-center justify-end gap-4 lg:basis-1/3"
         style={{
           // @ts-expect-error
           WebkitAppRegion: 'no-drag',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: theme.spacing(),
-          color: theme.palette.text.primary,
-          ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
         {isDesktop && !isEmbed && (
           <>
-            <Tooltip title={`Code cell outlines ${showCellTypeOutlines ? 'visible' : 'hidden'}`}>
-              <Switch className={cn('br-0')} checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
-            </Tooltip>
             <TopBarUsers />
+            <Tooltip title={`${showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
+              <SwitchApp checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
+            </Tooltip>
             <TopBarShareButton />
           </>
         )}

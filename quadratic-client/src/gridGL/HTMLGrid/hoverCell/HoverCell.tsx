@@ -2,7 +2,6 @@ import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { cn } from '@/shadcn/utils';
-import { colors } from '@/theme/colors';
 import { useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
 
@@ -69,12 +68,14 @@ export const HoverCell = () => {
           <div>Array output could not expand because it would overwrite existing values.</div>
           <div>
             To fix this, remove content in cell{spillError.length > 1 ? 's' : ''}{' '}
-            {spillError.map(
-              (pos, index) =>
-                `(${pos.x}, ${pos.y})${
-                  index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'
-                }`
-            )}
+            {spillError.map((pos, index) => (
+              <>
+                <code className="hover-cell-code">
+                  ({String(pos.x)}, {String(pos.y)})
+                </code>
+                {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
+              </>
+            ))}
           </div>
         </div>
       </>
@@ -86,7 +87,7 @@ export const HoverCell = () => {
           <div className="hover-cell-header">Run Error</div>
           <div className="hover-cell-body">
             <div>There was an error running the code in this cell.</div>
-            <div style={{ color: colors.error }}>{code.std_err}</div>
+            <div className="hover-cell-error-msg">{code.std_err}</div>
           </div>
           <div className="hover-cell-header-space">{renderCodeCell.language} Code</div>
           <div className="code-body">{code?.code_string}</div>
@@ -149,6 +150,12 @@ export const HoverCell = () => {
     };
     updatePosition();
     pixiApp.viewport.on('moved', updatePosition);
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      pixiApp.viewport.off('moved', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
   }, [cell]);
 
   return (

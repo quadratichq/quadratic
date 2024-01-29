@@ -60,7 +60,6 @@ export default function QuadraticUI() {
           display: 'flex',
           overflow: 'hidden',
           position: 'relative',
-          border: follow ? `3px solid ${follow.colorString}` : '',
         }}
       >
         <FileUploadWrapper>
@@ -69,6 +68,16 @@ export default function QuadraticUI() {
         </FileUploadWrapper>
         {editorInteractionState.showCodeEditor && <CodeEditor />}
         <Following follow={follow} />
+        <div
+          style={{
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            position: 'absolute',
+            border: follow ? `3px solid ${follow.colorString}` : '',
+            pointerEvents: 'none',
+          }}
+        ></div>
       </div>
 
       {!presentationMode && !isEmbed && <BottomBar />}

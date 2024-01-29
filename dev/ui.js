@@ -11,10 +11,11 @@ export class UI {
     showing = false;
     characters = 0;
     lines = 0;
+    interval;
     constructor(cli, control) {
         this.cli = cli;
         this.control = control;
-        setInterval(() => {
+        this.interval = setInterval(() => {
             this.spin = (this.spin + 1) % ANIMATE_STATUS.length;
             if (this.showing) {
                 this.clear();
@@ -22,6 +23,11 @@ export class UI {
             }
         }, ANIMATION_INTERVAL);
         createScreen();
+    }
+    quit() {
+        this.clear();
+        clearInterval(this.interval);
+        process.stdin.pause();
     }
     clear() {
         if (this.showing) {
@@ -171,9 +177,9 @@ export class UI {
         const command = this.control[name];
         const component = COMPONENTS[name];
         const color = this.cli.options.dark ? component.dark : component.color;
-        const hide = component.hide || this.getHideOption(name);
         const displayName = component.name;
         command.stdout.on("data", (data) => {
+            const hide = COMPONENTS[name].hide || this.getHideOption(name);
             if (hide) {
                 if (callback) {
                     callback(data);
@@ -191,6 +197,7 @@ export class UI {
             }
         });
         command.stderr.on("data", (data) => {
+            const hide = COMPONENTS[name].hide || this.getHideOption(name);
             if (hide) {
                 if (callback) {
                     callback(data);

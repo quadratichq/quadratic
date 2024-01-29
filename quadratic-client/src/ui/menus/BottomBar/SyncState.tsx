@@ -25,21 +25,21 @@ export default function SyncState() {
     tooltip = 'Connecting to the Quadratic server…';
   } else if (syncState === 'syncing') {
     icon = <CircularProgress size="0.5rem" />;
-    message = <span>Connected to Server</span>;
+    message = <span>Connected</span>;
     tooltip = 'Syncing changes to the Quadratic server. Your recent changes are saved locally.';
   } else if (syncState === 'connected') {
     icon = <Check fontSize="inherit" />;
-    message = <span>Connected to Server</span>;
+    message = <span>Connected</span>;
     tooltip = 'Connected to the Quadratic server. Your changes are saved.';
   } else if (syncState === 'no internet') {
     icon = <ErrorOutline fontSize="inherit" style={{ color: theme.palette.error.main }} />;
-    message = <span style={{ color: theme.palette.error.main }}>Offline mode</span>;
+    message = <span style={{ color: theme.palette.error.main }}>Offline</span>;
     tooltip = 'Your internet connection appears not to be working. Your changes are only saved locally.';
   } else {
     icon = <ErrorOutline fontSize="inherit" style={{ color: theme.palette.error.main }} />;
     tooltip =
       "Connection to the Quadratic server was lost. We'll continue trying to reconnect. Your changes are only saved locally.";
-    message = <span style={{ color: theme.palette.error.main }}>Offline mode</span>;
+    message = <span style={{ color: theme.palette.error.main }}>Offline</span>;
   }
 
   return (
