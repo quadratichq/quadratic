@@ -77,6 +77,7 @@ aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
 sudo docker run -d \
+            --name ${imageRepositoryName} \
             --restart always \
             -p 80:80 \
             --env-file .env \
