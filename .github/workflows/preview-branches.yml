@@ -29,7 +29,6 @@ jobs:
     - uses: pulumi/actions@v4
 
     - name: Update Pulumi Infrastructure
-      id: pulumiInfra
       working-directory: infra
       run: |
         npm ci
