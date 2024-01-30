@@ -39,6 +39,9 @@ export type MultiplayerState =
   | 'waiting to reconnect'
   | 'syncing';
 
+// todo: Next time we have a chance to refactor Multiplayer:
+// * separate out the connection part into its own class/file and fully test all connection states by mocking the Socket.
+
 export class Multiplayer {
   sessionId: string;
 
