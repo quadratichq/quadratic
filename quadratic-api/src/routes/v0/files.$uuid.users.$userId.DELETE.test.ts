@@ -1,11 +1,8 @@
-describe('DELETE /v0/files/:uuid/users/:userId', () => {
-  it.todo('to come...');
-});
-/*
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { getUserIdByAuth0Id } from '../../tests/helpers';
+import { expectError, getUserIdByAuth0Id } from '../../tests/helpers';
+import { createFile } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users
@@ -31,15 +28,12 @@ beforeEach(async () => {
   });
 
   // Create a file
-  await dbClient.file.create({
+  await createFile({
     data: {
+      creatorUserId: userOwner.id,
       ownerUserId: userOwner.id,
-      contents: Buffer.from('contents_0'),
-      version: '1.4',
       name: 'File',
       uuid: '00000000-0000-4000-8000-000000000001',
-      publicLinkAccess: 'NOT_SHARED',
-      // teamId: team.id,
       UserFileRole: {
         create: [
           { userId: userEditor.id, role: 'EDITOR' },
@@ -53,144 +47,82 @@ beforeEach(async () => {
 afterEach(async () => {
   await dbClient.$transaction([
     dbClient.userFileRole.deleteMany(),
+    dbClient.fileCheckpoint.deleteMany(),
     dbClient.file.deleteMany(),
     dbClient.user.deleteMany(),
   ]);
 });
 
 describe('DELETE /v0/files/:uuid/users/:userId', () => {
-  // TODO: this is similar to editing users, as there is a matrix of
-  // what a user can do based on whether they're part of a team, the file is public, etc.
-
   describe('invalid request', () => {
     it('responds with a 400 for an invalid user', async () => {
       await request(app)
         .delete('/v0/files/00000000-0000-4000-8000-000000000001/users/foo')
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(400);
+        .expect(400)
+        .expect(expectError);
     });
-    it('responds with a 403 for a user that isn’t assciated with a file', async () => {
+    it('responds with a 404 for a user that isn’t in the system', async () => {
       await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000001/users/1400000')
-        .set('Accept', 'application/json')
+        .delete(`/v0/files/00000000-0000-4000-8000-000000000001/users/200000`)
         .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(403);
+        .expect(404)
+        .expect(expectError);
     });
   });
+
   describe('deleting yourself', () => {
-    it('does not allow owners to remove themselves', async () => {
+    it('responds with a 400 if you’re the owner', async () => {
       const userAuth0Id = 'userOwner';
       const userId = await getUserIdByAuth0Id(userAuth0Id);
       await request(app)
         .delete(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken ${userAuth0Id}`)
-        .expect('Content-Type', /json/)
-        .expect(403);
+        .expect(400)
+        .expect(expectError);
     });
-    it('allows editors to remove themselves', async () => {
+    it('responds with a 200 and a directive to redirect', async () => {
       const userAuth0Id = 'userEditor';
       const userId = await getUserIdByAuth0Id(userAuth0Id);
       await request(app)
         .delete(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken ${userAuth0Id}`)
-        .expect('Content-Type', /json/)
-        .expect(200);
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toEqual({ id: userId, redirect: true });
+        });
     });
-    it('allows viewers to remove themselves', async () => {
+  });
+
+  describe('deleting others', () => {
+    it('responds with a 403 if you don’t have permission', async () => {
+      const userAuth0Id = 'userEditor';
+      const userId = await getUserIdByAuth0Id(userAuth0Id);
+      await request(app)
+        .delete(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
+        .set('Authorization', `Bearer ValidToken userViewer`)
+        .expect(403)
+        .expect(expectError);
+    });
+    it('responds with a 404 for a user not associated with the file', async () => {
+      const userAuth0Id = 'userNoFileRole';
+      const userId = await getUserIdByAuth0Id(userAuth0Id);
+      await request(app)
+        .delete(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
+        .set('Authorization', `Bearer ValidToken userOwner`)
+        .expect(404)
+        .expect(expectError);
+    });
+    it('responds with a 200 if you can remove somebody else', async () => {
       const userAuth0Id = 'userViewer';
       const userId = await getUserIdByAuth0Id(userAuth0Id);
       await request(app)
         .delete(`/v0/files/00000000-0000-4000-8000-000000000001/users/${userId}`)
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken ${userAuth0Id}`)
-        .expect('Content-Type', /json/)
-        .expect(200);
+        .set('Authorization', `Bearer ValidToken userEditor`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body).toEqual({ id: userId });
+        });
     });
   });
-  /*
-  describe('deleteing others as an owner', () => {
-    it('allows owners to remove other owners', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000002/users/2')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(200);
-    });
-    it('allows owners to remove editors', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000001/users/2')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(200);
-    });
-    it('allows owners to remove viewers', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000001/users/3')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userOwner`)
-        .expect('Content-Type', /json/)
-        .expect(200);
-    });
-  });
-  describe('deleteing others as an editor', () => {
-    it('doesn’t allow editors to remove owners', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000002/users/1')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userViewer`)
-        .expect('Content-Type', /json/)
-        .expect(403);
-    });
-    it('allows editors to remove other editors', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000002/users/4')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userViewer`)
-        .expect('Content-Type', /json/)
-        .expect(200);
-    });
-    it('allows editors to remove viewers', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000002/users/5')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken userViewer`)
-        .expect('Content-Type', /json/)
-        .expect(200);
-    });
-  });
-  describe('deleteing others as a viewer', () => {
-    it('doesn’t allow viewers to remove owners', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000002/users/1')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken test_user5`)
-        .expect('Content-Type', /json/)
-        .expect(403);
-    });
-    it('doesn’t allow viewers to remove editors', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000002/users/3')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken test_user5`)
-        .expect('Content-Type', /json/)
-        .expect(403);
-    });
-    it('doesn’t allow viewers to remove other viewers', async () => {
-      await request(app)
-        .delete('/v0/files/00000000-0000-4000-8000-000000000002/users/6')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken test_user5`)
-        .expect('Content-Type', /json/)
-        .expect(403);
-    });
-  });
-  
 });
-*/
