@@ -40,7 +40,7 @@ export type MultiplayerState =
   | 'syncing';
 
 export class Multiplayer {
-  sessionId;
+  sessionId: string;
 
   private websocket?: WebSocket;
   private _state: MultiplayerState = 'startup';
@@ -364,7 +364,6 @@ export class Multiplayer {
       if (user.session_id === this.sessionId) {
         this.index = user.index;
         this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
-        console.log(this.index);
       } else {
         let player = this.users.get(user.session_id);
         if (player) {

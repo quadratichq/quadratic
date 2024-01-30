@@ -50,7 +50,8 @@ impl Room {
         Ok(user.to_owned())
     }
 
-    pub fn next_user_index(&mut self) -> usize {
+    /// Gets the next user index and increments the user index to prepare for the next user.
+    pub fn user_index_increment(&mut self) -> usize {
         let index = self.user_index;
         self.user_index += 1;
         index
@@ -76,7 +77,7 @@ impl State {
         mut pre_connection: PreConnection,
         sequence_num: u64,
     ) -> Result<bool> {
-        user.index = get_or_create_room!(self, file_id, sequence_num).next_user_index();
+        user.index = get_or_create_room!(self, file_id, sequence_num).user_index_increment();
         let is_new = get_room!(self, file_id)?
             .users
             .insert(user.session_id.to_owned(), user.to_owned())
