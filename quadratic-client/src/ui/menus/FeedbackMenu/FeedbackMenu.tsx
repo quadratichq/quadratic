@@ -38,6 +38,8 @@ export const FeedbackMenu = () => {
 
     if (name.length > 0) {
       // Caught you bot!
+      closeMenu();
+      setValue('');
       return;
     }
 
