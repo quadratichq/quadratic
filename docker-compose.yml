@@ -35,6 +35,7 @@ services:
       context: .
       dockerfile: quadratic-client/Dockerfile
     env_file:
+      - quadratic-client/.env.local
       - quadratic-client/.env.docker
     restart: "always"
     ports:
@@ -55,7 +56,7 @@ services:
       context: .
       dockerfile: quadratic-api/Dockerfile
     env_file:
-      # - quadratic-api/.env
+      - quadratic-api/.env
       - quadratic-api/.env.docker
     restart: "always"
     ports:
@@ -66,10 +67,8 @@ services:
         condition: service_healthy
     profiles:
       - api
-      - backend
+      - frontend
       - all
-    networks:
-      - host
 
   quadratic-multiplayer:
     build:
@@ -81,7 +80,7 @@ services:
       - quadratic-multiplayer/.env.docker
     # override env vars here
     environment:
-      QUADRATIC_API_URI: http://host.docker.internal:8000
+      # QUADRATIC_API_URI: http://host.docker.internal:8000
       RUST_LOG: info
     restart: "always"
     ports:
@@ -95,7 +94,7 @@ services:
         condition: service_started
     profiles:
       - backend
-      - quadratic-files-dev
+      - quadratic-multiplayer
       - all
     networks:
       - host
@@ -124,10 +123,8 @@ services:
         condition: service_started
     profiles:
       - backend
-      - quadratic-multiplayer-dev
+      - quadratic-files
       - all
-    networks:
-      - host
 
 volumes:
   docker:
