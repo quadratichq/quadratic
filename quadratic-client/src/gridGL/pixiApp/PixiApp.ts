@@ -134,9 +134,9 @@ export class PixiApp {
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());
 
+    this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
-    this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());

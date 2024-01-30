@@ -77,6 +77,7 @@ aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
 sudo docker run -d \
+            --name ${imageRepositoryName} \
             --restart always \
             -p 80:80 \
             --env-file .env \
@@ -85,11 +86,11 @@ sudo docker run -d \
 # TODO: In preview environments we should disable datadog
 echo 'Setting up Datadog agent'
 docker run -d --name datadog-agent \
-           --env-file .env \
-           -e DD_HOSTNAME=${imageTag} \
-           -v /var/run/docker.sock:/var/run/docker.sock:ro \
-           -v /proc/:/host/proc/:ro \
-           -v /opt/datadog-agent/run:/opt/datadog-agent/run:rw \
-           -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
-           datadog/agent:latest`;
+            --restart always \
+            --env-file .env \
+            -v /var/run/docker.sock:/var/run/docker.sock:ro \
+            -v /proc/:/host/proc/:ro \
+            -v /opt/datadog-agent/run:/opt/datadog-agent/run:rw \
+            -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
+            datadog/agent:latest`;
 };
