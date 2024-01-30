@@ -178,14 +178,12 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(sheet_pos, html, special) {
-                self.start_user_transaction(ops, cursor)
-            } else {
-                TransactionSummary::default()
+                return self.start_user_transaction(ops, cursor);
             }
         }
         // if not quadratic html, then use the plain text
         // first try html
-        else if let Some(plain_text) = plain_text {
+        if let Some(plain_text) = plain_text {
             let ops = self.paste_plain_text_operations(sheet_pos, plain_text, special);
             self.start_user_transaction(ops, cursor)
         } else {
