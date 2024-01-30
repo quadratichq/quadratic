@@ -26,6 +26,7 @@ export interface MultiplayerUserServer {
   y?: number;
   viewport: string;
   code_running: string;
+  follow?: string;
 }
 
 // extended by the client
@@ -55,6 +56,7 @@ export interface MessageUserUpdate {
     visible?: boolean;
     viewport?: string;
     code_running?: string;
+    follow?: string;
   };
 }
 

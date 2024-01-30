@@ -1,10 +1,12 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { TooltipHint } from '@/ui/components/TooltipHint';
 import { displayInitials, displayName } from '@/utils/userUtil';
 import { Avatar, AvatarGroup, IconButton } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
-import { useSetRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import { useMultiplayerUsers } from './useMultiplayerUsers';
@@ -13,8 +15,15 @@ const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 
 export const TopBarUsers = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const { users, follow } = useMultiplayerUsers();
-  const usersWithoutFollow = users.filter((user) => user.session_id !== follow?.session_id);
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const { users, followers } = useMultiplayerUsers();
+
+  const anonymous = !user
+    ? {
+        index: multiplayer.index,
+        colorString: MULTIPLAYER_COLORS[(multiplayer.index ?? 0) % MULTIPLAYER_COLORS.length],
+      }
+    : undefined;
 
   return (
     <>
@@ -30,29 +39,18 @@ export const TopBarUsers = () => {
         }}
         max={5}
       >
-        {user && (
+        {
           <div className={`ml-2`}>
             <You
-              displayName={displayName(user, true)}
-              initial={displayInitials(user)}
-              picture={user.picture || ''}
-              border={'black'}
+              displayName={displayName(user ?? anonymous, true)}
+              initial={displayInitials(user ?? anonymous)}
+              picture={user?.picture ?? ''}
+              border={multiplayer.colorString ?? 'black'}
+              bgColor={multiplayer.colorString}
             />
           </div>
-        )}
-        {follow && (
-          <UserAvatar
-            displayName={displayName(follow, false)}
-            initial={displayInitials(follow)}
-            picture={follow.image || ''}
-            border={follow.colorString}
-            sessionId={follow.session_id}
-            follow={true}
-            viewport={follow.viewport}
-            bgColor={follow.colorString}
-          />
-        )}
-        {usersWithoutFollow.map((user) => {
+        }
+        {users.map((user) => {
           return (
             <UserAvatar
               key={user.session_id}
@@ -61,7 +59,8 @@ export const TopBarUsers = () => {
               picture={user.image}
               border={user.colorString}
               sessionId={user.session_id}
-              follow={false}
+              follow={editorInteractionState.follow === user.session_id}
+              follower={followers.includes(user.session_id)}
               viewport={user.viewport}
               bgColor={user.colorString}
             />
@@ -77,17 +76,19 @@ function You({
   initial,
   picture,
   border,
+  bgColor,
 }: {
   displayName: string;
   initial: string;
   picture: string;
   border: string;
+  bgColor?: string;
 }) {
   return (
     <TooltipHint title={displayName}>
       <Avatar
         sx={{
-          bgcolor: colors.quadraticSecondary,
+          bgcolor: bgColor ?? colors.quadraticSecondary,
           ...sharedAvatarSxProps,
         }}
         alt={displayName}
@@ -109,6 +110,7 @@ function UserAvatar({
   border,
   sessionId,
   follow,
+  follower,
   viewport,
   bgColor,
 }: {
@@ -118,23 +120,31 @@ function UserAvatar({
   border: string;
   sessionId: string;
   follow: boolean;
+  follower: boolean;
   viewport: string;
   bgColor?: string;
 }) {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
   const handleFollow = () => {
+    // you cannot follow a user that is following you
+    if (follower) return;
     setEditorInteractionState((prev) => {
       if (follow) {
+        multiplayer.sendFollow('');
         return { ...prev, follow: undefined };
       }
       pixiApp.loadMultiplayerViewport(JSON.parse(viewport));
+      multiplayer.sendFollow(sessionId);
       return { ...prev, follow: sessionId };
     });
   };
 
   return (
     <div className="relative">
-      <TooltipHint title={displayName} shortcut={`Click to ${follow ? 'unfollow' : 'follow'}`}>
+      <TooltipHint
+        title={displayName}
+        shortcut={follower ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`}
+      >
         <IconButton sx={{ borderRadius: 0, px: '.25rem' }} onClick={handleFollow}>
           <div>
             <Avatar
@@ -158,6 +168,11 @@ function UserAvatar({
       </TooltipHint>
       {follow && (
         <div className="pointer-events-none absolute bottom-1 left-1/2 flex h-5  w-5 items-center justify-center rounded-full bg-white">
+          <EyeOpenIcon />
+        </div>
+      )}
+      {follower && (
+        <div className="pointer-events-none absolute left-1/2 top-1 flex h-5  w-5 items-center justify-center rounded-full bg-white">
           <EyeOpenIcon />
         </div>
       )}
