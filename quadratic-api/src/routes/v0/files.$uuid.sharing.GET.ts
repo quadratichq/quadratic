@@ -8,6 +8,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 
 export default [
   validateRequestSchema(
@@ -22,12 +23,11 @@ export default [
   handler,
 ];
 
-async function handler(req: Request, res: Response) {
+async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sharing.GET.response']>) {
   const {
     user: { id: userId },
     params: { uuid },
   } = req as RequestWithUser;
-
   const { file, userMakingRequest } = await getFile({ uuid, userId });
   const { publicLinkAccess } = file;
 
@@ -37,6 +37,7 @@ async function handler(req: Request, res: Response) {
   //   delete owner.email;
   // }
 
+  // Get the file and all the invites/users associated with it
   const dbFile = await dbClient.file.findUnique({
     where: {
       id: file.id,
@@ -59,11 +60,7 @@ async function handler(req: Request, res: Response) {
     },
   });
   if (!dbFile) {
-    return res.status(500).json({
-      error: {
-        message: 'Failed to find file that should’ve been found in middleware.',
-      },
-    });
+    throw new ApiError(500, 'Failed to find file that should’ve been found in middleware.');
   }
   const dbInvites = dbFile.FileInvite;
   const dbUsers = dbFile.UserFileRole;
@@ -80,7 +77,7 @@ async function handler(req: Request, res: Response) {
   const ownerId = dbFile.ownerUser.id as number;
   const ownerUser = usersById[ownerId];
 
-  const data: ApiTypes['/v0/files/:uuid/sharing.GET.response'] = {
+  return res.status(200).json({
     file: {
       publicLinkAccess,
     },
@@ -90,7 +87,6 @@ async function handler(req: Request, res: Response) {
     }),
     invites: dbInvites.map(({ id, email, role }) => ({ id, email, role })),
     userMakingRequest: {
-      // If they're on this route, there's always a user
       id: userId,
       filePermissions: userMakingRequest.filePermissions,
       fileRole: userMakingRequest.fileRole,
@@ -98,13 +94,11 @@ async function handler(req: Request, res: Response) {
     },
     owner: {
       type: 'user',
-      // @ts-expect-error TODO: fix types coming from `getFile()`
-      id: file.ownerUserId,
+      id: ownerUser.id,
       email: ownerUser.email,
       name: ownerUser.name,
       picture: ownerUser.picture,
     },
     // team: {},
-  };
-  return res.status(200).json(data);
+  });
 }
