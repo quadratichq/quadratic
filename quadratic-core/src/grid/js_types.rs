@@ -196,13 +196,14 @@ pub struct JsCodeCell {
     pub std_out: Option<String>,
     pub std_err: Option<String>,
     pub evaluation_result: Option<String>,
+    pub spill_error: Option<Vec<Pos>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderCodeCell {
-    pub x: i64,
-    pub y: i64,
+    pub x: i32,
+    pub y: i32,
     pub w: u32,
     pub h: u32,
     pub language: CodeCellLanguage,

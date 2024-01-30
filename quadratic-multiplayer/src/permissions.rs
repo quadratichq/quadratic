@@ -8,8 +8,8 @@ use crate::{
     state::State,
 };
 
-pub(crate) fn validate_can_edit_or_view_file(roles: &Vec<FilePermRole>) -> Result<()> {
-    if !can_view(&roles) || !can_edit(&roles) {
+pub(crate) fn validate_can_edit_or_view_file(roles: &[FilePermRole]) -> Result<()> {
+    if !(can_view(roles) || can_edit(roles)) {
         return Err(MpError::FilePermissions(
             "You do not have permission to access this file".to_string(),
         ));
@@ -18,8 +18,8 @@ pub(crate) fn validate_can_edit_or_view_file(roles: &Vec<FilePermRole>) -> Resul
     Ok(())
 }
 
-pub(crate) fn validate_can_edit_file(roles: &Vec<FilePermRole>) -> Result<()> {
-    if !can_edit(&roles) {
+pub(crate) fn validate_can_edit_file(roles: &[FilePermRole]) -> Result<()> {
+    if !can_edit(roles) {
         return Err(MpError::FilePermissions(
             "You do not have permission to edit this file".to_string(),
         ));

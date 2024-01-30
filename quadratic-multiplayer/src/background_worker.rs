@@ -15,7 +15,11 @@ use crate::{
 ///   * Broadcast sequence number to all users in the room
 ///   * Check for stale users in rooms and remove them.
 #[tracing::instrument(level = "trace")]
-pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_timeout_s: i64) {
+pub(crate) fn start(
+    state: Arc<State>,
+    heartbeat_check_s: i64,
+    heartbeat_timeout_s: i64,
+) -> JoinHandle<()> {
     let state = Arc::clone(&state);
 
     tokio::spawn(async move {
@@ -48,7 +52,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                     tracing::trace!("Processing room {}", file_id);
 
                     // broadcast sequence number to all users in the room
-                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), &file_id).await;
+                    let broadcasted = broadcast_sequence_num(Arc::clone(&state), file_id).await;
 
                     if let Err(error) = broadcasted {
                         tracing::warn!("Error broadcasting sequence number: {:?}", error);
@@ -57,7 +61,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
                     // remove stale users in the room
                     let removed = remove_stale_users_in_room(
                         Arc::clone(&state),
-                        &file_id,
+                        file_id,
                         heartbeat_timeout_s,
                     )
                     .await;
@@ -74,7 +78,7 @@ pub(crate) async fn start(state: Arc<State>, heartbeat_check_s: i64, heartbeat_t
 
             interval.tick().await;
         }
-    });
+    })
 }
 
 // broadcast sequence number to all users in the room
@@ -96,13 +100,13 @@ async fn remove_stale_users_in_room(
     file_id: &Uuid,
     heartbeat_timeout_s: i64,
 ) -> Result<Option<JoinHandle<()>>> {
-    let (num_removed, num_remaining) = state
+    let (num_stale_users, num_remaining) = state
         .remove_stale_users_in_room(file_id.to_owned(), heartbeat_timeout_s)
         .await?;
 
     tracing::trace!("Checking heartbeats in room {file_id} ({num_remaining} remaining in room)");
 
-    if num_removed == 0 {
+    if num_stale_users == 0 {
         return Ok(None);
     }
 
@@ -134,8 +138,7 @@ mod tests {
     async fn test_broadcast_sequence_num() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
-        let connection_id = Uuid::new_v4();
-        let _user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let _user = add_new_user_to_room(file_id, state.clone()).await;
         let mut grid = GridController::test();
         let transaction_id_1 = Uuid::new_v4();
         let operations_1 = operation(&mut grid, 0, 0, "1");
@@ -158,8 +161,7 @@ mod tests {
     async fn remove_stale_users_in_room() {
         let state = new_arc_state().await;
         let file_id = Uuid::new_v4();
-        let connection_id = Uuid::new_v4();
-        let user = add_new_user_to_room(file_id, state.clone(), connection_id).await;
+        let user = add_new_user_to_room(file_id, state.clone()).await;
 
         let room = state.get_room(&file_id).await.unwrap();
         assert_eq!(room.get_user(&user.session_id).unwrap(), user);

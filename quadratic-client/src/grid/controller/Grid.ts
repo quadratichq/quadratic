@@ -115,6 +115,7 @@ export class Grid {
 
     if (summary.code_cells_modified.length) {
       pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+      window.dispatchEvent(new CustomEvent('code-cells-update'));
     }
 
     if (summary.border_sheets_modified.length) {
@@ -154,6 +155,9 @@ export class Grid {
       window.dispatchEvent(new CustomEvent('grid-empty', { detail: true }));
       this.empty = true;
     }
+
+    // todo: this should not be necessary as Update.ts should take care of it; right now
+    //       it renders every time it receives a heartbeat. not a big deal but worth fixing.
 
     pixiApp.setViewportDirty();
   }

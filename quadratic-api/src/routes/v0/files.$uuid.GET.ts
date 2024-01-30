@@ -25,7 +25,7 @@ export default [
 async function handler(req: RequestWithOptionalUser, res: Response) {
   const {
     file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerTeam },
-    userMakingRequest: { filePermissions, isFileOwner },
+    userMakingRequest: { filePermissions, isFileOwner, fileRole },
   } = await getFile({ uuid: req.params.uuid, userId: req.user?.id });
 
   const thumbnailSignedUrl = thumbnail ? await generatePresignedUrl(thumbnail) : null;
@@ -56,13 +56,11 @@ async function handler(req: RequestWithOptionalUser, res: Response) {
       lastCheckpointDataUrl,
       thumbnail: thumbnailSignedUrl,
     },
-    owner: ownerTeam
-      ? { type: 'team', uuid: ownerTeam.uuid, name: ownerTeam.name }
-      : isFileOwner
-      ? { type: 'self' }
-      : { type: 'user' },
+    team: ownerTeam ? { uuid: ownerTeam.uuid, name: ownerTeam.name } : undefined,
     userMakingRequest: {
       filePermissions,
+      isFileOwner,
+      fileRole,
     },
   };
   return res.status(200).json(data);

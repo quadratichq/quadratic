@@ -7,6 +7,7 @@ import { CellInput } from './CellInput';
 import { CodeHint } from './CodeHint';
 import { CodeError } from './codeError/CodeError';
 import { CodeRunning } from './codeRunning/CodeRunning';
+import { HoverCell } from './hoverCell/HoverCell';
 import { HtmlCells } from './htmlCells/HtmlCells';
 import { MultiplayerCellEdits } from './multiplayerInput/MultiplayerCellEdits';
 
@@ -61,10 +62,12 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
     viewport.on('moved', updateTransform);
     viewport.on('moved-end', updateTransform);
     viewport.on('zoomed', updateTransform);
+    window.addEventListener('resize', updateTransform);
     return () => {
       viewport.off('moved', updateTransform);
       viewport.off('moved-end', updateTransform);
       viewport.off('zoomed', updateTransform);
+      window.removeEventListener('resize', updateTransform);
     };
   }, [parent, container]);
 
@@ -109,7 +112,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
             {emptyGrid && <CodeHint />}
             <HtmlCells />
             <CodeRunning />
-            <CodeError />
+            <HoverCell />
             <MultiplayerCursors topHeading={topHeading} leftHeading={leftHeading} />
           </div>
         </div>

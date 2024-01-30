@@ -139,12 +139,12 @@ fn handle_response(response: &Response) -> Result<()> {
 }
 
 /// Validate that role allows viewing a file
-pub fn can_view(role: &Vec<FilePermRole>) -> bool {
+pub fn can_view(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileView)
 }
 
 /// Validate that role allows editing a file
-pub fn can_edit(role: &Vec<FilePermRole>) -> bool {
+pub fn can_edit(role: &[FilePermRole]) -> bool {
     role.contains(&FilePermRole::FileEdit)
 }
 

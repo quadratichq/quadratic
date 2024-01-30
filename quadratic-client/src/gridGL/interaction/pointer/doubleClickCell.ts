@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { CodeCellLanguage } from '@/quadratic-core/types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -15,6 +16,9 @@ export function doubleClickCell(options: {
   const hasPermission = hasPermissionToEditFile(settings.editorInteractionState.permissions);
 
   if (!settings.setEditorInteractionState) return;
+
+  if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
+
   if (mode) {
     if (settings.editorInteractionState.showCodeEditor) {
       settings.setEditorInteractionState({

@@ -6,7 +6,7 @@ use crate::config::Config;
 #[derive(Debug)]
 pub(crate) struct Settings {
     pub(crate) quadratic_api_uri: String,
-    pub(crate) quadratic_api_jwt: String,
+    pub(crate) m2m_auth_token: String,
     pub(crate) aws_client: Client,
     pub(crate) aws_s3_bucket_name: String,
 }
@@ -16,7 +16,7 @@ impl Settings {
         let is_local = config.environment == Environment::Docker;
         Settings {
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
-            quadratic_api_jwt: config.quadratic_api_jwt.to_owned(),
+            m2m_auth_token: config.m2m_auth_token.to_owned(),
             aws_client: client(
                 &config.aws_s3_access_key_id,
                 &config.aws_s3_secret_access_key,

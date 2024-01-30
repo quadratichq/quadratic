@@ -55,34 +55,53 @@ export const TopBarFileMenu = () => {
 
 function FileLocation() {
   const { isAuthenticated } = useRootRouteLoaderData();
-  const { owner } = useFileRouteLoaderData();
+  const {
+    team,
+    userMakingRequest: { isFileOwner, fileRole },
+  } = useFileRouteLoaderData();
   const linkProps = {
     reloadDocument: true,
     className: 'underline:none text-inherit',
   };
 
+  // Don't show anything if they're not logged in
   if (!isAuthenticated) {
+    return null;
+  }
+
+  // Figure out the user's relationship to the file and the link back to its
+  // location in the dashboard
+  let DashboardLink;
+  if (team) {
+    DashboardLink = (
+      <Link to={ROUTES.TEAM(team.uuid)} {...linkProps}>
+        {team.name}
+      </Link>
+    );
+  } else if (isFileOwner) {
+    DashboardLink = (
+      <Link to={ROUTES.FILES} {...linkProps}>
+        My files
+      </Link>
+    );
+  } else if (fileRole) {
+    DashboardLink = (
+      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps}>
+        Shared with me
+      </Link>
+    );
+  }
+
+  // They must be seeing the file because the public link is being used
+  if (!DashboardLink) {
     return null;
   }
 
   return (
     <>
       <Type className="hidden text-muted-foreground hover:text-foreground hover:underline md:block">
-        {owner.type === 'team' ? (
-          <Link to={ROUTES.TEAM(owner.uuid)} {...linkProps}>
-            {owner.name}
-          </Link>
-        ) : owner.type === 'self' ? (
-          <Link to={ROUTES.FILES} {...linkProps}>
-            My files
-          </Link>
-        ) : owner.type === 'user' ? (
-          <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps}>
-            Shared with me
-          </Link>
-        ) : undefined}
+        {DashboardLink}
       </Type>
-
       <Type variant="body2" className="hidden select-none text-muted-foreground opacity-50 md:block">
         /
       </Type>

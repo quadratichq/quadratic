@@ -134,9 +134,9 @@ export class PixiApp {
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());
 
+    this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
-    this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
@@ -265,7 +265,6 @@ export class PixiApp {
   async rebuild() {
     sheets.create();
     await this.cellsSheets.create();
-
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
@@ -274,8 +273,6 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.multiplayerCursor.dirty = true;
     this.boxCells.reset();
-
-    this.viewport.dirty = true;
     this.paused = false;
     this.reset();
     this.setViewportDirty();

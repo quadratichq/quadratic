@@ -99,6 +99,14 @@ impl Sheet {
                 if let Some(code_run) = self.code_run(code_pos) {
                     let evaluation_result =
                         serde_json::to_string(&code_run.result).unwrap_or("".to_string());
+                    let spill_error = if code_run.spill_error {
+                        Some(self.find_spill_error_reasons(
+                            &code_run.output_rect(code_pos, true),
+                            code_pos,
+                        ))
+                    } else {
+                        None
+                    };
                     Some(JsCodeCell {
                         x: code_pos.x,
                         y: code_pos.y,
@@ -107,6 +115,7 @@ impl Sheet {
                         std_err: code_run.std_err.clone(),
                         std_out: code_run.std_out.clone(),
                         evaluation_result: Some(evaluation_result),
+                        spill_error,
                     })
                 } else {
                     Some(JsCodeCell {
@@ -117,6 +126,7 @@ impl Sheet {
                         std_err: None,
                         std_out: None,
                         evaluation_result: None,
+                        spill_error: None,
                     })
                 }
             }
@@ -130,7 +140,7 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{CodeCellLanguage, CodeRunResult, RenderSize},
+        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage, CodeRunResult, RenderSize},
         Array, CodeCellValue, SheetPos, Value,
     };
     use bigdecimal::BigDecimal;
@@ -244,6 +254,7 @@ mod test {
                 std_err: None,
                 std_out: None,
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
+                spill_error: None,
             })
         );
         assert_eq!(
@@ -256,8 +267,43 @@ mod test {
                 std_err: None,
                 std_out: None,
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
+                spill_error: None,
             })
         );
         assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
+    }
+
+    #[test]
+    fn edit_code_value_spill() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            "should cause spill".into(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3}".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value(Pos { x: 1, y: 0 }),
+            Some("should cause spill".into())
+        );
+        let render = sheet.get_render_cells(Rect::from_numbers(0, 0, 1, 1));
+        assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
+        let code = sheet.edit_code_value(Pos { x: 0, y: 0 }).unwrap();
+        assert_eq!(code.spill_error, Some(vec![Pos { x: 1, y: 0 }]));
     }
 }

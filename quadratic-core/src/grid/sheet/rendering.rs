@@ -323,8 +323,8 @@ impl Sheet {
                                 }
                             };
                             Some(JsRenderCodeCell {
-                                x: pos.x,
-                                y: pos.y,
+                                x: pos.x as i32,
+                                y: pos.y as i32,
                                 w,
                                 h,
                                 language: code.language,

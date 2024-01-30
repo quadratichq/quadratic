@@ -5,6 +5,7 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { intersects } from '../helpers/intersects';
+import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsSheet } from './CellsSheet';
 import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
 
@@ -70,10 +71,12 @@ export class CellsArray extends Container {
       tint = colors.cellColorUserFormula;
     }
 
-    // only show the entire array if the cursor overlaps any part of the output
-    if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
-      this.cellsSheet.cellsMarkers.add(start, codeCell, false);
-      return;
+    if (!pixiAppSettings.showCellTypeOutlines) {
+      // only show the entire array if the cursor overlaps any part of the output
+      if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
+        this.cellsSheet.cellsMarkers.add(start, codeCell, false);
+        return;
+      }
     }
 
     this.cellsSheet.cellsMarkers.add(start, codeCell, true);

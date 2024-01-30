@@ -6,6 +6,8 @@ use crate::error::{MpError, Result};
 use crate::state::{user::User, State};
 use crate::{get_mut_room, get_or_create_room, get_room};
 
+use super::connection::{Connection, PreConnection};
+
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct Room {
     pub(crate) file_id: Uuid,
@@ -40,7 +42,7 @@ impl Room {
     pub fn get_user(&self, session_id: &Uuid) -> Result<User> {
         let user = self
             .users
-            .get(&session_id)
+            .get(session_id)
             .ok_or(MpError::UserNotFound(*session_id, self.file_id))?;
 
         Ok(user.to_owned())
@@ -63,7 +65,7 @@ impl State {
         &self,
         file_id: Uuid,
         user: &User,
-        connection_id: Uuid,
+        mut pre_connection: PreConnection,
         sequence_num: u64,
     ) -> Result<bool> {
         let is_new = get_or_create_room!(self, file_id, sequence_num)
@@ -71,12 +73,17 @@ impl State {
             .insert(user.session_id.to_owned(), user.to_owned())
             .is_none();
 
+        let connection = Connection::new(
+            pre_connection.id,
+            user.session_id,
+            file_id,
+            pre_connection.jwt.take(),
+        );
+
         self.connections
             .lock()
             .await
-            .insert(connection_id, user.session_id);
-
-        tracing::info!("User {:?} entered room {:?}", user.session_id, file_id);
+            .insert(connection.id, connection);
 
         Ok(is_new)
     }
@@ -119,10 +126,7 @@ macro_rules! get_room {
             .lock()
             .await
             .get(&$file_id)
-            .ok_or($crate::error::MpError::Room(format!(
-                "Room {} not found",
-                $file_id
-            )))
+            .ok_or($crate::error::MpError::RoomNotFound($file_id.to_string()))
     };
 }
 
@@ -134,10 +138,7 @@ macro_rules! get_mut_room {
             .lock()
             .await
             .get_mut(&$file_id)
-            .ok_or($crate::error::MpError::Room(format!(
-                "Room {} not found",
-                $file_id
-            )))
+            .ok_or($crate::error::MpError::RoomNotFound($file_id.to_string()))
     };
 }
 
@@ -151,7 +152,7 @@ macro_rules! get_or_create_room {
                     0
                 } else {
                     let url = &$self.settings.quadratic_api_uri;
-                    let jwt = &$self.settings.quadratic_api_jwt;
+                    let jwt = &$self.settings.m2m_auth_token;
                     quadratic_rust_shared::quadratic_api::get_file_checkpoint(url, jwt, &$file_id)
                         .await?
                         .sequence_number
@@ -181,13 +182,14 @@ mod tests {
     #[tokio::test]
     async fn enters_retrieves_leaves_and_removes_a_room() {
         let state = new_state().await;
-        let connection_id = Uuid::new_v4();
         let file_id = Uuid::new_v4();
         let user = new_user();
         let user2 = new_user();
+        let connection = PreConnection::new(None);
+        let connection2 = PreConnection::new(None);
 
         let is_new = state
-            .enter_room(file_id, &user, connection_id, 0)
+            .enter_room(file_id, &user, connection, 0)
             .await
             .unwrap();
         let room = state.get_room(&file_id).await.unwrap();
@@ -199,7 +201,7 @@ mod tests {
 
         // leave the room of 2 users
         state
-            .enter_room(file_id, &user2, connection_id, 0)
+            .enter_room(file_id, &user2, connection2, 0)
             .await
             .unwrap();
         state.leave_room(file_id, &user.session_id).await.unwrap();
