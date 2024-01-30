@@ -222,7 +222,12 @@ export const CellInput = () => {
           closeInput({ x: 0, y: 1 });
           event.stopPropagation();
           event.preventDefault();
-        } else if (event.key === '=' && (!textInput || textInput.innerText.length === 0)) {
+        } else if (
+          event.key === '=' &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          (!textInput || textInput.innerText.length === 0)
+        ) {
           // Open cell type menu, close editor.
           setEditorInteractionState({
             ...editorInteractionState,
