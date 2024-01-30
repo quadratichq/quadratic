@@ -187,14 +187,14 @@ export class Control {
                     ? "watch:wasm:perf:javascript"
                     : "watch:wasm:javascript",
             ], { signal: this.signals.core.signal });
-            let firstTime = true;
+            let firstRun = true;
             this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
                 success: "[Finished running. Exit status: 0",
                 error: "error[",
                 start: ["> quadratic", "[Running "],
             }, () => {
-                if (!restart && firstTime) {
-                    firstTime = false;
+                if (!restart && firstRun) {
+                    firstRun = false;
                     this.runNpmInstall();
                     if (this.status.multiplayer !== "killed" && !this.multiplayer) {
                         this.runMultiplayer();
