@@ -147,6 +147,11 @@ export class PointerDown {
         keyboardMovePosition: { x: this.position.x, y: this.position.y },
         cursorPosition: { x: this.position.x, y: this.position.y },
       });
+      // update previousPosition
+      this.previousPosition = {
+        originPosition: new Point(this.position.x, this.position.y),
+        terminalPosition: new Point(this.position.x, this.position.y),
+      };
       pixiAppSettings.changeInput(false);
     } else {
       // cursor origin and terminal are not in the same cell
