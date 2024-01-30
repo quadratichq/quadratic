@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Invite to File</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        max-width: 560px;
+        margin: 0 auto;
+        background: #f7f7f7;
+      }
+      iframe {
+        width: 100%;
+        border: none;
+      }
+      .container {
+        background: #fff;
+
+        min-height: calc(100vh - 6rem);
+        display: flex;
+      }
+      .toolbar {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.25rem;
+        height: 4rem;
+
+        > * {
+          margin: 0;
+        }
+      }
+      .error {
+        color: red;
+      }
+      .muted {
+        color: #999;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module" crossorigin="anonymous">
+      import { h, render } from 'https://esm.sh/preact';
+      import { useState, useEffect } from 'https://esm.sh/preact/hooks';
+      import htm from 'https://esm.sh/htm';
+
+      // TODO: update env var somehow...
+      const API_URL = `http://localhost:8000`;
+
+      // Initialize app
+      const html = htm.bind(h);
+      render(html`<${App} />`, document.body);
+
+      function App(props) {
+        const [emailIds, setEmailIds] = useState([]);
+        const [email, setEmail] = useState({ html: '', subject: '' });
+
+        useEffect(() => {
+          fetch(`${API_URL}/v0/internal/emails`)
+            .then((res) => res.json())
+            .then((emailIds) => {
+              setEmailIds(emailIds);
+            })
+            .catch((err) => {
+              console.error(err);
+            });
+        }, []);
+
+        return html`
+          <div class="toolbar">
+            <div>
+              <select
+                onChange=${(e) => {
+                  const id = e.target.value;
+                  fetch(`${API_URL}/v0/internal/emails/${id}`)
+                    .then((res) => res.json())
+                    .then((email) => {
+                      setEmail(email);
+                    })
+                    .catch((err) => {
+                      console.error(err);
+                    });
+                }}
+              >
+                <option disabled selected>Select a template...</option>
+                ${emailIds.map((emailId) => html`<option value="${emailId}">${emailId}</option>`)}
+              </select>
+            </div>
+            <p class="subject"><strong>Subject:</strong> ${email.subject}</p>
+          </div>
+          <div class="container">
+            <iframe srcdoc="${email.html}"></iframe>
+          </div>
+        `;
+      }
+    </script>
+  </body>
+</html>
