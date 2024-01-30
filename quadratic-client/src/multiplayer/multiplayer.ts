@@ -54,6 +54,7 @@ export class Multiplayer {
   private jwt?: string | void;
   private lastMouseMove: { x: number; y: number } | undefined;
   private connectionTimeout: number | undefined;
+  brokenConnection = false;
 
   // server-assigned index of current user
   index?: number;
@@ -82,6 +83,15 @@ export class Multiplayer {
       this.state = 'no internet';
       this.websocket?.close();
     });
+
+    // this is only a partial solution mostly for desktop
+    // see https://www.igvita.com/2015/11/20/dont-lose-user-and-app-state-use-page-visibility/ for a further discussion
+    const alertUser = (e: BeforeUnloadEvent) => {
+      if (this.state === 'syncing') {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', alertUser);
   }
 
   get state() {
@@ -136,23 +146,27 @@ export class Multiplayer {
 
       this.websocket.addEventListener('close', () => {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
+        this.brokenConnection = true;
         this.state = 'waiting to reconnect';
+        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('error', (e) => {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
+        this.brokenConnection = true;
         this.state = 'waiting to reconnect';
+        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket connected.');
+        this.brokenConnection = false;
         this.state = 'connected';
         this.enterFileRoom();
         this.waitingForConnection.forEach((resolve) => resolve(0));
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
         window.addEventListener('change-sheet', this.sendChangeSheet);
-
         if (!this.updateId) {
           this.updateId = window.setInterval(multiplayer.update, UPDATE_TIME);
         }
