@@ -153,7 +153,7 @@ export const ApiSchemas = {
   '/v0/files/:uuid/sharing.PATCH.request': z.object({
     publicLinkAccess: PublicLinkAccessSchema,
   }),
-  '/v0/files/:uuid/sharing.PATCH.response': z.object({ message: z.string() }),
+  '/v0/files/:uuid/sharing.PATCH.response': z.object({ publicLinkAccess: PublicLinkAccessSchema }),
 
   /**
    * File users
