@@ -23,6 +23,7 @@ pub(crate) enum MessageRequest {
         selection: String,
         cell_edit: CellEdit,
         viewport: String,
+        follow: Option<String>,
     },
     LeaveRoom {
         session_id: Uuid,

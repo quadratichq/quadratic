@@ -8,9 +8,10 @@ on:
 # Our runners pick up jobs first, and if all our runners are being used or are down
 # it will automatically back up to using GitHub hosted runners.
 
+# Require previous builds and deployments to finish before starting a new one
+# Not sure how Pulumi would handle being terminated when changing a stack.
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
 
 jobs:
 
@@ -28,7 +29,6 @@ jobs:
     - uses: pulumi/actions@v4
 
     - name: Update Pulumi Infrastructure
-      id: pulumiInfra
       working-directory: infra
       run: |
         npm ci
@@ -44,7 +44,7 @@ jobs:
           pulumi stack select $STACK_NAME
         fi
 
-        # Create a file pointing at the correct Pulumi ESC Environment
+        # Point to the Pulumi ESC Environment
         cat <<EOF | tee Pulumi.$STACK_NAME.yaml
         environment:
           - aws-infra-development

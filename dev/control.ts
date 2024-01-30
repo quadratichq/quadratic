@@ -122,7 +122,6 @@ export class Control {
   async runApi() {
     if (this.quitting) return;
     this.ui.print("api");
-    // await killPort(8000);
     this.signals.api = new AbortController();
     this.api = spawn(
       "npm",
@@ -318,7 +317,6 @@ export class Control {
     if (this.quitting) return;
     if (this.status.multiplayer === "killed") return;
     await this.kill("multiplayer");
-    // await killPort(3001);
     this.signals.multiplayer = new AbortController();
     this.ui.print("multiplayer");
     this.multiplayer = spawn(
