@@ -10,6 +10,29 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
+    pub fn set_cell_values(&mut self, rect: Rect, values: &Array) -> Array {
+        let mut old_values = Array::new_empty(values.size());
+
+        for x in rect.x_range() {
+            let column = self.get_or_create_column(x);
+
+            for y in rect.y_range() {
+                let old_value;
+                if let Ok(value) = values.get((x - rect.min.x) as u32, (y - rect.min.y) as u32) {
+                    old_value = column.values.insert(y, value.clone());
+                } else {
+                    old_value = column.values.remove(&y);
+                }
+                if let Some(old_value) = old_value {
+                    let _ =
+                        old_values.set((x - rect.min.x) as u32, (y - rect.min.y) as u32, old_value);
+                }
+            }
+        }
+
+        old_values
+    }
+
     pub fn get_cells_response(&self, rect: Rect) -> GetCellsResponse {
         let mut response = vec![];
         for y in rect.y_range() {
@@ -68,7 +91,7 @@ impl Sheet {
             if let Some(column) = self.get_column(x) {
                 for y in rect.y_range() {
                     let cell_pos = Pos { x, y };
-                    if column.values.get(y).is_some_and(|cell| {
+                    if column.values.get(&y).is_some_and(|cell| {
                         Some(cell_pos) != skip && !cell.is_blank_or_empty_string()
                     }) {
                         return true;
@@ -89,7 +112,7 @@ impl Sheet {
             if let Some(column) = self.get_column(x) {
                 for y in spill_rect.y_range() {
                     let cell_pos = Pos { x, y };
-                    if column.values.get(y).is_some_and(|cell| {
+                    if column.values.get(&y).is_some_and(|cell| {
                         cell_pos != code_pos && !cell.is_blank_or_empty_string()
                     }) {
                         results.insert(cell_pos);

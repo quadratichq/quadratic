@@ -75,10 +75,9 @@ impl Sheet {
             for y in rect.y_range() {
                 let column = self.get_or_create_column(x);
                 let value = rng.gen_range(-10000..=10000).to_string();
-                column.values.set(
-                    y,
-                    Some(CellValue::Number(BigDecimal::from_str(&value).unwrap())),
-                );
+                column
+                    .values
+                    .insert(y, CellValue::Number(BigDecimal::from_str(&value).unwrap()));
             }
         }
         self.recalculate_bounds();
@@ -96,8 +95,11 @@ impl Sheet {
             return None;
         }
         let column = self.get_or_create_column(pos.x);
-        let old_value = column.values.set(pos.y, value).unwrap_or_default();
-        Some(old_value)
+        if let Some(value) = value {
+            column.values.insert(pos.y, value)
+        } else {
+            column.values.remove(&pos.y)
+        }
     }
 
     /// Deletes all cell values in a region. This does not affect:
@@ -111,14 +113,21 @@ impl Sheet {
             let Some(column) = self.columns.get_mut(&x) else {
                 continue;
             };
-            let removed = column.values.remove_range(rect.y_range());
-            for block in removed {
-                for y in block.range() {
-                    let array_x = (x - rect.min.x) as u32;
-                    let array_y = (y - rect.min.y) as u32;
-                    let Some(value) = block.get(y) else { continue };
+            let filtered = column
+                .values
+                .range(rect.y_range())
+                .map(|(y, _)| y.clone())
+                .collect::<Vec<_>>();
+            let removed = filtered
+                .iter()
+                .map(|y| (*y, column.values.remove(y)))
+                .collect::<Vec<_>>();
+            for cell in removed {
+                let array_x = (x - rect.min.x) as u32;
+                let array_y = (cell.0 - rect.min.y) as u32;
+                if let Some(cell_value) = cell.1 {
                     old_cell_values_array
-                        .set(array_x, array_y, value)
+                        .set(array_x, array_y, cell_value)
                         .expect("error inserting value into array of old cell values");
                 }
             }
@@ -149,7 +158,7 @@ impl Sheet {
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         let cell_value = self
             .get_column(pos.x)
-            .and_then(|column| column.values.get(pos.y));
+            .and_then(|column| column.values.get(&pos.y));
 
         // if CellValue::Code, then we need to get the value from code_runs
         if let Some(cell_value) = cell_value {
@@ -158,7 +167,7 @@ impl Sheet {
                     .code_runs
                     .get(&pos)
                     .and_then(|run| run.cell_value_at(0, 0)),
-                _ => Some(cell_value),
+                _ => Some(cell_value.clone()),
             }
         } else {
             // if there is no CellValue at Pos, then we still need to check code_runs
@@ -169,7 +178,7 @@ impl Sheet {
     /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
-        column.values.get(pos.y)
+        column.values.get(&pos.y).cloned()
     }
 
     /// Returns a formatting property of a cell.

@@ -9,13 +9,13 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::formatting::*;
-use super::{Block, BlockContent, CellValueBlockContent, SameValue};
-use crate::IsBlank;
+use super::{Block, BlockContent, SameValue};
+use crate::{CellValue, IsBlank};
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct Column {
     pub x: i64,
-    pub values: ColumnData<CellValueBlockContent>,
+    pub values: BTreeMap<i64, CellValue>,
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub numeric_format: ColumnData<SameValue<NumericFormat>>,
@@ -35,12 +35,22 @@ impl Column {
         }
     }
 
+    pub fn values_range(&self) -> Option<Range<i64>> {
+        let min = self.values.first_key_value();
+        let max = self.values.last_key_value();
+        if let (Some(min), Some(max)) = (min, max) {
+            Some(*min.0..*max.0)
+        } else {
+            None
+        }
+    }
+
     pub fn range(&self, ignore_formatting: bool) -> Option<Range<i64>> {
         if ignore_formatting {
-            self.values.range()
+            self.values_range()
         } else {
             crate::util::union_ranges([
-                self.values.range(),
+                self.values_range(),
                 self.align.range(),
                 self.wrap.range(),
                 self.numeric_format.range(),
@@ -54,7 +64,7 @@ impl Column {
     }
 
     pub fn has_data_in_row(&self, y: i64) -> bool {
-        self.values.get(y).is_some_and(|v| !v.is_blank())
+        self.values.get(&y).is_some_and(|v| !v.is_blank())
     }
     pub fn has_anything_in_row(&self, y: i64) -> bool {
         self.has_data_in_row(y)
@@ -104,7 +114,10 @@ impl<B: BlockContent> ColumnData<B> {
         let key = block.start();
         self.0.insert(key, block);
     }
-    fn add_blocks(&mut self, blocks: impl IntoIterator<Item = Block<B>>) {
+
+    /// Adds blocks w/o regard to whether they overlap with existing blocks.
+    /// This is temporary and for use with column.values only!
+    pub fn add_blocks(&mut self, blocks: impl IntoIterator<Item = Block<B>>) {
         for block in blocks {
             self.add_block(block);
         }

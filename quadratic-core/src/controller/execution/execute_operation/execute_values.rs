@@ -19,6 +19,7 @@ impl GridController {
                 Some(sheet) => {
                     // update individual cell values and collect old_values
                     jsTime("1".into());
+                    // let old_values = sheet.set_cell_values(sheet_rect.into(), &values);
                     let old_values = sheet_rect
                         .iter()
                         .zip(values.clone().into_cell_values_vec())
