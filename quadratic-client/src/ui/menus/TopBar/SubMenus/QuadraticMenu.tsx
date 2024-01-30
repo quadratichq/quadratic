@@ -148,7 +148,7 @@ export const QuadraticMenu = () => {
             <MenuLineItem primary={copyAction.label} secondary={KeyboardSymbols.Command + 'C'} />
           </MenuItem>
           {pasteAction.isAvailable(permissions) && (
-            <MenuItem onClick={pasteFromClipboard}>
+            <MenuItem onClick={() => pasteFromClipboard()}>
               <MenuLineItem primary={pasteAction.label} secondary={KeyboardSymbols.Command + 'V'} />
             </MenuItem>
           )}

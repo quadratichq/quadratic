@@ -261,7 +261,7 @@ export class Control {
     async restartCore() {
         await this.kill("core");
         this.cli.options.core = !this.cli.options.core;
-        this.runCore();
+        this.runCore(true);
     }
     async runMultiplayer(restart) {
         if (this.quitting)

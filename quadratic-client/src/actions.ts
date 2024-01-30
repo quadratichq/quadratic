@@ -128,6 +128,16 @@ export const pasteAction = {
   isAvailable: hasPermissionToEditFile,
 };
 
+export const pasteActionValues = {
+  label: 'Paste values only',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const pasteActionFormats = {
+  label: 'Paste formats only',
+  isAvailable: hasPermissionToEditFile,
+};
+
 export const undoAction = {
   label: 'Undo',
   isAvailable: hasPermissionToEditFile,
