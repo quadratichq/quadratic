@@ -367,6 +367,7 @@ pub(crate) mod tests {
             image: user.image.clone(),
             cell_edit: CellEdit::default(),
             viewport: "initial viewport".to_string(),
+            follow: None,
         };
 
         // UsersInRoom and EnterRoom are sent to the client when they enter a room
@@ -439,6 +440,7 @@ pub(crate) mod tests {
                 cell_edit: None,
                 code_running: None,
                 viewport: Some("new_viewport".to_string()),
+                follow: None,
             },
         }
     }
@@ -480,6 +482,7 @@ pub(crate) mod tests {
             image: new_user.image.clone(),
             cell_edit: CellEdit::default(),
             viewport: "initial viewport".to_string(),
+            follow: None,
         };
         let expected_enter_room = MessageResponse::EnterRoom {
             file_id,
@@ -594,12 +597,7 @@ pub(crate) mod tests {
         let update = UserStateUpdate {
             x: Some(1.0),
             y: Some(2.0),
-            selection: None,
-            code_running: None,
-            sheet_id: None,
-            visible: None,
-            cell_edit: None,
-            viewport: None,
+            ..Default::default()
         };
 
         assert_user_changes_state(update).await;
@@ -609,13 +607,7 @@ pub(crate) mod tests {
     async fn user_changes_selection() {
         let update = UserStateUpdate {
             selection: Some("test".to_string()),
-            sheet_id: None,
-            x: None,
-            y: None,
-            visible: None,
-            cell_edit: None,
-            code_running: None,
-            viewport: None,
+            ..Default::default()
         };
 
         assert_user_changes_state(update).await;
@@ -624,14 +616,8 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn user_changes_viewport() {
         let update = UserStateUpdate {
-            selection: None,
-            sheet_id: None,
-            x: None,
-            y: None,
-            visible: None,
-            cell_edit: None,
-            code_running: None,
             viewport: Some("new_viewport".to_string()),
+            ..Default::default()
         };
 
         assert_user_changes_state(update).await;
@@ -640,14 +626,8 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn user_changes_running() {
         let update = UserStateUpdate {
-            selection: None,
-            sheet_id: None,
-            x: None,
-            y: None,
-            visible: None,
-            cell_edit: None,
             code_running: Some("new_running".to_string()),
-            viewport: None,
+            ..Default::default()
         };
 
         assert_user_changes_state(update).await;

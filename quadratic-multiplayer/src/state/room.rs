@@ -14,6 +14,7 @@ pub(crate) struct Room {
     pub(crate) users: DashMap<Uuid, User>,
     pub(crate) sequence_num: u64,
     pub(crate) checkpoint_sequence_num: u64,
+    pub(crate) user_index: usize,
 }
 
 impl PartialEq for Room {
@@ -31,6 +32,7 @@ impl Room {
             users: DashMap::new(),
             sequence_num,
             checkpoint_sequence_num: sequence_num,
+            user_index: 0,
         }
     }
 
@@ -46,6 +48,13 @@ impl Room {
             .ok_or(MpError::UserNotFound(*session_id, self.file_id))?;
 
         Ok(user.to_owned())
+    }
+
+    /// Gets the next user index and increments the user index to prepare for the next user.
+    pub fn user_index_increment(&mut self) -> usize {
+        let index = self.user_index;
+        self.user_index += 1;
+        index
     }
 }
 
@@ -64,11 +73,12 @@ impl State {
     pub(crate) async fn enter_room(
         &self,
         file_id: Uuid,
-        user: &User,
+        user: &mut User,
         mut pre_connection: PreConnection,
         sequence_num: u64,
     ) -> Result<bool> {
-        let is_new = get_or_create_room!(self, file_id, sequence_num)
+        user.index = get_or_create_room!(self, file_id, sequence_num).user_index_increment();
+        let is_new = get_room!(self, file_id)?
             .users
             .insert(user.session_id.to_owned(), user.to_owned())
             .is_none();
@@ -183,13 +193,13 @@ mod tests {
     async fn enters_retrieves_leaves_and_removes_a_room() {
         let state = new_state().await;
         let file_id = Uuid::new_v4();
-        let user = new_user();
-        let user2 = new_user();
+        let mut user = new_user();
+        let mut user2 = new_user();
         let connection = PreConnection::new(None);
         let connection2 = PreConnection::new(None);
 
         let is_new = state
-            .enter_room(file_id, &user, connection, 0)
+            .enter_room(file_id, &mut user, connection, 0)
             .await
             .unwrap();
         let room = state.get_room(&file_id).await.unwrap();
@@ -198,10 +208,11 @@ mod tests {
         assert!(is_new);
         assert_eq!(state.rooms.lock().await.len(), 1);
         assert_eq!(room.users.len(), 1);
+        assert_eq!(user.index, 0);
 
         // leave the room of 2 users
         state
-            .enter_room(file_id, &user2, connection2, 0)
+            .enter_room(file_id, &mut user2, connection2, 0)
             .await
             .unwrap();
         state.leave_room(file_id, &user.session_id).await.unwrap();
@@ -209,10 +220,49 @@ mod tests {
 
         assert_eq!(room.users.len(), 1);
         assert_eq!(room.users.get(&user2.session_id).unwrap().value(), &user2);
+        assert_eq!(user2.index, 1);
 
         // leave a room of 1 user
         state.leave_room(file_id, &user2.session_id).await.unwrap();
         let room = state.get_room(&file_id).await;
         assert!(room.is_err());
+    }
+
+    #[tokio::test]
+    async fn user_gets_assigned_indices() {
+        let state = new_state().await;
+        let file_id = Uuid::new_v4();
+        let mut user = new_user();
+        let mut user2 = new_user();
+        let mut user3 = new_user();
+        let connection = PreConnection::new(None);
+        let connection2 = PreConnection::new(None);
+        let connection3 = PreConnection::new(None);
+        let connection4 = PreConnection::new(None);
+
+        state
+            .enter_room(file_id, &mut user, connection, 0)
+            .await
+            .unwrap();
+        state
+            .enter_room(file_id, &mut user2, connection2, 0)
+            .await
+            .unwrap();
+        state
+            .enter_room(file_id, &mut user3, connection3, 0)
+            .await
+            .unwrap();
+        assert_eq!(user.index, 0);
+        assert_eq!(user2.index, 1);
+        assert_eq!(user3.index, 2);
+        state
+            .leave_room(file_id, &mut user2.session_id)
+            .await
+            .unwrap();
+        state
+            .enter_room(file_id, &mut user2, connection4, 0)
+            .await
+            .unwrap();
+        assert_eq!(user2.index, 3);
     }
 }
