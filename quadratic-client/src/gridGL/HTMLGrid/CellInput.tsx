@@ -218,7 +218,7 @@ export const CellInput = () => {
       onBlur={() => closeInput()}
       onKeyDown={(event) => {
         if (event.key === 'Enter') {
-          closeInput({ x: 0, y: 1 });
+          closeInput({ x: 0, y: event.shiftKey ? -1 : 1 });
           event.stopPropagation();
           event.preventDefault();
         } else if (event.key === '=' && (!textInput || textInput.innerText.length === 0)) {
