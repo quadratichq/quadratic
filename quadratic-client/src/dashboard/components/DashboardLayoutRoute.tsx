@@ -84,18 +84,20 @@ function Navbar() {
   const { teams, hasError } = useLoaderData() as LoaderData;
   const { loggedInUser: user } = useRootRouteLoaderData();
   const fetchers = useFetchers();
+  const navigation = useNavigation();
   const classNameIcons = `h-5 w-5 mx-0.5`;
 
   return (
     <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <div className={`flex items-center justify-between`}>
-          <SidebarNavLink to="/" className={`pr-3`} isLogo={true}>
+      <div className={`flex flex-col`}>
+        <div className={`flex items-center lg:justify-between`}>
+          <SidebarNavLink to="/files" className={`pr-3`} isLogo={true}>
             <div className={`flex w-5 items-center justify-center`}>
               <img src={QuadraticLogo} alt="Quadratic logo glyph" />
             </div>
             <img src={QuadraticLogotype} alt="Quadratic logotype" />
           </SidebarNavLink>
+          {navigation.state === 'loading' && <CircularProgress size={18} className="mr-3" />}
         </div>
 
         <Type
@@ -215,16 +217,13 @@ function SidebarNavLink({
       {...(target ? { target } : {})}
       to={to}
       className={cn(
-        isActive && 'bg-muted',
+        isActive && !isLogo && 'bg-muted',
         TYPE.body2,
         `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,
         className
       )}
     >
       {children}
-      {navigation.state === 'loading' && navigation.location.pathname.includes(to) && !isLogo && (
-        <CircularProgress size={18} sx={{ ml: 'auto' }} />
-      )}
     </NavLink>
   );
 }
