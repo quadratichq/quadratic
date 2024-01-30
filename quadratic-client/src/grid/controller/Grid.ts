@@ -15,6 +15,7 @@ import init, {
   JsComputeGetCells,
   JsRenderBorders,
   MinMax,
+  PasteSpecial,
   Pos,
   Rect as RectInternal,
   SheetOffsets,
@@ -597,13 +598,15 @@ export class Grid {
     y: number;
     plainText: string | undefined;
     html: string | undefined;
+    special: PasteSpecial;
   }) {
-    const { sheetId, x, y, plainText, html } = options;
+    const { sheetId, x, y, plainText, html, special } = options;
     const summary = this.gridController.pasteFromClipboard(
       sheetId,
       new Pos(x, y),
       plainText,
       html,
+      special,
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);

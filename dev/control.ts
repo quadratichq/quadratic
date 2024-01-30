@@ -225,6 +225,7 @@ export class Control {
         ],
         { signal: this.signals.core.signal }
       );
+      let firstRun = true;
       this.ui.printOutput("core", (data) =>
         this.handleResponse(
           "core",
@@ -235,7 +236,8 @@ export class Control {
             start: ["> quadratic", "[Running "],
           },
           () => {
-            if (!restart) {
+            if (!restart && firstRun) {
+              firstRun = false;
               this.runNpmInstall();
               if (this.status.multiplayer !== "killed" && !this.multiplayer) {
                 this.runMultiplayer();
@@ -308,7 +310,7 @@ export class Control {
   async restartCore() {
     await this.kill("core");
     this.cli.options.core = !this.cli.options.core;
-    this.runCore();
+    this.runCore(true);
   }
 
   async runMultiplayer(restart?: boolean) {
