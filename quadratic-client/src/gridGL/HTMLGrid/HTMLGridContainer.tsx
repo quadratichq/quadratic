@@ -5,7 +5,6 @@ import { useRecoilValue } from 'recoil';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellInput } from './CellInput';
 import { CodeHint } from './CodeHint';
-import { CodeError } from './codeError/CodeError';
 import { CodeRunning } from './codeRunning/CodeRunning';
 import { HoverCell } from './hoverCell/HoverCell';
 import { HtmlCells } from './htmlCells/HtmlCells';
