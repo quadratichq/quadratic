@@ -1,12 +1,10 @@
 import axios from 'axios';
 import express from 'express';
 import { z } from 'zod';
-import dbClient from '../dbClient';
-import { userMiddleware } from '../middleware/user';
-import { validateAccessToken } from '../middleware/validateAccessToken';
-import { Request } from '../types/Request';
-
-const files_router = express.Router();
+import dbClient from '../../dbClient';
+import { userMiddleware } from '../../middleware/user';
+import { validateAccessToken } from '../../middleware/validateAccessToken';
+import { RequestWithUser } from '../../types/Request';
 
 const RequestBodySchema = z.object({
   feedback: z.string(),
@@ -14,12 +12,10 @@ const RequestBodySchema = z.object({
 });
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
-files_router.post('/', validateAccessToken, userMiddleware, async (req: Request, res) => {
-  const { feedback, userEmail }: RequestBody = RequestBodySchema.parse(req.body);
+export default [validateAccessToken, userMiddleware, handler];
 
-  if (!req.user) {
-    return res.status(500).json({ error: { message: 'Internal server error' } });
-  }
+async function handler(req: RequestWithUser, res: express.Response) {
+  const { feedback, userEmail }: RequestBody = RequestBodySchema.parse(req.body);
 
   // Add to DB
   await dbClient.qFeedback.create({
@@ -47,6 +43,4 @@ files_router.post('/', validateAccessToken, userMiddleware, async (req: Request,
   }
 
   res.status(200).json({ message: 'Feedback submitted' });
-});
-
-export default files_router;
+}
