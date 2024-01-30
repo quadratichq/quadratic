@@ -6,6 +6,7 @@ import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAt
 import { sheets } from '../../grid/controller/Sheets';
 import { focusGrid } from '../../helpers/focusGrid';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
+import { zoomIn, zoomOut } from '../helpers/zoom';
 import { getCursorLocation, isCursorAtEnd, isCursorAtStart } from '../interaction/contentEditableHelper';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
@@ -221,7 +222,12 @@ export const CellInput = () => {
           closeInput({ x: 0, y: event.shiftKey ? -1 : 1 });
           event.stopPropagation();
           event.preventDefault();
-        } else if (event.key === '=' && (!textInput || textInput.innerText.length === 0)) {
+        } else if (
+          event.key === '=' &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          (!textInput || textInput.innerText.length === 0)
+        ) {
           // Open cell type menu, close editor.
           setEditorInteractionState({
             ...editorInteractionState,
@@ -269,6 +275,12 @@ export const CellInput = () => {
           setTemporaryBold(bold);
           sheet.setCellBold(new Rectangle(cellLocation.x, cellLocation.y, 0, 0), bold);
           event.stopPropagation();
+          event.preventDefault();
+        } else if (event.key === '=' && (event.ctrlKey || event.metaKey)) {
+          zoomIn();
+          event.preventDefault();
+        } else if (event.key === '-' && (event.ctrlKey || event.metaKey)) {
+          zoomOut();
           event.preventDefault();
         }
         // ensure the cell border is redrawn
