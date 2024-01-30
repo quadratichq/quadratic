@@ -12,7 +12,7 @@ beforeAll(async () => {
   const user2 = await dbClient.user.create({ data: { auth0Id: 'user2' } });
 
   // Your file (with 1 invite and 1 user)
-  createFile({
+  await createFile({
     data: {
       creatorUserId: user1.id,
       ownerUserId: user1.id,
@@ -33,7 +33,7 @@ beforeAll(async () => {
     },
   });
   // File you're invited to
-  createFile({
+  await createFile({
     data: {
       creatorUserId: user2.id,
       ownerUserId: user2.id,
@@ -48,7 +48,7 @@ beforeAll(async () => {
     },
   });
   // Private file
-  createFile({
+  await createFile({
     data: {
       creatorUserId: user2.id,
       ownerUserId: user2.id,
@@ -57,7 +57,7 @@ beforeAll(async () => {
     },
   });
   // Public file
-  createFile({
+  await createFile({
     data: {
       creatorUserId: user2.id,
       ownerUserId: user2.id,
