@@ -34,6 +34,7 @@
     "test:api": "npm run docker:test:dev --workspace=quadratic-api",
     "test:multiplayer": "npm run test --workspace=quadratic-multiplayer",
     "benchmark:rust": "cd quadratic-core && cargo bench",
+    "lint:rust": "cargo clippy --all-targets --all-features -- -D warnings",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
     "heroku-postbuild": "npm run build --workspace=quadratic-api",
     "kill": "kill-port 3000 && kill-port 3001 && kill-port 8001 && kill-port 8000",

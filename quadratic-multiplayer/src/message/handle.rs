@@ -11,6 +11,7 @@ use quadratic_core::controller::operations::operation::Operation;
 use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 use crate::error::{MpError, Result};
 use crate::get_mut_room;
@@ -52,6 +53,7 @@ pub(crate) async fn handle_message(
             selection,
             cell_edit,
             viewport,
+            follow,
         } => {
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
@@ -81,6 +83,7 @@ pub(crate) async fn handle_message(
 
             validate_can_edit_or_view_file(&permissions)?;
 
+            let follow = follow.map(|follow| Uuid::parse_str(&follow).unwrap_or_default());
             let user_state = UserState {
                 sheet_id,
                 selection,
@@ -90,9 +93,10 @@ pub(crate) async fn handle_message(
                 visible: false,
                 code_running: "".to_string(),
                 viewport,
+                follow,
             };
 
-            let user = User {
+            let mut user = User {
                 user_id,
                 session_id,
                 connection_id: pre_connection.id,
@@ -104,6 +108,9 @@ pub(crate) async fn handle_message(
                 state: user_state,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
+
+                // this will be properly set in the enter_room function
+                index: 0,
             };
 
             // subscribe to the file's pubsub channel
@@ -112,7 +119,7 @@ pub(crate) async fn handle_message(
             };
 
             let is_new = state
-                .enter_room(file_id, &user, pre_connection, sequence_num)
+                .enter_room(file_id, &mut user, pre_connection, sequence_num)
                 .await?;
 
             // direct response to user w/sequence_num after logging in
@@ -268,7 +275,6 @@ pub(crate) async fn handle_message(
 
 #[cfg(test)]
 pub(crate) mod tests {
-
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
     use tokio::net::TcpStream;
@@ -318,6 +324,7 @@ pub(crate) mod tests {
             cell_edit: Some(CellEdit::default()),
             viewport: Some("viewport".to_string()),
             code_running: Some("code_running".to_string()),
+            follow: Some(Uuid::new_v4().to_string()),
         };
 
         let request = MessageRequest::UserUpdate {
@@ -337,7 +344,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn handle_enter_room() {
-        let (socket, state, _, file_id, user_1, user_2) = setup().await;
+        let (socket, state, _, file_id, user_1, _) = setup().await;
         let user = new_user();
 
         let request = MessageRequest::EnterRoom {
@@ -352,6 +359,7 @@ pub(crate) mod tests {
             selection: "selection".into(),
             cell_edit: CellEdit::default(),
             viewport: "viewport".into(),
+            follow: Some(Uuid::new_v4().to_string()),
         };
 
         let response = MessageResponse::EnterRoom {

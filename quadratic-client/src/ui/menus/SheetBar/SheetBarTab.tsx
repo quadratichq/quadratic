@@ -55,7 +55,6 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               position: 'sticky',
               left: '0',
               right: '0',
-              zIndex: 10,
               boxShadow: `inset 1px 0 0 ${theme.palette.divider}, inset -1px 0 0 ${theme.palette.divider}`,
             }
           : {}),
@@ -110,6 +109,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
 
 function TabWrapper({ children, sheet, active }: any) {
   const theme = useTheme();
+  const { follow } = useRecoilValue(editorInteractionStateAtom);
   return (
     <Stack
       direction="row"
@@ -123,7 +123,7 @@ function TabWrapper({ children, sheet, active }: any) {
         cursor: 'pointer',
         transition: 'box-shadow 200ms ease 250ms, background-color 200ms ease',
         whiteSpace: 'nowrap',
-        height: '100%',
+        height: `calc(100% - ${follow ? '3px' : '0px'})`,
         position: 'relative',
         '&::before': {
           content: '""',

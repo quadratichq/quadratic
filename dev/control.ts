@@ -122,7 +122,6 @@ export class Control {
   async runApi() {
     if (this.quitting) return;
     this.ui.print("api");
-    // await killPort(8000);
     this.signals.api = new AbortController();
     this.api = spawn(
       "npm",
@@ -226,6 +225,7 @@ export class Control {
         ],
         { signal: this.signals.core.signal }
       );
+      let firstRun = true;
       this.ui.printOutput("core", (data) =>
         this.handleResponse(
           "core",
@@ -236,7 +236,8 @@ export class Control {
             start: ["> quadratic", "[Running "],
           },
           () => {
-            if (!restart) {
+            if (!restart && firstRun) {
+              firstRun = false;
               this.runNpmInstall();
               if (this.status.multiplayer !== "killed" && !this.multiplayer) {
                 this.runMultiplayer();
@@ -309,14 +310,13 @@ export class Control {
   async restartCore() {
     await this.kill("core");
     this.cli.options.core = !this.cli.options.core;
-    this.runCore();
+    this.runCore(true);
   }
 
   async runMultiplayer(restart?: boolean) {
     if (this.quitting) return;
     if (this.status.multiplayer === "killed") return;
     await this.kill("multiplayer");
-    // await killPort(3001);
     this.signals.multiplayer = new AbortController();
     this.ui.print("multiplayer");
     this.multiplayer = spawn(

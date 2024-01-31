@@ -39,18 +39,26 @@ export type MultiplayerState =
   | 'waiting to reconnect'
   | 'syncing';
 
+// todo: Next time we have a chance to refactor Multiplayer:
+// * separate out the connection part into its own class/file and fully test all connection states by mocking the Socket.
+
 export class Multiplayer {
+  sessionId: string;
+
   private websocket?: WebSocket;
   private _state: MultiplayerState = 'startup';
   private updateId?: number;
-  private sessionId;
   private fileId?: string;
   private user?: User;
   private anonymous?: boolean;
   private jwt?: string | void;
   private lastMouseMove: { x: number; y: number } | undefined;
-
   private connectionTimeout: number | undefined;
+  brokenConnection = false;
+
+  // server-assigned index of current user
+  index?: number;
+  colorString?: string;
 
   // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
@@ -58,9 +66,6 @@ export class Multiplayer {
   // queue of items waiting to be sent to the server on the next tick
   private userUpdate: MessageUserUpdate;
   private lastHeartbeat = 0;
-
-  // next player's color index
-  private nextColor = 0;
 
   // users currently logged in to the room
   users: Map<string, MultiplayerUser> = new Map();
@@ -78,6 +83,15 @@ export class Multiplayer {
       this.state = 'no internet';
       this.websocket?.close();
     });
+
+    // this is only a partial solution mostly for desktop
+    // see https://www.igvita.com/2015/11/20/dont-lose-user-and-app-state-use-page-visibility/ for a further discussion
+    const alertUser = (e: BeforeUnloadEvent) => {
+      if (this.state === 'syncing') {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', alertUser);
   }
 
   get state() {
@@ -132,23 +146,27 @@ export class Multiplayer {
 
       this.websocket.addEventListener('close', () => {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
+        this.brokenConnection = true;
         this.state = 'waiting to reconnect';
+        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('error', (e) => {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
+        this.brokenConnection = true;
         this.state = 'waiting to reconnect';
+        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('open', () => {
         console.log('[Multiplayer] websocket connected.');
+        this.brokenConnection = false;
         this.state = 'connected';
         this.enterFileRoom();
         this.waitingForConnection.forEach((resolve) => resolve(0));
         this.waitingForConnection = [];
         this.lastHeartbeat = Date.now();
         window.addEventListener('change-sheet', this.sendChangeSheet);
-
         if (!this.updateId) {
           this.updateId = window.setInterval(multiplayer.update, UPDATE_TIME);
         }
@@ -196,6 +214,7 @@ export class Multiplayer {
       visible: false,
       viewport: pixiApp.saveMultiplayerViewport(),
       code_running: JSON.stringify(pythonWebWorker.getCodeRunning()),
+      follow: pixiAppSettings.editorInteractionState.follow,
     };
     this.websocket.send(JSON.stringify(enterRoom));
     offline.loadTransactions();
@@ -345,6 +364,11 @@ export class Multiplayer {
     this.state = 'syncing';
   }
 
+  sendFollow(follow: string) {
+    const userUpdate = this.getUserUpdate().update;
+    userUpdate.follow = follow;
+  }
+
   //#endregion
 
   //#region receive messages
@@ -354,7 +378,10 @@ export class Multiplayer {
   private receiveUsersInRoom(room: ReceiveRoom) {
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
-      if (user.session_id !== this.sessionId) {
+      if (user.session_id === this.sessionId) {
+        this.index = user.index;
+        this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
+      } else {
         let player = this.users.get(user.session_id);
         if (player) {
           player.first_name = user.first_name;
@@ -380,16 +407,16 @@ export class Multiplayer {
             cell_edit: user.cell_edit,
             x: 0,
             y: 0,
-            color: MULTIPLAYER_COLORS_TINT[this.nextColor],
-            colorString: MULTIPLAYER_COLORS[this.nextColor],
+            color: MULTIPLAYER_COLORS_TINT[user.index % MULTIPLAYER_COLORS_TINT.length],
+            colorString: MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length],
             visible: false,
-            index: this.users.size,
+            index: user.index,
             viewport: user.viewport,
             code_running: user.code_running,
             parsedCodeRunning: user.code_running ? JSON.parse(user.code_running) : [],
+            follow: user.follow,
           };
           this.users.set(user.session_id, player);
-          this.nextColor = (this.nextColor + 1) % MULTIPLAYER_COLORS.length;
           if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
       }
@@ -495,6 +522,11 @@ export class Multiplayer {
 
       // trigger changes in CodeRunning.tsx
       dispatchEvent(new CustomEvent('python-change'));
+    }
+
+    if (update.follow !== null) {
+      player.follow = update.follow;
+      window.dispatchEvent(new CustomEvent('multiplayer-follow'));
     }
   }
 

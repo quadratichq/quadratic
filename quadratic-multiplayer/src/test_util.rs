@@ -107,11 +107,13 @@ pub(crate) fn new_user() -> User {
             visible: false,
             viewport: "initial viewport".to_string(),
             code_running: "".to_string(),
+            follow: None,
         },
         image: FilePath().fake(),
         permissions: vec![FilePermRole::FileView, FilePermRole::FileEdit],
         socket: None,
         last_heartbeat: chrono::Utc::now(),
+        index: 0,
     }
 }
 
@@ -135,6 +137,7 @@ pub(crate) async fn add_user_via_ws(
         image: user.image.clone(),
         cell_edit: CellEdit::default(),
         viewport: "initial viewport".to_string(),
+        follow: None,
     };
 
     // UsersInRoom and EnterRoom are sent to the client when they enter a room
@@ -154,8 +157,9 @@ pub(crate) async fn add_new_user_to_room(file_id: Uuid, state: Arc<State>) -> Us
 /// Returns the user.
 pub(crate) async fn add_user_to_room(file_id: Uuid, user: User, state: Arc<State>) -> User {
     let connection = PreConnection::new(None);
+    let mut user = user.clone();
     state
-        .enter_room(file_id, &user, connection, 0)
+        .enter_room(file_id, &mut user, connection, 0)
         .await
         .unwrap();
     user
