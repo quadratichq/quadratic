@@ -101,7 +101,6 @@ export class Control {
         if (this.quitting)
             return;
         this.ui.print("api");
-        // await killPort(8000);
         this.signals.api = new AbortController();
         this.api = spawn("npm", [
             "run",
@@ -188,12 +187,14 @@ export class Control {
                     ? "watch:wasm:perf:javascript"
                     : "watch:wasm:javascript",
             ], { signal: this.signals.core.signal });
+            let firstRun = true;
             this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
                 success: "[Finished running. Exit status: 0",
                 error: "error[",
                 start: ["> quadratic", "[Running "],
             }, () => {
-                if (!restart) {
+                if (!restart && firstRun) {
+                    firstRun = false;
                     this.runNpmInstall();
                     if (this.status.multiplayer !== "killed" && !this.multiplayer) {
                         this.runMultiplayer();
@@ -260,7 +261,7 @@ export class Control {
     async restartCore() {
         await this.kill("core");
         this.cli.options.core = !this.cli.options.core;
-        this.runCore();
+        this.runCore(true);
     }
     async runMultiplayer(restart) {
         if (this.quitting)
@@ -268,7 +269,6 @@ export class Control {
         if (this.status.multiplayer === "killed")
             return;
         await this.kill("multiplayer");
-        // await killPort(3001);
         this.signals.multiplayer = new AbortController();
         this.ui.print("multiplayer");
         this.multiplayer = spawn("cargo", this.cli.options.multiplayer ? ["watch", "-x", "'run'"] : ["run"], {

@@ -26,6 +26,7 @@ use quadratic_rust_shared::pubsub::PubSub;
 use quadratic_rust_shared::quadratic_api::{get_file_perms, FilePermRole};
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
 #[tracing::instrument(level = "trace")]
@@ -51,6 +52,7 @@ pub(crate) async fn handle_message(
             selection,
             cell_edit,
             viewport,
+            follow,
         } => {
             // validate that the user has permission to access the file
             let base_url = &state.settings.quadratic_api_uri;
@@ -89,6 +91,7 @@ pub(crate) async fn handle_message(
 
             validate_can_edit_or_view_file(&permissions)?;
 
+            let follow = follow.map(|follow| Uuid::parse_str(&follow).unwrap_or_default());
             let user_state = UserState {
                 sheet_id,
                 selection,
@@ -98,9 +101,10 @@ pub(crate) async fn handle_message(
                 visible: false,
                 code_running: "".to_string(),
                 viewport,
+                follow,
             };
 
-            let user = User {
+            let mut user = User {
                 user_id,
                 session_id,
                 connection_id: pre_connection.id,
@@ -112,6 +116,9 @@ pub(crate) async fn handle_message(
                 state: user_state,
                 socket: Some(Arc::clone(&sender)),
                 last_heartbeat: chrono::Utc::now(),
+
+                // this will be properly set in the enter_room function
+                index: 0,
             };
 
             // subscribe to the file's pubsub channel
@@ -129,7 +136,7 @@ pub(crate) async fn handle_message(
             };
 
             let is_new = state
-                .enter_room(file_id, &user, pre_connection, sequence_num)
+                .enter_room(file_id, &mut user, pre_connection, sequence_num)
                 .await?;
 
             // direct response to user w/sequence_num after logging in
@@ -297,7 +304,6 @@ pub(crate) async fn handle_message(
 
 #[cfg(test)]
 pub(crate) mod tests {
-
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
 
@@ -321,14 +327,11 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                sheet_id: None,
                 selection: Some("selection".to_string()),
                 x: Some(1.0),
                 y: Some(2.0),
                 visible: Some(true),
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -346,13 +349,7 @@ pub(crate) mod tests {
             file_id,
             update: UserStateUpdate {
                 selection: Some("test".to_string()),
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -369,14 +366,8 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
                 visible: Some(false),
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -393,14 +384,8 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
                 sheet_id: Some(Uuid::new_v4()),
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -417,11 +402,6 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
                 cell_edit: Some(CellEdit {
                     text: "test".to_string(),
                     cursor: 0,
@@ -430,8 +410,7 @@ pub(crate) mod tests {
                     bold: None,
                     italic: None,
                 }),
-                viewport: None,
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -448,14 +427,8 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
                 viewport: Some("viewport".to_string()),
-                code_running: None,
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -472,14 +445,8 @@ pub(crate) mod tests {
             session_id: user_1.session_id,
             file_id,
             update: UserStateUpdate {
-                selection: None,
-                sheet_id: None,
-                x: None,
-                y: None,
-                visible: None,
-                cell_edit: None,
-                viewport: None,
                 code_running: Some("code running".to_string()),
+                ..Default::default()
             },
         };
         broadcast(vec![user_1.session_id], file_id, state, message)
@@ -508,5 +475,53 @@ pub(crate) mod tests {
             .unwrap();
 
         // TODO(ddimaria): mock the splitsink sender to test the actual sending
+    }
+
+    #[tokio::test]
+    async fn enter_room_follow() {
+        let (state, file_id, user_1) = setup().await;
+        let user_2 = add_new_user_to_room(file_id, state.clone()).await;
+
+        let _enter_room = MessageRequest::EnterRoom {
+            session_id: user_2.session_id,
+            user_id: user_2.user_id,
+            file_id,
+            first_name: "test".to_string(),
+            last_name: "test".to_string(),
+            email: "test".to_string(),
+            image: "test".to_string(),
+            sheet_id: Uuid::new_v4(),
+            selection: "test".to_string(),
+            cell_edit: CellEdit {
+                text: "test".to_string(),
+                cursor: 0,
+                active: true,
+                code_editor: false,
+                bold: None,
+                italic: None,
+            },
+            viewport: "test".to_string(),
+            follow: Some(user_1.session_id.to_string()),
+        };
+
+        // todo: need to create a mock? socket to call the rest of this
+
+        // handle_message(
+        //     enter_room,
+        //     Arc::clone(&state),
+        //     Arc::clone(&user_2.socket.unwrap()),
+        //     PreConnection {
+        //         id: Uuid::new_v4(),
+        //         jwt: None,
+        //     },
+        // )
+        // .await
+        // .unwrap();
+
+        // let room = state.get_room(&file_id).await.unwrap();
+        // assert_eq!(
+        //     room.users.get(&user_2.session_id).unwrap().state.follow,
+        //     Some(user_1.session_id)
+        // );
     }
 }

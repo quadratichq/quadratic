@@ -22,7 +22,7 @@ pub(crate) fn broadcast(
     message: MessageResponse,
 ) -> JoinHandle<()> {
     tracing::trace!(
-        "Broadcasting message to room {}, exluding {:?}: {:?}",
+        "Broadcasting message to room {}, excluding {:?}: {:?}",
         file_id,
         exclude,
         message
