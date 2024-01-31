@@ -300,8 +300,10 @@ mod tests {
     async fn follow_updates() {
         let (_, state, _, file_id, user, _) = setup().await;
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.follow = Some(user.session_id.to_string());
+        let user_state = UserStateUpdate {
+            follow: Some(user.session_id.to_string()),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -315,8 +317,10 @@ mod tests {
 
         assert_eq!(user.state.follow, Some(user.session_id));
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.follow = Some("".to_string());
+        let user_state = UserStateUpdate {
+            follow: Some("".to_string()),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -335,8 +339,10 @@ mod tests {
     async fn follow_updates_invalid_uuid() {
         let (_, state, _, file_id, user, _) = setup().await;
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.follow = Some("invalid".to_string());
+        let user_state = UserStateUpdate {
+            follow: Some("invalid".to_string()),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -355,8 +361,10 @@ mod tests {
     async fn user_visible_update() {
         let (_, state, _, file_id, user, _) = setup().await;
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.visible = Some(false);
+        let user_state = UserStateUpdate {
+            visible: Some(false),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -368,10 +376,12 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(user.state.visible, false);
+        assert!(!user.state.visible);
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.visible = Some(true);
+        let user_state = UserStateUpdate {
+            visible: Some(true),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -383,7 +393,7 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(user.state.visible, true);
+        assert!(user.state.visible);
     }
 
     #[tokio::test]

@@ -270,10 +270,7 @@ mod tests {
         assert_eq!(user.index, 0);
         assert_eq!(user2.index, 1);
         assert_eq!(user3.index, 2);
-        state
-            .leave_room(file_id, &mut user2.session_id)
-            .await
-            .unwrap();
+        state.leave_room(file_id, &user2.session_id).await.unwrap();
         state
             .enter_room(file_id, &mut user2, connection4, 0)
             .await
