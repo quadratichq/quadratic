@@ -63,7 +63,8 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
         message: 'Auth0 user returned without `email`',
         level: 'error',
         extra: {
-          auth0User,
+          auth0IdInOurDb: auth0Id,
+          auth0UserResult: auth0User,
         },
       });
       throw new Error('Failed to retrieve all user info from Auth0');
