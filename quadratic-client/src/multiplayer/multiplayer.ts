@@ -532,6 +532,7 @@ export class Multiplayer {
 
   // Receives a new transaction from the server
   private async receiveTransaction(data: ReceiveTransaction) {
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Received transaction ${data.id}.`);
     if (data.file_id !== this.fileId) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
@@ -546,6 +547,8 @@ export class Multiplayer {
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
   private async receiveTransactions(data: ReceiveTransactions) {
+    if (debugShowMultiplayer)
+      console.log(`[Multiplayer] Received ${Math.floor(data.transactions.length / 1000)}MB transactions data.`);
     grid.receiveMultiplayerTransactions(data.transactions);
     if (await offline.unsentTransactionsCount()) {
       this.state = 'syncing';

@@ -192,12 +192,22 @@ impl GridController {
                 .unsaved_transactions
                 .find_index(transaction.id)
             {
-                self.rollback_unsaved_transactions(transaction);
-                self.transactions.unsaved_transactions.remove(index);
-                self.mark_transaction_sent(transaction.id);
-                self.start_transaction(transaction);
-                self.apply_out_of_order_transactions(transaction, sequence_num);
-                self.reapply_unsaved_transactions(transaction);
+                // if it's our first unsaved_transaction, then there's nothing more to do except delete it and mark it as sent
+                if index == 0 {
+                    self.transactions.unsaved_transactions.remove(index);
+                    self.mark_transaction_sent(transaction.id);
+                    self.apply_out_of_order_transactions(transaction, sequence_num);
+                }
+                // otherwise we need to rollback all transaction and properly apply it
+                else {
+                    self.rollback_unsaved_transactions(transaction);
+                    self.transactions.unsaved_transactions.remove(index);
+                    self.mark_transaction_sent(transaction.id);
+                    self.start_transaction(transaction);
+                    self.apply_out_of_order_transactions(transaction, sequence_num);
+                    self.reapply_unsaved_transactions(transaction);
+                    dbgjs!("second case");
+                }
             } else {
                 // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions
                 self.rollback_unsaved_transactions(transaction);

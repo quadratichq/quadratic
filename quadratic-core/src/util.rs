@@ -250,6 +250,24 @@ macro_rules! dbgjs {
     };
 }
 
+#[allow(unused_macros)]
+macro_rules! jsTime {
+    ($($arg:tt)*) => {
+        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            $crate::wasm_bindings::js::jsTime($($arg)*)
+        }
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! jsTimeEnd {
+    ($($arg:tt)*) => {
+        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            $crate::wasm_bindings::js::jsTimeEnd($($arg)*)
+        }
+    };
+}
+
 pub fn date_string() -> String {
     let now = Utc::now();
     now.format("%Y-%m-%d %H:%M:%S").to_string()

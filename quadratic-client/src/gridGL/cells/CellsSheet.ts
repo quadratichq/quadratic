@@ -315,11 +315,11 @@ export class CellsSheet extends Container {
     return cellsTextHashes;
   }
 
-  update(): boolean {
+  update(userIsActive: boolean): boolean {
     if (this.updateHeadings()) return true;
     const cellTextHashes = this.dirtyCellTextHashesByDistance();
     for (const cellTextHash of cellTextHashes) {
-      if (cellTextHash.update()) {
+      if (cellTextHash.update(userIsActive)) {
         return true;
       }
     }

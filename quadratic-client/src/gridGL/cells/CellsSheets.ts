@@ -65,17 +65,21 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   // this updates the first dirty CellsSheet, always starting with the current sheet
-  update(): void {
+  // * userIsActive indicates whether to hold off on rendering sheets that are not visible
+  update(userIsActive: boolean): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
-    if (this.current.update()) {
+    if (this.current.update(userIsActive)) {
       pixiApp.setViewportDirty();
       return;
     }
-    for (const child of this.children) {
-      if (this.current !== child) {
-        if (child.update()) {
-          pixiApp.setViewportDirty();
-          return;
+    // if the current sheet is not dirty, check the other sheets
+    if (!userIsActive) {
+      // find the next non-visible sheet to render, and do one per inactive frame
+      for (const child of this.children) {
+        if (this.current !== child) {
+          if (child.update(false)) {
+            return;
+          }
         }
       }
     }

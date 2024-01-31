@@ -3,7 +3,6 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    wasm_bindings::js::{jsTime, jsTimeEnd},
     Array, CellValue,
 };
 
@@ -18,7 +17,6 @@ impl GridController {
                 None => (), // sheet may have been deleted
                 Some(sheet) => {
                     // update individual cell values and collect old_values
-                    jsTime("1".into());
                     // let old_values = sheet.set_cell_values(sheet_rect.into(), &values);
                     let old_values = sheet_rect
                         .iter()
@@ -37,7 +35,6 @@ impl GridController {
                         })
                         .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                         .collect();
-                    jsTimeEnd("1".into());
                     if transaction.is_user() || transaction.is_undo_redo() {
                         transaction
                             .forward_operations
