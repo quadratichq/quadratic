@@ -1,3 +1,4 @@
+import { CodeCellLanguage } from '@/quadratic-core/types';
 import monaco from 'monaco-editor';
 import { useEffect } from 'react';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -6,10 +7,10 @@ export const useEditorOnSelectionChange = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
   monacoRef: React.MutableRefObject<typeof monaco | null>,
-  language: 'TEXT' | 'FORMULA' | 'JAVASCRIPT' | 'PYTHON' | 'SQL' | 'COMPUTED' | 'AI'
+  language?: CodeCellLanguage
 ) => {
   useEffect(() => {
-    if (language !== 'FORMULA') return;
+    if (language !== 'Formula') return;
     const editor = editorRef.current;
     if (!isValidRef || !editor) return;
     const model = editor.getModel();

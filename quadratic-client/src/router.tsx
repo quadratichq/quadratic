@@ -17,21 +17,19 @@ import {
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
 import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
-import { action as shareFileMenuAction, loader as shareFileMenuLoader } from './components/ShareFileMenu';
 import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import * as Create from './dashboard/FilesCreateRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
-import { action as filesAction } from './dashboard/components/FilesList';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
-  user?: User;
+  loggedInUser?: User;
 };
 
 export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
@@ -58,7 +56,7 @@ export const router = createBrowserRouter(
 
           initializeAnalytics({ isAuthenticated, user });
 
-          return { isAuthenticated, user };
+          return { isAuthenticated, loggedInUser: user };
         }}
         element={<Root />}
         errorElement={<RootError />}
@@ -91,10 +89,22 @@ export const router = createBrowserRouter(
           />
 
           <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
-            <Route path={ROUTES.FILES} lazy={() => import('./dashboard/FilesRoute')} />
+            <Route path={ROUTES.FILES}>
+              <Route index lazy={() => import('./routes/files')} />
+
+              {/* Resource routes */}
+              <Route path=":uuid" lazy={() => import('./routes/files.$uuid')} />
+              <Route path=":uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
+            </Route>
+            <Route path={ROUTES.FILES_SHARED_WITH_ME} lazy={() => import('./routes/files.shared-with-me')} />
             <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/ExamplesRoute')} />
-            <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
             <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
+
+            <Route path={ROUTES.TEAMS}>
+              <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+              <Route path={ROUTES.CREATE_TEAM} lazy={() => import('./routes/teams.create')} />
+              <Route path=":uuid" lazy={() => import('./routes/teams.$uuid')} />
+            </Route>
           </Route>
 
           <Route
@@ -102,9 +112,6 @@ export const router = createBrowserRouter(
             element={<CloudFilesMigration.Component />}
             loader={CloudFilesMigration.loader}
           />
-
-          <Route path="/api/files/:uuid" action={filesAction} loader={() => null} />
-          <Route path="/api/files/:uuid/sharing" action={shareFileMenuAction} loader={shareFileMenuLoader} />
         </Route>
 
         <Route

@@ -123,20 +123,29 @@ impl Offsets {
         self.sizes.iter().map(|(&k, &v)| (k, v))
     }
 
+    /// Gets a list of changes between this and another `Offsets` structure.
+    /// This is used by TS to rapidly change positioning of CellSheets after an offsets change.
+    ///
+    /// * self: the old offsets structure that will be replaced
+    /// * offsets: the new offset structure with changes
+    ///
+    /// Returns `Vec<(offset_index, offset_delta)>`
     pub fn changes(&self, offsets: &Offsets) -> Vec<(i64, f64)> {
         let mut changes = Vec::new();
+
+        // find all changes in the old offset structure compared to the new one
         for (k, v) in &self.sizes {
             if let Some(old_v) = offsets.sizes.get(k) {
                 if *v != *old_v {
                     changes.push((*k, *old_v - *v));
                 }
-            } else {
+            } else if *v != offsets.default {
                 changes.push((*k, self.default - *v));
             }
         }
         for (k, v) in &offsets.sizes {
-            if !self.sizes.contains_key(k) {
-                changes.push((*k, self.default - *v));
+            if !self.sizes.contains_key(k) && *v != self.default {
+                changes.push((*k, *v - self.default));
             }
         }
         changes
@@ -252,11 +261,17 @@ mod tests {
         let mut first = Offsets::new(10.0);
         first.set_size(0, 20.0);
         first.set_size(-1, 25.0);
+        first.set_size(10, 50.0);
+
         let mut second = Offsets::new(10.0);
         second.set_size(0, 10.0);
         second.set_size(-1, 15.0);
         second.set_size(1, 30.0);
+        second.set_size(20, 40.0);
         let changes = first.changes(&second);
-        assert_eq!(changes, vec![(-1, -10.0), (0, -10.0), (1, -20.0)]);
+        assert_eq!(
+            changes,
+            vec![(-1, -10.0), (0, -10.0), (10, -40.0), (1, 20.0), (20, 30.0)]
+        );
     }
 }

@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
+import { Coordinate } from '@/gridGL/types/size';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
-import { CodeCellLanguage } from '../../../quadratic-core/quadratic_core';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
@@ -23,16 +24,18 @@ export const CodeEditor = () => {
 
   // update code cell
   const [codeString, setCodeString] = useState('');
+
+  // code info
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
+  const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
+
   const [editorWidth, setEditorWidth] = useState<number>(
     window.innerWidth * 0.35 // default to 35% of the window width
   );
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
-
-  const isRunningComputation = pythonState === 'running';
 
   const cellLocation = useMemo(() => {
     return {
@@ -46,7 +49,6 @@ export const CodeEditor = () => {
     editorInteractionState.selectedCellSheet,
   ]);
 
-  // update code cell
   const unsaved = useMemo(() => {
     return editorContent !== codeString;
   }, [codeString, editorContent]);
@@ -87,12 +89,11 @@ export const CodeEditor = () => {
         editorInteractionState.selectedCell.y
       );
       if (codeCell) {
-        const codeString = codeCell.getCodeString();
-        setCodeString(codeString);
-        setOut({ stdOut: codeCell.getStdOut(), stdErr: codeCell.getStdErr() });
-        if (updateEditorContent) setEditorContent(codeString);
-        setEvaluationResult(codeCell.getEvaluationResult());
-        codeCell.free();
+        setCodeString(codeCell.code_string);
+        setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
+        if (updateEditorContent) setEditorContent(codeCell.code_string);
+        setEvaluationResult(codeCell.evaluation_result);
+        setSpillError(codeCell.spill_error?.map((c) => ({ x: Number(c.x), y: Number(c.y) })));
       } else {
         setCodeString('');
         if (updateEditorContent) setEditorContent('');
@@ -107,19 +108,19 @@ export const CodeEditor = () => {
     ]
   );
 
-  // update code cell after computation
-  useEffect(() => {
-    if (!isRunningComputation) {
-      updateCodeCell(false);
-    }
-  }, [updateCodeCell, isRunningComputation]);
-
   useEffect(() => {
     updateCodeCell(true);
+
+    const update = () => updateCodeCell(false);
+    window.addEventListener('code-cells-update', update);
+    return () => {
+      window.removeEventListener('code-cells-update', update);
+    };
   }, [updateCodeCell]);
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
+    multiplayer.sendCellEdit('', 0, true);
   }, [editorMode]);
 
   const closeEditor = useCallback(
@@ -134,6 +135,7 @@ export const CodeEditor = () => {
         }));
         pixiApp.highlightedCells.clear();
         focusGrid();
+        multiplayer.sendEndCellEdit();
       }
     },
     [setEditorInteractionState, unsaved]
@@ -151,28 +153,17 @@ export const CodeEditor = () => {
   }, [closeEditor, editorInteractionState.editorEscapePressed, unsaved]);
 
   const saveAndRunCell = async () => {
-    if (pythonState !== 'idle') return;
-    const language =
-      editorInteractionState.mode === 'PYTHON'
-        ? CodeCellLanguage.Python
-        : editorInteractionState.mode === 'FORMULA'
-        ? CodeCellLanguage.Formula
-        : undefined;
+    const language = editorInteractionState.mode;
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
-    if (
-      grid.setCodeCellValue({
-        sheetId: cellLocation.sheetId,
-        x: cellLocation.x,
-        y: cellLocation.y,
-        codeString: editorContent ?? '',
-        language,
-      })
-    ) {
-      // for formulas, the code cell may be run synchronously; in that case we update the code cell immediately
-      // if there is any async computation, then we have to wait to update the code cell
-      updateCodeCell(false);
-    }
+    grid.setCodeCellValue({
+      sheetId: cellLocation.sheetId,
+      x: cellLocation.x,
+      y: cellLocation.y,
+      codeString: editorContent ?? '',
+      language,
+    });
+    setCodeString(editorContent ?? '');
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
       code: editorContent,
@@ -187,7 +178,7 @@ export const CodeEditor = () => {
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
     // Don't allow the shortcuts below for certain users
-    if (!isEditorOrAbove(editorInteractionState.permission)) {
+    if (!hasPermissionToEditFile(editorInteractionState.permissions)) {
       return;
     }
 
@@ -253,6 +244,13 @@ export const CodeEditor = () => {
         backgroundColor: '#ffffff',
       }}
       onKeyDownCapture={onKeyDownEditor}
+      onPointerEnter={() => {
+        // todo: handle multiplayer code editor here
+        multiplayer.sendMouseMove();
+      }}
+      onPointerMove={(e) => {
+        e.stopPropagation();
+      }}
     >
       {showSaveChangesAlert && (
         <SaveChangesAlert
@@ -278,7 +276,6 @@ export const CodeEditor = () => {
       <CodeEditorHeader
         cellLocation={cellLocation}
         unsaved={unsaved}
-        isRunningComputation={isRunningComputation}
         saveAndRunCell={saveAndRunCell}
         cancelPython={cancelPython}
         closeEditor={() => closeEditor(false)}
@@ -297,12 +294,13 @@ export const CodeEditor = () => {
           height: `${consoleHeight}px`,
         }}
       >
-        {(editorInteractionState.mode === 'PYTHON' || editorInteractionState.mode === 'FORMULA') && (
+        {(editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
           <Console
             consoleOutput={out}
             editorMode={editorMode}
             editorContent={editorContent}
             evaluationResult={evaluationResult}
+            spillError={spillError}
           />
         )}
       </div>

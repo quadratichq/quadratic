@@ -1,7 +1,6 @@
 use super::*;
-use crate::controller::transaction_types::{CellsForArray, JsCodeResult, JsComputeGetCells};
-use crate::{controller::transaction_summary::TransactionSummary, grid::js_types::*};
-use std::collections::HashSet;
+use crate::controller::transaction_types::{JsCodeResult, JsComputeGetCells};
+use crate::grid::js_types::*;
 use std::str::FromStr;
 
 pub mod auto_complete;
@@ -9,6 +8,7 @@ pub mod borders;
 pub mod bounds;
 pub mod cells;
 pub mod clipboard;
+pub mod code;
 pub mod export;
 pub mod formatting;
 pub mod import;
@@ -16,15 +16,22 @@ pub mod render;
 pub mod sheet_offsets;
 pub mod sheets;
 pub mod summarize;
+pub mod transactions;
 
 #[wasm_bindgen]
 impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
-    pub fn js_new_from_file(file: &str) -> Result<GridController, JsValue> {
+    pub fn js_new_from_file(file: &str, last_sequence_num: u32) -> Result<GridController, JsValue> {
         Ok(GridController::from_grid(
             file::import(file).map_err(|e| e.to_string())?,
+            last_sequence_num as u64,
         ))
+    }
+
+    #[wasm_bindgen(js_name = "test")]
+    pub fn js_test() -> GridController {
+        GridController::test()
     }
 
     /// Exports a [`GridController`] to a file. Returns a `String`.
@@ -37,12 +44,6 @@ impl GridController {
     #[wasm_bindgen(js_name = "getVersion")]
     pub fn js_file_version(&self) -> String {
         file::CURRENT_VERSION.into()
-    }
-
-    /// Constructs a new empty grid.
-    #[wasm_bindgen(constructor)]
-    pub fn js_new() -> Self {
-        Self::new()
     }
 
     /// Returns whether there is a transaction to undo.
@@ -68,56 +69,5 @@ impl GridController {
     #[wasm_bindgen(js_name = "redo")]
     pub fn js_redo(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
         Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
-    }
-
-    #[wasm_bindgen(js_name = "calculationComplete")]
-    pub fn js_calculation_complete(&mut self, result: JsCodeResult) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(
-            &self.calculation_complete(result),
-        )?)
-    }
-
-    #[wasm_bindgen(js_name = "getCalculationTransactionSummary")]
-    pub fn js_calculation_transaction_summary(&mut self) -> Result<JsValue, JsValue> {
-        self.updated_bounds_in_transaction();
-        if let Some(summary) = self.transaction_summary() {
-            Ok(serde_wasm_bindgen::to_value(&summary)?)
-        } else {
-            Err(JsValue::UNDEFINED)
-        }
-    }
-
-    #[wasm_bindgen(js_name = "calculationGetCells")]
-    pub fn js_calculation_get_cells(
-        &mut self,
-        get_cells: JsComputeGetCells,
-    ) -> Option<CellsForArray> {
-        self.calculation_get_cells(get_cells)
-    }
-
-    /// Populates a portion of a sheet with random float values.
-    ///
-    /// Returns a [`TransactionSummary`].
-    #[wasm_bindgen(js_name = "populateWithRandomFloats")]
-    pub fn js_populate_with_random_floats(
-        &mut self,
-        sheet_id: String,
-        region: &Rect,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        self.populate_with_random_floats(sheet_id, region);
-        Ok(serde_wasm_bindgen::to_value(&TransactionSummary {
-            fill_sheets_modified: vec![],
-            border_sheets_modified: vec![],
-            code_cells_modified: HashSet::new(),
-            cell_sheets_modified: HashSet::new(),
-            sheet_list_modified: false,
-            cursor: None,
-            offsets_modified: vec![],
-            save: false,
-            generate_thumbnail: false,
-            transaction_busy: false,
-            html: HashSet::new(),
-        })?)
     }
 }

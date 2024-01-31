@@ -75,7 +75,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let b = end.inner;
                 let len = (a - b).unsigned_abs() as u32 + 1;
                 if len as f64 > crate::limits::INTEGER_RANGE_LIMIT {
-                    return Err(ErrorMsg::ArrayTooBig.with_span(span));
+                    return Err(RunErrorMsg::ArrayTooBig.with_span(span));
                 }
                 let range = if a < b { a..=b } else { b..=a };
                 let width = 1;
@@ -109,8 +109,8 @@ mod tests {
             eval_to_string(&g, "1 * -6 + -2 - 1 * -3 ^ 2 ^ 3"),
         );
         assert_eq!((1.0 / 2.0).to_string(), eval_to_string(&g, "1/2"));
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "1 / 0").msg);
-        assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "0/ 0").msg);
+        assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "1 / 0").msg);
+        assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "0/ 0").msg);
     }
 
     #[test]

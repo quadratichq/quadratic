@@ -1,3 +1,4 @@
+import { test } from 'vitest';
 import { CellDependencyManager } from './CellDependencyManager';
 
 test('QuadraticDependencyGraph', () => {

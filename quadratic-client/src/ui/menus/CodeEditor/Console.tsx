@@ -1,9 +1,9 @@
 import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import { useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { isViewerOrAbove } from '../../../actions';
-import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+import { Coordinate } from '@/gridGL/types/size';
+import { useRootRouteLoaderData } from '@/router';
 import { Circle } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
@@ -16,18 +16,14 @@ interface ConsoleProps {
   editorMode: EditorInteractionState['mode'];
   editorContent: string | undefined;
   evaluationResult?: any;
+  spillError?: Coordinate[];
 }
 
-export function Console({ consoleOutput, editorMode, editorContent, evaluationResult }: ConsoleProps) {
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
+export function Console({ consoleOutput, editorMode, editorContent, evaluationResult, spillError }: ConsoleProps) {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
-  let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length);
-
-  // Whenever we change to a different cell, reset the active tab to the 1st
-  // useEffect(() => {
-  //   setActiveTabIndex(0);
-  // }, [selectedCell]);
+  const { isAuthenticated } = useRootRouteLoaderData();
+  let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
 
   return (
     <>
@@ -52,7 +48,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             }
             iconPosition="end"
           ></Tab>
-          {editorMode === 'PYTHON' && isViewerOrAbove(permission) && (
+          {editorMode === 'Python' && isAuthenticated && (
             <Tab
               style={{ minHeight: '32px' }}
               label="AI Assistant"
@@ -87,6 +83,19 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
           >
             {hasOutput ? (
               <>
+                {spillError && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
+                    SPILL ERROR: Array output could not expand because it would overwrite existing content. To fix this,
+                    remove content in cell
+                    {spillError.length > 1 ? 's' : ''}{' '}
+                    {spillError.map(
+                      (pos, index) =>
+                        `(${pos.x}, ${pos.y})${
+                          index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'
+                        }`
+                    )}
+                  </span>
+                )}
                 {consoleOutput?.stdErr && (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
                     ERROR: {consoleOutput?.stdErr}
@@ -96,7 +105,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
               </>
             ) : (
               <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
-                {editorMode === 'PYTHON'
+                {editorMode === 'Python'
                   ? 'Print statements, standard out, and errors will show here.'
                   : 'Errors will show here.'}
               </div>

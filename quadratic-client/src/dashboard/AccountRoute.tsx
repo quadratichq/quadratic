@@ -1,75 +1,86 @@
+import { Type } from '@/components/Type';
 import { Button } from '@/shadcn/ui/button';
-import { Box, Typography, useTheme } from '@mui/material';
+import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
 import { useRootRouteLoaderData } from '../router';
 import { DashboardHeader } from './components/DashboardHeader';
-// import { useColorMode } from 'shared/root/Theme';
 
 export const Component = () => {
-  const { user } = useRootRouteLoaderData();
-  const theme = useTheme();
-  // const { colorModePreference, toggleColorMode } = useColorMode();
+  const { loggedInUser: user } = useRootRouteLoaderData();
+  // const [darkMode, setDarkMode] = useLocalStorage('dark-mode', false);
+  // const hasDarkModeFeature = window.location.origin.includes('localhost');
+  // useEffect(() => {
+  //   if (hasDarkModeFeature) {
+  //     if (darkMode) {
+  //       document.body.classList.add('dark');
+  //     } else {
+  //       document.body.classList.remove('dark');
+  //     }
+  //   }
+  // }, [darkMode, hasDarkModeFeature]);
 
   return (
     <>
       <DashboardHeader title="My account" />
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: theme.spacing(3), mt: theme.spacing(3) }}>
+      <div className={`mt-6 flex flex-col gap-6`}>
         <Row>
-          <Typography variant="body2" color="text.primary" fontWeight="bold">
+          <Type variant="body2" className="font-bold">
             Name
-          </Typography>
-          <Typography variant="body2" color="text.primary">
-            {user?.name}
-          </Typography>
+          </Type>
+          <Type variant="body2">{user?.name}</Type>
         </Row>
         <Row>
-          <Typography variant="body2" color="text.primary" fontWeight="bold">
+          <Type variant="body2" className="font-bold">
             Email
-          </Typography>
-          <Typography variant="body2" color="text.primary">
-            {user?.email}
-          </Typography>
+          </Type>
+          <Type variant="body2">{user?.email}</Type>
         </Row>
-        {/*
-        <Row>
-          <Typography variant="body1" color="text.primary" fontWeight="bold">
-            Theme
-          </Typography>
-          <ButtonGroup disableElevation variant="outlined" aria-label="Disabled elevation buttons">
-            <Button
-              variant={colorModePreference === 'light' ? 'contained' : 'outlined'}
-              onClick={() => toggleColorMode('light')}
-            >
-              Light
-            </Button>
-            <Button
-              variant={colorModePreference === 'dark' ? 'contained' : 'outlined'}
-              onClick={() => toggleColorMode('dark')}
-            >
-              Dark
-            </Button>
-            <Button
-              variant={colorModePreference === 'system' ? 'contained' : 'outlined'}
-              onClick={() => toggleColorMode('system')}
-            >
-              System
-            </Button>
-          </ButtonGroup>
-  </Row> */}
-        <Typography variant="body2" color="text.secondary">
+        {/*hasDarkModeFeature && (
+          <Row>
+            <Type variant="body2" className="font-bold">
+              Theme
+            </Type>
+            <div>
+              <Button
+                disabled={darkMode}
+                variant={darkMode ? 'secondary' : 'outline'}
+                onClick={() => {
+                  setDarkMode((prev) => !prev);
+                }}
+              >
+                Dark mode
+              </Button>
+              <Button
+                disabled={!darkMode}
+                variant={!darkMode ? 'secondary' : 'outline'}
+                onClick={() => {
+                  setDarkMode((prev) => !prev);
+                }}
+              >
+                Light mode
+              </Button>
+            </div>
+          </Row>
+              )*/}
+
+        <Type variant="body2" className="text-muted-foreground">
           Additional account management coming in the future.
-        </Typography>
+        </Type>
         <Form method="post" action={ROUTES.LOGOUT}>
           <Button variant="outline" type="submit">
             Log out
           </Button>
         </Form>
-      </Box>
+      </div>
     </>
   );
 };
 
-function Row(props: any) {
-  return <Box sx={{ display: 'grid', gridTemplateColumns: '160px 1fr', alignItems: 'center' }}>{props.children}</Box>;
+function Row(props: { children: ReactNode }) {
+  return (
+    <div className={`grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
+      {props.children}
+    </div>
+  );
 }
