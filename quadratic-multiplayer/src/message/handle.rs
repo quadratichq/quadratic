@@ -140,14 +140,7 @@ pub(crate) async fn handle_message(
                 let room = state.get_room(&file_id).await?;
                 let response = MessageResponse::from(room.users);
 
-                broadcast(vec![], file_id, Arc::clone(&state), response)
-                    .await
-                    .map_err(|e| {
-                        MpError::SendingMessage(format!(
-                            "Error broadcasting to users in room {}: {}",
-                            file_id, e
-                        ))
-                    })?;
+                broadcast(vec![], file_id, Arc::clone(&state), response);
             }
 
             Ok(None)
