@@ -9,32 +9,28 @@ import { templates } from '../../email/templates';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
-export default [
-  validateRequestSchema(
-    z.object({
-      params: z.object({
-        uuid: z.string().uuid(),
-      }),
-      body: ApiSchemas['/v0/files/:uuid/invites.POST.request'],
-    })
-  ),
-  validateAccessToken,
-  userMiddleware,
-  handler,
-];
+export default [validateAccessToken, userMiddleware, handler];
+
+const schema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+  }),
+  body: ApiSchemas['/v0/files/:uuid/invites.POST.request'],
+});
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/invites.POST.response']>) {
   const {
-    body,
+    body: { email, role },
     params: { uuid },
+  } = parseRequest(req, schema);
+  const {
     user: { id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id },
   } = req;
-  const { email, role } = body as ApiTypes['/v0/files/:uuid/invites.POST.request'];
   const {
     file: { id: fileId, name: fileName, ownerUserId },
     userMakingRequest: { filePermissions },

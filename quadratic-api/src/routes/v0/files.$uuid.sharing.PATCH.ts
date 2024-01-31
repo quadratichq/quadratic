@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ApiSchemas, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
+import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
@@ -24,7 +24,7 @@ export default [
   handler,
 ];
 
-async function handler(req: Request, res: Response) {
+async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sharing.PATCH.response']>) {
   const {
     body: { publicLinkAccess },
     user: { id: userId },
@@ -40,10 +40,10 @@ async function handler(req: Request, res: Response) {
   }
 
   // Then edit!
-  await dbClient.file.update({
+  const newFile = await dbClient.file.update({
     where: { uuid },
     data: { publicLinkAccess },
   });
 
-  return res.status(200).json({ message: 'File updated.' });
+  return res.status(200).json({ publicLinkAccess: newFile.publicLinkAccess });
 }

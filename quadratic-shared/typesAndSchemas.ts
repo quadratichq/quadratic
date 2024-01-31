@@ -27,7 +27,10 @@ export type TeamPermission = z.infer<typeof TeamPermissionSchema>;
 // =============================================================================
 // TODO share these with the API
 
-export const emailSchema = z.string().email();
+export const emailSchema = z
+  .string()
+  .email()
+  .transform((v) => v.toLowerCase());
 
 const BaseUserSchema = z.object({
   id: z.number(),
@@ -153,14 +156,17 @@ export const ApiSchemas = {
   '/v0/files/:uuid/sharing.PATCH.request': z.object({
     publicLinkAccess: PublicLinkAccessSchema,
   }),
-  '/v0/files/:uuid/sharing.PATCH.response': z.object({ message: z.string() }),
+  '/v0/files/:uuid/sharing.PATCH.response': z.object({ publicLinkAccess: PublicLinkAccessSchema }),
 
   /**
    * File users
    */
   '/v0/files/:uuid/users/:userId.PATCH.request': FileUserSchema.pick({ role: true }),
   '/v0/files/:uuid/users/:userId.PATCH.response': FileUserSchema.pick({ role: true }),
-  '/v0/files/:uuid/users/:userId.DELETE.response': z.object({ message: z.string(), redirect: z.boolean().optional() }),
+  '/v0/files/:uuid/users/:userId.DELETE.response': z.object({
+    id: FileUserSchema.shape.id,
+    redirect: z.boolean().optional(),
+  }),
 
   /**
    * File invites
