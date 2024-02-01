@@ -27,15 +27,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.G
       createdDate: true,
       updatedDate: true,
       publicLinkAccess: true,
-      FileCheckpoint: {
-        take: 1,
-        orderBy: {
-          timestamp: 'desc',
-        },
-        select: {
-          timestamp: true,
-        },
-      },
     },
     orderBy: [
       {
@@ -56,7 +47,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.G
   const data: ApiTypes['/v0/files.GET.response'] = dbFiles.map((file) => ({
     ...file,
     createdDate: file.createdDate.toISOString(),
-    updatedDate: file.FileCheckpoint[0].timestamp.toISOString() || file.updatedDate.toISOString(),
+    updatedDate: file.updatedDate.toISOString(),
   }));
   return res.status(200).json(data);
 }
