@@ -7,9 +7,7 @@ export function provideCompletionItems(model: editor.ITextModel, position: Posit
     endLineNumber: position.lineNumber,
     endColumn: position.column,
   });
-  var match = textUntilPosition.match(
-    /cel/
-  );
+  var match = textUntilPosition.match(/cel/);
   if (!match) {
     return { suggestions: [] };
   }
@@ -30,18 +28,18 @@ function createDependencyProposals(range: IRange | languages.CompletionItemRange
     {
       label: 'cell',
       kind: languages.CompletionItemKind.Function,
-      detail: "Reference a single cell in the grid.",
-      documentation: "Reference a single cell in the grid.",
+      detail: 'Reference a single cell in the grid.',
+      documentation: 'Reference a single cell in the grid.',
       insertText: 'cell(x, y)',
       range: range,
     },
     {
       label: 'cells',
       kind: languages.CompletionItemKind.Function,
-      detail: "Reference a multiple cells in the grid.",
-      documentation: "Reference a multiple cells in the grid.",
+      detail: 'Reference a multiple cells in the grid.',
+      documentation: 'Reference a multiple cells in the grid.',
       insertText: 'cells((x1, y1), (x2, y2))',
       range: range,
-    }
+    },
   ];
 }

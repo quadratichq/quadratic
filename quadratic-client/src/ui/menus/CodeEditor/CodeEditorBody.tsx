@@ -65,8 +65,9 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.registerHoverProvider('Formula', { provideHover });
 
       monaco.languages.register({ id: 'python' });
-      monaco.languages.registerCompletionItemProvider('python', { 
-        provideCompletionItems: provideCompletionItemsPython });
+      monaco.languages.registerCompletionItemProvider('python', {
+        provideCompletionItems: provideCompletionItemsPython,
+      });
 
       setDidMount(true);
     },

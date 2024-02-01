@@ -39,7 +39,7 @@ async function pythonWebWorker() {
     await pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
 
     // load our python code
-    await micropip.install("/quadratic_py-0.1.0-py3-none-any.whl");
+    await micropip.install('/quadratic_py-0.1.0-py3-none-any.whl');
 
     // make run_python easier to call later
     await pyodide.runPython('from quadratic_py.run_python import run_python');
