@@ -388,18 +388,19 @@ export function InviteForm({
 
     // Get the data from the form
     const formData = new FormData(e.currentTarget);
-    const email = String(formData.get('email_search')).trim();
+    const emailFromUser = String(formData.get('email_search')).trim();
     const roleIndex = Number(formData.get('roleIndex'));
 
     // Validate email
-    if (disallowedEmails.includes(email)) {
-      setError('This email has already been invited.');
-      return;
-    }
+    let email;
     try {
-      emailSchema.parse(email);
+      email = emailSchema.parse(emailFromUser);
     } catch (e) {
       setError('Invalid email.');
+      return;
+    }
+    if (disallowedEmails.includes(email)) {
+      setError('This email has already been invited.');
       return;
     }
 
