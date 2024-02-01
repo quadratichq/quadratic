@@ -259,5 +259,27 @@ mod tests {
                 )
             }
         }
+
+        // replace old values with new values
+        let values_2 = Array::from_random_floats(rect.size());
+        let old_values = sheet.set_cell_values(rect, &values_2);
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                assert_eq!(
+                    sheet.cell_value(Pos { x, y }).unwrap(),
+                    *values_2
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap()
+                );
+                assert_eq!(
+                    *old_values
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap(),
+                    *values
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap()
+                )
+            }
+        }
     }
 }
