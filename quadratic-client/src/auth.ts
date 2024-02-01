@@ -45,10 +45,6 @@ interface AuthClient {
   login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
-  /**
-   * Tries to get a token for the current user. If the token is expired, it
-   * redirects the user to auth0 to get re-authenticate and get a new token.
-   */
   getTokenOrRedirect(): Promise<string>;
 }
 
@@ -89,6 +85,12 @@ export const authClient: AuthClient = {
     await client.logout({ logoutParams: { returnTo: window.location.origin } });
     await waitForAuth0ClientToRedirect();
   },
+  /**
+   * Tries to get a token for the current user from the auth0 client.
+   * If the token is still valid, it'll pull it from a cache. If it’s expired,
+   * it will fail and we will manually redirect the user to auth0 to re-authenticate
+   * and get a new token.
+   */
   async getTokenOrRedirect() {
     const client = await getClient();
     try {
@@ -130,14 +132,17 @@ export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFun
 
 /**
  * In cases where we call the auth0 client and it redirects the user to the
- * auth0 website on its own (e.g. for `.login` and `.logout`, presumably via
- * manipulation `window.location`) we have to manually wait for the client
+ * auth0 website (e.g. for `.login` and `.logout`, presumably via changing
+ * `window.location`) we have to manually wait for the auth0 client.
+ *
  * Why? Because even though auth0's client APIs are async, they seem to
  * complete immediately and our app's code continues before `window.location`
  * kicks in.
  *
- * So, in other words, this ensures our whole app pauses while the auth0 lib
- * does its thing and kicks the user over to auth0.com
+ * So this function ensures our whole app pauses while the auth0 lib does its
+ * thing and kicks the user over to auth0.com
+ *
+ * We only use this when we _want_ to pause everything and wait to redirect
  */
 export function waitForAuth0ClientToRedirect() {
   return new Promise((resolve) => setTimeout(resolve, 10000));
