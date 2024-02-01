@@ -502,7 +502,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                         current::CellValue::Duration(duration.to_string())
                                     }
                                     CellValue::Error(error) => current::CellValue::Error(
-                                        current::RunError::from_grid_run_error(&error),
+                                        current::RunError::from_grid_run_error(error),
                                     ),
                                     CellValue::Blank => current::CellValue::Blank,
                                 },

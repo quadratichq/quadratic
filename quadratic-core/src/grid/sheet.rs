@@ -116,7 +116,7 @@ impl Sheet {
             let filtered = column
                 .values
                 .range(rect.y_range())
-                .map(|(y, _)| y.clone())
+                .map(|(y, _)| *y)
                 .collect::<Vec<_>>();
             let removed = filtered
                 .iter()
