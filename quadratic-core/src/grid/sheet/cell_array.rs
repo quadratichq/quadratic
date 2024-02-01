@@ -236,4 +236,28 @@ mod tests {
         assert!(reasons.iter().any(|p| *p == Pos { x: 1, y: 0 }));
         assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 0 }));
     }
+
+    #[test]
+    fn set_cell_values() {
+        let mut sheet = Sheet::test();
+        let rect = Rect::from_numbers(0, 0, 2, 2);
+        let values = Array::from_random_floats(rect.size());
+        let old_values = sheet.set_cell_values(rect, &values);
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                assert_eq!(
+                    sheet.cell_value(Pos { x, y }).unwrap(),
+                    *values
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap()
+                );
+                assert_eq!(
+                    *old_values
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap(),
+                    CellValue::Blank
+                )
+            }
+        }
+    }
 }
