@@ -39,7 +39,7 @@ beforeEach(async () => {
         ],
       },
       FileInvite: {
-        create: [{ email: 'invitedPerson@example.com', role: 'EDITOR' }],
+        create: [{ email: 'invite@example.com', role: 'EDITOR' }],
       },
     },
   });
@@ -59,11 +59,11 @@ afterEach(async () => {
 const auth0Users = [
   {
     user_id: 'userOwner',
-    email: 'userOwner@example.com',
+    email: 'owner@example.com',
   },
   {
     user_id: 'userEditor',
-    email: 'userEditor@example.com',
+    email: 'editor@example.com',
   },
   {
     user_id: 'userViewer',
@@ -71,7 +71,7 @@ const auth0Users = [
   },
   {
     user_id: 'userNoRole',
-    email: 'userNoRole@example.com',
+    email: 'norole@example.com',
   },
   {
     user_id: 'duplicate_emails_user_1',
@@ -83,10 +83,7 @@ const auth0Users = [
   },
   {
     user_id: 'userNotYetInDb',
-    email: 'userNotYetInDb@example.com',
-  },
-  {
-    email: 'userWithoutId@example.com',
+    email: 'nodb@example.com',
   },
 ];
 jest.mock('auth0', () => ({
@@ -95,8 +92,9 @@ jest.mock('auth0', () => ({
       // example value for `q`: "user_id:(user1 OR user2)"
       return auth0Users.filter(({ user_id }) => user_id && q.includes(user_id));
     }),
+    // auth0 doesn't match on case sensitivty, so we won't either
     getUsersByEmail: jest.fn().mockImplementation((email: string) => {
-      return auth0Users.filter(({ email: userEmail }) => email === userEmail);
+      return auth0Users.filter(({ email: userEmail }) => email.toLowerCase() === userEmail.toLowerCase());
     }),
   })),
 }));
@@ -141,17 +139,13 @@ describe('POST /v0/files/:uuid/invites', () => {
 
   describe('permissioning', () => {
     it('rejects inviting someone if you don’t have permission', async () => {
-      await invite({ email: 'someRandomPerson@example.com', role: 'EDITOR' }, 'userViewer')
-        .expect(403)
-        .expect(expectError);
+      await invite({ email: 'somebody@example.com', role: 'EDITOR' }, 'userViewer').expect(403).expect(expectError);
     });
     it('creates an invite for someone if you have permission', async () => {
-      await invite({ email: 'someRandomPerson@example.com', role: 'EDITOR' }, 'userEditor')
-        .expect(201)
-        .expect(expectInvite);
+      await invite({ email: 'somebody@example.com', role: 'EDITOR' }, 'userEditor').expect(201).expect(expectInvite);
     });
     it('adds a user to the file if you have permission', async () => {
-      await invite({ email: 'userNoRole@example.com', role: 'EDITOR' }, 'userOwner').expect(200).expect(expectUser);
+      await invite({ email: 'norole@example.com', role: 'EDITOR' }, 'userOwner').expect(200).expect(expectUser);
     });
 
     describe('publicly editable file', () => {
@@ -162,31 +156,29 @@ describe('POST /v0/files/:uuid/invites', () => {
         });
       });
       it('adds yourself if the file is publicly editable', async () => {
-        await invite({ email: 'userNoRole@example.com', role: 'EDITOR' }, 'userNoRole').expect(200).expect(expectUser);
+        await invite({ email: 'norole@example.com', role: 'EDITOR' }, 'userNoRole').expect(200).expect(expectUser);
       });
       it('creates an invite for someone even if you’re just a viewer', async () => {
-        await invite({ email: 'someRandomPerson@example.com', role: 'EDITOR' }, 'userViewer')
-          .expect(201)
-          .expect(expectInvite);
+        await invite({ email: 'somebody@example.com', role: 'EDITOR' }, 'userViewer').expect(201).expect(expectInvite);
       });
     });
   });
 
   describe('inviting people already associated with the file', () => {
     it('rejects inviting yourself as the file owner', async () => {
-      await invite({ email: 'userOwner@example.com', role: 'EDITOR' }, 'userOwner').expect(400).expect(expectError);
+      await invite({ email: 'owner@example.com', role: 'EDITOR' }, 'userOwner').expect(400).expect(expectError);
     });
     it('rejects inviting the file owner', async () => {
-      await invite({ email: 'userOwner@example.com', role: 'EDITOR' }, 'userEditor').expect(400).expect(expectError);
+      await invite({ email: 'owner@example.com', role: 'EDITOR' }, 'userEditor').expect(400).expect(expectError);
     });
     it('rejects inviting yourself as an exisiting user', async () => {
-      await invite({ email: 'userEditor@example.com', role: 'EDITOR' }, 'userEditor').expect(409).expect(expectError);
+      await invite({ email: 'editor@example.com', role: 'EDITOR' }, 'userEditor').expect(409).expect(expectError);
     });
     it('rejects inviting another exisiting user', async () => {
-      await invite({ email: 'userEditor@example.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
+      await invite({ email: 'editor@example.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
     it('rejects inviting an email associated with an exisiting invite', async () => {
-      await invite({ email: 'invitedPerson@example.com', role: 'VIEWER' }, 'userOwner').expect(409).expect(expectError);
+      await invite({ email: 'invite@example.com', role: 'VIEWER' }, 'userOwner').expect(409).expect(expectError);
     });
     it('rejects inviting an email associated with multiple accounts', async () => {
       await invite({ email: 'duplicate@example.com', role: 'VIEWER' }, 'userOwner').expect(500).expect(expectError);
@@ -195,23 +187,36 @@ describe('POST /v0/files/:uuid/invites', () => {
 
   describe('inviting people who already have a Quadratic account', () => {
     it('creates an invite for a user who exists in auth0 but not yet our database', async () => {
-      await invite({ email: 'userNotYetInDb@example.com', role: 'VIEWER' }, 'userOwner')
-        .expect(201)
-        .expect(expectInvite);
+      await invite({ email: 'nodb@example.com', role: 'VIEWER' }, 'userOwner').expect(201).expect(expectInvite);
     });
     it('adds a user to the file', async () => {
-      await invite({ email: 'userNoRole@example.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
+      await invite({ email: 'norole@example.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
     });
     it('rejects for a user in auth0 without an ID', async () => {
-      await invite({ email: 'userNoRole@example.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
+      await invite({ email: 'norole@example.com', role: 'EDITOR' }, 'userEditor').expect(200).expect(expectUser);
     });
   });
 
   describe('inviting people who don’t have a Quadratic account', () => {
     it('creates an invite', async () => {
-      await invite({ email: 'userWithoutAccount@example.com', role: 'EDITOR' }, 'userOwner')
+      await invite({ email: 'somebody@example.com', role: 'EDITOR' }, 'userOwner').expect(201).expect(expectInvite);
+    });
+  });
+
+  describe('inviting based on case sensitivity', () => {
+    it('transforms email to lowercase and creates an invite', async () => {
+      await invite({ email: 'ALL_CAPS_EMAIL@EXAMPLE.COM', role: 'EDITOR' }, 'userOwner')
         .expect(201)
-        .expect(expectInvite);
+        .expect(expectInvite)
+        .expect((res) => {
+          expect(res.body.email).toBe('all_caps_email@example.com');
+        });
+    });
+    it('transforms email to lowercase and finds exisiting invite', async () => {
+      await invite({ email: 'INVITE@example.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
+    });
+    it('finds exisiting users through auth0 based on case insensitivity', async () => {
+      await invite({ email: 'EDITOR@EXAMPLE.com', role: 'EDITOR' }, 'userOwner').expect(409).expect(expectError);
     });
   });
 });
