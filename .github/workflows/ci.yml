@@ -131,7 +131,7 @@ jobs:
 
       - name: Test python
         run: |
-          cd quadratic-py
+          cd quadratic-kernels/python-wasm
           npm run test
 
   test_api:
