@@ -2,6 +2,7 @@ import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { cn } from '@/shadcn/utils';
+import { useGridSettings } from '@/ui/menus/TopBar/SubMenus/useGridSettings';
 import { useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
 
@@ -13,6 +14,7 @@ export interface EditingCell {
 }
 
 export const HoverCell = () => {
+  const { showCodePeek } = useGridSettings();
   const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | undefined>();
   const ref = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -60,6 +62,7 @@ export const HoverCell = () => {
   const renderCodeCell = cell as JsRenderCodeCell | undefined;
   const editingCell = cell as EditingCell | undefined;
   const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;
+  let onlyCode = false;
   if (spillError) {
     text = (
       <>
@@ -101,6 +104,7 @@ export const HoverCell = () => {
         <div className="code-body">{code?.code_string}</div>
       </>
     );
+    onlyCode = true;
   } else if (editingCell?.user) {
     text = (
       <>
@@ -157,6 +161,9 @@ export const HoverCell = () => {
       window.removeEventListener('resize', updatePosition);
     };
   }, [cell]);
+
+  // hide code peek unless showCodePeek is true
+  if (onlyCode && !showCodePeek) return null;
 
   return (
     <div
