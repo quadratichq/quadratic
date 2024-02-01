@@ -13,7 +13,7 @@ source poetry-path.sh
 poetry build
 
 pushd "${SCRIPT_DIR}/dist/"
-find . -name "*.whl" -exec cp '{}' "${SCRIPT_DIR}/../quadratic-client/public/" \;
+find . -name "*.whl" -exec cp '{}' "${SCRIPT_DIR}/../../quadratic-client/public/" \;
 popd
 
 popd

@@ -77,7 +77,6 @@
     "test:unit:ci": "npm run test:unit -- --ci --runInBand",
     "test:e2e": "playwright test --workers=1",
     "test:e2e:debug": "playwright test --debug",
-    "test:python": "cd ../quadratic-py && ./setup-poetry.sh && poetry run python tests/test.py",
     "test:wasm": "cd .. && cd quadratic-core && cargo test --workspace",
     "test:vite": "vitest",
     "dev": "concurrently \"BROWSER=none npm start\" \"electron .\"",

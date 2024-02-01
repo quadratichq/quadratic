@@ -7,6 +7,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import { provideCompletionItems as provideCompletionItemsPython } from './PythonLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
@@ -54,14 +55,18 @@ export const CodeEditorBody = (props: Props) => {
       monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
       monaco.editor.setTheme('quadratic');
 
-      if (didMount) return;
       // Only register language once
+      if (didMount) return;
 
       monaco.languages.register({ id: 'Formula' });
       monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
       monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
       monaco.languages.registerCompletionItemProvider('Formula', { provideCompletionItems });
       monaco.languages.registerHoverProvider('Formula', { provideHover });
+
+      monaco.languages.register({ id: 'python' });
+      monaco.languages.registerCompletionItemProvider('python', { 
+        provideCompletionItems: provideCompletionItemsPython });
 
       setDidMount(true);
     },

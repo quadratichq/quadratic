@@ -1,0 +1,12 @@
+{
+  "name": "quadratic-py",
+  "description": "Quadratic Python Library",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "build": "./package.sh",
+    "dev": "npx nodemon -e py --exec bash ./package.sh",
+    "test": "./setup-poetry.sh && poetry run python tests/test.py"
+  }
+}

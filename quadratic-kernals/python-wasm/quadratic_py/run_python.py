@@ -189,6 +189,7 @@ async def run_python(code):
         # Fill DF
         x_offset = p0[0]
         y_offset = p0[1]
+
         for cell in cells:
             df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
 
