@@ -27,7 +27,10 @@ export type TeamPermission = z.infer<typeof TeamPermissionSchema>;
 // =============================================================================
 // TODO share these with the API
 
-export const emailSchema = z.string().email();
+export const emailSchema = z
+  .string()
+  .email()
+  .transform((v) => v.toLowerCase());
 
 const BaseUserSchema = z.object({
   id: z.number(),
