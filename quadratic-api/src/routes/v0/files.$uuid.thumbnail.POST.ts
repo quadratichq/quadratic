@@ -46,6 +46,7 @@ async function handler(req: RequestWithUser & RequestWithFile, res: Response) {
     },
     data: {
       thumbnail: req.file?.key,
+      updatedDate: new Date(),
     },
   });
 

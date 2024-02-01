@@ -177,6 +177,7 @@ export const CellInput = () => {
         fontSize: '14px',
         backgroundColor: formatting?.fillColor ?? 'white',
         whiteSpace: 'nowrap',
+        pointerEvents: 'auto',
       }}
       onPaste={handlePaste}
       onInput={() => {
