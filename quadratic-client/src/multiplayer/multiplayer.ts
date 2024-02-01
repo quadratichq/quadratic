@@ -148,14 +148,12 @@ export class Multiplayer {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
         this.brokenConnection = true;
         this.state = 'waiting to reconnect';
-        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('error', (e) => {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
         this.brokenConnection = true;
         this.state = 'waiting to reconnect';
-        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('open', () => {
@@ -346,8 +344,10 @@ export class Multiplayer {
       operations,
     };
     this.state = 'syncing';
-    this.websocket.send(JSON.stringify(message));
-    if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
+    const stringified = JSON.stringify(message);
+    this.websocket.send(stringified);
+    if (debugShowMultiplayer)
+      console.log(`[Multiplayer] Sent transaction ${id} (${Math.round(stringified.length / 1000000)}MB).`);
   }
 
   async sendGetTransactions(min_sequence_num: bigint) {
