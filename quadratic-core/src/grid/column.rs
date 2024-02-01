@@ -39,7 +39,7 @@ impl Column {
         let min = self.values.first_key_value();
         let max = self.values.last_key_value();
         if let (Some(min), Some(max)) = (min, max) {
-            Some(*min.0..*max.0)
+            Some(*min.0..*max.0 + 1)
         } else {
             None
         }
