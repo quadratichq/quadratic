@@ -1,12 +1,12 @@
 //! Extension traits
 
-use super::{CodeResult, ErrorMsg, Span, Spanned};
+use super::{CodeResult, RunErrorMsg, Span, Spanned};
 
 /// Extension trait for `Result<T, ErrorMsg>` that defines `with_span()`.
 pub trait CodeResultExt<T> {
     fn with_span(self, span: impl Into<Span>) -> CodeResult<Spanned<T>>;
 }
-impl<T> CodeResultExt<T> for Result<T, ErrorMsg> {
+impl<T> CodeResultExt<T> for Result<T, RunErrorMsg> {
     fn with_span(self, span: impl Into<Span>) -> CodeResult<Spanned<T>> {
         match self {
             Ok(ok) => Ok(Spanned {
@@ -46,6 +46,7 @@ pub trait SpannedIterExt: Sized {
     type In;
     type Out;
 
+    #[allow(clippy::type_complexity)]
     fn without_spans(self) -> std::iter::Map<Self, fn(Self::In) -> Self::Out>;
 }
 impl<I, T> SpannedIterExt for I

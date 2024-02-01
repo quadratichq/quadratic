@@ -18,11 +18,11 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the value of the cell at a given location.
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
-            #[async_zip_map]
+            #[zip_map]
             fn INDIRECT(ctx: Ctx, [cellref_string]: (Spanned<String>)) {
-                let pos = CellRef::parse_a1(&cellref_string.inner, ctx.pos)
-                    .ok_or(ErrorMsg::BadCellReference.with_span(cellref_string.span))?;
-                ctx.get_cell(pos, cellref_string.span).await?.inner
+                let pos = CellRef::parse_a1(&cellref_string.inner, ctx.sheet_pos.into())
+                    .ok_or(RunErrorMsg::BadCellReference.with_span(cellref_string.span))?;
+                ctx.get_cell(&pos, cellref_string.span)?.inner
             }
         ),
         formula_fn!(
@@ -41,7 +41,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// array, then they must be compatible sizes and a lookup will be
             /// performed for each corresponding set of elements.
             #[examples("VLOOKUP(17, A1:C10, 3)", "VLOOKUP(17, A1:C10, 2, FALSE)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn VLOOKUP(
                 span: Span,
                 [search_key]: CellValue,
@@ -58,9 +58,9 @@ fn get_functions() -> Vec<FormulaFunction> {
 
                 let x = output_col
                     .checked_sub(1)
-                    .ok_or_else(|| ErrorMsg::IndexOutOfBounds)?;
+                    .ok_or(RunErrorMsg::IndexOutOfBounds)?;
                 let y = lookup(needle, haystack, match_mode, search_mode)?
-                    .ok_or_else(|| ErrorMsg::NoMatch.with_span(span))?;
+                    .ok_or_else(|| RunErrorMsg::NoMatch.with_span(span))?;
 
                 search_range.get(x, y as u32)?.clone()
             }
@@ -82,7 +82,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// array, then they must be compatible sizes and a lookup will be
             /// performed for each corresponding set of elements.
             #[examples("HLOOKUP(17, A1:Z3, 3)", "HLOOKUP(17, A1:Z3, 2, FALSE)")]
-            #[pure_zip_map]
+            #[zip_map]
             fn HLOOKUP(
                 span: Span,
                 [search_key]: CellValue,
@@ -99,10 +99,10 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let search_mode = LookupSearchMode::from_is_sorted(is_sorted);
 
                 let x = lookup(needle, haystack, match_mode, search_mode)?
-                    .ok_or_else(|| ErrorMsg::NoMatch.with_span(span))?;
+                    .ok_or_else(|| RunErrorMsg::NoMatch.with_span(span))?;
                 let y = output_row
                     .checked_sub(1)
-                    .ok_or_else(|| ErrorMsg::IndexOutOfBounds)?;
+                    .ok_or(RunErrorMsg::IndexOutOfBounds)?;
 
                 search_range.get(x as u32, y)?.clone()
             }
@@ -184,7 +184,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 let fallback = fallback.unwrap_or(Spanned {
                     span,
                     inner: Array::from(CellValue::Error(Box::new(
-                        ErrorMsg::NoMatch.with_span(span),
+                        RunErrorMsg::NoMatch.with_span(span),
                     ))),
                 });
                 let search_mode_span = search_mode.map_or(span, |arg| arg.span);
@@ -197,7 +197,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                         LookupSearchMode::LinearForward | LookupSearchMode::LinearReverse => (), //ok
                         LookupSearchMode::BinaryAscending | LookupSearchMode::BinaryDescending => {
                             // not ok -- can't do binary search with wildcard
-                            return Err(ErrorMsg::InvalidArgument.with_span(search_mode_span));
+                            return Err(RunErrorMsg::InvalidArgument.with_span(search_mode_span));
                         }
                     }
                 }
@@ -376,7 +376,7 @@ fn lookup_linear_search<'a, V: 'a + AsRef<CellValue>>(
     best_match.map(|(index, _value)| index)
 }
 
-fn lookup_binary_search<'a, V: AsRef<CellValue>>(
+fn lookup_binary_search<V: AsRef<CellValue>>(
     needle: &CellValue,
     haystack: &[V],
     preference: std::cmp::Ordering,
@@ -407,7 +407,7 @@ enum LookupMatchMode {
     Wildcard = 2,
 }
 impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
-    type Error = Error;
+    type Error = RunError;
 
     fn try_from(value: Option<Spanned<i64>>) -> Result<Self, Self::Error> {
         match value {
@@ -417,7 +417,7 @@ impl TryFrom<Option<Spanned<i64>>> for LookupMatchMode {
                 -1 => Ok(LookupMatchMode::NextSmaller),
                 1 => Ok(LookupMatchMode::NextLarger),
                 2 => Ok(LookupMatchMode::Wildcard),
-                _ => Err(ErrorMsg::InvalidArgument.with_span(v.span)),
+                _ => Err(RunErrorMsg::InvalidArgument.with_span(v.span)),
             },
         }
     }
@@ -440,7 +440,7 @@ impl LookupSearchMode {
     }
 }
 impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
-    type Error = Error;
+    type Error = RunError;
 
     fn try_from(value: Option<Spanned<i64>>) -> Result<Self, Self::Error> {
         match value {
@@ -450,7 +450,7 @@ impl TryFrom<Option<Spanned<i64>>> for LookupSearchMode {
                 -1 => Ok(LookupSearchMode::LinearReverse),
                 2 => Ok(LookupSearchMode::BinaryAscending),
                 -2 => Ok(LookupSearchMode::BinaryDescending),
-                _ => Err(ErrorMsg::InvalidArgument.with_span(v.span)),
+                _ => Err(RunErrorMsg::InvalidArgument.with_span(v.span)),
             },
         }
     }
@@ -463,7 +463,7 @@ mod tests {
     use lazy_static::lazy_static;
     use smallvec::smallvec;
 
-    use crate::formulas::tests::*;
+    use crate::{formulas::tests::*, Pos};
 
     lazy_static! {
         static ref NUMBERS_LOOKUP_ARRAY: Array = array![
@@ -497,17 +497,18 @@ mod tests {
     fn test_formula_indirect() {
         let form = parse_formula("INDIRECT(\"D5\")", pos![B2]).unwrap();
 
-        let g = &mut FnGrid(|pos| Some((pos.x * 10 + pos.y).to_string()));
+        let mut g = Grid::new();
+        let sheet = &mut g.sheets_mut()[0];
+        let _ = sheet.set_cell_value(pos![D5], 35);
+        let sheet_id = sheet.id;
 
+        let mut ctx = Ctx::new(&g, pos![D5].to_sheet_pos(sheet_id));
         assert_eq!(
-            ErrorMsg::CircularReference,
-            form.eval_blocking(g, pos![D5]).unwrap_err().msg,
+            RunErrorMsg::CircularReference,
+            form.eval(&mut ctx).unwrap_err().msg,
         );
 
-        assert_eq!(
-            (3 * 10 + 5).to_string(),
-            eval_to_string(g, "INDIRECT(\"D5\")"),
-        );
+        assert_eq!("35".to_string(), eval_to_string(&g, "INDIRECT(\"D5\")"));
     }
 
     /// Test VLOOKUP error conditions.
@@ -515,45 +516,45 @@ mod tests {
     fn test_vlookup_errors() {
         // Test using numbers ...
         let array = &*NUMBERS_LOOKUP_ARRAY;
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], array);
 
         // Test no match (value missing)
         for col in 1..=3 {
             for is_sorted in ["", ", FALSE", ", TRUE"] {
                 for search_key in [-5, 11, 999] {
                     let formula = format!("VLOOKUP({search_key}, A1:C4, {col}{is_sorted})");
-                    eval_to_err(g, &formula);
+                    eval_to_err(&g, &formula);
                 }
             }
         }
 
         // Test no match due to wrong type
-        eval_to_err(g, "VLOOKUP('word', A1:C4, 1)");
+        eval_to_err(&g, "VLOOKUP('word', A1:C4, 1)");
 
         // Invalid argument: blank first argument (no match)
-        eval_to_err(g, "VLOOKUP(, A1:C4, 1)");
+        eval_to_err(&g, "VLOOKUP(, A1:C4, 1)");
         // Invalid argument: blank range argument
-        eval_to_err(g, "VLOOKUP(-99,, 1)");
+        eval_to_err(&g, "VLOOKUP(-99,, 1)");
         // Invalid argument: bad column number
-        eval_to_err(g, "VLOOKUP(-99, A1:C4, 'word')");
-        eval_to_err(g, "VLOOKUP(-99, A1:C4, 0)");
-        eval_to_err(g, "VLOOKUP(-99, A1:C4, 3)");
+        eval_to_err(&g, "VLOOKUP(-99, A1:C4, 'word')");
+        eval_to_err(&g, "VLOOKUP(-99, A1:C4, 0)");
+        eval_to_err(&g, "VLOOKUP(-99, A1:C4, 3)");
 
         // Test using strings ...
         let array = &*STRINGS_LOOKUP_ARRAY;
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], array);
 
         // Test no match
         for word in ["aardvark", "crackers", "zebra"] {
             for is_sorted in ["", ", FALSE", ", TRUE"] {
-                eval_to_err(g, &format!("VLOOKUP('{word}', A1:C4, 1 {is_sorted})"));
+                eval_to_err(&g, &format!("VLOOKUP('{word}', A1:C4, 1 {is_sorted})"));
             }
         }
 
         // Test no match due to wrong type
-        eval_to_err(g, "VLOOKUP(10, A1:C4, 1)");
-        eval_to_err(g, "VLOOKUP(10, A1:C4, 1, FALSE)");
-        eval_to_err(g, "VLOOKUP(10, A1:C4, 1, TRUE)");
+        eval_to_err(&g, "VLOOKUP(10, A1:C4, 1)");
+        eval_to_err(&g, "VLOOKUP(10, A1:C4, 1, FALSE)");
+        eval_to_err(&g, "VLOOKUP(10, A1:C4, 1, TRUE)");
     }
 
     /// Test VLOOKUP.
@@ -561,7 +562,7 @@ mod tests {
     fn test_vlookup() {
         // Test exact match (unsorted)
         let array = &*MIXED_LOOKUP_ARRAY;
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], array);
         for is_sorted in ["", ", FALSE"] {
             for row in array.clone().rows() {
                 let s = row[0].repr();
@@ -571,7 +572,7 @@ mod tests {
                         let col = i + 1;
                         let formula = format!("VLOOKUP({needle}, A1:C8, {col} {is_sorted})");
                         println!("Testing formula {formula:?}");
-                        assert_eq!(elem.to_string(), eval_to_string(g, &formula));
+                        assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
                     }
                 }
             }
@@ -579,7 +580,7 @@ mod tests {
 
         // Test exact match (sorted)
         let array = &*STRINGS_LOOKUP_ARRAY;
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], array);
         for row in array.clone().rows() {
             let s = row[0].repr();
             // should be case-insensitive
@@ -588,7 +589,7 @@ mod tests {
                     let col = i + 1;
                     let formula = format!("VLOOKUP({needle}, A1:C4, {col}, TRUE)");
                     println!("Testing formula {formula:?}");
-                    assert_eq!(elem.to_string(), eval_to_string(g, &formula));
+                    assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
                 }
             }
         }
@@ -600,46 +601,46 @@ mod tests {
         // Test using numbers ...
         let transposed_array = &*NUMBERS_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], &array);
 
         // Test no match (value missing)
         for row in 1..=3 {
             for is_sorted in ["", ", FALSE", ", TRUE"] {
                 for search_key in [-5, 11, 999] {
                     let formula = format!("HLOOKUP({search_key}, A1:D3, {row}{is_sorted})");
-                    eval_to_err(g, &formula);
+                    eval_to_err(&g, &formula);
                 }
             }
         }
 
         // Test no match due to wrong type
-        eval_to_err(g, "HLOOKUP('word', A1:D3, 1)");
+        eval_to_err(&g, "HLOOKUP('word', A1:D3, 1)");
 
         // Invalid argument: blank first argument (no match)
-        eval_to_err(g, "HLOOKUP(, A1:D3, 1)");
+        eval_to_err(&g, "HLOOKUP(, A1:D3, 1)");
         // Invalid argument: blank range argument
-        eval_to_err(g, "HLOOKUP(-99,, 1)");
+        eval_to_err(&g, "HLOOKUP(-99,, 1)");
         // Invalid argument: bad column number
-        eval_to_err(g, "HLOOKUP(-99, A1:D3, 'word')");
-        eval_to_err(g, "HLOOKUP(-99, A1:D3, 0)");
-        eval_to_err(g, "HLOOKUP(-99, A1:D3, 3)");
+        eval_to_err(&g, "HLOOKUP(-99, A1:D3, 'word')");
+        eval_to_err(&g, "HLOOKUP(-99, A1:D3, 0)");
+        eval_to_err(&g, "HLOOKUP(-99, A1:D3, 3)");
 
         // Test using strings ...
         let transposed_array = &*STRINGS_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], &array);
 
         // Test no match
         for word in ["aardvark", "crackers", "zebra"] {
             for is_sorted in ["", ", FALSE", ", TRUE"] {
-                eval_to_err(g, &format!("HLOOKUP('{word}', A1:D3, 1 {is_sorted})"));
+                eval_to_err(&g, &format!("HLOOKUP('{word}', A1:D3, 1 {is_sorted})"));
             }
         }
 
         // Test no match due to wrong type
-        eval_to_err(g, "HLOOKUP(10, A1:D3, 1)");
-        eval_to_err(g, "HLOOKUP(10, A1:D3, 1, FALSE)");
-        eval_to_err(g, "HLOOKUP(10, A1:D3, 1, TRUE)");
+        eval_to_err(&g, "HLOOKUP(10, A1:D3, 1)");
+        eval_to_err(&g, "HLOOKUP(10, A1:D3, 1, FALSE)");
+        eval_to_err(&g, "HLOOKUP(10, A1:D3, 1, TRUE)");
     }
 
     /// Test HLOOKUP.
@@ -648,7 +649,7 @@ mod tests {
         // Test exact match (unsorted)
         let transposed_array = &*MIXED_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], &array);
         for is_sorted in ["", ", FALSE"] {
             for col in transposed_array.clone().rows() {
                 let s = col[0].repr();
@@ -658,7 +659,7 @@ mod tests {
                         let col = i + 1;
                         let formula = format!("HLOOKUP({needle}, A1:H3, {col} {is_sorted})");
                         println!("Testing formula {formula:?}");
-                        assert_eq!(elem.to_string(), eval_to_string(g, &formula));
+                        assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
                     }
                 }
             }
@@ -667,7 +668,7 @@ mod tests {
         // Test exact match (sorted)
         let transposed_array = &*STRINGS_LOOKUP_ARRAY;
         let array = transposed_array.transpose();
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], &array);
         for col in transposed_array.clone().rows() {
             let s = col[0].repr();
             // should be case-insensitive
@@ -676,7 +677,7 @@ mod tests {
                     let col = i + 1;
                     let formula = format!("HLOOKUP({needle}, A1:D3, {col}, TRUE)");
                     println!("Testing formula {formula:?}");
-                    assert_eq!(elem.to_string(), eval_to_string(g, &formula));
+                    assert_eq!(elem.to_string(), eval_to_string(&g, &formula));
                 }
             }
         }
@@ -686,59 +687,59 @@ mod tests {
     #[test]
     fn test_xlookup_validation() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], array);
 
-        const EXPECTED_NUMBER_ERR: ErrorMsg = ErrorMsg::Expected {
+        const EXPECTED_NUMBER_ERR: RunErrorMsg = RunErrorMsg::Expected {
             expected: Cow::Borrowed("number"),
             got: Some(Cow::Borrowed("text")),
         };
 
         // Good value for `match_mode`
-        eval_to_string(g, "XLOOKUP(50, A1:A4, B1:B4, 1)");
+        eval_to_string(&g, "XLOOKUP(50, A1:A4, B1:B4, 1)");
         // Bad values for `match_mode`
-        let e = &ErrorMsg::InvalidArgument;
-        expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,, -2)");
+        let e = &RunErrorMsg::InvalidArgument;
+        expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,, -2)");
         let e = &EXPECTED_NUMBER_ERR;
-        expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,, 'word')");
+        expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,, 'word')");
 
         // Good value for `search_mode`
-        eval_to_string(g, "XLOOKUP(50, A1:A4, B1:B4,,, 1)");
+        eval_to_string(&g, "XLOOKUP(50, A1:A4, B1:B4,,, 1)");
         // Bad values for `search_mode`
-        let e = &ErrorMsg::InvalidArgument;
-        expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,,, 0)");
-        expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,,, -3)");
+        let e = &RunErrorMsg::InvalidArgument;
+        expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,,, 0)");
+        expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,,, -3)");
         let e = &EXPECTED_NUMBER_ERR;
-        expect_err(e, g, "XLOOKUP(50, A1:A4, B1:B4,,, 'word')");
+        expect_err(e, &g, "XLOOKUP(50, A1:A4, B1:B4,,, 'word')");
 
         // 1xN and Nx1 are ok
-        eval_to_string(g, "XLOOKUP(50, A1:A4, B1:B4)");
-        eval_to_string(g, "XLOOKUP(50, A3:C3, A2:C2)");
+        eval_to_string(&g, "XLOOKUP(50, A1:A4, B1:B4)");
+        eval_to_string(&g, "XLOOKUP(50, A3:C3, A2:C2)");
 
         // 1x1 is ok
-        eval_to_string(g, "XLOOKUP(50, A3:A3, B3:B3)");
-        eval_to_string(g, "XLOOKUP(50, A3, B3:B3)");
-        eval_to_string(g, "XLOOKUP(50, A3:A3, B3)");
-        eval_to_string(g, "XLOOKUP(50, A3, B3)");
+        eval_to_string(&g, "XLOOKUP(50, A3:A3, B3:B3)");
+        eval_to_string(&g, "XLOOKUP(50, A3, B3:B3)");
+        eval_to_string(&g, "XLOOKUP(50, A3:A3, B3)");
+        eval_to_string(&g, "XLOOKUP(50, A3, B3)");
 
         // NxM is not ok
-        let e = &ErrorMsg::NonLinearArray;
-        expect_err(e, g, "XLOOKUP(50, A1:B4, A5:B8)");
+        let e = &RunErrorMsg::NonLinearArray;
+        expect_err(e, &g, "XLOOKUP(50, A1:B4, A5:B8)");
 
         // Mismatch is not ok (vertical)
-        eval_to_err(g, "XLOOKUP(50, A1:A4, B1:B5)"); // too long
-        eval_to_err(g, "XLOOKUP(50, A1:A4, B1:B3)"); // too short
-        eval_to_err(g, "XLOOKUP(50, A1:A4, B1)"); // too short (single cell)
-        eval_to_err(g, "XLOOKUP(50, A1:A4, B1:E1)"); // different axis
+        eval_to_err(&g, "XLOOKUP(50, A1:A4, B1:B5)"); // too long
+        eval_to_err(&g, "XLOOKUP(50, A1:A4, B1:B3)"); // too short
+        eval_to_err(&g, "XLOOKUP(50, A1:A4, B1)"); // too short (single cell)
+        eval_to_err(&g, "XLOOKUP(50, A1:A4, B1:E1)"); // different axis
 
         // Mismatch is not ok (horizontal)
-        eval_to_err(g, "XLOOKUP(50, A4:D4, A1:E1)"); // too long
-        eval_to_err(g, "XLOOKUP(50, A4:D4, A1:C1)"); // too short
-        eval_to_err(g, "XLOOKUP(50, A4:D4, A1)"); // too short (single cell)
-        eval_to_err(g, "XLOOKUP(50, A4:D4, E1:E4)"); // different axis
+        eval_to_err(&g, "XLOOKUP(50, A4:D4, A1:E1)"); // too long
+        eval_to_err(&g, "XLOOKUP(50, A4:D4, A1:C1)"); // too short
+        eval_to_err(&g, "XLOOKUP(50, A4:D4, A1)"); // too short (single cell)
+        eval_to_err(&g, "XLOOKUP(50, A4:D4, E1:E4)"); // different axis
 
         // Multiple return values is ok
-        eval_to_string(g, "XLOOKUP(50, A1:A4, B1:C4)");
-        eval_to_string(g, "XLOOKUP(50, A1:A4, B1:C4)");
+        eval_to_string(&g, "XLOOKUP(50, A1:A4, B1:C4)");
+        eval_to_string(&g, "XLOOKUP(50, A1:A4, B1:C4)");
 
         // Multiple needle values is ok if it matches the return values
         fn make_test_formula(needle_size: (u32, u32), returns_size: (u32, u32)) -> String {
@@ -754,12 +755,12 @@ mod tests {
             format!("XLOOKUP({}, A1:A4, {})", needle.repr(), returns.repr())
         }
         // (needles_w, needles_h), (returns_w, returns_h)
-        eval_to_string(g, &make_test_formula((2, 2), (1, 4)));
-        eval_to_string(g, &make_test_formula((2, 2), (2, 4)));
-        eval_to_string(g, &make_test_formula((3, 2), (3, 4)));
-        eval_to_string(g, &make_test_formula((3, 3), (3, 4)));
-        eval_to_err(g, &make_test_formula((2, 2), (3, 4)));
-        eval_to_err(g, &make_test_formula((2, 3), (3, 4)));
+        eval_to_string(&g, &make_test_formula((2, 2), (1, 4)));
+        eval_to_string(&g, &make_test_formula((2, 2), (2, 4)));
+        eval_to_string(&g, &make_test_formula((3, 2), (3, 4)));
+        eval_to_string(&g, &make_test_formula((3, 3), (3, 4)));
+        eval_to_err(&g, &make_test_formula((2, 2), (3, 4)));
+        eval_to_err(&g, &make_test_formula((2, 3), (3, 4)));
     }
 
     /// Test XLOOKUP's various search modes.
@@ -772,8 +773,8 @@ mod tests {
         ) {
             let w = array.width() as i64;
             let h = array.height() as i64;
-            let mut grid_vlookup = ArrayGrid(pos![A1], array.clone());
-            let mut grid_hlookup = ArrayGrid(pos![A1], array.transpose());
+            let grid_vlookup = Grid::from_array(pos![A1], array);
+            let grid_hlookup = Grid::from_array(pos![A1], &array.transpose());
             for &col in columns_to_search {
                 for if_not_found in [CellValue::Blank, "default-value".into()] {
                     let if_not_found_repr = if_not_found.repr();
@@ -809,11 +810,11 @@ mod tests {
 
                         // Test vertical lookup
                         let formula = format!("XLOOKUP({needle}, {v_params})");
-                        expect_val(expected.clone(), &mut grid_vlookup, &formula);
+                        expect_val(expected.clone(), &grid_vlookup, &formula);
 
                         // Test horizontal lookup
                         let formula = format!("XLOOKUP({needle}, {h_params})");
-                        expect_val(expected.transpose(), &mut grid_hlookup, &formula);
+                        expect_val(expected.transpose(), &grid_hlookup, &formula);
                     }
 
                     // Test `if_not_found`
@@ -822,15 +823,15 @@ mod tests {
                         let v_formula = format!("XLOOKUP({needle}, {v_params})");
                         let h_formula = format!("XLOOKUP({needle}, {h_params})");
 
-                        let v_result = dbg!(eval(&mut grid_vlookup, &v_formula));
-                        let h_result = dbg!(eval(&mut grid_hlookup, &h_formula));
+                        let v_result = eval(&grid_vlookup, &v_formula);
+                        let h_result = eval(&grid_hlookup, &h_formula);
                         let results = [&v_result, &h_result]
                             .into_iter()
                             .flat_map(|a| a.cell_values_slice());
 
                         if if_not_found.is_blank() {
                             for v in results {
-                                assert_eq!(ErrorMsg::NoMatch, dbg!(v).error().unwrap().msg);
+                                assert_eq!(RunErrorMsg::NoMatch, v.error().unwrap().msg);
                             }
                         } else {
                             for v in results {
@@ -873,9 +874,9 @@ mod tests {
 
         // Test that forward and reverse linear search are capable of giving
         // different results
-        let g = &mut ArrayGrid(
+        let g = Grid::from_array(
             pos![A1],
-            array![
+            &array![
                 1, "a";
                 2, "b";
                 1, "c";
@@ -884,12 +885,12 @@ mod tests {
         );
         expect_val(
             Array::from(CellValue::from("a")),
-            g,
+            &g,
             "XLOOKUP(1, A1:A3, B1:B3,,, 1)", // forward
         );
         expect_val(
             Array::from(CellValue::from("c")),
-            g,
+            &g,
             "XLOOKUP(1, A1:A4, B1:B4,,, -1)", // reverse
         );
     }
@@ -897,23 +898,26 @@ mod tests {
     /// Tests XLOOKUP's various match modes.
     #[test]
     fn test_xlookup_match_modes() {
-        let numbers_grid = ArrayGrid(pos![A1], NUMBERS_LOOKUP_ARRAY.clone());
-        let rev_numbers_grid = ArrayGrid(pos![A1], NUMBERS_LOOKUP_ARRAY.flip_vertically());
-        let mixed_grid = ArrayGrid(pos![A1], MIXED_LOOKUP_ARRAY.clone());
+        let numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY);
+        let rev_numbers_grid = Grid::from_array(pos![A1], &NUMBERS_LOOKUP_ARRAY.flip_vertically());
+        let mixed_grid = Grid::from_array(pos![A1], &MIXED_LOOKUP_ARRAY);
+
+        // Get array heights
+        let numbers_h = NUMBERS_LOOKUP_ARRAY.height();
+        let mixed_h = MIXED_LOOKUP_ARRAY.height();
 
         let test_xlookup_comparison_match = |expected: &str, needle: &str, match_mode: i64| {
-            for (grid, search_mode) in [
-                (&mixed_grid, ""),           // linear forward (default)
-                (&mixed_grid, ", 1"),        // linear forward
-                (&mixed_grid, ", -1"),       // linear reverse
-                (&numbers_grid, ", 2"),      // binary ascending
-                (&rev_numbers_grid, ", -2"), // binary descending
+            for (grid, h, search_mode) in [
+                (&mixed_grid, mixed_h, ""),             // linear forward (default)
+                (&mixed_grid, mixed_h, ", 1"),          // linear forward
+                (&mixed_grid, mixed_h, ", -1"),         // linear reverse
+                (&numbers_grid, numbers_h, ", 2"),      // binary ascending
+                (&rev_numbers_grid, numbers_h, ", -2"), // binary descending
             ] {
-                let h = grid.1.height();
                 assert_eq!(
                     expected,
                     eval_to_string(
-                        &mut grid.clone(),
+                        grid,
                         &format!(
                             "XLOOKUP({needle}, A1:A{h}, A1:C{h}, 'x', \
                                      {match_mode}{search_mode})",
@@ -951,27 +955,27 @@ mod tests {
         test_xlookup_comparison_match("{x, x, x}", "9999", 1);
 
         // Test wildcard search
-        let mut g = ArrayGrid(pos![A1], MIXED_LOOKUP_ARRAY.clone());
+        let g = Grid::from_array(pos![A1], &MIXED_LOOKUP_ARRAY);
         assert_eq!(
             "{bread}",
-            eval_to_string(&mut g, "XLOOKUP('b*', A1:A20, A1:A20,, 2)"),
+            eval_to_string(&g, "XLOOKUP('b*', A1:A20, A1:A20,, 2)"),
         ); // linear forward (default)
         assert_eq!(
             "{bread}",
-            eval_to_string(&mut g, "XLOOKUP('b*', A1:A20, A1:A20,, 2, 1)"),
+            eval_to_string(&g, "XLOOKUP('b*', A1:A20, A1:A20,, 2, 1)"),
         ); // linear forward
         assert_eq!(
             "{BAnAnA}",
-            eval_to_string(&mut g, "XLOOKUP('b*', A1:A20, A1:A20,, 2, -1)"),
+            eval_to_string(&g, "XLOOKUP('b*', A1:A20, A1:A20,, 2, -1)"),
         ); // linear reverse
         expect_err(
-            &ErrorMsg::InvalidArgument,
-            &mut g,
+            &RunErrorMsg::InvalidArgument,
+            &g,
             "XLOOKUP('b*', A1:A20, A1:A20,, 2, 2)", // binary ascending (invalid!)
         );
         expect_err(
-            &ErrorMsg::InvalidArgument,
-            &mut g,
+            &RunErrorMsg::InvalidArgument,
+            &g,
             "XLOOKUP('b*', A1:A20, A1:A20,, 2, -2)", // binary descending (invalid!)
         );
     }
@@ -981,45 +985,44 @@ mod tests {
     #[test]
     fn test_xlookup_zip_map() {
         let array = &*NUMBERS_LOOKUP_ARRAY;
-        let g = &mut ArrayGrid(pos![A1], array.clone());
+        let g = Grid::from_array(pos![A1], array);
 
         let formula = "XLOOKUP({1, 2, 3; 4, 50, 100}, A1:A4, A1:C4, {'a', 'b', 'c'})";
         assert_eq!(
             "{1, two, c; \
               a, fifty, ale}",
-            eval_to_string(g, formula,),
+            eval_to_string(&g, formula,),
         );
 
         let formula = "XLOOKUP({1; 4}, A1:A4, A1:C4, {'a', 'b', 'c'})";
         assert_eq!(
             "{1, one, wan; \
               a, b, c}",
-            eval_to_string(g, formula,),
+            eval_to_string(&g, formula,),
         );
 
         let formula = "XLOOKUP({1; 4}, A1:A4, A1:C4, 'a')";
         assert_eq!(
             "{1, one, wan; \
               a, a, a}",
-            eval_to_string(g, formula,),
+            eval_to_string(&g, formula,),
         );
     }
 
     #[test]
     fn test_xlookup() {
-        let g = &mut FnGrid(|pos| -> CellValue {
-            match pos.x {
-                0 => pos.y.into(),
-                1 => format!("{pos}").into(),
-                _ => panic!(),
-            }
-        });
+        let mut g = Grid::new();
+        let sheet = &mut g.sheets_mut()[0];
+        for y in 1..=6 {
+            let _ = sheet.set_cell_value(Pos { x: 0, y }, y);
+            let _ = sheet.set_cell_value(Pos { x: 1, y }, format!("cell #{y}"));
+        }
 
         // Test lookup in sorted array
         for i in 1..=6 {
             assert_eq!(
-                format!("{{(1, {i})}}"),
-                eval_to_string(g, &format!("XLOOKUP({i}, A1:A6, B1:B6)")),
+                format!("{{cell #{i}}}"),
+                eval_to_string(&g, &format!("XLOOKUP({i}, A1:A6, B1:B6)")),
             );
         }
     }

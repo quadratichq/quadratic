@@ -5,7 +5,6 @@ use crate::{Pos, Rect};
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "type", rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-
 pub enum GridBounds {
     Empty,
     NonEmpty(Rect),
@@ -25,7 +24,7 @@ impl GridBounds {
         *self == GridBounds::Empty
     }
     pub fn clear(&mut self) {
-        *self = GridBounds::default()
+        *self = GridBounds::default();
     }
     pub fn add(&mut self, pos: Pos) {
         match self {

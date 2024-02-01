@@ -1,0 +1,51 @@
+.hover-cell-container {
+  position: 'relative';
+  opacity: 0;
+}
+
+.hover-cell-header {
+  margin-bottom: 0.5rem;
+}
+
+.hover-cell-header-space {
+  margin: 0.5rem 0;
+}
+
+.hover-cell-body {
+  @apply text-xs;
+}
+
+.hover-cell-code {
+  @apply text-nowrap rounded-md bg-gray-100 p-0.5;
+}
+
+.hover-cell-error-msg {
+  @apply font-mono text-destructive;
+  font-size: 0.65rem;
+}
+
+.hover-cell-body > div:first-child {
+  margin-bottom: 0.5rem;
+}
+
+.hover-cell-fade-in {
+  opacity: 1;
+  transition: opacity 150ms linear 1s;
+}
+
+.hover-cell-fade-in-no-delay {
+  opacity: 1;
+  transition: opacity 150ms linear;
+}
+
+.hover-cell-fade-out {
+  opacity: 0;
+  transition: opacity 150ms linear;
+}
+
+.code-body {
+  @apply max-h-48 rounded-md bg-gray-50 p-1 font-mono;
+  white-space: pre;
+  overflow: hidden;
+  font-size: 0.65rem;
+}

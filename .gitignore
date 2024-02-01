@@ -1,7 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules
+**/node_modules
 /.pnp
 .pnp.js
 
@@ -10,6 +11,7 @@
 
 # production
 /build
+quadratic-shared/*.js
 
 # misc
 .DS_Store
@@ -33,11 +35,27 @@ venv/*
 .env.local
 
 # Generated Rust files
+/target
 quadratic-core/target/
 quadratic-core/tmp.txt
+quadratic-files/target/
+quadratic-multiplayer/target/
 
 # Generated JS files
 quadratic-api/node_modules/
 quadratic-api/.env
 quadratic-api/.env.local
 quadratic-api/dist
+
+# Code Coverage
+quadratic-core/coverage
+quadratic-files/coverage
+quadratic-multiplayer/coverage
+
+# Docker Data
+docker/localstack/data
+docker/redis/data
+docker/postgres/data
+
+# JMeter
+jmeter.log

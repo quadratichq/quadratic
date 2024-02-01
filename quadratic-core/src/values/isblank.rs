@@ -7,7 +7,7 @@ pub trait IsBlank {
 
     /// Coerces the value to a specific type; returns `None` if the conversion
     /// fails or the original value is blank.
-    fn coerce_nonblank<'a, T>(self) -> Option<T>
+    fn coerce_nonblank<T>(self) -> Option<T>
     where
         Self: TryInto<T>,
     {

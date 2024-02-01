@@ -1,6 +1,16 @@
 use std::fs::create_dir_all;
 
-use quadratic_core::{controller::transactions, *};
+use quadratic_core::{
+    controller::transaction_summary::{CellSheetsModified, TransactionSummary},
+    grid::{
+        js_types::{
+            JsCodeCell, JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+            JsRenderCodeCellState,
+        },
+        CodeCellLanguage,
+    },
+    Rect, *,
+};
 use ts_rs::TS;
 
 macro_rules! generate_type_declarations {
@@ -18,53 +28,44 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        transactions::TransactionSummary,
+        TransactionSummary,
+        CellSheetsModified,
+        CodeCellLanguage,
+        JsHtmlOutput,
+        JsCodeCell,
+        JsRenderCodeCell,
+        JsRenderCodeCellState,
+        JsRenderCellSpecial,
+        JsRenderCell,
         formulas::RangeRef,
         formulas::CellRef,
         formulas::CellRefCoord,
-        grid::CellBorders,
-        grid::CellBorderStyle,
-        grid::CellBorder,
         grid::GridBounds,
-        grid::CodeCellLanguage,
-        // grid::CodeCellValue,
-        // grid::CodeCellRunOutput,
-        // grid::CodeCellRunResult,
         grid::CellAlign,
         grid::CellWrap,
         grid::NumericFormat,
         grid::NumericFormatKind,
         grid::BoolSummary,
         grid::SheetId,
-        grid::RowId,
-        grid::ColumnId,
-        grid::CellRef,
         grid::js_types::JsRenderCell,
         grid::js_types::JsRenderFill,
-        grid::js_types::JsRenderBorder,
         grid::js_types::FormattingSummary,
         grid::js_types::CellFormatSummary,
-        grid::js_types::JsRenderCodeCell,
-        grid::js_types::JsRenderCodeCellState,
         grid::js_types::JsClipboard,
-        // values
         ArraySize,
         Axis,
-        // Array,
-        // Value,
         Instant,
         Duration,
-        wasm_bindings::JsCodeResult,
-        wasm_bindings::JsFormulaParseResult,
-        wasm_bindings::JsCellRefSpan,
-        Error,
-        ErrorMsg,
+        RunError,
+        RunErrorMsg,
         Pos,
         Rect,
         Span,
+        SheetPos,
     );
 
-    if create_dir_all("../src/quadratic-core").is_ok() {
-        std::fs::write("../src/quadratic-core/types.d.ts", s).expect("failed to write types file");
+    if create_dir_all("../quadratic-client/src/quadratic-core").is_ok() {
+        std::fs::write("../quadratic-client/src/quadratic-core/types.d.ts", s)
+            .expect("failed to write types file");
     }
 }

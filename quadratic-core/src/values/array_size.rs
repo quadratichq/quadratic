@@ -2,7 +2,7 @@ use std::{fmt, num::NonZeroU32};
 
 use serde::{Deserialize, Serialize};
 
-use super::ErrorMsg;
+use super::RunErrorMsg;
 
 /// Size of a region or array.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -12,6 +12,11 @@ pub struct ArraySize {
     pub w: NonZeroU32,
     /// Height (number of rows)
     pub h: NonZeroU32,
+}
+impl From<ArraySize> for (i64, i64) {
+    fn from(val: ArraySize) -> Self {
+        (val.w.get().into(), val.h.get().into())
+    }
 }
 impl fmt::Display for ArraySize {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -38,12 +43,13 @@ impl std::ops::IndexMut<Axis> for ArraySize {
     }
 }
 impl TryFrom<(u32, u32)> for ArraySize {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
     fn try_from((w, h): (u32, u32)) -> Result<Self, Self::Error> {
         Self::new_or_err(w, h)
     }
 }
+
 impl ArraySize {
     #[allow(unconditional_panic)]
     pub const _1X1: Self = match NonZeroU32::new(1) {
@@ -61,10 +67,11 @@ impl ArraySize {
     }
     /// Construct a new `ArraySize`, or returns an error if the width or height
     /// is zero.
-    pub fn new_or_err(w: u32, h: u32) -> Result<Self, ErrorMsg> {
-        Self::new(w, h).ok_or(ErrorMsg::EmptyArray)
+    pub fn new_or_err(w: u32, h: u32) -> Result<Self, RunErrorMsg> {
+        Self::new(w, h).ok_or(RunErrorMsg::EmptyArray)
     }
     /// Returns the number of elements in the array.
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(self) -> usize {
         self.w.get() as usize * self.h.get() as usize
     }
@@ -81,7 +88,7 @@ impl ArraySize {
         itertools::iproduct!(0..self.h.get(), 0..self.w.get()).map(|(y, x)| (x, y))
     }
     /// Flattens an index
-    pub fn flatten_index(self, x: u32, y: u32) -> Result<usize, ErrorMsg> {
+    pub fn flatten_index(self, x: u32, y: u32) -> Result<usize, RunErrorMsg> {
         let w = self.w.get();
         let h = self.h.get();
         let x = if w > 1 { x } else { 0 };
@@ -89,7 +96,7 @@ impl ArraySize {
         if x < w && y < h {
             Ok((x + y * w) as usize)
         } else {
-            Err(ErrorMsg::IndexOutOfBounds)
+            Err(RunErrorMsg::IndexOutOfBounds)
         }
     }
 }

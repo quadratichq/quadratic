@@ -1,8 +1,6 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
 
-use futures::future::LocalBoxFuture;
-use futures::FutureExt;
 use itertools::Itertools;
 use lazy_static::lazy_static;
 
@@ -19,7 +17,7 @@ mod util;
 
 use super::{CellRef, Criterion, Ctx, Param, ParamKind};
 use crate::{
-    Array, Axis, CellValue, CodeResult, CoerceInto, Error, ErrorMsg, IsBlank, Span, Spanned,
+    Array, Axis, CellValue, CodeResult, CoerceInto, IsBlank, RunError, RunErrorMsg, Span, Spanned,
     SpannedIterExt, Value,
 };
 
@@ -96,7 +94,7 @@ impl FormulaFnArgs {
         arg_name: impl Into<Cow<'static, str>>,
     ) -> CodeResult<Spanned<Value>> {
         self.take_next().ok_or_else(|| {
-            ErrorMsg::MissingRequiredArgument {
+            RunErrorMsg::MissingRequiredArgument {
                 func_name: self.func_name.into(),
                 arg_name: arg_name.into(),
             }
@@ -111,7 +109,7 @@ impl FormulaFnArgs {
     /// Returns an error if there are any arguments that have not been taken.
     pub fn error_if_more_args(&self) -> CodeResult<()> {
         if let Some(next_arg) = self.values.front() {
-            Err(ErrorMsg::TooManyArguments {
+            Err(RunErrorMsg::TooManyArguments {
                 func_name: self.func_name.into(),
                 max_arg_count: self.args_popped,
             }
@@ -123,8 +121,7 @@ impl FormulaFnArgs {
 }
 
 /// Function pointer that represents the body of a formula function.
-pub type FormulaFn =
-    for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> LocalBoxFuture<'a, CodeResult<Value>>;
+pub type FormulaFn = for<'a> fn(&'a mut Ctx<'_>, FormulaFnArgs) -> CodeResult<Value>;
 
 /// Formula function with associated metadata.
 pub struct FormulaFunction {

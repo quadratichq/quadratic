@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
-use crate::{CodeResult, ErrorMsg};
+use crate::{
+    controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunErrorMsg,
+};
 
 #[macro_export]
 macro_rules! array {
@@ -73,6 +75,43 @@ impl From<Value> for Array {
     }
 }
 
+impl From<Vec<Vec<String>>> for Array {
+    fn from(v: Vec<Vec<String>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v
+                .iter()
+                .flatten()
+                .map(|s| CellValue::from(s.as_ref()))
+                .collect(),
+        }
+    }
+}
+
+impl From<Vec<Vec<&str>>> for Array {
+    fn from(v: Vec<Vec<&str>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v.iter().flatten().map(|s| (*s).into()).collect(),
+        }
+    }
+}
+
+impl From<Vec<Vec<CellValue>>> for Array {
+    fn from(v: Vec<Vec<CellValue>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v.into_iter().flatten().collect(),
+        }
+    }
+}
+
 impl Array {
     /// Constructs an array of blank values.
     pub fn new_empty(size: ArraySize) -> Self {
@@ -129,8 +168,7 @@ impl Array {
         Self::new_row_major(
             self.size(),
             self.rows()
-                .map(|row| row.iter().rev().cloned())
-                .flatten()
+                .flat_map(|row| row.iter().rev().cloned())
                 .collect(),
         )
         .unwrap()
@@ -171,7 +209,7 @@ impl Array {
     /// if this is not a 1x1 array.
     pub fn cell_value(&self) -> Option<&CellValue> {
         if self.values.len() == 1 {
-            self.values.get(0)
+            self.values.first()
         } else {
             None
         }
@@ -179,13 +217,13 @@ impl Array {
     /// Returns the value at a given position in an array. If the width is 1,
     /// then `x` is ignored. If the height is 1, then `y` is ignored. Otherwise,
     /// returns an error if a coordinate is out of bounds.
-    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, ErrorMsg> {
+    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         Ok(&self.values[i])
     }
     /// Sets the value at a given position in an array. Returns an error if `x`
     /// or `y` is out of range.
-    pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), ErrorMsg> {
+    pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         self.values[i] = value;
         Ok(())
@@ -221,7 +259,7 @@ impl Array {
                 (_, 1) => continue,
                 (1, l) => common_len = l,
                 _ => {
-                    return Err(ErrorMsg::ArrayAxisMismatch {
+                    return Err(RunErrorMsg::ArrayAxisMismatch {
                         axis,
                         expected: common_len,
                         got: new_array_len,
@@ -233,7 +271,34 @@ impl Array {
 
         Ok(NonZeroU32::new(common_len).expect("bad array size"))
     }
+
+    pub fn from_string_list(
+        start: Pos,
+        sheet: &mut Sheet,
+        v: Vec<Vec<String>>,
+    ) -> (Option<Array>, Vec<Operation>) {
+        let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
+        let values;
+        let mut ops = vec![];
+        let Pos { mut x, mut y } = start;
+        values = v
+            .iter()
+            .flatten()
+            .map(|s| {
+                x += 1;
+                if x == v[0].len() as i64 + start.x {
+                    x = start.x;
+                    y += 1;
+                }
+                let (value, updated_ops) = CellValue::from_string(s, start, sheet);
+                ops.extend(updated_ops);
+                value
+            })
+            .collect();
+        (Some(Array { size, values }), ops)
+    }
 }
+
 impl Spanned<Array> {
     /// Checks that an array is linear (width=1 or height=1), then returns which
     /// is the long axis. Returns `None` in the case of a 1x1 array.
@@ -242,7 +307,7 @@ impl Spanned<Array> {
             (1, 1) => Ok(None),
             (_, 1) => Ok(Some(Axis::X)), // height = 1
             (1, _) => Ok(Some(Axis::Y)), // width = 1
-            _ => Err(ErrorMsg::NonLinearArray.with_span(self.span)),
+            _ => Err(RunErrorMsg::NonLinearArray.with_span(self.span)),
         }
     }
     /// Checks that an array is linear along a particular axis, then returns the
@@ -260,7 +325,7 @@ impl Spanned<Array> {
         if expected == got {
             Ok(())
         } else {
-            Err(ErrorMsg::ExactArrayAxisMismatch {
+            Err(RunErrorMsg::ExactArrayAxisMismatch {
                 axis,
                 expected,
                 got,
@@ -277,7 +342,7 @@ impl Spanned<Array> {
         if expected == got {
             Ok(())
         } else {
-            Err(ErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
+            Err(RunErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
         }
     }
 }

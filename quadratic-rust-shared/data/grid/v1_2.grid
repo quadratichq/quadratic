@@ -1,0 +1,338 @@
+{
+  "borders": [],
+  "cells": [
+    { "x": 0, "y": 0, "type": "TEXT", "value": "Quadratic", "last_modified": "2022-07-06T17:28:26.983Z" },
+    {
+      "x": 0,
+      "y": 1,
+      "type": "TEXT",
+      "value": "The data science spreadsheet",
+      "last_modified": "2022-07-06T17:28:38.463Z"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "type": "TEXT",
+      "value": "Read more docs.quadratichq.com",
+      "last_modified": "2022-07-06T17:32:01.914Z"
+    },
+    {
+      "x": 0,
+      "y": 7,
+      "type": "TEXT",
+      "value": "1. Cells can contain code",
+      "last_modified": "2023-02-15T23:09:34.953Z"
+    },
+    {
+      "x": 1,
+      "y": 7,
+      "type": "PYTHON",
+      "value": "Double click to see the code in this cell",
+      "array_cells": [],
+      "dependent_cells": [],
+      "evaluation_result": {
+        "success": true,
+        "std_out": "Hello world!\n",
+        "output_value": "Double click to see the code in this cell",
+        "cells_accessed": [],
+        "array_output": [],
+        "formatted_code": "print(\"Hello world!\")\n# The last python statement is returned\n# as the cell value.\n\"Double click to see the code in this cell\"\n",
+        "error_span": null
+      },
+      "last_modified": "2023-02-16T00:08:31.578Z",
+      "python_code": "print(\"Hello world!\")\n# The last python statement is returned \n# as the cell value.\n\"Double click to see the code in this cell\"\n"
+    },
+    {
+      "x": 0,
+      "y": 9,
+      "type": "TEXT",
+      "value": "    to create a new Formula or Python cell",
+      "last_modified": "2023-02-15T23:10:43.280Z"
+    },
+    {
+      "x": 0,
+      "y": 11,
+      "type": "TEXT",
+      "value": "4. Reference other cell values in Python",
+      "last_modified": "2023-02-16T00:08:57.084Z"
+    },
+    {
+      "x": 0,
+      "y": 12,
+      "type": "TEXT",
+      "value": "5. Double click and correct this error",
+      "last_modified": "2023-02-16T00:08:59.786Z"
+    },
+    {
+      "x": 1,
+      "y": 11,
+      "type": "PYTHON",
+      "value": "Click Here",
+      "array_cells": [],
+      "dependent_cells": [
+        [4, 7],
+        [4, 7],
+        [4, 8],
+        [4, 7],
+        [4, 8]
+      ],
+      "evaluation_result": {
+        "success": true,
+        "std_out": "The value of cell 4, 7 is:  343\nAddition cell 4, 7 and 4, 8:  463\nEqual:  False\n",
+        "output_value": "Click Here",
+        "cells_accessed": [
+          [4, 7],
+          [4, 7],
+          [4, 8],
+          [4, 7],
+          [4, 8]
+        ],
+        "formatted_code": "# You can reference other cells and ranges in Python\n# using the build in function `cell` to get a value.\n# cell(x, y)\nprint(\"The value of cell 4, 7 is: \", cell(4, 7))\n\n# With cells you can do math\nprint(\"Addition cell 4, 7 and 4, 8: \",\n      cell(4, 7) + cell(4, 8))\n\n# And equality comparisons\n# Tip: you can use `c` for short referencing a cell\nprint(\"Equal: \", c(4, 7) == c(4, 8))\n\n\"Click Here\"\n",
+        "error_span": null
+      },
+      "last_modified": "2023-03-17T04:24:47.001Z",
+      "python_code": "# You can reference other cells and ranges in Python\n# using the build in function `cell` to get a value.\n# cell(x, y)\nprint(\"The value of cell 4, 7 is: \", cell(4, 7))\n\n# With cells you can do math\nprint(\"Addition cell 4, 7 and 4, 8: \", \n    cell(4, 7) + cell(4, 8))\n\n# And equality comparisons\n# Tip: you can use `c` for short referencing a cell\nprint(\"Equal: \", c(4, 7) == c(4, 8))\n\n\"Click Here\""
+    },
+    {
+      "x": 1,
+      "y": 12,
+      "type": "PYTHON",
+      "value": "",
+      "array_cells": [],
+      "dependent_cells": [],
+      "evaluation_result": {
+        "success": false,
+        "std_out": "",
+        "std_err": "ZeroDivisionError on line 3: division by zero",
+        "output_value": null,
+        "cells_accessed": [],
+        "array_output": [],
+        "formatted_code": "# Cells show when they are in the error state.\n# Fix this error by changing 0 to another number.\n1 / 0",
+        "error_span": null
+      },
+      "last_modified": "2023-02-16T00:08:54.000Z",
+      "python_code": "# Cells show when they are in the error state.\n# Fix this error by changing 0 to another number.\n1 / 0"
+    },
+    { "x": 3, "y": 9, "type": "TEXT", "value": "Ex Data", "last_modified": "2022-07-06T17:10:35.948Z" },
+    { "x": 3, "y": 10, "type": "TEXT", "value": "SUM Formula", "last_modified": "2023-02-16T00:10:48.887Z" },
+    { "x": 3, "y": 11, "type": "TEXT", "value": "SUM Python", "last_modified": "2023-02-16T00:10:50.801Z" },
+    { "x": 0, "y": 5, "type": "TEXT", "value": "Quick start", "last_modified": "2023-02-22T18:05:42.923Z" },
+    {
+      "x": 0,
+      "y": 10,
+      "type": "TEXT",
+      "value": "3. Right click to access formatting menu",
+      "last_modified": "2023-02-15T23:10:13.944Z"
+    },
+    { "x": 1, "y": 10, "type": "TEXT", "value": "Bold Me", "last_modified": "2023-02-21T23:37:46.457Z" },
+    { "x": 4, "y": 5, "type": "TEXT", "value": "Example data", "last_modified": "2023-02-22T18:05:53.384Z" },
+    { "x": 4, "y": 7, "type": "TEXT", "value": "343", "last_modified": "2023-02-21T23:39:22.129Z" },
+    { "x": 4, "y": 8, "type": "TEXT", "value": "120", "last_modified": "2023-02-16T00:09:11.907Z" },
+    { "x": 6, "y": 5, "type": "TEXT", "value": "Python examples", "last_modified": "2023-02-22T18:05:57.690Z" },
+    { "x": 6, "y": 7, "type": "TEXT", "value": "Make an API request", "last_modified": "2023-02-16T00:09:35.228Z" },
+    { "x": 6, "y": 8, "type": "TEXT", "value": "AAPL", "last_modified": "2023-02-21T23:41:44.247Z" },
+    { "x": 7, "y": 8, "type": "TEXT", "value": "< - Try changing ticker", "last_modified": "2023-02-21T23:39:00.982Z" },
+    {
+      "x": 6,
+      "y": 9,
+      "type": "PYTHON",
+      "value": "Full Name",
+      "array_cells": [
+        [6, 9],
+        [7, 9],
+        [8, 9],
+        [9, 9],
+        [6, 10],
+        [7, 10],
+        [8, 10],
+        [9, 10]
+      ],
+      "dependent_cells": [[6, 8]],
+      "evaluation_result": {
+        "success": true,
+        "std_out": "",
+        "output_value": "    Full Name           Revenue Market Cap Multiple\n0  Apple Inc.  $117,154,000,000  $2.49e+12    21.26",
+        "cells_accessed": [[6, 8]],
+        "array_output": [
+          ["Full Name", "Revenue", "Market Cap", "Multiple"],
+          ["Apple Inc.", "$117,154,000,000", "$2.49e+12", "21.26"]
+        ],
+        "formatted_code": "from pprint import pprint\nimport pandas as pd\nimport json\nimport js\n\nsymbol = c(6, 8)\n\nstock_financials = await js.fetch('https://api.polygon.io/vX/reference/financials?ticker={}&apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\n    \"method\": \"GET\",\n    \"headers\": {\"Content-Type\": \"application/json\"}\n})\nstock_financials_json = json.loads(await stock_financials.text())\nincome_statement = stock_financials_json[\"results\"][1][\"financials\"][\"income_statement\"]\nrevenue = income_statement[\"revenues\"][\"value\"]\n\n\nmarket_data = await js.fetch('https://api.polygon.io/v3/reference/tickers/{}?apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\n    \"method\": \"GET\",\n    \"headers\": {\"Content-Type\": \"application/json\"}\n})\nmarket_data_json = json.loads(await market_data.text())[\"results\"]\nmarket_cap = market_data_json[\"market_cap\"]\nname = market_data_json[\"name\"]\n\npd.DataFrame([[\n    name[:20],\n    \"${:,}\".format(int(revenue)),\n    \"${:.2e}\".format(market_cap),\n    \"{:,.2f}\".format(market_cap / revenue),\n]], columns=[\"Full Name\", \"Revenue\", \"Market Cap\", \"Multiple\"])\n",
+        "error_span": null
+      },
+      "last_modified": "2023-03-21T19:52:22.507Z",
+      "python_code": "from pprint import pprint\nimport pandas as pd\nimport json\nimport js\n\nsymbol = c(6, 8)\n\nstock_financials = await js.fetch('https://api.polygon.io/vX/reference/financials?ticker={}&apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\n    \"method\": \"GET\",\n    \"headers\": {\"Content-Type\": \"application/json\"}\n})\nstock_financials_json = json.loads(await stock_financials.text())\nincome_statement = stock_financials_json[\"results\"][1][\"financials\"][\"income_statement\"]\nrevenue = income_statement[\"revenues\"][\"value\"]\n\n\nmarket_data = await js.fetch('https://api.polygon.io/v3/reference/tickers/{}?apiKey=_xBCl_0zcb9H1W25jJEK5pQaQTVLtemL'.format(symbol), {\n    \"method\": \"GET\",\n    \"headers\": {\"Content-Type\": \"application/json\"}\n})\nmarket_data_json = json.loads(await market_data.text())[\"results\"]\nmarket_cap = market_data_json[\"market_cap\"]\nname = market_data_json[\"name\"]\n\npd.DataFrame([[\n    name[:20],\n    \"${:,}\".format(int(revenue)),\n    \"${:.2e}\".format(market_cap),\n    \"{:,.2f}\".format(market_cap / revenue),\n]], columns=[\"Full Name\", \"Revenue\", \"Market Cap\", \"Multiple\"])\n"
+    },
+    {
+      "x": 6,
+      "y": 12,
+      "type": "TEXT",
+      "value": "Use Python packages from PIP",
+      "last_modified": "2023-02-16T00:09:35.449Z"
+    },
+    {
+      "x": 6,
+      "y": 13,
+      "type": "TEXT",
+      "value": "Generate a fake person using the Python package Faker",
+      "last_modified": "2023-02-16T00:09:35.449Z"
+    },
+    {
+      "x": 6,
+      "y": 14,
+      "type": "PYTHON",
+      "value": "Name",
+      "array_cells": [
+        [6, 14],
+        [7, 14],
+        [8, 14],
+        [9, 14],
+        [10, 14],
+        [6, 15],
+        [7, 15],
+        [8, 15],
+        [9, 15],
+        [10, 15]
+      ],
+      "dependent_cells": [],
+      "evaluation_result": {
+        "success": true,
+        "std_out": "",
+        "output_value": "[['Name', 'Birthday', 'SSN', 'Phone', 'Address'], ['Samuel King', '1969-01-14', '525-35-3815', '950.549.2928x', '975 Cynthia Turnpike\\nNew John, GA 73140']]",
+        "cells_accessed": [],
+        "array_output": [
+          ["Name", "Birthday", "SSN", "Phone", "Address"],
+          ["Samuel King", "1969-01-14", "525-35-3815", "950.549.2928x", "975 Cynthia Turnpike\nNew John, GA 73140"]
+        ],
+        "formatted_code": "# Run this cell again to generate a new fake person\n\nimport micropip\n\nawait micropip.install(\"faker\")\n\nfrom faker import Faker\nfake = Faker()\n\n[\n    [\n        \"Name\"[:13],\n        \"Birthday\",\n        \"SSN\",\n        \"Phone\",\n        \"Address\"\n    ],\n    [\n        fake.name(),\n        str(fake.date_of_birth()),\n        fake.ssn(),\n        fake.phone_number()[:13],\n        fake.address()\n    ]\n]\n",
+        "error_span": null
+      },
+      "last_modified": "2023-03-17T04:20:14.849Z",
+      "python_code": "# Run this cell again to generate a new fake person\n\nimport micropip\n\nawait micropip.install(\"faker\")\n\nfrom faker import Faker\nfake = Faker()\n\n[\n    [\n        \"Name\"[:13],\n        \"Birthday\",\n        \"SSN\",\n        \"Phone\",\n        \"Address\"\n    ],\n    [\n        fake.name(),\n        str(fake.date_of_birth()),\n        fake.ssn(),\n        fake.phone_number()[:13],\n        fake.address()\n    ]\n]\n"
+    },
+    { "x": 7, "y": 14, "type": "COMPUTED", "value": "Birthday", "last_modified": "2023-03-17T04:20:14.849Z" },
+    { "x": 8, "y": 14, "type": "COMPUTED", "value": "SSN", "last_modified": "2023-03-17T04:20:14.849Z" },
+    { "x": 9, "y": 14, "type": "COMPUTED", "value": "Phone", "last_modified": "2023-03-17T04:20:14.849Z" },
+    { "x": 10, "y": 14, "type": "COMPUTED", "value": "Address", "last_modified": "2023-03-17T04:20:14.849Z" },
+    { "x": 6, "y": 15, "type": "COMPUTED", "value": "Samuel King", "last_modified": "2023-03-17T04:20:14.849Z" },
+    { "x": 7, "y": 15, "type": "COMPUTED", "value": "1969-01-14", "last_modified": "2023-03-17T04:20:14.849Z" },
+    { "x": 8, "y": 15, "type": "COMPUTED", "value": "525-35-3815", "last_modified": "2023-03-17T04:20:14.849Z" },
+    { "x": 9, "y": 15, "type": "COMPUTED", "value": "950.549.2928x", "last_modified": "2023-03-17T04:20:14.849Z" },
+    {
+      "x": 10,
+      "y": 15,
+      "type": "COMPUTED",
+      "value": "975 Cynthia Turnpike\nNew John, GA 73140",
+      "last_modified": "2023-03-17T04:20:14.849Z"
+    },
+    {
+      "x": 4,
+      "y": 10,
+      "type": "FORMULA",
+      "value": "463",
+      "array_cells": [],
+      "dependent_cells": [
+        [4, 8],
+        [4, 7]
+      ],
+      "evaluation_result": {
+        "success": true,
+        "output_value": "463",
+        "cells_accessed": [
+          [4, 8],
+          [4, 7]
+        ],
+        "array_output": [],
+        "formatted_code": "SUM(E7:E8)",
+        "error_span": null
+      },
+      "formula_code": "SUM(E7:E8)",
+      "last_modified": "2023-03-14T17:21:29.341Z"
+    },
+    {
+      "x": 4,
+      "y": 11,
+      "type": "PYTHON",
+      "value": "463",
+      "array_cells": [],
+      "dependent_cells": [
+        [4, 7],
+        [4, 8]
+      ],
+      "evaluation_result": {
+        "success": true,
+        "std_out": "",
+        "output_value": "463",
+        "cells_accessed": [
+          [4, 7],
+          [4, 8]
+        ],
+        "formatted_code": "cell(4, 7) + cell(4, 8)\n",
+        "error_span": null
+      },
+      "last_modified": "2023-02-21T23:39:22.445Z",
+      "python_code": "cell(4, 7) + cell(4, 8)"
+    },
+    {
+      "x": 0,
+      "y": 8,
+      "type": "TEXT",
+      "value": "2. Move to an empty cell and press =",
+      "last_modified": "2023-02-21T23:37:40.104Z"
+    },
+    {
+      "x": 0,
+      "y": 17,
+      "type": "TEXT",
+      "value": "More examples in File > Open sample",
+      "last_modified": "2023-02-22T18:05:50.007Z"
+    },
+    {
+      "x": 0,
+      "y": 13,
+      "type": "TEXT",
+      "value": "6. Blue cell outlines show you what cells",
+      "last_modified": "2023-02-21T23:42:38.344Z"
+    },
+    {
+      "x": 0,
+      "y": 14,
+      "type": "TEXT",
+      "value": "    contain code and purple for formulas.",
+      "last_modified": "2023-02-21T23:42:51.541Z"
+    },
+    { "x": 7, "y": 9, "type": "COMPUTED", "value": "Revenue", "last_modified": "2023-03-21T19:52:22.507Z" },
+    { "x": 8, "y": 9, "type": "COMPUTED", "value": "Market Cap", "last_modified": "2023-03-21T19:52:22.507Z" },
+    { "x": 9, "y": 9, "type": "COMPUTED", "value": "Multiple", "last_modified": "2023-03-21T19:52:22.507Z" },
+    { "x": 6, "y": 10, "type": "COMPUTED", "value": "Apple Inc.", "last_modified": "2023-03-21T19:52:22.507Z" },
+    { "x": 7, "y": 10, "type": "COMPUTED", "value": "$117,154,000,000", "last_modified": "2023-03-21T19:52:22.507Z" },
+    { "x": 8, "y": 10, "type": "COMPUTED", "value": "$2.49e+12", "last_modified": "2023-03-21T19:52:22.507Z" },
+    { "x": 9, "y": 10, "type": "COMPUTED", "value": "21.26", "last_modified": "2023-03-21T19:52:22.507Z" }
+  ],
+  "cell_dependency": "[{\"key\":\"7,8\",\"value\":[[7,9],[7,9]]},{\"key\":\"11,8\",\"value\":[[11,9]]},{\"key\":\"9,8\",\"value\":[[9,9]]},{\"key\":\"4,7\",\"value\":[[4,11],[4,10],[1,11],[1,11],[1,11]]},{\"key\":\"4,8\",\"value\":[[4,11],[4,10],[1,11],[1,11]]},{\"key\":\"3,8\",\"value\":[[4,10]]},{\"key\":\"3,7\",\"value\":[[4,10]]},{\"key\":\"6,8\",\"value\":[[6,9]]}]",
+  "columns": [{ "id": 0, "size": 275.9100338070991 }],
+  "formats": [
+    { "x": 0, "y": 0, "bold": true },
+    { "x": 0, "y": 1, "italic": true },
+    { "x": 0, "y": 2, "italic": true },
+    { "x": 3, "y": 9, "bold": false },
+    { "x": 3, "y": 10, "italic": true },
+    { "x": 3, "y": 11, "italic": true },
+    { "x": 0, "y": 5, "bold": true },
+    { "x": 1, "y": 10, "bold": false },
+    { "x": 4, "y": 5, "bold": true },
+    { "x": 4, "y": 7, "fillColor": "rgb(218, 240, 255)" },
+    { "x": 4, "y": 8, "fillColor": "rgb(218, 240, 255)" },
+    { "x": 6, "y": 5, "bold": true },
+    { "x": 6, "y": 7, "bold": true },
+    { "x": 6, "y": 8, "fillColor": "rgb(218, 240, 255)" },
+    { "x": 6, "y": 12, "bold": true },
+    { "x": 0, "y": 17, "bold": true }
+  ],
+  "rows": [],
+  "version": "1.2",
+  "modified": 1697500063102,
+  "created": 1697500063102,
+  "id": "d798813c-973c-4664-a155-38929a09f586",
+  "filename": "Untitled"
+}

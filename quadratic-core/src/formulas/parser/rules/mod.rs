@@ -9,7 +9,7 @@ pub use combinators::*;
 pub use expression::*;
 
 use super::*;
-use crate::{CodeResult, ErrorMsg, Span, Spanned};
+use crate::{CodeResult, RunErrorMsg, Span, Spanned};
 
 /// A grammar rule that produces an AST node from tokens.
 pub trait SyntaxRule: fmt::Debug + fmt::Display {

@@ -13,11 +13,12 @@ mod time;
 pub use array::Array;
 pub use array_size::{ArraySize, Axis};
 pub use cellvalue::CellValue;
+pub use cellvalue::CodeCellValue;
 pub use convert::CoerceInto;
 pub use isblank::IsBlank;
 pub use time::{Duration, Instant};
 
-use crate::{CodeResult, CodeResultExt, ErrorMsg, SpannableIterExt, Spanned};
+use crate::{CodeResult, CodeResultExt, RunErrorMsg, SpannableIterExt, Spanned};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(untagged)]
@@ -51,19 +52,19 @@ impl From<Array> for Value {
 }
 
 impl Value {
-    pub fn cell_value(&self) -> Result<&CellValue, ErrorMsg> {
+    pub fn cell_value(&self) -> Result<&CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
-            Value::Array(a) => a.cell_value().ok_or_else(|| ErrorMsg::Expected {
+            Value::Array(a) => a.cell_value().ok_or_else(|| RunErrorMsg::Expected {
                 expected: "single value".into(),
                 got: Some(a.type_name().into()),
             }),
         }
     }
-    pub fn into_cell_value(self) -> Result<CellValue, ErrorMsg> {
+    pub fn into_cell_value(self) -> Result<CellValue, RunErrorMsg> {
         match self {
             Value::Single(value) => Ok(value),
-            Value::Array(a) => a.into_cell_value().map_err(|a| ErrorMsg::Expected {
+            Value::Array(a) => a.into_cell_value().map_err(|a| RunErrorMsg::Expected {
                 expected: "single value".into(),
                 got: Some(a.type_name().into()),
             }),
@@ -130,9 +131,10 @@ impl Spanned<Value> {
 
     /// Iterates over an array, converting values to a particular type. If a
     /// value cannot be converted, it is ignored.
+    #[allow(clippy::should_implement_trait)]
     pub fn into_iter<T>(self) -> impl Iterator<Item = CodeResult<Spanned<T>>>
     where
-        CellValue: TryInto<T, Error = ErrorMsg>,
+        CellValue: TryInto<T, Error = RunErrorMsg>,
     {
         // Ignore array values that fail to coerce, but return an error for a
         // single value that fails to coerce. This is consistent with Excel
@@ -146,7 +148,7 @@ impl Spanned<Value> {
                     inner: v,
                     span: self.span,
                 };
-                single_value = Some(v.try_coerce::<T>())
+                single_value = Some(v.try_coerce::<T>());
             }
             Value::Array(a) => array = a.into_cell_values_vec(),
         };

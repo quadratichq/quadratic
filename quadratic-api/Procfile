@@ -1,3 +1,0 @@
-web: node -r newrelic dist/server.js
-
-release: npx prisma migrate deploy

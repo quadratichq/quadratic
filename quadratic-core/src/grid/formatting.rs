@@ -2,8 +2,26 @@ use std::fmt;
 use std::ops::{BitOr, BitOrAssign};
 
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
+
+use crate::RunLengthEncoding;
 
 use super::{block::SameValue, Column, ColumnData};
+
+/// Array of a single cell formatting attribute.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum CellFmtArray {
+    Align(RunLengthEncoding<Option<CellAlign>>),
+    Wrap(RunLengthEncoding<Option<CellWrap>>),
+    NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
+    NumericDecimals(RunLengthEncoding<Option<i16>>),
+    NumericCommas(RunLengthEncoding<Option<bool>>),
+    Bold(RunLengthEncoding<Option<bool>>),
+    Italic(RunLengthEncoding<Option<bool>>),
+    TextColor(RunLengthEncoding<Option<String>>),
+    FillColor(RunLengthEncoding<Option<String>>),
+    RenderSize(RunLengthEncoding<Option<RenderSize>>),
+}
 
 /// Cell formatting attribute.
 pub trait CellFmtAttr {
@@ -50,6 +68,17 @@ impl CellFmtAttr for NumericDecimals {
     }
 }
 
+pub struct NumericCommas;
+impl CellFmtAttr for NumericCommas {
+    type Value = bool;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.numeric_commas
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.numeric_commas
+    }
+}
+
 pub struct Bold;
 impl CellFmtAttr for Bold {
     type Value = bool;
@@ -91,7 +120,17 @@ impl CellFmtAttr for FillColor {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+impl CellFmtAttr for RenderSize {
+    type Value = Self;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.render_size
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.render_size
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum CellAlign {
@@ -100,7 +139,9 @@ pub enum CellAlign {
     Right,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(
+    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString,
+)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum CellWrap {
@@ -110,7 +151,7 @@ pub enum CellWrap {
     Clip,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct NumericFormat {
     #[serde(rename = "type")]
@@ -118,10 +159,22 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+/// Measures DOM element size in pixels.
+pub struct RenderSize {
+    pub w: String,
+    pub h: String,
+}
+
+#[derive(
+    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString, Copy,
+)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]
+#[strum(ascii_case_insensitive)]
 pub enum NumericFormatKind {
+    #[default]
     Number,
     Currency, // { symbol: String }, // TODO: would be nice if this were just a single char (and it could be)
     Percentage,

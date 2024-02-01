@@ -8,10 +8,15 @@ datasource db {
 }
 
 model User {
-    id        Int         @id @default(autoincrement())
-    auth0_id  String      @unique
-    files     File[]
-    QFeedback QFeedback[]
+    id           Int            @id @default(autoincrement())
+    auth0Id      String         @unique @map("auth0_id")
+    ownedFiles   File[]         @relation(name: "OwnerRelation")
+    createdFiles File[]         @relation(name: "CreatorRelation")
+    QFeedback    QFeedback[]
+    UserTeamRole UserTeamRole[]
+    UserFileRole UserFileRole[]
+
+    @@index([auth0Id])
 }
 
 enum LinkPermission {
@@ -20,24 +25,144 @@ enum LinkPermission {
     EDIT
 }
 
+// TODO Properly configure camelCase <-> snake_case
 model File {
-    id                 Int            @id @default(autoincrement())
-    uuid               String         @unique @default(uuid())
-    name               String
-    created_date       DateTime       @default(now())
-    updated_date       DateTime       @default(now())
-    deleted            Boolean        @default(false)
-    deleted_date       DateTime?
+    id          Int       @id @default(autoincrement())
+    uuid        String    @unique @default(uuid())
+    name        String
+    thumbnail   String? // S3FileKey
+    createdDate DateTime  @default(now()) @map("created_date")
+    updatedDate DateTime  @default(now()) @map("updated_date")
+    deleted     Boolean   @default(false)
+    deletedDate DateTime? @map("deleted_date")
     // Binary file contents
-    contents           Bytes
-    // Permissions
-    owner              User           @relation(fields: [ownerUserId], references: [id])
-    ownerUserId        Int
-    public_link_access LinkPermission @default(NOT_SHARED)
-    // analytics fields
-    times_updated      Int            @default(1)
-    version            String?
+    contents    Bytes? // unused to delete
+
+    // This is recorded when the file is created and never changes after that
+    creator       User @relation(name: "CreatorRelation", fields: [creatorUserId], references: [id])
+    creatorUserId Int  @map("creator_user_id")
+
+    // This is where we differentiate between who owns a file: an individual
+    // user or a team. These two are mutually exclusive, i.e. you should only
+    // ever have an `owner` or `team` but never both.
+    //
+    // This allows files to be "moved" between individual users, from a team to
+    // a user, or a user to a team.
+    ownerUser   User? @relation(name: "OwnerRelation", fields: [ownerUserId], references: [id])
+    ownerUserId Int?
+    ownerTeam   Team? @relation(fields: [ownerTeamId], references: [id])
+    ownerTeamId Int?  @map("owner_team_id")
+
+    publicLinkAccess LinkPermission   @default(NOT_SHARED) @map("public_link_access")
+    times_updated    Int              @default(1) // unused to delete
+    version          String? // unused to delete
+    FileCheckpoint   FileCheckpoint[]
+    UserFileRole     UserFileRole[]
+    FileInvite       FileInvite[]
+
+    @@index([uuid])
 }
+
+model FileCheckpoint {
+    // Unique Identifiers
+    id             Int      @id @default(autoincrement())
+    file           File     @relation(fields: [fileId], references: [id])
+    fileId         Int      @map("file_id")
+    sequenceNumber Int      @map("sequence_number")
+    // Checkpoint Data
+    s3Bucket       String   @map("s3_bucket")
+    s3Key          String   @map("s3_key")
+    version        String // Quadratic file version
+    // Metadata
+    timestamp      DateTime @default(now())
+
+    @@unique([fileId, sequenceNumber])
+    @@index([fileId, sequenceNumber])
+}
+
+model Team {
+    id           Int            @id @default(autoincrement())
+    uuid         String         @unique @default(uuid())
+    name         String
+    picture      String? // S3FileKey
+    createdDate  DateTime       @default(now()) @map("created_date")
+    UserTeamRole UserTeamRole[]
+    TeamInvite   TeamInvite[]
+    File         File[]
+
+    @@index([uuid])
+}
+
+enum TeamRole {
+    OWNER
+    EDITOR
+    VIEWER
+}
+
+model UserTeamRole {
+    id          Int      @id @default(autoincrement())
+    userId      Int      @map("user_id")
+    teamId      Int      @map("team_id")
+    user        User     @relation(fields: [userId], references: [id])
+    team        Team     @relation(fields: [teamId], references: [id])
+    role        TeamRole
+    createdDate DateTime @default(now()) @map("created_date")
+
+    @@unique([userId, teamId])
+}
+
+model TeamInvite {
+    id          Int      @id @default(autoincrement())
+    email       String
+    teamId      Int      @map("team_id")
+    team        Team     @relation(fields: [teamId], references: [id])
+    role        TeamRole
+    createdDate DateTime @default(now()) @map("created_date")
+
+    @@unique([email, teamId])
+}
+
+enum FileRole {
+    // There is only ever 1 owner per file which is stored on the file itself
+    EDITOR
+    VIEWER
+}
+
+model UserFileRole {
+    id          Int      @id @default(autoincrement())
+    userId      Int      @map("user_id")
+    fileId      Int      @map("file_id")
+    user        User     @relation(fields: [userId], references: [id])
+    file        File     @relation(fields: [fileId], references: [id])
+    role        FileRole
+    createdDate DateTime @default(now()) @map("created_date")
+
+    @@unique([userId, fileId])
+}
+
+model FileInvite {
+    id          Int      @id @default(autoincrement())
+    email       String
+    fileId      Int      @map("file_id")
+    file        File     @relation(fields: [fileId], references: [id])
+    role        FileRole
+    createdDate DateTime @default(now()) @map("created_date")
+
+    @@unique([email, fileId])
+}
+
+// Future: folders
+// model Folder {
+//     id             Int      @id @default(autoincrement())
+//     uuid           String   @unique @default(uuid())
+//     name           String
+//     createdDate    DateTime @default(now()) @map("created_date")
+//     createdBy      User     @relation(fields: [createByUserId], references: [id])
+//     createByUserId Int      @map("created_by_user_id")
+//     team           Team?    @relation(fields: [teamId], references: [id])
+// }
+// enum FolderRole {}
+// model UserFolderRole {}
 
 model QFeedback {
     id           Int      @id @default(autoincrement())
@@ -71,41 +196,3 @@ model QFile {
     times_updated Int      @default(1)
     version       String?
 }
-
-// model Team {
-//     id       Int    @id @default(autoincrement())
-//     name     String
-//     logo     Image?
-// }
-
-// enum SharePermission {
-//     READONLY
-//     EDIT
-// }
-
-// model UserFileAccess {
-//   id Int
-//   userId    Int
-//   fileId    Int
-//   user      User      @relation(fields: [userId], references: [id])
-//   file      File      @relation(fields: [fileId], references: [id])
-//   permission SharePermission @default(READONLY)
-
-//   @@unique([userId, fileId])
-// }
-
-// model TeamFileAccess {
-//   id Int
-//   teamID    Int
-//   fileId    Int
-//   team      Team      @relation(fields: [teamID], references: [id])
-//   file      File      @relation(fields: [fileId], references: [id])
-//   permission SharePermission @default(READONLY)
-
-//   @@unique([userId, fileId])
-// }
-
-// Permission Logic
-// Public Link Access: Check the share_link column in the files table.
-// Direct User Access: Check for a row in UserFileAccess with the user's ID.
-// Team Access: Check for a row in TeamFileAccess with a team ID that the user is a part of.

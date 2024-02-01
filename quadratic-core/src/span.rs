@@ -51,6 +51,14 @@ impl From<&Span> for Span {
         *span
     }
 }
+impl From<[u32; 2]> for Span {
+    fn from(span: [u32; 2]) -> Self {
+        Self {
+            start: span[0],
+            end: span[1],
+        }
+    }
+}
 
 /// Any data with an associated span.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
@@ -102,6 +110,15 @@ impl<T> Spanned<T> {
         Spanned {
             span: self.span,
             inner: &self.inner,
+        }
+    }
+
+    /// Merges two spans using `Span::merge()` and merges the inner values using
+    /// the provided function.
+    pub fn merge<U, V>(a: Spanned<U>, b: Spanned<V>, merge: impl FnOnce(U, V) -> T) -> Spanned<T> {
+        Spanned {
+            span: Span::merge(a.span, b.span),
+            inner: merge(a.inner, b.inner),
         }
     }
 }
