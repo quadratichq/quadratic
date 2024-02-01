@@ -46,14 +46,20 @@ export const HoverCell = () => {
   }, []);
 
   useEffect(() => {
-    const changeZoom = () => {
-      if (textRef.current) {
-        textRef.current.style.transform = `scale(${1 / pixiApp.viewport.scale.x})`;
+    const remove = () => {
+      const div = ref.current;
+      if (!div) return;
+      if (!div.classList.contains('hover-cell-fade-out')) {
+        div.classList.add('hover-cell-fade-out');
+        div.classList.remove('hover-cell-fade-in');
+        div.classList.remove('hover-cell-fade-in-no-delay');
       }
     };
-    pixiApp.viewport.on('zoomed', changeZoom);
+    pixiApp.viewport.on('moved', remove);
+    pixiApp.viewport.on('zoomed', remove);
     return () => {
-      pixiApp.viewport.off('zoomed', changeZoom);
+      pixiApp.viewport.off('moved', remove);
+      pixiApp.viewport.off('zoomed', remove);
     };
   }, []);
 
