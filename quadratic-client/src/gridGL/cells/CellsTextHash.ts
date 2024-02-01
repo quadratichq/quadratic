@@ -35,10 +35,6 @@ export class CellsTextHash extends Container<LabelMeshes> {
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
-  // whether this hash overflows to the right or left (which will trigger an overflowCheck when the neighbor updates)
-  overflowRight: boolean;
-  overflowLeft: boolean;
-
   constructor(cellsSheet: CellsSheet, x: number, y: number) {
     super();
     this.cellsSheet = cellsSheet;
@@ -48,8 +44,6 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.hashX = x;
     this.hashY = y;
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    this.overflowRight = false;
-    this.overflowLeft = false;
   }
 
   get sheet(): Sheet {
@@ -124,17 +118,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   private updateText() {
     this.labelMeshes.clear();
-
-    // place glyphs and sets size of labelMeshes
-    let rightMost = -Infinity;
-    let leftMost = Infinity;
     this.cellLabels.forEach((child) => {
       child.updateText(this.labelMeshes);
-      rightMost = Math.max(rightMost, child.AABB.right);
-      leftMost = Math.min(leftMost, child.AABB.left);
     });
-    this.overflowRight = rightMost > this.AABB.right;
-    this.overflowLeft = leftMost < this.AABB.left;
   }
 
   overflowClip(): void {
@@ -165,6 +151,22 @@ export class CellsTextHash extends Container<LabelMeshes> {
         return;
       }
       column--;
+    }
+
+    column = label.location.x + 1;
+    while (column <= bounds.right) {
+      if (column > currentHash.AABB.right) {
+        // find hash to the right of current hash (skip over empty hashes)
+        currentHash = this.cellsSheet.findNextHash(column, row, bounds);
+        if (!currentHash) return;
+      }
+      const neighborLabel = currentHash.getLabel(column, row);
+      if (neighborLabel) {
+        neighborLabel.checkLeftClip(label.AABB.right);
+        label.checkRightClip(neighborLabel.AABB.left);
+        return;
+      }
+      column++;
     }
   }
 

@@ -146,7 +146,6 @@ export class CellLabel extends Container {
   }
 
   checkRightClip(nextLeft: number): void {
-    console.log(this.overflowRight, this.overflowRight ? this.AABB.right + this.overflowRight : undefined);
     if (this.overflowRight && this.AABB.right + this.overflowRight > nextLeft) {
       this.clipRight = nextLeft;
     } else {
