@@ -64,6 +64,7 @@ export const HoverCell = () => {
   const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;
   let onlyCode = false;
   if (spillError) {
+    onlyCode = false;
     text = (
       <>
         <div className="hover-cell-header">Spill Error</div>
@@ -84,6 +85,7 @@ export const HoverCell = () => {
       </>
     );
   } else if (renderCodeCell?.state === 'RunError') {
+    onlyCode = false;
     if (code) {
       text = (
         <>
@@ -98,6 +100,7 @@ export const HoverCell = () => {
       );
     }
   } else if (renderCodeCell?.state) {
+    onlyCode = false;
     text = (
       <>
         <div className="hover-cell-header">{renderCodeCell?.language} Code</div>
@@ -106,6 +109,7 @@ export const HoverCell = () => {
     );
     onlyCode = true;
   } else if (editingCell?.user) {
+    onlyCode = false;
     text = (
       <>
         <div className="hover-cell-header">Multiplayer Edit</div>
@@ -162,9 +166,6 @@ export const HoverCell = () => {
     };
   }, [cell]);
 
-  // hide code peek unless showCodePeek is true
-  if (onlyCode && !showCodePeek) return null;
-
   return (
     <div
       ref={ref}
@@ -179,7 +180,7 @@ export const HoverCell = () => {
         <div
           ref={textRef}
           className={cn('w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none')}
-          style={{ position: 'absolute' }}
+          style={{ position: 'absolute', visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden' }}
         >
           {text}
         </div>

@@ -71,7 +71,7 @@ interface GridSettingsReturn {
   setShowCellTypeOutlines: (value: boolean) => void;
   setShowA1Notation: (value: boolean) => void;
   setPresentationMode: (value: boolean) => void;
-  setCodePeek: (value: boolean) => void;
+  setShowCodePeek: (value: boolean) => void;
 }
 
 export const useGridSettings = (): GridSettingsReturn => {
@@ -132,7 +132,7 @@ export const useGridSettings = (): GridSettingsReturn => {
     });
   };
 
-  const setCodePeek = (value: boolean) => {
+  const setShowCodePeek = (value: boolean) => {
     setSettings((currentState) => {
       if (value !== currentState.showCodePeek) {
         mixpanel.track('[Grid].[Settings].setCodePeek', { value });
@@ -150,6 +150,6 @@ export const useGridSettings = (): GridSettingsReturn => {
     setShowCellTypeOutlines,
     setShowA1Notation,
     setPresentationMode,
-    setCodePeek,
+    setShowCodePeek,
   };
 };

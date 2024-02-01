@@ -30,7 +30,7 @@
 
 .hover-cell-fade-in {
   opacity: 1;
-  transition: opacity 150ms linear 500s;
+  transition: opacity 150ms linear 500ms;
 }
 
 .hover-cell-fade-in-no-delay {

@@ -166,6 +166,9 @@ export const QuadraticMenu = () => {
           <MenuItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
             <MenuLineItem primary="Show code cell outlines" Icon={settings.showCellTypeOutlines && Check} indent />
           </MenuItem>
+          <MenuItem onClick={() => settings.setShowCodePeek(!settings.showCodePeek)}>
+            <MenuLineItem primary="Show code peek" Icon={settings.showCodePeek && Check} indent />
+          </MenuItem>
           <MenuDivider />
           <MenuItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>
             <MenuLineItem primary="Presentation mode" Icon={settings.presentationMode && Check} indent />
