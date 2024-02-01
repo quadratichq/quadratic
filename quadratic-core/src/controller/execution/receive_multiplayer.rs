@@ -1208,4 +1208,42 @@ mod tests {
         assert_eq!(find_index(sheet, 1, 0), 1);
         assert_eq!(find_index(sheet, 2, 0), 2);
     }
+
+    #[test]
+    fn receive_our_transactions_out_of_order() {
+        let mut gc = GridController::test();
+        let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
+        let (transaction_id_1, operations_1) = create_multiple_calculations_1(&mut gc);
+        let (transaction_id_2, operations_2) = create_multiple_calculations_2(&mut gc);
+
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_2).unwrap(),
+            3,
+            serde_json::from_str(&operations_2).unwrap(),
+        );
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_0).unwrap(),
+            1,
+            serde_json::from_str(&operations_0).unwrap(),
+        );
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_1).unwrap(),
+            2,
+            serde_json::from_str(&operations_1).unwrap(),
+        );
+
+        let sheet = gc.grid.first_sheet();
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 2 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+    }
 }
