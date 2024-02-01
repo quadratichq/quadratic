@@ -1,42 +1,38 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { ApiSchemas, ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { firstRoleIsHigherThanSecond } from '../../utils/permissions';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
-export default [
-  validateRequestSchema(
-    z.object({
-      params: z.object({
-        uuid: z.string().uuid(),
-        userId: z.coerce.number(),
-      }),
-      body: ApiSchemas['/v0/files/:uuid/users/:userId.PATCH.request'],
-    })
-  ),
-  validateAccessToken,
-  userMiddleware,
-  handler,
-];
+export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/users/:userId.PATCH.response']>) {
+const schema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+    userId: z.coerce.number(),
+  }),
+  body: ApiSchemas['/v0/files/:uuid/users/:userId.PATCH.request'],
+});
+
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:uuid/users/:userId.PATCH.response']>) {
+  const {
+    body: { role: newRole },
+    params: { uuid, userId: userBeingChangedId },
+  } = parseRequest(req, schema);
   const {
     user: { id: userMakingRequestId },
-    params: { uuid, userId },
-  } = req as RequestWithUser;
-  const { role: newRole } = req.body as ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request'];
+  } = req;
   const {
     file: { id: fileId, ownerUserId, publicLinkAccess },
     userMakingRequest,
   } = await getFile({ uuid, userId: userMakingRequestId });
-  const userBeingChangedId = Number(userId);
 
   // Updating yourself?
   if (userBeingChangedId === userMakingRequestId) {
@@ -77,7 +73,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/use
   // So we'll check and make sure they can
 
   // First, can they do this?
-
   if (!userMakingRequest.filePermissions.includes(FILE_EDIT)) {
     throw new ApiError(403, 'You do not have permission to edit others');
   }
@@ -101,7 +96,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/use
     return res.status(200).json({ role: newRole });
   }
 
-  // Downgrading is ok!
+  // Make the change!
   const newUserFileRole = await dbClient.userFileRole.update({
     where: {
       userId_fileId: {
