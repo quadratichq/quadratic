@@ -5,6 +5,8 @@ import { Button, Layout, Link, Paragraph } from './components';
 // internal endpoing: /v0/emails/:templateName
 // e.g. `GET /v0/emails/inviteToFile`
 
+const EMAIL = 'notify@email.quadratichq.com';
+
 export const templates = {
   inviteToFile: ({
     fileName,
@@ -23,7 +25,7 @@ export const templates = {
   }) => {
     // TODO: we should probably use an env variable for this, but this works for now
     const fileUrl = `${origin}/file/${fileUuid}`;
-    const subject = `${senderName ? senderName : 'Somebody'} shared a spreadsheet with you in Quadratic`;
+    const subject = `Spreadsheet shared with you: ${fileName}`;
     const verb = fileRole === 'EDITOR' ? 'edit' : 'view';
     const html = Layout(/*html*/ `
       ${Paragraph(/*html*/ `
@@ -33,7 +35,11 @@ export const templates = {
       `)}
       ${Button('Open in Quadratic', { to: fileUrl })} 
     `);
+    const from = {
+      email: EMAIL,
+      name: `${senderName ? senderName : 'Somebody'} (via Quadratic)`,
+    };
 
-    return { subject, html };
+    return { from, subject, html };
   },
 };

@@ -25,15 +25,16 @@
       .container {
         background: #fff;
 
-        min-height: calc(100vh - 6rem);
+        min-height: calc(100vh - 7rem);
         display: flex;
       }
       .toolbar {
         display: flex;
         flex-direction: column;
         justify-content: center;
-        gap: 0.25rem;
-        height: 4rem;
+        gap: 0.5rem;
+        height: 5rem;
+        position: relative;
 
         > * {
           margin: 0;
@@ -77,7 +78,7 @@
 
         return html`
           <div class="toolbar">
-            <div>
+            <div style=${{ position: 'absolute', right: '0' }}>
               <select
                 onChange=${(e) => {
                   const id = e.target.value;
@@ -95,7 +96,24 @@
                 ${emailIds.map((emailId) => html`<option value="${emailId}">${emailId}</option>`)}
               </select>
             </div>
-            <p class="subject"><strong>Subject:</strong> ${email.subject}</p>
+            <div style=${{ fontWeight: '500' }}>${email.subject ? email.subject : '[Subject]'}</div>
+            <div style=${{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+              <div style=${{ width: '24px', height: '24px', backgroundColor: '#ddd', borderRadius: '50%' }}></div>
+              <div style=${{ display: 'flex', flexDirection: 'column' }}>
+                <span style=${{ fontSize: '12px', fontWeight: '600' }}
+                  >${email.from ? email.from.name : '[Sender]'}
+                  <span
+                    style=${{
+                      fontSize: '12px',
+                      opacity: '.5',
+                      fontWeight: '400',
+                    }}
+                    >${' <'}notify@email.quadratichq.com${'>'}</span
+                  ></span
+                >
+                <span style=${{ fontSize: '12px', opacity: '.5' }}>to: me@example.com</span>
+              </div>
+            </div>
           </div>
           <div class="container">
             <iframe srcdoc="${email.html}"></iframe>
