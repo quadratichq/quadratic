@@ -81,55 +81,24 @@ impl State {
     }
 }
 
-#[macro_export]
-macro_rules! get_mut_connection {
-    ( $self:ident, $connection_id:ident ) => {
-        $self
-            .connections
-            .lock()
-            .await
-            .get_mut(&$connection_id)
-            .ok_or(MpError::Connection(format!(
-                "connection_id {} not found",
-                &$connection_id
-            )))
-    };
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::{error::MpError, test_util::new_state};
-
-    use super::*;
-
-    async fn setup() -> (State, Uuid, Connection) {
-        let state = new_state().await;
-        let id = Uuid::new_v4();
-        let session_id = Uuid::new_v4();
-        let file_id = Uuid::new_v4();
-        let connection = Connection::new(id, session_id, file_id, None);
-
-        state
-            .connections
-            .lock()
-            .await
-            .insert(connection.id, connection.clone());
-
-        (state, session_id, connection)
-    }
+    use crate::{error::MpError, test_util::setup};
 
     #[tokio::test]
     async fn get_connection() {
-        let (state, _, connection) = setup().await;
-        let result = state.get_connection(connection.id).await.unwrap();
+        let (_, state, connection_id, _, _, _) = setup().await;
+        println!("state: {:?}", state.connections.lock().await);
+        let result = state.get_connection(connection_id).await.unwrap();
 
-        assert_eq!(result, connection);
+        assert_eq!(result.id, connection_id);
     }
 
     #[tokio::test]
     async fn clears_connections() {
-        let (state, _, connection) = setup().await;
-        let connection_id = connection.id;
+        let (_, state, connection_id, _, _, _) = setup().await;
+        let connection = state.get_connection(connection_id).await.unwrap();
+
         state.remove_connection(&connection).await.unwrap();
         let result = state.get_connection(connection_id).await;
         let expected = format!("connection_id {connection_id} not found");

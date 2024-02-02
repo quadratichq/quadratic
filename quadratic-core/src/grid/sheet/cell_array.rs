@@ -10,6 +10,29 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
+    pub fn set_cell_values(&mut self, rect: Rect, values: &Array) -> Array {
+        let mut old_values = Array::new_empty(values.size());
+
+        for x in rect.x_range() {
+            let column = self.get_or_create_column(x);
+
+            for y in rect.y_range() {
+                let old_value;
+                if let Ok(value) = values.get((x - rect.min.x) as u32, (y - rect.min.y) as u32) {
+                    old_value = column.values.insert(y, value.clone());
+                } else {
+                    old_value = column.values.remove(&y);
+                }
+                if let Some(old_value) = old_value {
+                    let _ =
+                        old_values.set((x - rect.min.x) as u32, (y - rect.min.y) as u32, old_value);
+                }
+            }
+        }
+
+        old_values
+    }
+
     pub fn get_cells_response(&self, rect: Rect) -> GetCellsResponse {
         let mut response = vec![];
         for y in rect.y_range() {
@@ -68,7 +91,7 @@ impl Sheet {
             if let Some(column) = self.get_column(x) {
                 for y in rect.y_range() {
                     let cell_pos = Pos { x, y };
-                    if column.values.get(y).is_some_and(|cell| {
+                    if column.values.get(&y).is_some_and(|cell| {
                         Some(cell_pos) != skip && !cell.is_blank_or_empty_string()
                     }) {
                         return true;
@@ -89,7 +112,7 @@ impl Sheet {
             if let Some(column) = self.get_column(x) {
                 for y in spill_rect.y_range() {
                     let cell_pos = Pos { x, y };
-                    if column.values.get(y).is_some_and(|cell| {
+                    if column.values.get(&y).is_some_and(|cell| {
                         cell_pos != code_pos && !cell.is_blank_or_empty_string()
                     }) {
                         results.insert(cell_pos);
@@ -212,5 +235,51 @@ mod tests {
         assert_eq!(reasons.len(), 2);
         assert!(reasons.iter().any(|p| *p == Pos { x: 1, y: 0 }));
         assert!(reasons.iter().any(|p| *p == Pos { x: 2, y: 0 }));
+    }
+
+    #[test]
+    fn set_cell_values() {
+        let mut sheet = Sheet::test();
+        let rect = Rect::from_numbers(0, 0, 2, 2);
+        let values = Array::from_random_floats(rect.size());
+        let old_values = sheet.set_cell_values(rect, &values);
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                assert_eq!(
+                    sheet.cell_value(Pos { x, y }).unwrap(),
+                    *values
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap()
+                );
+                assert_eq!(
+                    *old_values
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap(),
+                    CellValue::Blank
+                );
+            }
+        }
+
+        // replace old values with new values
+        let values_2 = Array::from_random_floats(rect.size());
+        let old_values = sheet.set_cell_values(rect, &values_2);
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                assert_eq!(
+                    sheet.cell_value(Pos { x, y }).unwrap(),
+                    *values_2
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap()
+                );
+                assert_eq!(
+                    *old_values
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap(),
+                    *values
+                        .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                        .unwrap()
+                );
+            }
+        }
     }
 }

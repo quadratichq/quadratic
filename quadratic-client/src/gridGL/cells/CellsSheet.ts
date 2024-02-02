@@ -73,24 +73,27 @@ export class CellsSheet extends Container {
   }
 
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
-    const rect = new Rectangle(
-      hashX * sheetHashWidth,
-      hashY * sheetHashHeight,
-      sheetHashWidth - 1,
-      sheetHashHeight - 1
-    );
-    if (this.sheet.hasRenderCells(rect)) {
-      const key = `${hashX},${hashY}`;
-      const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
-      this.cellsTextHash.set(key, cellsHash);
-      const row = this.cellsRows.get(hashY);
-      if (row) {
-        row.push(cellsHash);
-      } else {
-        this.cellsRows.set(hashY, [cellsHash]);
-      }
-      return cellsHash;
+    // todo: This is probably not needed, but keep it around until we're sure.
+    // This originally checked to see if there was content in the grid before creating the
+    // structure. This was expensive for large sheets.
+    // const rect = new Rectangle(
+    //   hashX * sheetHashWidth,
+    //   hashY * sheetHashHeight,
+    //   sheetHashWidth - 1,
+    //   sheetHashHeight - 1
+    // );
+    // if (this.sheet.hasRenderCells(rect)) {
+    const key = `${hashX},${hashY}`;
+    const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+    this.cellsTextHash.set(key, cellsHash);
+    const row = this.cellsRows.get(hashY);
+    if (row) {
+      row.push(cellsHash);
+    } else {
+      this.cellsRows.set(hashY, [cellsHash]);
     }
+    return cellsHash;
+    // }
   }
 
   createHashes(): boolean {
@@ -331,11 +334,11 @@ export class CellsSheet extends Container {
     return cellsTextHashes;
   }
 
-  update(): boolean {
+  update(userIsActive: boolean): boolean {
     if (this.updateHeadings()) return true;
     const cellTextHashes = this.dirtyCellTextHashesByDistance();
     for (const cellTextHash of cellTextHashes) {
-      if (cellTextHash.update()) {
+      if (cellTextHash.update(userIsActive)) {
         return true;
       }
     }
