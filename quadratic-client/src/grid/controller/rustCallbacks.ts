@@ -19,3 +19,6 @@ export const addUnsentTransaction = (transactionId: string, operations: string) 
 export const sendTransaction = (transactionId: string, operations: string) => {
   return window.sendTransaction(transactionId, operations);
 };
+
+export const jsTime = (name: string) => console.time(name);
+export const jsTimeEnd = (name: string) => console.timeEnd(name);

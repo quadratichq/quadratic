@@ -1,5 +1,6 @@
 use axum::extract::ws::Message;
 use futures_util::SinkExt;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::task::JoinHandle;
 use uuid::Uuid;
@@ -11,6 +12,40 @@ use crate::state::State;
 pub mod handle;
 pub mod request;
 pub mod response;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
+pub(crate) struct CellEdit {
+    pub active: bool,
+    pub text: String,
+    pub cursor: u32,
+    pub code_editor: bool,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub(crate) struct UserState {
+    pub sheet_id: Uuid,
+    pub selection: String,
+    pub code_running: String,
+    pub cell_edit: CellEdit,
+    pub x: f64,
+    pub y: f64,
+    pub visible: bool,
+    pub viewport: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub(crate) struct UserStateUpdate {
+    pub sheet_id: Option<Uuid>,
+    pub selection: Option<String>,
+    pub cell_edit: Option<CellEdit>,
+    pub code_running: Option<String>,
+    pub x: Option<f64>,
+    pub y: Option<f64>,
+    pub visible: Option<bool>,
+    pub viewport: Option<String>,
+}
 
 /// Broadcast a message to all users in a room except the sender.
 /// All messages are sent in a separate thread.

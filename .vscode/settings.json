@@ -41,9 +41,10 @@
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
   "rust-analyzer.linkedProjects": [
+    "./Cargo.toml",
+    "./quadratic-files/Cargo.toml",
     "./quadratic-core/Cargo.toml",
-    "./quadratic-multiplayer/Cargo.toml",
-    "./quadratic-core/Cargo.toml"
+    "./quadratic-multiplayer/Cargo.toml"
   ],
   "rust-analyzer.checkOnSave": true,
   // "rust-analyzer.checkOnSave.command": "clippy",

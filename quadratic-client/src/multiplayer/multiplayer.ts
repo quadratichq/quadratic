@@ -148,14 +148,12 @@ export class Multiplayer {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
         this.brokenConnection = true;
         this.state = 'waiting to reconnect';
-        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('error', (e) => {
         if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
         this.brokenConnection = true;
         this.state = 'waiting to reconnect';
-        console.log('broken connection...');
         this.reconnect();
       });
       this.websocket.addEventListener('open', () => {
@@ -346,8 +344,10 @@ export class Multiplayer {
       operations,
     };
     this.state = 'syncing';
-    this.websocket.send(JSON.stringify(message));
-    if (debugShowMultiplayer) console.log(`[Multiplayer] Sent transaction ${id}.`);
+    const stringified = JSON.stringify(message);
+    this.websocket.send(stringified);
+    if (debugShowMultiplayer)
+      console.log(`[Multiplayer] Sent transaction ${id} (${Math.round(stringified.length / 1000000)}MB).`);
   }
 
   async sendGetTransactions(min_sequence_num: bigint) {
@@ -532,6 +532,7 @@ export class Multiplayer {
 
   // Receives a new transaction from the server
   private async receiveTransaction(data: ReceiveTransaction) {
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Received transaction ${data.id}.`);
     if (data.file_id !== this.fileId) {
       throw new Error("Expected file_id to match room before receiving a message of type 'Transaction'");
     }
@@ -546,6 +547,8 @@ export class Multiplayer {
 
   // Receives a collection of transactions to catch us up based on our sequenceNum
   private async receiveTransactions(data: ReceiveTransactions) {
+    if (debugShowMultiplayer)
+      console.log(`[Multiplayer] Received ${Math.floor(data.transactions.length / 1000)}MB transactions data.`);
     grid.receiveMultiplayerTransactions(data.transactions);
     if (await offline.unsentTransactionsCount()) {
       this.state = 'syncing';

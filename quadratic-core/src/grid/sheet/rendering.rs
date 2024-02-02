@@ -18,10 +18,12 @@ use super::Sheet;
 impl Sheet {
     /// checks columns for any column that has data that might render
     pub fn has_render_cells(&self, rect: Rect) -> bool {
-        self.columns
-            .range(rect.x_range())
-            .any(|(_, column)| column.values.has_blocks_in_range(rect.y_range()))
-            || self.iter_code_output_in_rect(rect).count() > 0
+        self.columns.range(rect.x_range()).any(|(_, column)| {
+            column
+                .values
+                .iter()
+                .any(|(y, _)| rect.y_range().contains(y))
+        }) || self.iter_code_output_in_rect(rect).count() > 0
     }
 
     /// creates a render for a single cell
@@ -208,15 +210,18 @@ impl Sheet {
 
         // Fetch ordinary value cells.
         columns_iter.clone().for_each(|(x, column)| {
-            column
-                .values
-                .values_in_range(rect.y_range())
-                .for_each(|(y, value)| {
-                    // ignore code cells when rendering since they will be taken care in the next part
-                    if !matches!(value, CellValue::Code(_)) {
-                        render_cells.push(self.get_render_cell(x, y, Some(column), value, None));
-                    }
-                });
+            column.values.range(rect.y_range()).for_each(|(y, value)| {
+                // ignore code cells when rendering since they will be taken care in the next part
+                if !matches!(value, CellValue::Code(_)) {
+                    render_cells.push(self.get_render_cell(
+                        x,
+                        *y,
+                        Some(column),
+                        value.clone(),
+                        None,
+                    ));
+                }
+            });
         });
 
         // Fetch values from code cells
