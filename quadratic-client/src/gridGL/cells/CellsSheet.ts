@@ -188,6 +188,7 @@ export class CellsSheet extends Container {
   }
 
   // used for clipping to find neighboring hash - clipping always works from right to left
+  // todo: use the new overflowLeft to make this more efficient
   findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
     bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
     if (!bounds) {
@@ -196,6 +197,21 @@ export class CellsSheet extends Container {
     let hash = this.getCellsHash(column, row);
     while (!hash && column >= bounds.left) {
       column--;
+      hash = this.getCellsHash(column, row);
+    }
+    return hash;
+  }
+
+  // used for clipping to find neighboring hash
+  // todo: use the new overflowRight to make this more efficient
+  findNextHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
+    bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
+    if (!bounds) {
+      throw new Error('Expected bounds to be defined in findNextHash of CellsSheet');
+    }
+    let hash = this.getCellsHash(column, row);
+    while (!hash && column <= bounds.right) {
+      column++;
       hash = this.getCellsHash(column, row);
     }
     return hash;
