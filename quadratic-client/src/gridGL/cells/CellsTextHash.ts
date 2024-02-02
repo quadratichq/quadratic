@@ -96,8 +96,13 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.updateText();
   }
 
-  update(): boolean {
+  update(userIsActive: boolean): boolean {
     if (this.dirty) {
+      const visible = this.viewBounds.intersectsRectangle(pixiApp.viewport.getVisibleBounds());
+
+      // only update if either the user is not active or the hash is visible
+      if (!visible && userIsActive) return false;
+
       this.createLabels();
       this.overflowClip();
       this.updateBuffers(false);
@@ -105,7 +110,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
       this.dirtyBuffers = false;
 
       // we need to test visibility in case the bounds changed
-      this.visible = this.viewBounds.intersectsRectangle(pixiApp.viewport.getVisibleBounds());
+      this.visible = visible;
 
       return true;
     } else if (this.dirtyBuffers) {
