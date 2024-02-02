@@ -1,3 +1,4 @@
+import { parsePython } from '@/helpers/parseEditorPythonCell';
 import { CodeCellLanguage } from '@/quadratic-core/types';
 import monaco from 'monaco-editor';
 import { useEffect } from 'react';
@@ -64,7 +65,7 @@ export const useEditorCellHighlights = (
   }, [language]);
 
   useEffect(() => {
-    if (language !== 'Formula') return;
+    // if (language !== 'Formula') return;
     const editor = editorRef.current;
     const monacoInst = monacoRef.current;
     if (!isValidRef || !editor || !monacoInst) return;
@@ -80,55 +81,62 @@ export const useEditorCellHighlights = (
       const cellsMatches: CellMatch = new Map();
 
       const modelValue = editor.getValue();
+      let parsed;
 
-      const parsedFormula = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
+      if (language === 'Python') {
+        parsed = parsePython(modelValue) as ParseFormulaReturnType;
+      }
 
-      pixiApp.highlightedCells.fromFormula(
-        parsedFormula,
-        editorInteractionState.selectedCell,
-        editorInteractionState.selectedCellSheet
-      );
+      if (language === 'Formula') {
+        parsed = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
+      }
 
-      const extractedCells = extractCellsFromParseFormula(parsedFormula);
-
-      extractedCells.forEach((value, index) => {
-        const { cellId, span } = value;
-        const startPosition = model.getPositionAt(span.start);
-
-        const cellColor =
-          cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
-        cellColorReferences.set(cellId, cellColor);
-
-        const range = new monacoInst.Range(
-          startPosition.lineNumber,
-          startPosition.column,
-          startPosition.lineNumber,
-          startPosition.column + span.end - span.start
+      if (parsed) {
+        pixiApp.highlightedCells.fromFormula(
+          parsed,
+          editorInteractionState.selectedCell,
+          editorInteractionState.selectedCellSheet
         );
 
-        newDecorations.push({
-          range,
-          options: {
-            stickiness: 1,
-            inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
-          },
-        });
-        cellsMatches.set(cellId, range);
-        const editorCursorPosition = editor.getPosition();
-        if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-          pixiApp.highlightedCells.setHighlightedCell(index);
-        }
-      });
+        const extractedCells = extractCellsFromParseFormula(parsed);
 
-      // todo: this should use editor.createDecorationCollection() instead
-      const decorationsIds = editor.deltaDecorations(oldDecorations, newDecorations);
-      oldDecorations = decorationsIds;
+        extractedCells.forEach((value, index) => {
+          const { cellId, span } = value;
+          const startPosition = model.getPositionAt(span.start);
+
+          const cellColor =
+            cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
+          cellColorReferences.set(cellId, cellColor);
+
+          const range = new monacoInst.Range(
+            startPosition.lineNumber,
+            startPosition.column,
+            startPosition.lineNumber,
+            startPosition.column + span.end - span.start
+          );
+
+          newDecorations.push({
+            range,
+            options: {
+              stickiness: 1,
+              inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
+            },
+          });
+          cellsMatches.set(cellId, range);
+          const editorCursorPosition = editor.getPosition();
+          if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
+            pixiApp.highlightedCells.setHighlightedCell(index);
+          }
+        });
+
+        // todo: this should use editor.createDecorationCollection() instead
+        const decorationsIds = editor.deltaDecorations(oldDecorations, newDecorations);
+        oldDecorations = decorationsIds;
+      }
     };
 
-    if (language === 'Formula') {
-      onChangeModel();
-      editor.onDidChangeModelContent(onChangeModel);
-    }
+    onChangeModel();
+    editor.onDidChangeModelContent(onChangeModel);
   }, [
     isValidRef,
     editorRef,

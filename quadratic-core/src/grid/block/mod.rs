@@ -9,7 +9,6 @@ mod same;
 mod value;
 
 pub use same::SameValue;
-pub use value::CellValueBlockContent;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Block<B> {

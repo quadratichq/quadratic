@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use super::Sheet;
 use crate::{
     grid::{js_types::JsCodeCell, CodeRun, RenderSize},
@@ -19,6 +21,50 @@ impl Sheet {
     /// Returns a CodeCell at a Pos
     pub fn code_run(&self, pos: Pos) -> Option<&CodeRun> {
         self.code_runs.get(&pos)
+    }
+
+    /// Gets column bounds for code_runs that output to the columns
+    pub fn code_columns_bounds(&self, column_start: i64, column_end: i64) -> Option<Range<i64>> {
+        let mut min: Option<i64> = None;
+        let mut max: Option<i64> = None;
+        for (pos, code_run) in &self.code_runs {
+            let output_rect = code_run.output_rect(*pos, false);
+            if output_rect.min.x <= column_end && output_rect.max.x >= column_start {
+                min = min
+                    .map(|min| Some(min.min(output_rect.min.y)))
+                    .unwrap_or(Some(output_rect.min.y));
+                max = max
+                    .map(|max| Some(max.max(output_rect.max.y)))
+                    .unwrap_or(Some(output_rect.max.y));
+            }
+        }
+        if let (Some(min), Some(max)) = (min, max) {
+            Some(min..max + 1)
+        } else {
+            None
+        }
+    }
+
+    /// Gets the row bounds for code_runs that output to the rows
+    pub fn code_rows_bounds(&self, row_start: i64, row_end: i64) -> Option<Range<i64>> {
+        let mut min: Option<i64> = None;
+        let mut max: Option<i64> = None;
+        for (pos, code_run) in &self.code_runs {
+            let output_rect = code_run.output_rect(*pos, false);
+            if output_rect.min.y <= row_end && output_rect.max.y >= row_start {
+                min = min
+                    .map(|min| Some(min.min(output_rect.min.x)))
+                    .unwrap_or(Some(output_rect.min.x));
+                max = max
+                    .map(|max| Some(max.max(output_rect.max.x)))
+                    .unwrap_or(Some(output_rect.max.x));
+            }
+        }
+        if let (Some(min), Some(max)) = (min, max) {
+            Some(min..max + 1)
+        } else {
+            None
+        }
     }
 
     /// Returns the CellValue for a CodeRun (if it exists) at the Pos.
@@ -145,7 +191,7 @@ mod test {
     };
     use bigdecimal::BigDecimal;
     use chrono::Utc;
-    use std::collections::HashSet;
+    use std::{collections::HashSet, vec};
 
     #[test]
     fn test_render_size() {
@@ -305,5 +351,63 @@ mod test {
         assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
         let code = sheet.edit_code_value(Pos { x: 0, y: 0 }).unwrap();
         assert_eq!(code.spill_error, Some(vec![Pos { x: 1, y: 0 }]));
+    }
+
+    #[test]
+    fn code_columns_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![
+                vec!["1"],
+                vec!["2"],
+                vec!["3"],
+            ]))),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        sheet.set_code_run(Pos { x: 1, y: 1 }, Some(code_run.clone()));
+        sheet.set_code_run(Pos { x: 2, y: 3 }, Some(code_run.clone()));
+
+        assert_eq!(sheet.code_columns_bounds(0, 0), Some(0..3));
+        assert_eq!(sheet.code_columns_bounds(1, 1), Some(1..4));
+        assert_eq!(sheet.code_columns_bounds(1, 2), Some(1..6));
+        assert_eq!(sheet.code_columns_bounds(0, 2), Some(0..6));
+        assert_eq!(sheet.code_columns_bounds(-10, 0), Some(0..3));
+        assert_eq!(sheet.code_columns_bounds(2, 5), Some(3..6));
+        assert_eq!(sheet.code_columns_bounds(10, 10), None);
+    }
+
+    #[test]
+    fn code_row_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3'"]]))),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
+        sheet.set_code_run(Pos { x: 1, y: 1 }, Some(code_run.clone()));
+        sheet.set_code_run(Pos { x: 3, y: 2 }, Some(code_run.clone()));
+
+        assert_eq!(sheet.code_rows_bounds(0, 0), Some(0..3));
+        assert_eq!(sheet.code_rows_bounds(1, 1), Some(1..4));
+        assert_eq!(sheet.code_rows_bounds(1, 2), Some(1..6));
+        assert_eq!(sheet.code_rows_bounds(0, 2), Some(0..6));
+        assert_eq!(sheet.code_rows_bounds(-10, 0), Some(0..3));
+        assert_eq!(sheet.code_rows_bounds(2, 5), Some(3..6));
+        assert_eq!(sheet.code_rows_bounds(10, 10), None);
     }
 }
