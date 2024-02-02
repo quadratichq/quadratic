@@ -22,7 +22,10 @@ export function parsePython(modelContent: string) {
     const matchLength = match.length;
 
     parsedEditorContent.cell_refs.push({
-      cell_ref: { type: 'Cell', pos : { x: {type: 'Relative', coord:  parseInt(x) }, y: { type: 'Relative', coord: parseInt(y) } } },
+      cell_ref: {
+        type: 'Cell',
+        pos: { x: { type: 'Relative', coord: parseInt(x) }, y: { type: 'Relative', coord: parseInt(y) } },
+      },
       span: { start: startIndex, end: startIndex + matchLength },
     });
   }
@@ -39,8 +42,8 @@ export function parsePython(modelContent: string) {
     parsedEditorContent.cell_refs.push({
       cell_ref: {
         type: 'CellRange',
-        start: { x: { type: 'Relative', coord:  parseInt(startX) }, y: { type: 'Relative', coord:  parseInt(startY) } },
-        end: { x: { type: 'Relative', coord:  parseInt(endX) }, y: { type: 'Relative', coord:  parseInt(endY) } },
+        start: { x: { type: 'Relative', coord: parseInt(startX) }, y: { type: 'Relative', coord: parseInt(startY) } },
+        end: { x: { type: 'Relative', coord: parseInt(endX) }, y: { type: 'Relative', coord: parseInt(endY) } },
       },
       span: { start: startIndex, end: startIndex + matchLength },
     });

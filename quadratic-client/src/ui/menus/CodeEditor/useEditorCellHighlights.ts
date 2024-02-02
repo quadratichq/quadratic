@@ -68,7 +68,7 @@ export const useEditorCellHighlights = (
     // if (language !== 'Formula') return;
     const editor = editorRef.current;
     const monacoInst = monacoRef.current;
-    if (!isValidRef || !editor || !monacoInst) return;   
+    if (!isValidRef || !editor || !monacoInst) return;
 
     const model = editor.getModel();
 
@@ -81,7 +81,7 @@ export const useEditorCellHighlights = (
       const cellsMatches: CellMatch = new Map();
 
       const modelValue = editor.getValue();
-      let parsed
+      let parsed;
 
       if (language === 'Python') {
         parsed = parsePython(modelValue) as ParseFormulaReturnType;
@@ -91,7 +91,7 @@ export const useEditorCellHighlights = (
         parsed = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
       }
 
-      if(parsed) {
+      if (parsed) {
         pixiApp.highlightedCells.fromFormula(
           parsed,
           editorInteractionState.selectedCell,

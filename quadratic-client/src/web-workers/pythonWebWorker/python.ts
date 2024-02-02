@@ -48,7 +48,7 @@ class PythonWebWorker {
 
         const transactionId = this.executionStack[0].transactionId;
         const pythonResult = event.results;
-        
+
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
         if (pythonResult.array_output) {
@@ -74,7 +74,7 @@ class PythonWebWorker {
         if (!pythonResult.success) {
           pythonResult.error_msg = pythonResult.input_python_stack_trace;
         }
-        
+
         const result = new JsCodeResult(
           transactionId,
           pythonResult.success,
