@@ -1,0 +1,60 @@
+html,
+* {
+  box-sizing: border-box;
+}
+
+/* input[type="text"] {
+  font-size: 24px;
+  letter-spacing: 1rem;
+  font-weight: 500;
+} */
+
+@font-face {
+  font-family: 'OpenSans';
+  src: url('/fonts/opensans/OpenSans.ttf');
+}
+
+@font-face {
+  font-family: 'OpenSans-Bold';
+  src: url('/fonts/opensans/OpenSans-Bold.ttf');
+}
+
+@font-face {
+  font-family: 'OpenSans-Italic';
+  src: url('/fonts/opensans/OpenSans-Italic.ttf');
+}
+
+@font-face {
+  font-family: 'OpenSans-BoldItalic';
+  src: url('/fonts/opensans/OpenSans-BoldItalic.ttf');
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: ui-monospace, source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+a {
+  color: inherit;
+}
+
+/* Override third-party default to inherit from document defaults */
+.szh-menu {
+  color: inherit !important;
+  padding: 0.25rem 0 !important;
+}
+
+.szh-menu__divider {
+  margin: 0.25rem 0 !important;
+}
+.szh-menu__submenu > .szh-menu__item::after {
+  content: '›' !important;
+  font-size: 1.125rem !important;
+}

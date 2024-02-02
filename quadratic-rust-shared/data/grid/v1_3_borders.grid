@@ -1,0 +1,256 @@
+{
+  "borders": [
+    {
+      "x": 0,
+      "y": 0,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "vertical": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      },
+      "horizontal": {
+        "type": "dashed",
+        "color": "rgb(231, 76, 60)"
+      }
+    }
+  ],
+  "cells": [
+    {
+      "type": "TEXT",
+      "value": "",
+      "x": 0,
+      "y": 1,
+      "last_modified": "2023-10-30T16:29:29.137Z"
+    },
+    {
+      "type": "TEXT",
+      "value": "",
+      "x": 0,
+      "y": 2,
+      "last_modified": "2023-10-30T16:29:29.138Z"
+    },
+    {
+      "value": "",
+      "type": "TEXT",
+      "x": 1,
+      "y": 0,
+      "last_modified": "2023-10-30T16:29:29.139Z"
+    },
+    {
+      "value": "",
+      "type": "TEXT",
+      "x": 2,
+      "y": 0,
+      "last_modified": "2023-10-30T16:29:29.139Z"
+    },
+    {
+      "type": "TEXT",
+      "value": "",
+      "x": 1,
+      "y": 1,
+      "last_modified": "2023-10-30T16:29:29.139Z"
+    },
+    {
+      "type": "TEXT",
+      "value": "",
+      "x": 2,
+      "y": 1,
+      "last_modified": "2023-10-30T16:29:29.139Z"
+    },
+    {
+      "type": "TEXT",
+      "value": "",
+      "x": 1,
+      "y": 2,
+      "last_modified": "2023-10-30T16:29:29.139Z"
+    },
+    {
+      "type": "TEXT",
+      "value": "",
+      "x": 2,
+      "y": 2,
+      "last_modified": "2023-10-30T16:29:29.139Z"
+    }
+  ],
+  "cell_dependency": "[]",
+  "columns": [],
+  "formats": [
+    {
+      "x": 0,
+      "y": 1
+    },
+    {
+      "x": 0,
+      "y": 2
+    },
+    {
+      "x": 1,
+      "y": 0
+    },
+    {
+      "x": 2,
+      "y": 0
+    },
+    {
+      "x": 1,
+      "y": 1
+    },
+    {
+      "x": 2,
+      "y": 1
+    },
+    {
+      "x": 1,
+      "y": 2
+    },
+    {
+      "x": 2,
+      "y": 2
+    }
+  ],
+  "rows": [],
+  "version": "1.3"
+}

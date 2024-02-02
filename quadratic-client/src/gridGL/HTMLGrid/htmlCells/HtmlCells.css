@@ -1,0 +1,48 @@
+.html-cells {
+  position: relative;
+  left: 0;
+  pointer-events: none;
+}
+
+.html-cell {
+  background: white;
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.html-cell-iframe {
+  margin: 0;
+}
+
+.html-resize-control-right,
+.html-resize-control-bottom {
+  z-index: 200;
+  transition: 0.2s ease background-color 0ms;
+  background-color: transparent;
+  pointer-events: none;
+}
+
+.html-resize-control-right {
+  position: absolute;
+  width: 5px;
+  height: calc(100% + 2px);
+  top: -1px;
+  right: -6px;
+}
+
+.html-resize-control-right-corner {
+  height: calc(100% + 7px);
+}
+
+.html-resize-control-bottom-corner {
+  width: calc(100% + 7px);
+}
+
+.html-resize-control-bottom {
+  position: absolute;
+  height: 5px;
+  width: calc(100% + 2px);
+  bottom: -6px;
+  left: -1px;
+}

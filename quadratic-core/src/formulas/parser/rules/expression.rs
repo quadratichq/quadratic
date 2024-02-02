@@ -96,7 +96,7 @@ impl SyntaxRule for Expression {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         ExpressionWithPrecedence::default().prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.parse(ExpressionWithPrecedence::default())
     }
 }
@@ -117,9 +117,10 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 Token::LBracket => false,
                 Token::LBrace => true,
 
-                Token::RParen | Token::RBracket | Token::RBrace => false,
-
-                Token::ArgSep | Token::RowSep => false,
+                //  These match because an expression in a list or array or
+                //  functional call is allowed to be empty.
+                Token::RParen | Token::RBracket | Token::RBrace => true,
+                Token::ArgSep | Token::RowSep => true,
 
                 Token::Eql | Token::Neq | Token::Lt | Token::Gt | Token::Lte | Token::Gte => false,
 
@@ -132,11 +133,15 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 | Token::RangeOp
                 | Token::Percent
                 | Token::CellRangeOp
+                | Token::SheetRefOp
                 | Token::Ellipsis => false,
+
+                Token::False | Token::True => true,
 
                 Token::Comment | Token::UnterminatedBlockComment => false,
 
                 Token::FunctionCall
+                | Token::UnquotedSheetReference
                 | Token::StringLiteral
                 | Token::UnterminatedStringLiteral
                 | Token::NumericLiteral
@@ -149,7 +154,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
             false
         }
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         // Consume an expression at the given precedence level, which may
         // consist of expressions with higher precedence.
         match self.0 {
@@ -157,12 +162,13 @@ impl SyntaxRule for ExpressionWithPrecedence {
                 p,
                 [
                     FunctionCall.map(Some),
-                    StringLiteral.map(Some),
+                    CellReferenceExpression.map(Some),
+                    StringLiteralExpression.map(Some),
                     NumericLiteral.map(Some),
                     ArrayLiteral.map(Some),
-                    CellReference.map(Some),
+                    BoolExpression.map(Some),
                     ParenExpression.map(Some),
-                    Epsilon.map(|_| None),
+                    EmptyExpression.map(Some),
                 ],
             )
             .transpose()
@@ -178,10 +184,7 @@ impl SyntaxRule for ExpressionWithPrecedence {
 
 /// Parses an expression with any number of binary operators at a specific
 /// precedence level.
-fn parse_binary_ops_expr(
-    p: &mut Parser<'_>,
-    precedence: OpPrecedence,
-) -> FormulaResult<ast::AstNode> {
+fn parse_binary_ops_expr(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
     let recursive_expression = ExpressionWithPrecedence(precedence.next());
 
     let allowed_ops = precedence.binary_ops();
@@ -241,7 +244,7 @@ fn parse_binary_ops_expr(
 }
 
 /// Parses an expression with any number of prefix operators.
-fn parse_prefix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> FormulaResult<ast::AstNode> {
+fn parse_prefix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
     let allowed_ops = precedence.prefix_ops();
 
     // Build a list of operators in the order that they appear in the source
@@ -274,7 +277,7 @@ fn parse_prefix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> FormulaResu
 }
 
 /// Parses an expression with any number of suffix operators.
-fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> FormulaResult<ast::AstNode> {
+fn parse_suffix_ops(p: &mut Parser<'_>, precedence: OpPrecedence) -> CodeResult<ast::AstNode> {
     let allowed_ops = precedence.suffix_ops();
 
     // Parse the initial expression.
@@ -312,7 +315,7 @@ impl SyntaxRule for FunctionCall {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next() == Some(Token::FunctionCall)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.parse(Token::FunctionCall)?;
         let Some(func_str) = p.token_str().strip_suffix('(') else {
             internal_error!("function call missing left paren");
@@ -329,6 +332,7 @@ impl SyntaxRule for FunctionCall {
             start: Token::FunctionCall,
             end: Token::RParen,
             sep_name: "comma",
+            allow_trailing_sep: false,
         })?;
         let args = spanned_args.inner;
 
@@ -336,6 +340,21 @@ impl SyntaxRule for FunctionCall {
             span: Span::merge(func.span, spanned_args.span),
             inner: ast::AstNodeContents::FunctionCall { func, args },
         })
+    }
+}
+
+/// Matches a single cell reference.
+#[derive(Debug, Copy, Clone)]
+pub struct CellReferenceExpression;
+impl_display!(for CellReferenceExpression, "cell reference, such as 'A6' or '$ZB$3'");
+impl SyntaxRule for CellReferenceExpression {
+    type Output = AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        CellReference.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        Ok(p.parse(CellReference)?.map(ast::AstNodeContents::CellRef))
     }
 }
 
@@ -349,7 +368,7 @@ impl SyntaxRule for ParenExpression {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         Surround::paren(Expression).prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         p.parse(Surround::paren(
             Expression.map(|expr| ast::AstNodeContents::Paren(Box::new(expr))),
         ))
@@ -367,7 +386,7 @@ impl SyntaxRule for ArrayLiteral {
         p.next() == Some(Token::LBrace)
     }
 
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let start_span = p.peek_next_span();
 
         let mut rows = vec![vec![]];
@@ -397,12 +416,54 @@ impl SyntaxRule for ArrayLiteral {
         let end_span = p.span();
 
         if !rows.iter().map(|row| row.len()).all_equal() {
-            return Err(FormulaErrorMsg::NonRectangularArray.with_span(end_span));
+            return Err(RunErrorMsg::NonRectangularArray.with_span(end_span));
         }
 
         Ok(Spanned {
             span: Span::merge(start_span, end_span),
             inner: ast::AstNodeContents::Array(rows),
+        })
+    }
+}
+
+/// Matches a string literal and wraps it in an expression.
+#[derive(Debug, Copy, Clone)]
+pub struct StringLiteralExpression;
+impl_display!(for StringLiteralExpression, "string literal");
+impl SyntaxRule for StringLiteralExpression {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, p: Parser<'_>) -> bool {
+        StringLiteral.prefix_matches(p)
+    }
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        let inner = ast::AstNodeContents::String(p.parse(StringLiteral)?);
+        let span = p.span();
+        Ok(Spanned { span, inner })
+    }
+}
+
+/// Matches an empty expression that is followed by something that should
+/// normally follow an expression (such as a comma or semicolon or right paren).
+#[derive(Debug, Copy, Clone)]
+pub struct EmptyExpression;
+impl_display!(for EmptyExpression, "empty expression");
+impl SyntaxRule for EmptyExpression {
+    type Output = ast::AstNode;
+
+    fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
+        match p.next() {
+            None => true,
+            Some(Token::ArgSep | Token::RowSep) => true,
+            Some(Token::RBrace | Token::RBracket | Token::RParen) => true,
+            _ => false,
+        }
+    }
+
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
+        Ok(Spanned {
+            span: Span::empty(p.cursor.unwrap_or(0) as u32),
+            inner: ast::AstNodeContents::Empty,
         })
     }
 }

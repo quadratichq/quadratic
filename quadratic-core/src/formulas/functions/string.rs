@@ -9,16 +9,14 @@ pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
 };
 
 fn get_functions() -> Vec<FormulaFunction> {
-    vec![FormulaFunction {
-        name: "CONCAT",
-        arg_completion: "${1:a, b, ...}",
-        usages: &["a, b, ..."],
-        examples: &["CONCAT(\"Hello, \", C0, \"!\")"],
-        doc: "[Concatenates](https://en.wikipedia.org/wiki/Concatenation) all values as strings.",
-        eval: util::pure_fn(|args| {
-            Ok(Value::String(util::flat_iter_strings(&args.inner).join("")))
-        }),
-    }]
+    vec![formula_fn!(
+        /// [Concatenates](https://en.wikipedia.org/wiki/Concatenation) all
+        /// values as strings.
+        #[examples("CONCAT(\"Hello, \", C0, \"!\")")]
+        fn CONCAT(strings: (Iter<String>)) {
+            strings.try_fold(String::new(), |a, b| Ok(a + &b?))
+        }
+    )]
 }
 
 #[cfg(test)]
@@ -27,9 +25,10 @@ mod tests {
 
     #[test]
     fn test_formula_concat() {
+        let g = Grid::new();
         assert_eq!(
             "Hello, 14000605 worlds!".to_string(),
-            eval_to_string(&mut NoGrid, "'Hello, ' & 14000605 & ' worlds!'"),
+            eval_to_string(&g, "'Hello, ' & 14000605 & ' worlds!'"),
         );
     }
 }

@@ -11,6 +11,7 @@
 //!
 //! In particular, use `Serialize_repr` and `Deserialize_repr` for enums that
 //! should be serialized as integers.
+#![allow(non_camel_case_types)] // at time of writing, this is needed by `serde_repr`
 
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};

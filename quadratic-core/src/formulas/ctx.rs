@@ -1,149 +1,101 @@
-use futures::{future::LocalBoxFuture, FutureExt};
+use std::collections::HashSet;
+
 use smallvec::SmallVec;
 
 use super::*;
+use crate::{
+    grid::Grid, Array, CellValue, CodeResult, RunErrorMsg, SheetPos, SheetRect, Span, Spanned,
+    Value,
+};
 
 /// Formula execution context.
 pub struct Ctx<'ctx> {
-    pub grid: &'ctx mut dyn GridProxy,
-    pub pos: Pos,
+    /// Grid file to access cells from.
+    pub grid: &'ctx Grid,
+    /// Position in the grid from which the formula is being evaluated.
+    pub sheet_pos: SheetPos,
+    /// Cells that have been accessed in evaluating the formula.
+    pub cells_accessed: HashSet<SheetRect>,
 }
-impl Ctx<'_> {
+impl<'ctx> Ctx<'ctx> {
+    /// Constructs a context for evaluating a formula at `pos` in `grid`.
+    pub fn new(grid: &'ctx Grid, sheet_pos: SheetPos) -> Self {
+        Ctx {
+            grid,
+            sheet_pos,
+            cells_accessed: HashSet::new(),
+        }
+    }
+
     /// Fetches the contents of the cell at `ref_pos` evaluated at `base_pos`,
     /// or returns an error in the case of a circular reference.
-    pub async fn get_cell(&mut self, ref_pos: CellRef, span: Span) -> FormulaResult {
-        let ref_pos = ref_pos.resolve_from(self.pos);
-        if ref_pos == self.pos {
-            return Err(FormulaErrorMsg::CircularReference.with_span(span));
-        }
-        Ok(Value::String(
-            self.grid.get(ref_pos).await.unwrap_or_default(),
-        ))
-    }
-
-    /// Fetches the contents of the cell at `(x, y)`, but fetches an array of cells
-    /// if either `x` or `y` is an array.
-    pub async fn array_mapped_indirect(
-        &mut self,
-        args: Spanned<Vec<Spanned<Value>>>,
-    ) -> FormulaResult {
-        let base_pos = self.pos;
-
-        self.array_map_async(args, |ctx, [cellref_string]| {
-            async move {
-                let pos = CellRef::parse_a1(&cellref_string.to_string(), base_pos)
-                    .ok_or(FormulaErrorMsg::BadCellReference.with_span(cellref_string.span))?;
-                ctx.get_cell(pos, cellref_string.span).await
-            }
-            .boxed_local()
-        })
-        .await
-    }
-
-    /// Fetches the contents of the cell at `(x, y)`, but fetches an array of cells
-    /// if either `x` or `y` is an array.
-    pub async fn array_mapped_get_cell(
-        &mut self,
-        args: Spanned<Vec<Spanned<Value>>>,
-    ) -> FormulaResult {
-        self.array_map_async(args, |ctx, [x, y]| {
-            async {
-                let pos = Pos {
-                    x: x.to_integer()?,
-                    y: y.to_integer()?,
-                };
-                ctx.get_cell(CellRef::absolute(pos), Span::merge(x, y))
-                    .await
-            }
-            .boxed_local()
-        })
-        .await
-    }
-
-    /// Maps a fixed-argument-count function over arguments that may be arrays.
-    pub async fn array_map<const N: usize>(
-        &mut self,
-        args: Spanned<Vec<Spanned<Value>>>,
-        op: impl 'static + Copy + Fn(&mut Ctx<'_>, [Spanned<Value>; N]) -> FormulaResult,
-    ) -> FormulaResult {
-        self.array_map_async(args, move |ctx, args| {
-            async move { op(ctx, args) }.boxed_local()
-        })
-        .await
-    }
-
-    /// Maps a fixed-argument-count function over arguments that may be arrays.
-    pub async fn array_map_async<const N: usize>(
-        &mut self,
-        args: Spanned<Vec<Spanned<Value>>>,
-        op: impl for<'a> Fn(&'a mut Ctx<'_>, [Spanned<Value>; N]) -> LocalBoxFuture<'a, FormulaResult>,
-    ) -> FormulaResult {
-        let ArrayArgs { args, common_size } = args_with_common_array_size(args)?;
-        match common_size {
-            // Compute the results. If any argument is not an array, pretend it's an
-            // array of one element repeated with the right size.
-            Some((rows, cols)) => {
-                let mut output_array = Vec::with_capacity(rows);
-                for row in 0..rows {
-                    let mut output_row = SmallVec::with_capacity(cols);
-                    for col in 0..cols {
-                        let arg_values = args
-                            .iter()
-                            .map(|arg| arg.get_array_value(row, col))
-                            .collect::<FormulaResult<Vec<_>>>()?
-                            .try_into()
-                            .unwrap();
-                        let output_value = op(self, arg_values).await?;
-                        output_row.push(output_value);
-                    }
-                    output_array.push(output_row);
-                }
-                Ok(Value::Array(output_array))
-            }
-
-            // No operands are arrays, so just do the operation once.
-            None => op(self, args).await,
-        }
-    }
-}
-
-struct ArrayArgs<const N: usize> {
-    args: [Spanned<Value>; N],
-    common_size: Option<(usize, usize)>,
-}
-
-/// Checkes the number of arguments and returns the common `(rows, cols)` of
-/// several, or `None` if no arguments are arrays.
-fn args_with_common_array_size<const N: usize>(
-    args: Spanned<Vec<Spanned<Value>>>,
-) -> FormulaResult<ArrayArgs<N>> {
-    // Check argument count.
-    let args: [Spanned<Value>; N] = args
-        .inner
-        .try_into()
-        .map_err(|_| FormulaErrorMsg::BadArgumentCount.with_span(args.span))?;
-
-    let mut array_sizes_iter = args
-        .iter()
-        .filter_map(|arg| Some((arg.span, arg.inner.array_size()?)));
-
-    let common_size: Option<(usize, usize)>;
-    if let Some((_span, array_size)) = array_sizes_iter.next() {
-        // Check that all the arrays are the same size.
-        for (error_span, other_array_size) in array_sizes_iter {
-            if array_size != other_array_size {
-                return Err(FormulaErrorMsg::ArraySizeMismatch {
-                    expected: array_size,
-                    got: other_array_size,
-                }
-                .with_span(error_span));
-            }
+    pub fn get_cell(&mut self, ref_pos: &CellRef, span: Span) -> CodeResult<Spanned<CellValue>> {
+        let sheet = match &ref_pos.sheet {
+            Some(sheet_name) => self
+                .grid
+                .try_sheet_from_name(sheet_name.clone())
+                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
+            None => self
+                .grid
+                .try_sheet(self.sheet_pos.sheet_id)
+                .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
+        };
+        let ref_pos = ref_pos.resolve_from(self.sheet_pos.into());
+        let ref_pos_with_sheet = ref_pos.to_sheet_pos(sheet.id);
+        if ref_pos_with_sheet == self.sheet_pos {
+            return Err(RunErrorMsg::CircularReference.with_span(span));
         }
 
-        common_size = Some(array_size);
-    } else {
-        common_size = None;
+        self.cells_accessed.insert(ref_pos_with_sheet.into());
+
+        let value = sheet.display_value(ref_pos).unwrap_or(CellValue::Blank);
+        Ok(Spanned { inner: value, span })
     }
 
-    Ok(ArrayArgs { args, common_size })
+    /// Evaluates a function once for each corresponding set of values from
+    /// `arrays`.
+    ///
+    /// Many functions, including basic operators such as `+`, work on arrays by
+    /// zipping the arrays and then mapping the function across corresponding
+    /// sets of inputs. For example `{1,2,3} + {10,20,30}` results in
+    /// `{11,22,33}`. If any argument is not an array, it is expanded into an
+    /// array with the same size as other arguments. This also works
+    /// 2-dimensionally: if one argument is a 1x3 array and the other argument
+    /// is a 3x1 array, then both arguments are first expanded to 3x3 arrays. If
+    /// arrays cannot be expanded like this, then an error is returned.
+    pub fn zip_map<'a, I: Copy + IntoIterator<Item = &'a Spanned<Value>>>(
+        &mut self,
+        arrays: I,
+        f: impl for<'b> Fn(&'b mut Ctx<'_>, &[Spanned<&CellValue>]) -> CodeResult<CellValue>,
+    ) -> CodeResult<Value>
+    where
+        I::IntoIter: ExactSizeIterator,
+    {
+        let size = Value::common_array_size(arrays)?;
+
+        let mut args_buffer = Vec::with_capacity(arrays.into_iter().len());
+
+        // If the result is a single value, return that value instead of a 1x1
+        // array. This isn't just an optimization; it's important for Excel
+        // compatibility.
+        if size.len() == 1 {
+            for array in arrays {
+                args_buffer.push(array.cell_value()?);
+            }
+            return Ok(Value::Single(f(self, &args_buffer)?));
+        }
+
+        let mut values = SmallVec::with_capacity(size.len());
+        for (x, y) in size.iter() {
+            args_buffer.clear();
+            for array in arrays {
+                args_buffer.push(array.get(x, y)?);
+            }
+
+            values.push(f(self, &args_buffer)?);
+        }
+
+        let result = Array::new_row_major(size, values)?;
+        Ok(Value::Array(result))
+    }
 }

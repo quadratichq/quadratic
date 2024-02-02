@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "QFeedback" ADD COLUMN     "userId" INTEGER,
+ALTER COLUMN "qUserId" DROP NOT NULL;
+
+-- AddForeignKey
+ALTER TABLE "QFeedback" ADD CONSTRAINT "QFeedback_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

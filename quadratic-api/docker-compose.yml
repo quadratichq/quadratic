@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15
+    restart: always
+    container_name: postgres_for_api
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: prisma
+      POSTGRES_PASSWORD: prisma
+      POSTGRES_DB: quadratic-api
+    networks:
+      - quadratic
+
+networks:
+  quadratic:

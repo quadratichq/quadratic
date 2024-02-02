@@ -27,7 +27,7 @@ impl<B, R: SyntaxRule, F: Fn(R::Output) -> B> SyntaxRule for TokenMapper<R, F> {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.inner.prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         self.inner.consume_match(p).map(&self.f)
     }
 }
@@ -70,7 +70,7 @@ impl<R: Copy + SyntaxRule> SyntaxRule for Surround<R> {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.start.prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let span1 = p.peek_next_span();
 
         p.parse(self.start)?;
@@ -99,6 +99,8 @@ pub struct List<R> {
 
     /// User-friendly name for separator.
     pub(super) sep_name: &'static str,
+    /// Whether to allow a trailing separator.
+    pub(super) allow_trailing_sep: bool,
 }
 impl<R: fmt::Display> fmt::Display for List<R> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -115,19 +117,25 @@ impl<R: Copy + SyntaxRule> SyntaxRule for List<R> {
     fn prefix_matches(&self, p: Parser<'_>) -> bool {
         self.start.prefix_matches(p)
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         let span1 = p.peek_next_span();
 
         let mut items = vec![];
         p.parse(self.start)?;
         loop {
-            // End the list or consume an item.
-            match parse_one_of!(p, [self.inner.map(Some), self.end.map(|_| None)])? {
+            let result = if self.allow_trailing_sep || items.is_empty() {
+                // End the list or consume an item.
+                parse_one_of!(p, [self.end.map(|_| None), self.inner.map(Some)])?
+            } else {
+                // Consume an item.
+                parse_one_of!(p, [self.inner.map(Some)])?
+            };
+            match result {
                 Some(item) => items.push(item), // There is an item.
                 None => break,                  // End of list; empty list, or trailing separator.
             }
             // End the list or consume a separator.
-            match parse_one_of!(p, [self.sep.map(Some), self.end.map(|_| None)])? {
+            match parse_one_of!(p, [self.end.map(|_| None), self.sep.map(Some)])? {
                 Some(_) => continue, // There is a separator.
                 None => break,       // End of list, no trailing separator.
             }
@@ -150,7 +158,7 @@ impl SyntaxRule for Epsilon {
     fn prefix_matches(&self, _p: Parser<'_>) -> bool {
         true
     }
-    fn consume_match(&self, _p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, _p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         Ok(())
     }
 }
@@ -165,7 +173,7 @@ impl SyntaxRule for EndOfFile {
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         p.next().is_none()
     }
-    fn consume_match(&self, p: &mut Parser<'_>) -> FormulaResult<Self::Output> {
+    fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         match p.next() {
             Some(_) => Ok(()),
             None => p.expected(self),

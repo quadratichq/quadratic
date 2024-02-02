@@ -1,0 +1,135 @@
+version: "3.8"
+
+services:
+  redis:
+    extends:
+      file: docker-compose.base.yml
+      service: redis
+    volumes:
+      - ./docker/redis/data:/data
+
+  postgres:
+    extends:
+      file: docker-compose.base.yml
+      service: postgres
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data
+
+  localstack:
+    extends:
+      file: docker-compose.base.yml
+      service: localstack
+    volumes:
+      - "./docker/localstack/data:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  aws-cli:
+    extends:
+      file: docker-compose.base.yml
+      service: aws-cli
+    volumes:
+      - ./docker/localstack/cli:/aws
+
+  quadratic-client:
+    build:
+      context: .
+      dockerfile: quadratic-client/Dockerfile
+    env_file:
+      - quadratic-client/.env.docker
+    restart: "always"
+    ports:
+      - "3000:3000"
+    command: "npm run start"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - frontend
+      - all
+    networks:
+      - host
+
+  quadratic-api:
+    build:
+      context: .
+      dockerfile: quadratic-api/Dockerfile
+    env_file:
+      - quadratic-api/.env
+      # - quadratic-api/.env.docker
+    restart: "always"
+    ports:
+      - "8000:8000"
+    command: "node dist/server.js"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - backend
+      - all
+    networks:
+      - host
+
+  quadratic-multiplayer:
+    build:
+      context: .
+      dockerfile: quadratic-multiplayer/Dockerfile
+      args:
+        - binary=quadratic-multiplayer
+    env_file:
+      - quadratic-multiplayer/.env.docker
+    # override env vars here
+    environment:
+      QUADRATIC_API_URI: http://host.docker.internal:8000
+      RUST_LOG: info
+    restart: "always"
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      quadratic-api:
+        condition: service_started
+    profiles:
+      - backend
+      - quadratic-files-dev
+      - all
+    networks:
+      - host
+
+  quadratic-files:
+    build:
+      context: .
+      dockerfile: quadratic-files/Dockerfile
+      args:
+        - binary=quadratic-files
+    env_file:
+      - quadratic-files/.env.docker
+    # override env vars here
+    environment:
+      QUADRATIC_API_URI: http://host.docker.internal:8000
+      RUST_LOG: info
+    restart: "always"
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      quadratic-api:
+        condition: service_started
+    profiles:
+      - backend
+      - quadratic-multiplayer-dev
+      - all
+    networks:
+      - host
+
+volumes:
+  docker:
+    name: docker
+
+networks:
+  host:

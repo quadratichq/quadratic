@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta content="True" name="HandheldFriendly" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <link rel="apple-touch-icon" href="/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="/manifest.json" />
+    <title>Quadratic</title>
+    <!-- 
+      Social share meta info
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Quadratic" />
+    <meta property="og:description" content="Modern spreadsheet software." />
+    <meta property="og:url" content="https://app.quadratichq.com" />
+    <meta property="og:image" content="https://app.quadratichq.com/images/social.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@quadratichq" />
+    <meta name="twitter:title" content="Quadratic" />
+    <meta name="twitter:description" content="Modern spreadsheet software." />
+    <meta name="twitter:image" content="https://app.quadratichq.com/images/social.png" />
+
+    <!-- Google Tag Manager -->
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != 'dataLayer' ? '&l=' + l : '';
+        j.async = true;
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, 'script', 'dataLayer', 'GTM-WVC2XPB3');
+    </script>
+    <!-- End Google Tag Manager -->
+  </head>
+  <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WVC2XPB3"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+
+  <!--
+    The combination of these two things (<script> & <style>) appear to be
+    what makes possible the expected effect of panning and zooming (especially
+    with pinch to zoom on a trackpad) on the grid without experiencing weird
+    zoom or intertial panning effects.
+
+    Prevent window zooming on Chrome
+    https://stackoverflow.com/questions/61114830/how-to-prevent-native-browser-default-pinch-to-zoom-behavior
+
+    Disable inertial scroll
+    https://stackoverflow.com/questions/28103125/disable-inertia-scroll-for-single-page-webapp
+
+    Disable two finger scroll to go back (overscroll-behavior-x: contain;)
+    https://stackoverflow.com/questions/15829172/stop-chrome-back-forward-two-finger-swipe
+  -->
+  <script>
+    window.addEventListener(
+      'wheel',
+      (e) => {
+        if (e.ctrlKey) {
+          e.preventDefault();
+          return;
+        }
+      },
+      { passive: false }
+    );
+  </script>
+  <style>
+    html,
+    body,
+    #root,
+    .App {
+      height: 100%;
+      overscroll-behavior-x: contain;
+    }
+    body {
+      overflow: hidden;
+    }
+    /* Disable two finger swipe back
+       https://stackoverflow.com/questions/15829172/stop-chrome-back-forward-two-finger-swipe */
+    html {
+      overscroll-behavior-x: none;
+    }
+    body {
+      overscroll-behavior-x: none;
+    }
+  </style>
+</html>

@@ -1,18 +1,18 @@
 //! Functions for lossless tokenization.
 
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use strum_macros::Display;
 
-use super::{Span, Spanned};
+use crate::{Span, Spanned};
 
 pub fn tokenize(input_str: &str) -> impl '_ + Iterator<Item = Spanned<Token>> {
     let mut token_start = 0;
     std::iter::from_fn(move || {
         Token::consume_from_input(input_str, token_start).map(|(token, token_end)| {
             let span = Span {
-                start: token_start,
-                end: token_end,
+                start: token_start as u32,
+                end: token_end as u32,
             };
             token_start = token_end;
             Spanned { span, inner: token }
@@ -26,7 +26,7 @@ fn new_fullmatch_regex(s: &str) -> Regex {
 
 /// Function call consisting of a letter or underscore followed by any letters,
 /// digits, and/or underscores terminated with a `(`.
-const FUNCTION_CALL_PATTERN: &str = r#"[A-Za-z_][A-Za-z_\d]*\("#;
+const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_][A-Za-z_\d]*\(";
 
 /// A1-style cell reference.
 ///
@@ -35,7 +35,7 @@ const FUNCTION_CALL_PATTERN: &str = r#"[A-Za-z_][A-Za-z_\d]*\("#;
 ///    n?         n?          optional `n`s
 ///      [A-Z]+               letters
 ///                 \d+       digits
-const A1_CELL_REFERENCE_PATTERN: &str = r#"\$?n?[A-Z]+\$?n?\d+"#;
+const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
 
 /// Floating-point or integer number, without leading sign.
 ///
@@ -48,14 +48,18 @@ const A1_CELL_REFERENCE_PATTERN: &str = r#"\$?n?[A-Z]+\$?n?\d+"#;
 ///                    ([eE]        )?    optional exponent
 ///                         [+-]?           with an optional sign
 ///                              \d+        followed by some digits
-const NUMERIC_LITERAL_PATTERN: &str = r#"(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?"#;
+const NUMERIC_LITERAL_PATTERN: &str = r"(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?";
 
 /// Single-quoted string. Note that like Rust strings, this can span multiple
 /// lines.
-const SINGLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#"'([^'\\]|\\[\s\S])*'"#;
+const SINGLE_QUOTE_STRING_LITERAL_PATTERN: &str = r"'([^'\\]|\\[\s\S])*'";
 /// Double-quoted string. Note that like Rust strings, this can span multiple
 /// lines.
 const DOUBLE_QUOTE_STRING_LITERAL_PATTERN: &str = r#""([^"\\]|\\[\s\S])*""#;
+/// Unquoted sheet reference, such as `Sheet1!`. A quoted sheet reference such
+/// as `'Sheet1'!` is parsed as a string followed by a sheet reference operator
+/// `!`.
+const UNQUOTED_SHEET_REFERENCE_PATTERN: &str = r"[A-Za-z_][A-Za-z0-9_\.]*\s*!";
 /// Unterminated string literal.
 const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 
@@ -64,11 +68,13 @@ const TOKEN_PATTERNS: &[&str] = &[
     // Comparison operators `==`, `!=`, `<=`, and `>=`.
     r#"[=!<>]="#,
     // Double and triple dot.
-    r#"\.\.\.?"#,
+    r"\.\.\.?",
     // Line comment.
-    r#"//[^\n]*"#,
+    r"//[^\n]*",
     // Start of a block comment (block comment has special handling).
-    r#"/\*"#,
+    r"/\*",
+    // Sheet reference.
+    UNQUOTED_SHEET_REFERENCE_PATTERN,
     // String literal.
     SINGLE_QUOTE_STRING_LITERAL_PATTERN,
     DOUBLE_QUOTE_STRING_LITERAL_PATTERN,
@@ -77,23 +83,29 @@ const TOKEN_PATTERNS: &[&str] = &[
     NUMERIC_LITERAL_PATTERN,
     // Function call.
     FUNCTION_CALL_PATTERN,
+    // Boolean literal (case-insensitive).
+    r#"false|true"#,
     // Reference to a cell.
     A1_CELL_REFERENCE_PATTERN,
     // Whitespace.
-    r#"\s+"#,
+    r"\s+",
     // Any other single Unicode character.
-    r#"[\s\S]"#,
+    r"[\s\S]",
 ];
 
 lazy_static! {
     /// Single regex that matches any token, including comments and strings,
     /// by joining each member of `TOKEN_PATTERNS` with "|".
     pub static ref TOKEN_REGEX: Regex =
-        Regex::new(&TOKEN_PATTERNS.join("|")).unwrap();
+        RegexBuilder::new(&TOKEN_PATTERNS.join("|")).case_insensitive(true).build().unwrap();
 
     /// Regex that matches a valid function call.
     pub static ref FUNCTION_CALL_REGEX: Regex =
         new_fullmatch_regex(FUNCTION_CALL_PATTERN);
+
+    /// Regex that matches an unquoted sheet reference, such as `Sheet1!`.
+    pub static ref UNQUOTED_SHEET_REFERENCE: Regex =
+        new_fullmatch_regex(UNQUOTED_SHEET_REFERENCE_PATTERN);
 
     /// Regex that matches a valid A1-style cell reference.
     pub static ref A1_CELL_REFERENCE_REGEX: Regex =
@@ -172,8 +184,16 @@ pub enum Token {
     Percent, // %
     #[strum(to_string = "cell range operator")]
     CellRangeOp, // :
+    #[strum(to_string = "sheet reference operator")]
+    SheetRefOp, // !
     #[strum(to_string = "ellipsis")]
     Ellipsis, // ...
+
+    // Booleans
+    #[strum(to_string = "FALSE")]
+    False,
+    #[strum(to_string = "TRUE")]
+    True,
 
     // Comments
     #[strum(to_string = "comment")]
@@ -184,6 +204,8 @@ pub enum Token {
     // Other special tokens
     #[strum(to_string = "function call")]
     FunctionCall,
+    #[strum(to_string = "unquoted sheet reference")]
+    UnquotedSheetReference,
     #[strum(to_string = "string literal")]
     StringLiteral,
     #[strum(to_string = "unterminated string literal")]
@@ -230,7 +252,10 @@ impl Token {
             ".." => Self::RangeOp,
             "%" => Self::Percent,
             ":" => Self::CellRangeOp,
+            "!" => Self::SheetRefOp,
             "..." => Self::Ellipsis,
+            s if s.eq_ignore_ascii_case("false") => Self::False,
+            s if s.eq_ignore_ascii_case("true") => Self::True,
 
             // Match a line comment.
             s if s.starts_with("//") => Self::Comment,
@@ -263,8 +288,11 @@ impl Token {
 
             // Match anything else.
             s if FUNCTION_CALL_REGEX.is_match(s) => Self::FunctionCall,
+            s if UNQUOTED_SHEET_REFERENCE.is_match(s) => Self::UnquotedSheetReference,
             s if STRING_LITERAL_REGEX.is_match(s) => Self::StringLiteral,
             s if UNTERMINATED_STRING_LITERAL_REGEX.is_match(s) => Self::UnterminatedStringLiteral,
+            s if s.eq_ignore_ascii_case("false") => Self::False,
+            s if s.eq_ignore_ascii_case("true") => Self::True,
             s if NUMERIC_LITERAL_REGEX.is_match(s) => Self::NumericLiteral,
             s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
             s if s.trim().is_empty() => Self::Whitespace,
