@@ -183,7 +183,9 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                         CellValue::Error(Box::new((*error).clone().into()))
                     }
                 };
-                col.values.insert(y.parse::<i64>().unwrap(), cell_value);
+                if let Ok(y) = y.parse::<i64>() {
+                    col.values.insert(y, cell_value);
+                }
             }
 
             Ok((*x, col))

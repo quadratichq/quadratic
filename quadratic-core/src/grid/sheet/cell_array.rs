@@ -256,7 +256,7 @@ mod tests {
                         .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
                         .unwrap(),
                     CellValue::Blank
-                )
+                );
             }
         }
 
@@ -278,7 +278,7 @@ mod tests {
                     *values
                         .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
                         .unwrap()
-                )
+                );
             }
         }
     }
