@@ -26,3 +26,9 @@ To run tests:
 ```shell
 npm run test
 ```
+
+To run tests with a watcher:
+
+```shell
+npm run test:watch
+```

@@ -168,7 +168,6 @@ def error_result(
 
 
 async def run_python(code):
-
     cells_accessed = []
 
     async def getCells(p0, p1, sheet=None, first_row_header=False):

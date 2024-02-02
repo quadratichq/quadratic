@@ -231,7 +231,25 @@ files = [
     {file = "tzdata-2023.4.tar.gz", hash = "sha256:dd54c94f294765522c77399649b4fefd95522479a664a0cec87f41bebc6148c9"},
 ]
 
+[[package]]
+name = "wasmtime"
+version = "17.0.0"
+description = "A WebAssembly runtime powered by Wasmtime"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "wasmtime-17.0.0-py3-none-any.whl", hash = "sha256:82629cc9e2712cf5a8f8792a42c244301c8d309639ff83042a98e0b14aaaa91f"},
+    {file = "wasmtime-17.0.0-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:f5e86e4e2a943c86ecefc4869d2a2181cf1be31e32e43a70a7462cd12299340d"},
+    {file = "wasmtime-17.0.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:c4e705003457d9fe192d54ae5403cbd0b636799580f3bcbab81d9c12a943c999"},
+    {file = "wasmtime-17.0.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:7607e38be496311369dbe0896f6ab424acfe3e7bf7a3b5122bf2e04a93ad78c5"},
+    {file = "wasmtime-17.0.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:c74cdc1ecae7f2792348f941f4cf79ca501c619426119f5a3481c68de7be60b1"},
+    {file = "wasmtime-17.0.0-py3-none-win_amd64.whl", hash = "sha256:681f5e3238c8aec404e2994f1065f5c0c1800776ed686c2cb61dae4fb36810c4"},
+]
+
+[package.extras]
+testing = ["coverage", "pycparser", "pytest", "pytest-mypy"]
+
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "4c60bc720a0a5089c60f0ba2e93805574423e45d12f88a4871a6a4799e4cdc75"
+content-hash = "d9ed80ea1692a612ef65fbdb48b0b147028d6ac9d31990907417d9790cdbb368"

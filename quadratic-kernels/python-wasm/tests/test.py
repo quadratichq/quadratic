@@ -2,30 +2,30 @@ import inspect
 import sys
 import unittest
 from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 
 #  Mock definitions
-
 def mock_GetCellsDB():
     return []
 
-class mock_pyodide:
-    async def eval_code_async(code, globals):
-        return exec(code, globals=globals)
-
 class mock_micropip:
-    def install(name):
-        return None
+    async def install(name):
+        return __import__(name)
 
 async def mock_fetch_module(source: str):
     return __import__(source)
 
-
+    
 # mock modules needed to import run_python
+sys.modules["pyodide"] = MagicMock()
+sys.modules["pyodide.code"] = MagicMock()
 sys.modules["getCellsDB"] = mock_GetCellsDB
-sys.modules["pyodide"] = mock_pyodide
-sys.modules["micropip"] = mock_micropip
+sys.modules["micropip"] = AsyncMock()
+sys.modules["plotly"] = MagicMock()
+sys.modules["plotly.io"] = MagicMock()
+sys.modules["autopep8"] = MagicMock()
+sys.modules["autopep8.fix_code"] = MagicMock()
 
 from quadratic_py import run_python, code_trace
 

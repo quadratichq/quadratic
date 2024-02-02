@@ -6,9 +6,14 @@ import traceback
 
 
 def line_number_from_traceback() -> int:
-    cl, exc, tb = sys.exc_info()
-    line_number = traceback.extract_tb(tb)[-1].lineno
-    return line_number
+    tb = sys.exc_info()[2]
+    frames = traceback.extract_tb(tb)
+
+    for frame in frames:
+        if frame.filename == "<exec>":
+            return frame.lineno
+
+    return frames[-1].lineno
 
 
 def get_user_frames() -> list[inspect.FrameInfo] | None:
