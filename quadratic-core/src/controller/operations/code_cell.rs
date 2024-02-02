@@ -1,8 +1,9 @@
 use super::operation::Operation;
 use crate::{
+    cell_values::CellValues,
     controller::GridController,
     grid::{CodeCellLanguage, CodeRun, SheetId},
-    Array, CellValue, CodeCellValue, SheetPos,
+    CellValue, CodeCellValue, SheetPos,
 };
 
 impl GridController {
@@ -16,7 +17,7 @@ impl GridController {
         vec![
             Operation::SetCellValues {
                 sheet_rect: sheet_pos.into(),
-                values: Array::from(CellValue::Code(CodeCellValue { language, code })),
+                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
             },
             Operation::ComputeCode { sheet_pos },
         ]
@@ -147,7 +148,7 @@ mod test {
             operations[0],
             Operation::SetCellValues {
                 sheet_rect: SheetRect::from(pos.to_sheet_pos(sheet_id)),
-                values: Array::from(CellValue::Code(CodeCellValue {
+                values: CellValues::from(CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Python,
                     code: "print('hello world')".to_string(),
                 })),

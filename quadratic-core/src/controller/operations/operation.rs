@@ -2,15 +2,16 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    cell_values::CellValues,
     grid::{formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
-    Array, SheetPos, SheetRect,
+    SheetPos, SheetRect,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Operation {
     SetCellValues {
         sheet_rect: SheetRect,
-        values: Array,
+        values: CellValues,
     },
     SetCodeRun {
         sheet_pos: SheetPos,

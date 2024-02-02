@@ -63,6 +63,7 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
+        cell_values::CellValues,
         controller::{
             active_transactions::pending_transaction::PendingTransaction,
             operations::operation::Operation, transaction_types::JsCodeResult, GridController,
@@ -92,7 +93,7 @@ mod test {
             vec![
                 Operation::SetCellValues {
                     sheet_rect: sheet_pos.into(),
-                    values: Array::from(Value::Single(code_cell.clone())),
+                    values: CellValues::from(code_cell.clone()),
                 },
                 Operation::ComputeCode { sheet_pos },
             ],

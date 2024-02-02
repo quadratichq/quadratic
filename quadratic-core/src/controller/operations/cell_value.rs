@@ -3,9 +3,10 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
+    cell_values::CellValues,
     controller::GridController,
     grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind},
-    Array, CellValue, RunLengthEncoding, SheetPos, SheetRect,
+    CellValue, RunLengthEncoding, SheetPos, SheetRect,
 };
 
 use super::operation::Operation;
@@ -85,7 +86,7 @@ impl GridController {
         let sheet_rect = sheet_pos.into();
         ops.push(Operation::SetCellValues {
             sheet_rect,
-            values: Array::from(cell_value),
+            values: CellValues::from(cell_value),
         });
         ops
     }
@@ -93,7 +94,7 @@ impl GridController {
     /// Generates and returns the set of operations to delete the values and code in a sheet_rect
     /// Does not commit the operations or create a transaction.
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
-        let values = Array::new_empty(sheet_rect.size());
+        let values = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
         vec![Operation::SetCellValues { sheet_rect, values }]
     }
 
@@ -126,6 +127,6 @@ mod test {
             "hello".to_string(),
             None,
         );
-        assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_rect\":{\"min\":{\"x\":1,\"y\":2},\"max\":{\"x\":1,\"y\":2},\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"size\":{\"w\":1,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"hello\"}]}}}]".to_string()));
+        assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_rect\":{\"min\":{\"x\":1,\"y\":2},\"max\":{\"x\":1,\"y\":2},\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"columns\":[{\"0\":{\"type\":\"text\",\"value\":\"hello\"}}],\"w\":1,\"h\":1}}}]".to_string()));
     }
 }

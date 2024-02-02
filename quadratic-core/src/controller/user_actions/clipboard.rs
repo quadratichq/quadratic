@@ -1,3 +1,4 @@
+use crate::cell_values::CellValues;
 use crate::controller::{
     operations::clipboard::Clipboard, transaction_summary::TransactionSummary, GridController,
 };
@@ -18,16 +19,15 @@ pub enum PasteSpecial {
 impl GridController {
     /// Copies clipboard to (plain_text, html).
     pub fn copy_to_clipboard(&self, sheet_rect: SheetRect) -> (String, String) {
-        let mut cells = vec![];
+        let mut cells = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
+        let mut values = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
 
         // todo: have function return an Option<(String, String)> and replace below with a question mark operator
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return (String::new(), String::new());
         };
-
-        let mut values = vec![];
 
         for y in sheet_rect.y_range() {
             if y != sheet_rect.min.y {
@@ -51,10 +51,22 @@ impl GridController {
                 let real_value = sheet.cell_value(pos);
 
                 // create quadratic clipboard values
-                cells.push(real_value.clone());
+                if let Some(real_value) = real_value {
+                    cells.set(
+                        (x - sheet_rect.min.x) as u32,
+                        (y - sheet_rect.min.y) as u32,
+                        real_value,
+                    );
+                }
 
                 // create quadratic clipboard value-only
-                values.push(simple_value.clone());
+                if let Some(simple_value) = &simple_value {
+                    values.set(
+                        (x - sheet_rect.min.x) as u32,
+                        (y - sheet_rect.min.y) as u32,
+                        simple_value.clone(),
+                    );
+                }
 
                 // add styling for html (only used for pasting to other spreadsheets)
                 // todo: add text color, fill, etc.
@@ -121,15 +133,17 @@ impl GridController {
                         clipboard_rect.max.y
                     };
 
-                    // add the code_run output to clipboard.cells
+                    // add the code_run output to clipboard.values
                     for y in y_start..=y_end {
                         for x in x_start..=x_end {
                             if let Some(value) = code_cell
                                 .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
                             {
-                                let index = (y - sheet_rect.min.y) as usize * sheet_rect.width()
-                                    + (x - sheet_rect.min.x) as usize;
-                                cells[index] = Some(value.clone());
+                                values.set(
+                                    (x - sheet_rect.min.x) as u32,
+                                    (y - sheet_rect.min.y) as u32,
+                                    value,
+                                );
                             }
                         }
                     }
