@@ -12,6 +12,7 @@ async function migrateFiles() {
         not: null,
       },
     },
+    take: 250,
   });
 
   console.log('There are ' + files_to_migrate.length + ' files to migrate.');

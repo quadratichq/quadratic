@@ -210,7 +210,8 @@ export class UI {
                     process.stdout.write(`[${chalk[color](displayName)}] ${chalk[color](data)}`);
                 }
                 else {
-                    process.stdout.write(`[${chalk[color](displayName)}] ${chalk.red(data)}`);
+                    let dataColor = this.cli.options.dark ? "white" : "red";
+                    process.stdout.write(`[${chalk[color](displayName)}] ${chalk[dataColor](data)}`);
                 }
                 this.prompt();
                 if (callback) {
