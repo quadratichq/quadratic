@@ -1,5 +1,6 @@
 import { Auth0Client, User, createAuth0Client } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';
+import { useEffect } from 'react';
 import { LoaderFunction, LoaderFunctionArgs, redirect } from 'react-router-dom';
 import { ROUTES } from './constants/routes';
 
@@ -161,4 +162,25 @@ export function parseDomain(url: string): string {
     // check for IP addresses or localhost (ignore ports) or just return the url
     return url.match(/(?:(?!:).)*/)![0] ?? url;
   }
+}
+
+/**
+ * Used in the dashboard and the app to ensure the user’s auth token always
+ * remains valid. If at any point it expires, we redirect for a new one.
+ *
+ * Because this runs in both the app and the dashboard, we only want to check
+ * for a token if the user is authenticated. If they're not, it's probably
+ * a shared public file in the app that doesn't require auth to view.
+ */
+export function useCheckForAuthorizationTokenOnWindowFocus() {
+  const fn = async () => {
+    const isAuthenticated = await authClient.isAuthenticated();
+    if (isAuthenticated) {
+      await authClient.getTokenOrRedirect();
+    }
+  };
+  useEffect(() => {
+    window.addEventListener('focus', fn);
+    return () => window.removeEventListener('focus', fn);
+  }, []);
 }
