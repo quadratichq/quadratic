@@ -2,7 +2,7 @@ import { File, User } from '@prisma/client';
 import { Request as JWTRequest } from 'express-jwt';
 
 export interface UploadFile extends Express.Multer.File {
-  key: string; // Available using `S3`.
+  key?: string; // Available using `S3`.
 }
 
 // API Request that extends the express-jwt Request type
@@ -19,3 +19,27 @@ export interface Request extends JWTRequest {
   quadraticFile?: File;
   file?: UploadFile;
 }
+
+export type RequestWithFile = Request & {
+  file: UploadFile;
+};
+
+export type RequestWithOptionalAuth = JWTRequest & {
+  auth?: { sub: string };
+};
+
+export type RequestWithAuth = JWTRequest & {
+  auth: { sub: string };
+};
+
+export type RequestWithUser = RequestWithAuth & {
+  user: User;
+};
+
+export type RequestWithOptionalUser = RequestWithOptionalAuth & {
+  user?: User;
+};
+
+export type RequestWithQuadraticFile = RequestWithOptionalUser & {
+  quadraticFile: File;
+};

@@ -1,5 +1,5 @@
 import { Graphics, Rectangle } from 'pixi.js';
-import { isEditorOrAbove } from '../../actions';
+import { hasPermissionToEditFile } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { colors } from '../../theme/colors';
@@ -17,10 +17,10 @@ const NUM_OF_CELL_REF_COLORS = colors.cellHighlightColor.length;
 export type CursorCell = { x: number; y: number; width: number; height: number };
 const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
 // adds a bit of padding when editing a cell w/CellInput
-const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
+export const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
 
 // outside border when editing the cell
-const INPUT_ALPHA = 0.333;
+const CURSOR_INPUT_ALPHA = 0.333;
 
 export class Cursor extends Graphics {
   indicator: Rectangle;
@@ -50,7 +50,7 @@ export class Cursor extends Graphics {
     const editor_selected_cell = editorInteractionState.selectedCell;
 
     // draw cursor but leave room for cursor indicator if needed
-    const indicatorSize = isEditorOrAbove(pixiAppSettings.editorInteractionState.permission)
+    const indicatorSize = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)
       ? Math.max(INDICATOR_SIZE / viewport.scale.x, 4)
       : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
@@ -95,7 +95,7 @@ export class Cursor extends Graphics {
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
         color,
-        alpha: INPUT_ALPHA,
+        alpha: CURSOR_INPUT_ALPHA,
         alignment: 1,
       });
       this.drawRect(x, y, width, height);
@@ -147,9 +147,9 @@ export class Cursor extends Graphics {
         editor_selected_cell.y === cell.y
       )
         color =
-          editorInteractionState.mode === 'PYTHON'
+          editorInteractionState.mode === 'Python'
             ? colors.cellColorUserPython
-            : editorInteractionState.mode === 'FORMULA'
+            : editorInteractionState.mode === 'Formula'
             ? colors.cellColorUserFormula
             : colors.cursorCell;
       this.beginFill(color).drawShape(this.indicator).endFill();
@@ -162,9 +162,9 @@ export class Cursor extends Graphics {
     const cell = editorInteractionState.selectedCell;
     const { x, y, width, height } = sheets.sheet.getCellOffsets(cell.x, cell.y);
     const color =
-      editorInteractionState.mode === 'PYTHON'
+      editorInteractionState.mode === 'Python'
         ? colors.cellColorUserPython
-        : editorInteractionState.mode === 'FORMULA'
+        : editorInteractionState.mode === 'Formula'
         ? colors.cellColorUserFormula
         : colors.independence;
     this.lineStyle({

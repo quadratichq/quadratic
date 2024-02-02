@@ -1,0 +1,29 @@
+.multiplayer-cursors {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.multiplayer-cursor,
+.multiplayer-cursor-offscreen {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  left: 0;
+  top: 0;
+  transition: transform 0.25s cubic-bezier(0.17, 0.93, 0.38, 1);
+}
+
+.multiplayer-cursor-offscreen {
+  width: 10px;
+  height: 10px;
+}
+
+.multiplayer-cursor svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}

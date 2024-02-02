@@ -1,0 +1,22 @@
+{
+  "name": "quadratic-multiplayer",
+  "description": "Quadratic Multiplayer server",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "start": "RUST_LOG=info cargo run",
+    "build": "cargo build",
+    "dev": "RUST_LOG=info cargo watch -x 'run'",
+    "test": "cargo test",
+    "test:watch": "RUST_LOG=info cargo watch -x 'test'",
+    "lint": "cargo clippy --all-targets --all-features -- -D warnings",
+    "coverage": "npm run coverage:gen && npm run coverage:html && npm run coverage:view",
+    "coverage:gen": "CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",
+    "coverage:html": "grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore '../*' --ignore '/*' -o coverage/html",
+    "coverage:view": "open coverage/html/index.html",
+    "docker:up": "docker compose -f ../docker-compose.base.yml up -d --wait",
+    "docker:down": "docker compose down -v",
+    "docker:test": "docker compose kill && npm run docker:up && npm run test && npm run docker:down"
+  }
+}

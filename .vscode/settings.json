@@ -6,7 +6,9 @@
     "bindgen",
     "dbgjs",
     "dcell",
+    "ddimaria",
     "dgraph",
+    "dotenv",
     "endregion",
     "Fuzzysort",
     "hljs",
@@ -14,29 +16,35 @@
     "indexmap",
     "itertools",
     "msdf",
+    "nonblank",
     "Northbridge",
     "openai",
     "opensans",
     "peekable",
     "pixi",
     "pixiapp",
+    "pulumi",
     "rects",
+    "reqwest",
     "Signin",
     "smallpop",
     "Southborough",
-    "subquadrant",
-    "subquadrants",
+    "thiserror",
     "unspill",
     "vals",
     "Westborough"
   ],
   "editor.codeActionsOnSave": {
-    "source.organizeImports": true
+    "source.organizeImports": "explicit"
   },
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
-  "rust-analyzer.linkedProjects": ["./quadratic-core/Cargo.toml"],
+  "rust-analyzer.linkedProjects": [
+    "./quadratic-core/Cargo.toml",
+    "./quadratic-multiplayer/Cargo.toml",
+    "./quadratic-core/Cargo.toml"
+  ],
   "rust-analyzer.checkOnSave": true,
   // "rust-analyzer.checkOnSave.command": "clippy",
   "files.associations": {

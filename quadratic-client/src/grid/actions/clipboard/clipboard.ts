@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -37,7 +37,7 @@ export const copyToClipboardEvent = (e: ClipboardEvent) => {
 
 export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!canvasIsTarget(e)) return;
-  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, rectangle);
@@ -53,7 +53,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   if (!canvasIsTarget(e)) return;
-  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
   if (!e.clipboardData) {
     console.warn('clipboardData is not defined');
@@ -112,7 +112,7 @@ const toClipboard = (plainText: string, html: string) => {
 };
 
 export const cutToClipboard = async () => {
-  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
   const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
   toClipboard(plainText, html);
@@ -154,7 +154,7 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
 };
 
 export const pasteFromClipboard = async () => {
-  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   const target = sheets.sheet.cursor.originPosition;
 
   if (fullClipboardSupport()) {

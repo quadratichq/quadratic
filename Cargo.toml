@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "quadratic-core",
+    "quadratic-files",
+    "quadratic-multiplayer",
+    "quadratic-rust-shared",
+]
+
+[workspace.package]
+authors = ["Quadratic"]
+edition = "2021"
+description = "Infinite data grid with Python, JavaScript, and SQL built-in"
+repository = "https://github.com/quadratichq/quadratic"
+license-file = "LICENSE"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = "s"

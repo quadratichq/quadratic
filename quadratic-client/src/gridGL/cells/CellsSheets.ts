@@ -5,7 +5,7 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
-  private current?: CellsSheet;
+  current?: CellsSheet;
 
   async create(): Promise<void> {
     this.removeChildren();
@@ -31,7 +31,6 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     const cellsSheet = this.addChild(new CellsSheet(sheet));
     await cellsSheet.preload();
-    this.show(sheet.id);
   }
 
   deleteSheet(id: string): void {
@@ -82,8 +81,8 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  toggleOutlines(force?: boolean): void {
-    this.current?.toggleOutlines(force);
+  toggleOutlines(off?: boolean): void {
+    this.current?.toggleOutlines(off);
   }
 
   createBorders(): void {
@@ -104,6 +103,11 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
     cellsSheet.adjustHeadings({ delta, row, column });
+    if (sheets.sheet.id === sheetId) {
+      pixiApp.gridLines.dirty = true;
+      pixiApp.cursor.dirty = true;
+      pixiApp.headings.dirty = true;
+    }
   }
 
   getCellsContentMaxWidth(column: number): number {
@@ -130,6 +134,11 @@ export class CellsSheets extends Container<CellsSheet> {
         }
       }
     });
+  }
+
+  updateCellsArray(): void {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');
+    this.current.updateCellsArray();
   }
 
   updateBorders(borderSheets: SheetId[]): void {
