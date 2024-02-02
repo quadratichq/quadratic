@@ -40,12 +40,15 @@ class PythonWebWorker {
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
+
       if (event.type === 'results') {
         if (this.executionStack.length === 0) {
           throw new Error('Expected executionStack to have at least one element in python.ts');
         }
+
         const transactionId = this.executionStack[0].transactionId;
         const pythonResult = event.results;
+        
         if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
         if (pythonResult.array_output) {
@@ -67,9 +70,11 @@ class PythonWebWorker {
             }
           }
         }
+
         if (!pythonResult.success) {
           pythonResult.error_msg = pythonResult.input_python_stack_trace;
         }
+        
         const result = new JsCodeResult(
           transactionId,
           pythonResult.success,

@@ -75,6 +75,7 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       return self.postMessage({
         type: 'results',
         results,
+        python_code,
       });
     }
   }
