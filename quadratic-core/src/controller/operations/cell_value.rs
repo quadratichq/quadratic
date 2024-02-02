@@ -83,9 +83,8 @@ impl GridController {
         let (operations, cell_value) = self.string_to_cell_value(sheet_pos, value);
         ops.extend(operations);
 
-        let sheet_rect = sheet_pos.into();
         ops.push(Operation::SetCellValues {
-            sheet_rect,
+            sheet_pos,
             values: CellValues::from(cell_value),
         });
         ops
@@ -95,7 +94,10 @@ impl GridController {
     /// Does not commit the operations or create a transaction.
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
         let values = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
-        vec![Operation::SetCellValues { sheet_rect, values }]
+        vec![Operation::SetCellValues {
+            sheet_pos: sheet_rect.into(),
+            values,
+        }]
     }
 
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect
@@ -127,6 +129,6 @@ mod test {
             "hello".to_string(),
             None,
         );
-        assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_rect\":{\"min\":{\"x\":1,\"y\":2},\"max\":{\"x\":1,\"y\":2},\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"columns\":[{\"0\":{\"type\":\"text\",\"value\":\"hello\"}}],\"w\":1,\"h\":1}}}]".to_string()));
+        assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_pos\":{\"x\":1,\"y\":2,\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"columns\":[{\"0\":{\"type\":\"text\",\"value\":\"hello\"}}],\"w\":1,\"h\":1}}}]".to_string()));
     }
 }

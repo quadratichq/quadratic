@@ -7,7 +7,7 @@ use crate::{
         SheetId,
     },
     util::maybe_reverse_range,
-    CellValue, Pos, Rect, SheetRect,
+    CellValue, Rect, SheetRect,
 };
 use anyhow::{Error, Result};
 use itertools::Itertools;
@@ -619,17 +619,8 @@ impl GridController {
         let values =
             CellValues::from_flat_array(range.width(), range.height(), series.to_owned().into());
 
-        let start_pos = range.min;
-        let end_pos = Pos {
-            x: start_pos.x + values.w as i64 - 1,
-            y: start_pos.y + values.h as i64 - 1,
-        };
-        let sheet_rect = SheetRect {
-            min: start_pos,
-            max: end_pos,
-            sheet_id,
-        };
-        let ops = vec![Operation::SetCellValues { sheet_rect, values }];
+        let sheet_pos = range.min.to_sheet_pos(sheet_id);
+        let ops = vec![Operation::SetCellValues { sheet_pos, values }];
 
         Ok((ops, series))
     }

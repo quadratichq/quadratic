@@ -134,15 +134,11 @@ impl From<Pos> for CellHash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        cell_values::CellValues, grid::GridBounds, CellValue, Pos, Rect, SheetPos, SheetRect,
-    };
+    use crate::{cell_values::CellValues, grid::GridBounds, CellValue, Pos, Rect, SheetPos};
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
-        let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
-
         Operation::SetCellValues {
-            sheet_rect,
+            sheet_pos,
             values: CellValues::from(value),
         }
     }

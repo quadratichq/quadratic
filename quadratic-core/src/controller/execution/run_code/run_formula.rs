@@ -92,7 +92,7 @@ mod test {
         gc.start_user_transaction(
             vec![
                 Operation::SetCellValues {
-                    sheet_rect: sheet_pos.into(),
+                    sheet_pos,
                     values: CellValues::from(code_cell.clone()),
                 },
                 Operation::ComputeCode { sheet_pos },

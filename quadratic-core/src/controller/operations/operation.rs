@@ -10,7 +10,7 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Operation {
     SetCellValues {
-        sheet_rect: SheetRect,
+        sheet_pos: SheetPos,
         values: CellValues,
     },
     SetCodeRun {
