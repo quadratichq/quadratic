@@ -15,6 +15,7 @@ import init, {
   JsComputeGetCells,
   JsRenderBorders,
   MinMax,
+  PasteSpecial,
   Pos,
   Rect as RectInternal,
   SheetOffsets,
@@ -597,13 +598,15 @@ export class Grid {
     y: number;
     plainText: string | undefined;
     html: string | undefined;
+    special: PasteSpecial;
   }) {
-    const { sheetId, x, y, plainText, html } = options;
+    const { sheetId, x, y, plainText, html, special } = options;
     const summary = this.gridController.pasteFromClipboard(
       sheetId,
       new Pos(x, y),
       plainText,
       html,
+      special,
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
@@ -714,6 +717,23 @@ export class Grid {
     } else if (result.response) {
       return result.response;
     }
+  }
+
+  rerunAllCodeCells() {
+    const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
+  rerunSheetCodeCells() {
+    const sheetId = sheets.sheet.id;
+    const summary = this.gridController.rerunSheetCodeCells(sheetId, sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
+  rerunCodeCell() {
+    const pos = sheets.sheet.cursor.getPos();
+    const summary = this.gridController.rerunCodeCell(sheets.sheet.id, pos, sheets.getCursorPosition());
+    this.transactionResponse(summary);
   }
 
   //#endregion

@@ -73,24 +73,27 @@ export class CellsSheet extends Container {
   }
 
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
-    const rect = new Rectangle(
-      hashX * sheetHashWidth,
-      hashY * sheetHashHeight,
-      sheetHashWidth - 1,
-      sheetHashHeight - 1
-    );
-    if (this.sheet.hasRenderCells(rect)) {
-      const key = `${hashX},${hashY}`;
-      const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
-      this.cellsTextHash.set(key, cellsHash);
-      const row = this.cellsRows.get(hashY);
-      if (row) {
-        row.push(cellsHash);
-      } else {
-        this.cellsRows.set(hashY, [cellsHash]);
-      }
-      return cellsHash;
+    // todo: This is probably not needed, but keep it around until we're sure.
+    // This originally checked to see if there was content in the grid before creating the
+    // structure. This was expensive for large sheets.
+    // const rect = new Rectangle(
+    //   hashX * sheetHashWidth,
+    //   hashY * sheetHashHeight,
+    //   sheetHashWidth - 1,
+    //   sheetHashHeight - 1
+    // );
+    // if (this.sheet.hasRenderCells(rect)) {
+    const key = `${hashX},${hashY}`;
+    const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+    this.cellsTextHash.set(key, cellsHash);
+    const row = this.cellsRows.get(hashY);
+    if (row) {
+      row.push(cellsHash);
+    } else {
+      this.cellsRows.set(hashY, [cellsHash]);
     }
+    return cellsHash;
+    // }
   }
 
   createHashes(): boolean {
@@ -185,6 +188,7 @@ export class CellsSheet extends Container {
   }
 
   // used for clipping to find neighboring hash - clipping always works from right to left
+  // todo: use the new overflowLeft to make this more efficient
   findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
     bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
     if (!bounds) {
@@ -193,6 +197,21 @@ export class CellsSheet extends Container {
     let hash = this.getCellsHash(column, row);
     while (!hash && column >= bounds.left) {
       column--;
+      hash = this.getCellsHash(column, row);
+    }
+    return hash;
+  }
+
+  // used for clipping to find neighboring hash
+  // todo: use the new overflowRight to make this more efficient
+  findNextHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
+    bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
+    if (!bounds) {
+      throw new Error('Expected bounds to be defined in findNextHash of CellsSheet');
+    }
+    let hash = this.getCellsHash(column, row);
+    while (!hash && column <= bounds.right) {
+      column++;
       hash = this.getCellsHash(column, row);
     }
     return hash;
@@ -315,11 +334,11 @@ export class CellsSheet extends Container {
     return cellsTextHashes;
   }
 
-  update(): boolean {
+  update(userIsActive: boolean): boolean {
     if (this.updateHeadings()) return true;
     const cellTextHashes = this.dirtyCellTextHashesByDistance();
     for (const cellTextHash of cellTextHashes) {
-      if (cellTextHash.update()) {
+      if (cellTextHash.update(userIsActive)) {
         return true;
       }
     }

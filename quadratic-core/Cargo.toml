@@ -33,6 +33,7 @@ js = [
 show-operations = []
 file-io = []
 multiplayer = []
+files = []
 
 [dependencies]
 anyhow = "1.0"

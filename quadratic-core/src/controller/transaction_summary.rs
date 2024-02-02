@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 use crate::{error_core::CoreError, grid::SheetId, SheetPos, SheetRect};
 
 // keep this in sync with CellsTypes.ts
-pub const CELL_SHEET_WIDTH: u32 = 20;
-pub const CELL_SHEET_HEIGHT: u32 = 40;
+pub const CELL_SHEET_WIDTH: u32 = 15;
+pub const CELL_SHEET_HEIGHT: u32 = 30;
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]

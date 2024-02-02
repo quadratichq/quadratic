@@ -3,6 +3,7 @@ import { GenericAction } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
 import BordersListItems from './ListItems/Borders';
+import CodeItems from './ListItems/Code';
 import EditListItems from './ListItems/Edit';
 import FileListItems from './ListItems/File';
 import FormatListItems from './ListItems/Format';
@@ -37,6 +38,7 @@ export const getCommandPaletteListItems = (props: {
     ...FormatListItems,
     ...SheetListItems(),
     ...HelpListItems,
+    ...CodeItems,
   ];
   const { activeSearchValue, permissions, isAuthenticated, ...rest } = props;
 
