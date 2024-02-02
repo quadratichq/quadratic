@@ -17,6 +17,7 @@ pub(crate) struct Room {
     pub(crate) user_index: usize,
 }
 
+#[cfg(test)]
 impl PartialEq for Room {
     fn eq(&self, other: &Self) -> bool {
         self.file_id == other.file_id
@@ -126,6 +127,11 @@ impl State {
 
         tracing::info!("Room {file_id} removed");
     }
+
+    /// Get a room's current sequence number.
+    pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
+        Ok(get_room!(self, file_id)?.sequence_num)
+    }
 }
 
 #[macro_export]
@@ -210,6 +216,15 @@ mod tests {
         assert_eq!(room.users.len(), 1);
         assert_eq!(user.index, 0);
 
+        let sequence_num = state.get_sequence_num(&file_id).await.unwrap();
+        assert_eq!(sequence_num, 0);
+
+        get_mut_room!(state, file_id)
+            .unwrap()
+            .increment_sequence_num();
+        let sequence_num = state.get_sequence_num(&file_id).await.unwrap();
+        assert_eq!(sequence_num, 1);
+
         // leave the room of 2 users
         state
             .enter_room(file_id, &mut user2, connection2, 0)
@@ -255,10 +270,7 @@ mod tests {
         assert_eq!(user.index, 0);
         assert_eq!(user2.index, 1);
         assert_eq!(user3.index, 2);
-        state
-            .leave_room(file_id, &mut user2.session_id)
-            .await
-            .unwrap();
+        state.leave_room(file_id, &user2.session_id).await.unwrap();
         state
             .enter_room(file_id, &mut user2, connection4, 0)
             .await

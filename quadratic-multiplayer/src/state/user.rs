@@ -154,6 +154,22 @@ impl State {
         Ok(())
     }
 
+    /// Updates a user's permissions in a room
+    #[tracing::instrument(level = "trace")]
+    pub(crate) async fn update_user_permissions(
+        &self,
+        file_id: Uuid,
+        session_id: &Uuid,
+        permissions: Vec<FilePermRole>,
+    ) -> Result<()> {
+        get_mut_room!(self, file_id)?
+            .users
+            .entry(session_id.to_owned())
+            .and_modify(|user| user.permissions = permissions);
+
+        Ok(())
+    }
+
     /// updates a user's state in a room
     pub(crate) async fn update_user_state(
         &self,
@@ -207,39 +223,13 @@ impl State {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        error::MpError,
-        state::connection::PreConnection,
-        test_util::{new_state, new_user},
-    };
-
-    async fn setup() -> (State, PreConnection, Uuid, User) {
-        let state = new_state().await;
-        let file_id = Uuid::new_v4();
-        let mut user = new_user();
-        let connection = PreConnection::new(None);
-
-        state
-            .enter_room(file_id, &mut user, connection.clone(), 0)
-            .await
-            .unwrap();
-
-        (state, connection, file_id, user)
-    }
+    use crate::{error::MpError, test_util::setup};
 
     use super::*;
     #[tokio::test]
     async fn removes_stale_users_in_room() {
-        // add a user to a room
-        let (state, connection, file_id, _) = setup().await;
-
-        // add another user to the room
-        let mut new_user = new_user();
-        state
-            .enter_room(file_id, &mut new_user, connection, 0)
-            .await
-            .unwrap();
-
+        // add 2 users to a room
+        let (_, state, _, file_id, _, _) = setup().await;
         assert_eq!(get_room!(state, file_id).unwrap().users.len(), 2);
 
         // remove stale users in the room until the room is empty
@@ -259,7 +249,7 @@ mod tests {
 
     #[tokio::test]
     async fn updates_a_users_heartbeat() {
-        let (state, _, file_id, user) = setup().await;
+        let (_, state, _, file_id, user, _) = setup().await;
 
         let old_heartbeat = state
             ._get_user_in_room(&file_id, &user.session_id)
@@ -282,11 +272,38 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn follow_updates() {
-        let (state, _, file_id, user) = setup().await;
+    async fn updates_a_users_permissions() {
+        let (_, state, _, file_id, user, _) = setup().await;
+        let get_user_perms = || async {
+            state
+                ._get_user_in_room(&file_id, &user.session_id)
+                .await
+                .unwrap()
+                .permissions
+        };
+        let expected = vec![FilePermRole::FileView, FilePermRole::FileEdit];
+        assert_eq!(get_user_perms().await, expected);
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.follow = Some(user.session_id.to_string());
+        let perms = vec![
+            FilePermRole::FileView,
+            FilePermRole::FileEdit,
+            FilePermRole::FileDelete,
+        ];
+        state
+            .update_user_permissions(file_id, &user.session_id, perms.clone())
+            .await
+            .unwrap();
+        assert_eq!(get_user_perms().await, perms);
+    }
+
+    #[tokio::test]
+    async fn follow_updates() {
+        let (_, state, _, file_id, user, _) = setup().await;
+
+        let user_state = UserStateUpdate {
+            follow: Some(user.session_id.to_string()),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -300,8 +317,10 @@ mod tests {
 
         assert_eq!(user.state.follow, Some(user.session_id));
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.follow = Some("".to_string());
+        let user_state = UserStateUpdate {
+            follow: Some("".to_string()),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -318,10 +337,12 @@ mod tests {
 
     #[tokio::test]
     async fn follow_updates_invalid_uuid() {
-        let (state, _, file_id, user) = setup().await;
+        let (_, state, _, file_id, user, _) = setup().await;
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.follow = Some("invalid".to_string());
+        let user_state = UserStateUpdate {
+            follow: Some("invalid".to_string()),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -338,25 +359,12 @@ mod tests {
 
     #[tokio::test]
     async fn user_visible_update() {
-        let (state, _, file_id, user) = setup().await;
+        let (_, state, _, file_id, user, _) = setup().await;
 
-        let mut user_state = UserStateUpdate::default();
-        user_state.visible = Some(false);
-
-        state
-            .update_user_state(&file_id, &user.session_id, &user_state)
-            .await
-            .unwrap();
-
-        let user = state
-            ._get_user_in_room(&file_id, &user.session_id)
-            .await
-            .unwrap();
-
-        assert_eq!(user.state.visible, false);
-
-        let mut user_state = UserStateUpdate::default();
-        user_state.visible = Some(true);
+        let user_state = UserStateUpdate {
+            visible: Some(false),
+            ..Default::default()
+        };
 
         state
             .update_user_state(&file_id, &user.session_id, &user_state)
@@ -368,12 +376,29 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(user.state.visible, true);
+        assert!(!user.state.visible);
+
+        let user_state = UserStateUpdate {
+            visible: Some(true),
+            ..Default::default()
+        };
+
+        state
+            .update_user_state(&file_id, &user.session_id, &user_state)
+            .await
+            .unwrap();
+
+        let user = state
+            ._get_user_in_room(&file_id, &user.session_id)
+            .await
+            .unwrap();
+
+        assert!(user.state.visible);
     }
 
     #[tokio::test]
     async fn user_sheet_id_update() {
-        let (state, _, file_id, user) = setup().await;
+        let (_, state, _, file_id, user, _) = setup().await;
 
         let mut user_state = UserStateUpdate::default();
         let sheet_id = Uuid::new_v4();
@@ -410,7 +435,7 @@ mod tests {
 
     #[tokio::test]
     async fn user_cell_edit_update() {
-        let (state, _, file_id, user) = setup().await;
+        let (_, state, _, file_id, user, _) = setup().await;
 
         let mut user_state = UserStateUpdate::default();
         let cell_edit = CellEdit {
