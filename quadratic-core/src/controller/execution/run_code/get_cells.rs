@@ -101,10 +101,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage},
-        Pos, Rect, SheetPos,
-    };
+    use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};
 
     #[test]
     fn test_calculation_get_cells_bad_transaction_id() {
@@ -194,6 +191,8 @@ mod test {
         assert!(error.contains("not found"));
     }
 
+    // This was previously disallowed. It is now allowed to unlock appending results.
+    // Leaving in some commented out code in case we want to revert this behavior.
     #[test]
     fn test_calculation_get_cells_self_reference() {
         let mut gc = GridController::test();
@@ -226,20 +225,20 @@ mod test {
             None,
             None,
         ));
-        assert!(result.is_err());
+        assert!(result.is_ok());
 
         let sheet = gc.sheet(sheet_id);
         let code = sheet.get_render_cells(Rect::from_numbers(0, 1, 1, 1));
-        assert_eq!(code.len(), 1);
-        assert_eq!(code[0].special, Some(JsRenderCellSpecial::RunError));
-        let sheet = gc.sheet(sheet_id);
-        let error = sheet
-            .code_run(Pos { x: 0, y: 1 })
-            .unwrap()
-            .clone()
-            .std_err
-            .unwrap();
-        assert!(error.contains("cell cannot reference"));
+        assert_eq!(code.len(), 0);
+        // assert_eq!(code[0].special, Some(JsRenderCellSpecial::RunError));
+        // let sheet = gc.sheet(sheet_id);
+        // let error = sheet
+        //     .code_run(Pos { x: 0, y: 1 })
+        //     .unwrap()
+        //     .clone()
+        //     .std_err
+        //     .unwrap();
+        // assert!(error.is_empty());
     }
 
     #[test]
