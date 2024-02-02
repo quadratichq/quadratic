@@ -235,8 +235,9 @@ export class UI {
             `[${chalk[color](displayName)}] ${chalk[color](data)}`
           );
         } else {
+          let dataColor = this.cli.options.dark ? "white" : "red";
           process.stdout.write(
-            `[${chalk[color](displayName)}] ${chalk.red(data)}`
+            `[${chalk[color](displayName)}] ${chalk[dataColor](data)}`
           );
         }
         this.prompt();
