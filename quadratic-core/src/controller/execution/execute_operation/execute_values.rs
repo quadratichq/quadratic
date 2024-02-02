@@ -17,6 +17,7 @@ impl GridController {
                 None => (), // sheet may have been deleted
                 Some(sheet) => {
                     // update individual cell values and collect old_values
+                    // let old_values = sheet.set_cell_values(sheet_rect.into(), &values);
                     let old_values = sheet_rect
                         .iter()
                         .zip(values.clone().into_cell_values_vec())
@@ -34,7 +35,6 @@ impl GridController {
                         })
                         .map(|old_value| old_value.unwrap_or(CellValue::Blank))
                         .collect();
-
                     if transaction.is_user() || transaction.is_undo_redo() {
                         transaction
                             .forward_operations

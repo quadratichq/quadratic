@@ -92,8 +92,12 @@ pub(crate) async fn serve() -> Result<()> {
                 // reconnect to pubsub if the connection becomes unhealthy
                 state.pubsub.lock().await.reconnect_if_unhealthy().await;
 
-                // push stats to the logs
-                tracing::info!("Stats: {}", state.stats.lock().await);
+                let stats = state.stats.lock().await;
+
+                // push stats to the logs if there are files to process
+                if stats.files_to_process_in_pubsub > 0 {
+                    tracing::info!("Stats: {}", stats);
+                }
             }
         }
     });
