@@ -1,5 +1,5 @@
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
+import { debugShowCellsHashBoxes, debugShowCellsSheetCulling, debugShowHashUpdates } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellSheetsModified } from '../../quadratic-core/types';
@@ -85,6 +85,7 @@ export class CellsSheet extends Container {
     // if (this.sheet.hasRenderCells(rect)) {
     const key = `${hashX},${hashY}`;
     const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] Creating hash for (${hashX}, ${hashY})`);
     this.cellsTextHash.set(key, cellsHash);
     const row = this.cellsRows.get(hashY);
     if (row) {
@@ -220,6 +221,7 @@ export class CellsSheet extends Container {
   // this assumes that dirtyRows has a size (checked in calling functions)
   private updateNextDirtyRow(): void {
     const nextRow = this.dirtyRows.values().next().value;
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] updateNextDirtyRow for ${nextRow}`);
     this.dirtyRows.delete(nextRow);
     const hashes = this.cellsRows.get(nextRow);
     if (!hashes) throw new Error('Expected hashes to be defined in preload');
@@ -339,6 +341,7 @@ export class CellsSheet extends Container {
     const cellTextHashes = this.dirtyCellTextHashesByDistance();
     for (const cellTextHash of cellTextHashes) {
       if (cellTextHash.update(userIsActive)) {
+        cellTextHash.show();
         return true;
       }
     }

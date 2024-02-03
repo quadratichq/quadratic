@@ -1,3 +1,4 @@
+import { debugShowHashUpdates } from '@/debugFlags';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
@@ -90,6 +91,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   createLabels(): void {
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] createLabels for ${this.hashX}, ${this.hashY}`);
     this.cellLabels = new Map();
     const cells = this.sheet.getRenderCells(this.AABB);
     cells.forEach((cell) => this.createLabel(cell));
@@ -135,10 +137,12 @@ export class CellsTextHash extends Container<LabelMeshes> {
     // empty when there are no cells
     if (!bounds) return;
 
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] overflowClip for ${this.hashX}, ${this.hashY}`);
     this.cellLabels.forEach((cellLabel) => this.checkClip(bounds, cellLabel));
   }
 
   private checkClip(bounds: Rectangle, label: CellLabel): void {
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] checkClip for ${this.hashX}, ${this.hashY}`);
     let column = label.location.x - 1;
     const row = label.location.y;
     let currentHash: CellsTextHash | undefined = this;
@@ -176,6 +180,8 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   updateBuffers(reuseBuffers: boolean): void {
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] updateBuffers for ${this.hashX}, ${this.hashY}`);
+
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare(reuseBuffers);
 
@@ -230,6 +236,11 @@ export class CellsTextHash extends Container<LabelMeshes> {
         }
       });
     }
+    if (changed && debugShowHashUpdates)
+      console.log(
+        `[CellsTextHash] adjustHeadings for ${this.hashX}, ${this.hashY} because of changes in column: ${column}, row: ${row}`
+      );
+
     return changed;
   }
 
