@@ -206,7 +206,6 @@ impl GridController {
                     self.start_transaction(transaction);
                     self.apply_out_of_order_transactions(transaction, sequence_num);
                     self.reapply_unsaved_transactions(transaction);
-                    dbgjs!("second case");
                 }
             } else {
                 // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions

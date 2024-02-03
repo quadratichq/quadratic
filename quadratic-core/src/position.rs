@@ -161,7 +161,7 @@ impl Rect {
     }
 
     /// Returns whether a position is contained within the rectangle.
-    pub fn contains(self, pos: Pos) -> bool {
+    pub fn contains(&self, pos: Pos) -> bool {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 

@@ -49,6 +49,11 @@ quadratic-api/dist
 
 # Code Coverage
 quadratic-core/coverage
+
+# Python deployment files
+quadratic-py/dist/
+quadratic-client/public/*.whl
+
 quadratic-files/coverage
 quadratic-multiplayer/coverage
 

@@ -123,9 +123,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   private updateText() {
     this.labelMeshes.clear();
-
-    // place glyphs and sets size of labelMeshes
-    this.cellLabels.forEach((child) => child.updateText(this.labelMeshes));
+    this.cellLabels.forEach((child) => {
+      child.updateText(this.labelMeshes);
+    });
   }
 
   overflowClip(): void {
@@ -142,6 +142,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
     let column = label.location.x - 1;
     const row = label.location.y;
     let currentHash: CellsTextHash | undefined = this;
+
     while (column >= bounds.left) {
       if (column < currentHash.AABB.x) {
         // find hash to the left of current hash (skip over empty hashes)
@@ -155,6 +156,22 @@ export class CellsTextHash extends Container<LabelMeshes> {
         return;
       }
       column--;
+    }
+
+    column = label.location.x + 1;
+    while (column <= bounds.right) {
+      if (column > currentHash.AABB.right) {
+        // find hash to the right of current hash (skip over empty hashes)
+        currentHash = this.cellsSheet.findNextHash(column, row, bounds);
+        if (!currentHash) return;
+      }
+      const neighborLabel = currentHash.getLabel(column, row);
+      if (neighborLabel) {
+        neighborLabel.checkLeftClip(label.AABB.right);
+        label.checkRightClip(neighborLabel.AABB.left);
+        return;
+      }
+      column++;
     }
   }
 

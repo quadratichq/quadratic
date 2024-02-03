@@ -24,7 +24,7 @@ pub struct GetCellsResponse {
 }
 
 impl GridController {
-    /// This is used to get cells during a  async calculation.
+    /// This is used to get cells during an async calculation.
     #[allow(clippy::result_large_err)]
     pub fn calculation_get_cells(
         &mut self,
@@ -41,8 +41,8 @@ impl GridController {
             )));
         };
 
-        let (current_sheet, pos) = if let Some(current_sheet_pos) = transaction.current_sheet_pos {
-            (current_sheet_pos.sheet_id, current_sheet_pos.into())
+        let current_sheet = if let Some(current_sheet_pos) = transaction.current_sheet_pos {
+            current_sheet_pos.sheet_id
         } else {
             return Err(TransactionSummary::error(CoreError::TransactionNotFound(
                 "Transaction's position not found".to_string(),
@@ -87,27 +87,6 @@ impl GridController {
                 "getCells can only be called for non-user transaction".to_string(),
             )));
         }
-        // ensure that the current cell ref is not in the get_cells request
-        if get_cells.rect().contains(pos) && sheet.id == current_sheet {
-            // unable to find sheet by name, generate error
-            let msg = if let Some(line_number) = get_cells.line_number() {
-                format!("cell cannot reference itself at line {}", line_number)
-            } else {
-                "cell cannot reference itself".to_string()
-            };
-            match self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number()) {
-                Ok(_) => {
-                    self.start_transaction(&mut transaction);
-                    return Err(self.finalize_transaction(&mut transaction));
-                }
-                Err(err) => {
-                    self.start_transaction(&mut transaction);
-                    let mut summary = self.finalize_transaction(&mut transaction);
-                    summary.error = Some(err);
-                    return Err(summary);
-                }
-            }
-        }
 
         let rect = get_cells.rect();
         let response = sheet.get_cells_response(rect);
@@ -122,10 +101,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        grid::{js_types::JsRenderCellSpecial, CodeCellLanguage},
-        Pos, Rect, SheetPos,
-    };
+    use crate::{grid::CodeCellLanguage, Pos, Rect, SheetPos};
 
     #[test]
     fn test_calculation_get_cells_bad_transaction_id() {
@@ -215,6 +191,8 @@ mod test {
         assert!(error.contains("not found"));
     }
 
+    // This was previously disallowed. It is now allowed to unlock appending results.
+    // Leaving in some commented out code in case we want to revert this behavior.
     #[test]
     fn test_calculation_get_cells_self_reference() {
         let mut gc = GridController::test();
@@ -247,20 +225,20 @@ mod test {
             None,
             None,
         ));
-        assert!(result.is_err());
+        assert!(result.is_ok());
 
         let sheet = gc.sheet(sheet_id);
         let code = sheet.get_render_cells(Rect::from_numbers(0, 1, 1, 1));
-        assert_eq!(code.len(), 1);
-        assert_eq!(code[0].special, Some(JsRenderCellSpecial::RunError));
-        let sheet = gc.sheet(sheet_id);
-        let error = sheet
-            .code_run(Pos { x: 0, y: 1 })
-            .unwrap()
-            .clone()
-            .std_err
-            .unwrap();
-        assert!(error.contains("cell cannot reference"));
+        assert_eq!(code.len(), 0);
+        // assert_eq!(code[0].special, Some(JsRenderCellSpecial::RunError));
+        // let sheet = gc.sheet(sheet_id);
+        // let error = sheet
+        //     .code_run(Pos { x: 0, y: 1 })
+        //     .unwrap()
+        //     .clone()
+        //     .std_err
+        //     .unwrap();
+        // assert!(error.is_empty());
     }
 
     #[test]
