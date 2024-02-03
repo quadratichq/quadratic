@@ -62,13 +62,19 @@ impl CellValues {
     }
 }
 
+/// Converts a 2D array of CellValue into CellValues
+/// The first dimension is the y-axis, the second is the x-axis.
+/// Therefore, [[1, 2, 3], [4, 5, 6]] becomes:
+/// 1 4
+/// 2 5
+/// 3 6
 impl From<Vec<Vec<CellValue>>> for CellValues {
     fn from(values: Vec<Vec<CellValue>>) -> Self {
-        let w = values.len() as u32;
-        let h = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
+        let w = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
+        let h = values.len() as u32;
         let mut columns = vec![BTreeMap::new(); w as usize];
-        for (x, col) in values.into_iter().enumerate() {
-            for (y, value) in col.into_iter().enumerate() {
+        for (y, col) in values.into_iter().enumerate() {
+            for (x, value) in col.into_iter().enumerate() {
                 if value != CellValue::Blank {
                     columns[x].insert(y as u64, value);
                 }
@@ -152,7 +158,8 @@ mod test {
 
     #[test]
     fn from_cell_value() {
-        let cell_values = CellValues::from(vec![vec![CellValue::from("a"), CellValue::from("b")]]);
+        let cell_values =
+            CellValues::from(vec![vec![CellValue::from("a")], vec![CellValue::from("b")]]);
         assert_eq!(cell_values.w, 1);
         assert_eq!(cell_values.h, 2);
         assert_eq!(cell_values.get(0, 0), Some(&CellValue::from("a")));
