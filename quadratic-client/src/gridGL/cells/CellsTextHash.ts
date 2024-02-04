@@ -3,7 +3,6 @@ import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderCell } from '../../quadratic-core/types';
-import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabel/CellLabel';
@@ -25,7 +24,14 @@ export class CellsTextHash extends Container<LabelMeshes> {
   // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
 
+  // shows bounds of the hash with content
   viewBounds: Bounds;
+
+  // rectangle of the hash on the screen regardless of content (does not include overflow cells)
+  rawViewRectangle: Rectangle;
+
+  // rectangle of the hash including overflowed cells
+  viewRectangle: Rectangle;
 
   // rebuild CellsTextHash
   dirty = false;
@@ -42,9 +48,13 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.cellLabels = new Map();
     this.labelMeshes = this.addChild(new LabelMeshes());
     this.viewBounds = new Bounds();
+    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
+    const start = cellsSheet.sheet.getCellOffsets(this.AABB.left, this.AABB.top);
+    const end = cellsSheet.sheet.getCellOffsets(this.AABB.right, this.AABB.bottom);
+    this.rawViewRectangle = new Rectangle(start.left, start.top, end.right - start.left, end.bottom - start.top);
+    this.viewRectangle = this.rawViewRectangle.clone();
     this.hashX = x;
     this.hashY = y;
-    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
   }
 
   get sheet(): Sheet {
@@ -65,15 +75,11 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   show(): void {
-    if (!this.visible) {
-      this.visible = true;
-    }
+    this.visible = true;
   }
 
   hide(): void {
-    if (this.visible) {
-      this.visible = false;
-    }
+    this.visible = false;
   }
 
   // overrides container's render function
@@ -98,22 +104,13 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.updateText();
   }
 
-  update(userIsActive: boolean): boolean {
+  update(): boolean {
     if (this.dirty) {
-      const visible = this.viewBounds.intersectsRectangle(pixiApp.viewport.getVisibleBounds());
-
-      // only update if either the user is not active or the hash is visible
-      if (!visible && userIsActive) return false;
-
       this.createLabels();
       this.overflowClip();
       this.updateBuffers(false);
       this.dirty = false;
       this.dirtyBuffers = false;
-
-      // we need to test visibility in case the bounds changed
-      this.visible = visible;
-
       return true;
     } else if (this.dirtyBuffers) {
       this.updateBuffers(true);
@@ -191,6 +188,23 @@ export class CellsTextHash extends Container<LabelMeshes> {
       const bounds = cellLabel.updateLabelMesh(this.labelMeshes);
       this.viewBounds.mergeInto(bounds);
     });
+
+    // adjust viewRectangle by viewBounds overflow
+    this.viewRectangle = this.rawViewRectangle.clone();
+    if (this.viewBounds.minX < this.viewRectangle.left) {
+      this.viewRectangle.width += this.viewRectangle.left - this.viewBounds.minX;
+      this.viewRectangle.x = this.viewBounds.minX;
+    }
+    if (this.viewBounds.maxX > this.viewRectangle.right) {
+      this.viewRectangle.width += this.viewBounds.maxX - this.viewRectangle.right;
+    }
+    if (this.viewBounds.minY < this.viewRectangle.top) {
+      this.viewRectangle.height += this.viewRectangle.top - this.viewBounds.minY;
+      this.viewRectangle.y = this.viewBounds.minY;
+    }
+    if (this.viewBounds.maxY > this.viewRectangle.bottom) {
+      this.viewRectangle.height += this.viewBounds.maxY - this.viewRectangle.bottom;
+    }
 
     // finalizes webGL buffers
     this.labelMeshes.finalize();
