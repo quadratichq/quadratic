@@ -65,6 +65,21 @@ const ListItems = [
       );
     },
   },
+  {
+    label: 'View: Show code peek (hover to peek at the code)',
+    Component: (props: any) => {
+      const settings = useGridSettings();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<CommandPaletteListItemCheckbox checked={settings.showCodePeek} />}
+          action={() => {
+            settings.setShowCodePeek(!settings.showCodePeek);
+          }}
+        />
+      );
+    },
+  },
   // Commented out because the editor switches this state automatically when the user
   // is editing a formula.
   // {
