@@ -168,7 +168,7 @@ export class CellLabel extends Container {
       }
       this.position = new Point(actualLeft, this.AABB.y);
     } else if (alignment === 'center') {
-      const actualLeft = this.AABB.x + this.cellWidth / 2 - this.textWidth / 2;
+      const actualLeft = this.AABB.x + this.cellWidth / 2 - this.textWidth / 2 - OPEN_SANS_FIX.x;
       const actualRight = actualLeft + this.textWidth;
       if (actualLeft < this.AABB.x) {
         this.overflowLeft = this.AABB.x - actualLeft;
