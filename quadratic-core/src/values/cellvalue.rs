@@ -257,6 +257,10 @@ impl CellValue {
         value.strip_suffix(PERCENTAGE_SYMBOL).unwrap_or(value)
     }
 
+    pub fn strip_commas(value: &str) -> String {
+        value.to_string().replace(",", "")
+    }
+
     pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
         if s.is_empty() {
             return None;
@@ -264,7 +268,8 @@ impl CellValue {
 
         for char in CURRENCY_SYMBOLS.chars() {
             if let Some(stripped) = s.strip_prefix(char) {
-                if let Ok(bd) = BigDecimal::from_str(stripped) {
+                let without_commas = CellValue::strip_commas(stripped);
+                if let Ok(bd) = BigDecimal::from_str(&without_commas) {
                     return Some((char.to_string(), bd));
                 }
             }
