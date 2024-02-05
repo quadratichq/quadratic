@@ -33,7 +33,7 @@ impl GridController {
                     1,
                 )),
             });
-            if value.contains(",") {
+            if value.contains(',') {
                 ops.push(Operation::SetCellFormats {
                     sheet_rect,
                     attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
@@ -55,7 +55,7 @@ impl GridController {
         } else if let Some(bool) = CellValue::unpack_boolean(value) {
             bool
         } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(value)) {
-            if value.contains(",") {
+            if value.contains(',') {
                 ops.push(Operation::SetCellFormats {
                     sheet_rect,
                     attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
@@ -211,6 +211,6 @@ mod test {
         assert_eq!(
             value,
             CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
-        )
+        );
     }
 }

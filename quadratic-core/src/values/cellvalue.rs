@@ -258,7 +258,7 @@ impl CellValue {
     }
 
     pub fn strip_commas(value: &str) -> String {
-        value.to_string().replace(",", "")
+        value.to_string().replace(',', "")
     }
 
     pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
@@ -454,14 +454,14 @@ impl CellValue {
                 });
             }
 
-            if s.contains(",") {
+            if s.contains(',') {
                 ops.push(Operation::SetCellFormats {
                     sheet_rect,
                     attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
                 });
             }
         } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(s)) {
-            if s.contains(",") {
+            if s.contains(',') {
                 ops.push(Operation::SetCellFormats {
                     sheet_rect,
                     attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),

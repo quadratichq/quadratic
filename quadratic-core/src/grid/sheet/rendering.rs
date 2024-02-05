@@ -517,14 +517,14 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 5,
-                value: "true".to_string(),
+                value: "".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: None,
+                special: Some(JsRenderCellSpecial::True),
             },
         );
         assert_eq!(
@@ -735,12 +735,12 @@ mod tests {
             min: (0, 0).into(),
             max: (5, 5).into(),
         });
-        for i in 0..=5 {
-            assert_eq!(rendering[i].value, "".to_string());
+        for (i, rendering) in rendering.iter().enumerate().take(5 + 1) {
+            assert_eq!(rendering.value, "".to_string());
             if i % 2 == 0 {
-                assert_eq!(rendering[i].special, Some(JsRenderCellSpecial::True));
+                assert_eq!(rendering.special, Some(JsRenderCellSpecial::True));
             } else {
-                assert_eq!(rendering[i].special, Some(JsRenderCellSpecial::False));
+                assert_eq!(rendering.special, Some(JsRenderCellSpecial::False));
             }
         }
     }
