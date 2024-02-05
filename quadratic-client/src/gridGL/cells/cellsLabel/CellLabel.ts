@@ -94,6 +94,10 @@ export class CellLabel extends Container {
     } else {
       this.tint = 0;
     }
+    if (cell.special === 'True' || cell.special === 'False') {
+      this.text = cell.special === 'True' ? 'TRUE' : 'FALSE';
+      cell.align = cell.align ?? 'center';
+    }
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
