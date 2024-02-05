@@ -23,18 +23,14 @@ const drawerWidth = 264;
 
 type LoaderData = {
   teams: ApiTypes['/v0/teams.GET.response'];
-  hasError: boolean;
 };
 
 export const loader = async (): Promise<LoaderData> => {
-  let hasError = false;
   const teams = await apiClient.teams.list().catch((err) => {
     Sentry.captureException(err);
-
-    hasError = true;
     return [];
   });
-  return { teams, hasError };
+  return { teams };
 };
 
 export const Component = () => {
@@ -81,7 +77,7 @@ export const Component = () => {
 };
 
 function Navbar() {
-  const { teams, hasError } = useLoaderData() as LoaderData;
+  const { teams } = useLoaderData() as LoaderData;
   const { loggedInUser: user } = useRootRouteLoaderData();
   const fetchers = useFetchers();
   const navigation = useNavigation();
@@ -123,54 +119,45 @@ function Navbar() {
           </SidebarNavLink>
         </div>
 
-        {false && (
-          <>
-            <Type as="h3" className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}>
-              <span className={`${TYPE.overline}`}>Teams</span>{' '}
-              {hasError && (
-                <span className="text-xs text-destructive">
-                  Failed to load,{' '}
-                  <a href="." className="underline">
-                    refresh
-                  </a>
-                </span>
-              )}
-            </Type>
-            <div className="grid gap-1">
-              {teams.map(({ uuid, name, picture }) => {
-                // TODO: can we refine this?
-                // See if this team has an inflight fetcher that's updating team info
-                const inFlightFetcher = fetchers.find(
-                  (fetcher) =>
-                    fetcher.state !== 'idle' &&
-                    fetcher.formAction?.includes(uuid) &&
-                    fetcher.json &&
-                    typeof fetcher.json === 'object' &&
-                    (fetcher.json as TeamAction['request.update-team']).intent === 'update-team'
-                );
-                // If it does, use its data
-                if (inFlightFetcher) {
-                  const data = inFlightFetcher.json as TeamAction['request.update-team'];
-                  if (data.name) name = data.name;
-                  if (data.picture) picture = data.picture;
-                }
+        <Type
+          as="h3"
+          className={`${TYPE.overline} mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
+        >
+          Teams
+        </Type>
+        <div className="grid gap-1">
+          {teams.map(({ uuid, name, picture }) => {
+            // TODO: can we refine this?
+            // See if this team has an inflight fetcher that's updating team info
+            const inFlightFetcher = fetchers.find(
+              (fetcher) =>
+                fetcher.state !== 'idle' &&
+                fetcher.formAction?.includes(uuid) &&
+                fetcher.json &&
+                typeof fetcher.json === 'object' &&
+                (fetcher.json as TeamAction['request.update-team']).intent === 'update-team'
+            );
+            // If it does, use its data
+            if (inFlightFetcher) {
+              const data = inFlightFetcher.json as TeamAction['request.update-team'];
+              if (data.name) name = data.name;
+              if (data.picture) picture = data.picture;
+            }
 
-                return (
-                  <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
-                    <AvatarWithLetters size="small" src={picture}>
-                      {name}
-                    </AvatarWithLetters>
-                    {name}
-                  </SidebarNavLink>
-                );
-              })}
-              <SidebarNavLink to={ROUTES.CREATE_TEAM}>
-                <PlusIcon className={classNameIcons} />
-                Create
+            return (
+              <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
+                <AvatarWithLetters size="small" src={picture}>
+                  {name}
+                </AvatarWithLetters>
+                {name}
               </SidebarNavLink>
-            </div>
-          </>
-        )}
+            );
+          })}
+          <SidebarNavLink to={ROUTES.CREATE_TEAM}>
+            <PlusIcon className={classNameIcons} />
+            Create
+          </SidebarNavLink>
+        </div>
       </div>
       <div>
         <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>
