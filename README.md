@@ -1,7 +1,7 @@
 ![E2E Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-e2e.yml/badge.svg) ![Python Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-python.yml/badge.svg) ![Unit Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-unit.yml/badge.svg)
 ![Twitter Follow](https://img.shields.io/twitter/follow/QuadraticHQ)
 
-## ![quadratic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The infinite spreadsheet, with Python, SQL, and AI_**
+## ![quadratic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The infinite multiplayer spreadsheet, with Python, SQL, and AI_**
 
 Modern multiplayer spreadsheet with Python, AI, and SQL built-in. 
 
@@ -66,10 +66,6 @@ Want to learn more about how Quadratic works? Read the [How Quadratic Works](./d
 ## Examples
 
 Access example sheets - [Examples](https://www.quadratichq.com/examples)
-
-There are more example files in the application file menu. File → Open sample
-
-You can download them and then open them in Quadratic via File → Open Grid
 
 ## Quadratic is hiring
 
