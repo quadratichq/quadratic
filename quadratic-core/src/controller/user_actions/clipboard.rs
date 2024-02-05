@@ -111,40 +111,48 @@ impl GridController {
                     x: output_rect.min.x,
                     y: output_rect.min.y,
                 };
-                if !clipboard_rect.contains(code_pos) {
-                    let x_start = if output_rect.min.x > clipboard_rect.min.x {
-                        output_rect.min.x
-                    } else {
-                        clipboard_rect.min.x
-                    };
-                    let y_start = if output_rect.min.y > clipboard_rect.min.y {
-                        output_rect.min.y
-                    } else {
-                        clipboard_rect.min.y
-                    };
-                    let x_end = if output_rect.max.x < clipboard_rect.max.x {
-                        output_rect.max.x
-                    } else {
-                        clipboard_rect.max.x
-                    };
-                    let y_end = if output_rect.max.y < clipboard_rect.max.y {
-                        output_rect.max.y
-                    } else {
-                        clipboard_rect.max.y
-                    };
+                let x_start = if output_rect.min.x > clipboard_rect.min.x {
+                    output_rect.min.x
+                } else {
+                    clipboard_rect.min.x
+                };
+                let y_start = if output_rect.min.y > clipboard_rect.min.y {
+                    output_rect.min.y
+                } else {
+                    clipboard_rect.min.y
+                };
+                let x_end = if output_rect.max.x < clipboard_rect.max.x {
+                    output_rect.max.x
+                } else {
+                    clipboard_rect.max.x
+                };
+                let y_end = if output_rect.max.y < clipboard_rect.max.y {
+                    output_rect.max.y
+                } else {
+                    clipboard_rect.max.y
+                };
 
-                    // add the code_run output to clipboard.values
-                    for y in y_start..=y_end {
-                        for x in x_start..=x_end {
-                            if let Some(value) = code_cell
-                                .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
-                            {
-                                values.set(
+                // add the CellValue to cells if the code is not included in the clipboard
+                let include_in_cells = !clipboard_rect.contains(code_pos);
+
+                // add the code_run output to clipboard.values
+                for y in y_start..=y_end {
+                    for x in x_start..=x_end {
+                        if let Some(value) = code_cell
+                            .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
+                        {
+                            if include_in_cells {
+                                cells.set(
                                     (x - sheet_rect.min.x) as u32,
                                     (y - sheet_rect.min.y) as u32,
-                                    value,
+                                    value.clone(),
                                 );
                             }
+                            values.set(
+                                (x - sheet_rect.min.x) as u32,
+                                (y - sheet_rect.min.y) as u32,
+                                value,
+                            );
                         }
                     }
                 }
@@ -847,5 +855,60 @@ mod test {
                 fill_color: None,
             }
         );
+    }
+
+    #[test]
+    fn copy_part_of_code_run() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            String::from("{1, 2, 3; 4, 5, 6}"),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+
+        // don't copy the origin point
+        let sheet_rect = SheetRect::new_pos_span(Pos { x: 2, y: 1 }, Pos { x: 3, y: 2 }, sheet_id);
+        let clipboard = gc.copy_to_clipboard(sheet_rect);
+
+        // paste using html on a new grid controller
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // ensure the grid controller is empty
+        assert_eq!(gc.undo_stack.len(), 0);
+
+        gc.paste_from_clipboard(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            Some(clipboard.0),
+            Some(clipboard.1),
+            PasteSpecial::None,
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
     }
 }
