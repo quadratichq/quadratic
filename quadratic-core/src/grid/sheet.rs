@@ -21,6 +21,7 @@ pub mod cell_array;
 pub mod code;
 pub mod formatting;
 pub mod rendering;
+pub mod search;
 pub mod sheet_offsets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
