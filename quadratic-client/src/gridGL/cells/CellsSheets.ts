@@ -69,7 +69,6 @@ export class CellsSheets extends Container<CellsSheet> {
   update(userIsActive: boolean): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
     if (this.current.update(userIsActive)) {
-      pixiApp.setViewportDirty();
       return;
     }
     // if the current sheet is not dirty, check the other sheets
