@@ -46,6 +46,8 @@ impl GridController {
                 }
             }
             CellValue::Number(number)
+        } else if let Some(bool) = CellValue::unpack_boolean(value) {
+            bool
         } else if let Ok(bd) = BigDecimal::from_str(value) {
             CellValue::Number(bd)
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
@@ -127,5 +129,38 @@ mod test {
             None,
         );
         assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_rect\":{\"min\":{\"x\":1,\"y\":2},\"max\":{\"x\":1,\"y\":2},\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"size\":{\"w\":1,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"hello\"}]}}}]".to_string()));
+    }
+
+    #[test]
+    fn boolean_to_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::test(),
+        };
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "true");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, true.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "false");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, false.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "TRUE");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, true.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "FALSE");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, false.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "tRue");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, true.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "FaLse");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, false.into());
     }
 }

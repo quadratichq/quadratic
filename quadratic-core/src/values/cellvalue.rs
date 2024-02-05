@@ -245,6 +245,14 @@ impl CellValue {
         None
     }
 
+    pub fn unpack_boolean(s: &str) -> Option<CellValue> {
+        match s.to_ascii_lowercase().as_str() {
+            "true" => Some(CellValue::Logical(true)),
+            "false" => Some(CellValue::Logical(false)),
+            _ => None,
+        }
+    }
+
     pub fn strip_percentage(value: &str) -> &str {
         value.strip_suffix(PERCENTAGE_SYMBOL).unwrap_or(value)
     }
