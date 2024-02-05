@@ -207,7 +207,7 @@ impl GridController {
                 if cell_value != CellValue::Blank {
                     cell_values.set(x as u32, y as u32, cell_value);
                 }
-            })
+            });
         });
 
         ops.push(Operation::SetCellValues {

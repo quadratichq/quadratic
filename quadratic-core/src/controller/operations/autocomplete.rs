@@ -616,8 +616,7 @@ impl GridController {
             negative,
         });
 
-        let values =
-            CellValues::from_flat_array(range.width(), range.height(), series.to_owned().into());
+        let values = CellValues::from_flat_array(range.width(), range.height(), series.to_owned());
 
         let sheet_pos = range.min.to_sheet_pos(sheet_id);
         let ops = vec![Operation::SetCellValues { sheet_pos, values }];
