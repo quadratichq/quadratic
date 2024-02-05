@@ -3,7 +3,9 @@
 
 ## ![quadratic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The infinite spreadsheet, with Python, SQL, and AI_**
 
-Modern multiplayer spreadsheet with Python, AI, and SQL built-in. Built with Rust + WASM + WebGL to run seamlessly at 60 fps in the browser.  
+Modern multiplayer spreadsheet with Python, AI, and SQL built-in. 
+
+Built with Rust + WASM + WebGL to run seamlessly at 60+ FPS in the browser.  
 
 Get from data to insight more effectively as a team. 
 
@@ -63,7 +65,7 @@ Want to learn more about how Quadratic works? Read the [How Quadratic Works](./d
 
 ## Examples
 
-Access example sheets - (Examples)[https://www.quadratichq.com/examples]
+Access example sheets - [Examples](https://www.quadratichq.com/examples)
 
 There are more example files in the application file menu. File → Open sample
 
