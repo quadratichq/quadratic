@@ -91,9 +91,13 @@ export function Search() {
           if (e.key === 'Escape') {
             setEditorInteractionState((prev) => ({ ...prev, showSearch: false }));
           }
+          if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            inputRef.current?.focus();
+          }
         }}
       >
-        <Input type="text" ref={inputRef} placeholder={placeholder} onChange={onChange} />
+        <Input id="search-input" type="text" ref={inputRef} placeholder={placeholder} onChange={onChange} />
         {!!results.length && (
           <div style={{ whiteSpace: 'nowrap' }}>
             {current + 1} of {results.length}

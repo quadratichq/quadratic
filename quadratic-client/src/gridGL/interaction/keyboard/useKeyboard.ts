@@ -61,7 +61,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       keyboardUndoRedo(event) ||
       keyboardSelect(event) ||
       keyboardCode(event, editorInteractionState) ||
-      keyboardSearch(event, setEditorInteractionState)
+      keyboardSearch(event, editorInteractionState, setEditorInteractionState)
     )
       return;
 
