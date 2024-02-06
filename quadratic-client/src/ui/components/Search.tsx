@@ -21,6 +21,7 @@ import { useRecoilState } from 'recoil';
 
 export function Search() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
+
   const [searchOptions, setSearchOptions] = useState<SearchOptions>({
     case_sensitive: false,
     whole_cell: false,
@@ -96,9 +97,30 @@ export function Search() {
 
   const closeSearch = () => {
     setResults([]);
+    setSearchOptions({
+      case_sensitive: false,
+      whole_cell: false,
+      search_code: false,
+      sheet_id: sheets.sheet.id,
+    });
     focusGrid();
     dispatchEvent(new CustomEvent('search'));
   };
+
+  useEffect(() => {
+    const changeSheet = () =>
+      setSearchOptions((prev) => {
+        if (prev.sheet_id) {
+          return { ...prev, sheet_id: sheets.sheet.id };
+        } else {
+          return prev;
+        }
+      });
+    window.addEventListener('change-sheet', changeSheet);
+    return () => {
+      window.removeEventListener('change-sheet', changeSheet);
+    };
+  }, []);
 
   useEffect(() => {
     if (!editorInteractionState.showSearch) {
