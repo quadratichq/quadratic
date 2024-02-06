@@ -2,13 +2,14 @@
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
+import { Pos } from '@/quadratic-core/types';
+import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
 import { editor, Range } from 'monaco-editor';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { inspectPython, inspectPythonReturnType } from '../../../grid/computations/python/inspectPython';
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -40,9 +41,8 @@ export const CodeEditor = () => {
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
-  const [returnSelection, setReturnSelection] = useState<inspectPythonReturnType | undefined>(undefined);
+  const [returnSelection, setReturnSelection] = useState<ComputedPythonReturnType | undefined>(undefined);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  
 
   const cellLocation = useMemo(() => {
     return {
@@ -86,19 +86,8 @@ export const CodeEditor = () => {
     }
   }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
 
-  // When editor content changes inspect python code
-  useEffect(() => {
-    inspectPython(editorContent || '').then((result) => {
-      if (!result) {
-        setReturnSelection(undefined);
-        return;
-      }
-      setReturnSelection(result);
-    });
-  }, [editorContent, editorInteractionState.selectedCell]);
-
   // highlight range in monaco editor
-  if (editorMode === 'PYTHON') {
+  if (editorInteractionState.mode === 'Python') {
     if (returnSelection !== undefined) {
       decorations = editorRef.current?.deltaDecorations(decorations || [], [
         {
@@ -135,7 +124,7 @@ export const CodeEditor = () => {
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
         if (updateEditorContent) setEditorContent(codeCell.code_string);
         setEvaluationResult(codeCell.evaluation_result);
-        setSpillError(codeCell.spill_error?.map((c: Coordinate) => ({ x: Number(c.x), y: Number(c.y) })));
+        setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
         if (updateEditorContent) setEditorContent('');
@@ -157,6 +146,15 @@ export const CodeEditor = () => {
     window.addEventListener('code-cells-update', update);
     return () => {
       window.removeEventListener('code-cells-update', update);
+    };
+  }, [updateCodeCell]);
+
+  // listen for python-inspect-results in order to display python inspection results
+  useEffect(() => {
+    const updateType = () => setReturnSelection(pythonWebWorker.getInspectionResults());
+    window.addEventListener('python-inspect-results', updateType);
+    return () => {
+      window.removeEventListener('python-inspect-results', updateType);
     };
   }, [updateCodeCell]);
 
@@ -344,7 +342,6 @@ export const CodeEditor = () => {
             evaluationResult={evaluationResult}
             spillError={spillError}
             hasUnsavedChanges={unsaved}
-            selectedCell={editorInteractionState.selectedCell}
             returnSelection={returnSelection}
           />
         )}

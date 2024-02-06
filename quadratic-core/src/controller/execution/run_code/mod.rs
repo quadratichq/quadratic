@@ -202,6 +202,7 @@ impl GridController {
                 CodeRun {
                     formatted_code_string: old_code_run.formatted_code_string.clone(),
                     result,
+                    return_type: None,
                     std_out: None,
                     std_err: Some(error_msg),
                     spill_error: false,
@@ -214,6 +215,7 @@ impl GridController {
             None => CodeRun {
                 formatted_code_string: None,
                 result,
+                return_type: None,
                 std_out: None,
                 std_err: Some(error_msg),
                 spill_error: false,
@@ -248,6 +250,7 @@ impl GridController {
                         "Sheet was deleted before the async operation completed".into(),
                     ),
                 }),
+                return_type: None,
                 std_out: None,
                 std_err: None,
                 spill_error: false,
@@ -286,6 +289,7 @@ impl GridController {
         let code_run = CodeRun {
             formatted_code_string: js_code_result.formatted_code().clone(),
             result,
+            return_type: None,
             std_out: js_code_result.input_python_std_out(),
             std_err: js_code_result.error_msg(),
             spill_error: false,
@@ -335,6 +339,7 @@ mod test {
             std_err: None,
             std_out: None,
             result: CodeRunResult::Ok(Value::Single(CellValue::Text("delete me".to_string()))),
+            return_type: Some("text".into()),
             last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
             spill_error: false,
@@ -364,6 +369,7 @@ mod test {
             std_err: None,
             std_out: None,
             result: CodeRunResult::Ok(Value::Single(CellValue::Text("replace me".to_string()))),
+            return_type: Some("text".into()),
             last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
             spill_error: false,

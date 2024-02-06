@@ -402,6 +402,7 @@ mod tests {
             std_err: None,
             std_out: None,
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1"]]))),
+            return_type: Some("number".into()),
             spill_error: false,
             last_modified: Utc::now(),
             cells_accessed: HashSet::new(),

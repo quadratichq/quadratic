@@ -3,7 +3,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
-import { PythonMessage, PythonReturnType } from './pythonTypes';
+import { ComputedPythonReturnType, InspectPythonReturnType, PythonMessage, PythonReturnType } from './pythonTypes';
 
 const stringOrNumber = (input: string | number | undefined): string => {
   if (typeof input === 'undefined') {
@@ -28,6 +28,12 @@ class PythonWebWorker {
   private loaded = false;
   private running = false;
   private executionStack: PythonCode[] = [];
+  private pythonOutputType?: string;
+  private inspectionResults?: InspectPythonReturnType;
+
+  private expectWorker() {
+    if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
+  }
 
   private calculationComplete() {
     this.running = false;
@@ -41,84 +47,112 @@ class PythonWebWorker {
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
 
-      if (event.type === 'results') {
-        if (this.executionStack.length === 0) {
-          throw new Error('Expected executionStack to have at least one element in python.ts');
-        }
+      switch (event.type) {
+        case 'results': {
+          if (this.executionStack.length === 0)
+            throw new Error('Expected executionStack to have at least one element in python.ts');
 
-        const transactionId = this.executionStack[0].transactionId;
-        const pythonResult = event.results;
+          const transactionId = this.executionStack[0].transactionId;
+          const pythonResult = event.results;
 
-        if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
+          if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
-        if (pythonResult.array_output) {
-          if (!Array.isArray(pythonResult.array_output[0])) {
-            pythonResult.array_output = pythonResult.array_output.flatMap((entry: string | number | undefined) => [
-              [stringOrNumber(entry)],
-            ]);
-          } else {
-            pythonResult.array_output = pythonResult.array_output.map((entry: (string | number)[]) =>
-              entry.map((entry: string | number | undefined) => stringOrNumber(entry))
-            );
+          this.pythonOutputType = pythonResult.output_type;
+          this.inspectPython(pythonResult.formatted_code);
 
-            // ensure that the 2d array has equally sized rows
-            const size = pythonResult.array_output[0].length;
-            for (let i = 1; i < pythonResult.array_output.length; i++) {
-              while (pythonResult.array_output[i].length < size) {
-                pythonResult.array_output[i].push('');
+          if (pythonResult.array_output) {
+            if (!Array.isArray(pythonResult.array_output[0])) {
+              pythonResult.array_output = pythonResult.array_output.flatMap((entry: string | number) => [
+                [stringOrNumber(entry)],
+              ]);
+            } else {
+              pythonResult.array_output = pythonResult.array_output.map((entry: (string | number)[]) =>
+                entry.map((entry: string | number) => stringOrNumber(entry))
+              );
+
+              // ensure that the 2d array has equally sized rows
+              const size = pythonResult.array_output[0].length;
+
+              for (let i = 1; i < pythonResult.array_output.length; i++) {
+                while (pythonResult.array_output[i].length < size) {
+                  pythonResult.array_output[i].push('');
+                }
               }
             }
           }
-        }
 
-        if (!pythonResult.success) {
-          pythonResult.error_msg = pythonResult.input_python_stack_trace;
-        }
+          if (!pythonResult.success) {
+            pythonResult.error_msg = pythonResult.input_python_stack_trace;
+          }
 
-        const result = new JsCodeResult(
-          transactionId,
-          pythonResult.success,
-          pythonResult.formatted_code,
-          pythonResult.error_msg,
-          pythonResult.std_out,
-          pythonResult.output_value,
-          JSON.stringify(pythonResult.array_output),
-          pythonResult.line_number,
-          pythonResult.cancel_compute
-        );
-        grid.calculationComplete(result);
-        this.calculationComplete();
-      } else if (event.type === 'get-cells') {
-        if (this.executionStack.length === 0) {
-          throw new Error('Expected executionStack to have at least one element in python.ts');
-        }
-        const transactionId = this.executionStack[0].transactionId;
-        const range = event.range;
-        if (!range) {
-          throw new Error('Expected range to be defined in get-cells');
-        }
-        const cells = grid.calculationGetCells(
-          transactionId,
-          pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-          range.sheet !== undefined ? range.sheet.toString() : undefined,
-          event.range?.lineNumber
-        );
-        // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
-        if (cells) {
-          this.worker!.postMessage({ type: 'get-cells', cells });
-        } else {
+          const result = new JsCodeResult(
+            transactionId,
+            pythonResult.success,
+            pythonResult.formatted_code,
+            pythonResult.error_msg,
+            pythonResult.std_out,
+            pythonResult.output_value,
+            JSON.stringify(pythonResult.array_output),
+            pythonResult.line_number,
+            pythonResult.cancel_compute
+          );
+          grid.calculationComplete(result);
           this.calculationComplete();
+
+          break;
         }
-      } else if (event.type === 'python-loaded') {
-        window.dispatchEvent(new CustomEvent('python-loaded'));
-        this.loaded = true;
-        this.next(false);
-      } else if (event.type === 'python-error') {
-        window.dispatchEvent(new CustomEvent('python-error'));
-      } else if (event.type === 'not-loaded') {
-        window.dispatchEvent(new CustomEvent('python-loading'));
-      } else {
-        throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
+
+        case 'get-cells': {
+          if (this.executionStack.length === 0)
+            throw new Error('Expected executionStack to have at least one element in python.ts');
+
+          const transactionId = this.executionStack[0].transactionId;
+          const range = event.range;
+
+          if (!range) throw new Error('Expected range to be defined in get-cells');
+
+          const cells = grid.calculationGetCells(
+            transactionId,
+            pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+            range.sheet !== undefined ? range.sheet.toString() : undefined,
+            event.range?.lineNumber
+          );
+
+          // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
+          if (cells) {
+            this.worker!.postMessage({ type: 'get-cells', cells });
+          } else {
+            this.calculationComplete();
+          }
+          break;
+        }
+
+        case 'python-loaded': {
+          window.dispatchEvent(new CustomEvent('python-loaded'));
+          this.loaded = true;
+          this.next(false);
+          break;
+        }
+
+        case 'python-error': {
+          window.dispatchEvent(new CustomEvent('python-error'));
+          break;
+        }
+
+        case 'not-loaded': {
+          window.dispatchEvent(new CustomEvent('python-loading'));
+          break;
+        }
+
+        case 'inspect-results': {
+          this.inspectionResults = event.results;
+          window.dispatchEvent(new CustomEvent('python-inspect-results'));
+          break;
+        }
+
+        default: {
+          throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
+        }
       }
     };
   }
@@ -130,6 +164,7 @@ class PythonWebWorker {
   runPython(transactionId: string, x: number, y: number, sheetId: string, code: string) {
     this.executionStack.push({ transactionId, sheetPos: { x, y, sheetId }, code });
     this.next(false);
+    this.pythonOutputType = undefined;
   }
 
   getCodeRunning(): SheetPos[] {
@@ -202,6 +237,18 @@ class PythonWebWorker {
   }
 
   changeOutput(_: Record<string, PythonReturnType>): void {}
+
+  inspectPython(python: string): void {
+    if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
+    this.worker.postMessage({ type: 'inspect', python });
+  }
+
+  getInspectionResults(): ComputedPythonReturnType {
+    return {
+      ...this.inspectionResults,
+      output_type: this.pythonOutputType,
+    } as any;
+  }
 }
 
 export const pythonWebWorker = new PythonWebWorker();

@@ -170,7 +170,8 @@ mod tests {
                 response: vec![GetCellResponse {
                     x: 0,
                     y: 0,
-                    value: "9".into()
+                    value: "9".into(),
+                    type_name: "number".into(),
                 }]
             })
         );
@@ -275,7 +276,8 @@ mod tests {
                 response: vec![GetCellResponse {
                     x: 0,
                     y: 0,
-                    value: "10".into()
+                    value: "10".into(),
+                    type_name: "number".into(),
                 }]
             })
         );
@@ -552,7 +554,8 @@ mod tests {
             GetCellResponse {
                 x: 0,
                 y: 0,
-                value: "1".into()
+                value: "1".into(),
+                type_name: "number".into(),
             }
         );
         let result = gc.calculation_complete(JsCodeResult::new_from_rust(
@@ -595,7 +598,8 @@ mod tests {
             GetCellResponse {
                 x: 0,
                 y: 1,
-                value: "2".into()
+                value: "2".into(),
+                type_name: "number".into(),
             }
         );
         let result = gc.calculation_complete(JsCodeResult::new_from_rust(

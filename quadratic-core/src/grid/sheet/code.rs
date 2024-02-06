@@ -236,6 +236,7 @@ mod test {
             last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(2)))),
+            return_type: Some("number".into()),
             spill_error: false,
         };
         let old = sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
@@ -256,6 +257,7 @@ mod test {
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(2)))),
+            return_type: Some("number".into()),
             spill_error: false,
             last_modified: Utc::now(),
         };
@@ -286,6 +288,7 @@ mod test {
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3"]]))),
+            return_type: Some("number".into()),
             spill_error: false,
             last_modified: Utc::now(),
         };
@@ -368,6 +371,7 @@ mod test {
                 vec!["2"],
                 vec!["3"],
             ]))),
+            return_type: Some("number".into()),
             spill_error: false,
             last_modified: Utc::now(),
         };
@@ -395,6 +399,7 @@ mod test {
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3'"]]))),
+            return_type: Some("number".into()),
             spill_error: false,
             last_modified: Utc::now(),
         };

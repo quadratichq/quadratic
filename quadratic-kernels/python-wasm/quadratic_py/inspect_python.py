@@ -1,10 +1,10 @@
 from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
-from pyodide import CodeRunner
+import pyodide
 
 
 async def inspect_python(code):
     try:
-        runner = CodeRunner(
+        runner = pyodide.code.CodeRunner(
             code,
             return_mode="last_expr_or_assign",
             mode="exec",

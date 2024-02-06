@@ -52,102 +52,6 @@ def strtobool(val):
 def stack_line_number():
     return int(traceback.format_stack()[-3].split(", ")[1].split(" ")[1])
 
-class Cell:
-    def __init__(self, object):
-        self.value = object.value
-
-    def __str__(self):
-        return str(self.value)
-
-    def __repr__(self):
-        return str(self.value)
-
-    def __int__(self):
-        return int(self.value or 0)
-
-    def __float__(self):
-        self_only_num = "".join(_ for _ in str(self) if _ in "+-,.1234567890")
-        return float(self_only_num or 0)
-
-    def generic_overload(self, other, op):
-        if type(other) is Cell:
-            try:
-                return op(Decimal(self.value), Decimal(other.value))
-            except (DecimalException, TypeError):
-                return op(self.value, other.value)
-        else:
-            try:
-                return op(Decimal(self.value), Decimal(other))
-            except (DecimalException, TypeError):
-                return op(self.value, other)
-
-    def __add__(self, other):
-        return self.generic_overload(other, operator.add)
-
-    def __sub__(self, other):
-        return self.generic_overload(other, operator.sub)
-
-    def __mul__(self, other):
-        return self.generic_overload(other, operator.mul)
-
-    def __truediv__(self, other):
-        return self.generic_overload(other, operator.truediv)
-
-    def __mod__(self, other):
-        return self.generic_overload(other, operator.mod)
-
-    def __pow__(self, other):
-        return self.generic_overload(other, operator.pow)
-
-    def __eq__(self, other):
-        return self.generic_overload(other, operator.eq)
-
-    def __lt__(self, other):
-        return self.generic_overload(other, operator.lt)
-
-    def __le__(self, other):
-        return self.generic_overload(other, operator.le)
-
-    def __gt__(self, other):
-        return self.generic_overload(other, operator.gt)
-
-    def __ge__(self, other):
-        return self.generic_overload(other, operator.ge)
-
-    def __bool__(self):
-        return strtobool(self.value)
-
-
-class Table:
-    def __init__(self, cells):
-        self.p0 = None
-        self.p1 = None
-        self.sheet = None
-        self.has_headers = False
-
-    def to_df(self):
-        raise NotImplementedError()
-
-    def to_list(self):
-        raise NotImplementedError()
-
-    def to_2darray(self):
-        raise NotImplementedError()
-
-    # TODO define iterator
-
-
-def not_cell(item):
-    if isinstance(item, Cell):
-        return item.value
-    return item
-
-def ensure_not_cell(item):
-    if isinstance(item, list):
-        return [ensure_not_cell(x) for x in item]
-    return not_cell(item)
-
-
 def error_result(
     error: Exception, code: str, cells_accessed: list[list], sout: StringIO, line_number: int,
 ) -> dict:
@@ -170,6 +74,28 @@ def error_result(
 async def run_python(code):
     cells_accessed = []
 
+    def number_type(value):
+        try:
+            return int(value)
+        except ValueError:
+            try:
+                return float(value)
+            except ValueError:
+                return value
+
+    def convert_type(value, value_type):
+        if value_type == "number":
+            return number_type(value)
+        elif value_type == "text":
+            return str(value)
+        elif value_type == "logical":
+            return strtobool(value)
+        else:
+            return value
+        
+    def result_to_value(result):
+        return convert_type(result.value, result.type_name)
+
     async def getCells(p0, p1, sheet=None, first_row_header=False):
         # mark cells as accessed by this cell
         for x in range(p0[0], p1[0] + 1):
@@ -178,6 +104,14 @@ async def run_python(code):
 
         # Get Cells
         cells = await getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet, int(stack_line_number()))
+
+        cell_range_width = p1[0] - p0[0] + 1
+        cell_range_height = p1[1] - p0[1] + 1
+
+        # return a list for a 1d array of cells     
+        if cell_range_width == 1 or cell_range_height == 1:
+            cell_list = [result_to_value(cell) for cell in cells]            
+            return pd.Series(cell_list)
 
         # Create empty df of the correct size
         df = pd.DataFrame(
@@ -190,6 +124,7 @@ async def run_python(code):
         y_offset = p0[1]
 
         for cell in cells:
+            cell.value = convert_type(cell.value, cell.type_name)
             df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
 
         # Move the first row to the header
@@ -205,78 +140,17 @@ async def run_python(code):
         result = await getCellsDB(p_x, p_y, p_x, p_y, sheet, int(stack_line_number()))
 
         if len(result):
-            return Cell(result[0])
+            return result_to_value(result[0])
         else:
             return None
-
-    class CellFunc:
-        @staticmethod
-        def __call__(p0_x, p0_y, sheet=None):
-            return getCell(p0_x, p0_y, sheet)
-
-    class CellsFunc:
-        @staticmethod
-        def __call__(p0, p1, sheet=None, first_row_header=False):
-            return getCells(p0, p1, sheet, first_row_header)
-
-        @staticmethod
-        async def __getitem__(item):
-            if type(item) == tuple and (len(item) == 2 or len(item) == 3):
-                row_idx = item[0]
-                col_idx = item[1]
-                sheet = item[2]
-
-                if type(row_idx) == type(col_idx) == int:
-                    return getCell(row_idx, col_idx, sheet)
-
-                elif type(row_idx) in (int, slice) and type(col_idx) in (int, slice):
-                    if type(row_idx) == slice:
-                        row_start = row_idx.start
-                        row_stop = row_idx.stop
-                        row_step = row_idx.step
-                    else:
-                        row_start = row_idx
-                        row_stop = row_idx + 1
-                        row_step = None
-
-                    if type(col_idx) == slice:
-                        col_start = col_idx.start
-                        col_stop = col_idx.stop
-                        col_step = col_idx.step
-                    else:
-                        col_start = col_idx
-                        col_stop = col_idx + 1
-                        col_step = None
-
-                    if row_step is not None or col_step is not None:
-                        raise IndexError("Slice step-size parameter not supported")
-
-                    return getCells(
-                        (col_start, row_start),
-                        (col_stop - 1, row_stop - 1),
-                        sheet,
-                        first_row_header=False,
-                    )
-
-                else:
-                    raise IndexError("Only int and slice type indices supported")
-            else:
-                raise IndexError(
-                    """Expected usage:
-                        1. cells[row                        , col                        , sheet?]
-                        2. cells[row_slice_min:row_slice_max, col                        , sheet?]
-                        3. cells[row                        , col_slice_min:col_slice_max, sheet?]
-                        4. cells[row_slice_min:row_slice_max, col_slice_min:col_slice_max, sheet?]
-                        """
-                )
 
     globals = {
         "getCells": getCells,
         "getCell": getCell,
-        "c": CellFunc(),
+        "c": getCell,
         "result": None,
-        "cell": CellFunc(),
-        "cells": CellsFunc(),
+        "cell": getCell,
+        "cells": getCells,
     }
 
     sout = StringIO()
@@ -373,7 +247,7 @@ async def run_python(code):
         return {
             "output_value": str(output_value),
             "output_type": type(output_value).__name__,
-            "array_output": ensure_not_cell(array_output),
+            "array_output": array_output,
             "cells_accessed": cells_accessed,
             "std_out": sout.getvalue(),
             "std_err": serr.getvalue(),

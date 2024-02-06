@@ -113,6 +113,7 @@ pub struct CodeRun {
     pub std_err: Option<String>,
     pub cells_accessed: Vec<SheetRect>,
     pub result: CodeRunResult,
+    pub return_type: Option<String>,
     pub spill_error: bool,
 
     // the Option is necessary to use serde

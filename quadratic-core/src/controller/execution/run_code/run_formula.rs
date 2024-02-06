@@ -29,6 +29,7 @@ impl GridController {
                             last_modified: Utc::now(),
                             cells_accessed: transaction.cells_accessed.clone(),
                             result: CodeRunResult::Ok(value),
+                            return_type: None,
                         };
                         self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
                     }
@@ -254,6 +255,7 @@ mod test {
                 formatted_code_string: None,
                 last_modified: result.last_modified,
                 result: CodeRunResult::Ok(Value::Single(CellValue::Number(12.into()))),
+                return_type: Some("number".into()),
                 cells_accessed: HashSet::new(),
                 spill_error: false,
             },
@@ -308,6 +310,7 @@ mod test {
                 std_err: None,
                 formatted_code_string: None,
                 result: CodeRunResult::Ok(Value::Array(array)),
+                return_type: Some("number".into()),
                 cells_accessed: HashSet::new(),
                 spill_error: false,
                 last_modified: result.last_modified,
