@@ -29,7 +29,7 @@ export class CLI {
       .option("-c, --core", "Watch the quadratic-core directory")
       .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
       .option("-f, --files", "Watch the quadratic-files directory")
-      .option("-a, --all", "Watch all directories")
+      .option("-l, --all", "Watch all directories")
       .option("-s, --skipTypes", "Skip WASM types compilation")
       .option(
         "-p, --perf",
