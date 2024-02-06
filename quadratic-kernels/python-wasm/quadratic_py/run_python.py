@@ -10,11 +10,7 @@ import micropip
 import pandas as pd
 import pyodide
 
-from quadratic_py import code_trace
-from quadratic_py import plotly_patch
-
-# todo separate this file out into a Python Package
-# https://pyodide.org/en/stable/usage/loading-custom-python-code.html
+from quadratic_py import code_trace, plotly_patch
 
 
 def attempt_fix_await(code):
@@ -35,19 +31,36 @@ def attempt_fix_await(code):
 
     return code
 
-def strtobool(val):
-    """Convert a string representation of truth to true (1) or false (0).
-    True values are 'y', 'yes', 't', 'true', 'on', and '1'; false values
-    are 'n', 'no', 'f', 'false', 'off', and '0'.  Raises ValueError if
-    'val' is anything else.
-    """
+def number_type(value):
+    try:
+        return int(value)
+    except ValueError:
+        try:
+            return float(value)
+        except ValueError:
+            return value
+
+def convert_type(value, value_type):
+    if value_type == "number":
+        return number_type(value)
+    elif value_type == "text":
+        return text_to_str_or_bool(value)
+    
+    # rust returns a string for bools currently, so save this for when it works
+    elif value_type == "logical":
+        return bool(value)
+    else:
+        return value
+
+def text_to_str_or_bool(val):
     val = val.lower()
+
     if val in ("y", "yes", "t", "true", "on", "1"):
         return True
     elif val in ("n", "no", "f", "false", "off", "0"):
         return False
     else:
-        raise ValueError("invalid truth value %r" % (val,))
+        return str(val)
 
 def stack_line_number():
     return int(traceback.format_stack()[-3].split(", ")[1].split(" ")[1])
@@ -73,25 +86,6 @@ def error_result(
 
 async def run_python(code):
     cells_accessed = []
-
-    def number_type(value):
-        try:
-            return int(value)
-        except ValueError:
-            try:
-                return float(value)
-            except ValueError:
-                return value
-
-    def convert_type(value, value_type):
-        if value_type == "number":
-            return number_type(value)
-        elif value_type == "text":
-            return str(value)
-        elif value_type == "logical":
-            return strtobool(value)
-        else:
-            return value
         
     def result_to_value(result):
         return convert_type(result.value, result.type_name)
@@ -108,15 +102,15 @@ async def run_python(code):
         cell_range_width = p1[0] - p0[0] + 1
         cell_range_height = p1[1] - p0[1] + 1
 
-        # return a list for a 1d array of cells     
+        # return a panda series for a 1d array of cells     
         if cell_range_width == 1 or cell_range_height == 1:
             cell_list = [result_to_value(cell) for cell in cells]            
             return pd.Series(cell_list)
 
         # Create empty df of the correct size
-        df = pd.DataFrame(
-            index=range(p1[1] - p0[1] + 1),
-            columns=range(p1[0] - p0[0] + 1),
+        df = pd.DataFrame(  
+            index=range(cell_range_height),
+            columns=range(cell_range_width),
         )
 
         # Fill DF
@@ -124,8 +118,8 @@ async def run_python(code):
         y_offset = p0[1]
 
         for cell in cells:
-            cell.value = convert_type(cell.value, cell.type_name)
-            df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
+            value = convert_type(cell.value, cell.type_name)
+            df.at[cell.y - y_offset, cell.x - x_offset] = value
 
         # Move the first row to the header
         if first_row_header:
