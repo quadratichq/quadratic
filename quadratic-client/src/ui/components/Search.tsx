@@ -33,10 +33,9 @@ export function Search() {
 
   const placeholder = !searchOptions.sheet_id ? 'Search all sheets...' : 'Search this sheet...';
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const search = e.target.value;
+  const onChange = (search: string, updatedSearchOptions = searchOptions) => {
     if (search.length > 0) {
-      const found = grid.search(search, searchOptions);
+      const found = grid.search(search, updatedSearchOptions);
       if (found.length) {
         setResults(found);
         setCurrent(0);
@@ -71,25 +70,47 @@ export function Search() {
   };
 
   const changeOptions = (option: 'case_sensitive' | 'whole_cell' | 'search_code' | 'sheet') => {
+    let updatedSearchOptions: SearchOptions;
     if (option === 'sheet') {
       if (searchOptions.sheet_id) {
-        setSearchOptions((prev) => ({ ...prev, sheet_id: undefined }));
+        setSearchOptions((prev) => {
+          updatedSearchOptions = { ...prev, sheet_id: undefined };
+          return updatedSearchOptions;
+        });
       } else {
-        setSearchOptions((prev) => ({ ...prev, sheet_id: sheets.sheet.id }));
+        setSearchOptions((prev) => {
+          updatedSearchOptions = { ...prev, sheet_id: sheets.sheet.id };
+          return updatedSearchOptions;
+        });
       }
     } else {
-      setSearchOptions((prev) => ({ ...prev, [option]: !prev[option] }));
+      setSearchOptions((prev) => {
+        updatedSearchOptions = { ...prev, [option]: !prev[option] };
+        return updatedSearchOptions;
+      });
     }
+
+    const search = (inputRef.current as HTMLInputElement).value;
+    onChange(search, updatedSearchOptions!);
+  };
+
+  const closeSearch = () => {
+    setResults([]);
+    focusGrid();
+    dispatchEvent(new CustomEvent('search'));
   };
 
   useEffect(() => {
     if (!editorInteractionState.showSearch) {
-      setResults([]);
-      setCurrent(0);
-      focusGrid();
-      dispatchEvent(new CustomEvent('search'));
+      closeSearch();
     }
   }, [editorInteractionState.showSearch]);
+
+  useEffect(() => {
+    if (editorInteractionState.showSearch && editorInteractionState.showCodeEditor) {
+      setEditorInteractionState((prev) => ({ ...prev, showSearch: false }));
+    }
+  }, [editorInteractionState.showSearch, editorInteractionState.showCodeEditor, setEditorInteractionState]);
 
   return (
     <Popover open={editorInteractionState.showSearch}>
@@ -126,7 +147,13 @@ export function Search() {
           }
         }}
       >
-        <Input id="search-input" type="text" ref={inputRef} placeholder={placeholder} onChange={onChange} />
+        <Input
+          id="search-input"
+          type="text"
+          ref={inputRef}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+        />
         {!!results.length && (
           <div style={{ whiteSpace: 'nowrap' }}>
             {current + 1} of {results.length}
