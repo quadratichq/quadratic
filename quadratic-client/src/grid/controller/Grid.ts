@@ -34,6 +34,8 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   Rect,
+  SearchOptions,
+  SheetPos,
   TransactionSummary,
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
@@ -789,8 +791,8 @@ export class Grid {
   //#endregion
 
   //#region Search
-  search() {
-    const search = this.gridController.search(sheets.sheet.id, sheets.sheet.cursor.getPos());
+  search(text: string, options: SearchOptions): SheetPos[] {
+    return this.gridController.search(text, options);
   }
 
   //#endregion
