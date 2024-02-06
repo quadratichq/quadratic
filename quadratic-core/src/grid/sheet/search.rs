@@ -16,8 +16,6 @@ pub struct SearchOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_code: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub all_sheets: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub sheet_id: Option<String>,
 }
 
@@ -26,7 +24,6 @@ impl Default for SearchOptions {
         SearchOptions {
             case_sensitive: None,
             whole_cell: None,
-            all_sheets: None,
             sheet_id: None,
             search_code: None,
         }
@@ -190,18 +187,19 @@ impl Sheet {
     /// Returns the resulting SheetPos sorted by x and then y.
     ///
     /// Returns `Vec<SheetPos>` for all cells that match.
-    pub fn search(&self, query: String, options: Option<SearchOptions>) -> Vec<SheetPos> {
-        let options = options.unwrap_or_default();
+    pub fn search(&self, query: &String, options: &SearchOptions) -> Vec<SheetPos> {
         let case_sensitive = options.case_sensitive.unwrap_or(false);
         let query = if case_sensitive {
-            query
+            query.to_owned()
         } else {
             query.to_lowercase()
         };
         let whole_cell = options.whole_cell.unwrap_or(false);
         let search_code = options.search_code.unwrap_or(false);
         let mut results = self.search_cell_values(&query, case_sensitive, whole_cell, search_code);
-        results.extend(self.search_code_runs(&query, case_sensitive, whole_cell));
+        if search_code {
+            results.extend(self.search_code_runs(&query, case_sensitive, whole_cell));
+        }
         results.sort_by(|a, b| {
             let order = a.x.cmp(&b.x);
             if order == std::cmp::Ordering::Equal {
@@ -233,12 +231,12 @@ mod test {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
         sheet.set_cell_value(Pos { x: -10, y: -10 }, CellValue::Text("hello".into()));
-        let results = sheet.search("hello".into(), None);
+        let results = sheet.search(&"hello".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -10),);
         assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
 
-        let results = sheet.search("goodbye".into(), None);
+        let results = sheet.search(&"goodbye".into(), &SearchOptions::default());
         assert_eq!(results.len(), 0);
     }
 
@@ -248,26 +246,26 @@ mod test {
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
         sheet.set_cell_value(Pos { x: -10, y: -11 }, CellValue::Text("HELLO".into()));
         let results = sheet.search(
-            "hello".into(),
-            Some(SearchOptions {
+            &"hello".into(),
+            &SearchOptions {
                 case_sensitive: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(
-            "HELLO".into(),
-            Some(SearchOptions {
+            &"HELLO".into(),
+            &SearchOptions {
                 case_sensitive: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
 
-        let results = sheet.search("HELLO".into(), None);
+        let results = sheet.search(&"HELLO".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
         assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
@@ -282,41 +280,41 @@ mod test {
             CellValue::Text("hello world".into()),
         );
         let results = sheet.search(
-            "hello".into(),
-            Some(SearchOptions {
+            &"hello".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(
-            "hello".into(),
-            Some(SearchOptions {
+            &"hello".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(
-            "hello".into(),
-            Some(SearchOptions {
+            &"hello".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(
-            "hello".into(),
-            Some(SearchOptions {
+            &"hello".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
@@ -331,43 +329,43 @@ mod test {
             CellValue::Text("HELLO world".into()),
         );
         let results = sheet.search(
-            "hello".into(),
-            Some(SearchOptions {
+            &"hello".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 case_sensitive: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 0);
 
         let results = sheet.search(
-            "HELLO".into(),
-            Some(SearchOptions {
+            &"HELLO".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 case_sensitive: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 0);
 
         let results = sheet.search(
-            "hello world".into(),
-            Some(SearchOptions {
+            &"hello world".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 case_sensitive: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(
-            "HELLO WORLD".into(),
-            Some(SearchOptions {
+            &"HELLO WORLD".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 case_sensitive: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 0);
     }
@@ -377,20 +375,20 @@ mod test {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
         sheet.set_cell_value(Pos { x: -10, y: -11 }, CellValue::Number(1234.into()));
-        let results = sheet.search("123".into(), None);
+        let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
         assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
 
-        let results = sheet.search("1234".into(), None);
+        let results = sheet.search(&"1234".into(), &SearchOptions::default());
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
 
-        let results = sheet.search("1234".into(), None);
+        let results = sheet.search(&"1234".into(), &SearchOptions::default());
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
 
-        let results = sheet.search("1234".into(), None);
+        let results = sheet.search(&"1234".into(), &SearchOptions::default());
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
     }
@@ -419,51 +417,51 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let results = sheet.search("123".into(), None);
+        let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
         assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
 
-        let results = sheet.search("$5,123".into(), None);
+        let results = sheet.search(&"$5,123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(
-            "5123".into(),
-            Some(SearchOptions {
+            &"5123".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
 
         let results = sheet.search(
-            "123".into(),
-            Some(SearchOptions {
+            &"123".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 0);
 
         let results = sheet.search(
-            "10.123%".into(),
-            Some(SearchOptions {
+            &"10.123%".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
 
         let results = sheet.search(
-            "0.10123".into(),
-            Some(SearchOptions {
+            &"0.10123".into(),
+            &SearchOptions {
                 whole_cell: Some(true),
                 case_sensitive: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
@@ -491,21 +489,21 @@ mod test {
         sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
 
         let results = sheet.search(
-            "hello".into(),
-            Some(SearchOptions {
+            &"hello".into(),
+            &SearchOptions {
                 search_code: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
 
         let results = sheet.search(
-            "world".into(),
-            Some(SearchOptions {
+            &"world".into(),
+            &SearchOptions {
                 search_code: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
@@ -529,31 +527,31 @@ mod test {
         sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
 
         let results = sheet.search(
-            "abc".into(),
-            Some(SearchOptions {
+            &"abc".into(),
+            &SearchOptions {
                 search_code: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
 
         let results = sheet.search(
-            "def".into(),
-            Some(SearchOptions {
+            &"def".into(),
+            &SearchOptions {
                 search_code: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 2, 2));
 
         let results = sheet.search(
-            "pqr".into(),
-            Some(SearchOptions {
+            &"pqr".into(),
+            &SearchOptions {
                 search_code: Some(true),
                 ..Default::default()
-            }),
+            },
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, 3, 3));
