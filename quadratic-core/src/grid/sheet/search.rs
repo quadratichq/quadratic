@@ -59,9 +59,11 @@ impl Sheet {
                 }
             }
             CellValue::Number(n) => {
+                // first test against unformatted number
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
                     true
                 } else {
+                    // test against any formatting applied to the number
                     if let Some(column) = column.map_or(self.get_column(pos.x), |c| Some(c)) {
                         // compare the number using its display value (eg, $ or % or commas)
                         let numeric_format = column.numeric_format.get(pos.y);
@@ -211,6 +213,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
+    use crate::controller::GridController;
+
     use super::*;
 
     #[test]
@@ -382,23 +386,74 @@ mod test {
 
     #[test]
     fn search_display_numbers() {
-        let mut sheet = Sheet::test();
-        sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
-        sheet.set_cell_value(Pos { x: -10, y: -11 }, CellValue::Number(1234.into()));
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 4,
+                y: 5,
+                sheet_id,
+            },
+            "$5,123".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: -10,
+                y: -11,
+                sheet_id,
+            },
+            "10.123%".to_string(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
         let results = sheet.search("123".into(), None);
         assert_eq!(results.len(), 2);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
         assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
 
-        let results = sheet.search("1234".into(), None);
+        let results = sheet.search("$5,123".into(), None);
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+
+        let results = sheet.search(
+            "5123".into(),
+            Some(SearchOptions {
+                whole_cell: Some(true),
+                ..Default::default()
+            }),
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+
+        let results = sheet.search(
+            "123".into(),
+            Some(SearchOptions {
+                whole_cell: Some(true),
+                ..Default::default()
+            }),
+        );
+        assert_eq!(results.len(), 0);
+
+        let results = sheet.search(
+            "10.123%".into(),
+            Some(SearchOptions {
+                whole_cell: Some(true),
+                ..Default::default()
+            }),
+        );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
 
-        let results = sheet.search("1234".into(), None);
-        assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
-
-        let results = sheet.search("1234".into(), None);
+        let results = sheet.search(
+            "0.10123".into(),
+            Some(SearchOptions {
+                whole_cell: Some(true),
+                case_sensitive: Some(true),
+                ..Default::default()
+            }),
+        );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
     }
