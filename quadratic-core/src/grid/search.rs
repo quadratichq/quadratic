@@ -10,7 +10,7 @@ impl Grid {
         if let Some(sheet_id) = options
             .sheet_id
             .as_ref()
-            .map(|id| SheetId::from_str(&id).unwrap_or_default())
+            .map(|id| SheetId::from_str(id).unwrap_or_default())
         {
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 let sheet_result = sheet.search(query, &options);

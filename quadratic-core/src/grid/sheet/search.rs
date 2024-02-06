@@ -6,7 +6,7 @@ use crate::{
 use super::Sheet;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
+#[derive(Default, Debug, Serialize, Deserialize, PartialEq, Clone, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SearchOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -19,22 +19,12 @@ pub struct SearchOptions {
     pub sheet_id: Option<String>,
 }
 
-impl Default for SearchOptions {
-    fn default() -> Self {
-        SearchOptions {
-            case_sensitive: None,
-            whole_cell: None,
-            sheet_id: None,
-            search_code: None,
-        }
-    }
-}
-
 impl Sheet {
     /// Compares a CellValue to a query.
     /// Note: Column and y are necessary to compare display value for CellValue::Number (regrettably).
     ///
     /// Returns true if the cell value matches the query.
+    #[allow(clippy::too_many_arguments)]
     fn compare_cell_value(
         &self,
         cell_value: &CellValue,
@@ -64,7 +54,7 @@ impl Sheet {
                     true
                 } else {
                     // test against any formatting applied to the number
-                    if let Some(column) = column.map_or(self.get_column(pos.x), |c| Some(c)) {
+                    if let Some(column) = column.map_or(self.get_column(pos.x), Some) {
                         // compare the number using its display value (eg, $ or % or commas)
                         let numeric_format = column.numeric_format.get(pos.y);
                         let numeric_decimals = column.numeric_decimals.get(pos.y);
@@ -79,7 +69,7 @@ impl Sheet {
             }
             CellValue::Logical(b) => {
                 let query = query.to_lowercase();
-                (*b == true && query == "true") || (*b == false && query == "false")
+                (*b && query == "true") || (!(*b) && query == "false")
             }
             CellValue::Code(code) => {
                 if search_code {
@@ -141,8 +131,8 @@ impl Sheet {
                 CodeRunResult::Ok(value) => match value {
                     Value::Single(v) => {
                         if self.compare_cell_value(
-                            &CellValue::from(v.clone()),
-                            &query,
+                            v,
+                            query,
                             None,
                             *pos,
                             case_sensitive,
@@ -158,7 +148,7 @@ impl Sheet {
                                 let cell_value = array.get(x, y).unwrap();
                                 if self.compare_cell_value(
                                     cell_value,
-                                    &query,
+                                    query,
                                     None,
                                     Pos {
                                         x: pos.x + x as i64,
