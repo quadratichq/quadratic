@@ -1,4 +1,5 @@
 use crate::{
+    cell_values::CellValues,
     controller::GridController,
     grid::{
         formatting::CellFmtArray,
@@ -6,9 +7,9 @@ use crate::{
         SheetId,
     },
     util::maybe_reverse_range,
-    Array, CellValue, Pos, Rect, SheetRect,
+    CellValue, Rect, SheetRect,
 };
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result};
 use itertools::Itertools;
 
 use super::operation::Operation;
@@ -615,20 +616,10 @@ impl GridController {
             negative,
         });
 
-        let values = Array::new_row_major(range.size(), series.to_owned().into())
-            .map_err(|e| anyhow!("Could not create array of size {:?}: {:?}", range.size(), e))?;
+        let values = CellValues::from_flat_array(range.width(), range.height(), series.to_owned());
 
-        let start_pos = range.min;
-        let end_pos = Pos {
-            x: start_pos.x + values.width() as i64 - 1,
-            y: start_pos.y + values.height() as i64 - 1,
-        };
-        let sheet_rect = SheetRect {
-            min: start_pos,
-            max: end_pos,
-            sheet_id,
-        };
-        let ops = vec![Operation::SetCellValues { sheet_rect, values }];
+        let sheet_pos = range.min.to_sheet_pos(sheet_id);
+        let ops = vec![Operation::SetCellValues { sheet_pos, values }];
 
         Ok((ops, series))
     }
