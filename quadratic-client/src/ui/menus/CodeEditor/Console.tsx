@@ -103,52 +103,35 @@ export function Console({
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
-            {
-              /*editorInteractionState.mode === 'PYTHON' &&*/
-              returnSelection?.output_type && (
-                <>
-                  <div
-                    style={{
-                      // padding: '4px 0 8px',
-                      // color: hasUnsavedChanges ? '#777' : 'green',
-                      color: consoleOutput?.stdErr ? 'red' : '#777',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: theme.spacing(1),
-                    }}
-                  >
-                    <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} />{' '}
-                    <ReturnType>
-                      {consoleOutput?.stdErr
-                        ? 'ERROR'
-                        : hasUnsavedChanges
-                        ? '…'
-                        : returnSelection?.output_type || evaluationResultParsed?.output_type}
-                    </ReturnType>
-                    {consoleOutput?.stdErr ? (
-                      ''
-                    ) : hasUnsavedChanges ? (
+            {returnSelection?.output_type && (
+              <>
+                <div
+                  style={{
+                    color: consoleOutput?.stdErr ? 'red' : '#777',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: theme.spacing(1),
+                  }}
+                >
+                  <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} />{' '}
+                  {consoleOutput?.stdErr ? '' : hasUnsavedChanges ? '…' : <>Line {returnSelection?.lineno}</>} returned
+                  a
+                  <ReturnType>
+                    {returnSelection?.output_size && (
                       <>
-                        [
-                        <a href="#TODO" style={{ color: 'inherit' }}>
-                          line: {returnSelection?.lineno}
-                        </a>
-                        ]
-                      </>
-                    ) : (
-                      <>
-                        [
-                        <a href="#TODO" style={{ color: 'inherit' }}>
-                          line: {returnSelection?.lineno}
-                        </a>
-                        ]
+                        {returnSelection.output_size[0]}x{returnSelection.output_size[1]}{' '}
                       </>
                     )}
-                  </div>
-                  <br />
-                </>
-              )
-            }
+                    {consoleOutput?.stdErr
+                      ? 'ERROR'
+                      : hasUnsavedChanges
+                      ? '…'
+                      : returnSelection?.output_type || evaluationResultParsed?.output_type}
+                  </ReturnType>
+                </div>
+                <br />
+              </>
+            )}
 
             {hasOutput ? (
               <>

@@ -44,4 +44,4 @@ export interface InspectPythonReturnType {
   value_type?: string;
 }
 
-export type ComputedPythonReturnType = InspectPythonReturnType & { output_type?: string };
+export type ComputedPythonReturnType = InspectPythonReturnType & { output_type?: string; output_size?: string };

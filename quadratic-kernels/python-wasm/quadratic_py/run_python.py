@@ -180,17 +180,23 @@ async def run_python(code):
         # return array_output if output is an array
         array_output = None
         output_type = type(output_value).__name__
+        output_size = None
 
         # TODO(ddimaria): figure out if we need to covert back to a list for array_outputl
         # We should have a single output
         if isinstance(output_value, list):
             if len(output_value) > 0:
                 array_output = output_value
+                output_size = (1, len(output_value))
             else:
                 output_value = ''
 
+        if isinstance(output_value, pd.Series):
+            output_size = (1, len(output_value))
+
         # Convert DF to array_output
         if isinstance(output_value, pd.DataFrame):
+            output_size = output_value.shape
             # If output_value columns is not the default (RangeIndex)
             if type(output_value.columns) != pd.core.indexes.range.RangeIndex:
                 # Return Column names and values
@@ -241,9 +247,11 @@ async def run_python(code):
         if array_output or output_value is None:
             output_value = ""
 
+
         return {
             "output_value": str(output_value),
             "output_type": output_type,
+            "output_size": output_size,
             "array_output": array_output,
             "cells_accessed": cells_accessed,
             "std_out": sout.getvalue(),

@@ -29,6 +29,7 @@ class PythonWebWorker {
   private running = false;
   private executionStack: PythonCode[] = [];
   private pythonOutputType?: string;
+  private pythonOutputSize?: string;
   private inspectionResults?: InspectPythonReturnType;
 
   private expectWorker() {
@@ -58,6 +59,7 @@ class PythonWebWorker {
           if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
           this.pythonOutputType = pythonResult.output_type;
+          this.pythonOutputSize = pythonResult.output_size;
           this.inspectPython(pythonResult.formatted_code);
 
           if (pythonResult.array_output) {
@@ -244,9 +246,15 @@ class PythonWebWorker {
   }
 
   getInspectionResults(): ComputedPythonReturnType {
+    console.log('getInspectionResults', {
+      ...this.inspectionResults,
+      output_type: this.pythonOutputType,
+      output_size: this.pythonOutputSize,
+    });
     return {
       ...this.inspectionResults,
       output_type: this.pythonOutputType,
+      output_size: this.pythonOutputSize,
     } as any;
   }
 }
