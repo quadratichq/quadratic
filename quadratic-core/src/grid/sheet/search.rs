@@ -197,9 +197,7 @@ impl Sheet {
         let whole_cell = options.whole_cell.unwrap_or(false);
         let search_code = options.search_code.unwrap_or(false);
         let mut results = self.search_cell_values(&query, case_sensitive, whole_cell, search_code);
-        if search_code {
-            results.extend(self.search_code_runs(&query, case_sensitive, whole_cell));
-        }
+        results.extend(self.search_code_runs(&query, case_sensitive, whole_cell));
         results.sort_by(|a, b| {
             let order = a.x.cmp(&b.x);
             if order == std::cmp::Ordering::Equal {

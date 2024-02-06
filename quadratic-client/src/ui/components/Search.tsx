@@ -36,18 +36,38 @@ export function Search() {
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const search = e.target.value;
     if (search.length > 0) {
-      const sheetPositions = grid.search(search, searchOptions);
-      setResults(sheetPositions);
-      setCurrent(0);
-      dispatchEvent(new CustomEvent('search', { detail: { sheetPositions, current: 0 } }));
-    } else {
-      setResults([]);
-      dispatchEvent(new CustomEvent('search'));
+      const found = grid.search(search, searchOptions);
+      if (found.length) {
+        setResults(found);
+        setCurrent(0);
+        moveCursor(found[0]);
+        dispatchEvent(new CustomEvent('search', { detail: { found, current: 0 } }));
+        return;
+      }
     }
+    setResults([]);
+    dispatchEvent(new CustomEvent('search'));
   };
 
-  const navigate = (delta: number) => {
-    setCurrent((current) => (current + delta) % results.length);
+  const moveCursor = (pos: SheetPos) => {
+    if (sheets.sheet.id !== pos.sheet_id.id) {
+      sheets.current = pos.sheet_id.id;
+    }
+    sheets.sheet.cursor.changePosition({
+      cursorPosition: { x: Number(pos.x), y: Number(pos.y) },
+      ensureVisible: true,
+    });
+  };
+
+  const navigate = (delta: 1 | -1) => {
+    setCurrent((current) => {
+      let next = (current + delta) % results.length;
+      if (next < 0) next = results.length - 1;
+      dispatchEvent(new CustomEvent('search', { detail: { found: results, current: next } }));
+      const result = results[next];
+      moveCursor(result);
+      return next;
+    });
   };
 
   const changeOptions = (option: 'case_sensitive' | 'whole_cell' | 'search_code' | 'sheet') => {
@@ -67,6 +87,7 @@ export function Search() {
       setResults([]);
       setCurrent(0);
       focusGrid();
+      dispatchEvent(new CustomEvent('search'));
     }
   }, [editorInteractionState.showSearch]);
 
@@ -94,6 +115,14 @@ export function Search() {
           if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             inputRef.current?.focus();
+          }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (results.length > 1) {
+              navigate(e.shiftKey ? -1 : 1);
+            } else if (results.length === 1) {
+              setEditorInteractionState((prev) => ({ ...prev, showSearch: false }));
+            }
           }
         }}
       >
