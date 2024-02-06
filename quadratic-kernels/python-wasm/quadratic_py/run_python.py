@@ -31,6 +31,18 @@ def attempt_fix_await(code):
 
     return code
 
+def convert_type(value, value_type):
+    if value_type == "number":
+        return number_type(value)
+    elif value_type == "text":
+        return text_type(value)
+    
+    # rust returns a string for bools currently, so save this for when it works
+    elif value_type == "logical":
+        return bool(value)
+    else:
+        return value
+
 def number_type(value):
     try:
         return int(value)
@@ -40,19 +52,7 @@ def number_type(value):
         except ValueError:
             return value
 
-def convert_type(value, value_type):
-    if value_type == "number":
-        return number_type(value)
-    elif value_type == "text":
-        return text_to_str_or_bool(value)
-    
-    # rust returns a string for bools currently, so save this for when it works
-    elif value_type == "logical":
-        return bool(value)
-    else:
-        return value
-
-def text_to_str_or_bool(val):
+def text_type(val):
     val = val.lower()
 
     if val in ("y", "yes", "t", "true", "on", "1"):
@@ -82,7 +82,6 @@ def error_result(
         "line_number": line_number,
         "formatted_code": code,
     }
-
 
 async def run_python(code):
     cells_accessed = []
@@ -180,6 +179,10 @@ async def run_python(code):
 
         # return array_output if output is an array
         array_output = None
+        output_type = type(output_value).__name__
+
+        # TODO(ddimaria): figure out if we need to covert back to a list for array_outputl
+        # We should have a single output
         if isinstance(output_value, list):
             if len(output_value) > 0:
                 array_output = output_value
@@ -240,7 +243,7 @@ async def run_python(code):
 
         return {
             "output_value": str(output_value),
-            "output_type": type(output_value).__name__,
+            "output_type": output_type,
             "array_output": array_output,
             "cells_accessed": cells_accessed,
             "std_out": sout.getvalue(),
