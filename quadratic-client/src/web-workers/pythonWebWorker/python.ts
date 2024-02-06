@@ -246,11 +246,6 @@ class PythonWebWorker {
   }
 
   getInspectionResults(): ComputedPythonReturnType {
-    console.log('getInspectionResults', {
-      ...this.inspectionResults,
-      output_type: this.pythonOutputType,
-      output_size: this.pythonOutputSize,
-    });
     return {
       ...this.inspectionResults,
       output_type: this.pythonOutputType,

@@ -1,5 +1,6 @@
+import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import Editor, { Monaco } from '@monaco-editor/react';
-import monaco from 'monaco-editor';
+import monaco, { Range } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -18,10 +19,11 @@ interface Props {
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
+  codeEditorReturn?: ComputedPythonReturnType;
 }
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor } = props;
+  const { editorContent, setEditorContent, closeEditor, codeEditorReturn } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
@@ -83,6 +85,26 @@ export const CodeEditorBody = (props: Props) => {
       );
     }
   }, [closeEditor, didMount]);
+
+  // highlight the return line and add a return icon next to the line number
+  useEffect(() => {
+    if (codeEditorReturn && editorRef.current) {
+      editorRef.current?.createDecorationsCollection([
+        {
+          range: new Range(
+            codeEditorReturn.lineno,
+            codeEditorReturn.col_offset,
+            codeEditorReturn.end_lineno,
+            codeEditorReturn.end_col_offset + 1
+          ),
+          options: {
+            inlineClassName: 'codeEditorReturnHighlight',
+            linesDecorationsClassName: 'codeEditorReturnLineDecoration',
+          },
+        },
+      ]);
+    }
+  }, [codeEditorReturn]);
 
   useEffect(() => {
     return () => editorRef.current?.dispose();

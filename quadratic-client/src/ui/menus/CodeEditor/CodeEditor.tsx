@@ -5,7 +5,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import { Pos } from '@/quadratic-core/types';
 import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
-import { editor, Range } from 'monaco-editor';
+import { editor } from 'monaco-editor';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -14,13 +14,12 @@ import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
+import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { SaveChangesAlert } from './SaveChangesAlert';
-
-let decorations: string[] | undefined = [];
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -41,7 +40,7 @@ export const CodeEditor = () => {
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
-  const [returnSelection, setReturnSelection] = useState<ComputedPythonReturnType | undefined>(undefined);
+  const [codeEditorReturn, setCodeEditorReturn] = useState<ComputedPythonReturnType | undefined>(undefined);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 
   const cellLocation = useMemo(() => {
@@ -86,30 +85,6 @@ export const CodeEditor = () => {
     }
   }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
 
-  // highlight range in monaco editor
-  if (editorInteractionState.mode === 'Python') {
-    if (returnSelection !== undefined) {
-      decorations = editorRef.current?.deltaDecorations(decorations || [], [
-        {
-          range: new Range(
-            returnSelection.lineno,
-            returnSelection.col_offset,
-            returnSelection.end_lineno,
-            returnSelection.end_col_offset + 1
-          ),
-          options: {
-            isWholeLine: false,
-            className: 'codeEditorReturnHighlight',
-          },
-        },
-      ]);
-    } else {
-      editorRef.current?.deltaDecorations(decorations || [], []);
-    }
-  } else {
-    editorRef.current?.deltaDecorations(decorations || [], []);
-  }
-
   const updateCodeCell = useCallback(
     (updateEditorContent: boolean) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
@@ -151,7 +126,7 @@ export const CodeEditor = () => {
 
   // listen for python-inspect-results in order to display python inspection results
   useEffect(() => {
-    const updateType = () => setReturnSelection(pythonWebWorker.getInspectionResults());
+    const updateType = () => setCodeEditorReturn(pythonWebWorker.getInspectionResults());
     window.addEventListener('python-inspect-results', updateType);
     return () => {
       window.removeEventListener('python-inspect-results', updateType);
@@ -320,7 +295,12 @@ export const CodeEditor = () => {
         cancelPython={cancelPython}
         closeEditor={() => closeEditor(false)}
       />
-      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} closeEditor={closeEditor} />
+      <CodeEditorBody
+        editorContent={editorContent}
+        setEditorContent={setEditorContent}
+        closeEditor={closeEditor}
+        codeEditorReturn={codeEditorReturn}
+      />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
 
       {/* Console Wrapper */}
@@ -342,7 +322,7 @@ export const CodeEditor = () => {
             evaluationResult={evaluationResult}
             spillError={spillError}
             hasUnsavedChanges={unsaved}
-            returnSelection={returnSelection}
+            codeEditorReturn={codeEditorReturn}
           />
         )}
       </div>

@@ -4,6 +4,7 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
+import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { Circle, KeyboardReturn } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
@@ -28,7 +29,7 @@ interface ConsoleProps {
   editorContent: string | undefined;
   evaluationResult?: any;
   spillError?: Coordinate[];
-  returnSelection: any;
+  codeEditorReturn?: ComputedPythonReturnType;
   hasUnsavedChanges: boolean;
 }
 
@@ -38,7 +39,7 @@ export function Console({
   editorContent,
   evaluationResult,
   spillError,
-  returnSelection,
+  codeEditorReturn,
   hasUnsavedChanges,
 }: ConsoleProps) {
   const evaluationResultParsed = evaluationResult ? JSON.parse(evaluationResult) : {};
@@ -103,7 +104,7 @@ export function Console({
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
-            {returnSelection?.output_type && (
+            {codeEditorReturn?.output_type && (
               <>
                 <div
                   style={{
@@ -114,19 +115,19 @@ export function Console({
                   }}
                 >
                   <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} />{' '}
-                  {consoleOutput?.stdErr ? '' : hasUnsavedChanges ? '…' : <>Line {returnSelection?.lineno}</>} returned
+                  {consoleOutput?.stdErr ? '' : hasUnsavedChanges ? '…' : <>Line {codeEditorReturn?.lineno}</>} returned
                   a
                   <ReturnType>
-                    {returnSelection?.output_size && (
+                    {codeEditorReturn?.output_size && (
                       <>
-                        {returnSelection.output_size[0]}x{returnSelection.output_size[1]}{' '}
+                        {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
                       </>
                     )}
                     {consoleOutput?.stdErr
                       ? 'ERROR'
                       : hasUnsavedChanges
                       ? '…'
-                      : returnSelection?.output_type || evaluationResultParsed?.output_type}
+                      : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
                   </ReturnType>
                 </div>
                 <br />
