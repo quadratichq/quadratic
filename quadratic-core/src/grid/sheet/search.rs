@@ -10,13 +10,15 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SearchOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
-    case_sensitive: Option<bool>,
+    pub case_sensitive: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    whole_cell: Option<bool>,
+    pub whole_cell: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    all_sheets: Option<bool>,
+    pub search_code: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    search_code: Option<bool>,
+    pub all_sheets: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sheet_id: Option<String>,
 }
 
 impl Default for SearchOptions {
@@ -25,6 +27,7 @@ impl Default for SearchOptions {
             case_sensitive: None,
             whole_cell: None,
             all_sheets: None,
+            sheet_id: None,
             search_code: None,
         }
     }

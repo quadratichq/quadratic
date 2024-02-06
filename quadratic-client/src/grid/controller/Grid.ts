@@ -787,9 +787,14 @@ export class Grid {
   }
 
   //#endregion
-}
 
-//#end
+  //#region Search
+  search() {
+    const search = this.gridController.search(sheets.sheet.id, sheets.sheet.cursor.getPos());
+  }
+
+  //#endregion
+}
 
 let gridCreate: Grid;
 

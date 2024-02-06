@@ -7,6 +7,7 @@ use quadratic_core::{
             JsCodeCell, JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
             JsRenderCodeCellState,
         },
+        sheet::search::SearchOptions,
         CodeCellLanguage,
     },
     Rect, *,
@@ -61,6 +62,7 @@ fn main() {
         Pos,
         Rect,
         Span,
+        SearchOptions,
         SheetPos,
     );
 
