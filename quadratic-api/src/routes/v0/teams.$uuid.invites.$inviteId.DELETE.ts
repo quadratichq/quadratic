@@ -28,7 +28,7 @@ async function handler(req: Request, res: Response) {
     user: { id: userId },
   } = req as RequestWithUser;
   const inviteToDelete = Number(inviteId);
-  const { user: userMakingRequest } = await getTeam({ uuid, userId });
+  const { userMakingRequest } = await getTeam({ uuid, userId });
 
   // TODO: write tests for this endpoint
 

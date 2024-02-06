@@ -32,13 +32,13 @@ async function handler(req: Request, res: Response) {
   } = req as RequestWithUser;
   const {
     team: { id: teamId },
-    user: teamUser,
+    userMakingRequest,
   } = await getTeam({ uuid, userId });
 
-  const userMakingRequestRole = teamUser.role;
+  const userMakingRequestRole = userMakingRequest.role;
 
   // Can you even invite others?
-  if (!teamUser.permissions.includes('TEAM_EDIT')) {
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
     return res.status(403).json({
       error: {
         message: 'User does not have permission to invite other users to this team.',

@@ -6,18 +6,17 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link, useSubmit } from 'react-router-dom';
+import { Link, useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import { duplicateFileAction } from '../../actions';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../constants/routes';
-import { useFileContext } from './FileProvider';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
-  const { name } = useFileContext();
+  const { uuid } = useParams() as { uuid: string };
   const theme = useTheme();
   const submit = useSubmit();
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -52,7 +51,7 @@ export function PermissionOverlay() {
         <Type>
           <strong>Read-only.</strong> To edit this file, make a duplicate in your files.
         </Type>
-        <Button variant="outline" size="sm" onClick={() => duplicateFileAction.run({ name, submit })}>
+        <Button variant="outline" size="sm" onClick={() => duplicateFileAction.run({ uuid, submit })}>
           {duplicateFileAction.label}
         </Button>
       </Wrapper>

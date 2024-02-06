@@ -96,15 +96,16 @@ export const apiClient = {
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
     },
     async create(
-      body: ApiTypes['/v0/files.POST.request'] = {
+      file: Omit<ApiTypes['/v0/files.POST.request'], 'teamUuid'> = {
         name: 'Untitled',
         contents: JSON.stringify(DEFAULT_FILE),
         version: DEFAULT_FILE.version,
-      }
+      },
+      teamUuid?: ApiTypes['/v0/files.POST.request']['teamUuid']
     ) {
       return fetchFromApi(
-        `/v0/files/`,
-        { method: 'POST', body: JSON.stringify(body) },
+        `/v0/files`,
+        { method: 'POST', body: JSON.stringify({ ...file, teamUuid }) },
         ApiSchemas['/v0/files.POST.response']
       );
     },
@@ -118,6 +119,45 @@ export const apiClient = {
       const checkpointUrl = file.lastCheckpointDataUrl;
       const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
       downloadQuadraticFile(file.name, checkpointData);
+    },
+    async duplicate(uuid: string) {
+      mixpanel.track('[Files].duplicateFile', { id: uuid });
+      // Get the file we want to duplicate
+      const {
+        file: { name, lastCheckpointDataUrl, lastCheckpointVersion, thumbnail },
+        team,
+      } = await apiClient.files.get(uuid);
+
+      // Get the most recent checkpoint for the file
+      const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
+
+      // Create it on the server
+      const newFile = await apiClient.files.create(
+        {
+          name: name + ' (Copy)',
+          version: lastCheckpointVersion,
+          contents: lastCheckpointContents,
+        },
+        team?.uuid
+      );
+
+      // If present, fetch the thumbnail of the file we just dup'd and
+      // save it to the new file we just created
+      if (thumbnail) {
+        try {
+          const res = await fetch(thumbnail);
+          const blob = await res.blob();
+          await apiClient.files.thumbnail.update(newFile.uuid, blob);
+        } catch (err) {
+          // Not a huge deal if it failed, just tell Sentry and move on
+          Sentry.captureEvent({
+            message: 'Failed to duplicate the thumbnail image when duplicating a file',
+            level: 'info',
+          });
+        }
+      }
+
+      return { uuid: newFile.uuid };
     },
     async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
       return fetchFromApi(

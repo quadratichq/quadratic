@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from 'react-router-dom';
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect, redirectDocument } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
 import { authClient } from '../auth';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../components/GlobalSnackbarProvider';
@@ -16,15 +16,6 @@ const getFailUrl = (path: string = ROUTES.FILES) => {
   return path + '?' + params.toString();
 };
 
-// FYI the `await new Promise()` code is a hack until this ships in react-router
-// https://github.com/remix-run/react-router/pull/10705
-// Hard reload instead of SPA navigation and replace current stack
-const navigate = async (uuid: string) => {
-  window.location.href = ROUTES.FILE(uuid);
-  await new Promise((resolve) => setTimeout(resolve, 10000));
-  return redirect('/');
-};
-
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   // We initialize mixpanel here (again, as we do it in the root loader) because
   // it helps us prevent the app from failing because all the loaders run in parallel
@@ -33,9 +24,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   let user = await authClient.user();
   initMixpanelAnalytics(user);
 
-  // Allows you to clone an example file by passing the file id, e.g.
-  // /files/create?example=:id
+  // Determine what kind of file creation we're doing:
   const url = new URL(request.url);
+
+  // 1.
+  // Clone an example file by passing the file id, e.g.
+  // /files/create?example=:id
   const exampleId = url.searchParams.get('example');
   if (exampleId) {
     if (!EXAMPLE_FILES.hasOwnProperty(exampleId)) {
@@ -74,7 +68,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const { uuid } = await apiClient.files.create({ name, contents: file.contents, version: file.version });
 
       // Navigate to it
-      return navigate(uuid);
+      return redirectDocument(ROUTES.FILE(uuid));
     } catch (error) {
       Sentry.captureEvent({
         message: 'Client failed to load the selected example file.',
@@ -87,11 +81,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
   }
 
-  // If there's no query params for the kind of file to create, just create a blank new one
+  // 2.
+  // The file is being created as part of a team
+  // /files/create?team=:uuid
+  const teamUuid = url.searchParams.get('team');
+  if (teamUuid) {
+    mixpanel.track('[Files].newFileInTeam');
+    try {
+      const { uuid } = await apiClient.files.create(undefined, teamUuid);
+      return redirectDocument(ROUTES.FILE(uuid));
+    } catch (error) {
+      return redirect(getFailUrl());
+    }
+  }
+
+  // 3.
+  // If there's no query params for the kind of file to create, just create a
+  // new, blank file in the user’s personal files
   mixpanel.track('[Files].newFile');
   try {
     const { uuid } = await apiClient.files.create();
-    return navigate(uuid);
+    return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());
   }
@@ -109,7 +119,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
   try {
     const { uuid } = await apiClient.files.create({ name, contents, version });
-    return navigate(uuid);
+    return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());
   }

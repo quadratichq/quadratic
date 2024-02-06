@@ -66,7 +66,7 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
         </MenuItem>
       )}
       {duplicateFileAction.isAvailable(permissions, isAuthenticated) && (
-        <MenuItem onClick={() => duplicateFileAction.run({ name, submit })}>
+        <MenuItem onClick={() => duplicateFileAction.run({ uuid, submit })}>
           <MenuLineItem primary={duplicateFileAction.label} />
         </MenuItem>
       )}

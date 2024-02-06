@@ -6,30 +6,29 @@ import { cn } from '@/shadcn/utils';
 import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon, ExternalLinkIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
 import { Empty } from '../components/Empty';
 import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { FilesList } from '../dashboard/components/FilesList';
+import { FilesList, FilesListFile } from '../dashboard/components/FilesList';
 import { debugShowUILogs } from '../debugFlags';
 
-export type Loader = ApiTypes['/v0/files.GET.response'];
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const data = await apiClient.files.list();
-  return data;
+export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListFile[]> => {
+  const files = await apiClient.files.list();
+  const permissions = ['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE'] as FilePermission[];
+  const filesWithPermissions = files.map((file) => ({ ...file, permissions }));
+  return filesWithPermissions;
 };
 
 export const Component = () => {
-  const files = useLoaderData() as Loader;
+  const files = useLoaderData() as Awaited<ReturnType<typeof loader>>;
 
   return (
     <>
       <DashboardHeader title="My files" actions={<CreateFileButton />} />
       <FilesList
-        isEditable={true}
         files={files}
         emptyState={
           <Empty

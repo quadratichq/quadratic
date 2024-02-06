@@ -1,5 +1,5 @@
-import { Loader as FilesLoader } from '@/routes/files';
 import { Action as FileAction } from '@/routes/files.$uuid';
+import { FilesListFile } from './FilesList';
 
 import { Button as Btn } from '@/shadcn/ui/button';
 import {
@@ -37,15 +37,13 @@ export function FilesListItems({ children, viewPreferences }: any) {
 export function FileListItem({
   file,
   filterValue,
-  isEditable,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
 }: {
-  file: FilesLoader[0];
+  file: FilesListFile;
   filterValue: string;
-  isEditable?: boolean;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
   lazyLoad: boolean;
@@ -58,7 +56,7 @@ export function FileListItem({
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
 
-  const { uuid, name, createdDate, updatedDate, publicLinkAccess, thumbnail } = file;
+  const { uuid, name, createdDate, updatedDate, publicLinkAccess, thumbnail, permissions } = file;
 
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
@@ -105,19 +103,8 @@ export function FileListItem({
   };
 
   const handleDuplicate = () => {
-    const date = new Date().toISOString();
     const data: FileAction['request.duplicate'] = {
       action: 'duplicate',
-
-      // These are the values that will optimistically render in the UI
-      file: {
-        uuid: 'duplicate-' + date,
-        publicLinkAccess: 'NOT_SHARED',
-        name: name + ' (Copy)',
-        thumbnail: null,
-        updatedDate: date,
-        createdDate: date,
-      },
     };
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
@@ -128,7 +115,7 @@ export function FileListItem({
   };
 
   const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
-  const isDisabled = uuid.startsWith('duplicate-');
+  const isDisabled = uuid.includes('duplicate');
 
   const sharedProps = {
     key: uuid,
@@ -139,7 +126,7 @@ export function FileListItem({
     hasNetworkError: Boolean(failedToDelete || failedToRename),
     isShared: publicLinkAccess !== 'NOT_SHARED',
     viewPreferences,
-    actions: isEditable ? (
+    actions: (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
@@ -147,15 +134,23 @@ export function FileListItem({
           </Btn>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-48">
-          <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
-          <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileAction.label}</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+          {permissions.includes('FILE_VIEW') && <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>}
+          {permissions.includes('FILE_EDIT') && (
+            <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileAction.label}</DropdownMenuItem>
+          )}
+          {permissions.includes('FILE_EDIT') && (
+            <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={handleDownload}>{downloadFileAction.label}</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+          {permissions.includes('FILE_DELETE') && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
-    ) : undefined,
+    ),
   };
 
   return (

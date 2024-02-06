@@ -27,13 +27,13 @@ async function handler(req: Request, res: Response) {
     params: { uuid },
     user: { id: userId },
   } = req as RequestWithUser;
-  const { user } = await getTeam({ uuid, userId });
+  const { userMakingRequest } = await getTeam({ uuid, userId });
 
   // TODO: improve this more generically when validating?
   const body = req.body as ApiTypes['/v0/teams/:uuid.POST.request'];
 
   // Can the user even edit this team?
-  if (!user.permissions.includes('TEAM_EDIT')) {
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
     return res.status(403).json({ error: { message: 'User does not have permission to edit this team.' } });
   }
 

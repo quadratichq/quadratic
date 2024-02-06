@@ -32,13 +32,13 @@ async function handler(req: Request, res: Response) {
   } = req as RequestWithUser;
   const {
     team: { id: teamId },
-    user: teamUser,
+    userMakingRequest,
   } = await getTeam({ uuid, userId: userMakingChangeId });
   const userBeingChangedId = Number(userId);
 
   // User is trying to update their own role
   if (userBeingChangedId === userMakingChangeId) {
-    const currentRole = teamUser.role;
+    const currentRole = userMakingRequest.role;
 
     // To the same role
     if (newRole === currentRole) {
@@ -84,7 +84,7 @@ async function handler(req: Request, res: Response) {
   // So we'll check and make sure they can
 
   // First, can they do this?
-  if (!teamUser.permissions.includes('TEAM_EDIT')) {
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
     return res.status(403).json({
       error: { message: 'User does not have permission to edit others' },
     });
@@ -103,7 +103,7 @@ async function handler(req: Request, res: Response) {
     return res.status(404).json({ error: { message: 'User not found' } });
   }
   const userBeingChangedRole = userBeingChanged.role;
-  const userMakingChangeRole = teamUser.role;
+  const userMakingChangeRole = userMakingRequest.role;
 
   // Changing to the same role?
   if (newRole === userBeingChangedRole) {

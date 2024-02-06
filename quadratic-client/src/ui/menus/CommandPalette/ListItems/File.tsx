@@ -20,9 +20,9 @@ const ListItems = [
     isAvailable: duplicateFileAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const submit = useSubmit();
-      const { name } = useFileContext();
+      const { uuid } = useParams() as { uuid: string };
       const action = () => {
-        duplicateFileAction.run({ name, submit });
+        duplicateFileAction.run({ uuid, submit });
       };
       return <CommandPaletteListItem {...props} icon={<FileCopyOutlined />} action={action} />;
     },

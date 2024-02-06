@@ -31,7 +31,7 @@ async function handler(req: Request, res: Response) {
   const userToDeleteId = Number(userIdString);
   const {
     team: { id: teamId },
-    user: userMakingRequest,
+    userMakingRequest,
   } = await getTeam({ uuid: req.params.uuid, userId: userMakingRequestId });
 
   // Allow the user to delete themselves from a team

@@ -91,14 +91,12 @@ export const ApiSchemas = {
       thumbnail: true,
     })
   ),
-  '/v0/files.POST.request': FileSchema.pick({
-    name: true,
-  })
-    .extend({
-      contents: z.string(),
-      version: z.string(),
-    })
-    .optional(),
+  '/v0/files.POST.request': z.object({
+    name: FileSchema.shape.name,
+    contents: z.string(),
+    version: z.string(),
+    teamUuid: TeamSchema.shape.uuid.optional(),
+  }),
   '/v0/files.POST.response': FileSchema.pick({ uuid: true, name: true, createdDate: true, updatedDate: true }),
 
   /**
@@ -221,14 +219,21 @@ export const ApiSchemas = {
     }),
     // TODO: still need this data
     // billing: z.any(),
-    // files: z.array(
-    //   z.object({
-    //     file: FileSchema,
-    //     userMakingRequest: z.object({
-    //       filePermissions: z.array(FilePermissionSchema),
-    //     }),
-    //   })
-    // ),
+    files: z.array(
+      z.object({
+        file: FileSchema.pick({
+          uuid: true,
+          name: true,
+          createdDate: true,
+          updatedDate: true,
+          publicLinkAccess: true,
+          thumbnail: true,
+        }),
+        userMakingRequest: z.object({
+          filePermissions: z.array(FilePermissionSchema),
+        }),
+      })
+    ),
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
   }),

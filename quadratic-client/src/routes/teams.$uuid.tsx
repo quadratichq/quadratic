@@ -1,5 +1,8 @@
 import { ShareTeamDialog } from '@/components/ShareDialog';
+import { ROUTES } from '@/constants/routes';
+import CreateFileButton from '@/dashboard/components/CreateFileButton';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
+import { FilesList } from '@/dashboard/components/FilesList';
 import { Button } from '@/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -8,8 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
-import { useTheme } from '@mui/material';
-import { CaretDownIcon, ExclamationTriangleIcon, PersonIcon } from '@radix-ui/react-icons';
+import { Avatar, AvatarGroup, useTheme } from '@mui/material';
+import { CaretDownIcon, ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import {
@@ -134,6 +137,7 @@ export const Component = () => {
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const {
     team,
+    files,
     users,
     userMakingRequest: { teamPermissions },
   } = loaderData;
@@ -152,7 +156,7 @@ export const Component = () => {
   }
 
   const handleClose = () => setIsRenaming(false);
-
+  const canEdit = teamPermissions.includes('TEAM_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
 
   return (
@@ -165,58 +169,84 @@ export const Component = () => {
           </AvatarWithLetters>
         }
         titleEnd={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="ml-1 rounded-full">
-                <CaretDownIcon />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <label>
-                  Upload logo
-                  <TeamLogoInput
-                    onChange={(url: string) => {
-                      handleClose();
+          canEdit ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" className="ml-1 rounded-full">
+                  <CaretDownIcon />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <label>
+                    Upload logo
+                    <TeamLogoInput
+                      onChange={(url: string) => {
+                        handleClose();
+                      }}
+                    />
+                  </label>
+                </DropdownMenuItem>
+                {teamPermissions.includes('TEAM_BILLING_EDIT') && (
+                  <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
+                )}
+                {teamPermissions.includes('TEAM_DELETE') && [
+                  <DropdownMenuSeparator key={1} />,
+                  <DropdownMenuItem
+                    key={2}
+                    onClick={() => {
+                      setShowDeleteDialog(true);
                     }}
-                  />
-                </label>
-              </DropdownMenuItem>
-              {teamPermissions.includes('TEAM_BILLING_EDIT') && (
-                <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
-              )}
-              {teamPermissions.includes('TEAM_DELETE') && [
-                <DropdownMenuSeparator key={1} />,
-                <DropdownMenuItem
-                  key={2}
-                  onClick={() => {
-                    setShowDeleteDialog(true);
-                  }}
-                >
-                  Delete
-                </DropdownMenuItem>,
-              ]}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  >
+                    Delete
+                  </DropdownMenuItem>,
+                ]}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null
         }
         actions={
           <div className={`flex items-center gap-2`}>
             <Button
-              variant="outline"
+              asChild
+              variant={null}
               onClick={() => {
                 setShareSearchParamValue('');
               }}
             >
-              <PersonIcon className={`mr-1`} /> {users.length}
+              <AvatarGroup
+                max={4}
+                sx={{ cursor: 'pointer', pr: 0 }}
+                slotProps={{ additionalAvatar: { sx: { width: 32, height: 32, fontSize: '1rem' } } }}
+              >
+                {users.map((user) => (
+                  <Avatar alt={user.name} src={user.picture} sx={{ width: 32, height: 32 }} />
+                ))}
+              </AvatarGroup>
             </Button>
-            <Button variant="outline">Import file</Button>
-            <Button>Create file</Button>
+            {canEdit && <CreateFileButton />}
           </div>
         }
       />
 
-      <div className="opacity-1 border border-dashed border-border py-20 text-center">Team files</div>
+      <FilesList
+        files={files.map((data) => ({ ...data.file, permissions: data.userMakingRequest.filePermissions }))}
+        emptyState={
+          <Empty
+            title="No team files"
+            description={`Files created by${canEdit ? ' you or ' : ' '}team members will show up here.`}
+            actions={
+              canEdit ? (
+                <Button asChild variant="secondary">
+                  <Link to={ROUTES.CREATE_TEAM_FILE(team.uuid)}>Create file</Link>
+                </Button>
+              ) : null
+            }
+            Icon={FileIcon}
+          />
+        }
+      />
 
       {isRenaming && (
         <DialogRenameItem

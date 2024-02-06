@@ -1,6 +1,6 @@
 import { Button } from '@/shadcn/ui/button';
 import * as React from 'react';
-import { Link, useSubmit } from 'react-router-dom';
+import { Link, useParams, useSubmit } from 'react-router-dom';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
@@ -10,6 +10,9 @@ import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGrid
 export default function CreateFileButton() {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const submit = useSubmit();
+  const { uuid } = useParams();
+
+  const actionUrl = uuid ? ROUTES.CREATE_TEAM_FILE(uuid) : ROUTES.CREATE_FILE;
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // If nothing was selected, just exit
@@ -34,7 +37,7 @@ export default function CreateFileButton() {
       version: validFile.version,
       contents: validFile.version === '1.3' ? JSON.stringify(validFile) : validFile.contents,
     };
-    submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
+    submit(data, { method: 'POST', action: actionUrl, encType: 'application/json' });
   };
 
   return (
@@ -46,7 +49,7 @@ export default function CreateFileButton() {
         </label>
       </Button>
       <Button asChild>
-        <Link to={ROUTES.CREATE_FILE}>Create file</Link>
+        <Link to={actionUrl}>Create file</Link>
       </Button>
     </div>
   );
