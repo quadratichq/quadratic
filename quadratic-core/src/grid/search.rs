@@ -105,7 +105,7 @@ mod test {
         let result = grid.search(&"hello".to_string(), SearchOptions::default());
         assert_eq!(result.len(), 2);
         let result = grid.search(
-            &"world".to_string(),
+            &"hello".to_string(),
             SearchOptions {
                 sheet_id: Some(sheet_id1.to_string()),
                 ..SearchOptions::default()
@@ -114,7 +114,7 @@ mod test {
         assert_eq!(result.len(), 1);
 
         let result = grid.search(
-            &"world".to_string(),
+            &"hello".to_string(),
             SearchOptions {
                 sheet_id: Some(sheet_id2.to_string()),
                 ..SearchOptions::default()
@@ -123,7 +123,7 @@ mod test {
         assert_eq!(result.len(), 1);
 
         let result = grid.search(
-            &"world".to_string(),
+            &"hello".to_string(),
             SearchOptions {
                 sheet_id: Some(sheet_id2.to_string()),
                 whole_cell: Some(true),
