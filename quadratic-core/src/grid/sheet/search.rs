@@ -213,7 +213,15 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use crate::controller::GridController;
+    use std::collections::HashSet;
+
+    use chrono::Utc;
+
+    use crate::{
+        controller::GridController,
+        grid::{CodeCellLanguage, CodeRun},
+        Array, CodeCellValue,
+    };
 
     use super::*;
 
@@ -456,5 +464,95 @@ mod test {
         );
         assert_eq!(results.len(), 1);
         assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+    }
+
+    #[test]
+    fn search_code_runs() {
+        let mut sheet = Sheet::test();
+        sheet.set_cell_value(
+            Pos { x: 1, y: 2 },
+            CellValue::Code(CodeCellValue {
+                code: "hello".into(),
+                language: CodeCellLanguage::Python,
+            }),
+        );
+        let code_run = CodeRun {
+            formatted_code_string: None,
+            result: CodeRunResult::Ok(Value::Single("world".into())),
+            std_out: None,
+            std_err: None,
+            cells_accessed: HashSet::new(),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
+
+        let results = sheet.search(
+            "hello".into(),
+            Some(SearchOptions {
+                search_code: Some(true),
+                ..Default::default()
+            }),
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
+
+        let results = sheet.search(
+            "world".into(),
+            Some(SearchOptions {
+                search_code: Some(true),
+                ..Default::default()
+            }),
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
+    }
+
+    #[test]
+    fn search_within_code_runs() {
+        let mut sheet = Sheet::test();
+        let code_run = CodeRun {
+            formatted_code_string: None,
+            result: CodeRunResult::Ok(Value::Array(Array::from(vec![
+                vec!["abc", "def", "ghi"],
+                vec!["jkl", "mno", "pqr"],
+            ]))),
+            std_out: None,
+            std_err: None,
+            cells_accessed: HashSet::new(),
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+        sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
+
+        let results = sheet.search(
+            "abc".into(),
+            Some(SearchOptions {
+                search_code: Some(true),
+                ..Default::default()
+            }),
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
+
+        let results = sheet.search(
+            "def".into(),
+            Some(SearchOptions {
+                search_code: Some(true),
+                ..Default::default()
+            }),
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet.id, 2, 2));
+
+        let results = sheet.search(
+            "pqr".into(),
+            Some(SearchOptions {
+                search_code: Some(true),
+                ..Default::default()
+            }),
+        );
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0], SheetPos::new(sheet.id, 3, 3));
     }
 }
