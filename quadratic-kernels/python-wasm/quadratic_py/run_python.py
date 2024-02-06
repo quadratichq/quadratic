@@ -103,7 +103,7 @@ async def run_python(code):
 
         # return a panda series for a 1d array of cells     
         if cell_range_width == 1 or cell_range_height == 1:
-            cell_list = [result_to_value(cell) for cell in cells]            
+            cell_list = [result_to_value(cell) for cell in cells]        
             return pd.Series(cell_list)
 
         # Create empty df of the correct size

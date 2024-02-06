@@ -115,8 +115,13 @@ export function Console({
                   }}
                 >
                   <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} />{' '}
-                  {consoleOutput?.stdErr ? '' : hasUnsavedChanges ? '…' : <>Line {codeEditorReturn?.lineno}</>} returned
-                  a
+                  {consoleOutput?.stdErr ? (
+                    ''
+                  ) : hasUnsavedChanges ? (
+                    '…'
+                  ) : (
+                    <>Line {codeEditorReturn?.lineno} returned a</>
+                  )}
                   <ReturnType>
                     {codeEditorReturn?.output_size && (
                       <>

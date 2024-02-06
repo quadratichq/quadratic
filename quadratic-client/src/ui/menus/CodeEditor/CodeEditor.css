@@ -1,12 +1,11 @@
 .codeEditorReturnHighlight {
-  font-weight: bold;
+  /* font-weight: medium; */
 }
 
 .codeEditorReturnLineDecoration::after {
   content: "\23CE";
   color: black;
-  display: block;
-  font-family: sans-serif;
+  font-family: OpenSans;
   position: absolute;
   left: 5px;
 }
