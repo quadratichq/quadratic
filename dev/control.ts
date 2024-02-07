@@ -333,6 +333,15 @@ export class Control {
     if (this.status.multiplayer === "killed") return;
     this.status.multiplayer = false;
     await this.kill("multiplayer");
+    try {
+      this.ui.print(
+        "multiplayer",
+        "killing port 3001 to ensure it's really good and dead..."
+      );
+      await killPort(3001);
+      // need to ignore the error if there is no process running on port 3001
+    } catch (e) {}
+
     this.signals.multiplayer = new AbortController();
     this.ui.print("multiplayer");
     this.multiplayer = spawn(
