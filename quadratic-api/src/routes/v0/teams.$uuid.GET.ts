@@ -31,7 +31,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     userMakingRequest,
   } = await getTeam({ uuid, userId: userMakingRequestId });
 
-  // Get users associated with the file
+  // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({
     where: {
       id: teamId,
@@ -68,26 +68,12 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       },
     },
   });
-
   const dbFiles = dbTeam?.File ? dbTeam.File : [];
   const dbUsers = dbTeam?.UserTeamRole ? dbTeam.UserTeamRole : [];
   const dbInvites = dbTeam?.TeamInvite ? dbTeam.TeamInvite : [];
 
-  // Get auth0 users
+  // Get user info from auth0
   const auth0UsersById = await getUsersFromAuth0(dbUsers.map(({ user }) => user));
-
-  // TODO: sort users by createdDate in the team
-  // TODO: invited users, also can we guarantee ordering here?
-  const users = dbUsers.map(({ userId: id, role }) => {
-    const { email, name, picture } = auth0UsersById[id];
-    return {
-      id,
-      email,
-      role,
-      name,
-      picture,
-    };
-  });
 
   // Get signed thumbnail URLs
   await Promise.all(
@@ -111,7 +97,16 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     },
     // IDEA: (enhancement) we could put this in /sharing and just return the userCount
     // then require the data for the team share modal to be a seaparte network request
-    users,
+    users: dbUsers.map(({ userId: id, role }) => {
+      const { email, name, picture } = auth0UsersById[id];
+      return {
+        id,
+        email,
+        role,
+        name,
+        picture,
+      };
+    }),
     invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
     files: dbFiles.map((file) => ({
       file: {
@@ -124,7 +119,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       },
       userMakingRequest: {
         filePermissions: getFilePermissions({
-          // TODO: test this
+          // TODO: test this, e.g. that if you have a role on the file AND you're part of the team
           fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
           teamRole: userMakingRequest.role,
           publicLinkAccess: file.publicLinkAccess,
