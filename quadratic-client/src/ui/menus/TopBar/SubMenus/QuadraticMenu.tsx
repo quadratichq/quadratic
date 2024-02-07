@@ -131,7 +131,7 @@ export const QuadraticMenu = () => {
                 <MenuLineItem
                   primary={redoAction.label}
                   secondary={
-                    isMac ? KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y'
+                    isMac ? KeyboardSymbols.Shift + KeyboardSymbols.Command + 'Z' : KeyboardSymbols.Command + 'Y'
                   }
                 />
               </MenuItem>
