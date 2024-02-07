@@ -2,14 +2,12 @@ use fake::faker::filesystem::en::FilePath;
 use fake::faker::internet::en::FreeEmail;
 use fake::faker::name::en::{FirstName, LastName};
 use fake::Fake;
-use futures_util::{
-    // stream::{SplitSink, SplitStream},
-    SinkExt,
-    StreamExt,
-};
+use futures::stream::StreamExt;
+use futures_util::SinkExt;
+use quadratic_core::cell_values::CellValues;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_core::controller::GridController;
-use quadratic_core::{Array, CellValue, SheetRect};
+use quadratic_core::{CellValue, SheetPos};
 use quadratic_rust_shared::quadratic_api::FilePermRole;
 use std::sync::Arc;
 use std::{
@@ -185,11 +183,11 @@ pub(crate) async fn new_connection(
 /// Create a new operation for testing
 pub(crate) fn operation(grid: &mut GridController, x: i64, y: i64, value: &str) -> Operation {
     let sheet_id = grid.sheet_ids().first().unwrap().to_owned();
-    let sheet_rect = SheetRect::single_pos((x, y).into(), sheet_id);
+    let sheet_pos = SheetPos { x, y, sheet_id };
     let value = CellValue::Text(value.into());
-    let values = Array::from(value);
+    let values = CellValues::from(value);
 
-    Operation::SetCellValues { sheet_rect, values }
+    Operation::SetCellValues { sheet_pos, values }
 }
 
 /// Setup integration testing, which:

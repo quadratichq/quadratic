@@ -18,6 +18,7 @@ use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
 pub mod cell_array;
+pub mod cell_values;
 pub mod code;
 pub mod formatting;
 pub mod rendering;

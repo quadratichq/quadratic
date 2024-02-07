@@ -1,3 +1,4 @@
+use crate::cell_values::CellValues;
 use crate::controller::{
     operations::clipboard::Clipboard, transaction_summary::TransactionSummary, GridController,
 };
@@ -18,16 +19,15 @@ pub enum PasteSpecial {
 impl GridController {
     /// Copies clipboard to (plain_text, html).
     pub fn copy_to_clipboard(&self, sheet_rect: SheetRect) -> (String, String) {
-        let mut cells = vec![];
+        let mut cells = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
+        let mut values = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
 
         // todo: have function return an Option<(String, String)> and replace below with a question mark operator
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return (String::new(), String::new());
         };
-
-        let mut values = vec![];
 
         for y in sheet_rect.y_range() {
             if y != sheet_rect.min.y {
@@ -51,10 +51,22 @@ impl GridController {
                 let real_value = sheet.cell_value(pos);
 
                 // create quadratic clipboard values
-                cells.push(real_value.clone());
+                if let Some(real_value) = real_value {
+                    cells.set(
+                        (x - sheet_rect.min.x) as u32,
+                        (y - sheet_rect.min.y) as u32,
+                        real_value,
+                    );
+                }
 
                 // create quadratic clipboard value-only
-                values.push(simple_value.clone());
+                if let Some(simple_value) = &simple_value {
+                    values.set(
+                        (x - sheet_rect.min.x) as u32,
+                        (y - sheet_rect.min.y) as u32,
+                        simple_value.clone(),
+                    );
+                }
 
                 // add styling for html (only used for pasting to other spreadsheets)
                 // todo: add text color, fill, etc.
@@ -99,38 +111,48 @@ impl GridController {
                     x: output_rect.min.x,
                     y: output_rect.min.y,
                 };
-                if !clipboard_rect.contains(code_pos) {
-                    let x_start = if output_rect.min.x > clipboard_rect.min.x {
-                        output_rect.min.x
-                    } else {
-                        clipboard_rect.min.x
-                    };
-                    let y_start = if output_rect.min.y > clipboard_rect.min.y {
-                        output_rect.min.y
-                    } else {
-                        clipboard_rect.min.y
-                    };
-                    let x_end = if output_rect.max.x < clipboard_rect.max.x {
-                        output_rect.max.x
-                    } else {
-                        clipboard_rect.max.x
-                    };
-                    let y_end = if output_rect.max.y < clipboard_rect.max.y {
-                        output_rect.max.y
-                    } else {
-                        clipboard_rect.max.y
-                    };
+                let x_start = if output_rect.min.x > clipboard_rect.min.x {
+                    output_rect.min.x
+                } else {
+                    clipboard_rect.min.x
+                };
+                let y_start = if output_rect.min.y > clipboard_rect.min.y {
+                    output_rect.min.y
+                } else {
+                    clipboard_rect.min.y
+                };
+                let x_end = if output_rect.max.x < clipboard_rect.max.x {
+                    output_rect.max.x
+                } else {
+                    clipboard_rect.max.x
+                };
+                let y_end = if output_rect.max.y < clipboard_rect.max.y {
+                    output_rect.max.y
+                } else {
+                    clipboard_rect.max.y
+                };
 
-                    // add the code_run output to clipboard.cells
-                    for y in y_start..=y_end {
-                        for x in x_start..=x_end {
-                            if let Some(value) = code_cell
-                                .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
-                            {
-                                let index = (y - sheet_rect.min.y) as usize * sheet_rect.width()
-                                    + (x - sheet_rect.min.x) as usize;
-                                cells[index] = Some(value.clone());
+                // add the CellValue to cells if the code is not included in the clipboard
+                let include_in_cells = !clipboard_rect.contains(code_pos);
+
+                // add the code_run output to clipboard.values
+                for y in y_start..=y_end {
+                    for x in x_start..=x_end {
+                        if let Some(value) = code_cell
+                            .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
+                        {
+                            if include_in_cells {
+                                cells.set(
+                                    (x - sheet_rect.min.x) as u32,
+                                    (y - sheet_rect.min.y) as u32,
+                                    value.clone(),
+                                );
                             }
+                            values.set(
+                                (x - sheet_rect.min.x) as u32,
+                                (y - sheet_rect.min.y) as u32,
+                                value,
+                            );
                         }
                     }
                 }
@@ -286,6 +308,7 @@ mod test {
             PasteSpecial::None,
             None,
         );
+
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
@@ -663,9 +686,9 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        // see line ~274 for the output (`print!("{}", clipboard.1);`)
+        // see line ~357 for the output (`print!("{}", clipboard.1);`)
         let pasted_output = String::from(
-            r#"<table data-quadratic="&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x5B;null&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x5D;&#x2C;&quot;values&quot;&#x3A;&#x5B;null&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x2C;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x2C;null&#x2C;null&#x2C;null&#x2C;null&#x5D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericCommas&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x2C;&quot;borders&quot;&#x3A;&#x5B;&#x5B;0&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;3&#x2C;null&#x5D;&#x5D;&#x7D;"><tbody><tr><td></td><td></td><td></td><td></tr><tr><td></td><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td></td><td><span style={font-style:italic;}>12</span></tr><tr><td></td><td></td><td></td><td></tr></tbody></table>"#,
+            r#"<table data-quadratic="&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x7B;&quot;columns&quot;&#x3A;&#x5B;&#x7B;&#x7D;&#x2C;&#x7B;&quot;1&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x7D;&#x2C;&#x7B;&#x7D;&#x2C;&#x7B;&quot;2&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x7D;&#x5D;&#x2C;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&quot;columns&quot;&#x3A;&#x5B;&#x7B;&#x7D;&#x2C;&#x7B;&quot;1&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x7D;&#x2C;&#x7B;&#x7D;&#x2C;&#x7B;&quot;2&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x7D;&#x5D;&#x2C;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x7D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericCommas&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x2C;&quot;borders&quot;&#x3A;&#x5B;&#x5B;0&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;3&#x2C;null&#x5D;&#x5D;&#x7D;"><tbody><tr><td></td><td></td><td></td><td></tr><tr><td></td><td><span style={font-weight:bold;}>1, 1</span></td><td></td><td></tr><tr><td></td><td></td><td></td><td><span style={font-style:italic;}>12</span></tr><tr><td></td><td></td><td></td><td></tr></tbody></table>"#,
         );
 
         gc.paste_from_clipboard(
@@ -832,5 +855,60 @@ mod test {
                 fill_color: None,
             }
         );
+    }
+
+    #[test]
+    fn copy_part_of_code_run() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            String::from("{1, 2, 3; 4, 5, 6}"),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+
+        // don't copy the origin point
+        let sheet_rect = SheetRect::new_pos_span(Pos { x: 2, y: 1 }, Pos { x: 3, y: 2 }, sheet_id);
+        let clipboard = gc.copy_to_clipboard(sheet_rect);
+
+        // paste using html on a new grid controller
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // ensure the grid controller is empty
+        assert_eq!(gc.undo_stack.len(), 0);
+
+        gc.paste_from_clipboard(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            Some(clipboard.0),
+            Some(clipboard.1),
+            PasteSpecial::None,
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
     }
 }
