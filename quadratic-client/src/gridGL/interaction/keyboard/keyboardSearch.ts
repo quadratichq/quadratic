@@ -2,7 +2,7 @@ import { EditorInteractionState } from '@/atoms/editorInteractionStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
 
 export function keyboardSearch(
-  event: React.KeyboardEvent<HTMLElement>,
+  event: KeyboardEvent,
   editorInteractionState: EditorInteractionState,
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>
 ): boolean {

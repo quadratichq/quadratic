@@ -29,7 +29,7 @@ export function Search() {
   const [current, setCurrent] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const placeholder = !searchOptions.sheet_id ? 'Search all sheets...' : 'Search this sheet...';
+  const placeholder = !searchOptions.sheet_id ? 'Find across all sheets...' : 'Find in this sheet...';
 
   const onChange = (search: string, updatedSearchOptions = searchOptions) => {
     if (search.length > 0) {
@@ -93,15 +93,8 @@ export function Search() {
   };
 
   const closeSearch = () => {
-    setResults([]);
-    setSearchOptions({
-      case_sensitive: false,
-      whole_cell: false,
-      search_code: false,
-      sheet_id: sheets.sheet.id,
-    });
-    focusGrid();
     dispatchEvent(new CustomEvent('search'));
+    focusGrid();
   };
 
   useEffect(() => {
@@ -123,6 +116,14 @@ export function Search() {
     if (!editorInteractionState.showSearch) {
       closeSearch();
     } else {
+      setResults([]);
+      setSearchOptions({
+        case_sensitive: false,
+        whole_cell: false,
+        search_code: false,
+        sheet_id: sheets.sheet.id,
+      });
+
       // if it's not true then it's of type SearchOptions
       if (editorInteractionState.showSearch !== true) {
         setSearchOptions(editorInteractionState.showSearch);

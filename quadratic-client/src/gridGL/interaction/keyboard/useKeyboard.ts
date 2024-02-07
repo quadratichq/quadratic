@@ -38,7 +38,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           setEditorInteractionState,
           presentationMode,
           setPresentationMode,
-        })
+        }) ||
+        keyboardSearch(event, editorInteractionState, setEditorInteractionState)
       ) {
         event.stopPropagation();
         event.preventDefault();
@@ -60,8 +61,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       }) ||
       keyboardUndoRedo(event) ||
       keyboardSelect(event) ||
-      keyboardCode(event, editorInteractionState) ||
-      keyboardSearch(event, editorInteractionState, setEditorInteractionState)
+      keyboardCode(event, editorInteractionState)
     )
       return;
 
