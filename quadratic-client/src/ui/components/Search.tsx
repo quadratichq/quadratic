@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
@@ -14,8 +12,7 @@ import {
 } from '@/shadcn/ui/dropdown-menu';
 import { Input } from '@/shadcn/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/shadcn/ui/popover';
-import { colors } from '@/theme/colors';
-import { MoreHoriz, NavigateBefore, NavigateNext } from '@mui/icons-material';
+import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 
@@ -141,20 +138,10 @@ export function Search() {
 
   return (
     <Popover open={!!editorInteractionState.showSearch}>
-      <PopoverAnchor
-        style={{
-          position: 'absolute',
-          right: '1rem',
-          top: '100%',
-        }}
-      />
+      <PopoverAnchor className="absolute right-[.5rem] top-[100%] min-[400px]:top-[calc(100%+.5rem)]" />
       <PopoverContent
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          width: '400px',
-        }}
+        align="end"
+        className="flex w-[100vw] flex-col items-center gap-1 p-2 min-[400px]:w-[400px] min-[400px]:flex-row min-[400px]:p-3"
         onKeyDown={(e) => {
           // close search
           if (e.key === 'Escape') {
@@ -165,6 +152,9 @@ export function Search() {
             inputRef.current?.focus();
           }
           if (e.key === 'Enter') {
+            // If other elements have focus, like the 'close' button, don't handle Enter
+            if (document.activeElement !== inputRef.current) return;
+
             e.preventDefault();
             if (results.length > 1) {
               navigate(e.shiftKey ? -1 : 1);
@@ -174,59 +164,73 @@ export function Search() {
           }
         }}
       >
-        <Input
-          id="search-input"
-          type="text"
-          ref={inputRef}
-          placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-        />
-        {!!results.length && (
-          <div style={{ whiteSpace: 'nowrap' }}>
-            {current + 1} of {results.length}
-          </div>
-        )}
-        {!!results.length && (
-          <>
-            <Button size="icon-sm" onClick={() => navigate(-1)}>
-              <NavigateBefore />
-            </Button>
-            <Button size="icon-sm" onClick={() => navigate(1)}>
-              <NavigateNext />
-            </Button>
-          </>
-        )}
-        {results.length === 0 && !!(inputRef.current as HTMLInputElement)?.value.length && (
-          <div style={{ whiteSpace: 'nowrap', color: colors.quadraticSecondary }}>not found</div>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <MoreHoriz fontSize="small" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuCheckboxItem checked={!searchOptions.sheet_id} onCheckedChange={() => changeOptions('sheet')}>
-              Search all sheets
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={searchOptions.case_sensitive}
-              onCheckedChange={() => changeOptions('case_sensitive')}
-            >
-              Case sensitive search
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={searchOptions.whole_cell}
-              onCheckedChange={() => changeOptions('whole_cell')}
-            >
-              Match entire cell contents
-            </DropdownMenuCheckboxItem>
-            <DropdownMenuCheckboxItem
-              checked={searchOptions.search_code}
-              onCheckedChange={() => changeOptions('search_code')}
-            >
-              Search within code
-            </DropdownMenuCheckboxItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="relative w-full">
+          <Input
+            id="search-input"
+            type="text"
+            ref={inputRef}
+            placeholder={placeholder}
+            onChange={(e) => onChange(e.target.value)}
+            className={`pr-[4rem]`}
+            autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+          />
+          {inputRef.current && inputRef.current.value.length !== 0 && (
+            <div className="absolute right-3 top-[.625rem] text-nowrap text-xs text-muted-foreground">
+              {results.length === 0 ? '0' : current + 1} of {results.length}
+            </div>
+          )}
+        </div>
+        <div className="flex w-full justify-between min-[400px]:w-auto">
+          <Button variant="ghost" className="px-2" onClick={() => navigate(-1)} disabled={results.length === 0}>
+            <ChevronLeftIcon />
+          </Button>
+          <Button variant="ghost" className="px-2" onClick={() => navigate(1)} disabled={results.length === 0}>
+            <ChevronRightIcon />
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="px-2">
+                <DotsHorizontalIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuCheckboxItem
+                checked={!searchOptions.sheet_id}
+                onCheckedChange={() => changeOptions('sheet')}
+              >
+                Search all sheets
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={searchOptions.case_sensitive}
+                onCheckedChange={() => changeOptions('case_sensitive')}
+              >
+                Case sensitive search
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={searchOptions.whole_cell}
+                onCheckedChange={() => changeOptions('whole_cell')}
+              >
+                Match entire cell contents
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={searchOptions.search_code}
+                onCheckedChange={() => changeOptions('search_code')}
+              >
+                Search within code
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            variant="ghost"
+            className="px-2"
+            onClick={() => setEditorInteractionState((prev) => ({ ...prev, showSearch: false }))}
+          >
+            <Cross2Icon />
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );
