@@ -125,6 +125,11 @@ export function Search() {
   useEffect(() => {
     if (!editorInteractionState.showSearch) {
       closeSearch();
+    } else {
+      // if it's not true then it's of type SearchOptions
+      if (editorInteractionState.showSearch !== true) {
+        setSearchOptions(editorInteractionState.showSearch);
+      }
     }
   }, [editorInteractionState.showSearch]);
 
@@ -135,7 +140,7 @@ export function Search() {
   }, [editorInteractionState.showSearch, editorInteractionState.showCodeEditor, setEditorInteractionState]);
 
   return (
-    <Popover open={editorInteractionState.showSearch}>
+    <Popover open={!!editorInteractionState.showSearch}>
       <PopoverAnchor
         style={{
           position: 'absolute',

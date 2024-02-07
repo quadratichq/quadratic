@@ -1,5 +1,5 @@
 import { Coordinate } from '@/gridGL/types/size';
-import { CodeCellLanguage } from '@/quadratic-core/types';
+import { CodeCellLanguage, SearchOptions } from '@/quadratic-core/types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
 
@@ -10,7 +10,7 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
-  showSearch: boolean;
+  showSearch: boolean | SearchOptions;
   permissions: FilePermission[];
   uuid: string;
   selectedCell: Coordinate;

@@ -9,6 +9,7 @@ import FileListItems from './ListItems/File';
 import FormatListItems from './ListItems/Format';
 import HelpListItems from './ListItems/Help';
 import ImportListItems from './ListItems/Import';
+import SearchItems from './ListItems/Search';
 import SheetListItems from './ListItems/Sheets';
 import TextListItems from './ListItems/Text';
 import ViewListItems from './ListItems/View';
@@ -39,6 +40,7 @@ export const getCommandPaletteListItems = (props: {
     ...SheetListItems(),
     ...HelpListItems,
     ...CodeItems,
+    ...SearchItems,
   ];
   const { activeSearchValue, permissions, isAuthenticated, ...rest } = props;
 
