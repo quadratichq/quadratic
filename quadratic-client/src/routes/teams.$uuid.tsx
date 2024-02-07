@@ -1,5 +1,6 @@
 import { ShareTeamDialog } from '@/components/ShareDialog';
 import { ROUTES } from '@/constants/routes';
+import { CONTACT_URL } from '@/constants/urls';
 import CreateFileButton from '@/dashboard/components/CreateFileButton';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
 import { FilesList } from '@/dashboard/components/FilesList';
@@ -31,11 +32,12 @@ import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { TeamLogoInput } from '../dashboard/components/TeamLogo';
-import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQueryStringValueWithoutNavigation';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { uuid } = params as { uuid: string };
-  const data = await apiClient.teams.get(uuid);
+  const data = await apiClient.teams.get(uuid).catch((error) => {
+    throw new Response('Failed to load file from server.', { status: error.status });
+  });
 
   // Sort the users so the logged-in user is first in the list
   data.users.sort((a, b) => {
@@ -85,8 +87,6 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   const data = (await request.json()) as TeamAction['request'];
   const { uuid } = params as { uuid: string };
   const { intent } = data;
-
-  await new Promise((resolve, reject) => setTimeout(resolve, 1000));
 
   if (intent === 'update-team') {
     try {
@@ -157,10 +157,6 @@ export const Component = () => {
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
   const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(searchParams.get('share'));
-  useUpdateQueryStringValueWithoutNavigation('share', shareSearchParamValue);
-
-  // const [shareQueryValue, setShareQueryValue] = useState<string>('');
-  // useUpdateQueryStringValueWithoutNavigation("share", queryValue);
 
   let name = team.name;
   if (fetcher.state !== 'idle') {
@@ -295,28 +291,41 @@ export const Component = () => {
   );
 };
 
-// TODO: fix when we merge better errors PR
 export const ErrorBoundary = () => {
   const error = useRouteError();
 
+  const actions = (
+    <div className={`flex justify-center gap-2`}>
+      <Button asChild variant="outline">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+          Get help
+        </a>
+      </Button>
+      <Button asChild variant="default">
+        <Link to="/">Go home</Link>
+      </Button>
+    </div>
+  );
+
   if (isRouteErrorResponse(error)) {
-    console.error(error);
-    // If the future, we can differentiate between the different kinds of file
-    // loading errors and be as granular in the message as we like.
-    // e.g. file found but didn't validate. file couldn't be found on server, etc.
-    // But for now, we'll just show a 404
-    return (
-      <Empty
-        title="404: team not found"
-        description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
-        Icon={ExclamationTriangleIcon}
-        actions={
-          <Button asChild>
-            <Link to="/">Go home</Link>
-          </Button>
-        }
-      />
-    );
+    if (error.status === 400)
+      return (
+        <Empty
+          title="Bad request"
+          description="Ensure you have the right URL for this team and try again."
+          Icon={ExclamationTriangleIcon}
+          actions={actions}
+        />
+      );
+    if (error.status === 404)
+      return (
+        <Empty
+          title="Team not found"
+          description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
+          Icon={ExclamationTriangleIcon}
+          actions={actions}
+        />
+      );
   }
 
   // Maybe we log this to Sentry someday...

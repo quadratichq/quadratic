@@ -65,7 +65,7 @@ export function ShareTeamDialog({
     invites,
     team: { name, uuid },
   } = data;
-  const action = `/teams/${uuid}`;
+  const action = ROUTES.TEAM(uuid);
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
 
   const pendingInvites = useFetchers()
@@ -96,12 +96,16 @@ export function ShareTeamDialog({
           action={action}
           intent="create-team-invite"
           disallowedEmails={exisitingTeamEmails}
-          roles={[UserTeamRoleSchema.enum.OWNER, UserTeamRoleSchema.enum.EDITOR, UserTeamRoleSchema.enum.VIEWER]}
-          roleDefaultValueIndex={1}
+          roles={[
+            ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER ? [UserTeamRoleSchema.enum.OWNER] : []),
+            UserTeamRoleSchema.enum.EDITOR,
+            UserTeamRoleSchema.enum.VIEWER,
+          ]}
+          roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
         />
       )}
 
-      {users.map((user, i) => {
+      {users.map((user) => {
         const isLoggedInUser = userMakingRequest.id === user.id;
         const canDelete = isLoggedInUser
           ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
@@ -183,7 +187,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     userMakingRequest: { filePermissions, id: loggedInUserId },
     owner,
   } = data;
-  const action = `/files/${uuid}/sharing`;
+  const action = ROUTES.FILES_SHARE(uuid);
   const canEditFile = filePermissions.includes('FILE_EDIT');
 
   sortLoggedInUserFirst(users, loggedInUserId);
@@ -220,7 +224,6 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         />
       )}
 
-      {/* TODO: (teams) If it's part of a team, that goes here. Otherwise, you show the user owner */}
       {owner.type === 'team' && (
         <ListItem className="py-1 text-muted-foreground">
           <div className="flex h-6 w-6 items-center justify-center">
@@ -310,7 +313,6 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
 
 export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
   const fetcher = useFetcher();
-  console.log(uuid);
 
   let loadState = !fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED';
 
@@ -365,13 +367,13 @@ export function InviteForm({
   action,
   intent,
   roles,
-  roleDefaultValueIndex,
+  roleDefaultValue,
 }: {
   disallowedEmails: string[];
   intent: TeamAction['request.create-team-invite']['intent'] | FileShareAction['request.create-file-invite']['intent'];
   action: string;
   roles: (UserTeamRole | UserFileRole)[];
-  roleDefaultValueIndex?: number;
+  roleDefaultValue?: UserTeamRole | UserFileRole;
 }) {
   const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -391,7 +393,7 @@ export function InviteForm({
     // Get the data from the form
     const formData = new FormData(e.currentTarget);
     const emailFromUser = String(formData.get('email_search')).trim();
-    const roleIndex = Number(formData.get('roleIndex'));
+    const role = String(formData.get('role'));
 
     // Validate email
     let email;
@@ -408,10 +410,7 @@ export function InviteForm({
 
     // Submit the data
     // TODO: (enhancement) enhance types so it knows which its submitting to
-    submit(
-      { intent, email: email, role: roles[roleIndex] },
-      { method: 'POST', action, encType: 'application/json', navigate: false }
-    );
+    submit({ intent, email: email, role }, { method: 'POST', action, encType: 'application/json', navigate: false });
 
     // Reset the email input & focus it
     if (inputRef.current) {
@@ -452,13 +451,13 @@ export function InviteForm({
       </div>
 
       <div className="flex-shrink-0">
-        <Select defaultValue={String(roleDefaultValueIndex ? roleDefaultValueIndex : '0')} name="roleIndex">
+        <Select defaultValue={roleDefaultValue ? roleDefaultValue : roles[0]} name="role">
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {roles.map((role, i) => (
-              <SelectItem key={role} value={String(i)}>
+              <SelectItem key={role} value={role}>
                 {getRoleLabel(role)}
               </SelectItem>
             ))}
