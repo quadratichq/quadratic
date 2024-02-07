@@ -1,3 +1,4 @@
+import { hasPermissionToEditFile } from '@/actions';
 import { authClient, parseDomain } from '@/auth';
 import { debugShowMultiplayer } from '@/debugFlags';
 import { grid } from '@/grid/controller/Grid';
@@ -87,7 +88,11 @@ export class Multiplayer {
     // this is only a partial solution mostly for desktop
     // see https://www.igvita.com/2015/11/20/dont-lose-user-and-app-state-use-page-visibility/ for a further discussion
     const alertUser = (e: BeforeUnloadEvent) => {
-      if (this.state === 'syncing') {
+      if (
+        this.state === 'syncing' &&
+        !this.brokenConnection &&
+        hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)
+      ) {
         e.preventDefault();
       }
     };
