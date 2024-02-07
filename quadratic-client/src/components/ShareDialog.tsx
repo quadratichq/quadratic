@@ -7,9 +7,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
 import { Skeleton } from '@/shadcn/ui/skeleton';
+import { cn } from '@/shadcn/utils';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
-import { EnvelopeClosedIcon, Link1Icon, LinkBreak1Icon } from '@radix-ui/react-icons';
+import { EnvelopeClosedIcon, Link1Icon, LinkBreak1Icon, PersonIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import {
   ApiTypes,
@@ -45,7 +46,7 @@ export function ShareDialog({ onClose, title, description, children }: any) {
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className={`flex flex-col gap-4`}>{children}</div>
+        <div className={`flex flex-col gap-3`}>{children}</div>
       </DialogContent>
     </Dialog>
   );
@@ -67,7 +68,6 @@ export function ShareTeamDialog({
   const action = `/teams/${uuid}`;
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
 
-  // TODO:(enhancement) error state when these fail
   const pendingInvites = useFetchers()
     .filter(
       (fetcher) =>
@@ -102,7 +102,7 @@ export function ShareTeamDialog({
       )}
 
       {users.map((user, i) => {
-        const isLoggedInUser = i === 0;
+        const isLoggedInUser = userMakingRequest.id === user.id;
         const canDelete = isLoggedInUser
           ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
           : canDeleteUserInTeam({
@@ -221,6 +221,17 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
       )}
 
       {/* TODO: (teams) If it's part of a team, that goes here. Otherwise, you show the user owner */}
+      {owner.type === 'team' && (
+        <ListItem className="py-1 text-muted-foreground">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <PersonIcon />
+          </div>
+          <Type variant="body2">Everyone in {owner.name}</Type>
+          <Type variant="body2" className="pr-4">
+            Can access
+          </Type>
+        </ListItem>
+      )}
 
       <ListItemPublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} disabled={!canEditFile} />
 
@@ -342,17 +353,6 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
     </ShareDialog>
   );
 }
-
-// function ListItemTeamMember({ teamName }: { teamName: string }) {
-//   return (
-//     <ListItem>
-//       <div className={`flex h-6 w-6 items-center justify-center`}>
-//         <PersonIcon className={`h-5 w-5`} />
-//       </div>
-//       <Type variant="body2">Everyone in {teamName} can access this file</Type>
-//     </ListItem>
-//   );
-// }
 
 /**
  * Form that accepts an email and a role and invites the person to a team or file
@@ -793,12 +793,12 @@ function ListItemPublicLink({
   );
 }
 
-function ListItem({ children }: { children: React.ReactNode }) {
+function ListItem({ className, children }: { className?: string; children: React.ReactNode }) {
   if (Children.count(children) !== 3) {
     console.warn('<ListItem> expects exactly 3 children');
   }
 
-  return <div className={'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto'}>{children}</div>;
+  return <div className={cn(className, 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto')}>{children}</div>;
 }
 
 // TODO: write tests for these
@@ -808,7 +808,6 @@ function canDeleteLoggedInUserInTeam({ role, numberOfOwners }: { role: UserTeamR
       return false;
     }
   }
-
   return true;
 }
 function canDeleteUserInTeam({
@@ -820,9 +819,9 @@ function canDeleteUserInTeam({
   loggedInUserRole: UserTeamRole;
   userRole: UserTeamRole;
 }) {
-  // TODO: can a user who is an editor remove a member who has a higher role than themselves?
   const { OWNER, EDITOR } = UserTeamRoleSchema.enum;
   if (permissions.includes('TEAM_EDIT')) {
+    // If you're an editor, you can't remove an owner
     if (loggedInUserRole === EDITOR && userRole === OWNER) {
       return false;
     }
@@ -891,7 +890,7 @@ function getAvailableRolesForUserInTeam({
   return [VIEWER];
 }
 
-function sortLoggedInUserFirst(collection: { id: number }[], loggedInUserId: number) {
+export function sortLoggedInUserFirst(collection: { id: number }[], loggedInUserId: number) {
   collection.sort((a, b) => {
     // Move the logged in user to the front
     if (a.id === loggedInUserId && b.id !== loggedInUserId) return -1;

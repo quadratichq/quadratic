@@ -72,7 +72,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
   if (dbFile.ownerTeam) {
     owner = {
       type: 'team',
-      name: dbFile.ownerTeam.uuid,
+      name: dbFile.ownerTeam.name,
       picture: dbFile.ownerTeam.picture ? dbFile.ownerTeam.picture : undefined,
     };
   } else if (dbFile.ownerUser) {
