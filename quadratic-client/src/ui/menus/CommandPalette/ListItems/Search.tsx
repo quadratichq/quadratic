@@ -31,6 +31,8 @@ const ListItems = [
           {...props}
           icon={<Search />}
           action={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
+          shortcut="F"
+          shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}
         />
       );
     },

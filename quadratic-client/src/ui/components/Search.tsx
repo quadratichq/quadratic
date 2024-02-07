@@ -151,6 +151,17 @@ export function Search() {
           if (e.key === 'f' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             inputRef.current?.focus();
+
+            // shift+cmd+f let's you change to all sheets search mode while in the dialog box
+            if (e.shiftKey) {
+              setSearchOptions((prev) => {
+                if (!prev.sheet_id) return prev;
+                const updatedSearchOptions = { ...prev, sheet_id: undefined };
+                const search = (inputRef.current as HTMLInputElement).value;
+                onChange(search, { ...searchOptions, sheet_id: undefined });
+                return updatedSearchOptions;
+              });
+            }
           }
           if (e.key === 'Enter') {
             // If other elements have focus, like the 'close' button, don't handle Enter

@@ -1,5 +1,4 @@
 import { EditorInteractionState } from '@/atoms/editorInteractionStateAtom';
-import { sheets } from '@/grid/controller/Sheets';
 
 export function keyboardSearch(
   event: KeyboardEvent,
@@ -14,8 +13,7 @@ export function keyboardSearch(
     } else {
       setEditorInteractionState((prev) => ({
         ...prev,
-        showSearch: true,
-        searchOptions: { case_sensitive: false, whole_cell: false, search_code: false, sheet_id: sheets.sheet.id },
+        showSearch: event.shiftKey ? { sheet_id: undefined } : true,
       }));
     }
     event.preventDefault();

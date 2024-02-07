@@ -152,6 +152,19 @@ export const QuadraticMenu = () => {
               <MenuLineItem primary={pasteAction.label} secondary={KeyboardSymbols.Command + 'V'} />
             </MenuItem>
           )}
+
+          <MenuDivider />
+          <MenuItem onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: true }))}>
+            <MenuLineItem primary="Find in current sheet" secondary={KeyboardSymbols.Command + 'F'} />
+          </MenuItem>
+          <MenuItem
+            onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
+          >
+            <MenuLineItem
+              primary="Find in all sheets"
+              secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + 'F'}
+            />
+          </MenuItem>
         </SubMenu>
         <SubMenu label={<MenuLineItem primary="View" />}>
           <MenuItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
