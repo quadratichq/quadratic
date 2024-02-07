@@ -12,7 +12,7 @@ class PythonWebWorker {
       throw new Error('Call webWorkers.pythonWebWorker.changeOutput to set mocked output');
     }
     if (!this.output[python_code]) {
-      throw new Error(`mocked python output not defined: ${python_code.replaceAll('\n', '\\\\n')}`);
+      throw new Error(`mocked python output not defined: ${python_code}`);
     }
     return this.output[python_code];
   }

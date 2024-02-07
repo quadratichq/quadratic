@@ -71,3 +71,9 @@ export const debugDisableProxy = debug && false;
 // --------
 
 export const debugShowUILogs = debug && false;
+
+//-----------
+// WebWorkers
+//-----------
+
+export const debugWebWorkers = debug && true;

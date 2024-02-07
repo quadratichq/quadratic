@@ -5,6 +5,7 @@ import { isEmbed } from '@/helpers/isEmbed';
 import { firstRustFileVersion } from '@/schemas/validateAndUpgradeLegacyGridFile';
 import { versionGTE } from '@/schemas/versioning';
 import { Button } from '@/shadcn/ui/button';
+import { coreWebWorker } from '@/web-workers/coreWebWorker/core';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -71,6 +72,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   // load WASM
   await init();
   hello();
+
+  // Launch the core web worker and load the file
+  coreWebWorker.load(checkpointContents, data.file.lastCheckpointSequenceNumber);
+
   if (!grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber)) {
     Sentry.captureEvent({
       message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,

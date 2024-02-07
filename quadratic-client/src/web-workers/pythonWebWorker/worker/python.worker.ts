@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-import { PythonMessage } from './pythonTypes';
+import { PythonMessage } from '../pythonTypes';
 
 const TRY_AGAIN_TIMEOUT = 500;
 
