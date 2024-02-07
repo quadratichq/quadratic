@@ -7,7 +7,7 @@ import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../Co
 const ListItems = [
   {
     label: 'Search: in current sheet',
-    keywords: ['find'],
+    keywords: 'find',
     Component: (props: CommandPaletteListItemSharedProps) => {
       const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
       return (
@@ -23,7 +23,7 @@ const ListItems = [
   },
   {
     label: 'Search: in all sheets',
-    keywords: ['find'],
+    keywords: 'find',
     Component: (props: CommandPaletteListItemSharedProps) => {
       const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
       return (
