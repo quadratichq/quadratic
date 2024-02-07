@@ -182,7 +182,7 @@ async def run_python(code):
         output_type = type(output_value).__name__
         output_size = None
 
-        # TODO(ddimaria): figure out if we need to covert back to a list for array_outputl
+        # TODO(ddimaria): figure out if we need to covert back to a list for array_output
         # We should have a single output
         if isinstance(output_value, list):
             if len(output_value) > 0:
@@ -247,6 +247,10 @@ async def run_python(code):
         if array_output or output_value is None:
             output_value = ""
 
+
+        print("array_output", array_output)
+        print("output_value", output_value)
+        print("array_output_type", type(array_output).__name__)
 
         return {
             "output_value": str(output_value),

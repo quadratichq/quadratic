@@ -104,17 +104,17 @@ export function Console({
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
-            {codeEditorReturn?.output_type && (
+            {codeEditorReturn?.output_type && !consoleOutput?.stdErr && (
               <>
                 <div
                   style={{
-                    color: consoleOutput?.stdErr ? 'red' : '#777',
+                    color: '#777',
                     display: 'flex',
                     alignItems: 'center',
                     gap: theme.spacing(1),
                   }}
                 >
-                  {!consoleOutput?.stdErr && !hasUnsavedChanges && (
+                  {!!hasUnsavedChanges && (
                     <>
                       <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
                       {codeEditorReturn?.lineno} returned a
@@ -127,11 +127,7 @@ export function Console({
                           {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
                         </>
                       )}
-                      {consoleOutput?.stdErr
-                        ? 'ERROR'
-                        : hasUnsavedChanges
-                        ? '…'
-                        : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
+                      {hasUnsavedChanges ? '…' : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
                     </ReturnType>
                   )}
                 </div>

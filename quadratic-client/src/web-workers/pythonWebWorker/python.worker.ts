@@ -83,22 +83,48 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       // auto load packages
       await pyodide.loadPackagesFromImports(event.python);
 
-      const output = await pyodide.globals.get('run_python')(event.python);
-      const results = Object.fromEntries(output.toJs());
-      return self.postMessage({
-        type: 'results',
-        results,
-        python_code: event.python,
-      });
+      let output, results;
+
+      try {
+        output = await pyodide.globals.get('run_python')(event.python);
+        results = Object.fromEntries(output.toJs());
+        console.log(results);
+
+        return self.postMessage({
+          type: 'results',
+          results,
+          python_code: event.python,
+        });
+      } catch (e) {
+        // gracefully recover from deserialization errors
+        console.warn(e);
+        const error_results = {
+          ...results,
+          output_value: null,
+          output_size: null,
+          array_output: [],
+          input_python_stack_trace: String(e),
+          std_err: String(e),
+          success: false,
+        };
+        return self.postMessage({
+          type: 'results',
+          results: error_results,
+          python_code: event.python,
+        });
+      } finally {
+        // destroy the output as it can cause memory leaks
+        if (output) output.destroy();
+      }
     }
   }
 };
 
 async function inspectPython(
-  python_code: string,
+  pythonCode: string,
   pyodide: any = undefined
 ): Promise<InspectPythonReturnType | undefined> {
-  const output = await pyodide.globals.get('inspect_python')(python_code);
+  const output = await pyodide.globals.get('inspect_python')(pythonCode);
 
   if (output === undefined) {
     return undefined;

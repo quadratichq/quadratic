@@ -94,6 +94,8 @@ export const CodeEditor = () => {
         editorInteractionState.selectedCell.x,
         editorInteractionState.selectedCell.y
       );
+
+      console.log('codeCell', codeCell);
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
