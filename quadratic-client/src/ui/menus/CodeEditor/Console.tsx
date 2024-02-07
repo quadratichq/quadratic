@@ -114,26 +114,26 @@ export function Console({
                     gap: theme.spacing(1),
                   }}
                 >
-                  <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} />{' '}
-                  {consoleOutput?.stdErr ? (
-                    ''
-                  ) : hasUnsavedChanges ? (
-                    '…'
-                  ) : (
-                    <>Line {codeEditorReturn?.lineno} returned a</>
+                  {!consoleOutput?.stdErr && !hasUnsavedChanges && (
+                    <>
+                      <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
+                      {codeEditorReturn?.lineno} returned a
+                    </>
                   )}
-                  <ReturnType>
-                    {codeEditorReturn?.output_size && (
-                      <>
-                        {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
-                      </>
-                    )}
-                    {consoleOutput?.stdErr
-                      ? 'ERROR'
-                      : hasUnsavedChanges
-                      ? '…'
-                      : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
-                  </ReturnType>
+                  {!hasUnsavedChanges && (
+                    <ReturnType>
+                      {codeEditorReturn?.output_size && (
+                        <>
+                          {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
+                        </>
+                      )}
+                      {consoleOutput?.stdErr
+                        ? 'ERROR'
+                        : hasUnsavedChanges
+                        ? '…'
+                        : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
+                    </ReturnType>
+                  )}
                 </div>
                 <br />
               </>
