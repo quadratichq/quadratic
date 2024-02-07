@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import {
   FilePermission,
   FilePermissionSchema,
@@ -25,7 +26,10 @@ export const getTeamPermissions = (role: UserTeamRole): TeamPermission[] => {
     case VIEWER:
       return [TEAM_VIEW];
     default:
-      console.error('Invalid role. This could should never be reached.');
+      Sentry.captureEvent({
+        message: 'Invalid role deriving team permissions. This could should never be reached.',
+        extra: { role },
+      });
       return [];
   }
 };

@@ -146,8 +146,6 @@ export const ApiSchemas = {
         type: z.literal('team'),
       }),
     ]),
-    // TODO: how, if at all, do we want to handle email visibility in the UI?
-    // e.g. should this not return emails if you're not logged in?
     users: z.array(FileUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserFileRoleSchema, id: z.number() })),
   }),

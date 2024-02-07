@@ -31,12 +31,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
   const { file, userMakingRequest } = await getFile({ uuid, userId });
   const { publicLinkAccess } = file;
 
-  // TOOD: who can view the email addresses of other users?
-  // const owner = await getUserProfile(req.quadraticFile.ownerUserId);
-  // if (!req.user) {
-  //   delete owner.email;
-  // }
-
   // Get the file and all the invites/users associated with it
   const dbFile = await dbClient.file.findUnique({
     where: {
@@ -44,6 +38,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
     },
     include: {
       ownerUser: true,
+      ownerTeam: true,
       UserFileRole: {
         include: {
           user: true,
@@ -72,10 +67,27 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
   }
   const usersById = await getUsersFromAuth0(usersToSearchFor);
 
-  // TODO: (teams) this will be conditional on whether the "owner" is a team or a user
-  // @ts-expect-error Before we launch teams, the owner will always be a user
-  const ownerId = dbFile.ownerUser.id as number;
-  const ownerUser = usersById[ownerId];
+  // Assign the owner based on whether this is a team or user-owned file
+  let owner: ApiTypes['/v0/files/:uuid/sharing.GET.response']['owner'];
+  if (dbFile.ownerTeam) {
+    owner = {
+      type: 'team',
+      name: dbFile.ownerTeam.uuid,
+      picture: dbFile.ownerTeam.picture ? dbFile.ownerTeam.picture : undefined,
+    };
+  } else if (dbFile.ownerUser) {
+    const ownerUser = usersById[dbFile.ownerUser.id];
+    owner = {
+      type: 'user',
+      id: ownerUser.id,
+      email: ownerUser.email,
+      name: ownerUser.name,
+      picture: ownerUser.picture,
+    };
+  } else {
+    // TODO log to sentry. bad data
+    throw new ApiError(500, 'File does not have a clear owner. This means there is corrupt data in the database.');
+  }
 
   return res.status(200).json({
     file: {
@@ -92,13 +104,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
       fileRole: userMakingRequest.fileRole,
       teamRole: userMakingRequest.teamRole,
     },
-    owner: {
-      type: 'user',
-      id: ownerUser.id,
-      email: ownerUser.email,
-      name: ownerUser.name,
-      picture: ownerUser.picture,
-    },
-    // team: {},
+    owner,
   });
 }

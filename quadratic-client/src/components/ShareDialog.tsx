@@ -67,9 +67,6 @@ export function ShareTeamDialog({
   const action = `/teams/${uuid}`;
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
 
-  // Sort the users how we want
-  sortLoggedInUserFirst(users, userMakingRequest.id);
-
   // TODO:(enhancement) error state when these fail
   const pendingInvites = useFetchers()
     .filter(
@@ -99,7 +96,8 @@ export function ShareTeamDialog({
           action={action}
           intent="create-team-invite"
           disallowedEmails={exisitingTeamEmails}
-          roles={[UserTeamRoleSchema.enum.EDITOR, UserTeamRoleSchema.enum.VIEWER]}
+          roles={[UserTeamRoleSchema.enum.OWNER, UserTeamRoleSchema.enum.EDITOR, UserTeamRoleSchema.enum.VIEWER]}
+          roleDefaultValueIndex={1}
         />
       )}
 
@@ -298,8 +296,9 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
   );
 }
 
-export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
+export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
   const fetcher = useFetcher();
+  console.log(uuid);
 
   let loadState = !fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED';
 
@@ -365,11 +364,13 @@ export function InviteForm({
   action,
   intent,
   roles,
+  roleDefaultValueIndex,
 }: {
   disallowedEmails: string[];
   intent: TeamAction['request.create-team-invite']['intent'] | FileShareAction['request.create-file-invite']['intent'];
   action: string;
   roles: (UserTeamRole | UserFileRole)[];
+  roleDefaultValueIndex?: number;
 }) {
   const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -450,7 +451,7 @@ export function InviteForm({
       </div>
 
       <div className="flex-shrink-0">
-        <Select defaultValue={'0'} name="roleIndex">
+        <Select defaultValue={String(roleDefaultValueIndex ? roleDefaultValueIndex : '0')} name="roleIndex">
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>

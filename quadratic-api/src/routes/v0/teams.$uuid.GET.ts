@@ -7,35 +7,31 @@ import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { getFilePermissions } from '../../utils/permissions';
 
-export default [
-  validateRequestSchema(
-    z.object({
-      params: z.object({
-        uuid: z.string().uuid(),
-      }),
-    })
-  ),
-  validateAccessToken,
-  userMiddleware,
-  handler,
-];
+export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: Request, res: Response) {
+const schema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+  }),
+});
+
+async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>) {
   const {
     params: { uuid },
-    user: { id: userId },
+  } = parseRequest(req, schema);
+  const {
+    user: { id: userMakingRequestId },
   } = req as RequestWithUser;
   const {
-    team,
-    team: { id: teamId },
+    team: { id: teamId, name, picture },
     userMakingRequest,
-  } = await getTeam({ uuid, userId });
+  } = await getTeam({ uuid, userId: userMakingRequestId });
 
-  // Get users in the team
+  // Get users associated with the file
   const dbTeam = await dbClient.team.findUnique({
     where: {
       id: teamId,
@@ -58,6 +54,13 @@ async function handler(req: Request, res: Response) {
         where: {
           ownerTeamId: teamId,
           deleted: false,
+        },
+        include: {
+          UserFileRole: {
+            where: {
+              userId: userMakingRequestId,
+            },
+          },
         },
         orderBy: {
           createdDate: 'asc',
@@ -95,18 +98,19 @@ async function handler(req: Request, res: Response) {
     })
   );
 
-  const response: ApiTypes['/v0/teams/:uuid.GET.response'] = {
+  const response = {
     team: {
-      uuid: team.uuid,
-      name: team.name,
-      ...(team.picture ? { picture: team.picture } : {}),
+      uuid,
+      name,
+      ...(picture ? { picture } : {}),
     },
     userMakingRequest: {
-      id: userId,
+      id: userMakingRequestId,
       teamRole: userMakingRequest.role,
       teamPermissions: userMakingRequest.permissions,
     },
-    // TODO we could put this in /sharing and just return the userCount
+    // IDEA: (enhancement) we could put this in /sharing and just return the userCount
+    // then require the data for the team share modal to be a seaparte network request
     users,
     invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
     files: dbFiles.map((file) => ({
@@ -120,10 +124,13 @@ async function handler(req: Request, res: Response) {
       },
       userMakingRequest: {
         filePermissions: getFilePermissions({
-          fileRole: undefined, // TODO
+          // TODO: test this
+          fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
           teamRole: userMakingRequest.role,
           publicLinkAccess: file.publicLinkAccess,
-          isFileOwner: false, // the team is the 'owner'
+          // In the context of a team, the owner is always the team (no one individual)
+          isFileOwner: false,
+          // Yes they're logged in, or they wouldn't see this
           isLoggedIn: true,
         }),
       },

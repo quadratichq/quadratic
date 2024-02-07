@@ -35,7 +35,20 @@ import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQu
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { uuid } = params as { uuid: string };
-  return await apiClient.teams.get(uuid);
+  const data = await apiClient.teams.get(uuid);
+
+  // Sort the users so the logged-in user is first in the list
+  data.users.sort((a, b) => {
+    const loggedInUser = data.userMakingRequest.id;
+    // Move the logged in user to the front
+    if (a.id === loggedInUser && b.id !== loggedInUser) return -1;
+    // Keep the logged in user at the front
+    if (a.id !== loggedInUser && b.id === loggedInUser) return 1;
+    // Leave the order as is for others
+    return 0;
+  });
+
+  return data;
 };
 
 export type TeamAction = {
@@ -158,6 +171,7 @@ export const Component = () => {
   const handleClose = () => setIsRenaming(false);
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
+  const avatarSxProps = { width: 32, height: 32, fontSize: '1rem' };
 
   return (
     <>
@@ -218,10 +232,10 @@ export const Component = () => {
               <AvatarGroup
                 max={4}
                 sx={{ cursor: 'pointer', pr: 0 }}
-                slotProps={{ additionalAvatar: { sx: { width: 32, height: 32, fontSize: '1rem' } } }}
+                slotProps={{ additionalAvatar: { sx: avatarSxProps } }}
               >
-                {users.map((user) => (
-                  <Avatar alt={user.name} src={user.picture} sx={{ width: 32, height: 32 }} />
+                {users.map((user, key) => (
+                  <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
                 ))}
               </AvatarGroup>
             </Button>

@@ -37,6 +37,11 @@ const auth0 = new ManagementClient({
  *   }
  */
 export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]) => {
+  // If we got nothing, we return an empty object
+  if (users.length === 0) {
+    return {};
+  }
+
   // Search for users on Auth0
   const auth0Ids = users.map(({ auth0Id }) => auth0Id);
   const auth0Users = await auth0.getUsers({
