@@ -1,6 +1,7 @@
 use std::{fmt, str::FromStr};
 
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
@@ -40,6 +41,9 @@ pub enum CellValue {
     Number(BigDecimal),
     /// Logical value.
     Logical(bool),
+    #[cfg_attr(test, proptest(skip))]
+    /// DateTime based on UTC (w/o support for timezones)
+    DateTime(NaiveDateTime),
     /// Instant in time.
     Instant(Instant),
     /// Duration of time.
@@ -64,6 +68,7 @@ impl fmt::Display for CellValue {
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
             CellValue::Code(code) => write!(f, "{:?}", code),
+            CellValue::DateTime(dt) => write!(f, "{:?}", dt),
         }
     }
 }
@@ -88,6 +93,7 @@ impl CellValue {
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
             CellValue::Code(_) => "python",
+            CellValue::DateTime(_) => "datetime",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -103,6 +109,7 @@ impl CellValue {
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
             CellValue::Code(_) => todo!("repr of python"),
+            CellValue::DateTime(dt) => dt.to_string(),
         }
     }
 
