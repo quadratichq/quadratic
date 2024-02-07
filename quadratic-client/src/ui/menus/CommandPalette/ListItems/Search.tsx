@@ -2,12 +2,13 @@ import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { Search } from '@mui/icons-material';
 import { useSetRecoilState } from 'recoil';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { CommandPaletteListItem } from '../CommandPaletteListItem';
+import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
 const ListItems = [
   {
     label: 'Search: in current sheet',
-    Component: (props: any) => {
+    keywords: ['find'],
+    Component: (props: CommandPaletteListItemSharedProps) => {
       const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
       return (
         <CommandPaletteListItem
@@ -22,7 +23,8 @@ const ListItems = [
   },
   {
     label: 'Search: in all sheets',
-    Component: (props: any) => {
+    keywords: ['find'],
+    Component: (props: CommandPaletteListItemSharedProps) => {
       const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
       return (
         <CommandPaletteListItem
