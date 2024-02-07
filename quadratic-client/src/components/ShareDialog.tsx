@@ -224,7 +224,8 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
       {owner.type === 'team' && (
         <ListItem className="py-1 text-muted-foreground">
           <div className="flex h-6 w-6 items-center justify-center">
-            <PersonIcon />
+            <PersonIcon className="-mr-[2px]" />
+            <PersonIcon className="-ml-[2px]" />
           </div>
           <Type variant="body2">Everyone in {owner.name}</Type>
           <Type variant="body2" className="pr-4">
