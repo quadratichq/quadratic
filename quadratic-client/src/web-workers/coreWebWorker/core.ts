@@ -4,7 +4,7 @@ class CoreWebWorker {
   private worker?: Worker;
 
   load(contents: string, lastSequenceNum: number) {
-    this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url));
+    this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
 
     this.worker.onmessage = async (e: MessageEvent<CoreMessages>) => {};
 

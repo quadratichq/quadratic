@@ -5,9 +5,5 @@
   },
   "include": ["src"],
   "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*", "**/worker/*"],
-  "references": [
-    { "path": "./tsconfig.node.json" },
-    { "path": "./src/web-workers/coreWebWorker/worker/tsconfig.json" },
-    { "path": "./src/web-workers/pythonWebWorker/worker/tsconfig.json" }
-  ]
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,10 +1,8 @@
-/* eslint-disable no-restricted-globals */
-
+import { PyodideInterface, loadPyodide } from 'pyodide';
 import { PythonMessage } from '../pythonTypes';
-
 const TRY_AGAIN_TIMEOUT = 500;
 
-self.importScripts('/pyodide/pyodide.js');
+declare var self: any;
 
 let getCellsMessages: (cells: { x: number; y: number; value: string }[]) => void | undefined;
 
@@ -22,17 +20,17 @@ const getCellsDB = async (
   });
 };
 
-let pyodide: any | undefined;
+let pyodide: PyodideInterface | undefined;
 
 async function pythonWebWorker() {
   try {
     self.postMessage({ type: 'not-loaded' } as PythonMessage);
-    pyodide = await (self as any).loadPyodide();
+    pyodide = await loadPyodide({ indexURL: '/public/pyodide' });
 
-    await pyodide.registerJsModule('getCellsDB', getCellsDB);
-    await pyodide.loadPackage('micropip');
+    pyodide.registerJsModule('getCellsDB', getCellsDB);
+    await pyodide.loadPackage('micropip', { messageCallback: () => {} });
 
-    let micropip = await pyodide.pyimport('micropip');
+    const micropip = pyodide.pyimport('micropip');
 
     // patch requests https://github.com/koenvo/pyodide-http
     await micropip.install(['pyodide-http']);
@@ -68,7 +66,7 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const python_code = event.python;
 
       // auto load packages
-      await pyodide.loadPackagesFromImports(python_code);
+      await pyodide.loadPackagesFromImports(python_code ?? '');
 
       const output = await pyodide.globals.get('run_python')(python_code);
       const results = Object.fromEntries(output.toJs());

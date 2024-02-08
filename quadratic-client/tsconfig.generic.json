@@ -19,7 +19,6 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "composite": true,
     "types": ["vitest/importMeta"]
   }
 }
