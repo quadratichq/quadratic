@@ -1,5 +1,6 @@
 use std::fmt;
 
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -8,6 +9,12 @@ use serde::{Deserialize, Serialize};
 pub struct Instant {
     #[cfg_attr(test, proptest(strategy = "0.0..(i32::MAX as f64)"))]
     pub seconds: f64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+pub struct DateTimeValue {
+    pub value: NaiveDateTime,
+    pub with_time: bool,
 }
 
 impl fmt::Display for Instant {

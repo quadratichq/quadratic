@@ -7,6 +7,7 @@ use crate::grid::{
     Sheet, SheetBorders, SheetId,
 };
 use crate::grid::{CodeCellLanguage, CodeRunResult};
+use crate::values::time::DateTimeValue;
 use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
 use anyhow::Result;
 use bigdecimal::BigDecimal;
@@ -182,6 +183,10 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                     current::CellValue::Error(error) => {
                         CellValue::Error(Box::new((*error).clone().into()))
                     }
+                    current::CellValue::DateTime(dt) => CellValue::DateTime(DateTimeValue {
+                        value: dt.value.to_owned(),
+                        with_time: dt.with_time,
+                    }),
                 };
                 if let Ok(y) = y.parse::<i64>() {
                     col.values.insert(y, cell_value);
@@ -496,6 +501,12 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                     }
                                     CellValue::Logical(logical) => {
                                         current::CellValue::Logical(*logical)
+                                    }
+                                    CellValue::DateTime(dt) => {
+                                        current::CellValue::DateTime(current::DateTimeSerialized {
+                                            value: dt.value.clone(),
+                                            with_time: dt.with_time,
+                                        })
                                     }
                                     CellValue::Instant(instant) => {
                                         current::CellValue::Instant(instant.to_string())

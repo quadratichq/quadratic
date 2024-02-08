@@ -78,6 +78,8 @@ where
  * CONVERSIONS (Value -> specific type)
  */
 
+// todo: not sure where or if this is used anymore
+
 impl<'a> TryFrom<&'a CellValue> for String {
     type Error = RunErrorMsg;
 
@@ -94,9 +96,13 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(s) => Ok(s.clone()),
             CellValue::Code(_) => Ok(String::new()),
+            CellValue::DateTime(dt) => Ok(dt.value.to_string()),
         }
     }
 }
+
+// todo: not sure where or if this is used anymore
+
 impl<'a> TryFrom<&'a CellValue> for f64 {
     type Error = RunErrorMsg;
 
@@ -125,6 +131,7 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
                 expected: "number".into(),
                 got: Some(value.type_name().into()),
             }),
+            CellValue::DateTime(_) => Ok(0.0),
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(_) => Ok(0.0),
             CellValue::Code(_) => Ok(0.0),

@@ -1,10 +1,9 @@
 use std::{fmt, str::FromStr};
 
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-use super::{Duration, Instant, IsBlank};
+use super::{time::DateTimeValue, Duration, Instant, IsBlank};
 use crate::{
     controller::operations::operation::Operation,
     grid::{
@@ -43,7 +42,7 @@ pub enum CellValue {
     Logical(bool),
     #[cfg_attr(test, proptest(skip))]
     /// DateTime based on UTC (w/o support for timezones)
-    DateTime(NaiveDateTime),
+    DateTime(DateTimeValue),
     /// Instant in time.
     Instant(Instant),
     /// Duration of time.
@@ -109,7 +108,13 @@ impl CellValue {
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
             CellValue::Code(_) => todo!("repr of python"),
-            CellValue::DateTime(dt) => dt.to_string(),
+            CellValue::DateTime(dt) => {
+                if dt.with_time {
+                    dt.value.to_string()
+                } else {
+                    dt.value.date().to_string()
+                }
+            }
         }
     }
 
@@ -218,6 +223,15 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
+            // todo: add formatting here...
+            CellValue::DateTime(dt) => {
+                if dt.with_time {
+                    dt.value.to_string()
+                } else {
+                    dt.value.date().to_string()
+                }
+            }
+
             // this should not render
             CellValue::Code(_) => String::new(),
         }
@@ -234,7 +248,13 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
-
+            CellValue::DateTime(dt) => {
+                if dt.with_time {
+                    dt.value.to_string()
+                } else {
+                    dt.value.date().to_string()
+                }
+            }
             // this should not be editable
             CellValue::Code(_) => String::new(),
         }
@@ -313,6 +333,9 @@ impl CellValue {
                 a.cmp(&b)
             }
             (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
+            (CellValue::DateTime(dt), CellValue::DateTime(other_dt)) => {
+                dt.value.cmp(&other_dt.value)
+            }
             (CellValue::Instant(a), CellValue::Instant(b)) => a.cmp(b),
             (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
             (CellValue::Blank, CellValue::Blank) => std::cmp::Ordering::Equal,
@@ -324,6 +347,7 @@ impl CellValue {
             | (CellValue::Duration(_), _)
             | (CellValue::Html(_), _)
             | (CellValue::Code(_), _)
+            | (CellValue::DateTime(_), _)
             | (CellValue::Blank, _) => return Ok(None),
         }))
     }
@@ -346,6 +370,7 @@ impl CellValue {
                 CellValue::Blank => 6,
                 CellValue::Html(_) => 7,
                 CellValue::Code(_) => 8,
+                CellValue::DateTime(_) => 9,
             }
         }
 

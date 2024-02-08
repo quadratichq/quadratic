@@ -9,7 +9,7 @@ pub mod cell_values;
 mod cellvalue;
 mod convert;
 mod isblank;
-mod time;
+pub mod time;
 
 pub use array::Array;
 pub use array_size::{ArraySize, Axis};
