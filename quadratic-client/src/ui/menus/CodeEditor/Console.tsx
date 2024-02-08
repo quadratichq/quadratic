@@ -114,7 +114,7 @@ export function Console({
                     gap: theme.spacing(1),
                   }}
                 >
-                  {!!hasUnsavedChanges && (
+                  {!hasUnsavedChanges && (
                     <>
                       <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
                       {codeEditorReturn?.lineno} returned a

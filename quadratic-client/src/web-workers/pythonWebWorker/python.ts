@@ -5,18 +5,6 @@ import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { ComputedPythonReturnType, InspectPythonReturnType, PythonMessage, PythonReturnType } from './pythonTypes';
 
-const stringOrNumber = (input: string | number | undefined): string => {
-  if (typeof input === 'undefined') {
-    return '';
-  }
-
-  if (typeof input === 'string') {
-    return input;
-  }
-
-  return input.toString();
-};
-
 interface PythonCode {
   transactionId: string;
   sheetPos: SheetPos;
@@ -62,26 +50,7 @@ class PythonWebWorker {
           this.pythonOutputSize = pythonResult.output_size;
           this.inspectPython(pythonResult.formatted_code);
 
-          if (pythonResult.array_output) {
-            if (!Array.isArray(pythonResult.array_output[0])) {
-              pythonResult.array_output = pythonResult.array_output.flatMap((entry: string | number) => [
-                [stringOrNumber(entry)],
-              ]);
-            } else {
-              pythonResult.array_output = pythonResult.array_output.map((entry: (string | number)[]) =>
-                entry.map((entry: string | number) => stringOrNumber(entry))
-              );
-
-              // ensure that the 2d array has equally sized rows
-              const size = pythonResult.array_output[0].length;
-
-              for (let i = 1; i < pythonResult.array_output.length; i++) {
-                while (pythonResult.array_output[i].length < size) {
-                  pythonResult.array_output[i].push('');
-                }
-              }
-            }
-          }
+          console.log('pythonResult', pythonResult);
 
           if (!pythonResult.success) {
             pythonResult.error_msg = pythonResult.input_python_stack_trace;

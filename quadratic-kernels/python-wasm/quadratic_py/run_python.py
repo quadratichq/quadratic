@@ -1,4 +1,3 @@
-import operator
 import re
 import traceback
 from contextlib import redirect_stdout, redirect_stderr
@@ -31,13 +30,33 @@ def attempt_fix_await(code):
 
     return code
 
-def convert_type(value, value_type):
+def to_unix_timestamp(value):
+    return (value - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
+
+def to_interval(value):
+    return (to_unix_timestamp(value.start_time), to_unix_timestamp(value.end_time))
+
+# Convert from python types to quadratic types
+def to_quadratic_type(value):
+    if value in (None, ""):
+        return (None, "blank")
+    elif pd.api.types.is_number(value):
+        return (str(value), "number")
+    elif pd.api.types.is_bool(value):
+        return (bool(value), "logical")
+    elif pd.api.types.is_datetime64_any_dtype(value):
+        return (to_unix_timestamp(value), "instant")
+    elif pd.api.types.is_period_dtype(value):
+        return (to_interval(value), "duration")
+    else :
+        return (str(value), "text")
+
+# Convert from quadratic types to python types
+def to_python_type(value, value_type):
     if value_type == "number":
         return number_type(value)
     elif value_type == "text":
-        return text_type(value)
-    
-    # rust returns a string for bools currently, so save this for when it works
+        return str(value)
     elif value_type == "logical":
         return bool(value)
     else:
@@ -51,16 +70,6 @@ def number_type(value):
             return float(value)
         except ValueError:
             return value
-
-def text_type(val):
-    val = val.lower()
-
-    if val in ("y", "yes", "t", "true", "on", "1"):
-        return True
-    elif val in ("n", "no", "f", "false", "off", "0"):
-        return False
-    else:
-        return str(val)
 
 def stack_line_number():
     return int(traceback.format_stack()[-3].split(", ")[1].split(" ")[1])
@@ -87,7 +96,7 @@ async def run_python(code):
     cells_accessed = []
         
     def result_to_value(result):
-        return convert_type(result.value, result.type_name)
+        return to_python_type(result.value, result.type_name)
 
     async def getCells(p0, p1, sheet=None, first_row_header=False):
         # mark cells as accessed by this cell
@@ -117,7 +126,7 @@ async def run_python(code):
         y_offset = p0[1]
 
         for cell in cells:
-            value = convert_type(cell.value, cell.type_name)
+            value = to_python_type(cell.value, cell.type_name)
             df.at[cell.y - y_offset, cell.x - x_offset] = value
 
         # Move the first row to the header
@@ -247,16 +256,31 @@ async def run_python(code):
         if array_output or output_value is None:
             output_value = ""
 
+        typed_array_output = []
 
-        print("array_output", array_output)
-        print("output_value", output_value)
-        print("array_output_type", type(array_output).__name__)
+        if array_output is not None:
+            is_2d_array = isinstance(array_output[0], list)
+
+            # insure that all rows are the same length
+            if is_2d_array:
+                length_1d = len(array_output)
+                length_2d = max(len(row) for row in array_output)
+                
+                # TODO(ddimaria): is this efficient?
+                typed_array_output = [[0 for i in range(length_2d)] for j in range(length_1d)]
+
+                for row in range(0, length_1d):
+                    col_length_2d = len(array_output[row])
+                    for col in range(0, length_2d):
+                        if col > col_length_2d - 1:
+                            typed_array_output[row][col] = (None, "blank")
+                        else:
+                            typed_array_output[row][col] = to_quadratic_type(array_output[row][col])
 
         return {
-            "output_value": str(output_value),
-            "output_type": output_type,
+            "output": to_quadratic_type(output_value),
+            "array_output": typed_array_output,
             "output_size": output_size,
-            "array_output": array_output,
             "cells_accessed": cells_accessed,
             "std_out": sout.getvalue(),
             "std_err": serr.getvalue(),

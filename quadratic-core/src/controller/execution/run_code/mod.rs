@@ -259,8 +259,10 @@ impl GridController {
             };
         };
         let result = if js_code_result.success() {
+            println!("1");
             let result = if let Some(array_output) = js_code_result.array_output() {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
+                println!("array: {:?}", array);
                 transaction.reverse_operations.splice(0..0, ops);
                 if let Some(array) = array {
                     Value::Array(array)
@@ -268,7 +270,9 @@ impl GridController {
                     Value::Single("".into())
                 }
             } else if let Some(output_value) = js_code_result.output_value() {
-                let (cell_value, ops) = CellValue::from_string(&output_value, start.into(), sheet);
+                let (cell_value, ops) =
+                    CellValue::from_string(&output_value[0], start.into(), sheet);
+                println!("cell_value: {:?}", cell_value);
                 transaction.reverse_operations.splice(0..0, ops);
                 Value::Single(cell_value)
             } else {
@@ -276,6 +280,7 @@ impl GridController {
             };
             CodeRunResult::Ok(result)
         } else {
+            println!("2");
             let error_msg = js_code_result
                 .error_msg()
                 .unwrap_or_else(|| "Unknown Python Error".into());

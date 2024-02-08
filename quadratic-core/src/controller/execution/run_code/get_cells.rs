@@ -305,7 +305,7 @@ mod test {
                     x: 0,
                     y: 0,
                     value: "test".into(),
-                    type_name: "string".into()
+                    type_name: "text".into()
                 }]
             })
         );

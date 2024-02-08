@@ -275,7 +275,7 @@ impl Array {
     pub fn from_string_list(
         start: Pos,
         sheet: &mut Sheet,
-        v: Vec<Vec<String>>,
+        v: Vec<Vec<Vec<String>>>,
     ) -> (Option<Array>, Vec<Operation>) {
         let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
         let values;
@@ -290,7 +290,7 @@ impl Array {
                     x = start.x;
                     y += 1;
                 }
-                let (value, updated_ops) = CellValue::from_string(s, start, sheet);
+                let (value, updated_ops) = CellValue::from_string(&s[0], start, sheet);
                 ops.extend(updated_ops);
                 value
             })

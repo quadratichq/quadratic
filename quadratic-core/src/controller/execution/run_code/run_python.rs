@@ -61,7 +61,7 @@ mod tests {
             None,
             None,
             None,
-            Some("test".to_string()),
+            Some(vec!["test".into(), "text".into()]),
             None,
             None,
             None,
@@ -111,7 +111,7 @@ mod tests {
             None,
             None,
             None,
-            Some("hello world".to_string()),
+            Some(vec!["hello world".into(), "text".into()]),
             None,
             None,
             None,
@@ -184,7 +184,7 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("10".to_string()),
+                Some(vec!["10".into(), "number".into()]),
                 None,
                 None,
                 None,
@@ -244,7 +244,7 @@ mod tests {
             None,
             None,
             None,
-            Some("10".to_string()),
+            Some(vec!["10".into(), "number".into()]),
             None,
             None,
             None,
@@ -288,7 +288,7 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("11".to_string()),
+                Some(vec!["11".into(), "number".into()]),
                 None,
                 None,
                 None,
@@ -303,8 +303,11 @@ mod tests {
         );
     }
 
-    fn python_array(input: Vec<isize>) -> Vec<Vec<String>> {
-        input.iter().map(|i| vec![i.to_string()]).collect()
+    fn python_array(input: Vec<isize>) -> Vec<Vec<Vec<String>>> {
+        input
+            .iter()
+            .map(|i| vec![vec![i.to_string(), "number".into()]])
+            .collect()
     }
 
     #[test]
@@ -376,7 +379,7 @@ mod tests {
             None,
             None,
             None,
-            Some("".into()),
+            Some(vec!["".into(), "blank".into()]),
             None,
             None,
             Some(true),
@@ -418,7 +421,7 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("original output".to_string()),
+                Some(vec!["original output".into(), "text".into()]),
                 None,
                 None,
                 None,
@@ -459,7 +462,7 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("new output".to_string()),
+                Some(vec!["new output".into(), "text".into()]),
                 None,
                 None,
                 None,
@@ -500,7 +503,7 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("new output second time".to_string()),
+                Some(vec!["new output second time".into(), "text".into()]),
                 None,
                 None,
                 None,
@@ -564,7 +567,7 @@ mod tests {
             None,
             None,
             None,
-            Some("2".to_string()),
+            Some(vec!["2".into(), "number".into()]),
             None,
             None,
             None,
@@ -608,7 +611,7 @@ mod tests {
             None,
             None,
             None,
-            Some("3".to_string()),
+            Some(vec!["3".into(), "number".into()]),
             None,
             None,
             None,

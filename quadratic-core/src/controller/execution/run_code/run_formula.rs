@@ -233,7 +233,7 @@ mod test {
             None,
             None,
             None,
-            Some("$12".into()),
+            Some(vec!["$12".into(), "number".into()]),
             None,
             None,
             None,
@@ -266,9 +266,15 @@ mod test {
     fn test_js_code_result_to_code_cell_value_array() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let array_output: Vec<Vec<String>> = vec![
-            vec!["$1.1".into(), "20%".into()],
-            vec!["3".into(), "Hello".into()],
+        let array_output: Vec<Vec<Vec<String>>> = vec![
+            vec![
+                vec!["$1.1".into(), "number".into()],
+                vec!["20%".into(), "number".into()],
+            ],
+            vec![
+                vec!["3".into(), "number".into()],
+                vec!["Hello".into(), "text".into()],
+            ],
         ];
         let mut transaction = PendingTransaction::default();
         let result = JsCodeResult::new_from_rust(
