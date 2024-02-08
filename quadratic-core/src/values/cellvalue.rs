@@ -1,7 +1,7 @@
-use std::{fmt, str::FromStr};
-
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
+use parse_datetime::from_str_datetime;
 use serde::{Deserialize, Serialize};
+use std::{fmt, str::FromStr};
 
 use super::{time::DateTimeValue, Duration, Instant, IsBlank};
 use crate::{
@@ -112,7 +112,7 @@ impl CellValue {
                 if dt.with_time {
                     dt.value.to_string()
                 } else {
-                    dt.value.date().to_string()
+                    dt.value.date_naive().to_string()
                 }
             }
         }
@@ -228,7 +228,7 @@ impl CellValue {
                 if dt.with_time {
                     dt.value.to_string()
                 } else {
-                    dt.value.date().to_string()
+                    dt.value.date_naive().to_string()
                 }
             }
 
@@ -252,7 +252,7 @@ impl CellValue {
                 if dt.with_time {
                     dt.value.to_string()
                 } else {
-                    dt.value.date().to_string()
+                    dt.value.date_naive().to_string()
                 }
             }
             // this should not be editable
@@ -488,8 +488,10 @@ impl CellValue {
         // todo: probably use a crate here to detect html
         } else if s.to_lowercase().starts_with("<html>") || s.to_lowercase().starts_with("<div>") {
             value = CellValue::Html(s.to_string());
+        } else if let Ok(dt) = crate::parse_datetime::from_str(&s) {
+            value = CellValue::DateTime(dt);
         }
-        // todo: include other types here
+        // include other types here
         else {
             value = CellValue::Text(s.to_string());
         }

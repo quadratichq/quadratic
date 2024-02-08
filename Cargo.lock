@@ -2104,6 +2104,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "parse_datetime"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bbf4e25b13841080e018a1e666358adfe5e39b6d353f986ca5091c210b586a1"
+dependencies = [
+ "chrono",
+ "regex",
+]
+
+[[package]]
 name = "pem"
 version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2277,6 +2287,7 @@ dependencies = [
  "js-sys",
  "lazy_static",
  "lexicon_fractional_index",
+ "parse_datetime",
  "pollster",
  "proptest",
  "proptest-derive",
