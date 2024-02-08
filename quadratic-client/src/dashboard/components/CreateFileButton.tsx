@@ -12,7 +12,7 @@ export default function CreateFileButton() {
   const submit = useSubmit();
   const { uuid } = useParams();
 
-  const actionUrl = uuid ? ROUTES.CREATE_TEAM_FILE(uuid) : ROUTES.CREATE_FILE;
+  const actionUrl = uuid ? ROUTES.CREATE_FILE_IN_TEAM(uuid) : ROUTES.CREATE_FILE;
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     // If nothing was selected, just exit

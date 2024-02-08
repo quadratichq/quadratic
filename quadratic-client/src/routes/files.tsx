@@ -44,7 +44,7 @@ export const Component = () => {
                     description: 'With an instructional walk-through',
                     link: (
                       <Link
-                        to={ROUTES.CREATE_EXAMPLE_FILE('default.grid')}
+                        to={ROUTES.CREATE_FILE_EXAMPLE('default.grid')}
                         reloadDocument
                         onClick={() => {
                           mixpanel.track('[FilesEmptyState].clickOpenStarterFile');

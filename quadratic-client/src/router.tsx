@@ -21,8 +21,8 @@ import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
-import * as Create from './dashboard/FilesCreateRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
+import * as Create from './routes/files.create';
 import { initializeAnalytics } from './utils/analytics';
 // @ts-expect-error - for testing purposes
 window.lf = localforage;

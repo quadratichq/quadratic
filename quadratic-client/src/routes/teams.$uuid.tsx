@@ -249,7 +249,7 @@ export const Component = () => {
             actions={
               canEdit ? (
                 <Button asChild variant="secondary">
-                  <Link to={ROUTES.CREATE_TEAM_FILE(team.uuid)}>Create file</Link>
+                  <Link to={ROUTES.CREATE_FILE_IN_TEAM(team.uuid)}>Create file</Link>
                 </Button>
               ) : null
             }

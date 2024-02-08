@@ -84,7 +84,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // 2.
   // The file is being created as part of a team
   // /files/create?team=:uuid
-  const teamUuid = url.searchParams.get('team');
+  const teamUuid = url.searchParams.get('team-uuid');
   if (teamUuid) {
     mixpanel.track('[Files].newFileInTeam');
     try {
@@ -114,11 +114,14 @@ export type CreateActionRequest = {
 };
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
+  const url = new URL(request.url);
+  const searchParams = new URLSearchParams(url.search);
+  const teamUuid = searchParams.get('team-uuid');
   const { name, contents, version }: CreateActionRequest = await request.json();
 
   mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
   try {
-    const { uuid } = await apiClient.files.create({ name, contents, version });
+    const { uuid } = await apiClient.files.create({ name, contents, version }, teamUuid ? teamUuid : undefined);
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());
