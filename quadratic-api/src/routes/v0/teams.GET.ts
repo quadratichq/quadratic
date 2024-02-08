@@ -7,7 +7,7 @@ import { RequestWithUser } from '../../types/Request';
 
 export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: Request, res: Response) {
+async function handler(req: Request, res: Response<ApiTypes['/v0/teams.GET.response']>) {
   const { user } = req as RequestWithUser;
 
   // Fetch teams the user is a part of
@@ -35,11 +35,10 @@ async function handler(req: Request, res: Response) {
   });
 
   // Make picture optional when available
-  const clientTeams = teams.map(({ team: { picture, ...rest } }) => ({
+  const data = teams.map(({ team: { picture, ...rest } }) => ({
     ...rest,
     ...(picture ? { picture } : {}),
   }));
 
-  const data: ApiTypes['/v0/teams.GET.response'] = clientTeams;
   return res.status(200).json(data);
 }

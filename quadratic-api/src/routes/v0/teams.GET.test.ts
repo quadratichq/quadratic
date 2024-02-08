@@ -3,7 +3,6 @@ import { app } from '../../app';
 import dbClient from '../../dbClient';
 
 beforeEach(async () => {
-  // Create some users & team
   const user_1 = await dbClient.user.create({
     data: {
       auth0Id: 'team_1_owner',
@@ -45,12 +44,12 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  const deleteTeamInvites = dbClient.teamInvite.deleteMany();
-  const deleteTeamUsers = dbClient.userTeamRole.deleteMany();
-  const deleteUsers = dbClient.user.deleteMany();
-  const deleteTeams = dbClient.team.deleteMany();
-
-  await dbClient.$transaction([deleteTeamInvites, deleteTeamUsers, deleteUsers, deleteTeams]);
+  await dbClient.$transaction([
+    dbClient.teamInvite.deleteMany(),
+    dbClient.userTeamRole.deleteMany(),
+    dbClient.user.deleteMany(),
+    dbClient.team.deleteMany(),
+  ]);
 });
 
 describe('GET /v0/teams', () => {
