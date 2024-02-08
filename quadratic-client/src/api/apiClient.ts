@@ -132,7 +132,9 @@ export const apiClient = {
       const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
 
       // Create it on the server
-      const newFile = await apiClient.files.create(
+      const {
+        file: { uuid: newFileUuid },
+      } = await apiClient.files.create(
         {
           name: name + ' (Copy)',
           version: lastCheckpointVersion,
@@ -147,7 +149,7 @@ export const apiClient = {
         try {
           const res = await fetch(thumbnail);
           const blob = await res.blob();
-          await apiClient.files.thumbnail.update(newFile.uuid, blob);
+          await apiClient.files.thumbnail.update(newFileUuid, blob);
         } catch (err) {
           // Not a huge deal if it failed, just tell Sentry and move on
           Sentry.captureEvent({
@@ -157,7 +159,7 @@ export const apiClient = {
         }
       }
 
-      return { uuid: newFile.uuid };
+      return { uuid: newFileUuid };
     },
     async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
       return fetchFromApi(

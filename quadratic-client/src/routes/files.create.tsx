@@ -65,7 +65,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
 
       // Create a new file from that example file
-      const { uuid } = await apiClient.files.create({ name, contents: file.contents, version: file.version });
+      const {
+        file: { uuid },
+      } = await apiClient.files.create({ name, contents: file.contents, version: file.version });
 
       // Navigate to it
       return redirectDocument(ROUTES.FILE(uuid));
@@ -88,7 +90,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (teamUuid) {
     mixpanel.track('[Files].newFileInTeam');
     try {
-      const { uuid } = await apiClient.files.create(undefined, teamUuid);
+      const {
+        file: { uuid },
+      } = await apiClient.files.create(undefined, teamUuid);
       return redirectDocument(ROUTES.FILE(uuid));
     } catch (error) {
       return redirect(getFailUrl());
@@ -100,7 +104,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // new, blank file in the user’s personal files
   mixpanel.track('[Files].newFile');
   try {
-    const { uuid } = await apiClient.files.create();
+    const {
+      file: { uuid },
+    } = await apiClient.files.create();
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());
@@ -121,7 +127,9 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
   mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
   try {
-    const { uuid } = await apiClient.files.create({ name, contents, version }, teamUuid ? teamUuid : undefined);
+    const {
+      file: { uuid },
+    } = await apiClient.files.create({ name, contents, version }, teamUuid ? teamUuid : undefined);
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());

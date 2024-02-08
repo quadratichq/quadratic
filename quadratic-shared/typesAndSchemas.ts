@@ -97,7 +97,10 @@ export const ApiSchemas = {
     version: z.string(),
     teamUuid: TeamSchema.shape.uuid.optional(),
   }),
-  '/v0/files.POST.response': FileSchema.pick({ uuid: true, name: true, createdDate: true, updatedDate: true }),
+  '/v0/files.POST.response': z.object({
+    file: FileSchema.pick({ uuid: true, name: true }),
+    team: TeamSchema.pick({ uuid: true }).optional(),
+  }),
 
   /**
    *

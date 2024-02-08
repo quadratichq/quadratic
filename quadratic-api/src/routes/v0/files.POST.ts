@@ -52,8 +52,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
       id: true,
       uuid: true,
       name: true,
-      createdDate: true,
-      updatedDate: true,
+      ownerTeam: true,
     },
   });
 
@@ -72,8 +71,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
   });
 
   return res.status(201).json({
-    ...dbFile,
-    createdDate: dbFile.createdDate.toISOString(),
-    updatedDate: dbFile.updatedDate.toISOString(),
+    file: { uuid, name: dbFile.name },
+    team: dbFile.ownerTeam ? { uuid: dbFile.ownerTeam.uuid } : undefined,
   });
 }
