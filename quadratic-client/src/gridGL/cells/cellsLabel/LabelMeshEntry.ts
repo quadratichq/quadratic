@@ -1,3 +1,12 @@
+/**
+ * A LabelMeshEntry is a Mesh of a specific font and style that holds the
+ * vertices, uvs, and indices for the hashed region of text.
+ *
+ * There may be multiple LabelMeshEntries for a single font/style combination to
+ * ensure that the webGL buffers do not exceed the maximum size. These meshes
+ * are rendered.
+ */
+
 import { BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program, Renderer } from 'pixi.js';
 import { debugShowCellHashesInfo } from '../../../debugFlags';
 import { LabelMesh } from './LabelMesh';

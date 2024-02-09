@@ -1,3 +1,13 @@
+/**
+ * LabelMesh is a container that holds a specific font/style combination of
+ * text.
+ *
+ * Where needed there will be two LabelMesh objects for the same font/style: one
+ * that includes color information, and one without color information because we
+ * need to track color information per vertex, which can get moderately
+ * expensive.
+ */
+
 import { v4 as uuid } from 'uuid';
 
 import { BitmapFont, Container, Renderer, Texture } from 'pixi.js';
