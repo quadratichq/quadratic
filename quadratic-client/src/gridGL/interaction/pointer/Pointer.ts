@@ -1,3 +1,4 @@
+import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { Viewport } from 'pixi-viewport';
 import { InteractionEvent } from 'pixi.js';
@@ -106,6 +107,14 @@ export class Pointer {
   };
 
   handleEscape(): boolean {
+    // close search if canvas gets the keyboard event
+    if (pixiAppSettings.editorInteractionState.showSearch) {
+      pixiAppSettings.setEditorInteractionState?.({
+        ...pixiAppSettings.editorInteractionState,
+        showSearch: false,
+      });
+      return true;
+    }
     return (
       this.pointerHtmlCells.handleEscape() ||
       this.pointerHeading.handleEscape() ||
