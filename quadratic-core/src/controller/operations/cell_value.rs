@@ -76,6 +76,8 @@ impl GridController {
                 )),
             });
             CellValue::Number(percent)
+        } else if let Some(cell_value) = CellValue::unpack_date_time(value) {
+            cell_value
         } else {
             CellValue::Text(value.into())
         };

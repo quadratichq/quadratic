@@ -1,5 +1,4 @@
 use crate::grid::{file::v1_4::schema as v1_4, SheetId};
-use chrono::NaiveDateTime;
 use chrono::{serde::ts_seconds_option, DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -158,7 +157,7 @@ pub enum CellValue {
     Html(String),
     Code(CodeCell),
     Logical(bool),
-    DateTime(DateTimeSerialized),
+    DateTime(DateTime<Utc>),
     Instant(String),
     Duration(String),
     Error(RunError),
@@ -212,10 +211,4 @@ pub enum CellWrap {
     Overflow,
     Wrap,
     Clip,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DateTimeSerialized {
-    pub value: NaiveDateTime,
-    pub with_time: bool,
 }

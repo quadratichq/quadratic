@@ -1,6 +1,5 @@
 use std::fmt;
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -82,10 +81,4 @@ impl Ord for Duration {
         }
         ret
     }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
-pub struct DateTimeValue {
-    pub value: DateTime<Utc>,
-    pub with_time: bool,
 }

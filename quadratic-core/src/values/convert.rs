@@ -96,7 +96,7 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Error(e) => Err(e.msg.clone()),
             CellValue::Html(s) => Ok(s.clone()),
             CellValue::Code(_) => Ok(String::new()),
-            CellValue::DateTime(dt) => Ok(dt.value.to_string()),
+            CellValue::DateTime(dt) => Ok(dt.to_string()),
         }
     }
 }

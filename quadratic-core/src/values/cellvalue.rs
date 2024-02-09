@@ -1,9 +1,4 @@
-use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
-use parse_datetime::from_str_datetime;
-use serde::{Deserialize, Serialize};
-use std::{fmt, str::FromStr};
-
-use super::{time::DateTimeValue, Duration, Instant, IsBlank};
+use super::{Duration, Instant, IsBlank};
 use crate::{
     controller::operations::operation::Operation,
     grid::{
@@ -12,6 +7,11 @@ use crate::{
     },
     CodeResult, Pos, RunError, RunLengthEncoding, SheetRect,
 };
+use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
+use chrono::{DateTime, Utc};
+use dateparser::parse_with_timezone;
+use serde::{Deserialize, Serialize};
+use std::{fmt, str::FromStr};
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
@@ -42,7 +42,7 @@ pub enum CellValue {
     Logical(bool),
     #[cfg_attr(test, proptest(skip))]
     /// DateTime based on UTC (w/o support for timezones)
-    DateTime(DateTimeValue),
+    DateTime(DateTime<Utc>),
     /// Instant in time.
     Instant(Instant),
     /// Duration of time.
@@ -108,13 +108,7 @@ impl CellValue {
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
             CellValue::Code(_) => todo!("repr of python"),
-            CellValue::DateTime(dt) => {
-                if dt.with_time {
-                    dt.value.to_string()
-                } else {
-                    dt.value.date_naive().to_string()
-                }
-            }
+            CellValue::DateTime(dt) => dt.date_naive().to_string(),
         }
     }
 
@@ -224,13 +218,7 @@ impl CellValue {
             CellValue::Error(_) => "[error]".to_string(),
 
             // todo: add formatting here...
-            CellValue::DateTime(dt) => {
-                if dt.with_time {
-                    dt.value.to_string()
-                } else {
-                    dt.value.date_naive().to_string()
-                }
-            }
+            CellValue::DateTime(dt) => dt.date_naive().to_string(),
 
             // this should not render
             CellValue::Code(_) => String::new(),
@@ -248,13 +236,8 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
-            CellValue::DateTime(dt) => {
-                if dt.with_time {
-                    dt.value.to_string()
-                } else {
-                    dt.value.date_naive().to_string()
-                }
-            }
+            CellValue::DateTime(dt) => dt.to_string(),
+
             // this should not be editable
             CellValue::Code(_) => String::new(),
         }
@@ -310,6 +293,12 @@ impl CellValue {
         })
     }
 
+    pub fn unpack_date_time(value: &str) -> Option<CellValue> {
+        parse_with_timezone(value, &Utc)
+            .ok()
+            .map(|dt| CellValue::DateTime(dt))
+    }
+
     pub fn is_blank_or_empty_string(&self) -> bool {
         self.is_blank() || *self == CellValue::Text(String::new())
     }
@@ -346,9 +335,7 @@ impl CellValue {
                 a.cmp(&b)
             }
             (CellValue::Logical(a), CellValue::Logical(b)) => a.cmp(b),
-            (CellValue::DateTime(dt), CellValue::DateTime(other_dt)) => {
-                dt.value.cmp(&other_dt.value)
-            }
+            (CellValue::DateTime(dt), CellValue::DateTime(other_dt)) => dt.cmp(&other_dt),
             (CellValue::Instant(a), CellValue::Instant(b)) => a.cmp(b),
             (CellValue::Duration(a), CellValue::Duration(b)) => a.cmp(b),
             (CellValue::Blank, CellValue::Blank) => std::cmp::Ordering::Equal,
@@ -453,6 +440,7 @@ impl CellValue {
     }
 
     // todo: this needs to be reworked under the new paradigm
+
     // compare to operations/cell_value.rs, which has a very similar functions, except for the decimal check (which requires Sheet access)
     /// Converts a string to a CellValue, updates number formatting, and returns reverse Ops
     pub fn from_string(s: &String, pos: Pos, sheet: &mut Sheet) -> (CellValue, Vec<Operation>) {
@@ -518,9 +506,7 @@ impl CellValue {
         } else if s.to_lowercase().starts_with("<html>") || s.to_lowercase().starts_with("<div>") {
             // todo: probably use a crate here to detect html
             value = CellValue::Html(s.to_string());
-
-            // todo...
-        } else if let Ok(dt) = parse_datetime::from_str(&s) {
+        } else if let Ok(dt) = parse_with_timezone(&s, &chrono::Utc) {
             value = CellValue::DateTime(dt);
         } else if let Some(boolean) = CellValue::unpack_boolean(&s) {
             value = boolean;
