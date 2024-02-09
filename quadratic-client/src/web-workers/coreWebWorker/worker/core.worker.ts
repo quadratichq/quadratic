@@ -1,15 +1,22 @@
 import { debugWebWorkers } from '@/debugFlags';
 import init, { GridController, Pos, Rect, hello } from '@/quadratic-core/quadratic_core';
-import { CoreLoad, CoreMessage, CoreRenderCells, CoreRequestRenderCells } from '../coreTypes';
+import {
+  CoreGridBounds,
+  CoreLoad,
+  CoreMessage,
+  CoreRenderCells,
+  CoreRequestGridBounds,
+  CoreRequestRenderCells,
+} from '../coreTypes';
 
-declare var self: any;
+declare var self: WorkerGlobalScope & typeof globalThis;
 
 class CoreWebWorker {
   private gridController!: GridController;
 
   constructor() {
     self.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[Core WebWorker] created');
+    if (debugWebWorkers) console.log('[Render WebWorker] created');
   }
 
   private handleMessage = async (e: MessageEvent<CoreMessage>) => {
@@ -20,6 +27,10 @@ class CoreWebWorker {
 
       case 'requestRenderCells':
         this.requestRenderCells(e.data as CoreRequestRenderCells);
+        break;
+
+      case 'requestGridBounds':
+        this.requestGridBounds(e.data as CoreRequestGridBounds);
         break;
 
       default:
@@ -40,13 +51,28 @@ class CoreWebWorker {
     if (debugWebWorkers) console.log('[Core WebWorker] GridController loaded');
   }
 
-  private async requestRenderCells(event: CoreRequestRenderCells) {
+  private requestRenderCells(event: CoreRequestRenderCells) {
     const cells = this.gridController.getRenderCells(
       event.sheetId,
       new Rect(new Pos(event.x, event.y), new Pos(event.x + event.width, event.y + event.height))
     );
-    console.log(cells);
     self.postMessage({ type: 'renderCells', cells: JSON.parse(cells), id: event.id } as CoreRenderCells);
+  }
+
+  private requestGridBounds(event: CoreRequestGridBounds) {
+    const gridBounds = this.gridController.getGridBounds(event.sheetId, event.ignoreFormatting);
+    let bounds: { x: number; y: number; width: number; height: number } | undefined;
+    if (gridBounds.type === 'empty') {
+      bounds = undefined;
+    } else {
+      bounds = {
+        x: gridBounds.bounds.min.x,
+        y: gridBounds.bounds.min.y,
+        width: gridBounds.bounds.max.x - gridBounds.bounds.min.x,
+        height: gridBounds.bounds.max.y - gridBounds.bounds.min.y,
+      };
+    }
+    self.postMessage({ type: 'gridBounds', bounds, id: event.id } as CoreGridBounds);
   }
 }
 

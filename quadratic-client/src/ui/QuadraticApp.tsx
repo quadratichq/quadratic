@@ -1,5 +1,6 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { useRootRouteLoaderData } from '@/router';
+import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -9,7 +10,6 @@ import { hasPermissionToEditFile } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { pythonStateAtom } from '../atoms/pythonStateAtom';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
-import { initializeWebWorkers } from '../web-workers/webWorkers';
 import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
@@ -71,7 +71,7 @@ export default function QuadraticApp() {
     // Load python and populate web workers (if supported)
     if (!isMobile && hasPermissionToEditFile(permissions)) {
       setLoadedState((prevState) => ({ ...prevState, pythonState: 'loading' }));
-      initializeWebWorkers();
+      pythonWebWorker.init();
     }
   }, [permissions, setLoadedState]);
 
