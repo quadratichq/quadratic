@@ -47,6 +47,8 @@ export class CellsTextHash extends Container<LabelMeshes> {
   // rebuild CellsTextHash
   dirty = false;
 
+  // todo: not sure if this is still used as I ran into issues with only rendering buffers:
+
   // rebuild only buffers
   dirtyBuffers = false;
 

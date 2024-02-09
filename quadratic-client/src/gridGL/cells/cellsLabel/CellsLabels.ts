@@ -1,3 +1,11 @@
+/**
+ * CellsLabels renders all text within a CellsSheet.
+ *
+ * It is responsible for creating and managing CellsTextHash objects, which is
+ * an efficient way of batching cells together to reduce the number of
+ * geometries sent to the GPU.
+ */
+
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling, debugShowHashUpdates } from '@/debugFlags';
 import { grid } from '@/grid/controller/Grid';
 import { Sheet } from '@/grid/sheet/Sheet';
