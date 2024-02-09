@@ -1,16 +1,27 @@
+/**
+ * CellsTextHash is the parent container for the text of cells in a hashed
+ * region of the sheet.
+ *
+ * It contains LabelMeshes children. LabelMeshes are rendered meshes for each
+ * font and style combination. LabelMeshes are populated using the data within
+ * each CellLabel within the hashed region. LabelMeshes may contain multiple
+ * LabelMesh children of the same font/style combination to ensure that the
+ * webGL buffers do not exceed the maximum size.
+ */
+
 import { debugShowHashUpdates } from '@/debugFlags';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import { Bounds } from '../../grid/sheet/Bounds';
-import { Sheet } from '../../grid/sheet/Sheet';
-import { JsRenderCell } from '../../quadratic-core/types';
-import { CellsSheet } from './CellsSheet';
-import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
-import { CellLabel } from './cellsLabel/CellLabel';
-import { LabelMeshes } from './cellsLabel/LabelMeshes';
+import { Bounds } from '../../../grid/sheet/Bounds';
+import { Sheet } from '../../../grid/sheet/Sheet';
+import { JsRenderCell } from '../../../quadratic-core/types';
+import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
+import { CellLabel } from './CellLabel';
+import { CellsLabels } from './CellsLabels';
+import { LabelMeshes } from './LabelMeshes';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container<LabelMeshes> {
-  private cellsSheet: CellsSheet;
+  private cellsLabels: CellsLabels;
 
   // holds the glyph meshes for font/style combinations
   private labelMeshes: LabelMeshes;
@@ -36,21 +47,23 @@ export class CellsTextHash extends Container<LabelMeshes> {
   // rebuild CellsTextHash
   dirty = false;
 
+  // todo: not sure if this is still used as I ran into issues with only rendering buffers:
+
   // rebuild only buffers
   dirtyBuffers = false;
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
-  constructor(cellsSheet: CellsSheet, x: number, y: number) {
+  constructor(cellsLabels: CellsLabels, x: number, y: number) {
     super();
-    this.cellsSheet = cellsSheet;
+    this.cellsLabels = cellsLabels;
     this.cellLabels = new Map();
     this.labelMeshes = this.addChild(new LabelMeshes());
     this.viewBounds = new Bounds();
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    const start = cellsSheet.sheet.getCellOffsets(this.AABB.left, this.AABB.top);
-    const end = cellsSheet.sheet.getCellOffsets(this.AABB.right, this.AABB.bottom);
+    const start = cellsLabels.sheet.getCellOffsets(this.AABB.left, this.AABB.top);
+    const end = cellsLabels.sheet.getCellOffsets(this.AABB.right, this.AABB.bottom);
     this.rawViewRectangle = new Rectangle(start.left, start.top, end.right - start.left, end.bottom - start.top);
     this.viewRectangle = this.rawViewRectangle.clone();
     this.hashX = x;
@@ -58,7 +71,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   get sheet(): Sheet {
-    return this.cellsSheet.sheet;
+    return this.cellsLabels.sheet;
   }
 
   // key used to find individual cell labels
@@ -67,7 +80,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
-    return this.cellsSheet.findPreviousHash(column, row, bounds);
+    return this.cellsLabels.findPreviousHash(column, row, bounds);
   }
 
   getLabel(column: number, row: number): CellLabel | undefined {
@@ -163,7 +176,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
     while (column <= bounds.right) {
       if (column > currentHash.AABB.right) {
         // find hash to the right of current hash (skip over empty hashes)
-        currentHash = this.cellsSheet.findNextHash(column, row, bounds);
+        currentHash = this.cellsLabels.findNextHash(column, row, bounds);
         if (!currentHash) return;
       }
       const neighborLabel = currentHash.getLabel(column, row);

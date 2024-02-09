@@ -105,7 +105,7 @@ export class CellsSheets extends Container<CellsSheet> {
     const { sheetId, delta, row, column } = options;
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
-    cellsSheet.adjustHeadings({ delta, row, column });
+    cellsSheet.cellsLabels.adjustHeadings({ delta, row, column });
     if (sheets.sheet.id === sheetId) {
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
@@ -115,7 +115,7 @@ export class CellsSheets extends Container<CellsSheet> {
 
   getCellsContentMaxWidth(column: number): number {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
-    return this.current.getCellsContentMaxWidth(column);
+    return this.current.cellsLabels.getCellsContentMaxWidth(column);
   }
 
   modified(cellSheetsModified: CellSheetsModified[]): void {
@@ -123,7 +123,7 @@ export class CellsSheets extends Container<CellsSheet> {
       const modified = cellSheetsModified.filter((modified) => modified.sheet_id === cellSheet.sheet.id);
       if (modified.length) {
         cellSheet.updateCellsArray();
-        cellSheet.modified(modified);
+        cellSheet.cellsLabels.modified(modified);
       }
     }
   }

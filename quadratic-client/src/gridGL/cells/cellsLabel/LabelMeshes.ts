@@ -1,3 +1,9 @@
+/**
+ * LabelMeshes is a container for the LabelMesh objects.
+ *
+ * It contains LabelMesh children. LabelMeshes are rendered meshes for each font and style.
+ */
+
 import { Container, Renderer, Texture } from 'pixi.js';
 import { LabelMesh } from './LabelMesh';
 

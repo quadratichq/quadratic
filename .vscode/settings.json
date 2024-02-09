@@ -15,6 +15,7 @@
     "htmlescape",
     "indexmap",
     "itertools",
+    "MDSL",
     "micropip",
     "msdf",
     "nonblank",

@@ -1,3 +1,12 @@
+/**
+ * A CellLabel contains the data necessary to render an individual cell within the Grid.
+ * It is never rendered but instead populates LabelMeshes that are rendered.
+ *
+ * The CellLabel is responsible for calculating the position and style of each glyph within the
+ * cell's text. It is also responsible for tracking any overflow of the cell's text. It also
+ * populates the buffers for the relevant LabelMeshes based on this data.
+ */
+
 import { colors } from '@/theme/colors';
 import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
