@@ -24,11 +24,11 @@ export class CellsSheet extends Container {
     super();
     this.sheet = sheet;
     this.cellsFills = this.addChild(new CellsFills(this));
-    this.cellsLabels = this.addChild(new CellsLabels(this));
 
     // may need to clean this up if we ever move to a SPA
     this.addChild(new CellsSearch(sheet));
 
+    this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
