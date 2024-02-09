@@ -1,5 +1,6 @@
 use std::{fmt, num::NonZeroU32};
 
+use anyhow::Result;
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
@@ -278,10 +279,10 @@ impl Array {
         v: Vec<Vec<Vec<String>>>,
     ) -> (Option<Array>, Vec<Operation>) {
         let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
-        let values;
         let mut ops = vec![];
         let Pos { mut x, mut y } = start;
-        values = v
+
+        let values = v
             .iter()
             .flatten()
             .map(|s| {
@@ -290,11 +291,15 @@ impl Array {
                     x = start.x;
                     y += 1;
                 }
-                let (value, updated_ops) = CellValue::from_string(&s[0], start, sheet);
+                CellValue::from_js(&s[0], &s[1], start, sheet).unwrap()
+            })
+            // .flatten_ok()
+            .map(|(value, updated_ops)| {
                 ops.extend(updated_ops);
                 value
             })
-            .collect();
+            .collect::<SmallVec<[CellValue; 1]>>();
+
         (Some(Array { size, values }), ops)
     }
 }

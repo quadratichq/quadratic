@@ -88,7 +88,6 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       try {
         output = await pyodide.globals.get('run_python')(event.python);
         results = Object.fromEntries(output.toJs());
-        console.log(results);
 
         return self.postMessage({
           type: 'results',

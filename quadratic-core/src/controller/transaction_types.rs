@@ -80,20 +80,25 @@ impl JsCodeResult {
         error_msg: Option<String>,
         input_python_std_out: Option<String>,
         output_value: Option<Vec<String>>,
-        array_output: Option<Vec<String>>,
+        array_output: Option<String>,
         line_number: Option<u32>,
         cancel_compute: Option<bool>,
     ) -> Self {
         let array_output: Option<Vec<Vec<Vec<String>>>> = if let Some(output_value) = array_output {
-            match serde_json::from_str(&output_value[0]) {
+            match serde_json::from_str(&output_value) {
                 Ok(array) => Some(array),
-                Err(_) => {
+                Err(e) => {
+                    crate::util::dbgjs(format!(
+                        "Could not parse array_output in JsCodeResult::new: {:?}",
+                        e
+                    ));
                     panic!("Could not parse array_output in JsCodeResult::new")
                 }
             }
         } else {
             None
         };
+
         JsCodeResult {
             transaction_id,
             success,

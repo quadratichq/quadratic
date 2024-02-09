@@ -50,7 +50,11 @@ class PythonWebWorker {
           this.pythonOutputSize = pythonResult.output_size;
           this.inspectPython(pythonResult.formatted_code);
 
-          console.log('pythonResult', pythonResult);
+          if (pythonResult.array_output && pythonResult.array_output.length) {
+            if (!Array.isArray(pythonResult.array_output[0][0])) {
+              pythonResult.array_output = [pythonResult.array_output];
+            }
+          }
 
           if (!pythonResult.success) {
             pythonResult.error_msg = pythonResult.input_python_stack_trace;
@@ -62,7 +66,7 @@ class PythonWebWorker {
             pythonResult.formatted_code,
             pythonResult.error_msg,
             pythonResult.std_out,
-            pythonResult.output_value,
+            pythonResult.output,
             JSON.stringify(pythonResult.array_output),
             pythonResult.line_number,
             pythonResult.cancel_compute

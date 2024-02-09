@@ -1,3 +1,4 @@
+from datetime import date, time, datetime, timedelta
 import re
 import traceback
 from contextlib import redirect_stdout, redirect_stderr
@@ -43,11 +44,11 @@ def to_quadratic_type(value):
     elif pd.api.types.is_number(value):
         return (str(value), "number")
     elif pd.api.types.is_bool(value):
-        return (bool(value), "logical")
-    elif pd.api.types.is_datetime64_any_dtype(value):
-        return (to_unix_timestamp(value), "instant")
-    elif pd.api.types.is_period_dtype(value):
-        return (to_interval(value), "duration")
+        return (str(bool(value)), "logical")
+    elif pd.api.types.is_datetime64_any_dtype(value) or isinstance(value, (pd.Timestamp, date, time, datetime)):
+        return (str(to_unix_timestamp(value)), "instant")
+    elif pd.api.types.is_period_dtype(value) or isinstance(value, (pd.Period, timedelta)):
+        return (str(to_interval(value)), "duration")
     else :
         return (str(value), "text")
 
@@ -188,7 +189,6 @@ async def run_python(code):
 
         # return array_output if output is an array
         array_output = None
-        output_type = type(output_value).__name__
         output_size = None
 
         # TODO(ddimaria): figure out if we need to covert back to a list for array_output
@@ -252,17 +252,16 @@ async def run_python(code):
             else:
                 output_value = plotly_html.result
 
-        # removes output_value if there's an array or None
-        if array_output or output_value is None:
-            output_value = ""
-
-        typed_array_output = []
+        typed_array_output = None
 
         if array_output is not None:
+            typed_array_output = []
             is_2d_array = isinstance(array_output[0], list)
 
             # insure that all rows are the same length
-            if is_2d_array:
+            if not is_2d_array:
+                typed_array_output = list(map(to_quadratic_type, array_output))
+            else:
                 length_1d = len(array_output)
                 length_2d = max(len(row) for row in array_output)
                 
@@ -277,8 +276,15 @@ async def run_python(code):
                         else:
                             typed_array_output[row][col] = to_quadratic_type(array_output[row][col])
 
+
+        # removes output_value if there's an array or None
+        if array_output is not None or output_value is None:
+            output_value = None
+        else:
+            output_value = to_quadratic_type(output_value)
+
         return {
-            "output": to_quadratic_type(output_value),
+            "output": output_value,
             "array_output": typed_array_output,
             "output_size": output_size,
             "cells_accessed": cells_accessed,

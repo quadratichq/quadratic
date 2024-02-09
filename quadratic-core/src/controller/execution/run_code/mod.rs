@@ -259,10 +259,8 @@ impl GridController {
             };
         };
         let result = if js_code_result.success() {
-            println!("1");
             let result = if let Some(array_output) = js_code_result.array_output() {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
-                println!("array: {:?}", array);
                 transaction.reverse_operations.splice(0..0, ops);
                 if let Some(array) = array {
                     Value::Array(array)
@@ -271,8 +269,8 @@ impl GridController {
                 }
             } else if let Some(output_value) = js_code_result.output_value() {
                 let (cell_value, ops) =
-                    CellValue::from_string(&output_value[0], start.into(), sheet);
-                println!("cell_value: {:?}", cell_value);
+                    CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)
+                        .unwrap();
                 transaction.reverse_operations.splice(0..0, ops);
                 Value::Single(cell_value)
             } else {
@@ -280,7 +278,6 @@ impl GridController {
             };
             CodeRunResult::Ok(result)
         } else {
-            println!("2");
             let error_msg = js_code_result
                 .error_msg()
                 .unwrap_or_else(|| "Unknown Python Error".into());
@@ -291,10 +288,17 @@ impl GridController {
             });
             CodeRunResult::Err(RunError { span, msg })
         };
+
+        let return_type = match result {
+            CodeRunResult::Ok(Value::Single(ref cell_value)) => Some(cell_value.type_name().into()),
+            CodeRunResult::Ok(Value::Array(_)) => Some("array".into()),
+            CodeRunResult::Err(_) => None,
+        };
+
         let code_run = CodeRun {
             formatted_code_string: js_code_result.formatted_code().clone(),
             result,
-            return_type: None,
+            return_type,
             std_out: js_code_result.input_python_std_out(),
             std_err: js_code_result.error_msg(),
             spill_error: false,

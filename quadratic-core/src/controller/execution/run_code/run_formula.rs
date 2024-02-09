@@ -316,7 +316,7 @@ mod test {
                 std_err: None,
                 formatted_code_string: None,
                 result: CodeRunResult::Ok(Value::Array(array)),
-                return_type: Some("number".into()),
+                return_type: Some("array".into()),
                 cells_accessed: HashSet::new(),
                 spill_error: false,
                 last_modified: result.last_modified,

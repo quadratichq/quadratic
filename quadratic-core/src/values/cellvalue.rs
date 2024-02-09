@@ -1,6 +1,8 @@
 use std::{fmt, str::FromStr};
 
+use anyhow::{bail, Result};
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
+use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
@@ -404,6 +406,7 @@ impl CellValue {
         }
     }
 
+    // TODO(ddimaria): remove once from_js() is implemented
     // todo: this needs to be reworked under the new paradigm
     /// Converts a string to a CellValue, updates number formatting, and returns reverse Ops
     pub fn from_string(s: &String, pos: Pos, sheet: &mut Sheet) -> (CellValue, Vec<Operation>) {
@@ -462,6 +465,91 @@ impl CellValue {
             value = CellValue::Text(s.to_string());
         }
         (value, ops)
+    }
+
+    pub fn from_js(
+        value: &String,
+        js_type: &String,
+        pos: Pos,
+        sheet: &mut Sheet,
+    ) -> Result<(CellValue, Vec<Operation>)> {
+        let mut ops = vec![];
+        let sheet_rect = SheetRect::single_pos(pos, sheet.id);
+
+        let value = match js_type.as_str() {
+            "text" => {
+                let is_html = value.to_lowercase().starts_with("<html>")
+                    || value.to_lowercase().starts_with("<div>");
+
+                match is_html {
+                    true => CellValue::Html(value.to_string()),
+                    false => CellValue::Text(value.to_string()),
+                }
+            }
+            "number" => {
+                if let Some((currency, number)) = CellValue::unpack_currency(value) {
+                    let numeric_format = NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol: Some(currency),
+                    };
+                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                            Some(numeric_format),
+                            1,
+                        )),
+                    });
+
+                    // only change decimals if it hasn't already been set
+                    if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
+                        sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
+                        ops.push(Operation::SetCellFormats {
+                            sheet_rect,
+                            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
+                                Some(2),
+                                1,
+                            )),
+                        });
+                    }
+
+                    CellValue::Number(number)
+                } else if let Ok(number) = BigDecimal::from_str(value) {
+                    CellValue::Number(number)
+                } else if let Some(number) = CellValue::unpack_percentage(value) {
+                    let numeric_format = NumericFormat {
+                        kind: NumericFormatKind::Percentage,
+                        symbol: None,
+                    };
+                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                            Some(numeric_format),
+                            1,
+                        )),
+                    });
+
+                    CellValue::Number(number)
+                } else {
+                    bail!("Could not parse number: {}", value);
+                }
+            }
+            "logical" => {
+                let is_true = value.eq_ignore_ascii_case("true");
+                CellValue::Logical(is_true)
+            }
+            "instant" => {
+                let parsed: i64 = value.parse()?;
+                let timestamp = Utc.timestamp_opt(parsed, 0).unwrap();
+                CellValue::Text(timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
+            }
+            "duration" => CellValue::Text("not implemented".into()),
+            _ => CellValue::Text(value.into()),
+        };
+
+        Ok((value, ops))
     }
 
     pub fn is_html(&self) -> bool {
