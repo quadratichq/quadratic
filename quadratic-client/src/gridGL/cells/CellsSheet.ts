@@ -9,6 +9,7 @@ import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
 import { CellsMarkers } from './CellsMarkers';
+import { CellsSearch } from './CellsSearch';
 import { CellsSheetPreloader } from './CellsSheetPreloader';
 import { CellsTextHash } from './CellsTextHash';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -50,6 +51,10 @@ export class CellsSheet extends Container {
     this.dirtyRowHeadings = new Map();
     this.cellsFills = this.addChild(new CellsFills(this));
     this.cellsTextDebug = this.addChild(new Graphics());
+
+    // may need to clean this up if we ever move to a SPA
+    this.addChild(new CellsSearch(sheet));
+
     this.cellsTextHashContainer = this.addChild(new Container<CellsTextHash>());
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
@@ -73,16 +78,6 @@ export class CellsSheet extends Container {
   }
 
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
-    // todo: This is probably not needed, but keep it around until we're sure.
-    // This originally checked to see if there was content in the grid before creating the
-    // structure. This was expensive for large sheets.
-    // const rect = new Rectangle(
-    //   hashX * sheetHashWidth,
-    //   hashY * sheetHashHeight,
-    //   sheetHashWidth - 1,
-    //   sheetHashHeight - 1
-    // );
-    // if (this.sheet.hasRenderCells(rect)) {
     const key = `${hashX},${hashY}`;
     const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
     if (debugShowHashUpdates) console.log(`[CellsTextHash] Creating hash for (${hashX}, ${hashY})`);
@@ -94,7 +89,6 @@ export class CellsSheet extends Container {
       this.cellsRows.set(hashY, [cellsHash]);
     }
     return cellsHash;
-    // }
   }
 
   createHashes(): boolean {

@@ -9,6 +9,7 @@ import { keyboardCell } from './keyboardCell';
 import { keyboardClipboard } from './keyboardClipboard';
 import { keyboardCode } from './keyboardCode';
 import { keyboardPosition } from './keyboardPosition';
+import { keyboardSearch } from './keyboardSearch';
 import { keyboardSelect } from './keyboardSelect';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
 import { keyboardViewport } from './keyboardViewport';
@@ -37,7 +38,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           setEditorInteractionState,
           presentationMode,
           setPresentationMode,
-        })
+        }) ||
+        keyboardSearch(event, editorInteractionState, setEditorInteractionState)
       ) {
         event.stopPropagation();
         event.preventDefault();

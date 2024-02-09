@@ -15,6 +15,8 @@ pub enum JsRenderCellSpecial {
     Chart,
     SpillError,
     RunError,
+    True,
+    False,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
