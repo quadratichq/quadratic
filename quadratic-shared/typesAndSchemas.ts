@@ -1,8 +1,5 @@
 import * as z from 'zod';
 
-// =============================================================================
-// Previously: src/permissions.ts
-
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
 
@@ -23,9 +20,6 @@ export const TeamPermissionSchema = z.enum([
   'TEAM_BILLING_EDIT',
 ]);
 export type TeamPermission = z.infer<typeof TeamPermissionSchema>;
-
-// =============================================================================
-// TODO share these with the API
 
 export const emailSchema = z
   .string()
@@ -241,18 +235,16 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.POST.request': TeamSchema.pick({ name: true, picture: true }),
   '/v0/teams/:uuid.POST.response': TeamSchema.pick({ name: true, picture: true }),
 
-  // TODO equivalent for /files/:uuid/sharing
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': TeamUserSchema.pick({ email: true, role: true }).extend({
     id: TeamUserSchema.shape.id,
   }),
   '/v0/teams/:uuid/invites/:inviteId.DELETE.response': z.object({ message: z.string() }),
-  // Update a user's sharing role
-  '/v0/teams/:uuid/users/:userId.POST.request': TeamUserSchema.pick({ role: true }),
-  '/v0/teams/:uuid/users/:userId.POST.response': z.object({
+
+  '/v0/teams/:uuid/users/:userId.PATCH.request': TeamUserSchema.pick({ role: true }),
+  '/v0/teams/:uuid/users/:userId.PATCH.response': z.object({
     role: UserTeamRoleSchema,
   }),
-  // Delete a user from a team
   '/v0/teams/:uuid/users/:userId.DELETE.response': z.object({
     message: z.string(),
     redirect: z.boolean().optional(),

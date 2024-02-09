@@ -1,40 +1,37 @@
-import { Request, Response } from 'express';
-import { /* ApiSchemas, */ ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { Response } from 'express';
+import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 import { firstRoleIsHigherThanSecond } from '../../utils/permissions';
 
-export default [
-  validateRequestSchema(
-    z.object({
-      params: z.object({
-        uuid: z.string().uuid(),
-        userId: z.coerce.number(),
-      }),
-      body: ApiSchemas['/v0/teams/:uuid/users/:userId.POST.request'],
-    })
-  ),
-  validateAccessToken,
-  userMiddleware,
-  handler,
-];
+export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: Request, res: Response) {
+const schema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+    userId: z.coerce.number(),
+  }),
+  body: ApiSchemas['/v0/teams/:uuid/users/:userId.PATCH.request'],
+});
+
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid/users/:userId.PATCH.response']>) {
   const {
     body: { role: newRole },
+    params: { uuid, userId: userBeingChangedId },
+  } = parseRequest(req, schema);
+  const {
     user: { id: userMakingChangeId },
-    params: { uuid, userId },
-  } = req as RequestWithUser;
+  } = req;
   const {
     team: { id: teamId },
     userMakingRequest,
   } = await getTeam({ uuid, userId: userMakingChangeId });
-  const userBeingChangedId = Number(userId);
 
   // User is trying to update their own role
   if (userBeingChangedId === userMakingChangeId) {
@@ -42,12 +39,12 @@ async function handler(req: Request, res: Response) {
 
     // To the same role
     if (newRole === currentRole) {
-      return res.status(204).end();
+      return res.status(200).json({ role: currentRole });
     }
 
     // Upgrading role
     if (firstRoleIsHigherThanSecond(newRole, currentRole)) {
-      return res.status(403).json({ error: { message: 'User cannot upgrade their own role' } });
+      throw new ApiError(403, 'Cannot upgrade your own role');
     }
 
     // Downgrading role
@@ -60,9 +57,7 @@ async function handler(req: Request, res: Response) {
         },
       });
       if (teamOwners.length <= 1) {
-        return res.status(403).json({
-          error: { message: 'There must be at least one owner on a team.' },
-        });
+        throw new ApiError(403, 'There must be at least one owner on a team.');
       }
     }
     // Make the change!
@@ -85,9 +80,7 @@ async function handler(req: Request, res: Response) {
 
   // First, can they do this?
   if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
-    return res.status(403).json({
-      error: { message: 'User does not have permission to edit others' },
-    });
+    throw new ApiError(403, 'You do not have permission to edit others');
   }
 
   // Lookup the user that's being changed and their current role
@@ -100,26 +93,27 @@ async function handler(req: Request, res: Response) {
     },
   });
   if (userBeingChanged === null) {
-    return res.status(404).json({ error: { message: 'User not found' } });
+    throw new ApiError(404, 'User not found');
   }
   const userBeingChangedRole = userBeingChanged.role;
   const userMakingChangeRole = userMakingRequest.role;
 
   // Changing to the same role?
   if (newRole === userBeingChangedRole) {
-    return res.status(204).end();
+    return res.status(200).json({ role: newRole });
   }
 
-  // Upgrading to a role higher than their own? Not so fast!
+  // Upgrading someone to a role higher than your own? Not so fast!
+  if (firstRoleIsHigherThanSecond(newRole, userMakingChangeRole)) {
+    throw new ApiError(403, 'You cannot upgrade another user to a role higher than your own');
+  }
+
+  // Downgrading someone with a role higher than your own? Not so fast!
   if (firstRoleIsHigherThanSecond(userBeingChangedRole, userMakingChangeRole)) {
-    return res.status(403).json({
-      error: {
-        message: 'User cannot upgrade another user’s role higher than their own',
-      },
-    });
+    throw new ApiError(403, 'You cannot downgrade another user who has a role higher than your own');
   }
 
-  // Downgrading is ok!
+  // Change is ok!
   const newUserTeamRole = await dbClient.userTeamRole.update({
     where: {
       userId_teamId: {
@@ -132,6 +126,5 @@ async function handler(req: Request, res: Response) {
     },
   });
 
-  const data: ApiTypes['/v0/teams/:uuid/users/:userId.POST.response'] = { role: newUserTeamRole.role };
-  return res.status(200).json(data);
+  return res.status(200).json({ role: newUserTeamRole.role });
 }

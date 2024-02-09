@@ -64,7 +64,7 @@ export type TeamAction = {
     intent: 'delete-team-invite';
     inviteId: string;
   };
-  'request.update-team-user': ApiTypes['/v0/teams/:uuid/users/:userId.POST.request'] & {
+  'request.update-team-user': ApiTypes['/v0/teams/:uuid/users/:userId.PATCH.request'] & {
     intent: 'update-team-user';
     userId: string;
   };

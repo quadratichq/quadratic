@@ -70,11 +70,11 @@ export const apiClient = {
       },
     },
     users: {
-      async update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request']) {
+      async update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.PATCH.request']) {
         return fetchFromApi(
           `/v0/teams/${uuid}/users/${userId}`,
-          { method: 'POST', body: JSON.stringify(body) },
-          ApiSchemas['/v0/teams/:uuid/users/:userId.POST.response']
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/teams/:uuid/users/:userId.PATCH.response']
         );
       },
       async delete(uuid: string, userId: string) {
