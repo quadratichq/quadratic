@@ -115,7 +115,6 @@ export class CellsTextHash extends Container<LabelMeshes> {
     const cells = this.sheet.getRenderCells(this.AABB);
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
-    console.log(`${this.hashX}, ${this.hashY}`, JSON.stringify(Array.from(this.labels.values())));
   }
 
   update(): boolean {
