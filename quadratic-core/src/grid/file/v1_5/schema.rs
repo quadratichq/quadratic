@@ -157,6 +157,7 @@ pub enum CellValue {
     Html(String),
     Code(CodeCell),
     Logical(bool),
+    DateTime(DateTime<Utc>),
     Instant(String),
     Duration(String),
     Error(RunError),

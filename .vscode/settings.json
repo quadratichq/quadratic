@@ -4,6 +4,7 @@
     "actix",
     "bigdecimal",
     "bindgen",
+    "dateparser",
     "dbgjs",
     "dcell",
     "ddimaria",

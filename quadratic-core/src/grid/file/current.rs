@@ -182,6 +182,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                     current::CellValue::Error(error) => {
                         CellValue::Error(Box::new((*error).clone().into()))
                     }
+                    current::CellValue::DateTime(dt) => CellValue::DateTime(dt.to_owned()),
                 };
                 if let Ok(y) = y.parse::<i64>() {
                     col.values.insert(y, cell_value);
@@ -496,6 +497,9 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                     }
                                     CellValue::Logical(logical) => {
                                         current::CellValue::Logical(*logical)
+                                    }
+                                    CellValue::DateTime(dt) => {
+                                        current::CellValue::DateTime(dt.to_owned())
                                     }
                                     CellValue::Instant(instant) => {
                                         current::CellValue::Instant(instant.to_string())
