@@ -518,6 +518,8 @@ impl CellValue {
         } else if s.to_lowercase().starts_with("<html>") || s.to_lowercase().starts_with("<div>") {
             // todo: probably use a crate here to detect html
             value = CellValue::Html(s.to_string());
+
+            // todo...
         } else if let Ok(dt) = parse_datetime::from_str(&s) {
             value = CellValue::DateTime(dt);
         } else if let Some(boolean) = CellValue::unpack_boolean(&s) {
