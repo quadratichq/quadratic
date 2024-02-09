@@ -4,6 +4,7 @@ import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
 import { CellsMarkers } from './CellsMarkers';
+import { CellsSearch } from './CellsSearch';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 
 export class CellsSheet extends Container {
@@ -23,6 +24,10 @@ export class CellsSheet extends Container {
     super();
     this.sheet = sheet;
     this.cellsFills = this.addChild(new CellsFills(this));
+
+    // may need to clean this up if we ever move to a SPA
+    this.addChild(new CellsSearch(sheet));
+
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
