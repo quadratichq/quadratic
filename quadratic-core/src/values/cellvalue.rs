@@ -406,67 +406,10 @@ impl CellValue {
         }
     }
 
-    // TODO(ddimaria): remove once from_js() is implemented
-    // todo: this needs to be reworked under the new paradigm
-    /// Converts a string to a CellValue, updates number formatting, and returns reverse Ops
-    pub fn from_string(s: &String, pos: Pos, sheet: &mut Sheet) -> (CellValue, Vec<Operation>) {
-        let mut ops = vec![];
-        let value: CellValue;
-        let sheet_rect = SheetRect::single_pos(pos, sheet.id);
-
-        // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(s) {
-            value = CellValue::Number(number);
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some(currency),
-            };
-            sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-
-            ops.push(Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
-
-            // only change decimals if it hasn't already been set
-            if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                });
-            }
-        } else if let Ok(bd) = BigDecimal::from_str(s) {
-            value = CellValue::Number(bd);
-        } else if let Some(percent) = CellValue::unpack_percentage(s) {
-            value = CellValue::Number(percent);
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            };
-            sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-            ops.push(Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
-
-        // todo: probably use a crate here to detect html
-        } else if s.to_lowercase().starts_with("<html>") || s.to_lowercase().starts_with("<div>") {
-            value = CellValue::Html(s.to_string());
-        }
-        // todo: include other types here
-        else {
-            value = CellValue::Text(s.to_string());
-        }
-        (value, ops)
-    }
-
+    /// Convert stringified values and types from JS to CellValue
+    ///
+    /// `value` is the stringified value
+    /// `js_type` is the stringified CelLValue type
     pub fn from_js(
         value: &String,
         js_type: &String,
