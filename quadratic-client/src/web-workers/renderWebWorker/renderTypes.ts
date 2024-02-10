@@ -1,20 +1,6 @@
 import { JsRenderCell } from '@/quadratic-core/types';
 
-export interface RenderMessage {
-  type: string;
-}
-
-export interface CoreLoad extends RenderMessage {
-  type: 'load';
-  contents: string;
-  lastSequenceNum: number;
-}
-
-export interface CoreReady extends RenderMessage {
-  type: 'ready';
-}
-
-export interface CoreRequestRenderCells extends RenderMessage {
+export interface RenderRequestRenderCells {
   type: 'requestRenderCells';
   id: number;
   sheetId: string;
@@ -24,8 +10,10 @@ export interface CoreRequestRenderCells extends RenderMessage {
   height: number;
 }
 
-export interface CoreRenderCells extends RenderMessage {
+export interface RenderCells {
   type: 'renderCells';
   id: number;
   cells: JsRenderCell[];
 }
+
+export type RenderMessage = RenderRequestRenderCells | RenderCells;

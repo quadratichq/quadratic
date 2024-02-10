@@ -6,20 +6,27 @@
  * geometries sent to the GPU.
  */
 
-import { debugShowHashUpdates } from '@/debugFlags';
+import { debugShowCellsHashBoxes, debugShowCellsSheetCulling, debugShowHashUpdates } from '@/debugFlags';
 import { grid } from '@/grid/controller/Grid';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { CellSheetsModified } from '@/quadratic-core/types';
-import { Container, Rectangle } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
+import { renderWebWorker } from '../../render';
 import { CellsTextHash } from './CellsTextHash';
+
+const PRELOADER_MAXIMUM_FRAME_TIME = 1000 / 15;
 
 export class CellsLabels extends Container {
   private sheetId: string;
 
   // (hashX, hashY) index into cellsTextHashContainer
   cellsTextHash: Map<string, CellsTextHash>;
+  private cellsTextHashContainer: Container<CellsTextHash>;
+
+  // used to draw debug boxes for cellsTextHash
+  private cellsTextDebug: Graphics;
 
   // row index into cellsTextHashContainer (used for clipping)
   private cellsRows: Map<number, CellsTextHash[]>;
@@ -31,10 +38,25 @@ export class CellsLabels extends Container {
   private dirtyColumnHeadings: Map<number, number>;
   private dirtyRowHeadings: Map<number, number>;
 
+  /******************
+   * preloader data *
+   * ****************/
+
+  // hashes to createLabels()
+  private hashesToCreate: CellsTextHash[] = [];
+
+  // hashes to overflowClip() and updateBuffers()
+  private hashesToLoad: CellsTextHash[] = [];
+
+  // final promise return
+  private preloaderResolve?: () => void;
+
   constructor(sheetId: string) {
     super();
     this.sheetId = sheetId;
     this.cellsTextHash = new Map();
+    this.cellsTextDebug = this.addChild(new Graphics());
+    this.cellsTextHashContainer = this.addChild(new Container<CellsTextHash>());
 
     this.cellsRows = new Map();
     this.dirtyRows = new Set();
@@ -49,9 +71,30 @@ export class CellsLabels extends Container {
     };
   }
 
+  show(bounds: Rectangle) {
+    let count = 0;
+    if (debugShowCellsHashBoxes) {
+      this.cellsTextDebug.clear();
+    }
+    this.cellsTextHash.forEach((cellsTextHash) => {
+      if (cellsTextHash.viewBounds.intersectsRectangle(bounds)) {
+        cellsTextHash.show();
+        if (debugShowCellsHashBoxes) {
+          cellsTextHash.drawDebugBox(this.cellsTextDebug);
+        }
+        count++;
+      } else {
+        cellsTextHash.hide();
+      }
+    });
+    if (debugShowCellsSheetCulling) {
+      console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
+    }
+  }
+
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
     const key = `${hashX},${hashY}`;
-    const cellsHash = new CellsTextHash(this, hashX, hashY);
+    const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
     if (debugShowHashUpdates) console.log(`[CellsTextHash] Creating hash for (${hashX}, ${hashY})`);
     this.cellsTextHash.set(key, cellsHash);
     const row = this.cellsRows.get(hashY);
@@ -61,12 +104,12 @@ export class CellsLabels extends Container {
       this.cellsRows.set(hashY, [cellsHash]);
     }
     return cellsHash;
+    // }
   }
 
-  createHashes(): boolean {
+  async createHashes(): Promise<boolean> {
     debugTimeReset();
-    // need the bounds from core...
-    const bounds = this.cellsSheet.sheet.getGridBounds(false);
+    const bounds = await renderWebWorker.getGridBounds(this.sheetId, false);
     if (!bounds) return false;
     const xStart = Math.floor(bounds.left / sheetHashWidth);
     const yStart = Math.floor(bounds.top / sheetHashHeight);
@@ -320,5 +363,48 @@ export class CellsLabels extends Container {
         cellsHash.dirty = true;
       }
     }
+  }
+
+  /*************
+   * Preloader *
+   *************/
+
+  // preloads hashes by creating labels, and then overflow clipping and updating buffers
+  private preloadTick = (time?: number): void => {
+    if (!this.hashesToCreate.length && !this.hashesToLoad.length) {
+      if (!this.preloaderResolve) throw new Error('Expected resolveTick to be defined in preloadTick');
+      this.preloaderResolve();
+    } else {
+      time = time ?? performance.now();
+      debugTimeReset();
+      if (this.hashesToCreate.length) {
+        const hash = this.hashesToCreate.pop()!;
+        hash.createLabels();
+      } else if (this.hashesToLoad.length) {
+        const hash = this.hashesToLoad.pop()!;
+        hash.overflowClip();
+        hash.updateBuffers(false);
+      }
+      if (performance.now() - time < PRELOADER_MAXIMUM_FRAME_TIME) {
+        this.preloadTick(time);
+      } else {
+        // we expect this to run longer than MINIMUM_FRAME_TIME
+        debugTimeCheck('preloadTick', PRELOADER_MAXIMUM_FRAME_TIME * 1.5);
+        setTimeout(this.preloadTick);
+      }
+    }
+  };
+
+  preload(): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.createHashes()) {
+        resolve();
+      } else {
+        this.preloaderResolve = resolve;
+        this.hashesToCreate = Array.from(this.cellsSheet.cellsLabels.cellsTextHash.values());
+        this.hashesToLoad = Array.from(this.cellsSheet.cellsLabels.cellsTextHash.values());
+        this.preloadTick();
+      }
+    });
   }
 }

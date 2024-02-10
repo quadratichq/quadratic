@@ -1,5 +1,6 @@
 import { JsRenderCell } from '@/quadratic-core/types';
 import { Rectangle } from 'pixi.js';
+import { renderWebWorker } from '../renderWebWorker/render';
 import { CoreLoad, CoreMessage, CoreRenderCells, CoreRequestRenderCells } from './coreTypes';
 
 class CoreWebWorker {
@@ -13,12 +14,17 @@ class CoreWebWorker {
     this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
 
+    const channel = new MessageChannel();
+
     const loadMessage: CoreLoad = {
       type: 'load',
       contents,
       lastSequenceNum,
+      renderMessagePort: channel.port1,
     };
     this.worker.postMessage(loadMessage);
+
+    renderWebWorker.init(channel.port2);
   }
 
   getRenderCells(sheetId: string, rectangle: Rectangle): Promise<JsRenderCell[]> {

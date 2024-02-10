@@ -1,32 +1,27 @@
 import { debugWebWorkers } from '@/debugFlags';
 import init, { GridController, Pos, Rect, hello } from '@/quadratic-core/quadratic_core';
-import {
-  CoreGridBounds,
-  CoreLoad,
-  CoreMessage,
-  CoreRenderCells,
-  CoreRequestGridBounds,
-  CoreRequestRenderCells,
-} from '../coreTypes';
+import { RenderMessage, RenderRequestRenderCells } from '../../renderWebWorker/renderTypes';
+import { CoreGridBounds, CoreLoad, CoreMessage, CoreReady, CoreRequestGridBounds } from '../coreTypes';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
 class CoreWebWorker {
   private gridController!: GridController;
+  private renderMessagePort!: MessagePort;
 
   constructor() {
     self.onmessage = this.handleMessage;
     if (debugWebWorkers) console.log('[Render WebWorker] created');
   }
 
-  private handleMessage = async (e: MessageEvent<CoreMessage>) => {
+  private handleMessage = async (e: MessageEvent<CoreMessage | RenderMessage>) => {
     switch (e.data.type) {
       case 'load':
         this.loadCoreMessage(e.data as CoreLoad);
         break;
 
       case 'requestRenderCells':
-        this.requestRenderCells(e.data as CoreRequestRenderCells);
+        this.requestRenderCells(e.data as RenderRequestRenderCells);
         break;
 
       case 'requestGridBounds':
@@ -41,10 +36,18 @@ class CoreWebWorker {
   private async loadCoreMessage(event: CoreLoad) {
     const data = event as CoreLoad;
     try {
+      this.renderMessagePort = data.renderMessagePort;
       await init();
       hello();
       this.gridController = GridController.newFromFile(data.contents, data.lastSequenceNum);
-      self.postMessage({ type: 'load' } as CoreLoad);
+
+      const sheetIds = this.gridController.getSheetIds();
+
+      // Send a message to the main thread to let it know that the core worker is ready
+      self.postMessage({ type: 'ready', sheetIds } as CoreReady);
+
+      // Send a message to the render worker to let it know that the core worker is ready
+      this.sendRenderMessage();
     } catch (e) {
       console.warn(e);
     }
