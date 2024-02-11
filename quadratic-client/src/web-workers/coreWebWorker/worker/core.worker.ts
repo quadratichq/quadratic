@@ -13,4 +13,4 @@ import './core';
 import './coreClient';
 import './coreRender';
 
-if (debugWebWorkers) console.log('[Core WebWorker] created');
+if (debugWebWorkers) console.log('[core.worker] created');

@@ -5,23 +5,34 @@
  * directly accessed by its siblings.
  */
 
+import { debugWebWorkers } from '@/debugFlags';
 import { JsRenderCell } from '@/quadratic-core/types';
 import { CoreGridBounds, CoreRequestGridBounds } from '@/web-workers/coreWebWorker/coreMessages';
-import { CoreRenderCells, CoreRequestRenderCells } from '@/web-workers/coreWebWorker/coreRenderMessages';
+import {
+  CoreRenderCells,
+  CoreRenderLoad,
+  CoreRequestRenderCells,
+} from '@/web-workers/coreWebWorker/coreRenderMessages';
 import { RenderCoreMessage } from '../renderCoreMessages';
+import { renderText } from './renderText';
 
 class RenderCore {
   private renderCorePort?: MessagePort;
   private waitingForResponse: Map<number, Function> = new Map();
   private id = 0;
 
-  init(sheetIds: string[], renderPort: MessagePort) {
+  init(renderPort: MessagePort) {
     this.renderCorePort = renderPort;
     this.renderCorePort.onmessage = this.handleMessage;
   }
 
-  private handleMessage(e: MessageEvent<RenderCoreMessage>) {
+  private handleMessage = (e: MessageEvent<RenderCoreMessage>) => {
+    if (debugWebWorkers) console.log(`[renderCore] received ${e.data.type}`);
     switch (e.data.type) {
+      case 'load':
+        this.renderLoad(e.data as CoreRenderLoad);
+        break;
+
       case 'renderCells':
         this.renderCells(e.data as CoreRenderCells);
         break;
@@ -31,9 +42,9 @@ class RenderCore {
         break;
 
       default:
-        console.warn('[coreRender] Unhandled message', e);
+        console.warn('[renderCore] Unhandled message', e.data);
     }
-  }
+  };
 
   /*********************
    * Core API requests *
@@ -89,6 +100,10 @@ class RenderCore {
    * Core API responses *
    **********************/
 
+  private renderLoad(event: CoreRenderLoad) {
+    renderText.setSheetIds(event.sheetIds);
+  }
+
   private renderCells(event: CoreRenderCells) {
     const { id, cells } = event;
     const response = this.waitingForResponse.get(id);
@@ -112,4 +127,4 @@ class RenderCore {
   }
 }
 
-export const renderClient = new RenderCore();
+export const renderCore = new RenderCore();

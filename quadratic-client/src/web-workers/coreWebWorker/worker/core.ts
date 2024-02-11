@@ -23,7 +23,7 @@ class Core {
     hello();
 
     this.gridController = GridController.newFromFile(data.contents, data.lastSequenceNum);
-    if (debugWebWorkers) console.log('[Core WebWorker] GridController loaded');
+    if (debugWebWorkers) console.log('[core] GridController loaded');
 
     const sheetIds = JSON.parse(this.gridController.getSheetIds());
     coreClient.init(sheetIds);

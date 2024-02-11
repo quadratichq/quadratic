@@ -12,7 +12,7 @@ class RenderWebWorker {
     this.worker.onmessage = this.handleMessage;
     this.worker.postMessage({ type: 'load' } as RenderInitMessage, [coreMessagePort]);
 
-    if (debugWebWorkers) console.log('[renderWebWorker] created');
+    if (debugWebWorkers) console.log('[render] created');
   }
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {

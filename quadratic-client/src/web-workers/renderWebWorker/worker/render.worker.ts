@@ -8,8 +8,8 @@
  * - renderCore.ts: the interface between this web worker and the core web worker
  */
 
-import { debug } from '@/debugFlags';
+import { debugWebWorkers } from '@/debugFlags';
 import './renderClient';
 import './renderCore';
 
-if (debug) console.log('[Render WebWorker] created');
+if (debugWebWorkers) console.log('[render.worker] created');

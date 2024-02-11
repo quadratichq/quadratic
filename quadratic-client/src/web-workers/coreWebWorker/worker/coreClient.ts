@@ -17,6 +17,8 @@ class CoreClient {
   }
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
+    if (debugWebWorkers) console.log(`[coreClient] received message ${e.data.type}`);
+
     switch (e.data.type) {
       case 'load':
         core.newFromFile(e.data, e.ports[0]);
@@ -29,7 +31,7 @@ class CoreClient {
 
   init(sheetIds: string[]) {
     self.postMessage({ type: 'ready', sheetIds } as CoreClientReady);
-    if (debugWebWorkers) console.log('[Core WebWorker] coreClient initialized.');
+    if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 }
 

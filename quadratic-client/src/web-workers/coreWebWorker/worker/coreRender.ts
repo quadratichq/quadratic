@@ -17,10 +17,12 @@ class CoreRender {
     this.coreRenderPort = renderPort;
     this.coreRenderPort.onmessage = this.handleMessage;
     this.coreRenderPort.postMessage({ type: 'load', sheetIds } as CoreRenderLoad);
-    if (debugWebWorkers) console.log('[Core WebWorker] coreRender initialized.');
+    if (debugWebWorkers) console.log('[coreRender] initialized');
   }
 
   private handleMessage(e: MessageEvent<CoreRenderMessage>) {
+    if (debugWebWorkers) console.log(`[coreRender] received message ${e.data.type}`);
+
     switch (e.data.type) {
       case 'requestRenderCells':
         this.getRenderCells(e.data as CoreRequestRenderCells);

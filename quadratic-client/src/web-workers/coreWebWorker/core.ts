@@ -29,9 +29,7 @@ class CoreWebWorker {
     this.worker.postMessage(loadMessage, [channel.port1]);
     renderWebWorker.init(channel.port2);
 
-    if (debugWebWorkers) {
-      console.log('[coreWebWorker] created');
-    }
+    if (debugWebWorkers) console.log('[core] created');
   }
 
   private init() {
