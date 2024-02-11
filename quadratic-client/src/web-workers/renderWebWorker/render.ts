@@ -1,3 +1,4 @@
+import { debugWebWorkers } from '@/debugFlags';
 import { RenderClientMessage, RenderInitMessage } from './renderClientMessages';
 
 class RenderWebWorker {
@@ -7,9 +8,11 @@ class RenderWebWorker {
   private id = 0;
 
   async init(coreMessagePort: MessagePort) {
-    this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
+    this.worker = new Worker(new URL('./worker/render.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
-    this.worker.postMessage({ type: 'initRender' } as RenderInitMessage, [coreMessagePort]);
+    this.worker.postMessage({ type: 'load' } as RenderInitMessage, [coreMessagePort]);
+
+    if (debugWebWorkers) console.log('[renderWebWorker] created');
   }
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {

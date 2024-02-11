@@ -1,5 +1,5 @@
 /**
- * Shared Core messages that talk to both coreClient and coreRender.
+ * Shared Core messages that talk to both Core web worker and Render web worker.
  */
 
 export interface CoreRequestGridBounds {

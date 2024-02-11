@@ -1,5 +1,5 @@
 export interface RenderInitMessage {
-  type: 'initRender';
+  type: 'load';
 }
 
 export type RenderClientMessage = RenderInitMessage;

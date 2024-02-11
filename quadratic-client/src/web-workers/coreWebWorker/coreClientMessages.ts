@@ -1,3 +1,7 @@
+/**
+ * Messages between Core web worker and main thread (Client).
+ */
+
 import { CoreGridBounds, CoreRequestGridBounds } from './coreMessages';
 
 export interface CoreClientLoad {

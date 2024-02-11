@@ -4,6 +4,7 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
+import { debugWebWorkers } from '@/debugFlags';
 import { renderWebWorker } from '../renderWebWorker/render';
 import { CoreClientLoad, CoreClientMessage } from './coreClientMessages';
 
@@ -26,8 +27,11 @@ class CoreWebWorker {
       lastSequenceNum,
     };
     this.worker.postMessage(loadMessage, [channel.port1]);
-
     renderWebWorker.init(channel.port2);
+
+    if (debugWebWorkers) {
+      console.log('[coreWebWorker] created');
+    }
   }
 
   private init() {
@@ -48,7 +52,7 @@ class CoreWebWorker {
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
     switch (e.data.type) {
-      case 'load':
+      case 'ready':
         this.ready();
         break;
 

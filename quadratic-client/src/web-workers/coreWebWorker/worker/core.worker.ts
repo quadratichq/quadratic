@@ -3,9 +3,9 @@
  * the application.
  *
  * It instantiates:
- * - core: the interface between Rust GridController and this web worker
- * - coreClient: the interface between this web worker and the main thread
- * - coreRender: the interface between this web worker and the render web worker
+ * - core.ts: the interface between Rust GridController and this web worker
+ * - coreClient.ts: the interface between this web worker and the main thread
+ * - coreRender.ts: the interface between this web worker and the render web worker
  */
 
 import { debugWebWorkers } from '@/debugFlags';

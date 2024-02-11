@@ -31,7 +31,7 @@ class CoreRender {
         break;
 
       default:
-        console.warn('Unhandled message type', e.data.type);
+        console.warn('[coreRender] Unhandled message type', e.data.type);
     }
   }
 

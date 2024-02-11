@@ -1,5 +1,8 @@
 /**
  * Interface between the core webworker and quadratic-core
+ *
+ * This is a singleton where one instance exists for the web worker and can be
+ * directly accessed by its siblings.
  */
 
 import { debugWebWorkers } from '@/debugFlags';

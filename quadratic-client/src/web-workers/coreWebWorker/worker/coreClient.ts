@@ -1,5 +1,8 @@
 /**
  * Communication between core web worker and main thread.
+ *
+ * This is a singleton where one instance exists for the web worker and can be
+ * directly accessed by its siblings.
  */
 
 import { debugWebWorkers } from '@/debugFlags';
@@ -20,7 +23,7 @@ class CoreClient {
         break;
 
       default:
-        console.warn('Unhandled message type', e.data.type);
+        console.warn('[coreClient] Unhandled message type', e.data.type);
     }
   };
 
