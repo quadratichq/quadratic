@@ -1,4 +1,5 @@
 import { JsRenderCell } from '@/quadratic-core/types';
+import { CoreGridBounds, CoreRequestGridBounds } from './coreMessages';
 
 export interface CoreRenderLoad {
   type: 'load';
@@ -21,11 +22,9 @@ export interface CoreRenderCells {
   cells: JsRenderCell[];
 }
 
-export interface CoreRequestGridBounds {
-  type: 'requestGridBounds';
-  id: number;
-  sheetId: string;
-  ignoreFormatting: boolean;
-}
-
-export type CoreRenderMessage = CoreRenderLoad | CoreRequestRenderCells | CoreRenderCells | CoreRequestGridBounds;
+export type CoreRenderMessage =
+  | CoreRenderLoad
+  | CoreRequestRenderCells
+  | CoreRenderCells
+  | CoreRequestGridBounds
+  | CoreGridBounds;

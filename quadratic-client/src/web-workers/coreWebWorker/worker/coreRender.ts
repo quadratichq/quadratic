@@ -1,25 +1,23 @@
-import { Pos, Rect } from '@/quadratic-core/quadratic_core';
-import {
-  CoreRenderCells,
-  CoreRenderLoad,
-  CoreRenderMessage,
-  CoreRequestGridBounds,
-  CoreRequestRenderCells,
-} from '../coreRenderMessages';
-import { CoreWebWorker } from './core.worker';
+/**
+ * Communication between core web worker and render web worker.
+ *
+ * This is a singleton where one instance exists for the web worker and can be
+ * directly accessed by its siblings.
+ */
 
-export class CoreRender {
-  private coreWebWorker: CoreWebWorker;
+import { debugWebWorkers } from '@/debugFlags';
+import { CoreGridBounds, CoreRequestGridBounds } from '../coreMessages';
+import { CoreRenderCells, CoreRenderLoad, CoreRenderMessage, CoreRequestRenderCells } from '../coreRenderMessages';
+import { core } from './core';
+
+class CoreRender {
   private coreRenderPort?: MessagePort;
-
-  constructor(coreWebWorker: CoreWebWorker) {
-    this.coreWebWorker = coreWebWorker;
-  }
 
   init(sheetIds: string[], renderPort: MessagePort) {
     this.coreRenderPort = renderPort;
     this.coreRenderPort.onmessage = this.handleMessage;
     this.coreRenderPort.postMessage({ type: 'load', sheetIds } as CoreRenderLoad);
+    if (debugWebWorkers) console.log('[Core WebWorker] coreRender initialized.');
   }
 
   private handleMessage(e: MessageEvent<CoreRenderMessage>) {
@@ -38,16 +36,24 @@ export class CoreRender {
   }
 
   getRenderCells(data: CoreRequestRenderCells) {
-    if (!this.coreRenderPort || !this.coreWebWorker.gridController) return;
+    if (!this.coreRenderPort) {
+      console.warn('Expected coreRenderPort to be defined in CoreRender.getRenderCells');
+      return;
+    }
 
-    const renderCells = this.coreWebWorker.gridController.getRenderCells(
-      data.sheetId,
-      new Rect(new Pos(data.x, data.y), new Pos(data.x + data.width, data.y + data.height))
-    );
-    this.coreRenderPort.postMessage({ type: 'renderCells', cells: JSON.parse(renderCells) } as CoreRenderCells);
+    const cells = core.getRenderCells(data);
+    this.coreRenderPort.postMessage({ type: 'renderCells', cells } as CoreRenderCells);
   }
 
   requestGridBounds(data: CoreRequestGridBounds) {
-    const gridBounds = this.coreWebWorker.getGridBounds(data);
+    if (!this.coreRenderPort) {
+      console.warn('Expected coreRenderPort to be defined in CoreRender.requestGridBounds');
+      return;
+    }
+
+    const bounds = core.getGridBounds(data);
+    this.coreRenderPort.postMessage({ type: 'gridBounds', bounds } as CoreGridBounds);
   }
 }
+
+export const coreRender = new CoreRender();

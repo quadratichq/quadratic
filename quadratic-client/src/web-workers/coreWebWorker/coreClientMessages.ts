@@ -1,7 +1,14 @@
+import { CoreGridBounds, CoreRequestGridBounds } from './coreMessages';
+
 export interface CoreClientLoad {
   type: 'load';
   contents: string;
   lastSequenceNum: number;
 }
 
-export type CoreClientMessage = CoreClientLoad;
+export interface CoreClientReady {
+  type: 'ready';
+  sheetIds: string[];
+}
+
+export type CoreClientMessage = CoreClientLoad | CoreClientReady | CoreRequestGridBounds | CoreGridBounds;

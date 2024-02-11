@@ -1,22 +1,22 @@
-import init, { hello } from '@/quadratic-core/quadratic_core';
+/**
+ * Communication between core web worker and main thread.
+ */
 
-import { CoreClientLoad, CoreClientMessage } from '../coreClientMessages';
-import { CoreWebWorker } from './core.worker';
+import { debugWebWorkers } from '@/debugFlags';
+import { CoreClientMessage, CoreClientReady } from '../coreClientMessages';
+import { core } from './core';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
-export class CoreClient {
-  private coreWebWorker: CoreWebWorker;
-
-  constructor(coreWebWorker: CoreWebWorker) {
+class CoreClient {
+  constructor() {
     self.onmessage = this.handleMessage;
-    this.coreWebWorker = coreWebWorker;
   }
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
     switch (e.data.type) {
       case 'load':
-        this.loadCoreMessage(e.data, e.ports[0]);
+        core.newFromFile(e.data, e.ports[0]);
         break;
 
       default:
@@ -24,19 +24,10 @@ export class CoreClient {
     }
   };
 
-  private async loadCoreMessage(data: CoreClientLoad, renderPort: MessagePort) {
-    try {
-      await init();
-      hello();
-
-      // Send a message to the main thread to let it know that the core worker is ready
-      self.postMessage({ type: 'ready', sheetIds } as ResponseLoad);
-
-      // Send a message to the render worker to let it know that the core worker is ready
-      this.coreRender = new CoreRender(this, renderPort);
-    } catch (e) {
-      console.warn(e);
-    }
-    if (debugWebWorkers) console.log('[Core WebWorker] GridController loaded');
+  init(sheetIds: string[]) {
+    self.postMessage({ type: 'ready', sheetIds } as CoreClientReady);
+    if (debugWebWorkers) console.log('[Core WebWorker] coreClient initialized.');
   }
 }
+
+export const coreClient = new CoreClient();

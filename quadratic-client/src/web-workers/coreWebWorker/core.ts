@@ -1,5 +1,11 @@
+/**
+ * Interface between main thread and core web worker.
+ *
+ * Also open communication channel between core web worker and render web worker.
+ */
+
 import { renderWebWorker } from '../renderWebWorker/render';
-import { CoreClientLoad } from './coreRenderMessages';
+import { CoreClientLoad, CoreClientMessage } from './coreClientMessages';
 
 class CoreWebWorker {
   private worker?: Worker;
@@ -40,7 +46,7 @@ class CoreWebWorker {
     this.waitingForLoad = [];
   }
 
-  private handleMessage = (e: MessageEvent<WorkerMessage>) => {
+  private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
     switch (e.data.type) {
       case 'load':
         this.ready();
