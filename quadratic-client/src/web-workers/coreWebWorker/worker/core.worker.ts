@@ -1,57 +1,44 @@
 import { debugWebWorkers } from '@/debugFlags';
-import init, { GridController, Pos, Rect, hello } from '@/quadratic-core/quadratic_core';
-import { RenderMessage, RenderRequestRenderCells } from '../../renderWebWorker/renderTypes';
-import { CoreGridBounds, CoreLoad, CoreMessage, CoreReady, CoreRequestGridBounds } from '../coreTypes';
+import { GridController } from '@/quadratic-core/quadratic_core';
+import { CoreClientLoad } from '../coreClientMessages';
+import { CoreRequestGridBounds } from '../coreRenderMessages';
+import { CoreClient } from './coreClient';
+import { CoreRender } from './coreRender';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
-class CoreWebWorker {
-  private gridController!: GridController;
-  private renderMessagePort!: MessagePort;
+export class CoreWebWorker {
+  private coreClient: CoreClient;
+  private coreRender: CoreRender;
+
+  gridController?: GridController;
 
   constructor() {
-    self.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[Render WebWorker] created');
+    this.coreClient = new CoreClient(this);
+    this.coreRender = new CoreRender(this);
+
+    if (debugWebWorkers) console.log('[Core WebWorker] created');
   }
 
-  private handleMessage = async (e: MessageEvent<CoreMessage | RenderMessage>) => {
-    switch (e.data.type) {
-      case 'load':
-        this.loadCoreMessage(e.data as CoreLoad);
-        break;
+  newFromFile(data: CoreClientLoad, renderPort: MessagePort) {
+    this.gridController = GridController.newFromFile(data.contents, data.lastSequenceNum);
+    const sheetIds = JSON.parse(this.gridController.getSheetIds());
+    this.coreClient.init(sheetIds);
+    this.coreRender.init(sheetIds, renderPort);
+  }
 
-      case 'requestRenderCells':
-        this.requestRenderCells(e.data as RenderRequestRenderCells);
-        break;
-
-      case 'requestGridBounds':
-        this.requestGridBounds(e.data as CoreRequestGridBounds);
-        break;
-
-      default:
-        console.warn('Unhandled message type', e.data.type);
+  getGridBounds(data: CoreRequestGridBounds): { x: number; y: number; width: number; height: number } | undefined {
+    if (!this.gridController) return;
+    const bounds = this.gridController.getGridBounds(data.sheetId, data.ignoreFormatting);
+    if (bounds.type === 'empty') {
+      return;
     }
-  };
-
-  private async loadCoreMessage(event: CoreLoad) {
-    const data = event as CoreLoad;
-    try {
-      this.renderMessagePort = data.renderMessagePort;
-      await init();
-      hello();
-      this.gridController = GridController.newFromFile(data.contents, data.lastSequenceNum);
-
-      const sheetIds = this.gridController.getSheetIds();
-
-      // Send a message to the main thread to let it know that the core worker is ready
-      self.postMessage({ type: 'ready', sheetIds } as CoreReady);
-
-      // Send a message to the render worker to let it know that the core worker is ready
-      this.sendRenderMessage();
-    } catch (e) {
-      console.warn(e);
-    }
-    if (debugWebWorkers) console.log('[Core WebWorker] GridController loaded');
+    return {
+      x: bounds.min.x,
+      y: bounds.min.y,
+      width: bounds.max.x - bounds.min.x,
+      height: bounds.max.y - bounds.min.y,
+    };
   }
 
   private requestRenderCells(event: CoreRequestRenderCells) {

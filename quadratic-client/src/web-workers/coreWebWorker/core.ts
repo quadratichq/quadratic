@@ -1,7 +1,5 @@
-import { JsRenderCell } from '@/quadratic-core/types';
-import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/render';
-import { CoreLoad, CoreMessage, CoreRenderCells, CoreRequestRenderCells } from './coreTypes';
+import { CoreClientLoad } from './coreRenderMessages';
 
 class CoreWebWorker {
   private worker?: Worker;
@@ -16,33 +14,14 @@ class CoreWebWorker {
 
     const channel = new MessageChannel();
 
-    const loadMessage: CoreLoad = {
+    const loadMessage: CoreClientLoad = {
       type: 'load',
       contents,
       lastSequenceNum,
-      renderMessagePort: channel.port1,
     };
-    this.worker.postMessage(loadMessage);
+    this.worker.postMessage(loadMessage, [channel.port1]);
 
     renderWebWorker.init(channel.port2);
-  }
-
-  getRenderCells(sheetId: string, rectangle: Rectangle): Promise<JsRenderCell[]> {
-    return new Promise(async (resolve) => {
-      await this.init();
-      if (!this.worker) return;
-      this.worker.postMessage({
-        type: 'requestRenderCells',
-        sheetId,
-        x: rectangle.x,
-        y: rectangle.y,
-        width: rectangle.width,
-        height: rectangle.height,
-        id: this.id,
-      } as CoreRequestRenderCells);
-      this.waitingForCallback[this.id] = resolve;
-      this.id++;
-    });
   }
 
   private init() {
@@ -61,23 +40,10 @@ class CoreWebWorker {
     this.waitingForLoad = [];
   }
 
-  private renderCells(event: CoreRenderCells) {
-    const resolve = this.waitingForCallback[event.id];
-    if (resolve) {
-      console.log(event.cells);
-      resolve(event.cells);
-      delete this.waitingForCallback[event.id];
-    }
-  }
-
-  private handleMessage = (e: MessageEvent<CoreMessage>) => {
+  private handleMessage = (e: MessageEvent<WorkerMessage>) => {
     switch (e.data.type) {
       case 'load':
         this.ready();
-        break;
-
-      case 'renderCells':
-        this.renderCells(e.data as CoreRenderCells);
         break;
 
       default:

@@ -1,4 +1,4 @@
-import { RenderMessage } from './renderTypes';
+import { RenderClientMessage, RenderInitMessage } from './renderClientMessages';
 
 class RenderWebWorker {
   private worker?: Worker;
@@ -9,16 +9,10 @@ class RenderWebWorker {
   async init(coreMessagePort: MessagePort) {
     this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
-
-    const loadMessage: CoreLoad = {
-      type: 'load',
-      contents,
-      lastSequenceNum,
-    };
-    this.worker.postMessage(loadMessage);
+    this.worker.postMessage({ type: 'initRender' } as RenderInitMessage, [coreMessagePort]);
   }
 
-  private handleMessage = (e: MessageEvent<RenderMessage>) => {
+  private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
     switch (e.data.type) {
       default:
         console.warn('Unhandled message type', e.data.type);
