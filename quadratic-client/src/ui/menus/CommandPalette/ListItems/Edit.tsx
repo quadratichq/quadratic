@@ -1,11 +1,23 @@
+import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import { useFileContext } from '@/ui/components/FileProvider';
-import { ContentCopy, ContentCut, ContentPaste, Download, East, Redo, Undo } from '@mui/icons-material';
+import {
+  ContentCopy,
+  ContentCut,
+  ContentPaste,
+  ContentPasteGoOutlined,
+  Download,
+  East,
+  Redo,
+  Undo,
+} from '@mui/icons-material';
 import { useRecoilState } from 'recoil';
 import {
   copyAction,
   cutAction,
   downloadSelectionAsCsvAction,
   pasteAction,
+  pasteActionFormats,
+  pasteActionValues,
   redoAction,
   undoAction,
 } from '../../../../actions';
@@ -97,6 +109,28 @@ const ListItems = [
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
       );
+    },
+  },
+  {
+    label: pasteActionValues.label,
+    isAvailable: pasteActionValues.isAvailable,
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      return (
+        <CommandPaletteListItem
+          {...props}
+          action={() => pasteFromClipboard(PasteSpecial.Values)}
+          icon={<ContentPasteGoOutlined />}
+          shortcut="V"
+          shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
+        />
+      );
+    },
+  },
+  {
+    label: pasteActionFormats.label,
+    isAvailable: pasteActionFormats.isAvailable,
+    Component: (props: CommandPaletteListItemSharedProps) => {
+      return <CommandPaletteListItem {...props} action={() => pasteFromClipboard(PasteSpecial.Formats)} />;
     },
   },
   {

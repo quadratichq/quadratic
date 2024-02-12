@@ -28,6 +28,7 @@ export const helpKeyboard =
   "\n             p - Toggle performance build for Core" +
   "\n             r - Restart React" +
   "\n             t - Rebuild WASM types from Core for React" +
+  "\n             l - Watch all" +
   "\n        ctrl+m - Kill/Resurrect multiplayer" +
   "\n        ctrl+f - Kill/Resurrect files" +
   "\n             d - Toggle dark theme" +

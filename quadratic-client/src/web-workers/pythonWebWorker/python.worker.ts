@@ -28,14 +28,21 @@ async function pythonWebWorker() {
   try {
     self.postMessage({ type: 'not-loaded' } as PythonMessage);
     pyodide = await (self as any).loadPyodide();
+
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage('micropip');
+
     let micropip = await pyodide.pyimport('micropip');
-    await micropip.install(['numpy', 'pandas', 'pyodide-http', 'requests']);
+
     // patch requests https://github.com/koenvo/pyodide-http
+    await micropip.install(['pyodide-http']);
     await pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
-    const python_code = await (await fetch('/run_python.py')).text();
-    await pyodide.runPython(python_code);
+
+    // load our python code
+    await micropip.install('/quadratic_py-0.1.0-py3-none-any.whl');
+
+    // make run_python easier to call later
+    await pyodide.runPython('from quadratic_py.run_python import run_python');
   } catch (e) {
     self.postMessage({ type: 'python-error' } as PythonMessage);
     console.warn(`[Python WebWorker] failed to load`, e);
@@ -68,6 +75,7 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       return self.postMessage({
         type: 'results',
         results,
+        python_code,
       });
     }
   }

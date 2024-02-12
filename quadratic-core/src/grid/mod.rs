@@ -1,7 +1,7 @@
 use crate::CellValue;
 #[cfg(test)]
 use crate::{Array, Pos};
-use block::{Block, BlockContent, CellValueBlockContent, SameValue};
+use block::{Block, BlockContent, SameValue};
 #[cfg(test)]
 pub use borders::print_borders;
 pub use borders::{
@@ -32,6 +32,7 @@ pub mod formatting;
 mod ids;
 pub mod js_types;
 mod offsets;
+pub mod search;
 pub mod series;
 pub mod sheet;
 pub mod sheets;

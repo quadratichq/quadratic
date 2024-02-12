@@ -3,7 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    Array, CellValue,
+    Pos, SheetRect,
 };
 
 impl GridController {
@@ -12,33 +12,30 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::SetCellValues { sheet_rect, values } = op {
-            match self.grid.try_sheet_mut(sheet_rect.sheet_id) {
+        if let Operation::SetCellValues { sheet_pos, values } = op {
+            match self.grid.try_sheet_mut(sheet_pos.sheet_id) {
                 None => (), // sheet may have been deleted
                 Some(sheet) => {
                     // update individual cell values and collect old_values
-                    let old_values = sheet_rect
-                        .iter()
-                        .zip(values.clone().into_cell_values_vec())
-                        .map(|(sheet_pos, value)| {
-                            let old_value = sheet.set_cell_value(sheet_pos.into(), value);
+                    let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
+                    if values.into_iter().any(|(_, _, value)| value.is_html()) {
+                        transaction.summary.html.insert(sheet_pos.sheet_id);
+                    };
 
-                            // add html to summary if old value was of that type
-                            if old_value
-                                .as_ref()
-                                .is_some_and(|cell_value| cell_value.is_html())
-                            {
-                                transaction.summary.html.insert(sheet_pos.sheet_id);
-                            }
-                            old_value
-                        })
-                        .map(|old_value| old_value.unwrap_or(CellValue::Blank))
-                        .collect();
+                    let min = sheet_pos.into();
+                    let sheet_rect = SheetRect {
+                        sheet_id: sheet_pos.sheet_id,
+                        min,
+                        max: Pos {
+                            x: min.x + values.w as i64,
+                            y: min.y + values.h as i64,
+                        },
+                    };
 
                     if transaction.is_user() || transaction.is_undo_redo() {
                         transaction
                             .forward_operations
-                            .push(Operation::SetCellValues { sheet_rect, values });
+                            .push(Operation::SetCellValues { sheet_pos, values });
 
                         if transaction.is_user() {
                             self.check_deleted_code_runs(transaction, &sheet_rect);
@@ -46,15 +43,10 @@ impl GridController {
                             self.check_all_spills(transaction, sheet_rect.sheet_id);
                         }
 
-                        // create reverse_operation
-                        let old_values = Array::new_row_major(sheet_rect.size(), old_values)
-                            .expect(
-                                "error constructing array of old values for SetCells operation",
-                            );
                         transaction.reverse_operations.insert(
                             0,
                             Operation::SetCellValues {
-                                sheet_rect,
+                                sheet_pos,
                                 values: old_values,
                             },
                         );
@@ -62,7 +54,7 @@ impl GridController {
                     // prepare summary
                     transaction
                         .sheets_with_dirty_bounds
-                        .insert(sheet_rect.sheet_id);
+                        .insert(sheet_pos.sheet_id);
                     transaction.summary.generate_thumbnail |=
                         self.thumbnail_dirty_sheet_rect(&sheet_rect);
                     transaction
@@ -154,7 +146,7 @@ mod tests {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{grid::CodeCellLanguage, SheetPos};
+    use crate::{grid::CodeCellLanguage, CellValue, SheetPos};
     use bigdecimal::BigDecimal;
 
     #[test]
