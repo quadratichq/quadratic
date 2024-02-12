@@ -311,11 +311,7 @@ pub fn is_series_key(key: &str, keys: &[&str]) -> bool {
     keys.contains(&key)
 }
 
-pub fn is_series_next_key(
-    key: &str,
-    existing_keys: &Vec<&str>,
-    all_keys: &&[&str],
-) -> Result<bool> {
+pub fn is_series_next_key(key: &str, existing_keys: &[&str], all_keys: &&[&str]) -> Result<bool> {
     let last_key = existing_keys[existing_keys.len() - 1];
     let index = all_keys
         .iter()

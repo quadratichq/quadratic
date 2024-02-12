@@ -427,7 +427,7 @@ impl GridController {
         sheet_id: SheetId,
         selection: &Rect,
         range: &Rect,
-        values: &Vec<CellValue>,
+        values: &[CellValue],
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
@@ -507,7 +507,7 @@ impl GridController {
         sheet_id: SheetId,
         selection: &Rect,
         range: &Rect,
-        values: &Vec<CellValue>,
+        values: &[CellValue],
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
