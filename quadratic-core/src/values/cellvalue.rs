@@ -486,7 +486,7 @@ impl CellValue {
         } else if s.to_lowercase().starts_with("<html>") || s.to_lowercase().starts_with("<div>") {
             // todo: probably use a crate here to detect html
             value = CellValue::Html(s.to_string());
-        } else if let Some(boolean) = CellValue::unpack_boolean(&s) {
+        } else if let Some(boolean) = CellValue::unpack_boolean(s) {
             value = boolean;
         } else {
             value = CellValue::Text(s.to_string());
