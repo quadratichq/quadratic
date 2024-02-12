@@ -236,7 +236,7 @@ pub fn find_string_series(options: SeriesOptions) -> Vec<CellValue> {
                             CellValue::Text(s) => s,
                             _ => "",
                         })
-                        .collect(),
+                        .collect::<Vec<&str>>(),
                     text_series,
                 )
                 .unwrap_or(false)
