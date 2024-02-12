@@ -6,27 +6,27 @@
  * geometries sent to the GPU.
  */
 
-import { debugShowCellsHashBoxes, debugShowCellsSheetCulling, debugShowHashUpdates } from '@/debugFlags';
-import { grid } from '@/grid/controller/Grid';
+import { debugShowHashUpdates } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
-import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { CellSheetsModified } from '@/quadratic-core/types';
-import { Container, Graphics, Rectangle } from 'pixi.js';
-import { renderWebWorker } from '../../render';
+import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
+import { SheetMetadata } from '@/web-workers/coreWebWorker/coreMessages';
+import { Container, Rectangle } from 'pixi.js';
+import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { CellsTextHash } from './CellsTextHash';
 
-const PRELOADER_MAXIMUM_FRAME_TIME = 1000 / 15;
-
 export class CellsLabels extends Container {
-  private sheetId: string;
+  sheetId: string;
+  sheetOffsets: SheetOffsets;
+
+  bitmapFonts: RenderBitmapFonts;
 
   // (hashX, hashY) index into cellsTextHashContainer
   cellsTextHash: Map<string, CellsTextHash>;
-  private cellsTextHashContainer: Container<CellsTextHash>;
 
-  // used to draw debug boxes for cellsTextHash
-  private cellsTextDebug: Graphics;
+  bounds?: { x: number; y: number; width: number; height: number };
+  boundsNoFormatting?: { x: number; y: number; width: number; height: number };
 
   // row index into cellsTextHashContainer (used for clipping)
   private cellsRows: Map<number, CellsTextHash[]>;
@@ -38,30 +38,28 @@ export class CellsLabels extends Container {
   private dirtyColumnHeadings: Map<number, number>;
   private dirtyRowHeadings: Map<number, number>;
 
-  /******************
-   * preloader data *
-   * ****************/
-
-  // hashes to createLabels()
-  private hashesToCreate: CellsTextHash[] = [];
-
-  // hashes to overflowClip() and updateBuffers()
-  private hashesToLoad: CellsTextHash[] = [];
-
-  // final promise return
-  private preloaderResolve?: () => void;
-
-  constructor(sheetId: string) {
+  constructor(sheetId: string, metadata: SheetMetadata, bitmapFonts: RenderBitmapFonts) {
     super();
     this.sheetId = sheetId;
+    this.bounds = metadata.bounds;
+    this.boundsNoFormatting = metadata.boundsNoFormatting;
+    this.sheetOffsets = SheetOffsetsWasm.load(metadata.offsets);
+    this.bitmapFonts = bitmapFonts;
     this.cellsTextHash = new Map();
-    this.cellsTextDebug = this.addChild(new Graphics());
-    this.cellsTextHashContainer = this.addChild(new Container<CellsTextHash>());
 
     this.cellsRows = new Map();
     this.dirtyRows = new Set();
     this.dirtyColumnHeadings = new Map();
     this.dirtyRowHeadings = new Map();
+
+    this.createHashes();
+  }
+
+  getCellOffsets(x: number, y: number) {
+    const screenRect = this.sheetOffsets.getCellOffsets(x, y);
+    const rect = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+    screenRect.free();
+    return rect;
   }
 
   static getHash(x: number, y: number): { x: number; y: number } {
@@ -71,30 +69,9 @@ export class CellsLabels extends Container {
     };
   }
 
-  show(bounds: Rectangle) {
-    let count = 0;
-    if (debugShowCellsHashBoxes) {
-      this.cellsTextDebug.clear();
-    }
-    this.cellsTextHash.forEach((cellsTextHash) => {
-      if (cellsTextHash.viewBounds.intersectsRectangle(bounds)) {
-        cellsTextHash.show();
-        if (debugShowCellsHashBoxes) {
-          cellsTextHash.drawDebugBox(this.cellsTextDebug);
-        }
-        count++;
-      } else {
-        cellsTextHash.hide();
-      }
-    });
-    if (debugShowCellsSheetCulling) {
-      console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
-    }
-  }
-
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
     const key = `${hashX},${hashY}`;
-    const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+    const cellsHash = new CellsTextHash(this, hashX, hashY);
     if (debugShowHashUpdates) console.log(`[CellsTextHash] Creating hash for (${hashX}, ${hashY})`);
     this.cellsTextHash.set(key, cellsHash);
     const row = this.cellsRows.get(hashY);
@@ -107,14 +84,14 @@ export class CellsLabels extends Container {
     // }
   }
 
-  async createHashes(): Promise<boolean> {
+  createHashes(): boolean {
     debugTimeReset();
-    const bounds = await renderWebWorker.getGridBounds(this.sheetId, false);
+    const bounds = this.boundsNoFormatting;
     if (!bounds) return false;
-    const xStart = Math.floor(bounds.left / sheetHashWidth);
-    const yStart = Math.floor(bounds.top / sheetHashHeight);
-    const xEnd = Math.floor(bounds.right / sheetHashWidth);
-    const yEnd = Math.floor(bounds.bottom / sheetHashHeight);
+    const xStart = Math.floor(bounds.x / sheetHashWidth);
+    const yStart = Math.floor(bounds.y / sheetHashHeight);
+    const xEnd = Math.floor((bounds.x + bounds.width) / sheetHashWidth);
+    const yEnd = Math.floor((bounds.y + bounds.height) / sheetHashHeight);
     for (let y = yStart; y <= yEnd; y++) {
       for (let x = xStart; x <= xEnd; x++) {
         this.createHash(x, y);
@@ -162,13 +139,10 @@ export class CellsLabels extends Container {
 
   // used for clipping to find neighboring hash - clipping always works from right to left
   // todo: use the new overflowLeft to make this more efficient
-  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
-    bounds = bounds ?? grid.getGridBounds(this.cellsSheet.sheet.id, true);
-    if (!bounds) {
-      throw new Error('Expected bounds to be defined in findPreviousHash of CellsSheet');
-    }
+  findPreviousHash(column: number, row: number): CellsTextHash | undefined {
+    if (!this.boundsNoFormatting) return;
     let hash = this.getCellsHash(column, row);
-    while (!hash && column >= bounds.left) {
+    while (!hash && column >= this.boundsNoFormatting.x) {
       column--;
       hash = this.getCellsHash(column, row);
     }
@@ -177,13 +151,10 @@ export class CellsLabels extends Container {
 
   // used for clipping to find neighboring hash
   // todo: use the new overflowRight to make this more efficient
-  findNextHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
-    bounds = bounds ?? grid.getGridBounds(this.cellsSheet.sheet.id, true);
-    if (!bounds) {
-      throw new Error('Expected bounds to be defined in findNextHash of CellsSheet');
-    }
+  findNextHash(column: number, row: number): CellsTextHash | undefined {
+    if (!this.boundsNoFormatting) return;
     let hash = this.getCellsHash(column, row);
-    while (!hash && column <= bounds.right) {
+    while (!hash && column <= this.boundsNoFormatting.x + this.boundsNoFormatting.width) {
       column++;
       hash = this.getCellsHash(column, row);
     }
@@ -200,13 +171,6 @@ export class CellsLabels extends Container {
     hashes.forEach((hash) => hash.createLabels());
     hashes.forEach((hash) => hash.overflowClip());
     hashes.forEach((hash) => hash.updateBuffers(false));
-  }
-
-  showLabel(x: number, y: number, show: boolean) {
-    const hash = this.getCellsHash(x, y);
-    if (hash) {
-      hash.showLabel(x, y, show);
-    }
   }
 
   // adjust hashes after a column/row resize
@@ -263,56 +227,52 @@ export class CellsLabels extends Container {
     return true;
   }
 
-  private findNextDirtyHash(onlyVisible: boolean): { hash: CellsTextHash; visible: boolean } | undefined {
-    const dirtyHashes = this.cellsTextHashContainer.children.filter((hash) => hash.dirty || hash.dirtyBuffers);
-    const viewportVisibleBounds = pixiApp.viewport.getVisibleBounds();
-    let visible: CellsTextHash[] = [];
-    let notVisible: CellsTextHash[] = [];
-    for (const hash of dirtyHashes) {
-      if (hash.viewRectangle.intersects(viewportVisibleBounds)) {
-        visible.push(hash);
-      } else {
-        notVisible.push(hash);
-      }
-    }
-
-    // if hashes are visible, sort them by y and return the first one
-    if (visible.length) {
-      visible.sort((a, b) => a.hashY - b.hashY);
-      return { hash: visible[0], visible: true };
-    }
-
-    // if onlyVisible then we're done because we're not going to work on offscreen hashes yet
-    if (onlyVisible || notVisible.length === 0) return;
-
-    // otherwise sort notVisible by distance from viewport center
-    const viewportCenter = pixiApp.viewport.center;
-    notVisible.sort((a, b) => {
-      const aCenter = {
-        x: a.viewRectangle.left + a.viewRectangle.width / 2,
-        y: a.viewRectangle.top + a.viewRectangle.height / 2,
-      };
-      const bCenter = {
-        x: b.viewRectangle.left + b.viewRectangle.width / 2,
-        y: b.viewRectangle.top + b.viewRectangle.height / 2,
-      };
-      const aDistance = Math.pow(viewportCenter.x - aCenter.x, 2) + Math.pow(viewportCenter.y - aCenter.y, 2);
-      const bDistance = Math.pow(viewportCenter.x - bCenter.x, 2) + Math.pow(viewportCenter.y - bCenter.y, 2);
-      return aDistance - bDistance;
-    });
-    return { hash: notVisible[0], visible: false };
+  private findNextDirtyHash(): { hash: CellsTextHash; visible: boolean } | undefined {
+    const dirtyHashes = Array.from(this.cellsTextHash.values()).filter((hash) => hash.dirty || hash.dirtyBuffers);
+    if (!dirtyHashes.length) return;
+    return { hash: dirtyHashes[0], visible: true };
+    // const viewportVisibleBounds = pixiApp.viewport.getVisibleBounds();
+    // let visible: CellsTextHash[] = [];
+    // let notVisible: CellsTextHash[] = [];
+    // for (const hash of dirtyHashes) {
+    //   if (hash.viewRectangle.intersects(viewportVisibleBounds)) {
+    //     visible.push(hash);
+    //   } else {
+    //     notVisible.push(hash);
+    //   }
+    // }
+    // // if hashes are visible, sort them by y and return the first one
+    // if (visible.length) {
+    //   visible.sort((a, b) => a.hashY - b.hashY);
+    //   return { hash: visible[0], visible: true };
+    // }
+    // // if onlyVisible then we're done because we're not going to work on offscreen hashes yet
+    // if (notVisible.length === 0) return;
+    // // otherwise sort notVisible by distance from viewport center
+    // const viewportCenter = pixiApp.viewport.center;
+    // notVisible.sort((a, b) => {
+    //   const aCenter = {
+    //     x: a.viewRectangle.left + a.viewRectangle.width / 2,
+    //     y: a.viewRectangle.top + a.viewRectangle.height / 2,
+    //   };
+    //   const bCenter = {
+    //     x: b.viewRectangle.left + b.viewRectangle.width / 2,
+    //     y: b.viewRectangle.top + b.viewRectangle.height / 2,
+    //   };
+    //   const aDistance = Math.pow(viewportCenter.x - aCenter.x, 2) + Math.pow(viewportCenter.y - aCenter.y, 2);
+    //   const bDistance = Math.pow(viewportCenter.x - bCenter.x, 2) + Math.pow(viewportCenter.y - bCenter.y, 2);
+    //   return aDistance - bDistance;
+    // });
+    // return { hash: notVisible[0], visible: false };
+    // return;
   }
 
-  update(userIsActive: boolean): boolean | 'headings' {
+  update(): boolean | 'headings' {
     if (this.updateHeadings()) return 'headings';
 
-    const next = this.findNextDirtyHash(userIsActive);
+    const next = this.findNextDirtyHash();
     if (next) {
       next.hash.update();
-      if (next.visible) {
-        next.hash.show();
-        pixiApp.setViewportDirty();
-      }
       return true;
     }
 
@@ -363,48 +323,5 @@ export class CellsLabels extends Container {
         cellsHash.dirty = true;
       }
     }
-  }
-
-  /*************
-   * Preloader *
-   *************/
-
-  // preloads hashes by creating labels, and then overflow clipping and updating buffers
-  private preloadTick = (time?: number): void => {
-    if (!this.hashesToCreate.length && !this.hashesToLoad.length) {
-      if (!this.preloaderResolve) throw new Error('Expected resolveTick to be defined in preloadTick');
-      this.preloaderResolve();
-    } else {
-      time = time ?? performance.now();
-      debugTimeReset();
-      if (this.hashesToCreate.length) {
-        const hash = this.hashesToCreate.pop()!;
-        hash.createLabels();
-      } else if (this.hashesToLoad.length) {
-        const hash = this.hashesToLoad.pop()!;
-        hash.overflowClip();
-        hash.updateBuffers(false);
-      }
-      if (performance.now() - time < PRELOADER_MAXIMUM_FRAME_TIME) {
-        this.preloadTick(time);
-      } else {
-        // we expect this to run longer than MINIMUM_FRAME_TIME
-        debugTimeCheck('preloadTick', PRELOADER_MAXIMUM_FRAME_TIME * 1.5);
-        setTimeout(this.preloadTick);
-      }
-    }
-  };
-
-  preload(): Promise<void> {
-    return new Promise((resolve) => {
-      if (!this.createHashes()) {
-        resolve();
-      } else {
-        this.preloaderResolve = resolve;
-        this.hashesToCreate = Array.from(this.cellsSheet.cellsLabels.cellsTextHash.values());
-        this.hashesToLoad = Array.from(this.cellsSheet.cellsLabels.cellsTextHash.values());
-        this.preloadTick();
-      }
-    });
   }
 }

@@ -14,3 +14,16 @@ export interface CoreGridBounds {
   id: number;
   bounds: { x: number; y: number; width: number; height: number };
 }
+
+export type SheetMetadata = {
+  offsets: string;
+  bounds?: { x: number; y: number; width: number; height: number };
+  boundsNoFormatting?: { x: number; y: number; width: number; height: number };
+};
+
+export type GridMetadata = Record<string, SheetMetadata>;
+
+export interface CoreReady {
+  type: 'ready';
+  metadata: GridMetadata;
+}

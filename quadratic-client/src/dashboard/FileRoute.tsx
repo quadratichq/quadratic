@@ -5,7 +5,7 @@ import { isEmbed } from '@/helpers/isEmbed';
 import { firstRustFileVersion } from '@/schemas/validateAndUpgradeLegacyGridFile';
 import { versionGTE } from '@/schemas/versioning';
 import { Button } from '@/shadcn/ui/button';
-import { coreWebWorker } from '@/web-workers/coreWebWorker/core';
+import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';

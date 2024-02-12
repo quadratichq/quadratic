@@ -5,8 +5,10 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import { renderWebWorker } from '../renderWebWorker/render';
+import { metadata } from '@/grid/controller/metadata';
+import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import { CoreClientLoad, CoreClientMessage } from './coreClientMessages';
+import { CoreReady } from './coreMessages';
 
 class CoreWebWorker {
   private worker?: Worker;
@@ -18,6 +20,7 @@ class CoreWebWorker {
   async load(contents: string, lastSequenceNum: number) {
     this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
+    this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`);
 
     const channel = new MessageChannel();
 
@@ -42,7 +45,8 @@ class CoreWebWorker {
     });
   }
 
-  private ready() {
+  private ready(coreReady: CoreReady) {
+    metadata.load(coreReady.metadata);
     this.loaded = true;
     this.waitingForLoad.forEach((resolve) => resolve());
     this.waitingForLoad = [];
@@ -51,7 +55,7 @@ class CoreWebWorker {
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
     switch (e.data.type) {
       case 'ready':
-        this.ready();
+        this.ready(e.data as CoreReady);
         break;
 
       default:

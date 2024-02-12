@@ -9,6 +9,7 @@ import { debugWebWorkers } from '@/debugFlags';
 import init, { GridController, hello } from '@/quadratic-core/quadratic_core';
 import { JsRenderCell } from '@/quadratic-core/types';
 import { CoreClientLoad } from '../coreClientMessages';
+import { GridMetadata } from '../coreMessages';
 import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
@@ -25,9 +26,18 @@ class Core {
     this.gridController = GridController.newFromFile(data.contents, data.lastSequenceNum);
     if (debugWebWorkers) console.log('[core] GridController loaded');
 
-    const sheetIds = JSON.parse(this.gridController.getSheetIds());
-    coreClient.init(sheetIds);
-    coreRender.init(sheetIds, renderPort);
+    const sheetIds = this.getSheetIds();
+    const metadata: GridMetadata = {};
+    sheetIds.forEach((sheetId) => {
+      metadata[sheetId] = {
+        offsets: this.getSheetOffsets(sheetId),
+        bounds: this.getGridBounds({ sheetId, ignoreFormatting: false }),
+        boundsNoFormatting: this.getGridBounds({ sheetId, ignoreFormatting: true }),
+      };
+    });
+    console.log(metadata);
+    coreClient.init(metadata);
+    coreRender.init(metadata, renderPort);
   }
 
   // Gets the bounds of a sheet.
@@ -64,6 +74,25 @@ class Core {
       pointsToRect(data.x, data.y, data.width, data.height)
     );
     return JSON.parse(cells);
+  }
+
+  // Gets the SheetIds for the Grid.
+  getSheetIds(): string[] {
+    if (!this.gridController) {
+      console.warn('Expected gridController to be defined in Core.getSheetIds');
+      return [];
+    }
+
+    return JSON.parse(this.gridController.getSheetIds());
+  }
+
+  getSheetOffsets(sheetId: string): string {
+    if (!this.gridController) {
+      console.warn('Expected gridController to be defined in Core.getGridOffsets');
+      return '';
+    }
+
+    return this.gridController.exportOffsets(sheetId);
   }
 }
 

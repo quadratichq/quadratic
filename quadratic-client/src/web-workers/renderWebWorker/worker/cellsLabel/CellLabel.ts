@@ -7,19 +7,21 @@
  * populates the buffers for the relevant LabelMeshes based on this data.
  */
 
+import { Bounds } from '@/grid/sheet/Bounds';
+import { Coordinate } from '@/gridGL/types/size';
+import { convertColorStringToTint, convertTintToArray } from '@/helpers/convertColor';
+import { CellAlign, JsRenderCell } from '@/quadratic-core/types';
+import { CellAlignment } from '@/schemas';
 import { colors } from '@/theme/colors';
 import { removeItems } from '@pixi/utils';
-import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
-import { Bounds } from '../../../grid/sheet/Bounds';
-import { convertColorStringToTint, convertTintToArray } from '../../../helpers/convertColor';
-import { CellAlign, JsRenderCell } from '../../../quadratic-core/types';
-import { CellAlignment } from '../../../schemas';
-import { Coordinate } from '../../types/size';
+import { Point, Rectangle } from 'pixi.js';
+import { RenderBitmapChar } from '../../renderBitmapFonts';
+import { CellsLabels } from './CellsLabels';
 import { LabelMeshes } from './LabelMeshes';
 import { extractCharCode, splitTextToCharacters } from './bitmapTextUtils';
 
 interface CharRenderData {
-  texture: Texture;
+  charData: RenderBitmapChar;
   labelMeshId: string;
   line: number;
   charCode: number;
@@ -38,7 +40,10 @@ const CHART_TEXT = ' CHART';
 // todo: make this part of the cell's style data structure
 const fontSize = 14;
 
-export class CellLabel extends Container {
+export class CellLabel {
+  private cellsLabels: CellsLabels;
+  position = new Point();
+
   text: string;
 
   // created in updateFontName()
@@ -85,8 +90,8 @@ export class CellLabel extends Container {
     }
   }
 
-  constructor(cell: JsRenderCell, screenRectangle: Rectangle) {
-    super();
+  constructor(cellsLabels: CellsLabels, cell: JsRenderCell, screenRectangle: Rectangle) {
+    this.cellsLabels = cellsLabels;
     this.text = this.getText(cell);
     this.fontSize = fontSize;
     this.roundPixels = true;
@@ -110,7 +115,6 @@ export class CellLabel extends Container {
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
-    this.position.set(screenRectangle.x, screenRectangle.y);
 
     this.bold = !!cell?.bold;
     this.italic = !!cell?.italic || isError || isChart;
@@ -198,10 +202,7 @@ export class CellLabel extends Container {
 
   /** Calculates the text glyphs and positions */
   public updateText(labelMeshes: LabelMeshes): void {
-    // visible is false when a cell is being edited
-    if (this.visible === false) return;
-
-    const data = BitmapFont.available[this.fontName];
+    const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateText');
     const pos = new Point();
     this.chars = [];
@@ -243,22 +244,22 @@ export class CellLabel extends Container {
       const charData = data.chars[charCode];
       if (!charData) continue;
 
-      const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.texture, !!this.tint);
+      const labelMeshId = labelMeshes.add(this.fontName, fontSize, charData.textureUid, !!this.tint);
       if (prevCharCode && charData.kerning[prevCharCode]) {
         pos.x += charData.kerning[prevCharCode];
       }
       const charRenderData: CharRenderData = {
         labelMeshId,
-        texture: charData.texture,
+        textureUid: charData.textureUid,
         line: line,
         charCode: charCode,
         prevSpaces: spaceCount,
         position: new Point(pos.x + charData.xOffset + this.letterSpacing / 2, pos.y + charData.yOffset),
       };
       this.chars.push(charRenderData);
-      lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.texture.orig.width);
+      lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.origWidth);
       pos.x += charData.xAdvance + this.letterSpacing;
-      maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.texture.height);
+      maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.textureHeight);
       prevCharCode = charCode;
       if (lastBreakPos !== -1 && maxWidth > 0 && pos.x > maxWidth) {
         ++spacesRemoved;
@@ -304,16 +305,12 @@ export class CellLabel extends Container {
     this.calculatePosition();
   }
 
-  /** Adds the glyphs to the CellsLabels container */
+  /** Adds the glyphs to the CellsLabels */
   updateLabelMesh(labelMeshes: LabelMeshes): Bounds {
     const bounds = new Bounds();
 
-    // visible is only used to hide a cell label when a cell is being edited
-    if (this.visible === false) {
-      return bounds;
-    }
-
-    const data = BitmapFont.available[this.fontName];
+    const data = this.cellsLabels.bitmapFonts[this.fontName];
+    if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
     for (let i = 0; i < this.chars.length; i++) {
@@ -326,8 +323,7 @@ export class CellLabel extends Container {
       const xPos = this.position.x + offset * scale + OPEN_SANS_FIX.x;
       const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
       const labelMesh = labelMeshes.get(char.labelMeshId);
-      const texture = char.texture;
-      const textureFrame = texture.frame;
+      const textureFrame = char.frame;
       const textureUvs = texture._uvs;
       const buffer = labelMesh.getBuffer();
 

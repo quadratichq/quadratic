@@ -11,6 +11,7 @@ pub mod clipboard;
 pub mod code;
 pub mod export;
 pub mod formatting;
+pub mod grid_metadata;
 pub mod import;
 pub mod render;
 pub mod search;

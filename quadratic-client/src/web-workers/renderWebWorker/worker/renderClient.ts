@@ -6,8 +6,10 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
+import { RenderBitmapFonts } from '../renderBitmapFonts';
 import { RenderClientMessage } from '../renderClientMessages';
 import { renderCore } from './renderCore';
+import { renderText } from './renderText';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
@@ -21,7 +23,7 @@ class RenderClient {
 
     switch (e.data.type) {
       case 'load':
-        this.load(e.ports[0]);
+        this.load(e.data.bitmapFonts, e.ports[0]);
         break;
 
       default:
@@ -37,7 +39,8 @@ class RenderClient {
    * Client response *
    *******************/
 
-  load(port: MessagePort) {
+  load(bitmapFonts: RenderBitmapFonts, port: MessagePort) {
+    renderText.bitmapFonts = bitmapFonts;
     renderCore.init(port);
   }
 }

@@ -8,10 +8,7 @@
  */
 
 import { BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program, Renderer } from 'pixi.js';
-import { debugShowCellHashesInfo } from '../../../debugFlags';
 import { LabelMesh } from './LabelMesh';
-import * as shaderNoTint from './cellLabelShader';
-import * as shaderTint from './cellLabelShaderTint';
 
 export class LabelMeshEntry extends Mesh {
   private labelMesh: LabelMesh;

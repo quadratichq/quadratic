@@ -7,12 +7,8 @@
 
 import { debugWebWorkers } from '@/debugFlags';
 import { JsRenderCell } from '@/quadratic-core/types';
-import { CoreGridBounds, CoreRequestGridBounds } from '@/web-workers/coreWebWorker/coreMessages';
-import {
-  CoreRenderCells,
-  CoreRenderLoad,
-  CoreRequestRenderCells,
-} from '@/web-workers/coreWebWorker/coreRenderMessages';
+import { CoreGridBounds, CoreReady, CoreRequestGridBounds } from '@/web-workers/coreWebWorker/coreMessages';
+import { CoreRenderCells, CoreRequestRenderCells } from '@/web-workers/coreWebWorker/coreRenderMessages';
 import { RenderCoreMessage } from '../renderCoreMessages';
 import { renderText } from './renderText';
 
@@ -29,8 +25,8 @@ class RenderCore {
   private handleMessage = (e: MessageEvent<RenderCoreMessage>) => {
     if (debugWebWorkers) console.log(`[renderCore] received ${e.data.type}`);
     switch (e.data.type) {
-      case 'load':
-        this.renderLoad(e.data as CoreRenderLoad);
+      case 'ready':
+        this.renderLoad(e.data as CoreReady);
         break;
 
       case 'renderCells':
@@ -100,8 +96,8 @@ class RenderCore {
    * Core API responses *
    **********************/
 
-  private renderLoad(event: CoreRenderLoad) {
-    renderText.setSheetIds(event.sheetIds);
+  private renderLoad(event: CoreReady) {
+    renderText.init(event.metadata);
   }
 
   private renderCells(event: CoreRenderCells) {

@@ -13,6 +13,19 @@ impl GridController {
         sheet.offsets.clone()
     }
 
+    #[wasm_bindgen(js_name = "exportOffsets")]
+    pub fn js_export_offsets(&self, sheet_id: String) -> Result<String, JsValue> {
+        if let Some(sheet) = self.try_sheet_from_string_id(sheet_id) {
+            if let Ok(offsets) = serde_json::to_string(&sheet.offsets) {
+                Ok(offsets)
+            } else {
+                Err(JsValue::from_str("Failed to serialize offsets"))
+            }
+        } else {
+            Err(JsValue::from_str("Sheet not found"))
+        }
+    }
+
     /// Commits a resize operation. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "commitOffsetsResize")]
     pub fn js_commit_resize(

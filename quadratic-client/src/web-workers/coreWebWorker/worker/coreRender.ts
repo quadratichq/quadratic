@@ -6,21 +6,21 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import { CoreGridBounds, CoreRequestGridBounds } from '../coreMessages';
-import { CoreRenderCells, CoreRenderLoad, CoreRenderMessage, CoreRequestRenderCells } from '../coreRenderMessages';
+import { CoreGridBounds, CoreReady, CoreRequestGridBounds, GridMetadata } from '../coreMessages';
+import { CoreRenderCells, CoreRenderMessage, CoreRequestRenderCells } from '../coreRenderMessages';
 import { core } from './core';
 
 class CoreRender {
   private coreRenderPort?: MessagePort;
 
-  init(sheetIds: string[], renderPort: MessagePort) {
+  init(metadata: GridMetadata, renderPort: MessagePort) {
     this.coreRenderPort = renderPort;
     this.coreRenderPort.onmessage = this.handleMessage;
-    this.coreRenderPort.postMessage({ type: 'load', sheetIds } as CoreRenderLoad);
+    this.coreRenderPort.postMessage({ type: 'ready', metadata } as CoreReady);
     if (debugWebWorkers) console.log('[coreRender] initialized');
   }
 
-  private handleMessage(e: MessageEvent<CoreRenderMessage>) {
+  private handleMessage = (e: MessageEvent<CoreRenderMessage>) => {
     if (debugWebWorkers) console.log(`[coreRender] received message ${e.data.type}`);
 
     switch (e.data.type) {
@@ -35,7 +35,7 @@ class CoreRender {
       default:
         console.warn('[coreRender] Unhandled message type', e.data.type);
     }
-  }
+  };
 
   getRenderCells(data: CoreRequestRenderCells) {
     if (!this.coreRenderPort) {
@@ -44,7 +44,7 @@ class CoreRender {
     }
 
     const cells = core.getRenderCells(data);
-    this.coreRenderPort.postMessage({ type: 'renderCells', cells } as CoreRenderCells);
+    this.coreRenderPort.postMessage({ type: 'renderCells', cells, id: data.id } as CoreRenderCells);
   }
 
   requestGridBounds(data: CoreRequestGridBounds) {

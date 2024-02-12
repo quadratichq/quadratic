@@ -2,7 +2,7 @@
  * Messages between Core web worker and main thread (Client).
  */
 
-import { CoreGridBounds, CoreRequestGridBounds } from './coreMessages';
+import { CoreGridBounds, CoreReady, CoreRequestGridBounds } from './coreMessages';
 
 export interface CoreClientLoad {
   type: 'load';
@@ -10,9 +10,4 @@ export interface CoreClientLoad {
   lastSequenceNum: number;
 }
 
-export interface CoreClientReady {
-  type: 'ready';
-  sheetIds: string[];
-}
-
-export type CoreClientMessage = CoreClientLoad | CoreClientReady | CoreRequestGridBounds | CoreGridBounds;
+export type CoreClientMessage = CoreClientLoad | CoreRequestGridBounds | CoreGridBounds | CoreReady;

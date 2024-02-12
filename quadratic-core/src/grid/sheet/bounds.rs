@@ -1,5 +1,5 @@
 use crate::{
-    grid::{Column, GridBounds},
+    grid::{bounds::BoundsRect, Column, GridBounds},
     CellValue, Pos,
 };
 
@@ -255,6 +255,16 @@ impl Sheet {
                 y
             }
         }
+    }
+
+    /// Returns the bounds of the sheet.
+    ///
+    /// Returns `(data_bounds, format_bounds)`.
+    pub fn to_bounds_rects(&self) -> (Option<BoundsRect>, Option<BoundsRect>) {
+        (
+            self.data_bounds.to_bounds_rect(),
+            self.format_bounds.to_bounds_rect(),
+        )
     }
 }
 

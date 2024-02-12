@@ -5,6 +5,7 @@ members = [
     "quadratic-core",
     "quadratic-files",
     "quadratic-multiplayer",
+    "quadratic-grid-metadata",
     "quadratic-rust-shared",
 ]
 

@@ -2,6 +2,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Pos, Rect};
 
+pub struct BoundsRect {
+    pub x: i64,
+    pub y: i64,
+    pub width: u32,
+    pub height: u32,
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(tag = "type", rename_all = "camelCase")]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -19,6 +26,16 @@ impl From<Rect> for GridBounds {
         GridBounds::NonEmpty(rect)
     }
 }
+
+impl From<GridBounds> for Option<Rect> {
+    fn from(bounds: GridBounds) -> Self {
+        match bounds {
+            GridBounds::Empty => None,
+            GridBounds::NonEmpty(rect) => Some(rect),
+        }
+    }
+}
+
 impl GridBounds {
     pub fn is_empty(&self) -> bool {
         *self == GridBounds::Empty
@@ -40,6 +57,17 @@ impl GridBounds {
                 a.extend_to(b.max);
                 GridBounds::NonEmpty(a)
             }
+        }
+    }
+    pub fn to_bounds_rect(&self) -> Option<BoundsRect> {
+        match self {
+            GridBounds::Empty => None,
+            GridBounds::NonEmpty(rect) => Some(BoundsRect {
+                x: rect.min.x,
+                y: rect.min.y,
+                width: rect.width(),
+                height: rect.height(),
+            }),
         }
     }
 }

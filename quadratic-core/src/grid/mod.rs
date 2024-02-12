@@ -1,4 +1,6 @@
-use crate::CellValue;
+use std::collections::HashMap;
+
+use crate::{sheet_offsets::SheetOffsets, CellValue, Rect};
 #[cfg(test)]
 use crate::{Array, Pos};
 use block::{Block, BlockContent, SameValue};
@@ -37,6 +39,12 @@ pub mod series;
 pub mod sheet;
 pub mod sheets;
 
+// based on grid_metadata.rs in quadratic-grid-metadata (without the wasm_bindgen)
+#[derive(Serialize, Deserialize)]
+pub struct GridMetaData {
+    metadata: HashMap<String, (SheetOffsets, Option<Rect>, Option<Rect>)>,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct Grid {
@@ -54,6 +62,17 @@ impl Grid {
         ret
     }
 
+    /// Exports all grid offsets for use by the client and workers.
+    pub fn export_metadata(&self) -> String {
+        let metadata = self
+            .sheets
+            .iter()
+            .map(|sheet| (sheet.id.to_string(), sheet.metadata()))
+            .collect::<HashMap<String, (SheetOffsets, Option<Rect>, Option<Rect>)>>();
+        let grid_offsets = GridMetaData { metadata };
+        serde_json::to_string(&grid_offsets).unwrap()
+    }
+
     #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();
@@ -64,5 +83,22 @@ impl Grid {
             let _ = sheet.set_cell_value(Pos { x, y }, value.clone());
         }
         ret
+    }
+}
+
+#[cfg(test)]
+mod test {
+    // use super::*;
+
+    #[test]
+    fn grid_offsets() {
+        // let mut grid = Grid::new();
+        // let sheet = &mut grid.sheets_mut()[0];
+        // sheet.id = SheetId::test();
+        // let offsets = grid.grid_offsets();
+        // assert_eq!(
+        //     offsets,
+        //     r#"{"00000000-0000-0000-0000-000000000000":{"column_widths":{"default":100.0,"sizes":{}},"row_heights":{"default":20.0,"sizes":{}},"thumbnail":[13,36]}}"#
+        // );
     }
 }

@@ -3,7 +3,7 @@ import { BitmapFont, Loader } from 'pixi.js';
 import { createBorderTypes } from './dashedTextures';
 
 const intervalToCheckBitmapFonts = 100;
-const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
+export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
 function loadFont(fontName: string): void {
   const font = new FontFaceObserver(fontName);

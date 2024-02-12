@@ -10,11 +10,11 @@
  */
 
 import { debugShowHashUpdates } from '@/debugFlags';
-import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import { Bounds } from '../../../grid/sheet/Bounds';
-import { Sheet } from '../../../grid/sheet/Sheet';
-import { JsRenderCell } from '../../../quadratic-core/types';
-import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
+import { Bounds } from '@/grid/sheet/Bounds';
+import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
+import { JsRenderCell } from '@/quadratic-core/types';
+import { Container, Rectangle } from 'pixi.js';
+import { renderCore } from '../renderCore';
 import { CellLabel } from './CellLabel';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshes } from './LabelMeshes';
@@ -45,7 +45,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   viewRectangle: Rectangle;
 
   // rebuild CellsTextHash
-  dirty = false;
+  dirty = true;
 
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
@@ -62,16 +62,12 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.labelMeshes = this.addChild(new LabelMeshes());
     this.viewBounds = new Bounds();
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    const start = cellsLabels.sheet.getCellOffsets(this.AABB.left, this.AABB.top);
-    const end = cellsLabels.sheet.getCellOffsets(this.AABB.right, this.AABB.bottom);
+    const start = this.cellsLabels.getCellOffsets(this.AABB.left, this.AABB.top);
+    const end = this.cellsLabels.getCellOffsets(this.AABB.right, this.AABB.bottom);
     this.rawViewRectangle = new Rectangle(start.left, start.top, end.right - start.left, end.bottom - start.top);
     this.viewRectangle = this.rawViewRectangle.clone();
     this.hashX = x;
     this.hashY = y;
-  }
-
-  get sheet(): Sheet {
-    return this.cellsLabels.sheet;
   }
 
   // key used to find individual cell labels
@@ -79,8 +75,8 @@ export class CellsTextHash extends Container<LabelMeshes> {
     return `${cell.x},${cell.y}`;
   }
 
-  findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
-    return this.cellsLabels.findPreviousHash(column, row, bounds);
+  findPreviousHash(column: number, row: number): CellsTextHash | undefined {
+    return this.cellsLabels.findPreviousHash(column, row);
   }
 
   getLabel(column: number, row: number): CellLabel | undefined {
@@ -95,30 +91,30 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.visible = false;
   }
 
-  // overrides container's render function
-  render(renderer: Renderer) {
-    if (this.visible && this.worldAlpha > 0 && this.renderable) {
-      this.labelMeshes.render(renderer);
-    }
-  }
-
   private createLabel(cell: JsRenderCell): CellLabel {
-    const rectangle = this.sheet.getCellOffsets(Number(cell.x), Number(cell.y));
+    const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
     const cellLabel = new CellLabel(cell, rectangle);
     this.labels.set(this.getKey(cell), cellLabel);
     return cellLabel;
   }
 
-  createLabels(): void {
+  async createLabels() {
     if (debugShowHashUpdates) console.log(`[CellsTextHash] createLabels for ${this.hashX}, ${this.hashY}`);
     this.labels = new Map();
-    const cells = this.sheet.getRenderCells(this.AABB);
+    const cells = await renderCore.getRenderCells(
+      this.cellsLabels.sheetId,
+      this.AABB.x,
+      this.AABB.y,
+      this.AABB.width,
+      this.AABB.height
+    );
+    console.log(cells);
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
-    console.log(`${this.hashX}, ${this.hashY}`, JSON.stringify(Array.from(this.labels.values())));
   }
 
-  update(): boolean {
+  async update(): Promise<boolean> {
+    console.log('updating in cellsTextHash...');
     if (this.dirty) {
       this.createLabels();
       this.overflowClip();
@@ -143,7 +139,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   overflowClip(): void {
     // used to ensure we don't check for clipping beyond the end of the sheet's data bounds
-    const bounds = this.sheet.getGridBounds(true);
+    const bounds = this.cellsLabels.boundsNoFormatting;
 
     // empty when there are no cells
     if (!bounds) return;
@@ -152,16 +148,16 @@ export class CellsTextHash extends Container<LabelMeshes> {
     this.labels.forEach((cellLabel) => this.checkClip(bounds, cellLabel));
   }
 
-  private checkClip(bounds: Rectangle, label: CellLabel): void {
+  private checkClip(bounds: { x: number; y: number; width: number; height: number }, label: CellLabel): void {
     if (debugShowHashUpdates) console.log(`[CellsTextHash] checkClip for ${this.hashX}, ${this.hashY}`);
     let column = label.location.x - 1;
     const row = label.location.y;
     let currentHash: CellsTextHash | undefined = this;
 
-    while (column >= bounds.left) {
+    while (column >= bounds.x) {
       if (column < currentHash.AABB.x) {
         // find hash to the left of current hash (skip over empty hashes)
-        currentHash = this.findPreviousHash(column, row, bounds);
+        currentHash = this.findPreviousHash(column, row);
         if (!currentHash) return;
       }
       const neighborLabel = currentHash.getLabel(column, row);
@@ -174,10 +170,10 @@ export class CellsTextHash extends Container<LabelMeshes> {
     }
 
     column = label.location.x + 1;
-    while (column <= bounds.right) {
+    while (column <= bounds.x + bounds.width) {
       if (column > currentHash.AABB.right) {
         // find hash to the right of current hash (skip over empty hashes)
-        currentHash = this.cellsLabels.findNextHash(column, row, bounds);
+        currentHash = this.cellsLabels.findNextHash(column, row);
         if (!currentHash) return;
       }
       const neighborLabel = currentHash.getLabel(column, row);
@@ -272,13 +268,6 @@ export class CellsTextHash extends Container<LabelMeshes> {
     return changed;
   }
 
-  drawDebugBox(g: Graphics) {
-    const screen = this.sheet.getScreenRectangle(this.AABB.left, this.AABB.top, this.AABB.width, this.AABB.height);
-    g.beginFill(this.debugColor, 0.25);
-    g.drawShape(screen);
-    g.endFill();
-  }
-
   getCellsContentMaxWidth(column: number): number {
     let max = 0;
     this.labels.forEach((label) => {
@@ -287,13 +276,5 @@ export class CellsTextHash extends Container<LabelMeshes> {
       }
     });
     return max;
-  }
-
-  showLabel(x: number, y: number, show: boolean) {
-    const label = this.getLabel(x, y);
-    if (label && label.visible !== show) {
-      label.visible = show;
-      this.dirtyBuffers = true;
-    }
   }
 }

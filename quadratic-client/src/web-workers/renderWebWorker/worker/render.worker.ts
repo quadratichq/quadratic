@@ -7,9 +7,7 @@
  * - renderClient.ts: the interface between this web worker and the main thread
  * - renderCore.ts: the interface between this web worker and the core web worker
  */
-
 import { debugWebWorkers } from '@/debugFlags';
 import './renderClient';
-import './renderCore';
 
 if (debugWebWorkers) console.log('[render.worker] created');
