@@ -189,6 +189,7 @@ async def run_python(code):
 
         # return array_output if output is an array
         array_output = None
+        output_type = type(output_value).__name__
         output_size = None
 
         # TODO(ddimaria): figure out if we need to covert back to a list for array_output
@@ -286,6 +287,7 @@ async def run_python(code):
         return {
             "output": output_value,
             "array_output": typed_array_output,
+            "output_type": output_type,
             "output_size": output_size,
             "cells_accessed": cells_accessed,
             "std_out": sout.getvalue(),
