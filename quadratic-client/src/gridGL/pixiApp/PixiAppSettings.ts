@@ -108,6 +108,10 @@ class PixiAppSettings {
     return this.settings.showA1Notation;
   }
 
+  get showCodePeek(): boolean {
+    return !this.settings.presentationMode && this.editorInteractionState.showCodeEditor;
+  }
+
   setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
     if (dirty.cursor) {
       pixiApp.cursor.dirty = true;

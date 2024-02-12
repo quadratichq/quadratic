@@ -134,7 +134,10 @@ fn handle_response(response: &Response) -> Result<()> {
         StatusCode::FORBIDDEN => Err(SharedError::QuadraticApi("Forbidden".into())),
         StatusCode::UNAUTHORIZED => Err(SharedError::QuadraticApi("Unauthorized".into())),
         StatusCode::NOT_FOUND => Err(SharedError::QuadraticApi("File not found".into())),
-        _ => Err(SharedError::QuadraticApi("Unexpected response".into())),
+        _ => Err(SharedError::QuadraticApi(format!(
+            "Unexpected response: {:?}",
+            response
+        ))),
     }
 }
 

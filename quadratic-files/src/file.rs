@@ -233,7 +233,10 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
     state.stats.lock().await.files_to_process_in_pubsub = files.len() as u64;
 
     for file_id in files.iter() {
-        process_queue_for_room(state, file_id, active_channels).await?;
+        // TODO(ddimaria): instead of logging the error, move the file to a dead letter queue
+        if let Err(error) = process_queue_for_room(state, file_id, active_channels).await {
+            tracing::error!("Error processing file {file_id}: {error}");
+        };
     }
 
     Ok(())
