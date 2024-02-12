@@ -1,10 +1,5 @@
-import asyncio
-import inspect
-import itertools
 import operator
-import os
 import re
-import sys
 import traceback
 from contextlib import redirect_stdout
 from decimal import Decimal, DecimalException
@@ -12,12 +7,15 @@ from io import StringIO
 
 import getCellsDB
 import micropip
-import numpy as np
 import pandas as pd
 import pyodide
 
+from quadratic_py import code_trace
+from quadratic_py import plotly_patch
+
 # todo separate this file out into a Python Package
 # https://pyodide.org/en/stable/usage/loading-custom-python-code.html
+
 
 def attempt_fix_await(code):
     # Insert a "await" keyword between known async functions to improve the UX
@@ -149,34 +147,8 @@ def ensure_not_cell(item):
         return [ensure_not_cell(x) for x in item]
     return not_cell(item)
 
-def _get_user_frames() -> list[inspect.FrameInfo] | None:
-    rev_frames = reversed(inspect.stack())
-    try:
-        rev_frames = itertools.dropwhile(
-            lambda frame: not ("/_pyodide/" in frame.filename and frame.function == "eval_code_async"),
-            rev_frames,
-        )
-        rev_frames = itertools.dropwhile(
-            lambda frame: frame.filename != "<exec>", rev_frames
-        )
-        rev_frames = itertools.takewhile(
-            lambda frame: frame.filename == "<exec>", rev_frames
-        )
 
-        return list(reversed(list(rev_frames)))
-    except:
-        return None
-
-def _line_number_from_traceback() -> int:
-    cl, exc, tb = sys.exc_info()
-    line_number = traceback.extract_tb(tb)[-1].lineno
-    return line_number
-
-def _get_return_line(code: str) -> int:
-    code = code.rstrip()
-    return code.count("\n") + 1
-
-def _error_result(
+def error_result(
     error: Exception, code: str, cells_accessed: list[list], sout: StringIO, line_number: int,
 ) -> dict:
     error_class = error.__class__.__name__
@@ -194,65 +166,6 @@ def _error_result(
         "formatted_code": code,
     }
 
-class FigureDisplayError(Exception):
-    def __init__(self, message: str, *, source_line: int):
-        super().__init__(message)
-        self._source_line = source_line
-
-    @property
-    def source_line(self) -> int:
-        return self._source_line
-
-class _FigureHolder:
-    def __init__(self):
-        self._result = None
-        self._result_set_from_line = None
-
-    def set_result(self, figure) -> None:
-        user_call_frames = _get_user_frames()
-        current_result_set_from_line = (
-            user_call_frames[0].lineno if user_call_frames is not None else "unknown"
-        )
-
-        if self._result is not None:
-            raise FigureDisplayError(
-                f"Cannot produce multiple figures from a single cell. "
-                f"First produced on line {self._result_set_from_line}, "
-                f"then on {current_result_set_from_line}",
-                source_line=current_result_set_from_line
-            )
-
-        self._result = figure
-        self._result_set_from_line = current_result_set_from_line
-
-    @property
-    def result(self):
-        return self._result
-
-    @property
-    def result_set_from_line(self) -> int | None:
-        return self._result_set_from_line
-
-async def _intercept_plotly_html(code) -> _FigureHolder | None:
-    if "plotly" not in pyodide.code.find_imports(code):
-        return None
-
-    await micropip.install("plotly")
-    import plotly.io
-
-    # TODO: It would be nice if we could prevent the user from setting the default renderer
-    plotly.io.renderers.default = "browser"
-    figure_holder = _FigureHolder()
-
-    plotly.io._base_renderers.open_html_in_browser = _make_open_html_patch(figure_holder.set_result)
-
-    return figure_holder
-
-def _make_open_html_patch(figure_saver):
-    def open_html_in_browser(html, *args, **kwargs):
-        figure_saver(html)
-
-    return open_html_in_browser
 
 async def run_python(code):
     cells_accessed = []
@@ -275,6 +188,7 @@ async def run_python(code):
         # Fill DF
         x_offset = p0[0]
         y_offset = p0[1]
+
         for cell in cells:
             df.at[cell.y - y_offset, cell.x - x_offset] = cell.value
 
@@ -369,7 +283,7 @@ async def run_python(code):
     output_value = None
 
     try:
-        plotly_html = await _intercept_plotly_html(code)
+        plotly_html = await plotly_patch.intercept_plotly_html(code)
 
         # Capture STDOut to sout
         with redirect_stdout(sout):
@@ -380,12 +294,12 @@ async def run_python(code):
                 quiet_trailing_semicolon=False,
             )
 
-    except FigureDisplayError as err:
-        return _error_result(err, code, cells_accessed, sout, err.source_line)
+    except plotly_patch.FigureDisplayError as err:
+        return error_result(err, code, cells_accessed, sout, err.source_line)
     except SyntaxError as err:
-        return _error_result(err, code, cells_accessed, sout, err.lineno)
+        return error_result(err, code, cells_accessed, sout, err.lineno)
     except Exception as err:
-        return _error_result(err, code, cells_accessed, sout, _line_number_from_traceback())
+        return error_result(err, code, cells_accessed, sout, code_trace.line_number_from_traceback())
     else:
         # Successfully Created a Result
         await micropip.install(
@@ -443,7 +357,9 @@ async def run_python(code):
                     f"(displayed on line {plotly_html.result_set_from_line})"
                 )
 
-                return _error_result(err, code, cells_accessed, sout, _get_return_line(code))
+                return error_result(
+                    err, code, cells_accessed, sout, code_trace.get_return_line(code)
+                )
             else:
                 output_value = plotly_html.result
 

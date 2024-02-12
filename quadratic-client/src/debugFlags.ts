@@ -51,6 +51,9 @@ export const debugShowCellsHashBoxes = (debug && false) || url.has('cell-boxes')
 // shows CellsHash information
 export const debugShowCellHashesInfo = debug && false;
 
+// reports on rendering
+export const debugShowHashUpdates = debug && false;
+
 // --------
 // Misc.
 // --------
@@ -59,7 +62,7 @@ export const debugShowFileIO = debug && false;
 
 export const debugGridSettings = debug && false;
 
-export const debugShowMultiplayer = debug && true;
+export const debugShowMultiplayer = debug && false;
 
 export const debugDisableProxy = debug && false;
 

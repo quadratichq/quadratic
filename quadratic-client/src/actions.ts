@@ -128,6 +128,16 @@ export const pasteAction = {
   isAvailable: hasPermissionToEditFile,
 };
 
+export const pasteActionValues = {
+  label: 'Paste values only',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const pasteActionFormats = {
+  label: 'Paste formats only',
+  isAvailable: hasPermissionToEditFile,
+};
+
 export const undoAction = {
   label: 'Undo',
   isAvailable: hasPermissionToEditFile,
@@ -140,6 +150,21 @@ export const redoAction = {
 
 export const copyAction = {
   label: 'Copy',
+};
+
+export const rerunCellAction = {
+  label: 'Run this code cell',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const rerunAction = {
+  label: 'Run all code cells in the file',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const rerunSheetAction = {
+  label: 'Run all code cells in the current sheet',
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const downloadSelectionAsCsvAction = {

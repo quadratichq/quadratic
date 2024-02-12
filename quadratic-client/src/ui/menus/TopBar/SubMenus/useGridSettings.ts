@@ -10,6 +10,7 @@ export interface GridSettings {
   showCellTypeOutlines: boolean;
   showA1Notation: boolean;
   presentationMode: boolean;
+  showCodePeek: boolean;
 }
 
 export const defaultGridSettings: GridSettings = {
@@ -18,6 +19,7 @@ export const defaultGridSettings: GridSettings = {
   showGridLines: true,
   showCellTypeOutlines: true,
   showA1Notation: false,
+  showCodePeek: false,
   presentationMode: false,
 };
 
@@ -61,6 +63,7 @@ interface GridSettingsReturn {
   showGridLines: boolean;
   showCellTypeOutlines: boolean;
   showA1Notation: boolean;
+  showCodePeek: boolean;
   presentationMode: boolean;
   setShowGridAxes: (value: boolean) => void;
   setShowHeadings: (value: boolean) => void;
@@ -68,6 +71,7 @@ interface GridSettingsReturn {
   setShowCellTypeOutlines: (value: boolean) => void;
   setShowA1Notation: (value: boolean) => void;
   setPresentationMode: (value: boolean) => void;
+  setShowCodePeek: (value: boolean) => void;
 }
 
 export const useGridSettings = (): GridSettingsReturn => {
@@ -128,6 +132,16 @@ export const useGridSettings = (): GridSettingsReturn => {
     });
   };
 
+  const setShowCodePeek = (value: boolean) => {
+    setSettings((currentState) => {
+      if (value !== currentState.showCodePeek) {
+        mixpanel.track('[Grid].[Settings].setCodePeek', { value });
+        return { ...currentState, showCodePeek: value };
+      }
+      return currentState;
+    });
+  };
+
   return {
     ...settings,
     setShowGridAxes,
@@ -136,5 +150,6 @@ export const useGridSettings = (): GridSettingsReturn => {
     setShowCellTypeOutlines,
     setShowA1Notation,
     setPresentationMode,
+    setShowCodePeek,
   };
 };

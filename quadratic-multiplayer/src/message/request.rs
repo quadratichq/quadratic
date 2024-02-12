@@ -1,6 +1,6 @@
 //! Websocket Message Requests
 //!
-//! A central place for storing websocket messages requests.
+//! A central place for websocket messages requests.
 
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -23,6 +23,7 @@ pub(crate) enum MessageRequest {
         selection: String,
         cell_edit: CellEdit,
         viewport: String,
+        follow: Option<String>,
     },
     LeaveRoom {
         session_id: Uuid,

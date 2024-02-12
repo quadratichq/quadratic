@@ -12,33 +12,33 @@ export const COMPONENTS = {
     types: { color: "magenta", dark: "cyan", name: "Types", shortcut: "t" },
     db: {
         color: "gray",
-        dark: "white",
+        dark: "gray",
         name: "Database",
         shortcut: "d",
         hide: true,
     },
     npm: {
         color: "gray",
-        dark: "white",
+        dark: "gray",
         name: "npm install",
         shortcut: "n",
         hide: true,
     },
     rust: {
         color: "gray",
-        dark: "white",
+        dark: "gray",
         name: "rustup upgrade",
         shortcut: "r",
         hide: true,
     },
     postgres: {
         color: "gray",
-        dark: "white",
+        dark: "gray",
         name: "Postgres",
     },
     redis: {
         color: "gray",
-        dark: "white",
+        dark: "gray",
         name: "Redis",
     },
 };

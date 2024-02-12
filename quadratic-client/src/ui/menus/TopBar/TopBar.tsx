@@ -1,4 +1,5 @@
 import { SwitchApp } from '@/shadcn/ui/switch';
+import { Search } from '@/ui/components/Search';
 import { Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -39,6 +40,7 @@ export const TopBar = () => {
         borderWidth: '0 0 1px 0',
         borderStyle: 'solid',
         height: theme.spacing(6),
+        position: 'relative',
         ...(isElectron()
           ? {
               paddingLeft: '4.5rem',
@@ -89,6 +91,7 @@ export const TopBar = () => {
         )}
         <TopBarZoomMenu />
       </div>
+      <Search />
     </Box>
   );
 };
