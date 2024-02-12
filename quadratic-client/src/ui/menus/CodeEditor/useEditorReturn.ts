@@ -26,7 +26,7 @@ export const useEditorReturn = (
 
     if (!model) return;
 
-    const onChangeModel = async () => {
+    const onChangeModel = () => {
       if(codeEditorReturn === undefined) return;
 
       if (decorations) decorations.current?.clear();
