@@ -1,8 +1,9 @@
 use super::operation::Operation;
 use crate::{
+    cell_values::CellValues,
     controller::GridController,
     grid::{CodeCellLanguage, CodeRun, SheetId},
-    Array, CellValue, CodeCellValue, SheetPos,
+    CellValue, CodeCellValue, SheetPos,
 };
 
 impl GridController {
@@ -15,8 +16,8 @@ impl GridController {
     ) -> Vec<Operation> {
         vec![
             Operation::SetCellValues {
-                sheet_rect: sheet_pos.into(),
-                values: Array::from(CellValue::Code(CodeCellValue { language, code })),
+                sheet_pos,
+                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
             },
             Operation::ComputeCode { sheet_pos },
         ]
@@ -127,7 +128,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::*;
-    use crate::{Pos, SheetRect};
+    use crate::Pos;
 
     #[test]
     fn test_set_code_cell_operations() {
@@ -146,8 +147,8 @@ mod test {
         assert_eq!(
             operations[0],
             Operation::SetCellValues {
-                sheet_rect: SheetRect::from(pos.to_sheet_pos(sheet_id)),
-                values: Array::from(CellValue::Code(CodeCellValue {
+                sheet_pos: pos.to_sheet_pos(sheet_id),
+                values: CellValues::from(CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Python,
                     code: "print('hello world')".to_string(),
                 })),

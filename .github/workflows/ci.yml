@@ -24,7 +24,6 @@ jobs:
         with:
           components: clippy, llvm-tools-preview
           cache: false
-          channel: "nightly"
 
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
@@ -42,11 +41,14 @@ jobs:
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
         run: |
           cd quadratic-core
           cargo test
 
       - name: Generate coverage for quadratic-core
+        env:
+          RUSTC_BOOTSTRAP: 1
         run: |
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
@@ -69,11 +71,14 @@ jobs:
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
         run: |
           cd quadratic-multiplayer
           npm run docker:test
 
       - name: Generate coverage quadratic-multiplayer
+        env:
+          RUSTC_BOOTSTRAP: 1
         run: |
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \

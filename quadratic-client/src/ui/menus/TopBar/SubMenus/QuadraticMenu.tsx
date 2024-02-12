@@ -131,7 +131,7 @@ export const QuadraticMenu = () => {
                 <MenuLineItem
                   primary={redoAction.label}
                   secondary={
-                    isMac ? KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y'
+                    isMac ? KeyboardSymbols.Shift + KeyboardSymbols.Command + 'Z' : KeyboardSymbols.Command + 'Y'
                   }
                 />
               </MenuItem>
@@ -152,6 +152,19 @@ export const QuadraticMenu = () => {
               <MenuLineItem primary={pasteAction.label} secondary={KeyboardSymbols.Command + 'V'} />
             </MenuItem>
           )}
+
+          <MenuDivider />
+          <MenuItem onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: true }))}>
+            <MenuLineItem primary="Find in current sheet" secondary={KeyboardSymbols.Command + 'F'} />
+          </MenuItem>
+          <MenuItem
+            onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
+          >
+            <MenuLineItem
+              primary="Find in all sheets"
+              secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + 'F'}
+            />
+          </MenuItem>
         </SubMenu>
         <SubMenu label={<MenuLineItem primary="View" />}>
           <MenuItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
@@ -165,6 +178,9 @@ export const QuadraticMenu = () => {
           </MenuItem>
           <MenuItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
             <MenuLineItem primary="Show code cell outlines" Icon={settings.showCellTypeOutlines && Check} indent />
+          </MenuItem>
+          <MenuItem onClick={() => settings.setShowCodePeek(!settings.showCodePeek)}>
+            <MenuLineItem primary="Show code peek" Icon={settings.showCodePeek && Check} indent />
           </MenuItem>
           <MenuDivider />
           <MenuItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>

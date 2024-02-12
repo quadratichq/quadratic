@@ -9,12 +9,14 @@ import FileListItems from './ListItems/File';
 import FormatListItems from './ListItems/Format';
 import HelpListItems from './ListItems/Help';
 import ImportListItems from './ListItems/Import';
+import SearchItems from './ListItems/Search';
 import SheetListItems from './ListItems/Sheets';
 import TextListItems from './ListItems/Text';
 import ViewListItems from './ListItems/View';
 
 export interface Commands {
   label: string;
+  keywords?: Array<string> | string;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
   isAvailable?: GenericAction['isAvailable'];
 }
@@ -39,6 +41,7 @@ export const getCommandPaletteListItems = (props: {
     ...SheetListItems(),
     ...HelpListItems,
     ...CodeItems,
+    ...SearchItems,
   ];
   const { activeSearchValue, permissions, isAuthenticated, ...rest } = props;
 
@@ -57,11 +60,27 @@ export const getCommandPaletteListItems = (props: {
   // component for rendering
   let out: any = [];
   let listItemIndex = 0;
-  filteredCommands.forEach(({ label, Component }, i) => {
-    const result = fuzzysort.single(activeSearchValue, label);
+  filteredCommands.forEach(({ label, keywords, Component }, i) => {
+    let addKeywords = '';
+    if (keywords) {
+      addKeywords += '|';
+      if (Array.isArray(keywords)) {
+        addKeywords += keywords.join(' ');
+      } else {
+        addKeywords += keywords;
+      }
+    }
+    const result = fuzzysort.single(activeSearchValue, label + addKeywords);
     if (result) {
       out.push(
-        <Component {...rest} key={label} listItemIndex={listItemIndex} label={label} fuzzysortResult={result} />
+        <Component
+          {...rest}
+          key={label}
+          listItemIndex={listItemIndex}
+          label={label}
+          fuzzysortResult={result}
+          addKeywords={addKeywords}
+        />
       );
       listItemIndex++;
     }

@@ -2,6 +2,7 @@ import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { cn } from '@/shadcn/utils';
+import { useGridSettings } from '@/ui/menus/TopBar/SubMenus/useGridSettings';
 import { useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
 
@@ -13,6 +14,7 @@ export interface EditingCell {
 }
 
 export const HoverCell = () => {
+  const { showCodePeek } = useGridSettings();
   const [cell, setCell] = useState<JsRenderCodeCell | EditingCell | undefined>();
   const ref = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -44,14 +46,20 @@ export const HoverCell = () => {
   }, []);
 
   useEffect(() => {
-    const changeZoom = () => {
-      if (textRef.current) {
-        textRef.current.style.transform = `scale(${1 / pixiApp.viewport.scale.x})`;
+    const remove = () => {
+      const div = ref.current;
+      if (!div) return;
+      if (!div.classList.contains('hover-cell-fade-out')) {
+        div.classList.add('hover-cell-fade-out');
+        div.classList.remove('hover-cell-fade-in');
+        div.classList.remove('hover-cell-fade-in-no-delay');
       }
     };
-    pixiApp.viewport.on('zoomed', changeZoom);
+    pixiApp.viewport.on('moved', remove);
+    pixiApp.viewport.on('zoomed', remove);
     return () => {
-      pixiApp.viewport.off('zoomed', changeZoom);
+      pixiApp.viewport.off('moved', remove);
+      pixiApp.viewport.off('zoomed', remove);
     };
   }, []);
 
@@ -60,7 +68,9 @@ export const HoverCell = () => {
   const renderCodeCell = cell as JsRenderCodeCell | undefined;
   const editingCell = cell as EditingCell | undefined;
   const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;
+  let onlyCode = false;
   if (spillError) {
+    onlyCode = false;
     text = (
       <>
         <div className="hover-cell-header">Spill Error</div>
@@ -81,6 +91,7 @@ export const HoverCell = () => {
       </>
     );
   } else if (renderCodeCell?.state === 'RunError') {
+    onlyCode = false;
     if (code) {
       text = (
         <>
@@ -95,13 +106,16 @@ export const HoverCell = () => {
       );
     }
   } else if (renderCodeCell?.state) {
+    onlyCode = false;
     text = (
       <>
         <div className="hover-cell-header">{renderCodeCell?.language} Code</div>
         <div className="code-body">{code?.code_string}</div>
       </>
     );
+    onlyCode = true;
   } else if (editingCell?.user) {
+    onlyCode = false;
     text = (
       <>
         <div className="hover-cell-header">Multiplayer Edit</div>
@@ -172,7 +186,7 @@ export const HoverCell = () => {
         <div
           ref={textRef}
           className={cn('w-64 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none')}
-          style={{ position: 'absolute' }}
+          style={{ position: 'absolute', visibility: !onlyCode || showCodePeek ? 'visible' : 'hidden' }}
         >
           {text}
         </div>

@@ -247,8 +247,20 @@ impl CellValue {
         None
     }
 
+    pub fn unpack_boolean(s: &str) -> Option<CellValue> {
+        match s.to_ascii_lowercase().as_str() {
+            "true" => Some(CellValue::Logical(true)),
+            "false" => Some(CellValue::Logical(false)),
+            _ => None,
+        }
+    }
+
     pub fn strip_percentage(value: &str) -> &str {
         value.strip_suffix(PERCENTAGE_SYMBOL).unwrap_or(value)
+    }
+
+    pub fn strip_commas(value: &str) -> String {
+        value.to_string().replace(',', "")
     }
 
     pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
@@ -258,7 +270,8 @@ impl CellValue {
 
         for char in CURRENCY_SYMBOLS.chars() {
             if let Some(stripped) = s.strip_prefix(char) {
-                if let Ok(bd) = BigDecimal::from_str(stripped) {
+                let without_commas = CellValue::strip_commas(stripped);
+                if let Ok(bd) = BigDecimal::from_str(&without_commas) {
                     return Some((char.to_string(), bd));
                 }
             }
@@ -393,10 +406,13 @@ impl CellValue {
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
     pub fn to_cell_value(value: &str) -> CellValue {
+        // check for number
         let parsed = CellValue::strip_percentage(CellValue::strip_currency(value)).trim();
-        let number = BigDecimal::from_str(parsed);
-        let is_true = parsed.eq_ignore_ascii_case("true");
-        let is_false = parsed.eq_ignore_ascii_case("false");
+        let without_commas = CellValue::strip_commas(parsed);
+        let number = BigDecimal::from_str(&without_commas);
+
+        let is_true = value.eq_ignore_ascii_case("true");
+        let is_false = value.eq_ignore_ascii_case("false");
         let is_bool = is_true || is_false;
 
         match (number, is_bool) {
