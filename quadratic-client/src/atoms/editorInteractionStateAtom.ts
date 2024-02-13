@@ -1,5 +1,5 @@
 import { Coordinate } from '@/gridGL/types/size';
-import { CodeCellLanguage } from '@/quadratic-core/types';
+import { CodeCellLanguage, SearchOptions } from '@/quadratic-core/types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
 
@@ -10,6 +10,7 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
+  showSearch: boolean | SearchOptions;
   permissions: FilePermission[];
   uuid: string;
   selectedCell: Coordinate;
@@ -32,6 +33,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showGoToMenu: false,
   showFeedbackMenu: false,
   showShareFileMenu: false,
+  showSearch: false,
   permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },

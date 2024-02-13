@@ -298,7 +298,7 @@ pub mod tests {
     #[tokio::test]
     async fn stream_connect_subscribe_publish_get_message() {
         let (config, channel) = setup();
-        let messages = vec!["test 1", "test 2"];
+        let messages = ["test 1", "test 2"];
         let group = "group 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
@@ -382,7 +382,7 @@ pub mod tests {
     #[tokio::test]
     async fn stream_get_last_message() {
         let (config, channel) = setup();
-        let messages = vec!["test 1", "test 2"];
+        let messages = ["test 1", "test 2"];
         let group = "group 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
@@ -405,7 +405,7 @@ pub mod tests {
     #[tokio::test]
     async fn stream_get_all_channels() {
         let (config, channel) = setup();
-        let messages = vec!["test 1", "test 2"];
+        let messages = ["test 1", "test 2"];
         let group = "group 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
@@ -428,7 +428,7 @@ pub mod tests {
     #[tokio::test]
     async fn stream_active_channels() {
         let (config, channel) = setup();
-        let messages = vec!["test 1", "test 2"];
+        let messages = ["test 1", "test 2"];
         let group = "group 1";
         let channels = [Uuid::new_v4().to_string(), Uuid::new_v4().to_string()];
         let active_channels = Uuid::new_v4().to_string();
