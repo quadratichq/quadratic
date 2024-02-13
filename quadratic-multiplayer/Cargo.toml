@@ -34,3 +34,8 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]
 fake = { version = "2.9.1", features = ["derive"] }
+
+[features]
+default = ["files"]
+multiplayer = []
+files = []

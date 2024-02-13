@@ -12,6 +12,7 @@ export const colors = {
   cellColorUserAI: 0x1a8c5d,
   cellColorError: 0xf25f5c,
   cursorCell: 0x6cd4ff,
+  searchCell: 0x50c878,
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
   headerSelectedBackgroundColor: 0xe7f7ff,

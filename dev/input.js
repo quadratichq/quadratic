@@ -52,6 +52,24 @@ export class Input {
             case "a": // toggle API
                 this.control.restartApi();
                 break;
+            case "l": // watch all
+                if (this.cli.options.api != true) {
+                    this.cli.options.api = true;
+                    this.control.restartApi();
+                }
+                if (this.cli.options.core != true) {
+                    this.cli.options.core = true;
+                    this.control.restartCore();
+                }
+                if (this.cli.options.multiplayer != true) {
+                    this.cli.options.multiplayer = true;
+                    this.control.restartMultiplayer();
+                }
+                if (this.cli.options.files != true) {
+                    this.cli.options.files = true;
+                    this.control.restartFiles();
+                }
+                break;
             case "A": // toggle showing API
                 this.cli.options.hideAPI = !this.cli.options.hideAPI;
                 break;

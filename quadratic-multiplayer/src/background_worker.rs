@@ -27,13 +27,7 @@ pub(crate) fn start(
 
         loop {
             // reconnect if pubsub connection is unhealthy
-            state
-                .transaction_queue
-                .lock()
-                .await
-                .pubsub
-                .reconnect_if_unhealthy()
-                .await;
+            state.pubsub.lock().await.reconnect_if_unhealthy().await;
 
             // get all room ids
             let rooms = state
@@ -111,7 +105,7 @@ async fn remove_stale_users_in_room(
     }
 
     if num_remaining == 0 {
-        tracing::info!("No users remaining in room {file_id}",);
+        tracing::trace!("No users remaining in room {file_id}",);
         return Ok(None);
     }
 
@@ -144,11 +138,12 @@ mod tests {
         let operations_1 = operation(&mut grid, 0, 0, "1");
 
         state
-            .transaction_queue
+            .pubsub
             .lock()
             .await
-            .push_pending(transaction_id_1, file_id, vec![operations_1.clone()], 1)
-            .await;
+            .push(transaction_id_1, file_id, vec![operations_1.clone()], 1)
+            .await
+            .unwrap();
 
         super::broadcast_sequence_num(state, &file_id)
             .await

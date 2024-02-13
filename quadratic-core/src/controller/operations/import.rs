@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail, Result};
 
-use crate::{controller::GridController, grid::SheetId, Array, CellValue, Pos, SheetRect};
+use crate::{cell_values::CellValues, controller::GridController, grid::SheetId, CellValue, Pos};
 
 use super::operation::Operation;
 
@@ -47,21 +47,10 @@ impl GridController {
             })
             .collect::<Vec<Vec<CellValue>>>();
 
-        let array = Array::from(cell_values);
-
-        let sheet_rect = SheetRect::new_pos_span(
-            insert_at,
-            (
-                insert_at.x + array.width() as i64 - 1,
-                insert_at.y + array.height() as i64 - 1,
-            )
-                .into(),
-            sheet_id,
-        );
-
+        let cell_values = CellValues::from(cell_values);
         ops.push(Operation::SetCellValues {
-            sheet_rect,
-            values: array,
+            sheet_pos: insert_at.to_sheet_pos(sheet_id),
+            values: cell_values,
         });
         Ok(ops)
     }

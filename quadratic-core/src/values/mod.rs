@@ -5,6 +5,7 @@ use smallvec::{smallvec, SmallVec};
 
 mod array;
 mod array_size;
+pub mod cell_values;
 mod cellvalue;
 mod convert;
 mod isblank;
