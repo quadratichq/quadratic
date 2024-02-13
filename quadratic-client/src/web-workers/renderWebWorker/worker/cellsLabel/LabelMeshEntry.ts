@@ -8,6 +8,7 @@
  */
 
 import { debugShowCellHashesInfo } from '@/debugFlags';
+import { RenderLabelMeshEntryMessage } from '../../renderClientMessages';
 import { renderClient } from '../renderClient';
 import { LabelMesh } from './LabelMesh';
 
@@ -53,17 +54,23 @@ export class LabelMeshEntry {
       if (!this.colors) {
         throw new Error('Expected LabelMeshEntries.finalize to have colors');
       }
-      renderClient.sendLabelMeshEntry(
-        {
-          textureUid: this.labelMesh.textureUid,
-          hasColor: this.labelMesh.hasColor,
-          vertices: this.vertices,
-          uvs: this.uvs,
-          indices: this.indices,
-          colors: this.colors,
-        },
-        [this.vertices.buffer, this.uvs.buffer, this.indices.buffer, this.colors.buffer]
-      );
+      const partialMessage: Partial<RenderLabelMeshEntryMessage> = {
+        sheetId: this.labelMesh.sheetId,
+        hashX: this.labelMesh.hashX,
+        hashY: this.labelMesh.hashY,
+        textureUid: this.labelMesh.textureUid,
+        hasColor: this.labelMesh.hasColor,
+        vertices: this.vertices,
+        uvs: this.uvs,
+        indices: this.indices,
+        colors: this.colors,
+      };
+      renderClient.sendLabelMeshEntry(partialMessage, [
+        this.vertices.buffer,
+        this.uvs.buffer,
+        this.indices.buffer,
+        this.colors.buffer,
+      ]);
     } else {
       renderClient.sendLabelMeshEntry(
         {

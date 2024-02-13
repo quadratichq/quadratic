@@ -6,8 +6,9 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
+import { Bounds } from '@/grid/sheet/Bounds';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
-import { RenderClientMessage, RenderLabelMeshEntryMessage } from '../renderClientMessages';
+import { RenderCellsTextHashClear, RenderClientMessage, RenderLabelMeshEntryMessage } from '../renderClientMessages';
 import { renderCore } from './renderCore';
 import { renderText } from './renderText';
 
@@ -35,11 +36,25 @@ class RenderClient {
    * Client requests *
    *******************/
 
+  // sends a message to the main thread to clear the cellsTextHash for the hashX, hashY
+  sendCellsTextHashClear(sheetId: string, hashX: number, hashY: number, viewBounds: Bounds) {
+    const message: RenderCellsTextHashClear = {
+      type: 'cellsTextHashClear',
+      sheetId,
+      hashX,
+      hashY,
+      bounds: viewBounds.toRectangle(),
+    };
+    self.postMessage(message);
+  }
+
   // sends a rendered LabelMeshEntry to the main thread for rendering
-  // data is sent as transferable ArrayBuffers:
-  //
-  sendLabelMeshEntry(message: Partial<RenderLabelMeshEntryMessage>, data: ArrayBuffer[]) {
-    self.postMessage({ type: 'labelMeshEntry', ...message } as RenderLabelMeshEntryMessage, data);
+  sendLabelMeshEntry(partialMessage: Partial<RenderLabelMeshEntryMessage>, data: ArrayBuffer[]) {
+    const message = {
+      type: 'labelMeshEntry',
+      ...partialMessage,
+    };
+    self.postMessage(message, data);
   }
 
   /*******************

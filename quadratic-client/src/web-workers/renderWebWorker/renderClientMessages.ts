@@ -8,6 +8,9 @@ export interface RenderInitMessage {
 // also includes sending the data as transferable ArrayBuffers
 export interface RenderLabelMeshEntryMessage {
   type: 'labelMeshEntry';
+  sheetId: string;
+  hashX: number;
+  hashY: number;
   textureUid: number;
   hasColor: boolean;
   vertices: Float32Array;
@@ -16,4 +19,12 @@ export interface RenderLabelMeshEntryMessage {
   colors?: Float32Array;
 }
 
-export type RenderClientMessage = RenderInitMessage | RenderLabelMeshEntryMessage;
+export interface RenderCellsTextHashClear {
+  type: 'cellsTextHashClear';
+  sheetId: string;
+  hashX: number;
+  hashY: number;
+  bounds?: { x: number; y: number; width: number; height: number };
+}
+
+export type RenderClientMessage = RenderInitMessage | RenderLabelMeshEntryMessage | RenderCellsTextHashClear;

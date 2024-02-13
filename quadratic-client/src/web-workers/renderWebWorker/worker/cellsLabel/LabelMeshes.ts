@@ -8,6 +8,15 @@ import { LabelMesh } from './LabelMesh';
 
 export class LabelMeshes {
   private labelMeshes: LabelMesh[] = [];
+  private sheetId: string;
+  private hashX: number;
+  private hashY: number;
+
+  constructor(sheetId: string, hashX: number, hashY: number) {
+    this.sheetId = sheetId;
+    this.hashX = hashX;
+    this.hashY = hashY;
+  }
 
   clear() {
     this.labelMeshes = [];
@@ -25,7 +34,15 @@ export class LabelMeshes {
       existing.total++;
       return existing.id;
     }
-    const labelMesh = new LabelMesh(textureUid, fontName, fontSize, color);
+    const labelMesh = new LabelMesh({
+      sheetId: this.sheetId,
+      hashX: this.hashX,
+      hashY: this.hashY,
+      textureUid,
+      fontName,
+      fontSize,
+      color,
+    });
     this.labelMeshes.push(labelMesh);
     return labelMesh.id;
   }

@@ -15,6 +15,10 @@ import { LabelMeshEntry } from './LabelMeshEntry';
 const MAX_VERTICES = 15000;
 
 export class LabelMesh {
+  sheetId: string;
+  hashX: number;
+  hashY: number;
+
   textureUid: number;
 
   id: string;
@@ -28,7 +32,20 @@ export class LabelMesh {
   private currentEntry = 0;
   private labelMeshEntries: LabelMeshEntry[] = [];
 
-  constructor(textureUid: number, fontName: string, fontSize: number, color: boolean) {
+  constructor(options: {
+    sheetId: string;
+    hashX: number;
+    hashY: number;
+    textureUid: number;
+    fontName: string;
+    fontSize: number;
+    color: boolean;
+  }) {
+    const { sheetId, hashX, hashY, textureUid, fontName, fontSize, color } = options;
+    this.sheetId = sheetId;
+    this.hashX = hashX;
+    this.hashY = hashY;
+
     this.textureUid = textureUid;
     this.hasColor = color;
 

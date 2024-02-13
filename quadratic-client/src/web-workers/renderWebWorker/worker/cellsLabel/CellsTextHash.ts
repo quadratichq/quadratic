@@ -14,6 +14,7 @@ import { Bounds } from '@/grid/sheet/Bounds';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { JsRenderCell } from '@/quadratic-core/types';
 import { Rectangle } from 'pixi.js';
+import { renderClient } from '../renderClient';
 import { renderCore } from '../renderCore';
 import { CellLabel } from './CellLabel';
 import { CellsLabels } from './CellsLabels';
@@ -55,18 +56,18 @@ export class CellsTextHash {
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
-  constructor(cellsLabels: CellsLabels, x: number, y: number) {
+  constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
     this.labels = new Map();
-    this.labelMeshes = new LabelMeshes();
+    this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
     this.viewBounds = new Bounds();
-    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
+    this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
     const start = this.cellsLabels.getCellOffsets(this.AABB.left, this.AABB.top);
     const end = this.cellsLabels.getCellOffsets(this.AABB.right, this.AABB.bottom);
     this.rawViewRectangle = new Rectangle(start.left, start.top, end.right - start.left, end.bottom - start.top);
     this.viewRectangle = this.rawViewRectangle.clone();
-    this.hashX = x;
-    this.hashY = y;
+    this.hashX = hashX;
+    this.hashY = hashY;
   }
 
   // key used to find individual cell labels
@@ -206,6 +207,7 @@ export class CellsTextHash {
     }
 
     // finalizes webGL buffers
+    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewBounds);
     this.labelMeshes.finalize();
   }
 

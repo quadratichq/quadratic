@@ -1,6 +1,11 @@
 import { debugWebWorkers } from '@/debugFlags';
 import { prepareBitmapFontInformation } from './renderBitmapFonts';
-import { RenderClientMessage, RenderInitMessage, RenderLabelMeshEntryMessage } from './renderClientMessages';
+import {
+  RenderCellsTextHashClear,
+  RenderClientMessage,
+  RenderInitMessage,
+  RenderLabelMeshEntryMessage,
+} from './renderClientMessages';
 
 class RenderWebWorker {
   private worker?: Worker;
@@ -21,6 +26,10 @@ class RenderWebWorker {
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
     switch (e.data.type) {
+      case 'cellsTextHashClear':
+        this.cellsTextHashClear(e.data);
+        break;
+
       case 'labelMeshEntry':
         this.labelMeshEntry(e.data);
         break;
@@ -30,8 +39,12 @@ class RenderWebWorker {
     }
   };
 
+  // Clears a CellsTextHash and replace it with the meshes coming from labelMeshEntry
+  private cellsTextHashClear(message: RenderCellsTextHashClear) {}
+
+  // Update a label mesh within a CellsTextHash
   private labelMeshEntry(message: RenderLabelMeshEntryMessage) {
-    console.log(message);
+    // console.log(message);
   }
 }
 
