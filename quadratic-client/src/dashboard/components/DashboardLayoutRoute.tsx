@@ -3,6 +3,7 @@ import { AvatarWithLetters } from '@/components/AvatarWithLetters';
 import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
@@ -10,10 +11,9 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { Avatar, CircularProgress } from '@mui/material';
 import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation } from 'react-router-dom';
+import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation, useSubmit } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
 import { useRootRouteLoaderData } from '../../router';
 import QuadraticLogo from './quadratic-logo.svg';
@@ -21,16 +21,9 @@ import QuadraticLogotype from './quadratic-logotype.svg';
 
 const drawerWidth = 264;
 
-type LoaderData = {
-  teams: ApiTypes['/v0/teams.GET.response'];
-};
-
-export const loader = async (): Promise<LoaderData> => {
-  const teams = await apiClient.teams.list().catch((err) => {
-    Sentry.captureException(err);
-    return [];
-  });
-  return { teams };
+export const loader = async (): Promise<ApiTypes['/v0/teams.GET.response']> => {
+  const data = await apiClient.teams.list();
+  return data;
 };
 
 export const Component = () => {
@@ -53,7 +46,7 @@ export const Component = () => {
       </div>
       <div
         className={cn(
-          `relative h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
+          `transition-filter relative h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
           isLoading ? 'overflow-hidden' : 'overflow-scroll',
           isLoading && 'pointer-events-none opacity-25'
         )}
@@ -77,7 +70,10 @@ export const Component = () => {
 };
 
 function Navbar() {
-  const { teams } = useLoaderData() as LoaderData;
+  const {
+    teams,
+    userMakingRequest: { id: ownerUserId },
+  } = useLoaderData() as ApiTypes['/v0/teams.GET.response'];
   const { loggedInUser: user } = useRootRouteLoaderData();
   const fetchers = useFetchers();
   const navigation = useNavigation();
@@ -105,7 +101,7 @@ function Navbar() {
         </Type>
 
         <div className="grid gap-1">
-          <SidebarNavLink to={ROUTES.FILES}>
+          <SidebarNavLink to={ROUTES.FILES} dropTarget={{ type: 'user', id: ownerUserId }}>
             <FileIcon className={classNameIcons} />
             Mine
           </SidebarNavLink>
@@ -126,8 +122,7 @@ function Navbar() {
           Teams
         </Type>
         <div className="grid gap-1">
-          {teams.map(({ uuid, name, picture }) => {
-            // TODO: can we refine this?
+          {teams.map(({ team: { id: ownerTeamId, uuid, name, picture }, userMakingRequest: { teamPermissions } }) => {
             // See if this team has an inflight fetcher that's updating team info
             const inFlightFetcher = fetchers.find(
               (fetcher) =>
@@ -145,7 +140,11 @@ function Navbar() {
             }
 
             return (
-              <SidebarNavLink key={uuid} to={ROUTES.TEAM(uuid)}>
+              <SidebarNavLink
+                key={uuid}
+                to={ROUTES.TEAM(uuid)}
+                dropTarget={teamPermissions.includes('TEAM_EDIT') ? { type: 'team', id: ownerTeamId } : undefined}
+              >
                 <AvatarWithLetters size="small" src={picture}>
                   {name}
                 </AvatarWithLetters>
@@ -181,17 +180,24 @@ function SidebarNavLink({
   to,
   children,
   className,
+  dropTarget,
   isLogo,
   target,
 }: {
   to: string;
   children: ReactNode;
   className?: string;
+  dropTarget?: {
+    type: 'user' | 'team';
+    id: number;
+  };
   isLogo?: boolean;
   target?: string;
 }) {
   const location = useLocation();
   const navigation = useNavigation();
+  const submit = useSubmit();
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const isActive =
     // We're currently on this page and not navigating elsewhere
@@ -199,16 +205,52 @@ function SidebarNavLink({
     // We're navigating to this page
     to === navigation.location?.pathname;
 
+  const isDroppable = dropTarget && to !== location.pathname;
+  const dropProps = isDroppable
+    ? {
+        onDragLeave: (event: React.DragEvent<HTMLAnchorElement>) => {
+          setIsDraggingOver(false);
+        },
+        onDragOver: (event: React.DragEvent<HTMLAnchorElement>) => {
+          if (!event.dataTransfer.types.includes('application/quadratic-file-uuid')) return;
+
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'move';
+          setIsDraggingOver(true);
+        },
+        onDrop: async (event: React.DragEvent<HTMLAnchorElement>) => {
+          if (!event.dataTransfer.types.includes('application/quadratic-file-uuid')) return;
+
+          event.preventDefault();
+          const uuid = event.dataTransfer.getData('application/quadratic-file-uuid');
+          setIsDraggingOver(false);
+          const data: FileAction['request.move'] = {
+            action: 'move',
+            ...(dropTarget.type === 'user' ? { ownerUserId: dropTarget.id } : { ownerTeamId: dropTarget.id }),
+          };
+          submit(data, {
+            method: 'POST',
+            action: `/files/${uuid}`,
+            encType: 'application/json',
+            navigate: false,
+            fetcherKey: `move-file:${uuid}`,
+          });
+        },
+      }
+    : {};
+
   return (
     <NavLink
       {...(target ? { target } : {})}
       to={to}
       className={cn(
         isActive && !isLogo && 'bg-muted',
+        isDraggingOver && 'bg-primary text-primary-foreground',
         TYPE.body2,
         `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,
         className
       )}
+      {...dropProps}
     >
       {children}
     </NavLink>

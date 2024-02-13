@@ -1,5 +1,5 @@
 import { ShareTeamDialog } from '@/components/ShareDialog';
-import { ROUTES } from '@/constants/routes';
+import { ROUTES, ROUTE_LOADER_IDS } from '@/constants/routes';
 import { CONTACT_URL } from '@/constants/urls';
 import CreateFileButton from '@/dashboard/components/CreateFileButton';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
@@ -24,6 +24,7 @@ import {
   useFetcher,
   useLoaderData,
   useRouteError,
+  useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
@@ -33,11 +34,12 @@ import { QDialogConfirmDelete } from '../components/QDialog';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { TeamLogoInput } from '../dashboard/components/TeamLogo';
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const useTeamRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.TEAM) as LoaderData | undefined;
+
+type LoaderData = ApiTypes['/v0/teams/:uuid.GET.response'];
+export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<LoaderData> => {
   const { uuid } = params as { uuid: string };
-  const data = await apiClient.teams.get(uuid).catch((error) => {
-    throw new Response('Failed to load file from server.', { status: error.status });
-  });
+  const data = await apiClient.teams.get(uuid);
 
   // Sort the users so the logged-in user is first in the list
   data.users.sort((a, b) => {

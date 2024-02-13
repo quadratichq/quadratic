@@ -1,6 +1,5 @@
 import { Action as FileAction } from '@/routes/files.$uuid';
-import { FilesListFile } from './FilesList';
-
+import { useTeamRouteLoaderData } from '@/routes/teams.$uuid';
 import { Button as Btn } from '@/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -11,14 +10,15 @@ import {
 } from '@/shadcn/ui/dropdown-menu';
 import { Separator } from '@/shadcn/ui/separator';
 import { cn } from '@/shadcn/utils';
-import { DotsVerticalIcon } from '@radix-ui/react-icons';
+import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
-import { useEffect, useState } from 'react';
-import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, SubmitOptions, useFetcher, useLocation } from 'react-router-dom';
 import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { DialogRenameItem } from './DialogRenameItem';
+import { FilesListFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
@@ -53,21 +53,27 @@ export function FileListItem({
   const fetcherDownload = useFetcher();
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
+  const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
+  const teamRouteLoaderData = useTeamRouteLoaderData();
+  const location = useLocation();
+  const fileDragRef = useRef<HTMLDivElement>(null);
 
+  // If we're looking at the user's personal files OR a team where they have edit access, they can move stuff
+  const canMoveFiles =
+    location.pathname === ROUTES.FILES ||
+    (teamRouteLoaderData && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
   const { uuid, name, createdDate, updatedDate, publicLinkAccess, thumbnail, permissions } = file;
-
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
     action: ROUTES.FILES_FILE(uuid),
     encType: 'application/json',
   };
-
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
   const failedToRename = fetcherRename.data && !fetcherRename.data.ok;
 
-  // If the download files, show an error in the UI
+  // If the download fails, show an error
   // TODO async communication in UI that the file is downloading?
   useEffect(() => {
     if (fetcherDownload.data && !fetcherDownload.data.ok) {
@@ -75,8 +81,15 @@ export function FileListItem({
     }
   }, [addGlobalSnackbar, fetcherDownload.data]);
 
-  // Optimistically hide this file if it's being deleted
-  if (fetcherDelete.state === 'submitting' || fetcherDelete.state === 'loading') {
+  // If the move fails, show an error
+  useEffect(() => {
+    if (fetcherMove.data && !fetcherMove.data.ok) {
+      addGlobalSnackbar('Failed to move file. Try again.', { severity: 'error' });
+    }
+  }, [addGlobalSnackbar, fetcherMove.data]);
+
+  // Optimistically hide this file if it's being deleted or moved
+  if (fetcherDelete.state !== 'idle' || fetcherMove.state !== 'idle') {
     return null;
   }
 
@@ -153,6 +166,25 @@ export function FileListItem({
     ),
   };
 
+  const dragProps = canMoveFiles
+    ? {
+        draggable: true,
+        onDragStart: (event: React.DragEvent<HTMLAnchorElement>) => {
+          if (fileDragRef.current) {
+            fileDragRef.current.style.opacity = '1';
+            event.dataTransfer.setDragImage(fileDragRef.current, 16, 24);
+          }
+          event.dataTransfer.dropEffect = 'move';
+          event.dataTransfer.setData('application/quadratic-file-uuid', uuid);
+        },
+        onDragEnd: (event: React.DragEvent<HTMLAnchorElement>) => {
+          if (fileDragRef.current) {
+            fileDragRef.current.style.opacity = '0';
+          }
+        },
+      }
+    : {};
+
   return (
     <li>
       <Link
@@ -160,7 +192,15 @@ export function FileListItem({
         to={ROUTES.FILE(uuid)}
         reloadDocument
         className={cn(`text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
+        {...dragProps}
       >
+        <div
+          ref={fileDragRef}
+          className="absolute -top-[1000px] z-0 flex items-center gap-1 rounded-full border border-background bg-primary px-2 py-1 text-sm text-primary-foreground opacity-0"
+        >
+          <FileIcon />
+          {file.name.length > 16 ? file.name.slice(0, 16) + '…' : file.name}
+        </div>
         {viewPreferences.layout === Layout.Grid ? (
           <div className="border border-border p-2 hover:bg-accent">
             <div className="flex aspect-video items-center justify-center bg-background">
@@ -170,6 +210,7 @@ export function FileListItem({
                   src={thumbnail}
                   alt="File thumbnail screenshot"
                   className="object-cover"
+                  draggable="false"
                 />
               ) : (
                 <div className="flex items-center justify-center">
@@ -179,6 +220,7 @@ export function FileListItem({
                     className={`opacity-10 brightness-0 grayscale`}
                     width="24"
                     height="24"
+                    draggable="false"
                   />
                 </div>
               )}
@@ -198,6 +240,7 @@ export function FileListItem({
                   alt="File thumbnail screenshot"
                   className={`aspect-video object-fill`}
                   width="80"
+                  draggable="false"
                 />
               ) : (
                 <div className="flex aspect-video w-20 items-center justify-center bg-background">
@@ -207,6 +250,7 @@ export function FileListItem({
                     className={`h-4 w-4 opacity-10 brightness-0 grayscale`}
                     width="16"
                     height="16"
+                    draggable="false"
                   />
                 </div>
               )}

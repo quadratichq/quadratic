@@ -11,7 +11,7 @@ import {
   UserTeamRoleSchema,
 } from 'quadratic-shared/typesAndSchemas';
 const { TEAM_EDIT, TEAM_DELETE, TEAM_BILLING_EDIT, TEAM_VIEW } = TeamPermissionSchema.enum;
-const { FILE_VIEW, FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
+const { FILE_VIEW, FILE_EDIT, FILE_MOVE, FILE_DELETE } = FilePermissionSchema.enum;
 
 /**
  * Derive a user’s permissions for a team (and its contents) based on their role.
@@ -73,14 +73,14 @@ export const getFilePermissions = ({
 
   // Are they personal owner of the file? We'll return early cause they get full permissions
   if (isFileOwner) {
-    permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+    permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE).add(FILE_MOVE);
     return Array.from(permissions);
   }
 
   // Based on user's explicitly-assigned role in the file's team (if applicable)
   if (teamRole) {
     if (teamRole === UserTeamRoleSchema.enum.OWNER || teamRole === UserTeamRoleSchema.enum.EDITOR) {
-      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_DELETE);
+      permissions.add(FILE_VIEW).add(FILE_EDIT).add(FILE_MOVE).add(FILE_DELETE);
       // Return because they already have full access now
       return Array.from(permissions);
     } else if (teamRole === UserTeamRoleSchema.enum.VIEWER) {

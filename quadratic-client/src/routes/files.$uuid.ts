@@ -16,6 +16,11 @@ export type Action = {
     action: 'duplicate';
     redirect?: boolean;
   };
+  'request.move': {
+    action: 'move';
+    ownerUserId?: number;
+    ownerTeamId?: number;
+  };
   'request.rename': {
     action: 'rename';
     name: string;
@@ -24,6 +29,7 @@ export type Action = {
     | Action['request.delete']
     | Action['request.download']
     | Action['request.duplicate']
+    | Action['request.move']
     | Action['request.rename'];
 };
 
@@ -64,6 +70,16 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     try {
       const { name } = json as Action['request.rename'];
       await apiClient.files.update(uuid, { name });
+      return { ok: true };
+    } catch (error) {
+      return { ok: false };
+    }
+  }
+
+  if (action === 'move') {
+    try {
+      const { ownerUserId, ownerTeamId } = json as Action['request.move'];
+      await apiClient.files.update(uuid, { ownerUserId, ownerTeamId });
       return { ok: true };
     } catch (error) {
       return { ok: false };

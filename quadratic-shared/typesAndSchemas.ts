@@ -6,7 +6,7 @@ export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
 export const UserTeamRoleSchema = z.enum(['OWNER', /*'ADMIN',*/ 'EDITOR', 'VIEWER']);
 export type UserTeamRole = z.infer<typeof UserTeamRoleSchema>;
 
-export const FilePermissionSchema = z.enum(['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE']);
+export const FilePermissionSchema = z.enum(['FILE_VIEW', 'FILE_EDIT', 'FILE_MOVE', 'FILE_DELETE']);
 export type FilePermission = z.infer<typeof FilePermissionSchema>;
 
 export const TeamPermissionSchema = z.enum([
@@ -42,6 +42,7 @@ const FileUserSchema = BaseUserSchema.extend({
 export type FileUser = z.infer<typeof FileUserSchema>;
 
 export const TeamSchema = z.object({
+  id: z.number(),
   uuid: z.string(),
   name: z
     .string()
@@ -115,9 +116,24 @@ export const ApiSchemas = {
   '/v0/files/:uuid.DELETE.response': z.object({
     message: z.string(),
   }),
-  '/v0/files/:uuid.PATCH.request': FileSchema.pick({ name: true }),
-  '/v0/files/:uuid.PATCH.response': FileSchema.pick({ name: true }),
+  '/v0/files/:uuid.PATCH.request': z.object({
+    name: FileSchema.shape.name.optional(),
+    ownerUserId: BaseUserSchema.shape.id.optional(),
+    ownerTeamId: TeamSchema.shape.id.optional(),
+  }),
+  '/v0/files/:uuid.PATCH.response': z.object({
+    name: FileSchema.shape.name.optional(),
+    ownerUserId: BaseUserSchema.shape.id.optional(),
+    ownerTeamId: TeamSchema.shape.id.optional(),
+  }),
   '/v0/files/:uuid/thumbnail.POST.response': z.object({
+    message: z.string(),
+  }),
+  '/v0/files/:uuid/move.POST.request': z.discriminatedUnion('owner', [
+    z.object({ owner: z.literal('user') }),
+    z.object({ owner: z.literal('team'), uuid: TeamSchema.shape.uuid }),
+  ]),
+  '/v0/files/:uuid/move.POST.response': z.object({
     message: z.string(),
   }),
 
@@ -199,7 +215,19 @@ export const ApiSchemas = {
    * Teams
    *
    */
-  '/v0/teams.GET.response': z.array(TeamSchema.pick({ uuid: true, name: true, picture: true })),
+  '/v0/teams.GET.response': z.object({
+    teams: z.array(
+      z.object({
+        team: TeamSchema.pick({ id: true, uuid: true, name: true, picture: true }),
+        userMakingRequest: z.object({
+          teamPermissions: z.array(TeamPermissionSchema),
+        }),
+      })
+    ),
+    userMakingRequest: z.object({
+      id: BaseUserSchema.shape.id,
+    }),
+  }),
   '/v0/teams.POST.request': TeamSchema.pick({
     name: true,
     picture: true,

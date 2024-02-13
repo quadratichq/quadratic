@@ -86,6 +86,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   const response = {
     team: {
+      id: teamId,
       uuid,
       name,
       ...(picture ? { picture } : {}),
