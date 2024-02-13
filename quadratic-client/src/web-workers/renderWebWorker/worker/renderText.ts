@@ -1,3 +1,4 @@
+import { debugWebWorkers } from '@/debugFlags';
 import init from '@/quadratic-grid-metadata/quadratic_grid_metadata';
 import { GridMetadata } from '@/web-workers/coreWebWorker/coreMessages';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
@@ -14,31 +15,21 @@ class RenderText {
     }
     this.update();
 
-    // for (const sheetId in this.cellsLabels) {
-    //   if (!sheetIds.includes(sheetId)) {
-    //     this.cellsLabels.delete(sheetId);
-    //   }
-    // }
-    // for (const sheetId in sheetIds) {
-    //   if (!this.cellsLabels.has(sheetId)) {
-    //     const sheetOffsets = this.gridMetadata.getBounds(sheetId);
-    //     this.cellsLabels.set(sheetId, new CellsLabels(sheetId, sheetOffsets));
-    //   }
-    // }
+    if (debugWebWorkers) console.log('[renderText] initialized');
   }
 
   // Updates the CellsLabels
-  private update = () => {
+  private update = async () => {
     // todo: use active sheet first
     const sheetIds = this.cellsLabels.keys();
     for (const sheetId of sheetIds) {
       const cellsLabel = this.cellsLabels.get(sheetId);
       if (cellsLabel?.update()) {
-        return;
+        break;
       }
     }
 
-    // allow the event loop to run
+    // defer to the event loop before rendering the next hash
     setTimeout(this.update);
   };
 }

@@ -8,7 +8,6 @@
  * expensive.
  */
 
-import { BitmapFont, Renderer } from 'pixi.js';
 import { v4 as uuid } from 'uuid';
 import { LabelMeshEntry } from './LabelMeshEntry';
 
@@ -68,12 +67,5 @@ export class LabelMesh {
 
   finalize(): void {
     this.labelMeshEntries.forEach((entry) => entry.finalize());
-  }
-
-  specialRender(renderer: Renderer, scale: number): void {
-    const { distanceFieldRange, size } = BitmapFont.available[this.fontName];
-    const fontScale = this.fontSize / size;
-    const ufWidth = distanceFieldRange * fontScale * scale;
-    this.labelMeshEntries.forEach((entry) => entry.specialRender(renderer, ufWidth));
   }
 }

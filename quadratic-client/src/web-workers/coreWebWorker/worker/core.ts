@@ -35,7 +35,6 @@ class Core {
         boundsNoFormatting: this.getGridBounds({ sheetId, ignoreFormatting: true }),
       };
     });
-    console.log(metadata);
     coreClient.init(metadata);
     coreRender.init(metadata, renderPort);
   }

@@ -37,12 +37,12 @@ export class LabelMeshes {
   }
 
   // prepares the buffers for each labelMesh
-  prepare(): void {
+  prepare() {
     this.labelMeshes.forEach((labelMesh) => labelMesh.prepare());
   }
 
   // finalizes the buffers after populated
-  finalize(): void {
+  finalize() {
     this.labelMeshes.forEach((labelMesh) => labelMesh.finalize());
   }
 }

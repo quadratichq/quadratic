@@ -7,7 +7,7 @@
 
 import { debugWebWorkers } from '@/debugFlags';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
-import { RenderClientMessage } from '../renderClientMessages';
+import { RenderClientMessage, RenderLabelMeshEntryMessage } from '../renderClientMessages';
 import { renderCore } from './renderCore';
 import { renderText } from './renderText';
 
@@ -34,6 +34,13 @@ class RenderClient {
   /*******************
    * Client requests *
    *******************/
+
+  // sends a rendered LabelMeshEntry to the main thread for rendering
+  // data is sent as transferable ArrayBuffers:
+  //
+  sendLabelMeshEntry(message: Partial<RenderLabelMeshEntryMessage>, data: ArrayBuffer[]) {
+    self.postMessage({ type: 'labelMeshEntry', ...message } as RenderLabelMeshEntryMessage, data);
+  }
 
   /*******************
    * Client response *

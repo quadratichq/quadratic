@@ -170,7 +170,7 @@ export class CellsLabels extends Container {
     if (!hashes) throw new Error('Expected hashes to be defined in preload');
     hashes.forEach((hash) => hash.createLabels());
     hashes.forEach((hash) => hash.overflowClip());
-    hashes.forEach((hash) => hash.updateBuffers(false));
+    hashes.forEach((hash) => hash.updateBuffers()); // false
   }
 
   // adjust hashes after a column/row resize
@@ -222,7 +222,7 @@ export class CellsLabels extends Container {
     this.dirtyRowHeadings.clear();
 
     hashesToUpdate.forEach((hash) => hash.overflowClip());
-    this.cellsTextHash.forEach((hash) => hash.updateBuffers(true));
+    this.cellsTextHash.forEach((hash) => hash.updateBuffers()); // true
 
     return true;
   }

@@ -1,8 +1,12 @@
 import { GridMetadata } from '@/web-workers/coreWebWorker/coreMessages';
 
 class Metadata {
+  private metadata?: GridMetadata;
+
   load(metadata: GridMetadata) {
-    console.log(metadata);
+    this.metadata = metadata;
+
+    // todo...
   }
 }
 

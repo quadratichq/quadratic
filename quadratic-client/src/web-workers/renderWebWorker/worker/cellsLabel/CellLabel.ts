@@ -203,7 +203,7 @@ export class CellLabel {
   /** Calculates the text glyphs and positions */
   public updateText(labelMeshes: LabelMeshes): void {
     const data = this.cellsLabels.bitmapFonts[this.fontName];
-    if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateText');
+    if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
     const pos = new Point();
     this.chars = [];
     const lineWidths = [];
@@ -250,7 +250,7 @@ export class CellLabel {
       }
       const charRenderData: CharRenderData = {
         labelMeshId,
-        textureUid: charData.textureUid,
+        charData,
         line: line,
         charCode: charCode,
         prevSpaces: spaceCount,
@@ -323,8 +323,8 @@ export class CellLabel {
       const xPos = this.position.x + offset * scale + OPEN_SANS_FIX.x;
       const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
       const labelMesh = labelMeshes.get(char.labelMeshId);
-      const textureFrame = char.frame;
-      const textureUvs = texture._uvs;
+      const textureFrame = char.charData.frame;
+      const textureUvs = char.charData.uvs;
       const buffer = labelMesh.getBuffer();
 
       // remove letters that are outside the clipping bounds
@@ -356,14 +356,14 @@ export class CellLabel {
         buffers.vertices![index * 8 + 6] = xPos;
         buffers.vertices![index * 8 + 7] = bottom;
 
-        buffers.uvs![index * 8 + 0] = textureUvs.x0;
-        buffers.uvs![index * 8 + 1] = textureUvs.y0;
-        buffers.uvs![index * 8 + 2] = textureUvs.x1;
-        buffers.uvs![index * 8 + 3] = textureUvs.y1;
-        buffers.uvs![index * 8 + 4] = textureUvs.x2;
-        buffers.uvs![index * 8 + 5] = textureUvs.y2;
-        buffers.uvs![index * 8 + 6] = textureUvs.x3;
-        buffers.uvs![index * 8 + 7] = textureUvs.y3;
+        buffers.uvs![index * 8 + 0] = textureUvs[0];
+        buffers.uvs![index * 8 + 1] = textureUvs[1];
+        buffers.uvs![index * 8 + 2] = textureUvs[2];
+        buffers.uvs![index * 8 + 3] = textureUvs[3];
+        buffers.uvs![index * 8 + 4] = textureUvs[4];
+        buffers.uvs![index * 8 + 5] = textureUvs[5];
+        buffers.uvs![index * 8 + 6] = textureUvs[6];
+        buffers.uvs![index * 8 + 7] = textureUvs[7];
 
         bounds.addRectanglePoints(xPos, yPos, right, bottom);
 

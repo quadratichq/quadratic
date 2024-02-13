@@ -13,14 +13,14 @@ import { debugShowHashUpdates } from '@/debugFlags';
 import { Bounds } from '@/grid/sheet/Bounds';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { JsRenderCell } from '@/quadratic-core/types';
-import { Container, Rectangle } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 import { renderCore } from '../renderCore';
 import { CellLabel } from './CellLabel';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshes } from './LabelMeshes';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
-export class CellsTextHash extends Container<LabelMeshes> {
+export class CellsTextHash {
   private cellsLabels: CellsLabels;
 
   // holds the glyph meshes for font/style combinations
@@ -56,10 +56,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
   debugColor = Math.floor(Math.random() * 0xffffff);
 
   constructor(cellsLabels: CellsLabels, x: number, y: number) {
-    super();
     this.cellsLabels = cellsLabels;
     this.labels = new Map();
-    this.labelMeshes = this.addChild(new LabelMeshes());
+    this.labelMeshes = new LabelMeshes();
     this.viewBounds = new Bounds();
     this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
     const start = this.cellsLabels.getCellOffsets(this.AABB.left, this.AABB.top);
@@ -83,17 +82,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
     return this.labels.get(`${column},${row}`);
   }
 
-  show(): void {
-    this.visible = true;
-  }
-
-  hide(): void {
-    this.visible = false;
-  }
-
   private createLabel(cell: JsRenderCell): CellLabel {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
-    const cellLabel = new CellLabel(cell, rectangle);
+    const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
     this.labels.set(this.getKey(cell), cellLabel);
     return cellLabel;
   }
@@ -108,22 +99,20 @@ export class CellsTextHash extends Container<LabelMeshes> {
       this.AABB.width,
       this.AABB.height
     );
-    console.log(cells);
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
   }
 
   async update(): Promise<boolean> {
-    console.log('updating in cellsTextHash...');
     if (this.dirty) {
-      this.createLabels();
+      await this.createLabels();
       this.overflowClip();
-      this.updateBuffers(false);
+      this.updateBuffers(); // false
       this.dirty = false;
       this.dirtyBuffers = false;
       return true;
     } else if (this.dirtyBuffers) {
-      this.updateBuffers(true);
+      this.updateBuffers(); // true
       this.dirtyBuffers = false;
       return true;
     }
@@ -186,11 +175,11 @@ export class CellsTextHash extends Container<LabelMeshes> {
     }
   }
 
-  updateBuffers(reuseBuffers: boolean): void {
+  updateBuffers(): void {
     if (debugShowHashUpdates) console.log(`[CellsTextHash] updateBuffers for ${this.hashX}, ${this.hashY}`);
 
     // creates labelMeshes webGL buffers based on size
-    this.labelMeshes.prepare(reuseBuffers);
+    this.labelMeshes.prepare();
 
     // populate labelMeshes webGL buffers
     this.viewBounds.clear();

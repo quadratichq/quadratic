@@ -1,6 +1,6 @@
 import { debugWebWorkers } from '@/debugFlags';
 import { prepareBitmapFontInformation } from './renderBitmapFonts';
-import { RenderClientMessage, RenderInitMessage } from './renderClientMessages';
+import { RenderClientMessage, RenderInitMessage, RenderLabelMeshEntryMessage } from './renderClientMessages';
 
 class RenderWebWorker {
   private worker?: Worker;
@@ -21,10 +21,18 @@ class RenderWebWorker {
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
     switch (e.data.type) {
+      case 'labelMeshEntry':
+        this.labelMeshEntry(e.data);
+        break;
+
       default:
         console.warn('Unhandled message type', e.data.type);
     }
   };
+
+  private labelMeshEntry(message: RenderLabelMeshEntryMessage) {
+    console.log(message);
+  }
 }
 
 export const renderWebWorker = new RenderWebWorker();

@@ -7,33 +7,25 @@
  * are rendered.
  */
 
-import { BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program, Renderer } from 'pixi.js';
+import { debugShowCellHashesInfo } from '@/debugFlags';
+import { renderClient } from '../renderClient';
 import { LabelMesh } from './LabelMesh';
 
-export class LabelMeshEntry extends Mesh {
+export class LabelMeshEntry {
   private labelMesh: LabelMesh;
   private total: number;
 
   index = 0;
   vertexCount = 0;
   uvsCount = 0;
+  size = 0;
 
-  // @ts-expect-error
-  indices!: Uint16Array;
-  vertices!: Float32Array;
-  // @ts-expect-error
-  uvs!: Float32Array;
-  colors!: Float32Array;
+  indices?: Uint16Array;
+  vertices?: Float32Array;
+  uvs?: Float32Array;
+  colors?: Float32Array;
 
   constructor(labelMesh: LabelMesh, total: number) {
-    const geometry = new MeshGeometry();
-    const shader = labelMesh.hasColor ? shaderTint : shaderNoTint;
-    const material = new MeshMaterial(labelMesh.texture, {
-      program: Program.from(shader.msdfVert, shader.msdfFrag),
-      uniforms: { uFWidth: 0 },
-    });
-    super(geometry, material);
-    this.blendMode = BLEND_MODES.NORMAL_NPM;
     this.labelMesh = labelMesh;
     this.total = total;
     this.clear();
@@ -49,30 +41,40 @@ export class LabelMeshEntry extends Mesh {
 
     if (this.labelMesh.hasColor) {
       this.colors = new Float32Array(4 * 4 * this.total);
-      if (!this.geometry.attributes.aColors) {
-        this.geometry.addAttribute('aColors', this.colors, 4);
-      }
     }
   }
 
   // finalizes the buffers for rendering
   finalize() {
-    const vertexBuffer = this.geometry.getBuffer('aVertexPosition');
-    const textureBuffer = this.geometry.getBuffer('aTextureCoord');
-    const indexBuffer = this.geometry.getIndex();
-
-    vertexBuffer.data = this.vertices;
-    textureBuffer.data = this.uvs;
-    indexBuffer.data = this.indices;
-
-    vertexBuffer.update();
-    textureBuffer.update();
-    indexBuffer.update();
-
+    if (!this.vertices || !this.uvs || !this.indices) {
+      throw new Error('Expected LabelMeshEntries.finalize to have buffers');
+    }
     if (this.labelMesh.hasColor) {
-      const colorBuffer = this.geometry.getBuffer('aColors');
-      colorBuffer.data = this.colors;
-      colorBuffer.update();
+      if (!this.colors) {
+        throw new Error('Expected LabelMeshEntries.finalize to have colors');
+      }
+      renderClient.sendLabelMeshEntry(
+        {
+          textureUid: this.labelMesh.textureUid,
+          hasColor: this.labelMesh.hasColor,
+          vertices: this.vertices,
+          uvs: this.uvs,
+          indices: this.indices,
+          colors: this.colors,
+        },
+        [this.vertices.buffer, this.uvs.buffer, this.indices.buffer, this.colors.buffer]
+      );
+    } else {
+      renderClient.sendLabelMeshEntry(
+        {
+          textureUid: this.labelMesh.textureUid,
+          hasColor: this.labelMesh.hasColor,
+          vertices: this.vertices,
+          uvs: this.uvs,
+          indices: this.indices,
+        },
+        [this.vertices.buffer, this.uvs.buffer, this.indices.buffer]
+      );
     }
 
     if (debugShowCellHashesInfo) {
@@ -82,10 +84,5 @@ export class LabelMeshEntry extends Mesh {
 
   reduceSize(delta: number) {
     this.size -= delta;
-  }
-
-  specialRender(renderer: Renderer, ufWidth: number) {
-    this.shader.uniforms.uFWidth = ufWidth;
-    this.render(renderer);
   }
 }

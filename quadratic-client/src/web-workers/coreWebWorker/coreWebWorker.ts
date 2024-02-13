@@ -17,22 +17,45 @@ class CoreWebWorker {
   private loaded = false;
   private id = 0;
 
-  async load(contents: string, lastSequenceNum: number) {
+  // we need to wait for initialization of both fonts and file contents
+  private fontsReady = false;
+  private contents?: string;
+  private lastSequenceNum?: number;
+
+  fontsLoaded() {
+    this.fontsReady = true;
+    this.loadMessage();
+  }
+
+  load(contents: string, lastSequenceNum: number) {
     this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`);
+    this.contents = contents;
+    this.lastSequenceNum = lastSequenceNum;
+    this.loadMessage();
+  }
 
-    const channel = new MessageChannel();
+  async loadMessage() {
+    if (this.fontsReady && this.contents && this.lastSequenceNum !== undefined) {
+      if (!this.worker) {
+        throw new Error('Worker not initialized in coreWebWorker');
+      }
+      const channel = new MessageChannel();
 
-    const loadMessage: CoreClientLoad = {
-      type: 'load',
-      contents,
-      lastSequenceNum,
-    };
-    this.worker.postMessage(loadMessage, [channel.port1]);
-    renderWebWorker.init(channel.port2);
+      const loadMessage: CoreClientLoad = {
+        type: 'load',
+        contents: this.contents,
+        lastSequenceNum: this.lastSequenceNum,
+      };
+      this.worker.postMessage(loadMessage, [channel.port1]);
+      renderWebWorker.init(channel.port2);
 
-    if (debugWebWorkers) console.log('[core] created');
+      this.contents = undefined;
+      this.lastSequenceNum = undefined;
+
+      if (debugWebWorkers) console.log('[core] created');
+    }
   }
 
   private init() {

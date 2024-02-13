@@ -5,4 +5,15 @@ export interface RenderInitMessage {
   bitmapFonts: RenderBitmapFonts;
 }
 
-export type RenderClientMessage = RenderInitMessage;
+// also includes sending the data as transferable ArrayBuffers
+export interface RenderLabelMeshEntryMessage {
+  type: 'labelMeshEntry';
+  textureUid: number;
+  hasColor: boolean;
+  vertices: Float32Array;
+  uvs: Float32Array;
+  indices: Uint16Array;
+  colors?: Float32Array;
+}
+
+export type RenderClientMessage = RenderInitMessage | RenderLabelMeshEntryMessage;

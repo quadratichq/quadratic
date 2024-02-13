@@ -5,7 +5,6 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers } from '@/debugFlags';
 import { JsRenderCell } from '@/quadratic-core/types';
 import { CoreGridBounds, CoreReady, CoreRequestGridBounds } from '@/web-workers/coreWebWorker/coreMessages';
 import { CoreRenderCells, CoreRequestRenderCells } from '@/web-workers/coreWebWorker/coreRenderMessages';
@@ -23,7 +22,6 @@ class RenderCore {
   }
 
   private handleMessage = (e: MessageEvent<RenderCoreMessage>) => {
-    if (debugWebWorkers) console.log(`[renderCore] received ${e.data.type}`);
     switch (e.data.type) {
       case 'ready':
         this.renderLoad(e.data as CoreReady);

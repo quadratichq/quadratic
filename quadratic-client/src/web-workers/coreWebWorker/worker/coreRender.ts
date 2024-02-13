@@ -21,8 +21,6 @@ class CoreRender {
   }
 
   private handleMessage = (e: MessageEvent<CoreRenderMessage>) => {
-    if (debugWebWorkers) console.log(`[coreRender] received message ${e.data.type}`);
-
     switch (e.data.type) {
       case 'requestRenderCells':
         this.getRenderCells(e.data as CoreRequestRenderCells);
