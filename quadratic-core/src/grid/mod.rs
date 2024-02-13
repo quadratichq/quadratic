@@ -62,17 +62,6 @@ impl Grid {
         ret
     }
 
-    /// Exports all grid offsets for use by the client and workers.
-    pub fn export_metadata(&self) -> String {
-        let metadata = self
-            .sheets
-            .iter()
-            .map(|sheet| (sheet.id.to_string(), sheet.metadata()))
-            .collect::<HashMap<String, (SheetOffsets, Option<Rect>, Option<Rect>)>>();
-        let grid_offsets = GridMetaData { metadata };
-        serde_json::to_string(&grid_offsets).unwrap()
-    }
-
     #[cfg(test)]
     pub fn from_array(base_pos: Pos, array: &Array) -> Self {
         let mut ret = Grid::new();

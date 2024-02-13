@@ -1,6 +1,6 @@
 import { debugWebWorkers } from '@/debugFlags';
 import init from '@/quadratic-grid-metadata/quadratic_grid_metadata';
-import { GridMetadata } from '@/web-workers/coreWebWorker/coreMessages';
+import { GridRenderMetadata } from '@/web-workers/coreWebWorker/coreRenderMessages';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 
@@ -8,9 +8,9 @@ class RenderText {
   private cellsLabels = new Map<string, CellsLabels>();
   bitmapFonts: RenderBitmapFonts = {};
 
-  async init(metadata: GridMetadata) {
+  async init(metadata: GridRenderMetadata) {
     await init();
-    for (const sheetId in metadata) {
+    for (const sheetId in metadata.sheets) {
       this.cellsLabels.set(sheetId, new CellsLabels(sheetId, metadata[sheetId], this.bitmapFonts));
     }
     this.update();

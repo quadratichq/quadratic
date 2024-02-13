@@ -21,7 +21,6 @@ pub mod cell_array;
 pub mod cell_values;
 pub mod code;
 pub mod formatting;
-pub mod metadata;
 pub mod rendering;
 pub mod search;
 pub mod sheet_offsets;

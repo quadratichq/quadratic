@@ -1,4 +1,5 @@
-import { CoreGridBounds, CoreReady } from '../coreWebWorker/coreMessages';
+import { CoreClientReady } from '../coreWebWorker/coreClientMessages';
+import { CoreGridBounds } from '../coreWebWorker/coreMessages';
 import { CoreRenderCells } from '../coreWebWorker/coreRenderMessages';
 
-export type RenderCoreMessage = CoreGridBounds | CoreRenderCells | CoreReady;
+export type RenderCoreMessage = CoreGridBounds | CoreRenderCells | CoreClientReady;

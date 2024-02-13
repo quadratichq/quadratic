@@ -1,7 +1,7 @@
+import { SheetOffsets } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
 import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
+import { Pos } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
@@ -12,33 +12,42 @@ import {
   JsRenderFill,
 } from '../../quadratic-core/types';
 import { grid } from '../controller/Grid';
+import { metadata } from '../controller/metadata';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
   id: string;
   cursor: SheetCursor;
-  offsets: SheetOffsets;
 
   name: string;
   order: string;
   color?: string;
 
-  constructor(index: number | 'test') {
-    if (index === 'test') {
+  constructor(sheetId: string) {
+    if (sheetId === 'test') {
       this.id = 'test';
-      this.offsets = new SheetOffsets();
+      // this.offsets = new SheetOffsets();
       this.name = 'test';
       this.order = 'A0';
     } else {
-      const sheetId = grid.sheetIndexToId(index);
-      if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
       this.id = sheetId;
-      this.name = grid.getSheetName(sheetId) ?? '';
-      this.order = grid.getSheetOrder(sheetId);
-      this.color = grid.getSheetColor(sheetId);
-      this.offsets = grid.getOffsets(this.id);
+      const sheetInfo = metadata.sheetInfo.get(sheetId);
+      if (!sheetInfo) {
+        throw new Error('Expected sheetInfo to be defined in Sheet constructor');
+      }
+      this.name = sheetInfo.name;
+      this.order = sheetInfo.order;
+      this.color = sheetInfo.color;
     }
     this.cursor = new SheetCursor(this);
+  }
+
+  get offsets(): SheetOffsets {
+    const offsets = metadata.offsets.get(this.id);
+    if (!offsets) {
+      throw new Error('Expected SheetOffsets to be defined in get offsets');
+    }
+    return offsets;
   }
 
   updateMetadata() {
@@ -202,17 +211,19 @@ export class Sheet {
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
   }
 
+  // todo...
   updateSheetOffsets() {
-    const newOffsets = grid.getOffsets(this.id);
-    const offsetSizeChanges: OffsetsSizeChanges = this.offsets.findResizeChanges(newOffsets);
-    const columns = offsetSizeChanges.getChanges(true);
-    for (let i = 0; i < columns.length; i += 2) {
-      const index = columns[i];
-      const delta = columns[i + 1];
-      pixiApp.cellsSheets.adjustHeadings({ sheetId: this.id, column: index, delta });
-    }
-    this.offsets.free();
-    this.offsets = newOffsets;
+    throw new Error('todo updateSheetOffsets');
+    // const newOffsets = grid.getOffsets(this.id);
+    // const offsetSizeChanges: OffsetsSizeChanges = this.offsets.findResizeChanges(newOffsets);
+    // const columns = offsetSizeChanges.getChanges(true);
+    // for (let i = 0; i < columns.length; i += 2) {
+    //   const index = columns[i];
+    //   const delta = columns[i + 1];
+    //   pixiApp.cellsSheets.adjustHeadings({ sheetId: this.id, column: index, delta });
+    // }
+    // this.offsets.free();
+    // this.offsets = newOffsets;
   }
 
   //#endregion

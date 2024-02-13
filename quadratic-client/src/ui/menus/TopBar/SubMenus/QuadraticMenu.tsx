@@ -1,3 +1,4 @@
+import { metadata } from '@/grid/controller/metadata';
 import { Check } from '@mui/icons-material';
 import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
@@ -121,13 +122,13 @@ export const QuadraticMenu = () => {
         )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
           {undoAction.isAvailable(permissions) && (
-            <MenuItem onClick={() => grid.undo()} disabled={!grid.hasUndo()}>
+            <MenuItem onClick={() => grid.undo()} disabled={!metadata.hasUndo()}>
               <MenuLineItem primary={undoAction.label} secondary={KeyboardSymbols.Command + 'Z'} />
             </MenuItem>
           )}
           {redoAction.isAvailable(permissions) && (
             <>
-              <MenuItem onClick={() => grid.redo()} disabled={!grid.hasRedo()}>
+              <MenuItem onClick={() => grid.redo()} disabled={!metadata.hasRedo()}>
                 <MenuLineItem
                   primary={redoAction.label}
                   secondary={

@@ -39,7 +39,7 @@ export class CellsSheet extends Container {
     this.cellsFills.create();
     this.cellsBorders.create();
     this.cellsArray.create();
-    await this.cellsLabels.preload();
+    // await this.cellsLabels.preload();
   }
 
   show(bounds: Rectangle): void {
@@ -75,15 +75,15 @@ export class CellsSheet extends Container {
     this.cellsFills.create();
   }
 
-  update(userIsActive: boolean): boolean {
-    const update = this.cellsLabels.update(userIsActive);
-    if (update === 'headings') {
-      // todo: these can be much more efficient
-      this.cellsFills.create();
-      this.cellsArray.create();
+  // update(userIsActive: boolean): boolean {
+  //   const update = this.cellsLabels.update(userIsActive);
+  //   if (update === 'headings') {
+  //     // todo: these can be much more efficient
+  //     this.cellsFills.create();
+  //     this.cellsArray.create();
 
-      return true;
-    }
-    return update;
-  }
+  //     return true;
+  //   }
+  //   return update;
+  // }
 }

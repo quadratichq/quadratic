@@ -5,38 +5,86 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers } from '@/debugFlags';
+import { debugShowFileIO, debugWebWorkers } from '@/debugFlags';
 import init, { GridController, hello } from '@/quadratic-core/quadratic_core';
 import { JsRenderCell } from '@/quadratic-core/types';
-import { CoreClientLoad } from '../coreClientMessages';
-import { GridMetadata } from '../coreMessages';
+import { CoreClientLoad, GridMetadata } from '../coreClientMessages';
+import { GridRenderMetadata } from '../coreRenderMessages';
 import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
 
 class Core {
   private gridController?: GridController;
+  private file?: string;
+
+  private async loadGridFile(file: CoreClientLoad) {
+    console.log('loading grid file...');
+    const res = await fetch(file.url);
+    this.file = await res.text();
+    if (debugShowFileIO || debugWebWorkers) {
+      console.log(`[core] Loaded file ${file.url}`);
+    }
+  }
 
   // Creates a Grid form a file. Also connects the MessagePort for coreRender to
   // speak with this web worker.
-  async newFromFile(data: CoreClientLoad, renderPort: MessagePort) {
-    await init();
+  async loadFile(data: CoreClientLoad, renderPort: MessagePort) {
+    await Promise.all([init(), this.loadGridFile(data)]);
     hello();
 
-    this.gridController = GridController.newFromFile(data.contents, data.lastSequenceNum);
+    if (!this.file) {
+      throw new Error('Expected file to be defined in Core.loadFile');
+    }
+    this.gridController = GridController.newFromFile(this.file, data.sequenceNumber);
+
     if (debugWebWorkers) console.log('[core] GridController loaded');
 
     const sheetIds = this.getSheetIds();
-    const metadata: GridMetadata = {};
+    const metadata: GridMetadata = { undo: false, redo: false, sheets: {} };
     sheetIds.forEach((sheetId) => {
-      metadata[sheetId] = {
+      metadata.sheets[sheetId] = {
         offsets: this.getSheetOffsets(sheetId),
         bounds: this.getGridBounds({ sheetId, ignoreFormatting: false }),
         boundsNoFormatting: this.getGridBounds({ sheetId, ignoreFormatting: true }),
+        name: this.getSheetName(sheetId),
+        order: this.getSheetOrder(sheetId),
+        color: this.getSheetColor(sheetId),
       };
     });
     coreClient.init(metadata);
-    coreRender.init(metadata, renderPort);
+    const renderMetadata: GridRenderMetadata = {};
+    sheetIds.forEach((sheetId) => {
+      renderMetadata[sheetId] = {
+        offsets: this.getSheetOffsets(sheetId),
+        bounds: this.getGridBounds({ sheetId, ignoreFormatting: true }),
+      };
+    });
+    coreRender.init(renderMetadata, renderPort);
+  }
+
+  getSheetName(sheetId: string) {
+    if (!this.gridController) {
+      console.warn('Expected gridController to be defined in Core.getSheetName');
+      return '';
+    }
+    return this.gridController.getSheetName(sheetId);
+  }
+
+  getSheetOrder(sheetId: string) {
+    if (!this.gridController) {
+      console.warn('Expected gridController to be defined in Core.getSheetOrder');
+      return '';
+    }
+    return this.gridController.getSheetOrder(sheetId);
+  }
+
+  getSheetColor(sheetId: string) {
+    if (!this.gridController) {
+      console.warn('Expected gridController to be defined in Core.getSheetColor');
+      return '';
+    }
+    return this.gridController.getSheetColor(sheetId);
   }
 
   // Gets the bounds of a sheet.

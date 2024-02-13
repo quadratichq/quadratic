@@ -2,12 +2,34 @@
  * Messages between Core web worker and main thread (Client).
  */
 
-import { CoreGridBounds, CoreReady, CoreRequestGridBounds } from './coreMessages';
+import { CoreGridBounds, CoreRequestGridBounds } from './coreMessages';
 
 export interface CoreClientLoad {
   type: 'load';
-  contents: string;
-  lastSequenceNum: number;
+  url: string;
+  version: string;
+  sequenceNumber: number;
+  thumbnail: boolean;
 }
 
-export type CoreClientMessage = CoreClientLoad | CoreRequestGridBounds | CoreGridBounds | CoreReady;
+export interface SheetMetadata {
+  offsets: string;
+  bounds?: { x: number; y: number; width: number; height: number };
+  boundsNoFormatting?: { x: number; y: number; width: number; height: number };
+  name: string;
+  order: string;
+  color?: string;
+}
+
+export interface GridMetadata {
+  undo: boolean;
+  redo: boolean;
+  sheets: Record<string, SheetMetadata>;
+}
+
+export interface CoreClientReady {
+  type: 'ready';
+  metadata: GridMetadata;
+}
+
+export type CoreClientMessage = CoreClientLoad | CoreRequestGridBounds | CoreGridBounds | CoreClientReady;

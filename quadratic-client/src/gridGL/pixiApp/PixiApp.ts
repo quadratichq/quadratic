@@ -23,7 +23,6 @@ import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
-import { loadAssets } from '../loadAssets';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
@@ -63,7 +62,6 @@ export class PixiApp {
 
   async init() {
     this.initialized = true;
-    await loadAssets();
     this.initCanvas();
     await this.rebuild();
     offline.loadTransactions();

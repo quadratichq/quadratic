@@ -22,7 +22,7 @@ class CoreClient {
 
     switch (e.data.type) {
       case 'load':
-        core.newFromFile(e.data, e.ports[0]);
+        core.loadFile(e.data, e.ports[0]);
         break;
 
       default:

@@ -21,4 +21,21 @@ export interface CoreRenderCells {
   cells: JsRenderCell[];
 }
 
-export type CoreRenderMessage = CoreRequestRenderCells | CoreRenderCells | CoreRequestGridBounds | CoreGridBounds;
+export type SheetRenderMetadata = {
+  offsets: string;
+  bounds?: { x: number; y: number; width: number; height: number };
+};
+
+export type GridRenderMetadata = Record<string, SheetRenderMetadata>;
+
+export interface CoreRenderReady {
+  type: 'ready';
+  metadata: GridRenderMetadata;
+}
+
+export type CoreRenderMessage =
+  | CoreRequestRenderCells
+  | CoreRenderCells
+  | CoreRequestGridBounds
+  | CoreRenderReady
+  | CoreGridBounds;

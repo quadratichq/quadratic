@@ -3,6 +3,7 @@ import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { SheetId } from '../../quadratic-core/types';
 import { Sheet } from '../sheet/Sheet';
 import { grid } from './Grid';
+import { metadata } from './metadata';
 
 class Sheets {
   sheets: Sheet[];
@@ -20,37 +21,38 @@ class Sheets {
 
   async create() {
     this.sheets = [];
-    const sheetIds = grid.getSheetIds();
-    sheetIds.forEach((_, index) => {
-      const sheet = new Sheet(index);
+    const sheetIds = metadata.sheetIds;
+    sheetIds.forEach((sheetId) => {
+      const sheet = new Sheet(sheetId);
       this.sheets.push(sheet);
     });
     this.sort();
     this.current = this.sheets[0].id;
   }
 
+  // TODO...
   // ensures there's a Sheet.ts for every Sheet.rs
   repopulate() {
-    const sheetIds = grid.getSheetIds();
+    // const sheetIds = metadata.sheetIds;
     // ensure the sheets exist
-    sheetIds.forEach((sheetId, index) => {
-      if (!this.sheets.find((search) => search.id === sheetId)) {
-        const sheet = new Sheet(index);
-        this.sheets.push(sheet);
-        pixiApp.cellsSheets.addSheet(sheet.id);
-      }
-    });
+    // sheetIds.forEach((sheetId, index) => {
+    //   if (!this.sheets.find((search) => search.id === sheetId)) {
+    //     const sheet = new Sheet(index);
+    //     this.sheets.push(sheet);
+    //     pixiApp.cellsSheets.addSheet(sheet.id);
+    //   }
+    // });
 
-    // delete any sheets that no longer exist
-    this.sheets.forEach((sheet, index) => {
-      if (!sheetIds.includes(sheet.id)) {
-        this.sheets.splice(index, 1);
-        pixiApp.cellsSheets.deleteSheet(sheet.id);
-        if (this.current === sheet.id) {
-          this.current = this.sheets[0].id;
-        }
-      }
-    });
+    // // delete any sheets that no longer exist
+    // this.sheets.forEach((sheet, index) => {
+    //   if (!sheetIds.includes(sheet.id)) {
+    //     this.sheets.splice(index, 1);
+    //     pixiApp.cellsSheets.deleteSheet(sheet.id);
+    //     if (this.current === sheet.id) {
+    //       this.current = this.sheets[0].id;
+    //     }
+    //   }
+    // });
     this.sheets.forEach((sheet) => sheet.updateMetadata());
     this.updateSheetBar();
   }

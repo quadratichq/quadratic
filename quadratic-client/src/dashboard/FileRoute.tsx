@@ -1,13 +1,12 @@
 import { authClient } from '@/auth';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
+import { metadata } from '@/grid/controller/metadata';
+import { loadAssets } from '@/gridGL/loadAssets';
 import { isEmbed } from '@/helpers/isEmbed';
-import { firstRustFileVersion } from '@/schemas/validateAndUpgradeLegacyGridFile';
-import { versionGTE } from '@/schemas/versioning';
 import { Button } from '@/shadcn/ui/button';
 import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import {
   Link,
@@ -23,10 +22,6 @@ import { apiClient } from '../api/apiClient';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
 import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
-import { grid } from '../grid/controller/Grid';
-import init, { hello } from '../quadratic-core/quadratic_core';
-import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
-import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
 export type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
@@ -46,55 +41,40 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Response('Failed to load file from server.', { status: error.status });
   }
   if (debugShowMultiplayer)
-    console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
+    console.log(
+      `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
+    );
 
-  // Get file contents from S3
-  const res = await fetch(data.file.lastCheckpointDataUrl);
+  // initialize: Rust metadata and PIXI assets
+  await Promise.all([metadata.init(), loadAssets()]);
 
-  let checkpointContents = await res.text();
-  let version = data.file.lastCheckpointVersion;
+  // initialize Core web worker
+  await coreWebWorker.load({
+    url: data.file.lastCheckpointDataUrl,
+    version: data.file.lastCheckpointVersion,
+    sequenceNumber: data.file.lastCheckpointSequenceNumber,
+    thumbnail: !!data.file,
+  });
 
-  // only need to upgrade the file if file version is < 1.4
-  if (!versionGTE(data.file.lastCheckpointVersion, firstRustFileVersion)) {
-    // Validate and upgrade file to the latest version in TS (up to 1.4)
-    const file = await validateAndUpgradeGridFile(checkpointContents);
-    if (!file) {
-      Sentry.captureEvent({
-        message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-        level: 'error',
-      });
-      throw new Response('File validation failed.', { status: 200 });
-    }
-    checkpointContents = file.contents;
-    version = file.version;
-  }
+  // if (!grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber)) {
+  //   Sentry.captureEvent({
+  //     message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
+  //     level: 'error',
+  //   });
+  //   throw new Response('File validation failed.', { status: 200 });
+  // }
+  // grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
 
-  // load WASM
-  await init();
-  hello();
-
-  // Launch the core web worker and load the file
-  coreWebWorker.load(checkpointContents, data.file.lastCheckpointSequenceNumber);
-
-  if (!grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber)) {
-    Sentry.captureEvent({
-      message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: 'error',
-    });
-    throw new Response('File validation failed.', { status: 200 });
-  }
-  grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
-
-  // If the file is newer than the app, do a (hard) reload.
-  const gridVersion = grid.getVersion();
-  if (compareVersions(version, gridVersion) === VersionComparisonResult.GreaterThan) {
-    Sentry.captureEvent({
-      message: `User opened a file at version ${version} but the app is at version ${gridVersion}. The app will automatically reload.`,
-      level: 'log',
-    });
-    // @ts-expect-error hard reload via `true` only works in some browsers
-    window.location.reload(true);
-  }
+  // // If the file is newer than the app, do a (hard) reload.
+  // const gridVersion = grid.getVersion();
+  // if (compareVersions(version, gridVersion) === VersionComparisonResult.GreaterThan) {
+  //   Sentry.captureEvent({
+  //     message: `User opened a file at version ${version} but the app is at version ${gridVersion}. The app will automatically reload.`,
+  //     level: 'log',
+  //   });
+  //   // @ts-expect-error hard reload via `true` only works in some browsers
+  //   window.location.reload(true);
+  // }
 
   return data;
 };

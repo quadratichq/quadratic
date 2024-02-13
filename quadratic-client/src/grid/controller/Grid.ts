@@ -13,7 +13,6 @@ import init, {
   GridController,
   JsCodeResult,
   JsComputeGetCells,
-  JsRenderBorders,
   MinMax,
   PasteSpecial,
   Pos,
@@ -456,18 +455,22 @@ export class Grid {
     return JSON.parse(data);
   }
 
+  // todo...
   getAllRenderFills(sheetId: string): JsRenderFill[] {
-    const data = this.gridController.getAllRenderFills(sheetId);
-    return JSON.parse(data);
+    return [];
+    // const data = this.gridController.getAllRenderFills(sheetId);
+    // return JSON.parse(data);
   }
 
   getCodeCell(sheetId: string, x: number, y: number): JsCodeCell | undefined {
     return this.gridController.getCodeCell(sheetId, new Pos(x, y));
   }
 
+  // todo...
   getRenderCodeCells(sheetId: string): JsRenderCodeCell[] {
-    const data = this.gridController.getAllRenderCodeCells(sheetId);
-    return JSON.parse(data);
+    return [];
+    // const data = this.gridController.getAllRenderCodeCells(sheetId);
+    // return JSON.parse(data);
   }
 
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
@@ -478,13 +481,16 @@ export class Grid {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
   }
 
-  getRenderBorders(sheetId: string): JsRenderBorders {
-    return this.gridController.getRenderBorders(sheetId);
-  }
+  // todo...
+  // getRenderBorders(sheetId: string): JsRenderBorders {
+  // return this.gridController.getRenderBorders(sheetId);
+  // }
 
+  // todo...
   getHtmlOutput(sheetId: string): JsHtmlOutput[] {
-    const data = this.gridController.getHtmlOutput(sheetId);
-    return JSON.parse(data);
+    // const data = this.gridController.getHtmlOutput(sheetId);
+    // return JSON.parse(data);
+    return [];
   }
 
   //#endregion
@@ -765,10 +771,11 @@ export class Grid {
     this.gridController.setMultiplayerSequenceNum(sequenceNum);
   }
 
+  // todo...
   receiveSequenceNum(sequenceNum: number) {
-    if (debugShowMultiplayer) console.log(`[Multiplayer] Server is at sequence_num ${sequenceNum}.`);
-    const summary = this.gridController.receiveSequenceNum(sequenceNum);
-    this.transactionResponse(summary);
+    // if (debugShowMultiplayer) console.log(`[Multiplayer] Server is at sequence_num ${sequenceNum}.`);
+    // const summary = this.gridController.receiveSequenceNum(sequenceNum);
+    // this.transactionResponse(summary);
   }
 
   receiveMultiplayerTransactions(transactions: string) {

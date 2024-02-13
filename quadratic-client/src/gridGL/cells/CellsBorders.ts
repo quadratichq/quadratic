@@ -1,5 +1,4 @@
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderBorder, JsRenderBorders } from '../../quadratic-core/quadratic_core';
 import { CellsSheet } from './CellsSheet';
@@ -57,12 +56,13 @@ export class CellsBorders extends Container {
     }
   }
 
+  // todo...
   create(): void {
     this.clear();
-    const borders = grid.getRenderBorders(this.sheet.id);
-    this.drawHorizontal(borders);
-    this.drawVertical(borders);
-    borders.free();
+    // const borders = grid.getRenderBorders(this.sheet.id);
+    // this.drawHorizontal(borders);
+    // this.drawVertical(borders);
+    // borders.free();
   }
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {
