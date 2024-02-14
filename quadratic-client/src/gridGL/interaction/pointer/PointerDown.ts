@@ -1,3 +1,4 @@
+import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -20,7 +21,7 @@ export class PointerDown {
   // flag that ensures that if pointerUp triggers during setTimeout, pointerUp is still called (see below)
   private afterShowInput?: boolean;
 
-  pointerDown(world: Point, event: PointerEvent): void {
+  async pointerDown(world: Point, event: PointerEvent) {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return;
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
@@ -56,7 +57,7 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        const code = sheet.getCodeCell(column, row);
+        const code = await coreWebWorker.getCodeCell(sheet.id, column, row);
         if (code) {
           doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
         } else {

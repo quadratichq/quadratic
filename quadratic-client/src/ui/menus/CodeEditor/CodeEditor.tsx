@@ -2,6 +2,7 @@
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
+import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -80,10 +81,10 @@ export const CodeEditor = () => {
   }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
 
   const updateCodeCell = useCallback(
-    (updateEditorContent: boolean) => {
+    async (updateEditorContent: boolean) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
       if (!editorInteractionState.selectedCellSheet) return;
-      const codeCell = grid.getCodeCell(
+      const codeCell = await coreWebWorker.getCodeCell(
         editorInteractionState.selectedCellSheet,
         editorInteractionState.selectedCell.x,
         editorInteractionState.selectedCell.y

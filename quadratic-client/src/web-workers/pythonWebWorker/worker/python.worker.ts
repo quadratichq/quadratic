@@ -25,7 +25,7 @@ let pyodide: PyodideInterface | undefined;
 async function pythonWebWorker() {
   try {
     self.postMessage({ type: 'not-loaded' } as PythonMessage);
-    pyodide = await loadPyodide({ indexURL: '/public/pyodide' });
+    pyodide = await loadPyodide({ indexURL: '/pyodide' });
 
     pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage('micropip', { messageCallback: () => {} });

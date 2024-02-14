@@ -6,17 +6,23 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import { CoreGridBounds, CoreReady, CoreRequestGridBounds, GridMetadata } from '../coreMessages';
-import { CoreRenderCells, CoreRenderMessage, CoreRequestRenderCells } from '../coreRenderMessages';
+import { CoreGridBounds, CoreRequestGridBounds } from '../coreMessages';
+import {
+  CoreRenderCells,
+  CoreRenderMessage,
+  CoreRenderReady,
+  CoreRequestRenderCells,
+  GridRenderMetadata,
+} from '../coreRenderMessages';
 import { core } from './core';
 
 class CoreRender {
   private coreRenderPort?: MessagePort;
 
-  init(metadata: GridMetadata, renderPort: MessagePort) {
+  init(metadata: GridRenderMetadata, renderPort: MessagePort) {
     this.coreRenderPort = renderPort;
     this.coreRenderPort.onmessage = this.handleMessage;
-    this.coreRenderPort.postMessage({ type: 'ready', metadata } as CoreReady);
+    this.coreRenderPort.postMessage({ type: 'ready', metadata } as CoreRenderReady);
     if (debugWebWorkers) console.log('[coreRender] initialized');
   }
 

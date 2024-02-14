@@ -6,8 +6,7 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import { CoreClientMessage } from '../coreClientMessages';
-import { CoreReady, GridMetadata } from '../coreMessages';
+import { CoreClientMessage, CoreClientReady, GridMetadata } from '../coreClientMessages';
 import { core } from './core';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
@@ -31,7 +30,7 @@ class CoreClient {
   };
 
   init(metadata: GridMetadata) {
-    self.postMessage({ type: 'ready', metadata } as CoreReady);
+    self.postMessage({ type: 'ready', metadata } as CoreClientReady);
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 }

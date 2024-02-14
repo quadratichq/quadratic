@@ -6,8 +6,12 @@
  */
 
 import { JsRenderCell } from '@/quadratic-core/types';
-import { CoreGridBounds, CoreReady, CoreRequestGridBounds } from '@/web-workers/coreWebWorker/coreMessages';
-import { CoreRenderCells, CoreRequestRenderCells } from '@/web-workers/coreWebWorker/coreRenderMessages';
+import { CoreGridBounds, CoreRequestGridBounds } from '@/web-workers/coreWebWorker/coreMessages';
+import {
+  CoreRenderCells,
+  CoreRenderReady,
+  CoreRequestRenderCells,
+} from '@/web-workers/coreWebWorker/coreRenderMessages';
 import { RenderCoreMessage } from '../renderCoreMessages';
 import { renderText } from './renderText';
 
@@ -24,7 +28,7 @@ class RenderCore {
   private handleMessage = (e: MessageEvent<RenderCoreMessage>) => {
     switch (e.data.type) {
       case 'ready':
-        this.renderLoad(e.data as CoreReady);
+        this.renderLoad(e.data as CoreRenderReady);
         break;
 
       case 'renderCells':
@@ -94,7 +98,7 @@ class RenderCore {
    * Core API responses *
    **********************/
 
-  private renderLoad(event: CoreReady) {
+  private renderLoad(event: CoreRenderReady) {
     renderText.init(event.metadata);
   }
 

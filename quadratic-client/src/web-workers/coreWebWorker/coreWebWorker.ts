@@ -6,8 +6,9 @@
 
 import { debugWebWorkers } from '@/debugFlags';
 import { metadata } from '@/grid/controller/metadata';
+import { JsCodeCell } from '@/quadratic-core/types';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
-import { CoreClientLoad, CoreClientMessage, CoreClientReady } from './coreClientMessages';
+import { CoreClientGetCodeCell, CoreClientLoad, CoreClientMessage, CoreClientReady } from './coreClientMessages';
 
 export interface FileToLoad {
   url: string;
@@ -79,10 +80,39 @@ class CoreWebWorker {
         this.ready(e.data as CoreClientReady);
         break;
 
+      case 'getCodeCellResponse':
+        const resolve = this.waitingForCallback[e.data.id];
+        if (resolve) {
+          resolve(e.data.cell);
+          delete this.waitingForCallback[e.data.id];
+        }
+        break;
+
       default:
         console.warn('Unhandled message type', e.data.type);
     }
   };
+
+  /******************
+   * Core API calls *
+   ******************/
+  getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
+    return new Promise((resolve) => {
+      if (!this.worker) {
+        throw new Error('Worker not initialized in coreWebWorker');
+      }
+      const id = this.id++;
+      this.waitingForCallback[id] = resolve;
+      const message: CoreClientGetCodeCell = {
+        type: 'getCodeCell',
+        sheetId,
+        x,
+        y,
+        id,
+      };
+      this.worker.postMessage(message);
+    });
+  }
 }
 
 export const coreWebWorker = new CoreWebWorker();

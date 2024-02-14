@@ -2,6 +2,7 @@
  * Messages between Core web worker and main thread (Client).
  */
 
+import { JsCodeCell } from '@/quadratic-core/types';
 import { CoreGridBounds, CoreRequestGridBounds } from './coreMessages';
 
 export interface CoreClientLoad {
@@ -32,4 +33,24 @@ export interface CoreClientReady {
   metadata: GridMetadata;
 }
 
-export type CoreClientMessage = CoreClientLoad | CoreRequestGridBounds | CoreGridBounds | CoreClientReady;
+export interface CoreClientGetCodeCell {
+  type: 'getCodeCell';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientGetCodeCellResponse {
+  type: 'getCodeCellResponse';
+  id: number;
+  cell: JsCodeCell | undefined;
+}
+
+export type CoreClientMessage =
+  | CoreClientLoad
+  | CoreRequestGridBounds
+  | CoreGridBounds
+  | CoreClientReady
+  | CoreClientGetCodeCell
+  | CoreClientGetCodeCellResponse;

@@ -3,6 +3,7 @@ import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { cn } from '@/shadcn/utils';
 import { useGridSettings } from '@/ui/menus/TopBar/SubMenus/useGridSettings';
+import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
 import { useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
 
@@ -63,68 +64,72 @@ export const HoverCell = () => {
     };
   }, []);
 
-  let text: JSX.Element | undefined;
-  const code = cell ? sheets.sheet.getCodeCell(Number(cell.x), Number(cell.y)) : undefined;
-  const renderCodeCell = cell as JsRenderCodeCell | undefined;
-  const editingCell = cell as EditingCell | undefined;
-  const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;
-  let onlyCode = false;
-  if (spillError) {
-    onlyCode = false;
-    text = (
-      <>
-        <div className="hover-cell-header">Spill Error</div>
-        <div className="hover-cell-body">
-          <div>Array output could not expand because it would overwrite existing values.</div>
-          <div>
-            To fix this, remove content in cell{spillError.length > 1 ? 's' : ''}{' '}
-            {spillError.map((pos, index) => (
-              <>
-                <code className="hover-cell-code">
-                  ({String(pos.x)}, {String(pos.y)})
-                </code>
-                {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
-              </>
-            ))}
-          </div>
-        </div>
-      </>
-    );
-  } else if (renderCodeCell?.state === 'RunError') {
-    onlyCode = false;
-    if (code) {
-      text = (
-        <>
-          <div className="hover-cell-header">Run Error</div>
-          <div className="hover-cell-body">
-            <div>There was an error running the code in this cell.</div>
-            <div className="hover-cell-error-msg">{code.std_err}</div>
-          </div>
-          <div className="hover-cell-header-space">{renderCodeCell.language} Code</div>
-          <div className="code-body">{code?.code_string}</div>
-        </>
-      );
-    }
-  } else if (renderCodeCell?.state) {
-    onlyCode = false;
-    text = (
-      <>
-        <div className="hover-cell-header">{renderCodeCell?.language} Code</div>
-        <div className="code-body">{code?.code_string}</div>
-      </>
-    );
-    onlyCode = true;
-  } else if (editingCell?.user) {
-    onlyCode = false;
-    text = (
-      <>
-        <div className="hover-cell-header">Multiplayer Edit</div>
-        <div className="hover-cell-body">
-          {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
-        </div>
-      </>
-    );
-  }
+  const [text, setText] = useState<React.ReactNode>();
+  const [onlyCode, setOnlyCode] = useState(false);
+  useEffect(() => {
+    const asyncFunction = async () => {
+      const code = cell ? await coreWebWorker.getCodeCell(sheets.sheet.id, Number(cell.x), Number(cell.y)) : undefined;
+      const renderCodeCell = cell as JsRenderCodeCell | undefined;
+      const editingCell = cell as EditingCell | undefined;
+      const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;
+      if (spillError) {
+        setOnlyCode(false);
+        setText(
+          <>
+            <div className="hover-cell-header">Spill Error</div>
+            <div className="hover-cell-body">
+              <div>Array output could not expand because it would overwrite existing values.</div>
+              <div>
+                To fix this, remove content in cell{spillError.length > 1 ? 's' : ''}{' '}
+                {spillError.map((pos, index) => (
+                  <>
+                    <code className="hover-cell-code">
+                      ({String(pos.x)}, {String(pos.y)})
+                    </code>
+                    {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
+                  </>
+                ))}
+              </div>
+            </div>
+          </>
+        );
+      } else if (renderCodeCell?.state === 'RunError') {
+        setOnlyCode(false);
+        if (code) {
+          setText(
+            <>
+              <div className="hover-cell-header">Run Error</div>
+              <div className="hover-cell-body">
+                <div>There was an error running the code in this cell.</div>
+                <div className="hover-cell-error-msg">{code.std_err}</div>
+              </div>
+              <div className="hover-cell-header-space">{renderCodeCell.language} Code</div>
+              <div className="code-body">{code?.code_string}</div>
+            </>
+          );
+        }
+      } else if (renderCodeCell?.state) {
+        setOnlyCode(true);
+        setText(
+          <>
+            <div className="hover-cell-header">{renderCodeCell?.language} Code</div>
+            <div className="code-body">{code?.code_string}</div>
+          </>
+        );
+      } else if (editingCell?.user) {
+        setOnlyCode(false);
+        setText(
+          <>
+            <div className="hover-cell-header">Multiplayer Edit</div>
+            <div className="hover-cell-body">
+              {editingCell.codeEditor ? 'The code in this cell' : 'This cell'} is being edited by {editingCell.user}.
+            </div>
+          </>
+        );
+      }
+    };
+    asyncFunction();
+  }, [cell]);
 
   useEffect(() => {
     const updatePosition = () => {

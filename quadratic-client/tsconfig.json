@@ -1,9 +1,8 @@
 {
   "extends": "./tsconfig.generic.json",
   "compilerOptions": {
-    "lib": ["dom", "dom.Iterable"]
+    "lib": ["dom", "dom.Iterable", "webworker"]
   },
   "include": ["src"],
-  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*", "**/worker/*"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"]
 }

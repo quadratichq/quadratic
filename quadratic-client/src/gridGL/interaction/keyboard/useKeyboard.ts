@@ -72,14 +72,11 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       return;
     }
 
-    if (
-      keyboardCell({
-        event,
-        editorInteractionState,
-        setEditorInteractionState,
-      })
-    )
-      return;
+    keyboardCell({
+      event,
+      editorInteractionState,
+      setEditorInteractionState,
+    });
   };
 
   return {

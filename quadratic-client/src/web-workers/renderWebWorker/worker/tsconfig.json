@@ -4,5 +4,6 @@
     "rootDir": "../../../",
     "module": "ESNext",
     "lib": ["ESNext", "webworker"]
-  }
+  },
+  "include": ["."]
 }
