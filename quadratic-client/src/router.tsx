@@ -24,6 +24,7 @@ import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Create from './routes/files.create';
 import { initializeAnalytics } from './utils/analytics';
+
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
 
@@ -41,8 +42,8 @@ export const router = createBrowserRouter(
         path="/"
         loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
           // All other routes get the same data
-          let isAuthenticated = await authClient.isAuthenticated();
-          let user = await authClient.user();
+          const isAuthenticated = await authClient.isAuthenticated();
+          const user = await authClient.user();
 
           // This is where we determine whether we need to run a migration
           // This redirect should trigger for every route _except_ the migration
@@ -54,7 +55,7 @@ export const router = createBrowserRouter(
             }
           }
 
-          initializeAnalytics({ isAuthenticated, user });
+          initializeAnalytics(user);
 
           return { isAuthenticated, loggedInUser: user };
         }}
@@ -137,14 +138,14 @@ export const router = createBrowserRouter(
       <Route
         path={ROUTES.LOGIN}
         loader={async ({ request }) => {
-          let isAuthenticated = await authClient.isAuthenticated();
+          const isAuthenticated = await authClient.isAuthenticated();
 
-          // If they’re authenticated, redirect home
+          // If they’re logged in, redirect home
           if (isAuthenticated) {
             return redirect('/');
           }
 
-          // If they’re not authenticated, send them to Auth0
+          // If not, send them to Auth0
           // Watch for a `from` query param, as unprotected routes will redirect
           // to here for them to auth first
           // Also watch for the presence of a `signup` query param, which means
@@ -156,9 +157,6 @@ export const router = createBrowserRouter(
 
           // auth0 will re-route us (above) but telling react-router where we
           // are re-routing to makes sure that this doesn't end up in the history stack
-          // but we have to add an artifical delay that's long enough for
-          // the auth0 navigation to take place
-          await new Promise((resolve) => setTimeout(resolve, 10000));
           return redirect(redirectTo);
         }}
       />

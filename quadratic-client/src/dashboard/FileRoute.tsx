@@ -1,4 +1,4 @@
-import { authClient } from '@/auth';
+import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
 import { isEmbed } from '@/helpers/isEmbed';
@@ -113,6 +113,8 @@ export const Component = () => {
   if (isEmbed) {
     document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
   }
+
+  useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
     <RecoilRoot initializeState={initializeState}>

@@ -49,7 +49,6 @@ beforeAll(async () => {
       },
     },
   });
-
   await createFile({
     data: {
       creatorUserId: userOwner.id,
@@ -57,6 +56,20 @@ beforeAll(async () => {
       name: 'test_team_file_2',
       contents: Buffer.from('contents_1'),
       uuid: '00000000-0000-4000-8000-000000000002',
+    },
+  });
+
+  await dbClient.team.create({
+    data: {
+      name: 'team2',
+      UserTeamRole: {
+        create: [
+          {
+            userId: userOwner.id,
+            role: 'OWNER',
+          },
+        ],
+      },
     },
   });
 });
@@ -135,14 +148,14 @@ describe('PATCH /v0/files/:uuid', () => {
     });
 
     describe('to a user', () => {
-      it('rejects request to move to a user that doesn’t exist', async () => {
+      it('rejects user -> user that doesn’t exist', async () => {
         await request(app)
           .patch('/v0/files/00000000-0000-4000-8000-000000000001')
           .send({ ownerUserId: 99999 })
           .set('Authorization', `Bearer ValidToken userOwner`)
           .expect(400);
       });
-      it('accepts moving file to self', async () => {
+      it('accepts user -> self', async () => {
         const ownerAuth0Id = 'userOwner';
         const ownerUserId = await getUserIdByAuth0Id(ownerAuth0Id);
         await request(app)
@@ -154,7 +167,7 @@ describe('PATCH /v0/files/:uuid', () => {
             expect(res.body.ownerUserId).toBe(ownerUserId);
           });
       });
-      it('accepts moving file to another user', async () => {
+      it('accepts user -> user', async () => {
         const ownerUserId = await getUserIdByAuth0Id('userNoTeam');
         await request(app)
           .patch('/v0/files/00000000-0000-4000-8000-000000000001')
@@ -164,19 +177,18 @@ describe('PATCH /v0/files/:uuid', () => {
           .expect((res) => {
             expect(res.body.ownerUserId).toBe(ownerUserId);
           });
-      });
-      // it('accepts moving file from a team', async () => {})
-    });
-
-    describe('to a team', () => {
-      it('rejects request to move file to a team that doesn’t exist (you won’t have permission for a team that doesn’t exist)', async () => {
+        // Move it back
+        const ownerUserId2 = await getUserIdByAuth0Id('userOwner');
         await request(app)
           .patch('/v0/files/00000000-0000-4000-8000-000000000001')
-          .send({ ownerTeamId: 99999 })
-          .set('Authorization', `Bearer ValidToken userOwner`)
-          .expect(403);
+          .send({ ownerUserId: ownerUserId2 })
+          .set('Authorization', `Bearer ValidToken userNoTeam`)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.ownerUserId).toBe(ownerUserId2);
+          });
       });
-      it('rejects request to move file to a team if you don’t have permission to edit that team', async () => {
+      it('accepts user -> team', async () => {
         const { id: ownerTeamId } = (await dbClient.team.findFirst({
           where: {
             name: 'team1',
@@ -185,10 +197,36 @@ describe('PATCH /v0/files/:uuid', () => {
         await request(app)
           .patch('/v0/files/00000000-0000-4000-8000-000000000001')
           .send({ ownerTeamId })
+          .set('Authorization', `Bearer ValidToken userOwner`)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.ownerTeamId).toBe(ownerTeamId);
+          });
+      });
+    });
+
+    describe('to a team', () => {
+      it('rejects team -> team that doesn’t exist', async () => {
+        await request(app)
+          .patch('/v0/files/00000000-0000-4000-8000-000000000002')
+          .send({ ownerTeamId: 99999 })
+          .set('Authorization', `Bearer ValidToken userOwner`)
+          .expect(400)
+          .expect(expectError);
+      });
+      it('rejects team -> team if you don’t have permission in the team', async () => {
+        const { id: ownerTeamId } = (await dbClient.team.findFirst({
+          where: {
+            name: 'team1',
+          },
+        })) as any;
+        await request(app)
+          .patch('/v0/files/00000000-0000-4000-8000-000000000002')
+          .send({ ownerTeamId })
           .set('Authorization', `Bearer ValidToken userViewer`)
           .expect(403);
       });
-      it('accepts request to move file to the team its already in', async () => {
+      it('accepts team -> same team', async () => {
         const { id: ownerTeamId } = (await dbClient.team.findFirst({
           where: {
             name: 'team1',
@@ -201,6 +239,32 @@ describe('PATCH /v0/files/:uuid', () => {
           .expect(200)
           .expect((res) => {
             expect(res.body.ownerTeamId).toBe(ownerTeamId);
+          });
+      });
+      it('accepts team -> team', async () => {
+        const { id: ownerTeamId } = (await dbClient.team.findFirst({
+          where: {
+            name: 'team2',
+          },
+        })) as any;
+        await request(app)
+          .patch('/v0/files/00000000-0000-4000-8000-000000000002')
+          .send({ ownerTeamId })
+          .set('Authorization', `Bearer ValidToken userOwner`)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.ownerTeamId).toBe(ownerTeamId);
+          });
+      });
+      it('accepts team -> user', async () => {
+        const ownerUserId = await getUserIdByAuth0Id('userNoTeam');
+        await request(app)
+          .patch('/v0/files/00000000-0000-4000-8000-000000000002')
+          .send({ ownerUserId })
+          .set('Authorization', `Bearer ValidToken userOwner`)
+          .expect(200)
+          .expect((res) => {
+            expect(res.body.ownerUserId).toBe(ownerUserId);
           });
       });
     });

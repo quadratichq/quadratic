@@ -1,53 +1,52 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 
-export default [
-  validateRequestSchema(
-    z.object({
-      body: ApiSchemas['/v0/teams/:uuid.POST.request'],
-      params: z.object({
-        uuid: z.string().uuid(),
-      }),
-    })
-  ),
-  validateAccessToken,
-  userMiddleware,
-  handler,
-];
+export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: Request, res: Response) {
+const schema = z.object({
+  body: ApiSchemas['/v0/teams/:uuid.PATCH.request'],
+  params: z.object({
+    uuid: z.string().uuid(),
+  }),
+});
+
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:uuid.PATCH.response']>) {
   const {
+    body: { name },
     params: { uuid },
+  } = parseRequest(req, schema);
+  const {
     user: { id: userId },
-  } = req as RequestWithUser;
-  const { userMakingRequest } = await getTeam({ uuid, userId });
-
-  // TODO: improve this more generically when validating?
-  const body = req.body as ApiTypes['/v0/teams/:uuid.POST.request'];
+  } = req;
+  const {
+    userMakingRequest: { permissions },
+  } = await getTeam({ uuid, userId });
 
   // Can the user even edit this team?
-  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
-    return res.status(403).json({ error: { message: 'User does not have permission to edit this team.' } });
+  if (!permissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'User does not have permission to edit this team.');
   }
+
+  // TODO: what if it's the team avatar?
 
   // TODO: what if it's billing info?
 
-  // Update the team
+  // Update the team name
   const newTeam = await dbClient.team.update({
     where: {
       uuid,
     },
-    data: body,
+    data: {
+      name,
+    },
   });
-
-  const data: ApiTypes['/v0/teams/:uuid.POST.response'] = { name: newTeam.name };
-  if (newTeam.picture) data.picture = newTeam.picture;
-  return res.status(200).json(data);
+  return res.status(200).json({ name: newTeam.name });
 }

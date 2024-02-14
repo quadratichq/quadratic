@@ -260,8 +260,8 @@ export const ApiSchemas = {
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
   }),
-  '/v0/teams/:uuid.POST.request': TeamSchema.pick({ name: true, picture: true }),
-  '/v0/teams/:uuid.POST.response': TeamSchema.pick({ name: true, picture: true }),
+  '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true, picture: true }),
+  '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true, picture: true }),
 
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': TeamUserSchema.pick({ email: true, role: true }).extend({

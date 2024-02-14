@@ -20,14 +20,13 @@ export const fullClipboardSupport = (): boolean => {
 //#region document event handler for copy, paste, and cut
 
 // returns if focus is not on the body or canvas or parent of canvas
-const canvasIsTarget = (e: ClipboardEvent) => {
-  return (
-    e.target === document.body || e.target === pixiApp.canvas || (e.target as HTMLElement)?.contains(pixiApp.canvas)
-  );
+const canvasIsTarget = () => {
+  const target = document.activeElement;
+  return target === document.body || target === pixiApp.canvas || (target as HTMLElement)?.contains(pixiApp.canvas);
 };
 
 export const copyToClipboardEvent = (e: ClipboardEvent) => {
-  if (!canvasIsTarget(e)) return;
+  if (!canvasIsTarget()) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
@@ -37,7 +36,7 @@ export const copyToClipboardEvent = (e: ClipboardEvent) => {
 };
 
 export const cutToClipboardEvent = async (e: ClipboardEvent) => {
-  if (!canvasIsTarget(e)) return;
+  if (!canvasIsTarget()) return;
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
@@ -53,7 +52,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
-  if (!canvasIsTarget(e)) return;
+  if (!canvasIsTarget()) return;
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
   if (!e.clipboardData) {

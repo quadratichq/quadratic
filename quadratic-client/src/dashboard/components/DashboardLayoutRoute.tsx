@@ -1,4 +1,5 @@
 import { apiClient } from '@/api/apiClient';
+import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { AvatarWithLetters } from '@/components/AvatarWithLetters';
 import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
@@ -38,6 +39,9 @@ export const Component = () => {
   useEffect(() => {
     setIsOpen((prevIsOpen) => (prevIsOpen ? false : prevIsOpen));
   }, [location.pathname]);
+
+  // Ensure long-running browser sessions still have a token
+  useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
     <div className={`h-full lg:flex lg:flex-row`}>

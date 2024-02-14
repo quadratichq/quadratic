@@ -7,10 +7,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
 import { Skeleton } from '@/shadcn/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shadcn/ui/tooltip';
 import { cn } from '@/shadcn/utils';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
-import { EnvelopeClosedIcon, Link1Icon, LinkBreak1Icon, PersonIcon } from '@radix-ui/react-icons';
+import {
+  EnvelopeClosedIcon,
+  ExclamationTriangleIcon,
+  Link1Icon,
+  LinkBreak1Icon,
+  PersonIcon,
+} from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import {
   ApiTypes,
@@ -256,6 +263,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         return (
           <ManageUser
             key={user.id}
+            publicLinkAccess={publicLinkAccess}
             isLoggedInUser={isLoggedInUser}
             user={user}
             roles={canEditFile ? ['EDITOR', 'VIEWER'] : ['VIEWER']}
@@ -479,6 +487,7 @@ export function InviteForm({
 
 function ManageUser({
   isLoggedInUser,
+  publicLinkAccess,
   user,
   roles,
   onDelete,
@@ -486,6 +495,7 @@ function ManageUser({
 }: {
   onDelete?: (submit: FetcherSubmitFunction, userId: string) => void;
   onUpdate?: (submit: FetcherSubmitFunction, userId: string, role: UserTeamRole | UserFileRole) => void;
+  publicLinkAccess?: PublicLinkAccess;
   isLoggedInUser: boolean;
   user: {
     id: number;
@@ -501,7 +511,7 @@ function ManageUser({
 
   const isReadOnly = !((roles.length > 2 && Boolean(onUpdate)) || Boolean(onDelete));
   const userId = String(user.id);
-  let value = user.role;
+  let activeRole = user.role;
   let error = undefined;
 
   // If user is being deleted, hide them
@@ -514,12 +524,12 @@ function ManageUser({
 
   // If the user's role is being updated, show the optimistic value
   if (fetcherUpdate.state !== 'idle' && isJsonObject(fetcherUpdate.json)) {
-    value = fetcherUpdate.json.role as (typeof roles)[0];
+    activeRole = fetcherUpdate.json.role as (typeof roles)[0];
   } else if (fetcherUpdate.data && !fetcherUpdate.data.ok) {
     error = 'Failed to update. Try again.';
   }
 
-  const label = getRoleLabel(value);
+  const label = getRoleLabel(activeRole);
 
   return (
     <ListItemUser
@@ -532,31 +542,45 @@ function ManageUser({
         isReadOnly ? (
           <Type className="pr-4">{label}</Type>
         ) : (
-          <Select
-            value={value}
-            onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
-              if (value === 'DELETE' && onDelete) {
-                onDelete(fetcherDelete.submit, userId);
-              } else if (onUpdate) {
-                const role = value as (typeof roles)[0];
-                onUpdate(fetcherUpdate.submit, userId, role);
-              }
-            }}
-          >
-            <SelectTrigger className={`w-auto`}>
-              <SelectValue>{label}</SelectValue>
-            </SelectTrigger>
+          <div className="flex items-center gap-4">
+            {publicLinkAccess === 'EDIT' && activeRole === 'VIEWER' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <ExclamationTriangleIcon className="text-warning" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-40 text-center">
+                    This person can still edit because the file is set so <em>anyone with the link can edit</em>.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <Select
+              value={activeRole}
+              onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
+                if (value === 'DELETE' && onDelete) {
+                  onDelete(fetcherDelete.submit, userId);
+                } else if (onUpdate) {
+                  const role = value as (typeof roles)[0];
+                  onUpdate(fetcherUpdate.submit, userId, role);
+                }
+              }}
+            >
+              <SelectTrigger className={`w-auto`}>
+                <SelectValue>{label}</SelectValue>
+              </SelectTrigger>
 
-            <SelectContent>
-              {roles.map((role, i) => (
-                <SelectItem key={i} value={role}>
-                  {getRoleLabel(role)}
-                </SelectItem>
-              ))}
-              <SelectSeparator />
-              <SelectItem value="DELETE">{isLoggedInUser ? 'Leave' : 'Remove'}</SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectContent>
+                {roles.map((role, i) => (
+                  <SelectItem key={i} value={role}>
+                    {getRoleLabel(role)}
+                  </SelectItem>
+                ))}
+                <SelectSeparator />
+                <SelectItem value="DELETE">{isLoggedInUser ? 'Leave' : 'Remove'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         )
       }
     />
