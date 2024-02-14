@@ -3,7 +3,7 @@ import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
 import { cn } from '@/shadcn/utils';
 import { useGridSettings } from '@/ui/menus/TopBar/SubMenus/useGridSettings';
-import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useRef, useState } from 'react';
 import './HoverCell.css';
 
@@ -68,7 +68,7 @@ export const HoverCell = () => {
   const [onlyCode, setOnlyCode] = useState(false);
   useEffect(() => {
     const asyncFunction = async () => {
-      const code = cell ? await coreWebWorker.getCodeCell(sheets.sheet.id, Number(cell.x), Number(cell.y)) : undefined;
+      const code = cell ? await quadraticCore.getCodeCell(sheets.sheet.id, Number(cell.x), Number(cell.y)) : undefined;
       const renderCodeCell = cell as JsRenderCodeCell | undefined;
       const editingCell = cell as EditingCell | undefined;
       const spillError = renderCodeCell ? renderCodeCell.spill_error : undefined;

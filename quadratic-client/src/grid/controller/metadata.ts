@@ -1,5 +1,5 @@
 import initMetadata, { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
-import { GridMetadata } from '@/web-workers/coreWebWorker/coreClientMessages';
+import { GridMetadata } from '@/web-workers/quadraticCore/coreClientMessages';
 
 class Metadata {
   sheetIds: string[] = [];

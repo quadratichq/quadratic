@@ -5,42 +5,33 @@
  * directly accessed by its siblings.
  */
 
-import { debugShowFileIO, debugWebWorkers } from '@/debugFlags';
-import init, { GridController, hello } from '@/quadratic-core/quadratic_core';
-import { JsRenderCell } from '@/quadratic-core/types';
-import { CoreClientLoad, GridMetadata } from '../coreClientMessages';
+import { debugWebWorkers } from '@/debugFlags';
+import init, { GridController, Pos } from '@/quadratic-core/quadratic_core';
+import { JsCodeCell, JsRenderCell } from '@/quadratic-core/types';
+import { ClientCoreLoad, GridMetadata } from '../coreClientMessages';
 import { GridRenderMetadata } from '../coreRenderMessages';
 import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
 
 class Core {
-  private gridController?: GridController;
-  private file?: string;
+  gridController?: GridController;
 
-  private async loadGridFile(file: CoreClientLoad) {
-    console.log('loading grid file...');
-    const res = await fetch(file.url);
-    this.file = await res.text();
-    if (debugShowFileIO || debugWebWorkers) {
-      console.log(`[core] Loaded file ${file.url}`);
-    }
+  private async loadGridFile(file: string) {
+    const res = await fetch(file);
+    return await res.text();
   }
 
-  // Creates a Grid form a file. Also connects the MessagePort for coreRender to
-  // speak with this web worker.
-  async loadFile(data: CoreClientLoad, renderPort: MessagePort) {
-    await Promise.all([init(), this.loadGridFile(data)]);
-    hello();
-
-    if (!this.file) {
-      throw new Error('Expected file to be defined in Core.loadFile');
-    }
-    this.gridController = GridController.newFromFile(this.file, data.sequenceNumber);
+  // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.
+  async loadFile(message: ClientCoreLoad, renderPort: MessagePort) {
+    const results = await Promise.all([this.loadGridFile(message.url), init()]);
+    this.gridController = GridController.newFromFile(results[0], message.sequenceNumber);
 
     if (debugWebWorkers) console.log('[core] GridController loaded');
 
     const sheetIds = this.getSheetIds();
+
+    // initialize Client with relevant Core metadata
     const metadata: GridMetadata = { undo: false, redo: false, sheets: {} };
     sheetIds.forEach((sheetId) => {
       metadata.sheets[sheetId] = {
@@ -52,7 +43,9 @@ class Core {
         color: this.getSheetColor(sheetId),
       };
     });
-    coreClient.init(metadata);
+    coreClient.init(message.id, metadata);
+
+    // initialize RenderWebWorker with relevant Core metadata
     const renderMetadata: GridRenderMetadata = {};
     sheetIds.forEach((sheetId) => {
       renderMetadata[sheetId] = {
@@ -140,6 +133,11 @@ class Core {
     }
 
     return this.gridController.exportOffsets(sheetId);
+  }
+
+  getCodeCell(sheetId: string, x: number, y: number): JsCodeCell | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getCodeCell');
+    return this.gridController.getCodeCell(sheetId, new Pos(x, y));
   }
 }
 

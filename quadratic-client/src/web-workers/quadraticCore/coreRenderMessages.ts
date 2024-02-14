@@ -3,7 +3,6 @@
  */
 
 import { JsRenderCell } from '@/quadratic-core/types';
-import { CoreGridBounds, CoreRequestGridBounds } from './coreMessages';
 
 export interface CoreRequestRenderCells {
   type: 'requestRenderCells';
@@ -33,9 +32,4 @@ export interface CoreRenderReady {
   metadata: GridRenderMetadata;
 }
 
-export type CoreRenderMessage =
-  | CoreRequestRenderCells
-  | CoreRenderCells
-  | CoreRequestGridBounds
-  | CoreRenderReady
-  | CoreGridBounds;
+export type CoreRenderMessage = CoreRequestRenderCells | CoreRenderCells | CoreRenderReady;

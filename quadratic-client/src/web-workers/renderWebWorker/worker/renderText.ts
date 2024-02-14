@@ -1,6 +1,6 @@
 import { debugWebWorkers } from '@/debugFlags';
 import init from '@/quadratic-grid-metadata/quadratic_grid_metadata';
-import { GridRenderMetadata } from '@/web-workers/coreWebWorker/coreRenderMessages';
+import { GridRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 

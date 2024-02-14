@@ -1,38 +1,32 @@
 import { debugWebWorkers } from '@/debugFlags';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { prepareBitmapFontInformation } from './renderBitmapFonts';
-import {
-  RenderCellsTextHashClear,
-  RenderClientMessage,
-  RenderInitMessage,
-  RenderLabelMeshEntryMessage,
-} from './renderClientMessages';
+import { ClientRenderMessage, RenderClientMessage, RenderInitMessage } from './renderClientMessages';
 
 class RenderWebWorker {
-  private worker?: Worker;
-  private waitingForLoad: (() => void)[] = [];
-  private loaded = false;
-  private id = 0;
+  private worker: Worker;
 
-  async init(coreMessagePort: MessagePort) {
+  constructor() {
     this.worker = new Worker(new URL('./worker/render.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = (e) => console.warn(`[render.worker] error: ${e.message}`, e);
+  }
+
+  async init(coreMessagePort: MessagePort) {
     this.worker.postMessage({ type: 'load', bitmapFonts: prepareBitmapFontInformation() } as RenderInitMessage, [
       coreMessagePort,
     ]);
-
-    if (debugWebWorkers) console.log('[render] created');
+    if (debugWebWorkers) console.log('[renderWebWorker] initialized.');
   }
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
     switch (e.data.type) {
       case 'cellsTextHashClear':
-        this.cellsTextHashClear(e.data);
+        pixiApp.cellsSheets.cellsTextHashClear(e.data);
         break;
 
       case 'labelMeshEntry':
-        this.labelMeshEntry(e.data);
+        pixiApp.cellsSheets.labelMeshEntry(e.data);
         break;
 
       default:
@@ -40,14 +34,9 @@ class RenderWebWorker {
     }
   };
 
-  // Clears a CellsTextHash and replace it with the meshes coming from labelMeshEntry
-  private cellsTextHashClear(message: RenderCellsTextHashClear) {
-    pixiApp.cellsSheets.cellsTextHashClear(message);
-  }
-
-  // Update a label mesh within a CellsTextHash
-  private labelMeshEntry(message: RenderLabelMeshEntryMessage) {
-    pixiApp.cellsSheets.labelMeshEntry(message);
+  private send(message: ClientRenderMessage) {
+    if (!this.worker) throw new Error('Expected ');
+    this.worker.postMessage(message);
   }
 }
 

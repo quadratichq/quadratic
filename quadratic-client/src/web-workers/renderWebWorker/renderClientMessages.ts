@@ -30,3 +30,4 @@ export interface RenderCellsTextHashClear {
 }
 
 export type RenderClientMessage = RenderInitMessage | RenderLabelMeshEntryMessage | RenderCellsTextHashClear;
+export type ClientRenderMessage = undefined;

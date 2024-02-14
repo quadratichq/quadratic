@@ -557,15 +557,6 @@ export class Grid {
 
   //#region Undo/redo
   //-----------------
-
-  hasUndo(): boolean {
-    return this.gridController.hasUndo();
-  }
-
-  hasRedo(): boolean {
-    return this.gridController.hasRedo();
-  }
-
   undo() {
     const summary = this.gridController.undo(sheets.getCursorPosition());
     this.transactionResponse(summary);

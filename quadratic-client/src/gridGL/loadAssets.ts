@@ -1,4 +1,3 @@
-import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
 import FontFaceObserver from 'fontfaceobserver';
 import { BitmapFont, Loader } from 'pixi.js';
 import { createBorderTypes } from './dashedTextures';
@@ -44,11 +43,6 @@ export function loadAssets(): Promise<void> {
     Loader.shared.add('/images/python-icon.png');
 
     // Wait until pixi fonts are loaded before resolving
-    Loader.shared.load((results) =>
-      ensureBitmapFontLoaded(() => {
-        coreWebWorker.fontsLoaded();
-        resolve();
-      })
-    );
+    Loader.shared.load(() => ensureBitmapFontLoaded(resolve));
   });
 }

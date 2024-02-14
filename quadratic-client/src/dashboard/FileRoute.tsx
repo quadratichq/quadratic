@@ -5,7 +5,7 @@ import { metadata } from '@/grid/controller/metadata';
 import { loadAssets } from '@/gridGL/loadAssets';
 import { isEmbed } from '@/helpers/isEmbed';
 import { Button } from '@/shadcn/ui/button';
-import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import {
@@ -49,12 +49,13 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   await Promise.all([metadata.init(), loadAssets()]);
 
   // initialize Core web worker
-  await coreWebWorker.load({
-    url: data.file.lastCheckpointDataUrl,
-    version: data.file.lastCheckpointVersion,
-    sequenceNumber: data.file.lastCheckpointSequenceNumber,
-    thumbnail: !!data.file,
-  });
+  await quadraticCore.load(
+    data.file.lastCheckpointDataUrl,
+    data.file.lastCheckpointVersion,
+    data.file.lastCheckpointSequenceNumber
+  );
+
+  // todo: handle thumbnail generation when it doesn't exist...
 
   // if (!grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber)) {
   //   Sentry.captureEvent({

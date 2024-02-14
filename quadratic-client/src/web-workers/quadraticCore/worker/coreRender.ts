@@ -6,7 +6,6 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import { CoreGridBounds, CoreRequestGridBounds } from '../coreMessages';
 import {
   CoreRenderCells,
   CoreRenderMessage,
@@ -32,10 +31,6 @@ class CoreRender {
         this.getRenderCells(e.data as CoreRequestRenderCells);
         break;
 
-      case 'requestGridBounds':
-        this.requestGridBounds(e.data as CoreRequestGridBounds);
-        break;
-
       default:
         console.warn('[coreRender] Unhandled message type', e.data.type);
     }
@@ -49,16 +44,6 @@ class CoreRender {
 
     const cells = core.getRenderCells(data);
     this.coreRenderPort.postMessage({ type: 'renderCells', cells, id: data.id } as CoreRenderCells);
-  }
-
-  requestGridBounds(data: CoreRequestGridBounds) {
-    if (!this.coreRenderPort) {
-      console.warn('Expected coreRenderPort to be defined in CoreRender.requestGridBounds');
-      return;
-    }
-
-    const bounds = core.getGridBounds(data);
-    this.coreRenderPort.postMessage({ type: 'gridBounds', bounds } as CoreGridBounds);
   }
 }
 

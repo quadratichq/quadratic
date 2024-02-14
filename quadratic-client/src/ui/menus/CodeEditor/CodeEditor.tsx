@@ -2,7 +2,7 @@
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
-import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -84,7 +84,7 @@ export const CodeEditor = () => {
     async (updateEditorContent: boolean) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
       if (!editorInteractionState.selectedCellSheet) return;
-      const codeCell = await coreWebWorker.getCodeCell(
+      const codeCell = await quadraticCore.getCodeCell(
         editorInteractionState.selectedCellSheet,
         editorInteractionState.selectedCell.x,
         editorInteractionState.selectedCell.y

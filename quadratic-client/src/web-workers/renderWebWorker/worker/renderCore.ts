@@ -6,12 +6,11 @@
  */
 
 import { JsRenderCell } from '@/quadratic-core/types';
-import { CoreGridBounds, CoreRequestGridBounds } from '@/web-workers/coreWebWorker/coreMessages';
 import {
   CoreRenderCells,
   CoreRenderReady,
   CoreRequestRenderCells,
-} from '@/web-workers/coreWebWorker/coreRenderMessages';
+} from '@/web-workers/quadraticCore/coreRenderMessages';
 import { RenderCoreMessage } from '../renderCoreMessages';
 import { renderText } from './renderText';
 
@@ -33,10 +32,6 @@ class RenderCore {
 
       case 'renderCells':
         this.renderCells(e.data as CoreRenderCells);
-        break;
-
-      case 'gridBounds':
-        this.gridBounds(e.data as CoreGridBounds);
         break;
 
       default:
@@ -71,29 +66,6 @@ class RenderCore {
     });
   }
 
-  async getGridBounds(
-    sheetId: string,
-    ignoreFormatting: boolean
-  ): Promise<{ x: number; y: number; width: number; height: number } | undefined> {
-    return new Promise((resolve) => {
-      if (!this.renderCorePort) {
-        console.warn('Expected renderCorePort to be defined in RenderCore.getGridBounds');
-        resolve(undefined);
-        return;
-      }
-      const id = this.id;
-      const message: CoreRequestGridBounds = {
-        type: 'requestGridBounds',
-        id,
-        sheetId,
-        ignoreFormatting,
-      };
-      this.renderCorePort.postMessage(message);
-      this.waitingForResponse.set(id, resolve);
-      this.id++;
-    });
-  }
-
   /**********************
    * Core API responses *
    **********************/
@@ -110,17 +82,6 @@ class RenderCore {
       return;
     }
     response(cells);
-    this.waitingForResponse.delete(id);
-  }
-
-  private gridBounds(event: CoreGridBounds) {
-    const { id, bounds } = event;
-    const response = this.waitingForResponse.get(id);
-    if (!response) {
-      console.warn('No callback for requestGridBounds');
-      return;
-    }
-    response(bounds);
     this.waitingForResponse.delete(id);
   }
 }

@@ -11,7 +11,7 @@ import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { CellSheetsModified } from '@/quadratic-core/types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
-import { SheetRenderMetadata } from '@/web-workers/coreWebWorker/coreRenderMessages';
+import { SheetRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
 import { Container, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { CellsTextHash } from './CellsTextHash';

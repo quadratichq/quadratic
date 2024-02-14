@@ -40,6 +40,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "color": "^4.2.3",
+    "eventemitter3": "^5.0.1",
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^2.0.4",
     "localforage": "^1.10.0",

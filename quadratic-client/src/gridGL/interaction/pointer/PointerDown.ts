@@ -1,4 +1,4 @@
-import { coreWebWorker } from '@/web-workers/coreWebWorker/coreWebWorker';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -57,7 +57,7 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
-        const code = await coreWebWorker.getCodeCell(sheet.id, column, row);
+        const code = await quadraticCore.getCodeCell(sheet.id, column, row);
         if (code) {
           doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
         } else {

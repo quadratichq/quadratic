@@ -1,4 +1,3 @@
-import { CoreGridBounds } from '../coreWebWorker/coreMessages';
-import { CoreRenderCells, CoreRenderReady } from '../coreWebWorker/coreRenderMessages';
+import { CoreRenderCells, CoreRenderReady } from '../quadraticCore/coreRenderMessages';
 
-export type RenderCoreMessage = CoreGridBounds | CoreRenderCells | CoreRenderReady;
+export type RenderCoreMessage = CoreRenderCells | CoreRenderReady;
