@@ -41,7 +41,9 @@ async function handler(
     return res.status(403).json({ error: { message: 'Permission denied' } });
   }
 
+  //
   // Updating the name?
+  //
   if (name) {
     const { name: newName } = await dbClient.file.update({
       where: {
@@ -54,55 +56,70 @@ async function handler(
     return res.status(200).json({ name: newName });
   }
 
+  //
   // Moving the file?
-  if (ownerUserId || ownerTeamId) {
-    // We won't accept a request to do both. That's invalid.
-    if (ownerUserId && ownerTeamId) {
-      throw new ApiError(400, 'Cannot move to both a user and a team');
-    }
+  //
 
-    // Do you have permission to move?
-    if (!filePermissions.includes(FILE_MOVE)) {
-      throw new ApiError(403, 'Permission denied');
-    }
+  // We won't accept a request to do both. That's invalid.
+  if (ownerUserId && ownerTeamId) {
+    throw new ApiError(400, 'Cannot move to both a user and a team');
+  }
 
-    // Moving to a user?
-    if (ownerUserId) {
-      const newFile = await dbClient.file.update({
-        where: {
-          uuid,
-        },
-        data: {
-          ownerUserId,
-          ownerTeamId: null,
-        },
-      });
-      if (!newFile.ownerUserId) {
-        throw new ApiError(400, 'Failed to move file. Make sure the requested user exists.');
-      }
-      return res.status(200).json({ ownerUserId: newFile.ownerUserId });
+  // Ensure that either the specified user or team exists
+  if (ownerUserId) {
+    const user = await dbClient.user.findUnique({ where: { id: ownerUserId } });
+    if (!user) {
+      throw new ApiError(400, 'User does not exist');
     }
-
-    // Moving to a team?
-    if (ownerTeamId) {
-      console.log('old team id: %s old user id:', file.ownerTeamId, file.ownerUserId);
-      const newFile = await dbClient.file.update({
-        where: {
-          uuid,
-        },
-        data: {
-          ownerUserId: null,
-          ownerTeamId,
-        },
-      });
-      if (!newFile.ownerTeamId) {
-        throw new ApiError(400, 'Failed to move file. Make sure the requested team exists.');
-      }
-      console.log('old team id: %s old user id:', newFile.ownerTeamId, newFile.ownerUserId);
-      return res.status(200).json({ ownerTeamId: newFile.ownerTeamId });
+  }
+  if (ownerTeamId) {
+    const team = await dbClient.team.findUnique({ where: { id: ownerTeamId } });
+    if (!team) {
+      throw new ApiError(400, 'Team does not exist');
     }
   }
 
-  // Like I say to my 4y/o, idk what you’re asking for
+  // Do you have permission to move?
+  // (Permissions must come after knowing a team exists otherwise you get
+  // a 403 for a team that doesn’t exist)
+  if (!filePermissions.includes(FILE_MOVE)) {
+    throw new ApiError(403, 'Permission denied');
+  }
+
+  // Moving to a user?
+  if (ownerUserId) {
+    const newFile = await dbClient.file.update({
+      where: {
+        uuid,
+      },
+      data: {
+        ownerUserId,
+        ownerTeamId: null,
+      },
+    });
+    if (!newFile.ownerUserId) {
+      throw new ApiError(500, 'Failed to move file. Make sure the specified file and user exist.');
+    }
+    return res.status(200).json({ ownerUserId: newFile.ownerUserId });
+  }
+
+  // Moving to a team?
+  if (ownerTeamId) {
+    const newFile = await dbClient.file.update({
+      where: {
+        uuid,
+      },
+      data: {
+        ownerUserId: null,
+        ownerTeamId,
+      },
+    });
+    if (!newFile.ownerTeamId) {
+      throw new ApiError(500, 'Failed to move file. Make sure the specified team and user exist.');
+    }
+    return res.status(200).json({ ownerTeamId: newFile.ownerTeamId });
+  }
+
+  // We don’t know what you're asking for
   return res.status(400).json({ error: { message: 'Invalid request' } });
 }

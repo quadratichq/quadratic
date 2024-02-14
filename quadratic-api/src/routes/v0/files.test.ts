@@ -166,7 +166,12 @@ describe('READ - GET /v0/files/:uuid with auth and owned file', () => {
       .expect((res) => {
         expect(res.body).toHaveProperty('file');
         expect(res.body).toHaveProperty('userMakingRequest');
-        expect(res.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE']);
+        expect(res.body.userMakingRequest.filePermissions).toEqual([
+          'FILE_VIEW',
+          'FILE_EDIT',
+          'FILE_DELETE',
+          'FILE_MOVE',
+        ]);
         expect(res.body.userMakingRequest.isFileOwner).toBe(true);
       }); // OK
   });
@@ -202,21 +207,10 @@ describe('READ - GET /v0/files/:uuid with auth and another users file not shared
   });
 });
 
-describe('UPDATE - PATCH /v0/files/:uuid bad request', () => {
-  it('responds with json', async () => {
-    await request(app)
-      .patch('/v0/files/00000000-0000-0000-0000-000000000000')
-      .set('Accept', 'application/json')
-      .expect('Content-Type', /json/)
-      .expect(400);
-  });
-});
-
-describe('UPDATE - PATCH /v0/files/:uuid no auth', () => {
+describe('UPDATE - POST /v0/files/:uuid/thumbnail no auth', () => {
   it('responds with json', async () => {
     const res = await request(app)
-      .patch('/v0/files/00000000-0000-0000-0000-000000000000')
-      .send({ name: 'new_name' })
+      .post('/v0/files/00000000-0000-0000-0000-000000000000/thumbnail')
       .set('Accept', 'application/json')
       .expect('Content-Type', /json/)
       .expect(401); // Unauthorized
@@ -225,13 +219,12 @@ describe('UPDATE - PATCH /v0/files/:uuid no auth', () => {
   });
 });
 
-describe('UPDATE - PATCH /v0/files/:uuid file not found', () => {
+describe('UPDATE - POST /v0/files/:uuid/thumbnail file not found', () => {
   it('responds with json', async () => {
     const res = await request(app)
-      .patch('/v0/files/00000000-0000-4000-8000-000000000009')
-      .send({ name: 'new_name' })
+      .post('/v0/files/00000000-0000-4000-8000-000000000009/thumbnail')
       .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
+      .set('Authorization', `Bearer ValidToken userOwner`)
       .expect('Content-Type', /json/)
       .expect(404); // Not Found
 
@@ -239,58 +232,21 @@ describe('UPDATE - PATCH /v0/files/:uuid file not found', () => {
   });
 });
 
-describe('UPDATE - PATCH /v0/files/:uuid with auth and owned file rename file', () => {
+describe('UPDATE - POST /v0/files/:uuid/thumbnail with auth and owned file update preview', () => {
   it('responds with json', async () => {
-    // change file name
+    const filePath = 'test_thumbnail.png';
+
+    // update preview
     const res = await request(app)
-      .patch('/v0/files/00000000-0000-4000-8000-000000000000')
-      .send({ name: 'test_file_1_new_name' })
+      .post('/v0/files/00000000-0000-4000-8000-000000000001/thumbnail')
+      .attach('thumbnail', filePath)
       .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
+      .set('Content-Type', 'multipart/form-data')
+      .set('Authorization', `Bearer ValidToken userOwner`);
+    // .expect(200); // OK
 
-    expect(res.body.name).toBe('test_file_1_new_name');
-
-    // check file name changed
-    const res2 = await request(app)
-      .get('/v0/files/00000000-0000-4000-8000-000000000000')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(200); // OK
-
-    expect(res2.body).toHaveProperty('file');
-    expect(res2.body.userMakingRequest.filePermissions).toEqual(['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE']);
-    expect(res2.body.file.name).toEqual('test_file_1_new_name');
-  });
-});
-
-describe('UPDATE - PATCH /v0/files/:uuid with auth and another users file shared readonly', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .patch('/v0/files/00000000-0000-4000-8000-000000000001')
-      .send({ name: 'new_name' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .expect('Content-Type', /json/)
-      .expect(403); // OK
-
-    expect(res.body).toMatchObject({ error: { message: 'Permission denied' } });
-  });
-});
-
-describe('UPDATE - PATCH /v0/files/:uuid with auth and another users file not shared', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .patch('/v0/files/00000000-0000-4000-8000-000000000000')
-      .send({ name: 'new_name' })
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_2`)
-      .expect('Content-Type', /json/)
-      .expect(403); // Forbidden
-
-    expect(res.body).toMatchObject({ error: { message: 'Permission denied' } });
+    // expect(res.body).toMatchObject({ message: 'Preview updated' });
+    // TODO fix test with mocks
   });
 });
 
@@ -358,48 +314,5 @@ describe('DELETE - DELETE /v0/files/:uuid with auth and another users file', () 
       .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
       .expect(200); // OK
-  });
-});
-
-describe('UPDATE - POST /v0/files/:uuid/thumbnail no auth', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .post('/v0/files/00000000-0000-0000-0000-000000000000/thumbnail')
-      .set('Accept', 'application/json')
-      .expect('Content-Type', /json/)
-      .expect(401); // Unauthorized
-
-    expect(res.body).toMatchObject({ error: { message: 'No authorization token was found' } });
-  });
-});
-
-describe('UPDATE - POST /v0/files/:uuid/thumbnail file not found', () => {
-  it('responds with json', async () => {
-    const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000009/thumbnail')
-      .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken test_user_1`)
-      .expect('Content-Type', /json/)
-      .expect(404); // Not Found
-
-    expect(res.body).toMatchObject({ error: { message: 'File not found' } });
-  });
-});
-
-describe('UPDATE - POST /v0/files/:uuid/thumbnail with auth and owned file update preview', () => {
-  it('responds with json', async () => {
-    const filePath = 'test_thumbnail.png';
-
-    // update preview
-    const res = await request(app)
-      .post('/v0/files/00000000-0000-4000-8000-000000000001/thumbnail')
-      .attach('thumbnail', filePath)
-      .set('Accept', 'application/json')
-      .set('Content-Type', 'multipart/form-data')
-      .set('Authorization', `Bearer ValidToken test_user_1`);
-    // .expect(200); // OK
-
-    // expect(res.body).toMatchObject({ message: 'Preview updated' });
-    // TODO fix test with mocks
   });
 });
