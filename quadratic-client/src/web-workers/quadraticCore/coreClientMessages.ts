@@ -67,14 +67,30 @@ export interface CoreClientGetRenderCodeCells {
   id: number;
 }
 
+export interface ClientCoreCellHasContent {
+  type: 'clientCoreCellHasContent';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
+export interface CoreClientCellHasContent {
+  type: 'coreClientCellHasContent';
+  hasContent: boolean;
+  id: number;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
   | ClientCoreGetAllRenderFills
-  | ClientCoreGetRenderCodeCells;
+  | ClientCoreGetRenderCodeCells
+  | ClientCoreCellHasContent;
 
 export type CoreClientMessage =
   | CoreClientLoad
   | CoreClientGetCodeCell
   | CoreClientGetAllRenderFills
-  | CoreClientGetRenderCodeCells;
+  | CoreClientGetRenderCodeCells
+  | CoreClientCellHasContent;

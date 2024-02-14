@@ -8,6 +8,7 @@ import { metadata } from '@/grid/controller/metadata';
 import { JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
+  ClientCoreCellHasContent,
   ClientCoreGetAllRenderFills,
   ClientCoreGetCodeCell,
   ClientCoreGetRenderCodeCells,
@@ -113,6 +114,23 @@ class QuadraticCore {
       const message: ClientCoreGetRenderCodeCells = {
         type: 'clientCoreGetRenderCodeCells',
         sheetId,
+        id,
+      };
+      this.worker.postMessage(message);
+    });
+  }
+
+  cellHasContent(sheetId: string, x: number, y: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { hasContent: boolean }) => {
+        resolve(message.hasContent);
+      };
+      const message: ClientCoreCellHasContent = {
+        type: 'clientCoreCellHasContent',
+        sheetId,
+        x,
+        y,
         id,
       };
       this.worker.postMessage(message);

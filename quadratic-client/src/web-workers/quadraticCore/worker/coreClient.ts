@@ -9,6 +9,7 @@ import { debugWebWorkers } from '@/debugFlags';
 import {
   ClientCoreLoad,
   ClientCoreMessage,
+  CoreClientCellHasContent,
   CoreClientGetAllRenderFills,
   CoreClientGetCodeCell,
   CoreClientGetRenderCodeCells,
@@ -43,6 +44,11 @@ class CoreClient {
       case 'clientCoreGetRenderCodeCells':
         const codeCells = core.getRenderCodeCells(e.data.sheetId);
         this.send({ type: 'coreClientGetRenderCodeCells', id: e.data.id, codeCells } as CoreClientGetRenderCodeCells);
+        break;
+
+      case 'clientCoreCellHasContent':
+        const hasContent = core.cellHasContent(e.data.sheetId, e.data.x, e.data.y);
+        this.send({ type: 'coreClientCellHasContent', id: e.data.id, hasContent } as CoreClientCellHasContent);
         break;
 
       default:

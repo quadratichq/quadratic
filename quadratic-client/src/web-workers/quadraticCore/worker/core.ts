@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import init, { GridController, Pos } from '@/quadratic-core/quadratic_core';
+import init, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import { JsCodeCell, JsRenderCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
 import { ClientCoreLoad, GridMetadata } from '../coreClientMessages';
 import { GridRenderMetadata } from '../coreRenderMessages';
@@ -148,6 +148,11 @@ class Core {
   getRenderCodeCells(sheetId: string): JsRenderCodeCell[] {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return JSON.parse(this.gridController.getAllRenderCodeCells(sheetId));
+  }
+
+  cellHasContent(sheetId: string, x: number, y: number): boolean {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.hasRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
   }
 }
 

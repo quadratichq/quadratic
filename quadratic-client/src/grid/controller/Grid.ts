@@ -434,17 +434,9 @@ export class Grid {
     return this.gridController.getEditCell(sheetId, pos);
   }
 
-  cellHasContent(sheetId: string, column: number, row: number): boolean {
-    return this.gridController.hasRenderCells(sheetId, posToRect(column, row));
-  }
-
   getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
     const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
     return JSON.parse(data);
-  }
-
-  hasRenderCells(sheetId: string, rectangle: Rectangle): boolean {
-    return this.gridController.hasRenderCells(sheetId, rectangleToRect(rectangle));
   }
 
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
@@ -454,11 +446,6 @@ export class Grid {
   getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
   }
-
-  // todo...
-  // getRenderBorders(sheetId: string): JsRenderBorders {
-  // return this.gridController.getRenderBorders(sheetId);
-  // }
 
   // todo...
   getHtmlOutput(sheetId: string): JsHtmlOutput[] {

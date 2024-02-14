@@ -56,7 +56,6 @@ export class CellsBorders extends Container {
     }
   }
 
-  // todo...
   create(): void {
     this.clear();
     // const borders = grid.getRenderBorders(this.sheet.id);
