@@ -10,7 +10,7 @@ class RenderText {
 
   async init(metadata: GridRenderMetadata) {
     await init();
-    for (const sheetId in metadata.sheets) {
+    for (const sheetId in metadata) {
       this.cellsLabels.set(sheetId, new CellsLabels(sheetId, metadata[sheetId], this.bitmapFonts));
     }
     this.update();

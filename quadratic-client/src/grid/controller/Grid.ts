@@ -27,7 +27,6 @@ import {
   CodeCellLanguage,
   FormattingSummary,
   JsClipboard,
-  JsCodeCell,
   JsHtmlOutput,
   JsRenderCell,
   JsRenderCodeCell,
@@ -460,10 +459,6 @@ export class Grid {
     return [];
     // const data = this.gridController.getAllRenderFills(sheetId);
     // return JSON.parse(data);
-  }
-
-  getCodeCell(sheetId: string, x: number, y: number): JsCodeCell | undefined {
-    return this.gridController.getCodeCell(sheetId, new Pos(x, y));
   }
 
   // todo...

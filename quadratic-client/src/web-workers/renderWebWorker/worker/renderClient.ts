@@ -49,11 +49,7 @@ class RenderClient {
   }
 
   // sends a rendered LabelMeshEntry to the main thread for rendering
-  sendLabelMeshEntry(partialMessage: Partial<RenderLabelMeshEntryMessage>, data: ArrayBuffer[]) {
-    const message = {
-      type: 'labelMeshEntry',
-      ...partialMessage,
-    };
+  sendLabelMeshEntry(message: RenderLabelMeshEntryMessage, data: ArrayBuffer[]) {
     self.postMessage(message, data);
   }
 

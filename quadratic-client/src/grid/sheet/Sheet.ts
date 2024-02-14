@@ -6,7 +6,6 @@ import {
   CellAlign,
   CellFormatSummary,
   FormattingSummary,
-  JsCodeCell,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -88,10 +87,6 @@ export class Sheet {
 
   getRenderCell(x: number, y: number): JsRenderCell | undefined {
     return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
-  }
-
-  getCodeCell(x: number, y: number): JsCodeCell | undefined {
-    return grid.getCodeCell(this.id, x, y);
   }
 
   getEditCell(x: number, y: number): string {

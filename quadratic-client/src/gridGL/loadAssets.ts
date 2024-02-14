@@ -44,7 +44,7 @@ export function loadAssets(): Promise<void> {
     Loader.shared.add('/images/python-icon.png');
 
     // Wait until pixi fonts are loaded before resolving
-    Loader.shared.load(() =>
+    Loader.shared.load((results) =>
       ensureBitmapFontLoaded(() => {
         coreWebWorker.fontsLoaded();
         resolve();

@@ -1,3 +1,7 @@
+import {
+  RenderCellsTextHashClear,
+  RenderLabelMeshEntryMessage,
+} from '@/web-workers/renderWebWorker/renderClientMessages';
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { CellSheetsModified, SheetId } from '../../quadratic-core/types';
@@ -62,6 +66,22 @@ export class CellsSheets extends Container<CellsSheet> {
 
   private getById(id: string): CellsSheet | undefined {
     return this.children.find((search) => search.sheet.id === id);
+  }
+
+  cellsTextHashClear(message: RenderCellsTextHashClear) {
+    const cellsSheet = this.getById(message.sheetId);
+    if (!cellsSheet) {
+      throw new Error('Expected to find cellsSheet in cellsTextHashClear');
+    }
+    cellsSheet.cellsLabels.clearCellsTextHash(message);
+  }
+
+  labelMeshEntry(message: RenderLabelMeshEntryMessage) {
+    const cellsSheet = this.getById(message.sheetId);
+    if (!cellsSheet) {
+      throw new Error('Expected to find cellsSheet in labelMeshEntry');
+    }
+    cellsSheet.cellsLabels.addLabelMeshEntry(message);
   }
 
   // this updates the first dirty CellsSheet, always starting with the current sheet

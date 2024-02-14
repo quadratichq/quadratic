@@ -1,4 +1,5 @@
 import { debugWebWorkers } from '@/debugFlags';
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { prepareBitmapFontInformation } from './renderBitmapFonts';
 import {
   RenderCellsTextHashClear,
@@ -40,11 +41,13 @@ class RenderWebWorker {
   };
 
   // Clears a CellsTextHash and replace it with the meshes coming from labelMeshEntry
-  private cellsTextHashClear(message: RenderCellsTextHashClear) {}
+  private cellsTextHashClear(message: RenderCellsTextHashClear) {
+    pixiApp.cellsSheets.cellsTextHashClear(message);
+  }
 
   // Update a label mesh within a CellsTextHash
   private labelMeshEntry(message: RenderLabelMeshEntryMessage) {
-    // console.log(message);
+    pixiApp.cellsSheets.labelMeshEntry(message);
   }
 }
 

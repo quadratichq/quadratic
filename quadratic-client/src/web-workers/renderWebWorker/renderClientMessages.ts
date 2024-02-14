@@ -11,6 +11,8 @@ export interface RenderLabelMeshEntryMessage {
   sheetId: string;
   hashX: number;
   hashY: number;
+  fontName: string;
+  fontSize: number;
   textureUid: number;
   hasColor: boolean;
   vertices: Float32Array;

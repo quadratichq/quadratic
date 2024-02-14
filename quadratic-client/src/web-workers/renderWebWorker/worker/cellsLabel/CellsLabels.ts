@@ -11,7 +11,7 @@ import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { CellSheetsModified } from '@/quadratic-core/types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
-import { SheetMetadata } from '@/web-workers/coreWebWorker/coreMessages';
+import { SheetRenderMetadata } from '@/web-workers/coreWebWorker/coreRenderMessages';
 import { Container, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { CellsTextHash } from './CellsTextHash';
@@ -26,7 +26,6 @@ export class CellsLabels extends Container {
   cellsTextHash: Map<string, CellsTextHash>;
 
   bounds?: { x: number; y: number; width: number; height: number };
-  boundsNoFormatting?: { x: number; y: number; width: number; height: number };
 
   // row index into cellsTextHashContainer (used for clipping)
   private cellsRows: Map<number, CellsTextHash[]>;
@@ -38,11 +37,10 @@ export class CellsLabels extends Container {
   private dirtyColumnHeadings: Map<number, number>;
   private dirtyRowHeadings: Map<number, number>;
 
-  constructor(sheetId: string, metadata: SheetMetadata, bitmapFonts: RenderBitmapFonts) {
+  constructor(sheetId: string, metadata: SheetRenderMetadata, bitmapFonts: RenderBitmapFonts) {
     super();
     this.sheetId = sheetId;
     this.bounds = metadata.bounds;
-    this.boundsNoFormatting = metadata.boundsNoFormatting;
     this.sheetOffsets = SheetOffsetsWasm.load(metadata.offsets);
     this.bitmapFonts = bitmapFonts;
     this.cellsTextHash = new Map();
@@ -86,7 +84,7 @@ export class CellsLabels extends Container {
 
   createHashes(): boolean {
     debugTimeReset();
-    const bounds = this.boundsNoFormatting;
+    const bounds = this.bounds;
     if (!bounds) return false;
     const xStart = Math.floor(bounds.x / sheetHashWidth);
     const yStart = Math.floor(bounds.y / sheetHashHeight);
@@ -140,9 +138,9 @@ export class CellsLabels extends Container {
   // used for clipping to find neighboring hash - clipping always works from right to left
   // todo: use the new overflowLeft to make this more efficient
   findPreviousHash(column: number, row: number): CellsTextHash | undefined {
-    if (!this.boundsNoFormatting) return;
+    if (!this.bounds) return;
     let hash = this.getCellsHash(column, row);
-    while (!hash && column >= this.boundsNoFormatting.x) {
+    while (!hash && column >= this.bounds.x) {
       column--;
       hash = this.getCellsHash(column, row);
     }
@@ -152,9 +150,9 @@ export class CellsLabels extends Container {
   // used for clipping to find neighboring hash
   // todo: use the new overflowRight to make this more efficient
   findNextHash(column: number, row: number): CellsTextHash | undefined {
-    if (!this.boundsNoFormatting) return;
+    if (!this.bounds) return;
     let hash = this.getCellsHash(column, row);
-    while (!hash && column <= this.boundsNoFormatting.x + this.boundsNoFormatting.width) {
+    while (!hash && column <= this.bounds.x + this.bounds.width) {
       column++;
       hash = this.getCellsHash(column, row);
     }

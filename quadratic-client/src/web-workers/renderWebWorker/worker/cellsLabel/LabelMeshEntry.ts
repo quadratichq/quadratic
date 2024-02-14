@@ -50,38 +50,32 @@ export class LabelMeshEntry {
     if (!this.vertices || !this.uvs || !this.indices) {
       throw new Error('Expected LabelMeshEntries.finalize to have buffers');
     }
+    const message: RenderLabelMeshEntryMessage = {
+      type: 'labelMeshEntry',
+      sheetId: this.labelMesh.sheetId,
+      hashX: this.labelMesh.hashX,
+      hashY: this.labelMesh.hashY,
+      fontName: this.labelMesh.fontName,
+      fontSize: this.labelMesh.fontSize,
+      textureUid: this.labelMesh.textureUid,
+      hasColor: this.labelMesh.hasColor,
+      vertices: this.vertices,
+      uvs: this.uvs,
+      indices: this.indices,
+    };
     if (this.labelMesh.hasColor) {
       if (!this.colors) {
         throw new Error('Expected LabelMeshEntries.finalize to have colors');
       }
-      const partialMessage: Partial<RenderLabelMeshEntryMessage> = {
-        sheetId: this.labelMesh.sheetId,
-        hashX: this.labelMesh.hashX,
-        hashY: this.labelMesh.hashY,
-        textureUid: this.labelMesh.textureUid,
-        hasColor: this.labelMesh.hasColor,
-        vertices: this.vertices,
-        uvs: this.uvs,
-        indices: this.indices,
-        colors: this.colors,
-      };
-      renderClient.sendLabelMeshEntry(partialMessage, [
+      message.colors = this.colors;
+      renderClient.sendLabelMeshEntry(message, [
         this.vertices.buffer,
         this.uvs.buffer,
         this.indices.buffer,
         this.colors.buffer,
       ]);
     } else {
-      renderClient.sendLabelMeshEntry(
-        {
-          textureUid: this.labelMesh.textureUid,
-          hasColor: this.labelMesh.hasColor,
-          vertices: this.vertices,
-          uvs: this.uvs,
-          indices: this.indices,
-        },
-        [this.vertices.buffer, this.uvs.buffer, this.indices.buffer]
-      );
+      renderClient.sendLabelMeshEntry(message, [this.vertices.buffer, this.uvs.buffer, this.indices.buffer]);
     }
 
     if (debugShowCellHashesInfo) {

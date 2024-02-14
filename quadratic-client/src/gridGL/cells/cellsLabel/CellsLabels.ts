@@ -8,59 +8,66 @@
 
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/debugFlags';
 import { Sheet } from '@/grid/sheet/Sheet';
-import { intersects } from '@/gridGL/helpers/intersects';
-import { CellSheetsModified } from '@/quadratic-core/types';
+import {
+  RenderCellsTextHashClear,
+  RenderLabelMeshEntryMessage,
+} from '@/web-workers/renderWebWorker/renderClientMessages';
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CellsSheet } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsTextHash } from './CellsTextHash';
 
-// const PRELOADER_MAXIMUM_FRAME_TIME = 1000 / 15;
-
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
 
+  // draws text hashes
+  private cellsTextHashes: Container<CellsTextHash>;
+
   // (hashX, hashY) index into cellsTextHashContainer
   cellsTextHash: Map<string, CellsTextHash>;
-  private cellsTextHashContainer: Container<CellsTextHash>;
 
   // used to draw debug boxes for cellsTextHash
   private cellsTextDebug: Graphics;
-
-  // row index into cellsTextHashContainer (used for clipping)
-  private cellsRows: Map<number, CellsTextHash[]>;
-
-  // set of rows that need updating
-  private dirtyRows: Set<number>;
-
-  // keep track of headings that need adjusting during next update tick
-  private dirtyColumnHeadings: Map<number, number>;
-  private dirtyRowHeadings: Map<number, number>;
-
-  /******************
-   * preloader data *
-   * ****************/
-
-  // hashes to createLabels()
-  private hashesToCreate: CellsTextHash[] = [];
-
-  // hashes to overflowClip() and updateBuffers()
-  private hashesToLoad: CellsTextHash[] = [];
-
-  // final promise return
-  private preloaderResolve?: () => void;
 
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
     this.cellsTextHash = new Map();
+    this.cellsTextHashes = this.addChild(new Container<CellsTextHash>());
     this.cellsTextDebug = this.addChild(new Graphics());
-    this.cellsTextHashContainer = this.addChild(new Container<CellsTextHash>());
+  }
 
-    this.cellsRows = new Map();
-    this.dirtyRows = new Set();
-    this.dirtyColumnHeadings = new Map();
-    this.dirtyRowHeadings = new Map();
+  // received a clear message before a new set of labelMeshEntries
+  clearCellsTextHash(message: RenderCellsTextHashClear) {
+    const key = `${message.hashX},${message.hashY}`;
+    const cellsTextHash = this.cellsTextHash.get(key);
+    if (cellsTextHash) {
+      if (message.bounds) {
+        cellsTextHash.clearMeshEntries(message.bounds);
+      } else {
+        this.cellsTextHashes.removeChild(cellsTextHash);
+        cellsTextHash.destroy();
+        this.cellsTextHash.delete(key);
+      }
+    } else {
+      if (message.bounds) {
+        const cellsTextHash = this.cellsTextHashes.addChild(
+          new CellsTextHash(this, message.hashX, message.hashY, message.bounds)
+        );
+        this.cellsTextHash.set(key, cellsTextHash);
+      }
+    }
+  }
+
+  // received a new LabelMeshEntry to add to a CellsTextHash
+  addLabelMeshEntry(message: RenderLabelMeshEntryMessage) {
+    const key = `${message.hashX},${message.hashY}`;
+    const cellsTextHash = this.cellsTextHash.get(key);
+    if (!cellsTextHash) {
+      console.warn(`[CellsLabels] labelMeshEntry: cellsTextHash not found for (${message.hashX}, ${message.hashY})`);
+      return;
+    }
+    cellsTextHash.addLabelMeshEntry(message);
   }
 
   get sheet(): Sheet {
@@ -79,16 +86,16 @@ export class CellsLabels extends Container {
     if (debugShowCellsHashBoxes) {
       this.cellsTextDebug.clear();
     }
-    this.cellsTextHash.forEach((cellsTextHash) => {
-      if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
-        cellsTextHash.show();
-        if (debugShowCellsHashBoxes) {
-          cellsTextHash.drawDebugBox(this.cellsTextDebug);
-        }
-        count++;
-      } else {
-        cellsTextHash.hide();
+    this.cellsTextHashes.children.forEach((cellsTextHash) => {
+      // if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
+      cellsTextHash.show();
+      if (debugShowCellsHashBoxes) {
+        cellsTextHash.drawDebugBox(this.cellsTextDebug);
       }
+      count++;
+      //   } else {
+      //     cellsTextHash.hide();
+      //   }
     });
     if (debugShowCellsSheetCulling) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
@@ -127,15 +134,15 @@ export class CellsLabels extends Container {
   //   return true;
   // }
 
-  getHashKey(hashX: number, hashY: number): string {
-    return `${hashX},${hashY}`;
-  }
+  // getHashKey(hashX: number, hashY: number): string {
+  //   return `${hashX},${hashY}`;
+  // }
 
-  getCellsHash(column: number, row: number): CellsTextHash | undefined {
-    const { x, y } = CellsLabels.getHash(column, row);
-    const key = this.getHashKey(x, y);
-    return this.cellsTextHash.get(key);
-  }
+  // getCellsHash(column: number, row: number): CellsTextHash | undefined {
+  //   const { x, y } = CellsLabels.getHash(column, row);
+  //   const key = this.getHashKey(x, y);
+  //   return this.cellsTextHash.get(key);
+  // }
 
   // getColumnHashes(column: number): CellsTextHash[] {
   //   const hashX = Math.floor(column / sheetHashWidth);
@@ -202,10 +209,10 @@ export class CellsLabels extends Container {
   // }
 
   showLabel(x: number, y: number, show: boolean) {
-    const hash = this.getCellsHash(x, y);
-    if (hash) {
-      hash.showLabel(x, y, show);
-    }
+    // const hash = this.getCellsHash(x, y);
+    // if (hash) {
+    //   hash.showLabel(x, y, show);
+    // }
   }
 
   // // adjust hashes after a column/row resize
@@ -326,22 +333,22 @@ export class CellsLabels extends Container {
   // TODO: remove
   // adjust headings without recalculating the glyph geometries
   adjustHeadings(options: { delta: number; column?: number; row?: number }): void {
-    const { delta, column, row } = options;
-    if (column !== undefined) {
-      const existing = this.dirtyColumnHeadings.get(column);
-      if (existing) {
-        this.dirtyColumnHeadings.set(column, existing + delta);
-      } else {
-        this.dirtyColumnHeadings.set(column, delta);
-      }
-    } else if (row !== undefined) {
-      const existing = this.dirtyRowHeadings.get(row);
-      if (existing) {
-        this.dirtyRowHeadings.set(row, existing + delta);
-      } else {
-        this.dirtyRowHeadings.set(row, delta);
-      }
-    }
+    // const { delta, column, row } = options;
+    // if (column !== undefined) {
+    //   const existing = this.dirtyColumnHeadings.get(column);
+    //   if (existing) {
+    //     this.dirtyColumnHeadings.set(column, existing + delta);
+    //   } else {
+    //     this.dirtyColumnHeadings.set(column, delta);
+    //   }
+    // } else if (row !== undefined) {
+    //   const existing = this.dirtyRowHeadings.get(row);
+    //   if (existing) {
+    //     this.dirtyRowHeadings.set(row, existing + delta);
+    //   } else {
+    //     this.dirtyRowHeadings.set(row, delta);
+    //   }
+    // }
   }
 
   getCellsContentMaxWidth(column: number): number {
@@ -357,7 +364,7 @@ export class CellsLabels extends Container {
 
   // TODO: remove
   // update values for cells
-  modified(modified: CellSheetsModified[]): void {
+  modified(modified: any /*CellSheetsModified*/[]): void {
     // for (const update of modified) {
     //   const cellsHash = this.getCellsHash(Number(update.x) * sheetHashWidth, Number(update.y) * sheetHashHeight, true);
     //   if (cellsHash) {
@@ -365,47 +372,4 @@ export class CellsLabels extends Container {
     //   }
     // }
   }
-
-  /*************
-   * Preloader *
-   *************/
-
-  // // preloads hashes by creating labels, and then overflow clipping and updating buffers
-  // private preloadTick = (time?: number): void => {
-  //   if (!this.hashesToCreate.length && !this.hashesToLoad.length) {
-  //     if (!this.preloaderResolve) throw new Error('Expected resolveTick to be defined in preloadTick');
-  //     this.preloaderResolve();
-  //   } else {
-  //     time = time ?? performance.now();
-  //     debugTimeReset();
-  //     if (this.hashesToCreate.length) {
-  //       const hash = this.hashesToCreate.pop()!;
-  //       hash.createLabels();
-  //     } else if (this.hashesToLoad.length) {
-  //       const hash = this.hashesToLoad.pop()!;
-  //       hash.overflowClip();
-  //       hash.updateBuffers(false);
-  //     }
-  //     if (performance.now() - time < PRELOADER_MAXIMUM_FRAME_TIME) {
-  //       this.preloadTick(time);
-  //     } else {
-  //       // we expect this to run longer than MINIMUM_FRAME_TIME
-  //       debugTimeCheck('preloadTick', PRELOADER_MAXIMUM_FRAME_TIME * 1.5);
-  //       setTimeout(this.preloadTick);
-  //     }
-  //   }
-  // };
-
-  // preload(): Promise<void> {
-  //   return new Promise((resolve) => {
-  //     if (!this.createHashes()) {
-  //       resolve();
-  //     } else {
-  //       this.preloaderResolve = resolve;
-  //       this.hashesToCreate = Array.from(this.cellsSheet.cellsLabels.cellsTextHash.values());
-  //       this.hashesToLoad = Array.from(this.cellsSheet.cellsLabels.cellsTextHash.values());
-  //       this.preloadTick();
-  //     }
-  //   });
-  // }
 }

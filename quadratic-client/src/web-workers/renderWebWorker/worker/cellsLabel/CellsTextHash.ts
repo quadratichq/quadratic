@@ -129,7 +129,7 @@ export class CellsTextHash {
 
   overflowClip(): void {
     // used to ensure we don't check for clipping beyond the end of the sheet's data bounds
-    const bounds = this.cellsLabels.boundsNoFormatting;
+    const bounds = this.cellsLabels.bounds;
 
     // empty when there are no cells
     if (!bounds) return;
