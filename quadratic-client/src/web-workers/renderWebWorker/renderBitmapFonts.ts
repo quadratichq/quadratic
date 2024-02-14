@@ -1,3 +1,6 @@
+// Converts BitmapFont information to a simplified format that can be sent over
+// to the render web worker
+
 import { BitmapFont, IBitmapFontCharacter } from 'pixi.js';
 
 export interface RenderBitmapChar {

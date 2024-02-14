@@ -5,12 +5,16 @@
  */
 
 import { metadata } from '@/grid/controller/metadata';
-import { JsCodeCell } from '@/quadratic-core/types';
+import { JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
+  ClientCoreGetAllRenderFills,
   ClientCoreGetCodeCell,
+  ClientCoreGetRenderCodeCells,
   ClientCoreLoad,
+  CoreClientGetAllRenderFills,
   CoreClientGetCodeCell,
+  CoreClientGetRenderCodeCells,
   CoreClientLoad,
   CoreClientMessage,
 } from './coreClientMessages';
@@ -80,6 +84,36 @@ class QuadraticCore {
       };
       this.waitingForResponse[id] = (message: CoreClientGetCodeCell) => {
         resolve(message.cell);
+      };
+      this.worker.postMessage(message);
+    });
+  }
+
+  getAllRenderFills(sheetId: string): Promise<JsRenderFill[]> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientGetAllRenderFills) => {
+        resolve(message.fills);
+      };
+      const message: ClientCoreGetAllRenderFills = {
+        type: 'clientCoreGetAllRenderFills',
+        sheetId,
+        id,
+      };
+      this.worker.postMessage(message);
+    });
+  }
+
+  getRenderCodeCells(sheetId: string): Promise<JsRenderCodeCell[]> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientGetRenderCodeCells) => {
+        resolve(message.codeCells);
+      };
+      const message: ClientCoreGetRenderCodeCells = {
+        type: 'clientCoreGetRenderCodeCells',
+        sheetId,
+        id,
       };
       this.worker.postMessage(message);
     });

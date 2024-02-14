@@ -2,14 +2,7 @@ import { SheetOffsets } from '@/quadratic-grid-metadata/quadratic_grid_metadata'
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { Pos } from '../../quadratic-core/quadratic_core';
-import {
-  CellAlign,
-  CellFormatSummary,
-  FormattingSummary,
-  JsRenderCell,
-  JsRenderCodeCell,
-  JsRenderFill,
-} from '../../quadratic-core/types';
+import { CellAlign, CellFormatSummary, FormattingSummary, JsRenderCell } from '../../quadratic-core/types';
 import { grid } from '../controller/Grid';
 import { metadata } from '../controller/metadata';
 import { SheetCursor } from './SheetCursor';
@@ -91,18 +84,6 @@ export class Sheet {
 
   getEditCell(x: number, y: number): string {
     return grid.getEditCell(this.id, new Pos(x, y));
-  }
-
-  getRenderFills(rectangle: Rectangle): JsRenderFill[] {
-    return grid.getRenderFills(this.id, rectangle);
-  }
-
-  getAllRenderFills(): JsRenderFill[] {
-    return grid.getAllRenderFills(this.id);
-  }
-
-  getRenderCodeCells(): JsRenderCodeCell[] {
-    return grid.getRenderCodeCells(this.id);
   }
 
   getFormattingSummary(rectangle: Rectangle): FormattingSummary {

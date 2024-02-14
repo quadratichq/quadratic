@@ -1,5 +1,6 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { colors } from '../../theme/colors';
@@ -33,12 +34,12 @@ export class CellsArray extends Container {
     return this.cellsSheet.sheet;
   }
 
-  create(): void {
+  async create() {
     this.particles.removeChildren();
     this.graphics.clear();
     this.lines = [];
     const cursor = sheets.sheet.cursor;
-    const codeCells = this.cellsSheet.sheet.getRenderCodeCells();
+    const codeCells = await quadraticCore.getRenderCodeCells(this.sheet.id);
     this.cellsSheet.cellsMarkers.clear();
     const cursorRectangle = cursor.getRectangle();
 

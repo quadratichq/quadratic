@@ -1,4 +1,4 @@
-import { JsCodeCell } from '@/quadratic-core/types';
+import { JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
 
 export interface ClientCoreLoad {
   type: 'clientCoreLoad';
@@ -43,5 +43,38 @@ export interface CoreClientGetCodeCell {
   id: number;
 }
 
-export type ClientCoreMessage = ClientCoreLoad | ClientCoreGetCodeCell;
-export type CoreClientMessage = CoreClientLoad | CoreClientGetCodeCell;
+export interface ClientCoreGetAllRenderFills {
+  type: 'clientCoreGetAllRenderFills';
+  sheetId: string;
+  id: number;
+}
+
+export interface CoreClientGetAllRenderFills {
+  type: 'coreClientGetAllRenderFills';
+  fills: JsRenderFill[];
+  id: number;
+}
+
+export interface ClientCoreGetRenderCodeCells {
+  type: 'clientCoreGetRenderCodeCells';
+  sheetId: string;
+  id: number;
+}
+
+export interface CoreClientGetRenderCodeCells {
+  type: 'coreClientGetRenderCodeCells';
+  codeCells: JsRenderCodeCell[];
+  id: number;
+}
+
+export type ClientCoreMessage =
+  | ClientCoreLoad
+  | ClientCoreGetCodeCell
+  | ClientCoreGetAllRenderFills
+  | ClientCoreGetRenderCodeCells;
+
+export type CoreClientMessage =
+  | CoreClientLoad
+  | CoreClientGetCodeCell
+  | CoreClientGetAllRenderFills
+  | CoreClientGetRenderCodeCells;

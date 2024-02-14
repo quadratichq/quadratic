@@ -29,8 +29,6 @@ import {
   JsClipboard,
   JsHtmlOutput,
   JsRenderCell,
-  JsRenderCodeCell,
-  JsRenderFill,
   Rect,
   SearchOptions,
   SheetPos,
@@ -447,25 +445,6 @@ export class Grid {
 
   hasRenderCells(sheetId: string, rectangle: Rectangle): boolean {
     return this.gridController.hasRenderCells(sheetId, rectangleToRect(rectangle));
-  }
-
-  getRenderFills(sheetId: string, rectangle: Rectangle): JsRenderFill[] {
-    const data = this.gridController.getRenderFills(sheetId, rectangleToRect(rectangle));
-    return JSON.parse(data);
-  }
-
-  // todo...
-  getAllRenderFills(sheetId: string): JsRenderFill[] {
-    return [];
-    // const data = this.gridController.getAllRenderFills(sheetId);
-    // return JSON.parse(data);
-  }
-
-  // todo...
-  getRenderCodeCells(sheetId: string): JsRenderCodeCell[] {
-    return [];
-    // const data = this.gridController.getAllRenderCodeCells(sheetId);
-    // return JSON.parse(data);
   }
 
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {

@@ -9,7 +9,9 @@ import { debugWebWorkers } from '@/debugFlags';
 import {
   ClientCoreLoad,
   ClientCoreMessage,
+  CoreClientGetAllRenderFills,
   CoreClientGetCodeCell,
+  CoreClientGetRenderCodeCells,
   CoreClientLoad,
   CoreClientMessage,
   GridMetadata,
@@ -31,6 +33,16 @@ class CoreClient {
       case 'clientCoreGetCodeCell':
         const cell = core.getCodeCell(e.data.sheetId, e.data.x, e.data.y);
         this.send({ type: 'coreClientGetCodeCell', id: e.data.id, cell } as CoreClientGetCodeCell);
+        break;
+
+      case 'clientCoreGetAllRenderFills':
+        const fills = core.getAllRenderFills(e.data.sheetId);
+        this.send({ type: 'coreClientGetAllRenderFills', id: e.data.id, fills } as CoreClientGetAllRenderFills);
+        break;
+
+      case 'clientCoreGetRenderCodeCells':
+        const codeCells = core.getRenderCodeCells(e.data.sheetId);
+        this.send({ type: 'coreClientGetRenderCodeCells', id: e.data.id, codeCells } as CoreClientGetRenderCodeCells);
         break;
 
       default:
