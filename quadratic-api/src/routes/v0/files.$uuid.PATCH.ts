@@ -33,7 +33,6 @@ async function handler(
   } = req;
   const {
     userMakingRequest: { filePermissions },
-    file,
   } = await getFile({ uuid, userId });
 
   // Can they edit this file?
