@@ -10,6 +10,7 @@ export interface CommandPaletteListItemSharedProps {
   label: string;
   listItemIndex: number;
   selectedListItemIndex: number;
+  addKeywords?: string;
 }
 
 // Contextual props added to each individual <CommandPaletteListItem>
@@ -18,7 +19,8 @@ interface CommandPaletteListItemUniqueProps {
   disabled?: boolean;
   icon?: ReactElement;
   shortcut?: string;
-  shortcutModifiers?: Array<string>;
+  shortcutModifiers?: Array<string> | string;
+  keywords?: Array<string> | string;
 }
 
 // All props this component needs
@@ -36,9 +38,19 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
     shortcutModifiers,
     icon,
     fuzzysortResult,
+    addKeywords,
   } = props;
 
-  const displayText = fuzzysortResult ? fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>) : label;
+  let displayText: (string | JSX.Element)[] | null | string = label;
+
+  // remove any keywords from the displayed search result
+  if (addKeywords && fuzzysortResult?.target) {
+    fuzzysort.highlight({ ...fuzzysortResult, target: fuzzysortResult.target.replace(addKeywords, '') }, (m, i) => (
+      <b key={i}>{m}</b>
+    ));
+  } else if (fuzzysortResult) {
+    displayText = fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>);
+  }
 
   return (
     <ListItem disablePadding key={label}>

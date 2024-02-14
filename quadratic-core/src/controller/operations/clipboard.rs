@@ -1,8 +1,9 @@
 use super::operation::Operation;
 use crate::{
+    cell_values::CellValues,
     controller::{user_actions::clipboard::PasteSpecial, GridController},
     grid::{formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders},
-    Array, ArraySize, CellValue, Pos, SheetPos, SheetRect,
+    CellValue, Pos, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use regex::Regex;
@@ -12,10 +13,10 @@ use serde::{Deserialize, Serialize};
 pub struct Clipboard {
     pub w: u32,
     pub h: u32,
-    pub cells: Vec<Option<CellValue>>,
+    pub cells: CellValues,
 
     // plain values for use with PasteSpecial::Values
-    pub values: Vec<Option<CellValue>>,
+    pub values: CellValues,
 
     pub formats: Vec<CellFmtArray>,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
@@ -32,56 +33,35 @@ impl GridController {
     }
 
     /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
-    fn array_from_clipboard_cells(
-        clipboard: Clipboard,
+    fn cell_values_from_clipboard_cells(
+        clipboard: &Clipboard,
         special: PasteSpecial,
-    ) -> (Option<Array>, Vec<(u32, u32)>) {
+    ) -> (Option<&CellValues>, Vec<(u32, u32)>) {
         if clipboard.w == 0 && clipboard.h == 0 {
             return (None, vec![]);
         }
 
-        let mut array = Array::new_empty(ArraySize::new(clipboard.w, clipboard.h).unwrap());
-        let mut code = vec![];
-        let mut x = 0;
-        let mut y = 0;
-
         match special {
-            PasteSpecial::Values => clipboard.values.iter().for_each(|cell| {
-                let value = cell.clone().map_or(CellValue::Blank, |v| v);
-
-                // ignore result errors
-                let _ = array.set(x, y, value);
-
-                x += 1;
-
-                if x == clipboard.w {
-                    x = 0;
-                    y += 1;
-                }
-            }),
+            PasteSpecial::Values => (Some(&clipboard.values), vec![]),
             PasteSpecial::None => {
-                clipboard.cells.iter().for_each(|cell| {
-                    let value = cell.clone().map_or(CellValue::Blank, |v| v);
-
-                    if let CellValue::Code(_) = &value {
-                        code.push((x, y));
-                    }
-
-                    // ignore result errors
-                    let _ = array.set(x, y, value);
-
-                    x += 1;
-
-                    if x == clipboard.w {
-                        x = 0;
-                        y += 1;
-                    }
-                });
+                let code = clipboard
+                    .cells
+                    .columns
+                    .iter()
+                    .enumerate()
+                    .flat_map(|(x, col)| {
+                        col.iter()
+                            .filter_map(|(y, cell)| match cell {
+                                CellValue::Code(_) => Some((x as u32, *y as u32)),
+                                _ => None,
+                            })
+                            .collect::<Vec<_>>()
+                    })
+                    .collect::<Vec<_>>();
+                (Some(&clipboard.cells), code)
             }
-            _ => (),
+            _ => (None, vec![]),
         }
-
-        (Some(array), code)
     }
 
     fn set_clipboard_cells(
@@ -90,14 +70,6 @@ impl GridController {
         clipboard: Clipboard,
         special: PasteSpecial,
     ) -> Vec<Operation> {
-        let sheet_rect = SheetRect {
-            min: start_pos.into(),
-            max: Pos {
-                x: start_pos.x + (clipboard.w as i64) - 1,
-                y: start_pos.y + (clipboard.h as i64) - 1,
-            },
-            sheet_id: start_pos.sheet_id,
-        };
         let formats = clipboard.formats.clone();
         let borders = clipboard.borders.clone();
 
@@ -105,9 +77,13 @@ impl GridController {
 
         match special {
             PasteSpecial::None => {
-                let (values, code) = GridController::array_from_clipboard_cells(clipboard, special);
+                let (values, code) =
+                    GridController::cell_values_from_clipboard_cells(&clipboard, special);
                 if let Some(values) = values {
-                    ops.push(Operation::SetCellValues { sheet_rect, values });
+                    ops.push(Operation::SetCellValues {
+                        sheet_pos: start_pos,
+                        values: values.clone(),
+                    });
                 }
 
                 code.iter().for_each(|(x, y)| {
@@ -120,13 +96,26 @@ impl GridController {
                 });
             }
             PasteSpecial::Values => {
-                let (values, _) = GridController::array_from_clipboard_cells(clipboard, special);
+                let (values, _) =
+                    GridController::cell_values_from_clipboard_cells(&clipboard, special);
                 if let Some(values) = values {
-                    ops.push(Operation::SetCellValues { sheet_rect, values });
+                    ops.push(Operation::SetCellValues {
+                        sheet_pos: start_pos,
+                        values: values.clone(),
+                    });
                 }
             }
             _ => (),
         }
+
+        let sheet_rect = SheetRect {
+            min: start_pos.into(),
+            max: Pos {
+                x: start_pos.x + (clipboard.w as i64) - 1,
+                y: start_pos.y + (clipboard.h as i64) - 1,
+            },
+            sheet_id: start_pos.sheet_id,
+        };
 
         // paste formats and borders unless pasting only values
         if !matches!(special, PasteSpecial::Values) {
@@ -198,41 +187,32 @@ impl GridController {
 
         let mut ops = vec![];
 
-        let cell_values = lines
-            .iter()
-            .enumerate()
-            .map(|(x, line)| {
-                line.split('\t')
-                    .enumerate()
-                    .map(|(y, value)| {
-                        let (operations, cell_value) = self.string_to_cell_value(
-                            SheetPos {
-                                x: start_pos.x + x as i64,
-                                y: start_pos.y + y as i64,
-                                sheet_id: start_pos.sheet_id,
-                            },
-                            value,
-                        );
-                        ops.extend(operations);
-                        cell_value
-                    })
-                    .collect::<Vec<CellValue>>()
-            })
-            .collect::<Vec<Vec<CellValue>>>();
+        // calculate the width by checking the first line (with the assumption that all lines should have the same width)
+        let w = lines
+            .first()
+            .map(|line| line.split('\t').count())
+            .unwrap_or(0);
+        let mut cell_values = CellValues::new(w as u32, lines.len() as u32);
+        lines.iter().enumerate().for_each(|(y, line)| {
+            line.split('\t').enumerate().for_each(|(x, value)| {
+                let (operations, cell_value) = self.string_to_cell_value(
+                    SheetPos {
+                        x: start_pos.x + x as i64,
+                        y: start_pos.y + y as i64,
+                        sheet_id: start_pos.sheet_id,
+                    },
+                    value,
+                );
+                ops.extend(operations);
+                if cell_value != CellValue::Blank {
+                    cell_values.set(x as u32, y as u32, cell_value);
+                }
+            });
+        });
 
-        let array = Array::from(cell_values);
-        let sheet_rect = SheetRect::new_pos_span(
-            start_pos.into(),
-            (
-                start_pos.x + array.width() as i64 - 1,
-                start_pos.y + array.height() as i64 - 1,
-            )
-                .into(),
-            start_pos.sheet_id,
-        );
         ops.push(Operation::SetCellValues {
-            sheet_rect,
-            values: array,
+            sheet_pos: start_pos,
+            values: cell_values,
         });
         ops
     }
