@@ -12,7 +12,6 @@ import { ActionFunctionArgs, redirect, useSubmit } from 'react-router-dom';
 import z from 'zod';
 import { apiClient } from '../api/apiClient';
 import { AvatarWithLetters } from '../components/AvatarWithLetters';
-import { ROUTES } from '../constants/routes';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { TeamLogoDialog, TeamLogoInput } from '../dashboard/components/TeamLogo';
 
@@ -27,7 +26,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { uuid } = await apiClient.teams.create(data);
   // await new Promise((resolve) => setTimeout(resolve, 5000));
   // TODO make dialog=share a const, or maybe share=1 or share=first for extra UI
-  return redirect(ROUTES.TEAM(uuid) + '?share=team-created');
+  const checkoutSessionUrl = await apiClient.teams.billing.getCheckoutSessionUrl(uuid);
+  return redirect(checkoutSessionUrl.url);
 };
 
 const FormSchema = z.object({

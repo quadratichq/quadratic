@@ -1,10 +1,12 @@
 import { Request, Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
+import { getUsersFromAuth0 } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { createCustomer } from '../../stripe/stripe';
 import { RequestWithUser } from '../../types/Request';
 
 export default [
@@ -22,7 +24,7 @@ export default [
 async function handler(req: Request, res: Response<ApiTypes['/v0/teams.POST.response']>) {
   const {
     body: { name, picture },
-    user: { id: userId },
+    user: { id: userId, auth0Id },
   } = req as RequestWithUser;
 
   const select = {
@@ -31,9 +33,20 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams.POST.resp
     picture: picture ? true : false,
   };
 
+  // Get user email from Auth0
+  const auth0Record = await getUsersFromAuth0([{ id: userId, auth0Id }]);
+  const auth0User = auth0Record[userId];
+  if (!auth0User) {
+    throw new Error(`User ${userId} not found in Auth0`);
+  }
+
+  // create Stripe customer
+  const stripeCustomer = await createCustomer(name, auth0User.email);
+
   const team = await dbClient.team.create({
     data: {
       name,
+      stripeCustomerId: stripeCustomer.id,
       // TODO picture
       UserTeamRole: {
         create: {

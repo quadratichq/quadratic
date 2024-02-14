@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
+import { removeUserFromTeam } from '../../internal/removeUserFromTeam';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -47,14 +48,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid/use
     }
 
     // Delete!
-    await dbClient.userTeamRole.delete({
-      where: {
-        userId_teamId: {
-          userId: userToDeleteId,
-          teamId,
-        },
-      },
-    });
+    await removeUserFromTeam(userToDeleteId, teamId);
     return res.status(200).json(resSuccess);
   }
 
@@ -84,15 +78,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid/use
     throw new ApiError(403, 'User does not have the ability to delete an owner');
   }
 
-  // Ok, now we're good to delete the user
-  await dbClient.userTeamRole.delete({
-    where: {
-      userId_teamId: {
-        userId: userToDeleteId,
-        teamId,
-      },
-    },
-  });
-
+  // Ok, now we're good to remove the user
+  await removeUserFromTeam(userToDeleteId, teamId);
   return res.status(200).json(resSuccess);
 }

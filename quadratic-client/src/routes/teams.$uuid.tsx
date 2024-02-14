@@ -201,7 +201,28 @@ export const Component = () => {
                   </label>
                 </DropdownMenuItem>
                 {teamPermissions.includes('TEAM_BILLING_EDIT') && (
-                  <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      // Get the checkout session URL
+                      apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
+                        window.location.href = data.url;
+                      });
+                    }}
+                  >
+                    Checkout
+                  </DropdownMenuItem>
+                )}
+                {teamPermissions.includes('TEAM_BILLING_EDIT') && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      // Get the billing session URL
+                      apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                        window.location.href = data.url;
+                      });
+                    }}
+                  >
+                    Edit billing
+                  </DropdownMenuItem>
                 )}
                 {teamPermissions.includes('TEAM_DELETE') && [
                   <DropdownMenuSeparator key={1} />,
