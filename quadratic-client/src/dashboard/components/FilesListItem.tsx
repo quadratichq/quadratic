@@ -172,7 +172,7 @@ export function FileListItem({
         onDragStart: (event: React.DragEvent<HTMLAnchorElement>) => {
           if (fileDragRef.current) {
             fileDragRef.current.style.opacity = '1';
-            event.dataTransfer.setDragImage(fileDragRef.current, 16, 24);
+            event.dataTransfer.setDragImage(fileDragRef.current, 16, 16);
           }
           event.dataTransfer.dropEffect = 'move';
           event.dataTransfer.setData('application/quadratic-file-uuid', uuid);
@@ -186,21 +186,24 @@ export function FileListItem({
     : {};
 
   return (
-    <li>
+    <li className="relative">
+      <div
+        ref={fileDragRef}
+        // FYI: There's some trickery to get this displaying right across all browser
+        // Basically this is hidden behind the file itself and when it's dragged
+        // it becomes visible.
+        className="absolute -top-[1px] left-0 z-0 flex items-center gap-1 rounded-full border border-background bg-primary px-2 py-0.5 text-sm text-primary-foreground opacity-0"
+      >
+        <FileIcon />
+        {file.name.length > 16 ? file.name.slice(0, 16) + '…' : file.name}
+      </div>
       <Link
         key={uuid}
         to={ROUTES.FILE(uuid)}
         reloadDocument
-        className={cn(`text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
+        className={cn(`relative z-10 text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
         {...dragProps}
       >
-        <div
-          ref={fileDragRef}
-          className="absolute -top-[1000px] z-0 flex items-center gap-1 rounded-full border border-background bg-primary px-2 py-1 text-sm text-primary-foreground opacity-0"
-        >
-          <FileIcon />
-          {file.name.length > 16 ? file.name.slice(0, 16) + '…' : file.name}
-        </div>
         {viewPreferences.layout === Layout.Grid ? (
           <div className="border border-border p-2 hover:bg-accent">
             <div className="flex aspect-video items-center justify-center bg-background">
