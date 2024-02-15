@@ -33,11 +33,11 @@ export const apiClient = {
     async get(uuid: string) {
       return fetchFromApi(`/v0/teams/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
     },
-    async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.POST.request']) {
+    async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.PATCH.request']) {
       return fetchFromApi(
         `/v0/teams/${uuid}`,
-        { method: 'POST', body: JSON.stringify(body) },
-        ApiSchemas['/v0/teams/:uuid.POST.response']
+        { method: 'PATCH', body: JSON.stringify(body) },
+        ApiSchemas['/v0/teams/:uuid.PATCH.response']
       );
     },
     async create(body: ApiTypes['/v0/teams.POST.request']) {
