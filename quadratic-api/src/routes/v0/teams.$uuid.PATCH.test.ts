@@ -46,11 +46,11 @@ afterEach(async () => {
   await dbClient.$transaction([deleteTeamUsers, deleteUsers, deleteTeams]);
 });
 
-describe('POST /v0/teams/:uuid', () => {
+describe('PATCH /v0/teams/:uuid', () => {
   describe('sending a bad request', () => {
     it('responds with a 400 for an invalid UUID', async () => {
       await request(app)
-        .post(`/v0/teams/foo`)
+        .patch(`/v0/teams/foo`)
         .send({ name: 'Foobar' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -59,7 +59,7 @@ describe('POST /v0/teams/:uuid', () => {
     });
     it('responds with a 400 for sending invalid data', async () => {
       await request(app)
-        .post(`/v0/teams/foo`)
+        .patch(`/v0/teams/foo`)
         .send({ cheese: 'swiss' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -68,7 +68,7 @@ describe('POST /v0/teams/:uuid', () => {
     });
     it('responds with a 400 for sending valid & invalid data', async () => {
       await request(app)
-        .post(`/v0/teams/foo`)
+        .patch(`/v0/teams/foo`)
         .send({ name: 'Foobar', cheese: 'swiss' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -80,7 +80,7 @@ describe('POST /v0/teams/:uuid', () => {
   describe('update a team you belong to as an OWNER', () => {
     it('responds with the updated team name', async () => {
       await request(app)
-        .post(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .send({ name: 'Foobar' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
@@ -97,7 +97,7 @@ describe('POST /v0/teams/:uuid', () => {
   describe('update a team you belong to as an EDITOR', () => {
     it('responds with the updated team name', async () => {
       await request(app)
-        .post(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .send({ name: 'Foobar' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
@@ -114,7 +114,7 @@ describe('POST /v0/teams/:uuid', () => {
   describe('update a team you belong to as a VIEWER', () => {
     it('responds with a 403', async () => {
       await request(app)
-        .post(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .send({ name: 'Foobar' })
         .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)

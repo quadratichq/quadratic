@@ -1,24 +1,35 @@
 import { apiClient } from '@/api/apiClient';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { AvatarWithLetters } from '@/components/AvatarWithLetters';
+import { AvatarTeam } from '@/components/AvatarTeam';
 import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
+import { Avatar, AvatarFallback } from '@/shadcn/ui/avatar';
 import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
-import { Avatar, CircularProgress } from '@mui/material';
-import { ExternalLinkIcon, FileIcon, MixIcon, PersonIcon, PlusIcon } from '@radix-ui/react-icons';
+import { CircularProgress } from '@mui/material';
+import { AvatarImage } from '@radix-ui/react-avatar';
+import { ExternalLinkIcon, FileIcon, HamburgerMenuIcon, MixIcon, PlusIcon, Share2Icon } from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useEffect, useState } from 'react';
-import { NavLink, Outlet, useFetchers, useLoaderData, useLocation, useNavigation, useSubmit } from 'react-router-dom';
-import { ROUTES } from '../../constants/routes';
-import { useRootRouteLoaderData } from '../../router';
-import QuadraticLogo from './quadratic-logo.svg';
-import QuadraticLogotype from './quadratic-logotype.svg';
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useFetchers,
+  useLoaderData,
+  useLocation,
+  useNavigation,
+  useSubmit,
+} from 'react-router-dom';
+import { ROUTES } from '../constants/routes';
+import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
+import QuadraticLogotype from '../dashboard/components/quadratic-logotype.svg';
+import { useRootRouteLoaderData } from '../router';
 
 const drawerWidth = 264;
 
@@ -45,21 +56,26 @@ export const Component = () => {
 
   return (
     <div className={`h-full lg:flex lg:flex-row`}>
-      <div className={`hidden flex-shrink-0 border-r border-r-border lg:block`} style={{ width: drawerWidth }}>
-        {navbar}
-      </div>
       <div
         className={cn(
-          `transition-filter relative h-full w-full px-4 pb-10 transition-opacity lg:px-10`,
+          `transition-filter relative order-2 h-full w-full px-4 pb-10 transition-opacity sm:pt-0 lg:px-10`,
           isLoading ? 'overflow-hidden' : 'overflow-scroll',
           isLoading && 'pointer-events-none opacity-25'
         )}
       >
-        <div className={`absolute right-4 top-3 z-10 lg:hidden`}>
+        <div
+          className={`sticky top-0 z-50 -mx-4 flex min-h-14 items-center justify-between border-b border-border bg-background px-4 lg:hidden`}
+        >
+          <Link to={'/'} className={`flex items-center gap-2`}>
+            <div className={`flex w-5 items-center justify-center`}>
+              <img src={QuadraticLogo} alt="Quadratic logo glyph" />
+            </div>
+            <img src={QuadraticLogotype} alt="Quadratic logotype" />
+          </Link>
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" onClick={() => setIsOpen(true)}>
-                Menu
+              <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
+                <HamburgerMenuIcon />
               </Button>
             </SheetTrigger>
             <SheetContent className="p-0" style={{ width: drawerWidth }}>
@@ -68,6 +84,9 @@ export const Component = () => {
           </Sheet>
         </div>
         <Outlet />
+      </div>
+      <div className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`} style={{ width: drawerWidth }}>
+        {navbar}
       </div>
     </div>
   );
@@ -81,7 +100,7 @@ function Navbar() {
   const { loggedInUser: user } = useRootRouteLoaderData();
   const fetchers = useFetchers();
   const navigation = useNavigation();
-  const classNameIcons = `h-5 w-5 mx-0.5`;
+  const classNameIcons = `mx-1 text-muted-foreground`;
 
   return (
     <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
@@ -104,13 +123,13 @@ function Navbar() {
           Files
         </Type>
 
-        <div className="grid gap-1">
+        <div className="grid gap-0.5">
           <SidebarNavLink to={ROUTES.FILES} dropTarget={{ type: 'user', id: ownerUserId }}>
             <FileIcon className={classNameIcons} />
             Mine
           </SidebarNavLink>
           <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
-            <PersonIcon className={classNameIcons} />
+            <Share2Icon className={classNameIcons} />
             Shared with me
           </SidebarNavLink>
           <SidebarNavLink to={ROUTES.EXAMPLES}>
@@ -125,7 +144,7 @@ function Navbar() {
         >
           Teams
         </Type>
-        <div className="grid gap-1">
+        <div className="grid gap-0.5">
           {teams.map(({ team: { id: ownerTeamId, uuid, name, picture }, userMakingRequest: { teamPermissions } }) => {
             // See if this team has an inflight fetcher that's updating team info
             const inFlightFetcher = fetchers.find(
@@ -149,9 +168,7 @@ function Navbar() {
                 to={ROUTES.TEAM(uuid)}
                 dropTarget={teamPermissions.includes('TEAM_EDIT') ? { type: 'team', id: ownerTeamId } : undefined}
               >
-                <AvatarWithLetters size="small" src={picture}>
-                  {name}
-                </AvatarWithLetters>
+                <AvatarTeam className={`-my-0.5 h-6 w-6`} src={picture} />
                 {name}
               </SidebarNavLink>
             );
@@ -169,7 +186,11 @@ function Navbar() {
         </SidebarNavLink>
         <Separator className="my-2" />
         <SidebarNavLink to={ROUTES.ACCOUNT}>
-          <Avatar alt={user?.name} src={user?.picture} sx={{ width: 24, height: 24 }} />
+          <Avatar className="h-6 w-6 bg-muted text-muted-foreground">
+            <AvatarImage src={user?.picture} />
+            <AvatarFallback>{user && user.name ? user.name[0] : '?'}</AvatarFallback>
+          </Avatar>
+
           <div className={`flex flex-col overflow-hidden`}>
             {user?.name || 'You'}
             {user?.email && <p className={`truncate ${TYPE.caption} text-muted-foreground`}>{user?.email}</p>}

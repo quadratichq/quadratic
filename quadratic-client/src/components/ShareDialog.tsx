@@ -45,7 +45,17 @@ function getRoleLabel(role: UserTeamRole | UserFileRole) {
   );
 }
 
-export function ShareDialog({ onClose, title, description, children }: any) {
+export function ShareDialog({
+  onClose,
+  title,
+  description,
+  children,
+}: {
+  onClose: () => void;
+  title: string;
+  description: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent>
@@ -96,8 +106,21 @@ export function ShareTeamDialog({
     ...pendingInvites.map((invite) => invite.email),
   ];
 
+  const noOfUsers = users.length;
+
   return (
-    <ShareDialog title={`Share ${name}`} description="Invite people to collaborate in this team" onClose={onClose}>
+    <ShareDialog
+      title={`Share ${name}`}
+      description={
+        <>
+          <span className="font-semibold">
+            {noOfUsers} member{noOfUsers !== 1 ? 's' : ''}
+          </span>{' '}
+          · Invite people to collaborate in this team
+        </>
+      }
+      onClose={onClose}
+    >
       {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
         <InviteForm
           action={action}
