@@ -59,7 +59,12 @@
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
     "ua-parser-js": "^1.0.37",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "vscode": "^1.1.37",
+    "vscode-jsonrpc": "^8.2.0",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver-protocol": "^3.17.5",
+    "vscode-languageserver-types": "^3.17.5"
   },
   "main": "public/electron.js",
   "scripts": {
@@ -127,7 +132,7 @@
     "sass": "^1.69.5",
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",
-    "vite": "^5.0.0",
+    "vite": "^5.1.2",
     "vite-plugin-checker": "^0.6.2",
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0",

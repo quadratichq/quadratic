@@ -9,6 +9,9 @@ export default defineConfig(() => {
     build: {
       outDir: '../build',
     },
+    optimizeDeps: {
+      exclude: ['vscode']
+    },
     assetsInclude: ['**/*.py'],
     server: {
       port: 3000,
@@ -17,6 +20,7 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+      dedupe: ['monaco-editor', 'vscode'],
     },
     plugins: [
       react(),

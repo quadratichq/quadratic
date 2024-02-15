@@ -9,6 +9,7 @@ import { provideCompletionItems, provideHover } from '../../../quadratic-core/qu
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import { provideCompletionItems as provideCompletionItemsPython } from './PythonLanguageModel';
+import { pyrightWorker, uri } from './language-server/worker';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
@@ -38,6 +39,7 @@ export const CodeEditorBody = (props: Props) => {
   useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, codeEditorReturn);
+  // useLanguageServer(isValidRef, editorRef, monacoRef, language);
 
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {
@@ -70,7 +72,11 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.register({ id: 'python' });
       monaco.languages.registerCompletionItemProvider('python', {
         provideCompletionItems: provideCompletionItemsPython,
+        // triggerCharacters: ['.', '[', '"', "'"],
       });
+
+      // load the document in the python language server
+      pyrightWorker?.didOpenTextDocument( { textDocument: { text: editorRef.current?.getValue() ?? "", uri, languageId: 'python'}});
 
       setDidMount(true);
     },

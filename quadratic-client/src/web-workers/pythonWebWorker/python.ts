@@ -85,20 +85,27 @@ class PythonWebWorker {
           const range = event.range;
 
           if (!range) throw new Error('Expected range to be defined in get-cells');
+          
+          try {
+            const cells = grid.calculationGetCells(
+              transactionId,
+              pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+              range.sheet !== undefined ? range.sheet.toString() : undefined,
+              event.range?.lineNumber
+            );
 
-          const cells = grid.calculationGetCells(
-            transactionId,
-            pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-            range.sheet !== undefined ? range.sheet.toString() : undefined,
-            event.range?.lineNumber
-          );
-
-          // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
-          if (cells) {
-            this.worker!.postMessage({ type: 'get-cells', cells });
-          } else {
+            // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
+            if (cells) {
+              this.worker!.postMessage({ type: 'get-cells', cells });
+            } else {
+              this.calculationComplete();
+            }
+          } catch (e) {
+            // TODO: display error in the UI once we have one
+            console.error('Error in get-cells', e);
             this.calculationComplete();
           }
+
           break;
         }
 

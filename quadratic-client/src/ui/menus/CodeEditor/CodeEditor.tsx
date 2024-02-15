@@ -5,8 +5,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import { Pos } from '@/quadratic-core/types';
 import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
-import { editor } from 'monaco-editor';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -41,8 +40,7 @@ export const CodeEditor = () => {
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
   const [codeEditorReturn, setCodeEditorReturn] = useState<ComputedPythonReturnType | undefined>(undefined);
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-
+  
   const cellLocation = useMemo(() => {
     return {
       x: editorInteractionState.selectedCell.x,
@@ -89,11 +87,13 @@ export const CodeEditor = () => {
     (updateEditorContent: boolean) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
       if (!editorInteractionState.selectedCellSheet) return;
+      console.log('updateCodeCell', updateCodeCell);
       const codeCell = grid.getCodeCell(
         editorInteractionState.selectedCellSheet,
         editorInteractionState.selectedCell.x,
         editorInteractionState.selectedCell.y
       );
+      console.log('codeCell', codeCell);
 
       if (codeCell) {
         setCodeString(codeCell.code_string);

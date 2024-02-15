@@ -18,7 +18,10 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         match self.calculation_get_cells(get_cells) {
             Ok(get_cells) => Ok(serde_wasm_bindgen::to_value(&get_cells)?),
-            Err(e) => Err(serde_wasm_bindgen::to_value(&e)?),
+            Err(e) => {
+                crate::util::dbgjs(format!("calculation_get_cells error: {:?}", e));
+                Err(serde_wasm_bindgen::to_value(&e)?)
+            }
         }
     }
 
