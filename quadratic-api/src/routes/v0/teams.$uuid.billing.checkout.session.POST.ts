@@ -5,7 +5,7 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { createCheckoutSession } from '../../stripe/stripe';
+import { createCheckoutSession, getMonthlyPriceId } from '../../stripe/stripe';
 import { RequestWithUser } from '../../types/Request';
 
 export default [
@@ -35,7 +35,9 @@ async function handler(req: Request, res: Response) {
       .json({ error: { message: 'User does not have permission to access billing for this team.' } });
   }
 
-  const session = await createCheckoutSession(uuid, 'price_1OjSMZEXcHufZtPd0h7PsORf');
+  const monthlyPriceId = await getMonthlyPriceId();
+
+  const session = await createCheckoutSession(uuid, monthlyPriceId);
 
   if (!session.url) {
     return res.status(500).json({ error: { message: 'Failed to create checkout session' } });

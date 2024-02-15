@@ -113,3 +113,16 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string) =
     cancel_url: `http://localhost:3000/teams/${teamUuid}`,
   });
 };
+
+export const getMonthlyPriceId = async () => {
+  const prices = await stripe.prices.list({
+    active: true,
+  });
+
+  const data = prices.data.filter((price) => price.lookup_key === 'team_monthly');
+  if (data.length === 0) {
+    throw new Error('No monthly price found');
+  }
+
+  return data[0].id;
+};
