@@ -5,10 +5,12 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers } from '@/debugFlags';
 import { Bounds } from '@/grid/sheet/Bounds';
-import { RenderBitmapFonts } from '../renderBitmapFonts';
-import { RenderCellsTextHashClear, RenderClientMessage, RenderLabelMeshEntryMessage } from '../renderClientMessages';
+import {
+  ClientRenderMessage,
+  RenderClientCellsTextHashClear,
+  RenderClientLabelMeshEntry,
+} from '../renderClientMessages';
 import { renderCore } from './renderCore';
 import { renderText } from './renderText';
 
@@ -19,26 +21,28 @@ class RenderClient {
     self.onmessage = this.handleMessage;
   }
 
-  private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
-    if (debugWebWorkers) console.log(`[renderClient] received message ${e.data.type}`);
-
+  private handleMessage = (e: MessageEvent<ClientRenderMessage>) => {
     switch (e.data.type) {
-      case 'load':
-        this.load(e.data.bitmapFonts, e.ports[0]);
+      case 'clientRenderInit':
+        renderText.clientInit(e.data.bitmapFonts);
+        renderCore.init(e.ports[0]);
+        break;
+
+      case 'clientRenderViewport':
+        const startUpdate = !renderText.viewport;
+        renderText.viewport = e.data.bounds;
+        renderText.sheetId = e.data.sheetId;
+        if (startUpdate) renderText.ready();
         break;
 
       default:
-        console.warn('[renderClient] Unhandled message type', e.data.type);
+        console.warn('[renderClient] Unhandled message type', e.data);
     }
   };
 
-  /*******************
-   * Client requests *
-   *******************/
-
   // sends a message to the main thread to clear the cellsTextHash for the hashX, hashY
   sendCellsTextHashClear(sheetId: string, hashX: number, hashY: number, viewBounds: Bounds) {
-    const message: RenderCellsTextHashClear = {
+    const message: RenderClientCellsTextHashClear = {
       type: 'cellsTextHashClear',
       sheetId,
       hashX,
@@ -49,17 +53,8 @@ class RenderClient {
   }
 
   // sends a rendered LabelMeshEntry to the main thread for rendering
-  sendLabelMeshEntry(message: RenderLabelMeshEntryMessage, data: ArrayBuffer[]) {
+  sendLabelMeshEntry(message: RenderClientLabelMeshEntry, data: ArrayBuffer[]) {
     self.postMessage(message, data);
-  }
-
-  /*******************
-   * Client response *
-   *******************/
-
-  load(bitmapFonts: RenderBitmapFonts, port: MessagePort) {
-    renderText.bitmapFonts = bitmapFonts;
-    renderCore.init(port);
   }
 }
 

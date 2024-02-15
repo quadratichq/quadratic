@@ -1,7 +1,8 @@
 import {
-  RenderCellsTextHashClear,
-  RenderLabelMeshEntryMessage,
+  RenderClientCellsTextHashClear,
+  RenderClientLabelMeshEntry,
 } from '@/web-workers/renderWebWorker/renderClientMessages';
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { CellSheetsModified, SheetId } from '../../quadratic-core/types';
@@ -22,6 +23,7 @@ export class CellsSheets extends Container<CellsSheet> {
         this.current = child;
       }
     }
+    renderWebWorker.pixiIsReady();
   }
 
   isReady(): boolean {
@@ -68,7 +70,7 @@ export class CellsSheets extends Container<CellsSheet> {
     return this.children.find((search) => search.sheet.id === id);
   }
 
-  cellsTextHashClear(message: RenderCellsTextHashClear) {
+  cellsTextHashClear(message: RenderClientCellsTextHashClear) {
     const cellsSheet = this.getById(message.sheetId);
     if (!cellsSheet) {
       throw new Error('Expected to find cellsSheet in cellsTextHashClear');
@@ -76,7 +78,7 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet.cellsLabels.clearCellsTextHash(message);
   }
 
-  labelMeshEntry(message: RenderLabelMeshEntryMessage) {
+  labelMeshEntry(message: RenderClientLabelMeshEntry) {
     const cellsSheet = this.getById(message.sheetId);
     if (!cellsSheet) {
       throw new Error('Expected to find cellsSheet in labelMeshEntry');

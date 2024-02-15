@@ -9,8 +9,8 @@
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/debugFlags';
 import { Sheet } from '@/grid/sheet/Sheet';
 import {
-  RenderCellsTextHashClear,
-  RenderLabelMeshEntryMessage,
+  RenderClientCellsTextHashClear,
+  RenderClientLabelMeshEntry,
 } from '@/web-workers/renderWebWorker/renderClientMessages';
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CellsSheet } from '../CellsSheet';
@@ -38,7 +38,7 @@ export class CellsLabels extends Container {
   }
 
   // received a clear message before a new set of labelMeshEntries
-  clearCellsTextHash(message: RenderCellsTextHashClear) {
+  clearCellsTextHash(message: RenderClientCellsTextHashClear) {
     const key = `${message.hashX},${message.hashY}`;
     const cellsTextHash = this.cellsTextHash.get(key);
     if (cellsTextHash) {
@@ -60,7 +60,7 @@ export class CellsLabels extends Container {
   }
 
   // received a new LabelMeshEntry to add to a CellsTextHash
-  addLabelMeshEntry(message: RenderLabelMeshEntryMessage) {
+  addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
     const key = `${message.hashX},${message.hashY}`;
     const cellsTextHash = this.cellsTextHash.get(key);
     if (!cellsTextHash) {

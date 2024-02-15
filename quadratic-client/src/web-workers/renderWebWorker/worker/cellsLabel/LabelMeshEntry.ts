@@ -8,7 +8,7 @@
  */
 
 import { debugShowCellHashesInfo } from '@/debugFlags';
-import { RenderLabelMeshEntryMessage } from '../../renderClientMessages';
+import { RenderClientLabelMeshEntry } from '../../renderClientMessages';
 import { renderClient } from '../renderClient';
 import { LabelMesh } from './LabelMesh';
 
@@ -50,7 +50,7 @@ export class LabelMeshEntry {
     if (!this.vertices || !this.uvs || !this.indices) {
       throw new Error('Expected LabelMeshEntries.finalize to have buffers');
     }
-    const message: RenderLabelMeshEntryMessage = {
+    const message: RenderClientLabelMeshEntry = {
       type: 'labelMeshEntry',
       sheetId: this.labelMesh.sheetId,
       hashX: this.labelMesh.hashX,

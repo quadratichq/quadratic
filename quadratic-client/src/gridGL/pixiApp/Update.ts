@@ -1,3 +1,5 @@
+import { sheets } from '@/grid/controller/Sheets';
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Point } from 'pixi.js';
 import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
@@ -55,6 +57,8 @@ export class Update {
     }
     if (dirty) {
       pixiApp.viewportChanged();
+      const bounds = viewport.getVisibleBounds();
+      renderWebWorker.updateViewport(sheets.sheet.id, bounds);
     }
   }
 

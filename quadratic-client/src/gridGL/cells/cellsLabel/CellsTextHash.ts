@@ -10,7 +10,7 @@
  */
 
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
-import { RenderLabelMeshEntryMessage } from '@/web-workers/renderWebWorker/renderClientMessages';
+import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
@@ -49,7 +49,7 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.hashY = y;
   }
 
-  addLabelMeshEntry(message: RenderLabelMeshEntryMessage) {
+  addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
     this.addChild(new LabelMeshEntry(message));
     pixiApp.setViewportDirty();
   }

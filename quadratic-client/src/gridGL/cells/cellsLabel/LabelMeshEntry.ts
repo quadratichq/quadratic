@@ -7,7 +7,7 @@
  * are rendered.
  */
 
-import { RenderLabelMeshEntryMessage } from '@/web-workers/renderWebWorker/renderClientMessages';
+import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
 import { BLEND_MODES, BitmapFont, Loader, Mesh, MeshGeometry, MeshMaterial, Program, Renderer, Texture } from 'pixi.js';
 import * as shaderNoTint from './cellLabelShader';
 import * as shaderTint from './cellLabelShaderTint';
@@ -16,7 +16,7 @@ export class LabelMeshEntry extends Mesh {
   private fontName: string;
   private fontSize = 14;
 
-  constructor(message: RenderLabelMeshEntryMessage) {
+  constructor(message: RenderClientLabelMeshEntry) {
     const geometry = new MeshGeometry();
     const shader = message.hasColor ? shaderTint : shaderNoTint;
     const resource = Loader.shared.resources[message.fontName]; // Texture.WHITE; //Texture.from(message.fontName);
