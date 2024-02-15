@@ -97,16 +97,15 @@ class PythonWebWorker {
         if (!range) {
           throw new Error('Expected range to be defined in get-cells');
         }
-        const cells = grid.calculationGetCells(
-          transactionId,
-          pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-          range.sheet !== undefined ? range.sheet.toString() : undefined,
-          event.range?.lineNumber
-        );
-        // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
-        if (cells) {
+        try {
+          const cells = grid.calculationGetCells(
+            transactionId,
+            pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+            range.sheet !== undefined ? range.sheet.toString() : undefined,
+            event.range?.lineNumber
+          );
           this.worker!.postMessage({ type: 'get-cells', cells });
-        } else {
+        } catch (e) {
           this.calculationComplete();
         }
       } else if (event.type === 'python-loaded') {
