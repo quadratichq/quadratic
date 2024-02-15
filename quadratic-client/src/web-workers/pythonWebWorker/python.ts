@@ -1,5 +1,6 @@
 import { SheetPos } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
+import { TransactionSummary } from '@/quadratic-core/types';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
@@ -107,6 +108,7 @@ class PythonWebWorker {
           this.worker!.postMessage({ type: 'get-cells', cells });
         } catch (e) {
           this.calculationComplete();
+          grid.transactionResponse(e as TransactionSummary);
         }
       } else if (event.type === 'python-loaded') {
         window.dispatchEvent(new CustomEvent('python-loaded'));
