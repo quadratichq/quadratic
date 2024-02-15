@@ -1,36 +1,35 @@
 ![E2E Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-e2e.yml/badge.svg) ![Python Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-python.yml/badge.svg) ![Unit Tests](https://github.com/quadratichq/quadratic/actions/workflows/test-unit.yml/badge.svg)
 ![Twitter Follow](https://img.shields.io/twitter/follow/QuadraticHQ)
-![quadraticlogo4 1](https://user-images.githubusercontent.com/3479421/162037216-2fea1620-2310-4cfa-96fb-31299195e3a9.png)
 
-## ![quadratic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The data science spreadsheet_**
+## ![quadratic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The infinite multiplayer spreadsheet, with Python, SQL, and AI_**
 
-Infinite data grid with Python, JavaScript, and SQL built-in. Data Connectors to pull in your data.
+Modern multiplayer spreadsheet with Python, AI, and SQL built-in. 
 
-Take your data and do something useful with it as quickly and easily as possible!
+Built with Rust + WASM + WebGL to run seamlessly at 60+ FPS in the browser.  
 
-<img width="1552" alt="Quadratic in a standalone macOS window; on the left is a table of stock prices, and on the right is a code editor containing Python code to fetch the stock prices from Polygon's API" src="https://user-images.githubusercontent.com/3479421/221301059-921ad96a-878e-4082-b3b9-e55a54185c5d.png">
+Get from data to insight more effectively as a team. 
 
-## Online demo
+<img width="1552" alt="Quadratic in a standalone macOS window; users are working together on a spreadsheet to measure the life expectancy in Canada." src="https://github.com/quadratichq/quadratic/assets/146771258/35724976-5d2b-46f9-b9e9-3fe19468b1af">
 
-We have a hosted version of the `main` branch available online.
+## Production build
+
+The `main` branch is always live for individuals and teams to use.
 
 **Try it out! ⟶ <https://app.quadratichq.com>**
-
-## Community
-
-Join the conversation on our Discord channel ⟶ <https://discord.gg/quadratic>
 
 ## Documentation
 
 Read the documentation ⟶ <https://docs.quadratichq.com>
 
+## Community
+
+Join the conversation on our Discord channel ⟶ <https://discord.gg/quadratic>
+
 # What is Quadratic?
 
 Quadratic is a Web-based spreadsheet application that runs in the browser and as a native app (via Electron).
 
-Our goal is to build a spreadsheet that enables you to pull your data from its source (SaaS, Database, CSV, API, etc) and then work with that data using the most popular data science tools today (Python, Pandas, SQL, JS, Excel Formulas, etc).
-
-Quadratic has no environment to configure. The grid runs entirely in the browser with no backend service. This makes our grids completely portable and very easy to share.
+Our goal is to build a spreadsheet that enables you to pull your data from its source (SaaS, database, CSV, API, etc) and then work with that data using the most popular data science tools today (Python, Pandas, SQL, JS, Formulas, etc).
 
 ## What can I do with Quadratic?
 
@@ -38,10 +37,12 @@ Quadratic has no environment to configure. The grid runs entirely in the browser
 - Create internal tools in minutes
 - Quickly mix data from different sources
 - Explore your data for new insights
+- Visualize your Python workflows as a spreadsheet
+- Mix technical and non-technical team members in your analysis
 
 ## Development progress and roadmap
 
-_Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
+_Quadratic is in Beta._
 
 - [x] WebGL Grid (pinch and zoom grid)
 - [x] Open and Save files locally
@@ -49,8 +50,10 @@ _Quadratic is in ALPHA. For now, we do not recommend relying on Quadratic._
 - [x] Excel Formula Support (in progress)
 - [x] Cell Formatting (issue [#44](https://github.com/quadratichq/quadratic/issues/44))
 - [x] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
-- [ ] Multiplayer Support
+- [x] Multiplayer Support
 - [x] Charts and Graphs
+- [ ] Teams support 
+- [ ] JS support 
 - [ ] SQL Database Support
 - [ ] AI Auto Complete
 
@@ -62,9 +65,7 @@ Want to learn more about how Quadratic works? Read the [How Quadratic Works](./d
 
 ## Examples
 
-There are more example files are in the application file menu. File → Open sample
-
-You can download them and then open them in Quadratic via File → Open Grid
+Access example sheets - [Examples](https://www.quadratichq.com/examples)
 
 ## Quadratic is hiring
 
