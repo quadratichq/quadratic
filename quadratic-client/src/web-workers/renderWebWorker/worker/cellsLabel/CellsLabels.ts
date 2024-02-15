@@ -14,6 +14,7 @@ import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-metadata/quadra
 import { SheetRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
 import { Container, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
+import { renderText } from '../renderText';
 import { CellsTextHash } from './CellsTextHash';
 
 export class CellsLabels extends Container {
@@ -228,41 +229,43 @@ export class CellsLabels extends Container {
   private findNextDirtyHash(): { hash: CellsTextHash; visible: boolean } | undefined {
     const dirtyHashes = Array.from(this.cellsTextHash.values()).filter((hash) => hash.dirty || hash.dirtyBuffers);
     if (!dirtyHashes.length) return;
-    return { hash: dirtyHashes[0], visible: true };
-    // const viewportVisibleBounds = pixiApp.viewport.getVisibleBounds();
-    // let visible: CellsTextHash[] = [];
-    // let notVisible: CellsTextHash[] = [];
-    // for (const hash of dirtyHashes) {
-    //   if (hash.viewRectangle.intersects(viewportVisibleBounds)) {
-    //     visible.push(hash);
-    //   } else {
-    //     notVisible.push(hash);
-    //   }
-    // }
-    // // if hashes are visible, sort them by y and return the first one
-    // if (visible.length) {
-    //   visible.sort((a, b) => a.hashY - b.hashY);
-    //   return { hash: visible[0], visible: true };
-    // }
-    // // if onlyVisible then we're done because we're not going to work on offscreen hashes yet
-    // if (notVisible.length === 0) return;
-    // // otherwise sort notVisible by distance from viewport center
-    // const viewportCenter = pixiApp.viewport.center;
-    // notVisible.sort((a, b) => {
-    //   const aCenter = {
-    //     x: a.viewRectangle.left + a.viewRectangle.width / 2,
-    //     y: a.viewRectangle.top + a.viewRectangle.height / 2,
-    //   };
-    //   const bCenter = {
-    //     x: b.viewRectangle.left + b.viewRectangle.width / 2,
-    //     y: b.viewRectangle.top + b.viewRectangle.height / 2,
-    //   };
-    //   const aDistance = Math.pow(viewportCenter.x - aCenter.x, 2) + Math.pow(viewportCenter.y - aCenter.y, 2);
-    //   const bDistance = Math.pow(viewportCenter.x - bCenter.x, 2) + Math.pow(viewportCenter.y - bCenter.y, 2);
-    //   return aDistance - bDistance;
-    // });
-    // return { hash: notVisible[0], visible: false };
-    // return;
+    const bounds = renderText.viewport;
+    if (bounds) {
+      let visible: CellsTextHash[] = [];
+      let notVisible: CellsTextHash[] = [];
+      for (const hash of dirtyHashes) {
+        if (hash.viewRectangle.intersects(bounds)) {
+          visible.push(hash);
+        } else {
+          notVisible.push(hash);
+        }
+      }
+      // if hashes are visible, sort them by y and return the first one
+      if (visible.length) {
+        visible.sort((a, b) => a.hashY - b.hashY);
+        return { hash: visible[0], visible: true };
+      }
+      // if onlyVisible then we're done because we're not going to work on offscreen hashes yet
+      if (notVisible.length === 0) return;
+      // otherwise sort notVisible by distance from viewport center
+      const viewportCenter = { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
+      notVisible.sort((a, b) => {
+        const aCenter = {
+          x: a.viewRectangle.left + a.viewRectangle.width / 2,
+          y: a.viewRectangle.top + a.viewRectangle.height / 2,
+        };
+        const bCenter = {
+          x: b.viewRectangle.left + b.viewRectangle.width / 2,
+          y: b.viewRectangle.top + b.viewRectangle.height / 2,
+        };
+        const aDistance = Math.pow(viewportCenter.x - aCenter.x, 2) + Math.pow(viewportCenter.y - aCenter.y, 2);
+        const bDistance = Math.pow(viewportCenter.x - bCenter.x, 2) + Math.pow(viewportCenter.y - bCenter.y, 2);
+        return aDistance - bDistance;
+      });
+      return { hash: notVisible[0], visible: false };
+    } else {
+      return { hash: dirtyHashes[0], visible: true };
+    }
   }
 
   update(): boolean | 'headings' {
