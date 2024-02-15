@@ -56,7 +56,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<L
 };
 
 export type TeamAction = {
-  'request.update-team': ApiTypes['/v0/teams/:uuid.POST.request'] & {
+  'request.update-team': ApiTypes['/v0/teams/:uuid.PATCH.request'] & {
     intent: 'update-team';
   };
   'request.create-team-invite': ApiTypes['/v0/teams/:uuid/invites.POST.request'] & {
