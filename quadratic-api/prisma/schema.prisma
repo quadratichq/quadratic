@@ -102,8 +102,8 @@ model Team {
     TeamInvite               TeamInvite[]
     File                     File[]
     // Billing
-    stripeCustomerId         String              @map("stripe_customer_id")
-    stripeSubscriptionId     String?             @map("stripe_subscription_id")
+    stripeCustomerId         String              @unique @map("stripe_customer_id")
+    stripeSubscriptionId     String?             @unique @map("stripe_subscription_id")
     stripeSubscriptionStatus SubscriptionStatus? @map("stripe_subscription_status")
     stripeCurrentPeriodEnd   DateTime?           @map("stripe_current_period_end")
 

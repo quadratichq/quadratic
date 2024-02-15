@@ -5,6 +5,12 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('No STRIPE_SECRET_KEY found');
 }
 
+if (!process.env.STRIPE_WEBHOOK_SECRET) {
+  throw new Error('No STRIPE_WEBHOOK_SECRET found');
+}
+
+export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   typescript: true,
 });
@@ -101,7 +107,6 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string) =
 
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
-    // payment_method_types: ['card'],
     line_items: [
       {
         price: priceId,
