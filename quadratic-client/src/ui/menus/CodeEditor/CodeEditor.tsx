@@ -87,13 +87,11 @@ export const CodeEditor = () => {
     (updateEditorContent: boolean) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
       if (!editorInteractionState.selectedCellSheet) return;
-      console.log('updateCodeCell', updateCodeCell);
       const codeCell = grid.getCodeCell(
         editorInteractionState.selectedCellSheet,
         editorInteractionState.selectedCell.x,
         editorInteractionState.selectedCell.y
       );
-      console.log('codeCell', codeCell);
 
       if (codeCell) {
         setCodeString(codeCell.code_string);

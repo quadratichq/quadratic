@@ -220,6 +220,20 @@ export class LanguageServerClient extends EventEmitter {
       : { items: results, isIncomplete: true };
   }
 
+  // async resolveCompletion(params: ResolveCompletionItemSignature): Promise<CompletionList> {
+  //   const results = await this.connection.sendRequest(
+  //     CompletionRequest.type,
+  //     params
+  //   );
+  //   if (!results) {
+  //     // Not clear how this should be handled.
+  //     return { items: [], isIncomplete: true };
+  //   }
+  //   return "items" in results
+  //     ? results
+  //     : { items: results, isIncomplete: true };
+  // }
+
   dispose() {
     this.connection.dispose();
   }

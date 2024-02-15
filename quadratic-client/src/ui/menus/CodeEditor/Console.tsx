@@ -47,7 +47,7 @@ export function Console({
   const theme = useTheme();
   const { isAuthenticated } = useRootRouteLoaderData();
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
-  
+
   return (
     <>
       <Box>

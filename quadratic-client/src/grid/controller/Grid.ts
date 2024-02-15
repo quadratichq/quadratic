@@ -114,7 +114,7 @@ export class Grid {
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
     }
-
+    
     if (summary.code_cells_modified.length) {
       pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
       window.dispatchEvent(new CustomEvent('code-cells-update'));

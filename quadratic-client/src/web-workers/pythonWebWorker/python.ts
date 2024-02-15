@@ -1,5 +1,6 @@
 import { SheetPos } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
+import { TransactionSummary } from '@/quadratic-core/types';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
@@ -104,6 +105,7 @@ class PythonWebWorker {
             // TODO: display error in the UI once we have one
             console.error('Error in get-cells', e);
             this.calculationComplete();
+            grid.transactionResponse(e as TransactionSummary);
           }
 
           break;

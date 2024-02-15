@@ -15,11 +15,6 @@ export function nextVersion(): number {
 export const uri = "file:///src/main.py";
 
 export const pyright = (uri: string): LanguageServerClient | undefined => {
-  // For jest.
-  if (!window.Worker) {
-    return undefined;
-  }
-  // Needed to support review branches that use a path location.
   const workerScriptUrl = new URL(workerScriptName, import.meta.url).toString();
   const foreground = new Worker(workerScriptUrl);
   foreground.postMessage({
@@ -92,112 +87,5 @@ export const pyright = (uri: string): LanguageServerClient | undefined => {
 
   return client;
 };
-
-// async function initialize(connection: MessageConnection, rootUri: string): Promise<void> {
-//   if (initializePromise) {
-//     return initializePromise;
-//   }
-  
-//   initializePromise = (async () => {
-//     connection.onNotification(LogMessageNotification.type, (params) => console.log('[LogMessageNotification]', params.message));
-
-//     connection.onNotification(
-//       PublishDiagnosticsNotification.type,
-//       (params) => {
-//         console.log('[PublishDiagnosticsNotification]', params);
-//         // this.diagnostics.set(params.uri, params.diagnostics);
-//         // // Republish as you can't listen twice.
-//         // this.emit("diagnostics", params);
-//       }
-//     );
-
-//     connection.onRequest(RegistrationRequest.type, () => {
-//       // Ignore. I don't think we should get these at all given our
-//       // capabilities, but Pyright is sending one anyway.
-//     });
-
-//     const initializeParams: InitializeParams = {
-//       locale: 'en',
-//       capabilities: {
-//         textDocument: {
-//           moniker: {},
-//           synchronization: {
-//             willSave: false,
-//             didSave: false,
-//             willSaveWaitUntil: false,
-//           },
-//           completion: {
-//             completionItem: {
-//               snippetSupport: false,
-//               commitCharactersSupport: true,
-//               documentationFormat: ['markdown'],
-//               deprecatedSupport: false,
-//               preselectSupport: false,
-//             },
-//             contextSupport: true,
-//           },
-//           signatureHelp: {
-//             signatureInformation: {
-//               documentationFormat: ['markdown'],
-//               activeParameterSupport: true,
-//               parameterInformation: {
-//                 labelOffsetSupport: true,
-//               },
-//             },
-//           },
-//           publishDiagnostics: {
-//             tagSupport: {
-//               valueSet: [DiagnosticTag.Unnecessary, DiagnosticTag.Deprecated],
-//             },
-//           },
-//         },
-//         workspace: {
-//           workspaceFolders: true,
-//           didChangeConfiguration: {},
-//           configuration: true,
-//         },
-//       },
-//       initializationOptions: await getInitializationOptions(),
-//       processId: null,
-//       // Do we need both of these?
-//       rootUri: rootUri,
-//       workspaceFolders: [
-//         {
-//           name: 'src',
-//           uri: rootUri,
-//         },
-//       ],
-//     };
-
-//     console.log('initializeParams', initializeParams);
-//     // const { cacapabilities } = await connection.sendRequest(
-//     //   InitializeRequest.type,
-//     //   initializeParams
-//     // );
-
-//     try {
-//       await connection.sendRequest(InitializeRequest.type, JSON.parse(JSON.stringify(initializeParams)));
-//     } catch (e) {
-//       console.error('Failed to initialize language server', e);
-//     }
-
-//     connection.sendNotification(InitializedNotification.type, {});
-//   })();
-
-//   return initializePromise;
-// }
-
-// async function getInitializationOptions(): Promise<any> {
-//   const files = await retryAsyncLoad(() => {
-//     return import('./typeshed.json');
-//   });
-
-//   return {
-//     files,
-//     diagnosticStyle: 'simplified',
-//   };
-// }
-
-
 
 export const pyrightWorker = pyright(uri);

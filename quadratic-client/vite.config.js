@@ -9,9 +9,9 @@ export default defineConfig(() => {
     build: {
       outDir: '../build',
     },
-    optimizeDeps: {
-      exclude: ['vscode']
-    },
+    // optimizeDeps: {
+    //   exclude: ['vscode']
+    // },
     assetsInclude: ['**/*.py'],
     server: {
       port: 3000,
