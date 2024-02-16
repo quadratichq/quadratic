@@ -111,7 +111,7 @@ export class Multiplayer {
   }
 
   private async getJwt() {
-    this.jwt = await authClient.getToken();
+    this.jwt = await authClient.getTokenOrRedirect();
   }
 
   private async addJwtCookie(force: boolean = false) {
