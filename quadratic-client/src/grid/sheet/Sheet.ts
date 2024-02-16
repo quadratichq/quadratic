@@ -58,10 +58,6 @@ export class Sheet {
     }
   }
 
-  setCellValue(x: number, y: number, value: string): void {
-    grid.setCellValue({ sheetId: this.id, x, y, value });
-  }
-
   deleteCells(rectangle: Rectangle): void {
     grid.deleteCellValues(this.id, rectangle);
   }

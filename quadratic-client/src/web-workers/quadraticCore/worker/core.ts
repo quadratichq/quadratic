@@ -154,6 +154,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.hasRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
   }
+
+  setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setCellValue(sheetId, new Pos(x, y), value, cursor);
+  }
 }
 
 export const core = new Core();

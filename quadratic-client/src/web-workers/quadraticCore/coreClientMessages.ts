@@ -81,12 +81,22 @@ export interface CoreClientCellHasContent {
   id: number;
 }
 
+export interface ClientCoreSetCellValue {
+  type: 'clientCoreSetCellValue';
+  sheetId: string;
+  x: number;
+  y: number;
+  value: string;
+  cursor?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
   | ClientCoreGetAllRenderFills
   | ClientCoreGetRenderCodeCells
-  | ClientCoreCellHasContent;
+  | ClientCoreCellHasContent
+  | ClientCoreSetCellValue;
 
 export type CoreClientMessage =
   | CoreClientLoad

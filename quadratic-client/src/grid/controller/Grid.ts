@@ -238,15 +238,15 @@ export class Grid {
   //#region set grid operations
   //-----------------------------
 
-  setCellValue(options: { sheetId: string; x: number; y: number; value: string }) {
-    const summary = this.gridController.setCellValue(
-      options.sheetId,
-      new Pos(options.x, options.y),
-      options.value,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellValue(options: { sheetId: string; x: number; y: number; value: string }) {
+  //   const summary = this.gridController.setCellValue(
+  //     options.sheetId,
+  //     new Pos(options.x, options.y),
+  //     options.value,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
   // returns whether the transaction completed
   setCodeCellValue(options: {

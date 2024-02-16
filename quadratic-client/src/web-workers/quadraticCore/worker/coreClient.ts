@@ -51,6 +51,10 @@ class CoreClient {
         this.send({ type: 'coreClientCellHasContent', id: e.data.id, hasContent } as CoreClientCellHasContent);
         break;
 
+      case 'clientCoreSetCellValue':
+        core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

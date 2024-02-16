@@ -1,4 +1,5 @@
 import { multiplayer } from '@/multiplayer/multiplayer';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { ClipboardEvent, useCallback, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -105,7 +106,7 @@ export const CellInput = () => {
     const value = textInput.innerText;
 
     if (!cancel && (value.trim() || cell)) {
-      sheet.setCellValue(cellLocation.x, cellLocation.y, value);
+      quadraticCore.setCellValue(sheets.sheet.id, cellLocation.x, cellLocation.y, value, sheets.getCursorPosition());
       setTemporaryBold(undefined);
       setTemporaryItalic(undefined);
       textInput.innerText = '';

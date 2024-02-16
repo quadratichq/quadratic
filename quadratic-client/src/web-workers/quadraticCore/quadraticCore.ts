@@ -136,6 +136,17 @@ class QuadraticCore {
       this.worker.postMessage(message);
     });
   }
+
+  setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
+    this.worker.postMessage({
+      type: 'clientCoreSetCellValue',
+      sheetId,
+      x,
+      y,
+      value,
+      cursor,
+    });
+  }
 }
 
 export const quadraticCore = new QuadraticCore();
