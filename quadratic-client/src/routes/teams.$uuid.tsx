@@ -168,7 +168,7 @@ export const Component = () => {
   const handleClose = () => setIsRenaming(false);
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
-  const avatarSxProps = { width: 32, height: 32, fontSize: '1rem' };
+  const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
 
   return (
     <>

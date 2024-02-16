@@ -181,8 +181,8 @@ function Navbar() {
       </div>
       <div>
         <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>
+          <ExternalLinkIcon className={cn(classNameIcons, `text-inherit opacity-50`)} />
           Docs
-          <ExternalLinkIcon className={cn(classNameIcons, `ml-auto text-inherit opacity-50`)} />
         </SidebarNavLink>
         <Separator className="my-2" />
         <SidebarNavLink to={ROUTES.ACCOUNT}>
