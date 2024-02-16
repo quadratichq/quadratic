@@ -79,14 +79,13 @@ class PythonWebWorker {
         }
 
         case 'get-cells': {
-          if (this.executionStack.length === 0)
-            throw new Error('Expected executionStack to have at least one element in python.ts');
+          if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
 
           const transactionId = this.executionStack[0].transactionId;
           const range = event.range;
 
           if (!range) throw new Error('Expected range to be defined in get-cells');
-          
+
           try {
             const cells = grid.calculationGetCells(
               transactionId,
@@ -102,8 +101,7 @@ class PythonWebWorker {
               this.calculationComplete();
             }
           } catch (e) {
-            // TODO: display error in the UI once we have one
-            console.error('Error in get-cells', e);
+            console.warn('Error in get-cells', e);
             this.calculationComplete();
             grid.transactionResponse(e as TransactionSummary);
           }

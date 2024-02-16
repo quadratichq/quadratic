@@ -8,7 +8,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
-import { provideCompletionItems as provideCompletionItemsPython } from './PythonLanguageModel';
+import { provideCompletionItems as provideCompletionItemsPython, provideHover as provideHoverPython, provideSignatureHelp as provideSignatureHelpPython } from './PythonLanguageModel';
 import { pyrightWorker, uri } from './language-server/worker';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
@@ -72,11 +72,16 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.register({ id: 'python' });
       monaco.languages.registerCompletionItemProvider('python', {
         provideCompletionItems: provideCompletionItemsPython,
-        // triggerCharacters: ['.', '[', '"', "'"],
+        triggerCharacters: ['.', '[', '"', "'"],
       });
+      monaco.languages.registerSignatureHelpProvider('python', {
+        provideSignatureHelp: provideSignatureHelpPython,
+        signatureHelpTriggerCharacters: ['(', ','],
+    });
+    monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
 
       // load the document in the python language server
-      pyrightWorker?.didOpenTextDocument( { textDocument: { text: editorRef.current?.getValue() ?? "", uri, languageId: 'python'}});
+      pyrightWorker?.openDocument( { textDocument: { text: editorRef.current?.getValue() ?? "", uri, languageId: 'python'}});
 
       setDidMount(true);
     },
@@ -113,7 +118,7 @@ export const CodeEditorBody = (props: Props) => {
         onChange={setEditorContent}
         onMount={onMount}
         options={{
-          theme: 'light',
+          // theme: 'light',
           readOnly,
           minimap: { enabled: true },
           overviewRulerLanes: 0,

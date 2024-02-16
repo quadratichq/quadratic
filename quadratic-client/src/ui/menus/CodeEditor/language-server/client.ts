@@ -1,4 +1,4 @@
-import EventEmitter from "events";
+import EventEmitter from 'events';
 import {
   CompletionList,
   CompletionParams,
@@ -10,18 +10,22 @@ import {
   DidCloseTextDocumentNotification,
   DidCloseTextDocumentParams,
   DidOpenTextDocumentNotification,
+  Hover,
+  HoverParams,
+  HoverRequest,
   InitializedNotification,
   InitializeParams,
   InitializeRequest,
-  LogMessageNotification,
   MessageConnection,
   PublishDiagnosticsNotification,
   PublishDiagnosticsParams,
-  RegistrationRequest,
   ServerCapabilities,
+  SignatureHelp,
+  SignatureHelpParams,
+  SignatureHelpRequest,
   TextDocumentContentChangeEvent,
-  TextDocumentItem,
-} from "vscode-languageserver-protocol";
+  TextDocumentItem
+} from 'vscode-languageserver-protocol';
 
 /**
  * Create a URI for a source document under the default root of file:///src/.
@@ -37,26 +41,16 @@ export const createUri = (name: string) => `file:///src/${name}`;
  * Tracks and exposes the diagnostics.
  */
 export class LanguageServerClient extends EventEmitter {
-  /**
-   * The capabilities of the server we're connected to.
-   * Populated after initialize.
-   */
-  capabilities: ServerCapabilities | undefined;
+  private serverCapabilities: ServerCapabilities | undefined;
   private versions: Map<string, number> = new Map();
   private diagnostics: Map<string, Diagnostic[]> = new Map();
   private initializePromise: Promise<void> | undefined;
 
-  constructor(
-    public connection: MessageConnection,
-    public rootUri: string
-  ) {
+  constructor(public connection: MessageConnection, public rootUri: string) {
     super();
   }
 
-  on(
-    event: "diagnostics",
-    listener: (params: PublishDiagnosticsParams) => void
-  ): this {
+  on(event: 'diagnostics', listener: (params: PublishDiagnosticsParams) => void): this {
     super.on(event, listener);
     return this;
   }
@@ -70,34 +64,20 @@ export class LanguageServerClient extends EventEmitter {
   }
 
   errorCount(): number {
-    return this.allDiagnostics().filter(
-      (e) => e.severity === DiagnosticSeverity.Error
-    ).length;
+    return this.allDiagnostics().filter((e) => e.severity === DiagnosticSeverity.Error).length;
   }
 
   /**
    * Initialize or wait for in-progress initialization.
    */
   async initialize(): Promise<void> {
-    if (this.initializePromise) {
-      return this.initializePromise;
-    }
-    this.initializePromise = (async () => {
-      this.connection.onNotification(LogMessageNotification.type, (params) =>
-        console.log("[LS]", params.message)
-      );
+    if (this.initializePromise) return this.initializePromise;
 
-      this.connection.onNotification(
-        PublishDiagnosticsNotification.type,
-        (params) => {
-          this.diagnostics.set(params.uri, params.diagnostics);
-          // Republish as you can't listen twice.
-          this.emit("diagnostics", params);
-        }
-      );
-      this.connection.onRequest(RegistrationRequest.type, () => {
-        // Ignore. I don't think we should get these at all given our
-        // capabilities, but Pyright is sending one anyway.
+    this.initializePromise = (async () => {
+      this.connection.onNotification(PublishDiagnosticsNotification.type, (params) => {
+        this.diagnostics.set(params.uri, params.diagnostics);
+        // Republish as you can't listen twice.
+        this.emit('diagnostics', params);
       });
 
       const initializeParams: InitializeParams = {
@@ -112,9 +92,9 @@ export class LanguageServerClient extends EventEmitter {
             },
             completion: {
               completionItem: {
-                snippetSupport: false,
+                snippetSupport: true,
                 commitCharactersSupport: true,
-                documentationFormat: ["markdown"],
+                documentationFormat: ['markdown'],
                 deprecatedSupport: false,
                 preselectSupport: false,
               },
@@ -122,12 +102,15 @@ export class LanguageServerClient extends EventEmitter {
             },
             signatureHelp: {
               signatureInformation: {
-                documentationFormat: ["markdown"],
+                documentationFormat: ['markdown'],
                 activeParameterSupport: true,
                 parameterInformation: {
                   labelOffsetSupport: true,
                 },
               },
+            },
+            hover: {
+              contentFormat: ['markdown'],
             },
             publishDiagnostics: {
               tagSupport: {
@@ -141,41 +124,31 @@ export class LanguageServerClient extends EventEmitter {
             configuration: true,
           },
         },
-        initializationOptions: await this.getInitializationOptions(),
+        // optional, but gives monaco more info about Python (i.e. better icons)
+        initializationOptions: await this.initializationOptions(),
         processId: null,
-        // Do we need both of these?
         rootUri: this.rootUri,
         workspaceFolders: [
           {
-            name: "src",
+            name: 'src',
             uri: this.rootUri,
           },
         ],
       };
+
       const { capabilities } = await this.connection.sendRequest(
         InitializeRequest.type,
         JSON.parse(JSON.stringify(initializeParams))
       );
-      this.capabilities = capabilities;
+
+      this.serverCapabilities = capabilities;
       this.connection.sendNotification(InitializedNotification.type, {});
     })();
+
     return this.initializePromise;
   }
 
-  private async getInitializationOptions(): Promise<any> {
-    const files = await retryAsyncLoad(() => {
-      return import('./typeshed.json');
-    });
-
-    return {
-      files,
-      diagnosticStyle: "simplified",
-    };
-  }
-
-  didOpenTextDocument(params: {
-    textDocument: Omit<TextDocumentItem, "version">;
-  }): void {
+  openDocument(params: { textDocument: Omit<TextDocumentItem, 'version'> }): void {
     this.connection.sendNotification(DidOpenTextDocumentNotification.type, {
       textDocument: {
         ...params.textDocument,
@@ -184,19 +157,11 @@ export class LanguageServerClient extends EventEmitter {
     });
   }
 
-  // We close Python files that are deleted. We never write to the file system,
-  // so that way they're effectively deleted.
-  didCloseTextDocument(params: DidCloseTextDocumentParams): void {
-    this.connection.sendNotification(
-      DidCloseTextDocumentNotification.type,
-      params
-    );
+  closeDocument(params: DidCloseTextDocumentParams): void {
+    this.connection.sendNotification(DidCloseTextDocumentNotification.type, params);
   }
 
-  didChangeTextDocument(
-    uri: string,
-    contentChanges: TextDocumentContentChangeEvent[]
-  ): void {
+  changeDocument(uri: string, contentChanges: TextDocumentContentChangeEvent[]): void {
     this.connection.sendNotification(DidChangeTextDocumentNotification.type, {
       textDocument: {
         uri,
@@ -207,35 +172,36 @@ export class LanguageServerClient extends EventEmitter {
   }
 
   async completionRequest(params: CompletionParams): Promise<CompletionList> {
-    const results = await this.connection.sendRequest(
-      CompletionRequest.type,
-      params
-    );
-    if (!results) {
-      // Not clear how this should be handled.
+    const results = await this.connection.sendRequest(CompletionRequest.type, params);
+
+    if (!results || !('items' in results)) {
       return { items: [], isIncomplete: true };
     }
-    return "items" in results
-      ? results
-      : { items: results, isIncomplete: true };
+
+    return results;
   }
 
-  // async resolveCompletion(params: ResolveCompletionItemSignature): Promise<CompletionList> {
-  //   const results = await this.connection.sendRequest(
-  //     CompletionRequest.type,
-  //     params
-  //   );
-  //   if (!results) {
-  //     // Not clear how this should be handled.
-  //     return { items: [], isIncomplete: true };
-  //   }
-  //   return "items" in results
-  //     ? results
-  //     : { items: results, isIncomplete: true };
-  // }
+  async signatureHelpRequest(params: SignatureHelpParams): Promise<SignatureHelp | null> {
+    return this.connection.sendRequest(SignatureHelpRequest.type, params);
+  }
+
+  async hoverRequest(params: HoverParams): Promise<Hover | null> {
+    return this.connection.sendRequest(HoverRequest.type, params);
+  }
 
   dispose() {
     this.connection.dispose();
+  }
+
+  private async initializationOptions(): Promise<any> {
+    const files = await retryAsyncLoad(() => {
+      return import('./typeshed.json');
+    });
+
+    return {
+      files,
+      diagnosticStyle: 'simplified',
+    };
   }
 
   private nextVersion(uri: string): number {
@@ -245,8 +211,7 @@ export class LanguageServerClient extends EventEmitter {
   }
 }
 
-const defaultWaiter = (waitTime: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, waitTime));
+const defaultWaiter = (waitTime: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, waitTime));
 
 export const retryAsyncLoad = async <T>(
   load: () => Promise<T>,
