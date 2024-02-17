@@ -1,4 +1,4 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';

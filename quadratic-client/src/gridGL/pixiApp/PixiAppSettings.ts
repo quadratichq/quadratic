@@ -1,4 +1,4 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';

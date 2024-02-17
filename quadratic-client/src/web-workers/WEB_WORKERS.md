@@ -1,5 +1,12 @@
 # Web Workers
 
+## multiplayerWebWorker
+
+The `multiplayerWebWorker` sends and handles messages from the multiplayer server.
+
+`multiplayerCore` <-> `coreMultiplayer`
+`multiplayerClient` <-> `multiplayer`
+
 ## coreWebWorker
 
 The `coreWebWorker` provides quadratic-core with its own thread to do work.

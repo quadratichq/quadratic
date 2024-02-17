@@ -74,17 +74,13 @@ export class Sheet {
     return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
   }
 
-  getEditCell(x: number, y: number): string {
-    return grid.getEditCell(this.id, new Pos(x, y));
-  }
-
   getFormattingSummary(rectangle: Rectangle): FormattingSummary {
     return grid.getFormattingSummary(this.id, rectangle);
   }
 
-  getCellFormatSummary(x: number, y: number): CellFormatSummary {
-    return grid.getCellFormatSummary(this.id, x, y);
-  }
+  // getCellFormatSummary(x: number, y: number): CellFormatSummary {
+  //   return grid.getCellFormatSummary(this.id, x, y);
+  // }
 
   getGridBounds(onlyData: boolean): Rectangle | undefined {
     return grid.getGridBounds(this.id, onlyData);

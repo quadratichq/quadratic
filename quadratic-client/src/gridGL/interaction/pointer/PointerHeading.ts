@@ -1,4 +1,4 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '../../../constants/gridConstants';

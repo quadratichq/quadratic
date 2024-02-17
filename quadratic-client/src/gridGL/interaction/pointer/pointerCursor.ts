@@ -1,7 +1,7 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { EditingCell } from '@/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { multiplayer } from '@/multiplayer/multiplayer';
 import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { Point } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
 

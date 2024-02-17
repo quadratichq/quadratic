@@ -1,4 +1,4 @@
-import { JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
+import { CellFormatSummary, JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
 
 export interface ClientCoreLoad {
   type: 'clientCoreLoad';
@@ -81,6 +81,20 @@ export interface CoreClientCellHasContent {
   id: number;
 }
 
+export interface ClientCoreGetEditCell {
+  type: 'clientCoreGetEditCell';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
+export interface CoreClientGetEditCell {
+  type: 'coreClientGetEditCell';
+  cell: string | undefined;
+  id: number;
+}
+
 export interface ClientCoreSetCellValue {
   type: 'clientCoreSetCellValue';
   sheetId: string;
@@ -90,17 +104,35 @@ export interface ClientCoreSetCellValue {
   cursor?: string;
 }
 
+export interface ClientCoreGetCellFormatSummary {
+  type: 'clientCoreGetCellFormatSummary';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
+export interface CoreClientGetCellFormatSummary {
+  type: 'coreClientGetCellFormatSummary';
+  formatSummary: CellFormatSummary;
+  id: number;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
   | ClientCoreGetAllRenderFills
   | ClientCoreGetRenderCodeCells
   | ClientCoreCellHasContent
-  | ClientCoreSetCellValue;
+  | ClientCoreGetEditCell
+  | ClientCoreSetCellValue
+  | ClientCoreGetCellFormatSummary;
 
 export type CoreClientMessage =
   | CoreClientLoad
   | CoreClientGetCodeCell
   | CoreClientGetAllRenderFills
   | CoreClientGetRenderCodeCells
-  | CoreClientCellHasContent;
+  | CoreClientGetEditCell
+  | CoreClientCellHasContent
+  | CoreClientGetCellFormatSummary;

@@ -1,6 +1,6 @@
 import { SheetPos } from '@/gridGL/types/size';
-import { multiplayer } from '@/multiplayer/multiplayer';
 import { TransactionSummary } from '@/quadratic-core/types';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';

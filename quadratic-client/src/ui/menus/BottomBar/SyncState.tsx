@@ -1,4 +1,5 @@
-import { MultiplayerState, multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { MultiplayerState } from '@/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';

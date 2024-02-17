@@ -1,5 +1,5 @@
 import { sheets } from '@/grid/controller/Sheets';
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';

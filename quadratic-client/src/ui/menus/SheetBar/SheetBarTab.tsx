@@ -1,4 +1,4 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';

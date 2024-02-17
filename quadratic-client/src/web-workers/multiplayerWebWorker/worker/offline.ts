@@ -1,5 +1,5 @@
 import { debugShowFileIO } from '@/debugFlags';
-import { grid } from './Grid';
+import { grid } from '../../../grid/controller/Grid';
 
 const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;

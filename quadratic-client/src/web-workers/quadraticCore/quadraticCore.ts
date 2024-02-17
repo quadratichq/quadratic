@@ -5,16 +5,21 @@
  */
 
 import { metadata } from '@/grid/controller/metadata';
-import { JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
+import { CellFormatSummary, JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,
   ClientCoreGetAllRenderFills,
+  ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
+  ClientCoreGetEditCell,
   ClientCoreGetRenderCodeCells,
   ClientCoreLoad,
+  ClientCoreMessage,
   CoreClientGetAllRenderFills,
+  CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
+  CoreClientGetEditCell,
   CoreClientGetRenderCodeCells,
   CoreClientLoad,
   CoreClientMessage,
@@ -51,6 +56,14 @@ class QuadraticCore {
     }
   };
 
+  private send(message: ClientCoreMessage, port?: MessagePort) {
+    if (port) {
+      this.worker.postMessage(message, [port]);
+    } else {
+      this.worker.postMessage(message);
+    }
+  }
+
   // Loads a Grid file and initializes renderWebWorker upon response
   async load(url: string, version: string, sequenceNumber: number) {
     return new Promise((resolve) => {
@@ -68,7 +81,7 @@ class QuadraticCore {
         renderWebWorker.init(port.port2);
         resolve(undefined);
       };
-      this.worker.postMessage(message, [port.port1]);
+      this.send(message, port.port1);
     });
   }
 
@@ -86,7 +99,7 @@ class QuadraticCore {
       this.waitingForResponse[id] = (message: CoreClientGetCodeCell) => {
         resolve(message.cell);
       };
-      this.worker.postMessage(message);
+      this.send(message);
     });
   }
 
@@ -101,7 +114,7 @@ class QuadraticCore {
         sheetId,
         id,
       };
-      this.worker.postMessage(message);
+      this.send(message);
     });
   }
 
@@ -116,7 +129,7 @@ class QuadraticCore {
         sheetId,
         id,
       };
-      this.worker.postMessage(message);
+      this.send(message);
     });
   }
 
@@ -133,18 +146,52 @@ class QuadraticCore {
         y,
         id,
       };
-      this.worker.postMessage(message);
+      this.send(message);
+    });
+  }
+
+  getEditCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreGetEditCell = {
+        type: 'clientCoreGetEditCell',
+        sheetId,
+        x,
+        y,
+        id,
+      };
+      this.waitingForResponse[id] = (message: CoreClientGetEditCell) => {
+        resolve(message.cell);
+      };
+      this.send(message);
     });
   }
 
   setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
-    this.worker.postMessage({
+    this.send({
       type: 'clientCoreSetCellValue',
       sheetId,
       x,
       y,
       value,
       cursor,
+    });
+  }
+
+  getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreGetCellFormatSummary = {
+        type: 'clientCoreGetCellFormatSummary',
+        sheetId,
+        x,
+        y,
+        id,
+      };
+      this.waitingForResponse[id] = (message: CoreClientGetCellFormatSummary) => {
+        resolve(message.formatSummary);
+      };
+      this.send(message);
     });
   }
 }

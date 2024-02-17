@@ -43,21 +43,23 @@ export interface ReceiveRoom {
   users: MultiplayerUser[];
 }
 
+export interface UserUpdate {
+  cell_edit?: CellEdit;
+  selection?: string;
+  sheet_id?: string;
+  x?: number;
+  y?: number;
+  visible?: boolean;
+  viewport?: string;
+  code_running?: string;
+  follow?: string;
+}
+
 export interface MessageUserUpdate {
   type: 'UserUpdate';
   session_id: string;
   file_id: string;
-  update: {
-    cell_edit?: CellEdit;
-    selection?: string;
-    sheet_id?: string;
-    x?: number;
-    y?: number;
-    visible?: boolean;
-    viewport?: string;
-    code_running?: string;
-    follow?: string;
-  };
+  update: UserUpdate;
 }
 
 export interface SendEnterRoom extends MultiplayerUserServer {

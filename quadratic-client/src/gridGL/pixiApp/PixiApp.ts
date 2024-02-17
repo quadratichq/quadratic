@@ -1,6 +1,6 @@
-import { offline } from '@/grid/controller/offline';
 import { isEmbed } from '@/helpers/isEmbed';
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { offline } from '@/web-workers/multiplayerWebWorker/worker/offline';
 import { Drag, Viewport } from 'pixi-viewport';
 import { Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';

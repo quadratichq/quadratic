@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';

@@ -1,5 +1,5 @@
 import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
 import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';

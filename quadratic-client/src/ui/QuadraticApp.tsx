@@ -1,7 +1,6 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
 import { useRootRouteLoaderData } from '@/router';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
-import { User } from '@auth0/auth0-spa-js';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
@@ -77,14 +76,13 @@ export default function QuadraticApp() {
 
   useEffect(() => {
     if (uuid && !pixiApp.initialized) {
-      let anonymous = false;
-      let multiplayerUser: User | undefined = loggedInUser;
-      if (!multiplayerUser) {
-        multiplayerUser = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
-        anonymous = true;
-      }
-      pixiApp.init().then(async () => {
-        multiplayer.init(uuid, multiplayerUser, anonymous);
+      pixiApp.init().then(() => {
+        if (!loggedInUser) {
+          const anonymous = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
+          multiplayer.init(uuid, anonymous, true);
+        } else {
+          multiplayer.init(uuid, loggedInUser, false);
+        }
         setLoading(false);
       });
     }

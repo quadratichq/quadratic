@@ -1,4 +1,6 @@
-import { useRef } from 'react';
+import { CellFormatSummary } from '@/quadratic-core/types';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
+import { useEffect, useRef, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
 import { CURSOR_THICKNESS } from '../../UI/Cursor';
 import { MultiplayerCell } from './MultiplayerCellEdits';
@@ -14,7 +16,14 @@ export const MultiplayerCellEdit = (props: Props) => {
   const sheet = sheets.sheet;
   const cellOffsets = sheet.getCellOffsets(cell.x, cell.y);
 
-  const formatting = sheet.getCellFormatSummary(cell.x, cell.y);
+  const [formatting, setFormatting] = useState<CellFormatSummary | undefined>();
+  useEffect(() => {
+    (async () => {
+      const format = await quadraticCore.getCellFormatSummary(sheet.id, cell.x, cell.y);
+      setFormatting(format);
+    })();
+  }, [cell.x, cell.y, sheet.id]);
+
   const displayItalic = italic === null ? formatting?.italic : italic;
   const displayBold = bold === null ? formatting?.bold : bold;
   let fontFamily: string = 'OpenSans';
@@ -46,7 +55,7 @@ export const MultiplayerCellEdit = (props: Props) => {
           left: 0,
           minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
           outline: 'none',
-          color: formatting.textColor ?? 'black',
+          color: formatting?.textColor ?? 'black',
           padding: `0 ${CURSOR_THICKNESS}px 0 0`,
           margin: 0,
           lineHeight: `${cellOffsets.height - CURSOR_THICKNESS * 2}px`,
@@ -55,7 +64,7 @@ export const MultiplayerCellEdit = (props: Props) => {
           transform: `translate(${cellOffsets.x + CURSOR_THICKNESS}px, ${cellOffsets.y + CURSOR_THICKNESS}px)`,
           fontFamily,
           fontSize: '14px',
-          backgroundColor: formatting.fillColor ?? 'white',
+          backgroundColor: formatting?.fillColor ?? 'white',
           whiteSpace: 'nowrap',
         }}
       >

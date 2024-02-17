@@ -1,6 +1,6 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
-import { multiplayer } from '@/multiplayer/multiplayer';
-import { MultiplayerUser } from '@/multiplayer/multiplayerTypes';
+import { MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 

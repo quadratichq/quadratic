@@ -1,7 +1,7 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { useEffect, useState } from 'react';
-import { multiplayer } from '../../../multiplayer/multiplayer';
+import { multiplayer } from '../../../web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerCursor } from './MultiplayerCursor';
 import './MultiplayerCursors.css';
 

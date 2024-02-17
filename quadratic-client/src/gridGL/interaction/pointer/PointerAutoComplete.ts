@@ -1,4 +1,4 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { grid } from '../../../grid/controller/Grid';

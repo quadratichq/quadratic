@@ -7,7 +7,7 @@
 
 import { debugWebWorkers } from '@/debugFlags';
 import init, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
-import { JsCodeCell, JsRenderCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
+import { CellFormatSummary, JsCodeCell, JsRenderCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
 import { ClientCoreLoad, GridMetadata } from '../coreClientMessages';
 import { GridRenderMetadata } from '../coreRenderMessages';
 import { coreClient } from './coreClient';
@@ -26,7 +26,7 @@ class Core {
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort) {
     const results = await Promise.all([this.loadGridFile(message.url), init()]);
     this.gridController = GridController.newFromFile(results[0], message.sequenceNumber);
-
+    console.log('here...');
     if (debugWebWorkers) console.log('[core] GridController loaded');
 
     const sheetIds = this.getSheetIds();
@@ -155,9 +155,22 @@ class Core {
     return this.gridController.hasRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(x, y)));
   }
 
+  getEditCell(sheetId: string, x: number, y: number): string {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.getEditCell(sheetId, new Pos(x, y));
+  }
+
   setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.setCellValue(sheetId, new Pos(x, y), value, cursor);
+    const summary = this.gridController.setCellValue(sheetId, new Pos(x, y), value, cursor);
+
+    // todo...push to render
+    console.log(summary);
+  }
+
+  getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.getCellFormatSummary(sheetId, new Pos(x, y));
   }
 }
 
