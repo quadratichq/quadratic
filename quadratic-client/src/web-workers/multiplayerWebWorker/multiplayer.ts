@@ -10,6 +10,7 @@ import { displayName } from '@/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
 import { pythonWebWorker } from '../pythonWebWorker/python';
+import { quadraticCore } from '../quadraticCore/quadraticCore';
 import {
   ClientMultiplayerMessage,
   MultiplayerClientMessage,
@@ -84,8 +85,12 @@ export class Multiplayer {
     }
   };
 
-  private send(message: ClientMultiplayerMessage) {
-    this.worker.postMessage(message);
+  private send(message: ClientMultiplayerMessage, port?: MessagePort) {
+    if (port) {
+      this.worker.postMessage(message, [port]);
+    } else {
+      this.worker.postMessage(message);
+    }
   }
 
   private async getJwt() {
@@ -106,30 +111,37 @@ export class Multiplayer {
   async init(fileId: string, user: User, anonymous: boolean) {
     if (this.state === 'connected' || this.state === 'syncing') return;
 
+    // channel for communication between the quadraticCore and the multiplayer web worker
+    const channel = new MessageChannel();
+
     this.fileId = fileId;
     this.user = user;
     this.anonymous = anonymous;
     if (!this.anonymous) {
       await this.addJwtCookie();
     }
-    this.send({
-      type: 'clientMultiplayerInit',
-      fileId,
-      user,
-      anonymous,
-      sessionId: this.sessionId,
-      sheetId: sheets.sheet.id,
-      selection: sheets.getMultiplayerSelection(),
-      cellEdit: {
-        text: '',
-        cursor: 0,
-        active: false,
-        code_editor: false,
+    this.send(
+      {
+        type: 'clientMultiplayerInit',
+        fileId,
+        user,
+        anonymous,
+        sessionId: this.sessionId,
+        sheetId: sheets.sheet.id,
+        selection: sheets.getMultiplayerSelection(),
+        cellEdit: {
+          text: '',
+          cursor: 0,
+          active: false,
+          code_editor: false,
+        },
+        viewport: pixiApp.saveMultiplayerViewport(),
+        codeRunning: JSON.stringify(pythonWebWorker.getCodeRunning),
+        follow: pixiAppSettings.editorInteractionState.follow,
       },
-      viewport: pixiApp.saveMultiplayerViewport(),
-      codeRunning: JSON.stringify(pythonWebWorker.getCodeRunning),
-      follow: pixiAppSettings.editorInteractionState.follow,
-    });
+      channel.port1
+    );
+    quadraticCore.initMultiplayer(channel.port2);
   }
 
   // used to pre-populate useMultiplayerUsers.tsx

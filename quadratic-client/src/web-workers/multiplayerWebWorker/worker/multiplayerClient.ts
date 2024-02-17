@@ -4,7 +4,8 @@
 
 import { ClientMultiplayerMessage, MultiplayerClientMessage } from '../multiplayerClientMessages';
 import { MessageUserUpdate, ReceiveRoom } from '../multiplayerTypes';
-import { multiplayerServer } from './multiplayerServer';
+import { multiplayerCore } from './multiplayerCore';
+import { cellEditDefault, multiplayerServer } from './multiplayerServer';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
@@ -21,10 +22,31 @@ class MultiplayerClient {
     switch (e.data.type) {
       case 'clientMultiplayerInit':
         multiplayerServer.init(e.data);
+        multiplayerCore.init(e.ports[0]);
         break;
 
       case 'clientMultiplayerMouseMove':
         // multiplayerServer.sendMouseMove(e.data);
+        break;
+
+      case 'clientMultiplayerCellEdit':
+        multiplayerServer.userUpdate.cell_edit = e.data.cellEdit ?? cellEditDefault();
+        break;
+
+      case 'clientMultiplayerSheet':
+        multiplayerServer.userUpdate.sheet_id = e.data.sheetId;
+        break;
+
+      case 'clientMultiplayerViewport':
+        multiplayerServer.userUpdate.viewport = e.data.viewport;
+        break;
+
+      case 'clientMultiplayerCodeRunning':
+        multiplayerServer.userUpdate.code_running = e.data.sheetPos;
+        break;
+
+      case 'clientMultiplayerSelection':
+        multiplayerServer.userUpdate.selection = e.data.selection;
         break;
 
       default:

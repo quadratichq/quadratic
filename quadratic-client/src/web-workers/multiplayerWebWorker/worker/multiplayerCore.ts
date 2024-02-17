@@ -3,26 +3,34 @@
  */
 
 import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../multiplayerCoreMessages';
-import { ReceiveEnterRoom } from '../multiplayerTypes';
-
-declare var self: WorkerGlobalScope & typeof globalThis;
 
 class MultiplayerCore {
+  private coreMessagePort?: MessagePort;
+
+  init(coreMessagePort: MessagePort) {
+    this.coreMessagePort = coreMessagePort;
+    this.coreMessagePort.onmessage = this.handleMessage;
+  }
+
   private send(message: MultiplayerCoreMessage) {
-    self.postMessage(message);
+    if (!this.coreMessagePort) throw new Error('Expected coreMessagePort to be defined in MultiplayerCore');
+    this.coreMessagePort.postMessage(message);
   }
 
   private handleMessage(e: MessageEvent<CoreMultiplayerMessage>) {
     switch (e.data.type) {
+      case 'multiplayerCoreEnterRoom':
+        break;
+
       default:
         console.warn('[multiplayerCore] Unhandled message type', e.data);
     }
   }
 
-  sendEnterRoom(enterRoom: ReceiveEnterRoom) {
+  sendSequenceNum(sequenceNum: number) {
     this.send({
-      type: 'multiplayerClientEnterRoom',
-      enterRoom,
+      type: 'multiplayerCoreSequenceNum',
+      sequenceNum,
     });
   }
 }

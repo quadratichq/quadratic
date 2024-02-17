@@ -14,7 +14,9 @@ extern "C" {
     pub(crate) fn log(s: &str);
 }
 
-#[wasm_bindgen(module = "/../quadratic-client/src/grid/controller/rustCallbacks.ts")]
+#[wasm_bindgen(
+    module = "/../quadratic-client/src/web-workers/quadraticCore/worker/rustCallbacks.ts"
+)]
 extern "C" {
     pub fn runPython(
         transactionId: String,

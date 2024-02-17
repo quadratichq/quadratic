@@ -14,6 +14,7 @@ import {
   GridMetadata,
 } from '../coreClientMessages';
 import { core } from './core';
+import { coreMultiplayer } from './coreMultiplayer';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
@@ -82,6 +83,10 @@ class CoreClient {
           id: e.data.id,
           formatSummary: core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y),
         });
+        break;
+
+      case 'clientCoreInitMultiplayer':
+        coreMultiplayer.init(e.ports[0]);
         break;
 
       default:

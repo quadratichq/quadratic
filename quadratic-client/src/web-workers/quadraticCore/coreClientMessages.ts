@@ -118,6 +118,10 @@ export interface CoreClientGetCellFormatSummary {
   id: number;
 }
 
+export interface ClientCoreInitMultiplayer {
+  type: 'clientCoreInitMultiplayer';
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -126,7 +130,8 @@ export type ClientCoreMessage =
   | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
-  | ClientCoreGetCellFormatSummary;
+  | ClientCoreGetCellFormatSummary
+  | ClientCoreInitMultiplayer;
 
 export type CoreClientMessage =
   | CoreClientLoad

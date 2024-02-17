@@ -26,7 +26,6 @@ class Core {
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort) {
     const results = await Promise.all([this.loadGridFile(message.url), init()]);
     this.gridController = GridController.newFromFile(results[0], message.sequenceNumber);
-    console.log('here...');
     if (debugWebWorkers) console.log('[core] GridController loaded');
 
     const sheetIds = this.getSheetIds();
@@ -171,6 +170,11 @@ class Core {
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.getCellFormatSummary(sheetId, new Pos(x, y));
+  }
+
+  receiveSequenceNum(message: { sequenceNum: number }) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveSequenceNum(message.sequenceNum);
   }
 }
 

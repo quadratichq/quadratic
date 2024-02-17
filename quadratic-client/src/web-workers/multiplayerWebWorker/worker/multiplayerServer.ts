@@ -34,6 +34,13 @@ interface UserData {
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
+export const cellEditDefault = (): CellEdit => ({
+  text: '',
+  cursor: 0,
+  active: false,
+  code_editor: false,
+});
+
 export class MultiplayerServer {
   private websocket?: WebSocket;
 
@@ -52,7 +59,7 @@ export class MultiplayerServer {
   private waitingForConnection: { (value: unknown): void }[] = [];
 
   // queue of items waiting to be sent to the server on the next tick
-  private userUpdate?: UserUpdate;
+  userUpdate: UserUpdate = {};
 
   private lastHeartbeat = 0;
   private updateId?: number;
@@ -62,7 +69,6 @@ export class MultiplayerServer {
     this.fileId = message.fileId;
     this.user = message.user;
     this.anonymous = message.anonymous;
-    this.userUpdate = {};
     this.userData = {
       sheetId: message.sheetId,
       selection: message.selection,
@@ -75,12 +81,12 @@ export class MultiplayerServer {
     };
     this.connect();
 
-    window.addEventListener('online', () => {
+    self.addEventListener('online', () => {
       if (this.state === 'no internet') {
         this.state = 'not connected';
       }
     });
-    window.addEventListener('offline', () => {
+    self.addEventListener('offline', () => {
       this.state = 'no internet';
       this.websocket?.close();
     });
@@ -100,7 +106,7 @@ export class MultiplayerServer {
 
     this.state = 'connecting';
     this.websocket = new WebSocket(import.meta.env.VITE_QUADRATIC_MULTIPLAYER_URL);
-    this.websocket.addEventListener('message', this.receiveMessage);
+    this.websocket.addEventListener('message', this.handleMessage);
 
     this.websocket.addEventListener('close', () => {
       if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
@@ -210,28 +216,45 @@ export class MultiplayerServer {
    * Receive Messages from Multiplayer Server *
    ********************************************/
 
-  private receiveMessage = (e: { data: string }) => {
-    const data = JSON.parse(e.data) as ReceiveMessages;
-    const { type } = data;
-    if (type === 'UsersInRoom') {
-      this.receiveUsersInRoom(data);
-    } else if (type === 'UserUpdate') {
-      multiplayerClient.sendUserUpdate(data);
-    } else if (type === 'Transaction') {
-      console.log('todo: Transaction');
-      // this.receiveTransaction(data);
-    } else if (type === 'Transactions') {
-      console.log('todo: receiveTransactions');
-      // this.receiveTransactions(data);
-    } else if (type === 'EnterRoom') {
-      multiplayerCore.sendEnterRoom(data);
-    } else if (type === 'CurrentTransaction') {
-      console.log('todo: receiveCurrentTransaction');
-      // this.receiveCurrentTransaction(data);
-    } else if (type === 'Error') {
-      console.warn(`[Multiplayer] Error`, data.error);
-    } else if (type !== 'Empty') {
-      console.warn(`Unknown message type: ${type}`);
+  private handleMessage = (e: MessageEvent<string>) => {
+    const data: ReceiveMessages = JSON.parse(e.data);
+    switch (data.type) {
+      case 'UsersInRoom':
+        this.receiveUsersInRoom(data);
+        break;
+
+      case 'UserUpdate':
+        multiplayerClient.sendUserUpdate(data);
+        break;
+
+      case 'Transaction':
+        console.log('todo: Transaction');
+        // this.receiveTransaction(data);
+        break;
+
+      case 'Transactions':
+        console.log('todo: receiveTransactions');
+        // this.receiveTransactions(data);
+        break;
+
+      case 'EnterRoom':
+        if (data.file_id !== this.fileId) throw new Error('Expected file_id to match in EnterRoom');
+        multiplayerCore.sendSequenceNum(data.sequence_num);
+        break;
+
+      case 'CurrentTransaction':
+        console.log('todo: receiveCurrentTransaction');
+        // this.receiveCurrentTransaction(data);
+        break;
+
+      case 'Error':
+        console.warn(`[Multiplayer] Error`, data.error);
+        break;
+
+      default:
+        if (data.type !== 'Empty') {
+          console.warn(`Unknown message type: ${data}`);
+        }
     }
   };
 

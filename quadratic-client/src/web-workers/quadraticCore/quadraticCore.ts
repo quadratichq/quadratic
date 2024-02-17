@@ -194,6 +194,10 @@ class QuadraticCore {
       this.send(message);
     });
   }
+
+  initMultiplayer(port: MessagePort) {
+    this.send({ type: 'clientCoreInitMultiplayer' }, port);
+  }
 }
 
 export const quadraticCore = new QuadraticCore();

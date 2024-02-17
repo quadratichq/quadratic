@@ -1,6 +1,5 @@
 import { isEmbed } from '@/helpers/isEmbed';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
-import { offline } from '@/web-workers/multiplayerWebWorker/worker/offline';
 import { Drag, Viewport } from 'pixi-viewport';
 import { Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
@@ -64,7 +63,6 @@ export class PixiApp {
     this.initialized = true;
     this.initCanvas();
     await this.rebuild();
-    offline.loadTransactions();
 
     // keep a reference of app on window, used for Playwright tests
     //@ts-expect-error

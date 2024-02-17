@@ -135,4 +135,4 @@ class Offline {
 export const offline = new Offline();
 
 // need to bind to window because rustCallbacks.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
-window.addTransaction = offline.addUnsentTransaction.bind(offline);
+// self.addTransaction = offline.addUnsentTransaction.bind(offline);

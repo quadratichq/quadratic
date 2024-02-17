@@ -1,10 +1,8 @@
-import { ReceiveEnterRoom } from './multiplayerTypes';
-
-export interface MultiplayerClientEnterRoom {
-  type: 'multiplayerClientEnterRoom';
-  enterRoom: ReceiveEnterRoom;
+export interface MultiplayerCoreSequenceNum {
+  type: 'multiplayerCoreSequenceNum';
+  sequenceNum: number;
 }
 
-export type MultiplayerCoreMessage = MultiplayerClientEnterRoom;
+export type MultiplayerCoreMessage = MultiplayerCoreSequenceNum;
 
 export type CoreMultiplayerMessage = { type: string };
