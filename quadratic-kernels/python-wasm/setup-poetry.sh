@@ -10,9 +10,10 @@ if [[ ! -x $(command -v poetry) ]]; then
     curl -sSL https://install.python-poetry.org | python3 -
 fi
 
-pushd "${SCRIPT_DIR}" || exit
+source "${SCRIPT_DIR}/utility.sh"
+pushd-quiet "${SCRIPT_DIR}"
 
 source poetry-path.sh
 poetry install --sync
 
-popd
+popd-quiet
