@@ -17,7 +17,7 @@ import {
 import { multiplayerClient } from './multiplayerClient';
 import { multiplayerCore } from './multiplayerCore';
 
-const UPDATE_TIME = 1000 / 30;
+const UPDATE_TIME = 1000 / 60;
 const HEARTBEAT_TIME = 1000 * 10;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 

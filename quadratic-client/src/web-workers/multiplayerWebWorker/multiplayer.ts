@@ -165,7 +165,8 @@ export class Multiplayer {
     if (this.lastMouseMove === undefined && x === undefined) return;
     if (this.lastMouseMove && this.lastMouseMove.x === x && this.lastMouseMove.y === y) return;
     this.lastMouseMove = x === undefined || y === undefined ? undefined : { x, y };
-    this.send({ type: 'clientMultiplayerMouseMove', x, y });
+    const visible = x !== undefined && y !== undefined;
+    this.send({ type: 'clientMultiplayerMouseMove', x, y, visible });
   }
 
   async sendSelection(selection: string) {
@@ -225,7 +226,6 @@ export class Multiplayer {
       throw new Error("Expected file_id to match room before receiving a message of type 'MouseMove'");
     }
     const update = userUpdate.userUpdate;
-
     if (update.x !== null && update.y !== null) {
       player.x = update.x;
       player.y = update.y;

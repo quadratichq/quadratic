@@ -26,7 +26,9 @@ class MultiplayerClient {
         break;
 
       case 'clientMultiplayerMouseMove':
-        // multiplayerServer.sendMouseMove(e.data);
+        multiplayerServer.userUpdate.x = e.data.x;
+        multiplayerServer.userUpdate.y = e.data.y;
+        multiplayerServer.userUpdate.visible = e.data.visible;
         break;
 
       case 'clientMultiplayerCellEdit':

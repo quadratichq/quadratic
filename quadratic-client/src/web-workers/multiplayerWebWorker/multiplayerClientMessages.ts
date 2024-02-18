@@ -42,6 +42,7 @@ export interface ClientMultiplayerMouseMove {
   type: 'clientMultiplayerMouseMove';
   x?: number;
   y?: number;
+  visible: boolean;
 }
 
 export interface ClientMultiplayerSelection {
