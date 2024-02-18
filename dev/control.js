@@ -12,6 +12,7 @@ export class Control {
     client;
     multiplayer;
     files;
+    python;
     db;
     npm;
     rust;
@@ -22,6 +23,7 @@ export class Control {
         core: false,
         multiplayer: false,
         files: false,
+        python: false,
         types: false,
         db: false,
         npm: false,
@@ -73,6 +75,7 @@ export class Control {
             this.kill("client"),
             this.kill("multiplayer"),
             this.kill("files"),
+            this.kill("python"),
         ]);
         destroyScreen();
         process.exit(0);
@@ -356,6 +359,27 @@ export class Control {
             this.status.files = "killed";
         }
     }
+    async runPython() {
+        if (this.quitting)
+            return;
+        this.status.python = false;
+        await this.kill("python");
+        this.ui.print("python");
+        this.signals.python = new AbortController();
+        this.python = spawn("npm", [
+            "run",
+            this.cli.options.python ? "watch:python" : "build:python",
+        ], { signal: this.signals.python.signal });
+        this.ui.printOutput("python", (data) => this.handleResponse("python", data, {
+            success: ["Built quadratic_py", "clean exit - waiting for changes before restart"],
+            error: "Python error!",
+            start: "quadratic-kernels/python-wasm/",
+        }));
+    }
+    async restartPython() {
+        this.cli.options.python = !this.cli.options.python;
+        this.runPython();
+    }
     async runDb() {
         if (this.quitting)
             return;
@@ -449,5 +473,6 @@ export class Control {
         this.ui = ui;
         this.runRust();
         this.runDb();
+        this.runPython();
     }
 }
