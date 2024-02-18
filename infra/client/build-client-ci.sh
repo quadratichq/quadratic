@@ -17,6 +17,9 @@ source "$HOME/.cargo/env"
 echo 'Installing wasm-pack...'
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+echo 'Packaging quadratic_py'
+./quadratic-kernels/python-wasm/package.sh
+
 cd quadratic-core
 
 echo 'Building wasm...'
