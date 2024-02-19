@@ -3,6 +3,8 @@
  */
 
 import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../multiplayerCoreMessages';
+import { ReceiveTransaction } from '../multiplayerTypes';
+import { multiplayerServer } from './multiplayerServer';
 
 class MultiplayerCore {
   private coreMessagePort?: MessagePort;
@@ -19,7 +21,8 @@ class MultiplayerCore {
 
   private handleMessage(e: MessageEvent<CoreMultiplayerMessage>) {
     switch (e.data.type) {
-      case 'multiplayerCoreEnterRoom':
+      case 'coreMultiplayerTransaction':
+        multiplayerServer.sendTransaction(e.data);
         break;
 
       default:
@@ -31,6 +34,15 @@ class MultiplayerCore {
     this.send({
       type: 'multiplayerCoreSequenceNum',
       sequenceNum,
+    });
+  }
+
+  receiveTransaction(transaction: ReceiveTransaction) {
+    this.send({
+      type: 'multiplayerCoreReceiveTransaction',
+      operations: transaction.operations,
+      transactionId: transaction.id,
+      sequenceNum: transaction.sequence_num,
     });
   }
 }

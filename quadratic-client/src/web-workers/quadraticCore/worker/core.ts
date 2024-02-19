@@ -8,9 +8,14 @@
 import { debugWebWorkers } from '@/debugFlags';
 import init, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import { CellFormatSummary, JsCodeCell, JsRenderCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
+import {
+  MultiplayerCoreReceiveTransaction,
+  MultiplayerCoreReceiveTransactions,
+} from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import { ClientCoreLoad, GridMetadata } from '../coreClientMessages';
 import { GridRenderMetadata } from '../coreRenderMessages';
 import { coreClient } from './coreClient';
+import { coreMultiplayer } from './coreMultiplayer';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
 
@@ -162,9 +167,7 @@ class Core {
   setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const summary = this.gridController.setCellValue(sheetId, new Pos(x, y), value, cursor);
-
-    // todo...push to render
-    console.log(summary);
+    coreMultiplayer.handleSummary(summary);
   }
 
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
@@ -175,6 +178,27 @@ class Core {
   receiveSequenceNum(message: { sequenceNum: number }) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.receiveSequenceNum(message.sequenceNum);
+  }
+
+  receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const data = message.transaction;
+    this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+    // if (await offline.unsentTransactionsCount()) {
+    //   this.state = 'syncing';
+    // } else {
+    //   this.state = 'connected';
+    // }
+  }
+
+  receiveTransactions(message: MultiplayerCoreReceiveTransactions) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveMultiplayerTransactions(message.transactions.transactions);
+    // if (await offline.unsentTransactionsCount()) {
+    //   this.state = 'syncing';
+    // } else {
+    //   this.state = 'connected';
+    // }
   }
 }
 

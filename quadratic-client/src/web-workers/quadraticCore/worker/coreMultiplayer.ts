@@ -1,5 +1,6 @@
 import { debugWebWorkers } from '@/debugFlags';
-import { MultiplayerCoreMessage } from '../../multiplayerWebWorker/multiplayerCoreMessages';
+import { TransactionSummary } from '@/quadratic-core/types';
+import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../../multiplayerWebWorker/multiplayerCoreMessages';
 import { core } from './core';
 
 class CoreMultiplayer {
@@ -12,7 +13,7 @@ class CoreMultiplayer {
     if (debugWebWorkers) console.log('[coreMultiplayer] initialized');
   }
 
-  private send(message: MultiplayerCoreMessage) {
+  private send(message: CoreMultiplayerMessage) {
     if (!this.coreMessagePort) throw new Error('Expected coreMessagePort to be defined in CoreMultiplayer');
     this.coreMessagePort.postMessage(message);
   }
@@ -23,10 +24,24 @@ class CoreMultiplayer {
         core.receiveSequenceNum(e.data);
         break;
 
+      case 'multiplayerCoreReceiveTransaction':
+        core.receiveTransaction(e.data);
+        break;
+
       default:
         console.warn('[coreMultiplayer] Unhandled message type', e.data);
     }
   };
+
+  handleSummary(summary: TransactionSummary) {
+    if (summary.operations && summary.transaction_id) {
+      this.send({
+        type: 'coreMultiplayerTransaction',
+        operations: summary.operations,
+        transaction_id: summary.transaction_id,
+      });
+    }
+  }
 }
 
 export const coreMultiplayer = new CoreMultiplayer();

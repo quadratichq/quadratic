@@ -5,6 +5,7 @@
 import { debugShowMultiplayer } from '@/debugFlags';
 import { User } from '@auth0/auth0-spa-js';
 import { ClientMultiplayerInit, MultiplayerState } from '../multiplayerClientMessages';
+import { CoreMultiplayerTransaction } from '../multiplayerCoreMessages';
 import {
   CellEdit,
   Heartbeat,
@@ -12,6 +13,7 @@ import {
   ReceiveMessages,
   ReceiveRoom,
   SendEnterRoom,
+  SendTransaction,
   UserUpdate,
 } from '../multiplayerTypes';
 import { multiplayerClient } from './multiplayerClient';
@@ -228,8 +230,7 @@ export class MultiplayerServer {
         break;
 
       case 'Transaction':
-        console.log('todo: Transaction');
-        // this.receiveTransaction(data);
+        multiplayerCore.receiveTransaction(data);
         break;
 
       case 'Transactions':
@@ -260,6 +261,18 @@ export class MultiplayerServer {
 
   private receiveUsersInRoom(room: ReceiveRoom) {
     multiplayerClient.sendUsersInRoom(room);
+  }
+
+  sendTransaction(transactionMessage: CoreMultiplayerTransaction) {
+    if (!this.websocket) throw new Error('Expected websocket to be defined in sendTransaction');
+    const message: SendTransaction = {
+      type: 'Transaction',
+      id: transactionMessage.transaction_id,
+      session_id: this.sessionId!,
+      file_id: this.fileId!,
+      operations: transactionMessage.operations,
+    };
+    this.websocket.send(JSON.stringify(message));
   }
 }
 
