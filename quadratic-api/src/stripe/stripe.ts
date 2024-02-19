@@ -1,3 +1,4 @@
+import { SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
 import dbClient from '../dbClient';
 
@@ -130,4 +131,124 @@ export const getMonthlyPriceId = async () => {
   }
 
   return data[0].id;
+};
+
+const updateTeamStatus = async (
+  stripeSubscriptionId: string,
+  status: Stripe.Subscription.Status,
+  customerId: string,
+  endDate: Date
+) => {
+  // convert the status to SubscriptionStatus enum
+  let stripeSubscriptionStatus: SubscriptionStatus;
+  switch (status) {
+    case 'active':
+      stripeSubscriptionStatus = SubscriptionStatus.ACTIVE;
+      break;
+    case 'canceled':
+      stripeSubscriptionStatus = SubscriptionStatus.CANCELED;
+      break;
+    case 'incomplete':
+      stripeSubscriptionStatus = SubscriptionStatus.INCOMPLETE;
+      break;
+    case 'incomplete_expired':
+      stripeSubscriptionStatus = SubscriptionStatus.INCOMPLETE_EXPIRED;
+      break;
+    case 'past_due':
+      stripeSubscriptionStatus = SubscriptionStatus.PAST_DUE;
+      break;
+    case 'trialing':
+      stripeSubscriptionStatus = SubscriptionStatus.TRIALING;
+      break;
+    case 'unpaid':
+      stripeSubscriptionStatus = SubscriptionStatus.UNPAID;
+      break;
+    default:
+      console.error(`Unhandled subscription status: ${status}`);
+      return;
+  }
+
+  // Associate the subscription with the team and update the status
+  await dbClient.team.update({
+    where: { stripeCustomerId: customerId },
+    data: {
+      stripeSubscriptionId,
+      stripeSubscriptionStatus,
+      stripeCurrentPeriodEnd: endDate,
+      stripeSubscriptionLastUpdated: new Date(),
+    },
+  });
+};
+
+export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription) => {
+  const { id: stripeSubscriptionId, status, customer } = event;
+
+  // if customer is not a string, then the following line will throw an error
+  if (typeof customer !== 'string') {
+    console.error('Invalid customer ID:', customer);
+    return;
+  }
+
+  updateTeamStatus(stripeSubscriptionId, status, customer, new Date(event.current_period_end * 1000));
+};
+
+export const updateBillingIfNecessary = async (teamId: number) => {
+  console.log('updateBillingIfNecessary');
+
+  const team = await dbClient.team.findUnique({
+    where: {
+      id: teamId,
+    },
+  });
+
+  // All teams should have a stripe customer, so this should not happen
+  if (!team?.stripeCustomerId) {
+    console.error('Unexpected Error: Team does not have a stripe customer.');
+    return;
+  }
+
+  // if not updated in the last 24 hours, update the customer
+  if (
+    team.stripeSubscriptionLastUpdated &&
+    Date.now() - team.stripeSubscriptionLastUpdated.getTime() < 24 * 60 * 60 * 1000
+  ) {
+    return;
+  }
+
+  // retrieve the customer
+  const customer = await stripe.customers.retrieve(team.stripeCustomerId, {
+    expand: ['subscriptions'],
+  });
+
+  // This should not happen, but if it does, we should not update the team
+  if (customer.deleted) {
+    console.error('Unexpected Error: Customer is deleted:', customer);
+    return;
+  }
+
+  if (customer.subscriptions && customer.subscriptions.data.length === 1) {
+    // if we have exactly one subscription, update the team
+    const subscription = customer.subscriptions.data[0];
+    await updateTeamStatus(
+      subscription.id,
+      subscription.status,
+      team.stripeCustomerId,
+      new Date(subscription.current_period_end * 1000)
+    );
+  } else if (customer.subscriptions && customer.subscriptions.data.length === 0) {
+    // if we have zero subscriptions, update the team
+    await dbClient.team.update({
+      where: { id: teamId },
+      data: {
+        stripeSubscriptionId: null,
+        stripeSubscriptionStatus: null,
+        stripeCurrentPeriodEnd: null,
+        stripeSubscriptionLastUpdated: null,
+      },
+    });
+  } else {
+    // If we have more than one subscription, log an error
+    // This should not happen.
+    console.error('Unexpected Error: Unhandled number of subscriptions:', customer.subscriptions?.data);
+  }
 };
