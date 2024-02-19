@@ -91,6 +91,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       name,
       ...(picture ? { picture } : {}),
     },
+    billing: {
+      status: dbTeam?.stripeSubscriptionStatus || undefined,
+      currentPeriodEnd: dbTeam?.stripeCurrentPeriodEnd?.toISOString(),
+    },
     userMakingRequest: {
       id: userMakingRequestId,
       teamRole: userMakingRequest.role,

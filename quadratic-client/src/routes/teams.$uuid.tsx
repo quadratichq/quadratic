@@ -14,7 +14,7 @@ import {
 } from '@/shadcn/ui/dropdown-menu';
 import { Avatar, AvatarGroup, useTheme } from '@mui/material';
 import { CaretDownIcon, ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes, TeamSubscriptionStatus } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import {
   ActionFunctionArgs,
@@ -155,6 +155,7 @@ export const Component = () => {
     files,
     users,
     userMakingRequest: { teamPermissions },
+    billing,
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
@@ -168,11 +169,13 @@ export const Component = () => {
 
   const handleClose = () => setIsRenaming(false);
   const canEdit = teamPermissions.includes('TEAM_EDIT');
+  const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
   const avatarSxProps = { width: 32, height: 32, fontSize: '1rem' };
 
   return (
     <>
+      <TeamBillingIssue billingStatus={billing.status} teamUuid={team.uuid} canEditBilling={canEditBilling} />
       <DashboardHeader
         title={name}
         titleStart={
@@ -365,5 +368,105 @@ export const ErrorBoundary = () => {
       }
       severity="error"
     />
+  );
+};
+
+const TeamBillingIssue = (props: {
+  teamUuid: string;
+  billingStatus: TeamSubscriptionStatus | undefined;
+  canEditBilling: boolean;
+}) => {
+  const { billingStatus, teamUuid, canEditBilling } = props;
+
+  // There is no issue if the billing status is active or trialing.
+  if (billingStatus === 'ACTIVE' || billingStatus === 'TRIALING') {
+    return null;
+  }
+
+  // Otherwise, show the billing issue overlay.
+  let heading = 'Team Billing Issue';
+  let description = '';
+  let buttonLabel = 'Fix payment';
+  if (billingStatus === 'CANCELED') {
+    description = 'Your Team’s subscription has been canceled. Please resubscribe.';
+    buttonLabel = 'Resubscribe';
+  } else if (billingStatus === 'INCOMPLETE' || billingStatus === 'INCOMPLETE_EXPIRED') {
+    description = 'Your Team’s subscription is incomplete. Please update your payment method to reactivate.';
+  } else if (billingStatus === 'PAST_DUE') {
+    description = 'Your Team’s subscription is past due. Please update your payment method to reactivate.';
+  } else if (billingStatus === 'UNPAID') {
+    description = 'Your Team’s subscription is unpaid. Please update your payment method to reactivate.';
+  } else if (billingStatus === 'PAUSED') {
+    description = 'Your Team’s subscription is paused. Please update your payment method to reactivate.';
+  } else if (billingStatus === undefined) {
+    // If the billing status is undefined, the user never subscribed.
+    heading = 'Subscribe to Teams';
+    description = 'You must have an active subscription to access Quadratic Teams. Subscribe to continue.';
+    buttonLabel = 'Continue';
+  }
+
+  if (!canEditBilling) {
+    description = 'Your Team’s subscription is inactive. Please contact the Team owner to reactivate.';
+  }
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black overlay
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 9999, // Ensure it's above other content
+        backdropFilter: 'blur(5px)', // Apply blur effect to background
+      }}
+    >
+      <div className="rounded bg-white p-4">
+        <Empty
+          title={heading}
+          description={description}
+          Icon={ExclamationTriangleIcon}
+          actions={
+            <div className={`flex justify-center gap-2`}>
+              <Button asChild variant="outline">
+                <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+                  Get help
+                </a>
+              </Button>
+              {canEditBilling && (
+                <Button
+                  variant="default"
+                  onClick={() => {
+                    if (
+                      // If the billing status is undefined, the user never subscribed.
+                      billingStatus === undefined ||
+                      // If the billing status is incomplete and expired, the user must resubscribe.
+                      billingStatus === 'INCOMPLETE_EXPIRED' ||
+                      // If the billing status is canceled or unpaid, the user must resubscribe.
+                      billingStatus === 'CANCELED' ||
+                      billingStatus === 'UNPAID'
+                    ) {
+                      apiClient.teams.billing.getCheckoutSessionUrl(teamUuid).then((data) => {
+                        window.open(data.url);
+                      });
+                    } else {
+                      apiClient.teams.billing.getPortalSessionUrl(teamUuid).then((data) => {
+                        window.open(data.url, '_blank');
+                      });
+                    }
+                  }}
+                >
+                  <span>{buttonLabel}</span>
+                </Button>
+              )}
+            </div>
+          }
+        />
+      </div>
+    </div>
   );
 };
