@@ -1,3 +1,4 @@
+import { AvatarTeam } from '@/components/AvatarTeam';
 import { ShareTeamDialog } from '@/components/ShareDialog';
 import { ROUTES, ROUTE_LOADER_IDS } from '@/constants/routes';
 import { CONTACT_URL } from '@/constants/urls';
@@ -12,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
-import { Avatar, AvatarGroup, useTheme } from '@mui/material';
+import { Avatar, AvatarGroup } from '@mui/material';
 import { CaretDownIcon, ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
 import { ApiTypes, TeamSubscriptionStatus } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
@@ -28,7 +29,6 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
-import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
@@ -146,7 +146,6 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 };
 
 export const Component = () => {
-  const theme = useTheme();
   const [searchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
@@ -171,18 +170,14 @@ export const Component = () => {
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
-  const avatarSxProps = { width: 32, height: 32, fontSize: '1rem' };
+  const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
 
   return (
     <>
       <TeamBillingIssue billingStatus={billing.status} teamUuid={team.uuid} canEditBilling={canEditBilling} />
       <DashboardHeader
         title={name}
-        titleStart={
-          <AvatarWithLetters size="large" src={team.picture} sx={{ mr: theme.spacing(1.5) }}>
-            {name}
-          </AvatarWithLetters>
-        }
+        titleStart={<AvatarTeam src={team.picture} className="mr-3 h-9 w-9" />}
         titleEnd={
           canEdit ? (
             <DropdownMenu>
@@ -244,22 +239,32 @@ export const Component = () => {
         }
         actions={
           <div className={`flex items-center gap-2`}>
+            <div className="hidden lg:block">
+              <Button
+                asChild
+                variant={null}
+                onClick={() => {
+                  setShareSearchParamValue('');
+                }}
+              >
+                <AvatarGroup
+                  max={4}
+                  sx={{ cursor: 'pointer', pr: 0 }}
+                  slotProps={{ additionalAvatar: { sx: avatarSxProps } }}
+                >
+                  {users.map((user, key) => (
+                    <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
+                  ))}
+                </AvatarGroup>
+              </Button>
+            </div>
             <Button
-              asChild
-              variant={null}
+              variant="outline"
               onClick={() => {
                 setShareSearchParamValue('');
               }}
             >
-              <AvatarGroup
-                max={4}
-                sx={{ cursor: 'pointer', pr: 0 }}
-                slotProps={{ additionalAvatar: { sx: avatarSxProps } }}
-              >
-                {users.map((user, key) => (
-                  <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
-                ))}
-              </AvatarGroup>
+              Members
             </Button>
             {canEdit && <CreateFileButton />}
           </div>

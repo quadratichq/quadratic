@@ -1,3 +1,4 @@
+import { AvatarTeam } from '@/components/AvatarTeam';
 import { TYPE } from '@/constants/appConstants';
 import { Button } from '@/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shadcn/ui/form';
@@ -9,7 +10,6 @@ import { useForm } from 'react-hook-form';
 import { ActionFunctionArgs, redirect, useSubmit } from 'react-router-dom';
 import z from 'zod';
 import { apiClient } from '../api/apiClient';
-import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { TeamLogoDialog, TeamLogoInput } from '../dashboard/components/TeamLogo';
 
@@ -61,9 +61,10 @@ export const Component = () => {
         </p>
 
         <div className={`flex flex-row items-center gap-2`}>
-          <AvatarWithLetters size="large" src={currentLogoUrl}>
+          <AvatarTeam src={currentLogoUrl} />
+          {/* <AvatarWithLetters size="large" src={currentLogoUrl}>
             {form.watch('name')}
-          </AvatarWithLetters>
+          </AvatarWithLetters> */}
           <div className={`text-muted-foreground`}>
             {currentLogoUrl ? (
               <Button

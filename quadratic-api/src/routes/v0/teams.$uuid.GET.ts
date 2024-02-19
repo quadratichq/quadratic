@@ -121,28 +121,28 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       };
     }),
     invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
-    files: dbFiles.map((file) => ({
-      file: {
-        uuid: file.uuid,
-        name: file.name,
-        createdDate: file.createdDate.toISOString(),
-        updatedDate: file.updatedDate.toISOString(),
-        publicLinkAccess: file.publicLinkAccess,
-        thumbnail: file.thumbnail,
-      },
-      userMakingRequest: {
-        filePermissions: getFilePermissions({
-          // TODO: test this, e.g. that if you have a role on the file AND you're part of the team
-          fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
-          teamRole: userMakingRequest.role,
+    files: dbFiles.map((file) => {
+      return {
+        file: {
+          uuid: file.uuid,
+          name: file.name,
+          createdDate: file.createdDate.toISOString(),
+          updatedDate: file.updatedDate.toISOString(),
           publicLinkAccess: file.publicLinkAccess,
-          // In the context of a team, the owner is always the team (no one individual)
-          isFileOwner: false,
-          // Yes they're logged in, or they wouldn't see this
-          isLoggedIn: true,
-        }),
-      },
-    })),
+          thumbnail: file.thumbnail,
+        },
+        userMakingRequest: {
+          filePermissions: getFilePermissions({
+            publicLinkAccess: file.publicLinkAccess,
+            userFileRelationship: {
+              owner: 'team',
+              teamRole: userMakingRequest.role,
+              fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
+            },
+          }),
+        },
+      };
+    }),
   };
 
   return res.status(200).json(response);
