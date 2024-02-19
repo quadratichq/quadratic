@@ -6,8 +6,11 @@
  */
 
 import { JsRenderCell } from '@/quadratic-core/types';
-import { CoreRenderCells, CoreRequestRenderCells } from '@/web-workers/quadraticCore/coreRenderMessages';
-import { RenderCoreMessage } from '../renderCoreMessages';
+import {
+  CoreRenderCells,
+  CoreRenderMessage,
+  RenderCoreRequestRenderCells,
+} from '@/web-workers/quadraticCore/coreRenderMessages';
 import { renderText } from './renderText';
 
 class RenderCore {
@@ -20,14 +23,18 @@ class RenderCore {
     this.renderCorePort.onmessage = this.handleMessage;
   }
 
-  private handleMessage = (e: MessageEvent<RenderCoreMessage>) => {
+  private handleMessage = (e: MessageEvent<CoreRenderMessage>) => {
     switch (e.data.type) {
-      case 'ready':
+      case 'coreRenderReady':
         renderText.coreInit(e.data.metadata);
         break;
 
-      case 'renderCells':
+      case 'coreRenderRenderCells':
         this.renderCells(e.data as CoreRenderCells);
+        break;
+
+      case 'coreRenderCellSheetsModified':
+        renderText.cellsSheetModified(e.data.sheetIds);
         break;
 
       default:
@@ -47,8 +54,8 @@ class RenderCore {
         return;
       }
       const id = this.id;
-      const message: CoreRequestRenderCells = {
-        type: 'requestRenderCells',
+      const message: RenderCoreRequestRenderCells = {
+        type: 'renderCoreRequestRenderCells',
         id,
         sheetId,
         x,

@@ -40,9 +40,7 @@ class MultiplayerCore {
   receiveTransaction(transaction: ReceiveTransaction) {
     this.send({
       type: 'multiplayerCoreReceiveTransaction',
-      operations: transaction.operations,
-      transactionId: transaction.id,
-      sequenceNum: transaction.sequence_num,
+      transaction,
     });
   }
 }

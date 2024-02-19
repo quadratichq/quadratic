@@ -18,6 +18,7 @@ import { coreClient } from './coreClient';
 import { coreMultiplayer } from './coreMultiplayer';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
+import { handleTransactionSummary } from './transactionSummary';
 
 class Core {
   gridController?: GridController;
@@ -168,6 +169,7 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const summary = this.gridController.setCellValue(sheetId, new Pos(x, y), value, cursor);
     coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
   }
 
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
@@ -183,12 +185,8 @@ class Core {
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const data = message.transaction;
-    this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
-    // if (await offline.unsentTransactionsCount()) {
-    //   this.state = 'syncing';
-    // } else {
-    //   this.state = 'connected';
-    // }
+    const summary = this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+    handleTransactionSummary(summary);
   }
 
   receiveTransactions(message: MultiplayerCoreReceiveTransactions) {

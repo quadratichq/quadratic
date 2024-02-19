@@ -6,12 +6,13 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
+import { CellSheetsModified } from '@/quadratic-core/types';
 import {
-  CoreRenderCells,
   CoreRenderMessage,
   CoreRenderReady,
-  CoreRequestRenderCells,
   GridRenderMetadata,
+  RenderCoreMessage,
+  RenderCoreRequestRenderCells,
 } from '../coreRenderMessages';
 import { core } from './core';
 
@@ -21,14 +22,14 @@ class CoreRender {
   init(metadata: GridRenderMetadata, renderPort: MessagePort) {
     this.coreRenderPort = renderPort;
     this.coreRenderPort.onmessage = this.handleMessage;
-    this.coreRenderPort.postMessage({ type: 'ready', metadata } as CoreRenderReady);
+    this.coreRenderPort.postMessage({ type: 'coreRenderReady', metadata } as CoreRenderReady);
     if (debugWebWorkers) console.log('[coreRender] initialized');
   }
 
-  private handleMessage = (e: MessageEvent<CoreRenderMessage>) => {
+  private handleMessage = (e: MessageEvent<RenderCoreMessage>) => {
     switch (e.data.type) {
-      case 'requestRenderCells':
-        this.getRenderCells(e.data as CoreRequestRenderCells);
+      case 'renderCoreRequestRenderCells':
+        this.getRenderCells(e.data);
         break;
 
       default:
@@ -36,14 +37,21 @@ class CoreRender {
     }
   };
 
-  getRenderCells(data: CoreRequestRenderCells) {
+  private send(message: CoreRenderMessage) {
     if (!this.coreRenderPort) {
-      console.warn('Expected coreRenderPort to be defined in CoreRender.getRenderCells');
+      console.warn('Expected coreRenderPort to be defined in CoreRender.send');
       return;
     }
+    this.coreRenderPort.postMessage(message);
+  }
 
+  getRenderCells(data: RenderCoreRequestRenderCells) {
     const cells = core.getRenderCells(data);
-    this.coreRenderPort.postMessage({ type: 'renderCells', cells, id: data.id } as CoreRenderCells);
+    this.send({ type: 'coreRenderRenderCells', cells, id: data.id });
+  }
+
+  cellSheetsModified(sheetIds: CellSheetsModified[]) {
+    this.send({ type: 'coreRenderCellSheetsModified', sheetIds });
   }
 }
 
