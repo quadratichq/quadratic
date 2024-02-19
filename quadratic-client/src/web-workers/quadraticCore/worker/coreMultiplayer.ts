@@ -20,12 +20,12 @@ class CoreMultiplayer {
 
   private handleMessage = (e: MessageEvent<MultiplayerCoreMessage>) => {
     switch (e.data.type) {
-      case 'multiplayerCoreSequenceNum':
-        core.receiveSequenceNum(e.data);
-        break;
-
       case 'multiplayerCoreReceiveTransaction':
         core.receiveTransaction(e.data);
+        break;
+
+      case 'multiplayerCoreReceiveCurrentTransaction':
+        core.receiveSequenceNum(e.data.sequenceNum);
         break;
 
       default:

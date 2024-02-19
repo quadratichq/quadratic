@@ -21,9 +21,15 @@ export interface MultiplayerCoreReceiveTransaction {
   transaction: ReceiveTransaction;
 }
 
+export interface MultiplayerCoreReceiveCurrentTransaction {
+  type: 'multiplayerCoreReceiveCurrentTransaction';
+  sequenceNum: number;
+}
+
 export type MultiplayerCoreMessage =
   | MultiplayerCoreSequenceNum
   | MultiplayerCoreReceiveTransactions
-  | MultiplayerCoreReceiveTransaction;
+  | MultiplayerCoreReceiveTransaction
+  | MultiplayerCoreReceiveCurrentTransaction;
 
 export type CoreMultiplayerMessage = CoreMultiplayerTransaction;

@@ -240,12 +240,11 @@ export class MultiplayerServer {
 
       case 'EnterRoom':
         if (data.file_id !== this.fileId) throw new Error('Expected file_id to match in EnterRoom');
-        multiplayerCore.sendSequenceNum(data.sequence_num);
+        multiplayerCore.receiveCurrentTransaction(data.sequence_num);
         break;
 
       case 'CurrentTransaction':
-        console.log('todo: receiveCurrentTransaction');
-        // this.receiveCurrentTransaction(data);
+        multiplayerCore.receiveCurrentTransaction(data.sequence_num);
         break;
 
       case 'Error':

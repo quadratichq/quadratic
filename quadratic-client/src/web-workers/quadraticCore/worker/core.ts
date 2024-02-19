@@ -177,9 +177,9 @@ class Core {
     return this.gridController.getCellFormatSummary(sheetId, new Pos(x, y));
   }
 
-  receiveSequenceNum(message: { sequenceNum: number }) {
+  receiveSequenceNum(sequenceNum: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.receiveSequenceNum(message.sequenceNum);
+    this.gridController.receiveSequenceNum(sequenceNum);
   }
 
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {

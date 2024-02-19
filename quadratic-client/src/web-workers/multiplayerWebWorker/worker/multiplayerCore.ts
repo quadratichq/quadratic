@@ -30,17 +30,17 @@ class MultiplayerCore {
     }
   }
 
-  sendSequenceNum(sequenceNum: number) {
-    this.send({
-      type: 'multiplayerCoreSequenceNum',
-      sequenceNum,
-    });
-  }
-
   receiveTransaction(transaction: ReceiveTransaction) {
     this.send({
       type: 'multiplayerCoreReceiveTransaction',
       transaction,
+    });
+  }
+
+  receiveCurrentTransaction(sequenceNum: number) {
+    this.send({
+      type: 'multiplayerCoreReceiveCurrentTransaction',
+      sequenceNum,
     });
   }
 }
