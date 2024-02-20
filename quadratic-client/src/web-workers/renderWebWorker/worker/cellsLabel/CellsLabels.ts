@@ -268,12 +268,12 @@ export class CellsLabels extends Container {
     }
   }
 
-  update(): boolean | 'headings' {
+  async update(): Promise<boolean | 'headings'> {
     if (this.updateHeadings()) return 'headings';
 
     const next = this.findNextDirtyHash();
     if (next) {
-      next.hash.update();
+      await next.hash.update();
       return true;
     }
 

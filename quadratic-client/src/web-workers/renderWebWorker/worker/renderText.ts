@@ -75,7 +75,7 @@ class RenderText {
     }
     for (const sheetId of sheetIds) {
       const cellsLabel = this.cellsLabels.get(sheetId);
-      if (cellsLabel?.update()) {
+      if (await cellsLabel?.update()) {
         break;
       }
     }

@@ -9,7 +9,6 @@
  * webGL buffers do not exceed the maximum size.
  */
 
-import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Sheet } from '../../../grid/sheet/Sheet';
@@ -51,7 +50,6 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
     this.addChild(new LabelMeshEntry(message));
-    pixiApp.setViewportDirty();
   }
 
   clearMeshEntries(bounds: { x: number; y: number; width: number; height: number }) {

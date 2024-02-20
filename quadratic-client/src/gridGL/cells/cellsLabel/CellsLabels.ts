@@ -7,8 +7,10 @@
  */
 
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/debugFlags';
+import { sheets } from '@/grid/controller/Sheets';
 import { Sheet } from '@/grid/sheet/Sheet';
 import { intersects } from '@/gridGL/helpers/intersects';
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
@@ -69,6 +71,17 @@ export class CellsLabels extends Container {
       return;
     }
     cellsTextHash.addLabelMeshEntry(message);
+
+    // refresh viewport if necessary
+    if (sheets.sheet.id === this.cellsSheet.sheet.id) {
+      const bounds = pixiApp.viewport.getVisibleBounds();
+      if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
+        cellsTextHash.show();
+        pixiApp.setViewportDirty();
+      } else {
+        cellsTextHash.hide();
+      }
+    }
   }
 
   get sheet(): Sheet {
