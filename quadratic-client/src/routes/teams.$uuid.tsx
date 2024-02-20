@@ -437,7 +437,7 @@ const TeamBillingIssue = (props: {
     undefined: {
       heading: 'Subscribe to Teams',
       description: 'You must have an active subscription to access Quadratic Teams. Subscribe to continue.',
-      buttonLabel: 'Continue',
+      buttonLabel: 'Subscribe',
       buttonAction: buttonActionResubscribe,
     },
   };
@@ -448,22 +448,8 @@ const TeamBillingIssue = (props: {
   let buttonAction = statusOptions[billingStatus ?? 'undefined'].buttonAction;
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.25)', // Semi-transparent black overlay
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 9999, // Ensure it's above other content
-        backdropFilter: 'blur(5px)', // Apply blur effect to background
-      }}
-    >
-      <div className="rounded bg-white p-4">
+    <div className="absolute left-0 top-0 z-40 flex h-full w-full items-center justify-center bg-opacity-20 shadow-md backdrop-blur-sm">
+      <div className="rounded border border-border bg-background px-4 shadow-xl">
         <Empty
           title={heading}
           description={
