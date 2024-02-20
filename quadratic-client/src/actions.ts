@@ -65,11 +65,20 @@ export const renameFileAction = {
   isAvailable: hasPermissionToEditFile,
 };
 
-export const duplicateFileAction = {
+export const duplicateFileWithUserAsOwnerAction = {
+  label: 'Duplicate to my files',
+  isAvailable: isLoggedIn,
+  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
+    const data = { action: 'duplicate', redirect: true, withCurrentOwner: false } as Action['request.duplicate'];
+    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
+  },
+};
+
+export const duplicateFileWithCurrentOwnerAction = {
   label: 'Duplicate',
   isAvailable: isLoggedIn,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
-    const data = { action: 'duplicate', redirect: true } as Action['request.duplicate'];
+    const data = { action: 'duplicate', redirect: true, withCurrentOwner: true } as Action['request.duplicate'];
     submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
   },
 };

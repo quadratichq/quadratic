@@ -1,6 +1,11 @@
 import { DeleteOutline, FileCopyOutlined, FileDownloadOutlined, InsertDriveFileOutlined } from '@mui/icons-material';
 import { useNavigate, useParams, useSubmit } from 'react-router-dom';
-import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '../../../../actions';
+import {
+  createNewFileAction,
+  deleteFile,
+  downloadFileAction,
+  duplicateFileWithUserAsOwnerAction,
+} from '../../../../actions';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { useFileContext } from '../../../components/FileProvider';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
@@ -16,13 +21,13 @@ const ListItems = [
     },
   },
   {
-    label: 'File: ' + duplicateFileAction.label,
-    isAvailable: duplicateFileAction.isAvailable,
+    label: 'File: ' + duplicateFileWithUserAsOwnerAction.label,
+    isAvailable: duplicateFileWithUserAsOwnerAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const submit = useSubmit();
       const { uuid } = useParams() as { uuid: string };
       const action = () => {
-        duplicateFileAction.run({ uuid, submit });
+        duplicateFileWithUserAsOwnerAction.run({ uuid, submit });
       };
       return <CommandPaletteListItem {...props} icon={<FileCopyOutlined />} action={action} />;
     },

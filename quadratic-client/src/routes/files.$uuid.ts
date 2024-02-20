@@ -14,6 +14,7 @@ export type Action = {
   };
   'request.duplicate': {
     action: 'duplicate';
+    withCurrentOwner: boolean;
     redirect?: boolean;
   };
   'request.move': {
@@ -58,8 +59,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'duplicate') {
     try {
-      const { redirect } = json as Action['request.duplicate'];
-      const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid);
+      const { redirect, withCurrentOwner } = json as Action['request.duplicate'];
+      const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, withCurrentOwner);
       return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
     } catch (error) {
       return { ok: false };

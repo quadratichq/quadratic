@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
 import { Avatar, AvatarGroup } from '@mui/material';
-import { CaretDownIcon, ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
+import { CaretDownIcon, ExclamationTriangleIcon, FileIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import {
@@ -39,7 +39,11 @@ export const useTeamRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.
 type LoaderData = ApiTypes['/v0/teams/:uuid.GET.response'];
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<LoaderData> => {
   const { uuid } = params as { uuid: string };
-  const data = await apiClient.teams.get(uuid);
+  const data = await apiClient.teams.get(uuid).catch((error) => {
+    const { status } = error;
+    if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
+    throw error;
+  });
 
   // Sort the users so the logged-in user is first in the list
   data.users.sort((a, b) => {
@@ -322,6 +326,14 @@ export const ErrorBoundary = () => {
           description="Ensure you have the right URL for this team and try again."
           Icon={ExclamationTriangleIcon}
           actions={actions}
+        />
+      );
+    if (error.status === 403)
+      return (
+        <Empty
+          title="You don’t have access to this team"
+          description="Reach out to the team owner for permission to access this team."
+          Icon={InfoCircledIcon}
         />
       );
     if (error.status === 404)

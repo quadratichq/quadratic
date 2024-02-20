@@ -120,7 +120,7 @@ export const apiClient = {
       const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
       downloadQuadraticFile(file.name, checkpointData);
     },
-    async duplicate(uuid: string) {
+    async duplicate(uuid: string, withCurrentOwner: boolean) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });
       // Get the file we want to duplicate
       const {
@@ -140,7 +140,9 @@ export const apiClient = {
           version: lastCheckpointVersion,
           contents: lastCheckpointContents,
         },
-        team?.uuid
+        // If we're duplicating with the current owner, denote the team (if present,
+        // otherwise it duplicates to the user's personal files)
+        withCurrentOwner ? team?.uuid : undefined
       );
 
       // If present, fetch the thumbnail of the file we just dup'd and
