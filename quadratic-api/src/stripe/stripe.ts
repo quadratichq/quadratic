@@ -6,11 +6,11 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('No STRIPE_SECRET_KEY found');
 }
 
-if (!process.env.STRIPE_WEBHOOK_SECRET) {
+if (process.env.ENVIRONMENT === 'PRODUCTION' && !process.env.STRIPE_WEBHOOK_SECRET) {
   throw new Error('No STRIPE_WEBHOOK_SECRET found');
 }
 
-export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   typescript: true,
