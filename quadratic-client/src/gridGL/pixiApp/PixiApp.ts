@@ -64,11 +64,11 @@ export class PixiApp {
     this.initCanvas();
     await this.rebuild();
 
-    // keep a reference of app on window, used for Playwright tests
-    //@ts-expect-error
-    window.pixiapp = this;
-
-    console.log('[QuadraticGL] environment ready');
+    return new Promise((resolve) => {
+      // keep a reference of app on window, used for Playwright tests
+      //@ts-expect-error
+      window.pixiapp = this;
+    });
   }
 
   private initCanvas() {
