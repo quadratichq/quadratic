@@ -147,7 +147,7 @@ async function handler(req: Request, res: Response) {
     }
 
     // If not, add them!
-    await addUserToTeam(dbUser.id, teamId, role);
+    await addUserToTeam({ userId: dbUser.id, teamId, role });
 
     // TODO: what to return exactly...?
     const data: ApiTypes['/v0/teams/:uuid/invites.POST.response'] = { email, role, id: dbUser.id };

@@ -4,8 +4,6 @@ import { STRIPE_WEBHOOK_SECRET, handleSubscriptionWebhookEvent, stripe } from '.
 export default [handler];
 
 async function handler(req: Request, res: Response) {
-  console.log('webhook hit');
-
   const sig = req.headers['stripe-signature']?.toString();
 
   if (!sig) {

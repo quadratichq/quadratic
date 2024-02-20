@@ -19,7 +19,7 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
   });
   if (teamInvites.length) {
     for (const { teamId, role } of teamInvites) {
-      await addUserToTeam(userId, teamId, role);
+      await addUserToTeam({ userId, teamId, role });
     }
     await dbClient.teamInvite.deleteMany({
       where: {
