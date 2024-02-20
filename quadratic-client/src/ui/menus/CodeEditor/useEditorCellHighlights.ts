@@ -35,7 +35,6 @@ function extractCellsFromParseFormula(
 }
 
 export type CellRefId = StringId | `${StringId}:${StringId}`;
-
 export type CellMatch = Map<CellRefId, monaco.Range>;
 
 export const useEditorCellHighlights = (
@@ -51,7 +50,9 @@ export const useEditorCellHighlights = (
   // the colors from the same colors used in pixi and stick them in the DOM
   useEffect(() => {
     if (language !== 'Formula') return;
+
     const id = 'useEditorCellHighlights';
+    
     if (!document.querySelector(id)) {
       const style = document.createElement('style');
       document.head.appendChild(style);
