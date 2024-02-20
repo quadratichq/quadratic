@@ -36,9 +36,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams.POST.resp
   // Get user email from Auth0
   const auth0Record = await getUsersFromAuth0([{ id: userId, auth0Id }]);
   const auth0User = auth0Record[userId];
-  if (!auth0User) {
-    throw new Error(`User ${userId} not found in Auth0`);
-  }
 
   // create Stripe customer
   const stripeCustomer = await createCustomer(name, auth0User.email);
