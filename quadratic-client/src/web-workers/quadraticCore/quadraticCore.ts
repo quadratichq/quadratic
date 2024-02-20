@@ -6,6 +6,7 @@
 
 import { metadata } from '@/grid/controller/metadata';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+import { Coordinate } from '@/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
@@ -389,6 +390,20 @@ class QuadraticCore {
     this.send({
       type: 'clientCoreClearFormatting',
       sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      cursor,
+    });
+  }
+
+  toggleCommas(sheetId: string, source: Coordinate, rectangle: Rectangle, cursor?: string) {
+    this.send({
+      type: 'clientCoreToggleCommas',
+      sheetId,
+      sourceX: source.x,
+      sourceY: source.y,
       x: rectangle.x,
       y: rectangle.y,
       width: rectangle.width,

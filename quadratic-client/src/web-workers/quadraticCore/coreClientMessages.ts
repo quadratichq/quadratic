@@ -37,6 +37,11 @@ export interface CoreClientLoad {
   metadata: GridMetadata;
 }
 
+export interface CoreClientFillSheetsModified {
+  type: 'coreClientFillSheetsModified';
+  sheetIds: SheetId[];
+}
+
 export interface ClientCoreGetCodeCell {
   type: 'clientCoreGetCodeCell';
   sheetId: string;
@@ -284,9 +289,16 @@ export interface ClientCoreClearFormatting {
   cursor?: string;
 }
 
-export interface CoreClientFillSheetsModified {
-  type: 'coreClientFillSheetsModified';
-  sheetIds: SheetId[];
+export interface ClientCoreToggleCommas {
+  type: 'clientCoreToggleCommas';
+  sheetId: string;
+  sourceX: number;
+  sourceY: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cursor?: string;
 }
 
 export type ClientCoreMessage =
@@ -311,7 +323,8 @@ export type ClientCoreMessage =
   | ClientCoreRemoveCellNumericFormat
   | ClientCoreChangeDecimals
   | ClientCoreClearFormatting
-  | ClientCoreGetRenderCell;
+  | ClientCoreGetRenderCell
+  | ClientCoreToggleCommas;
 
 export type CoreClientMessage =
   | CoreClientLoad

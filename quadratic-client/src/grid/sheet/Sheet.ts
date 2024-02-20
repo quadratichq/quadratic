@@ -122,6 +122,10 @@ export class Sheet {
     quadraticCore.setCellCurrency(this.id, rectangle, symbol, sheets.getCursorPosition());
   }
 
+  toggleCommas(source: Coordinate, rectangle: Rectangle) {
+    quadraticCore.toggleCommas(this.id, source, rectangle, sheets.getCursorPosition());
+  }
+
   setPercentage(rectangle: Rectangle) {
     quadraticCore.setCellPercentage(this.id, rectangle, sheets.getCursorPosition());
   }

@@ -146,6 +146,23 @@ class CoreClient {
         );
         break;
 
+      case 'clientCoreToggleCommas':
+        core.toggleCommas(
+          e.data.sheetId,
+          e.data.sourceX,
+          e.data.sourceY,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.cursor
+        );
+        break;
+
+      case 'clientCoreSetCurrency':
+        core.setCurrency(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.symbol, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

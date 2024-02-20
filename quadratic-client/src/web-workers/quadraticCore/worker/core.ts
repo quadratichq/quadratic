@@ -268,10 +268,38 @@ class Core {
     handleTransactionSummary(summary);
   }
 
+  toggleCommas(
+    sheetId: string,
+    sourceX: number,
+    sourceY: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    cursor?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.toggleCommas(
+      sheetId,
+      new Pos(sourceX, sourceY),
+      pointsToRect(x, y, width, height),
+      cursor
+    );
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
+  }
+
   getRenderCell(sheetId: string, x: number, y: number): JsRenderCell | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const results = JSON.parse(this.gridController.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(x, y))));
     return results[0];
+  }
+
+  setCurrency(sheetId: string, x: number, y: number, width: number, height: number, symbol: string, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.setCellCurrency(sheetId, pointsToRect(x, y, width, height), symbol, cursor);
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
   }
 }
 
