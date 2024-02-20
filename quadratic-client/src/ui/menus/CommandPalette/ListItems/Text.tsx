@@ -14,8 +14,9 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<FormatBold />}
-          action={() => {
-            setBold(!sheets.sheet.getFormatPrimaryCell()?.bold);
+          action={async () => {
+            const bold = (await sheets.sheet.getFormatPrimaryCell())?.bold;
+            setBold(!bold);
           }}
           shortcut="B"
           shortcutModifiers={KeyboardSymbols.Command}
@@ -31,8 +32,9 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<FormatItalic />}
-          action={() => {
-            setItalic(!sheets.sheet.getFormatPrimaryCell()?.italic);
+          action={async () => {
+            const italic = (await sheets.sheet.getFormatPrimaryCell())?.italic;
+            setItalic(!italic);
           }}
           shortcut="I"
           shortcutModifiers={KeyboardSymbols.Command}

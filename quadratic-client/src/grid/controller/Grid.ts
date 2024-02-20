@@ -22,7 +22,6 @@ import init, {
 } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
-  CellFormatSummary,
   CellWrap,
   CodeCellLanguage,
   FormattingSummary,
@@ -439,9 +438,9 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
-    return this.gridController.getCellFormatSummary(sheetId, new Pos(x, y));
-  }
+  // getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
+  //   return this.gridController.getCellFormatSummary(sheetId, new Pos(x, y));
+  // }
 
   getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
     return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);

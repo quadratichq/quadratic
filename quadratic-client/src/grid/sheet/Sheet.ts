@@ -1,4 +1,5 @@
 import { SheetOffsets } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { Pos } from '../../quadratic-core/quadratic_core';
@@ -146,8 +147,12 @@ export class Sheet {
     grid.clearFormatting(this.id, this.cursor.getRectangle());
   }
 
-  getFormatPrimaryCell(): CellFormatSummary {
-    return grid.getCellFormatSummary(this.id, this.cursor.originPosition.x, this.cursor.originPosition.y);
+  async getFormatPrimaryCell(): Promise<CellFormatSummary> {
+    return await quadraticCore.getCellFormatSummary(
+      this.id,
+      this.cursor.originPosition.x,
+      this.cursor.originPosition.y
+    );
   }
 
   //#endregion

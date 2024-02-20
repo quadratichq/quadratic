@@ -236,8 +236,8 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
           <IconButton
             size="small"
-            onClick={() => {
-              const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+            onClick={async () => {
+              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
               setBold(!formatPrimaryCell?.bold);
             }}
             color="inherit"
@@ -249,8 +249,8 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
           <IconButton
             size="small"
-            onClick={() => {
-              const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+            onClick={async () => {
+              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
               setItalic(!formatPrimaryCell?.italic);
             }}
             color="inherit"
