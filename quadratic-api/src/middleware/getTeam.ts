@@ -29,7 +29,7 @@ export async function getTeam({ uuid, userId }: { uuid: string; userId: number }
     },
   });
   if (userTeamRole === null) {
-    throw new ApiError(404, 'Team not found');
+    throw new ApiError(403, 'You don’t have access to this team');
   }
 
   // TODO: future - if the team is deleted/archived

@@ -12,7 +12,7 @@ import {
   cutAction,
   deleteFile,
   downloadFileAction,
-  duplicateFileAction,
+  duplicateFileWithUserAsOwnerAction,
   pasteAction,
   provideFeedbackAction,
   redoAction,
@@ -91,9 +91,9 @@ export const QuadraticMenu = () => {
                 <MenuLineItem primary={createNewFileAction.label} />
               </MenuItem>
             )}
-            {duplicateFileAction.isAvailable(permissions, isAuthenticated) && (
-              <MenuItem onClick={() => duplicateFileAction.run({ uuid, submit })}>
-                <MenuLineItem primary={duplicateFileAction.label} />
+            {duplicateFileWithUserAsOwnerAction.isAvailable(permissions, isAuthenticated) && (
+              <MenuItem onClick={() => duplicateFileWithUserAsOwnerAction.run({ uuid, submit })}>
+                <MenuLineItem primary={duplicateFileWithUserAsOwnerAction.label} />
               </MenuItem>
             )}
             {downloadFileAction.isAvailable(permissions, isAuthenticated) && (

@@ -116,6 +116,16 @@ describe('getFilePermissions', () => {
     [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'VIEWER' } }, 'V'],
     [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'VIEWER' } }, 'V'],
     [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'VIEWER' } }, 'VE'],
+
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: undefined } }, ''],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: undefined } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: undefined } }, 'V'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: undefined } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: undefined } }, 'VE'],
   ];
 
   tests.forEach(([input, access]) => {

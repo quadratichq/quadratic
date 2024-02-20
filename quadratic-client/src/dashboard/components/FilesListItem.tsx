@@ -14,7 +14,7 @@ import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
 import { Link, SubmitOptions, useFetcher, useLocation } from 'react-router-dom';
-import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../actions';
+import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { DialogRenameItem } from './DialogRenameItem';
@@ -118,6 +118,7 @@ export function FileListItem({
   const handleDuplicate = () => {
     const data: FileAction['request.duplicate'] = {
       action: 'duplicate',
+      withCurrentOwner: true,
     };
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
@@ -149,7 +150,7 @@ export function FileListItem({
         <DropdownMenuContent className="w-48">
           {permissions.includes('FILE_VIEW') && <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>}
           {permissions.includes('FILE_EDIT') && (
-            <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileAction.label}</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileWithCurrentOwnerAction.label}</DropdownMenuItem>
           )}
           {permissions.includes('FILE_EDIT') && (
             <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>

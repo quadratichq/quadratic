@@ -70,16 +70,6 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   } else if (file.ownerUserId) {
     userFileRelationship = { owner: 'another-user', fileRole };
   } else if (file.ownerTeamId) {
-    if (teamRole === undefined) {
-      Sentry.captureException({
-        message: 'File is owned by a team but user is not a member of the team',
-        extra: {
-          fileUuid: file.uuid,
-          userId,
-        },
-      });
-      throw new ApiError(500, 'File is owned by a team but user is not a member of the team');
-    }
     userFileRelationship = { owner: 'team', teamRole, fileRole };
   }
 

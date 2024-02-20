@@ -83,11 +83,11 @@ describe('GET /v0/teams/:uuid', () => {
       .expect(404)
       .expect(expectError);
   });
-  it('responds with 404 for a valid UUID but the user doesn’t have access to that team', async () => {
+  it('responds with 403 for a valid UUID but the user doesn’t have access to that team', async () => {
     await request(app)
       .get('/v0/teams/00000000-0000-4000-8000-000000000001')
       .set('Authorization', `Bearer ValidToken userNoTeam`)
-      .expect(404)
+      .expect(403)
       .expect(expectError);
   });
   it('responds with 200 for a valid request to a team the user has access', async () => {

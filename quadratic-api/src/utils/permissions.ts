@@ -49,7 +49,7 @@ export const getFilePermissions = ({
     | undefined
     | { owner: 'me' }
     | { owner: 'another-user'; fileRole?: UserFileRole }
-    | { owner: 'team'; teamRole: UserTeamRole; fileRole?: UserFileRole };
+    | { owner: 'team'; teamRole?: UserTeamRole; fileRole?: UserFileRole };
 }) => {
   const permissions = new Set<FilePermission>();
   const isLoggedIn = userFileRelationship !== undefined;
@@ -109,7 +109,7 @@ export const getFilePermissions = ({
     // Check for a file role (which can override the team role)
     if (fileRole === UserFileRoleSchema.enum.EDITOR) {
       permissions.add(FILE_EDIT).add(FILE_VIEW);
-    } else {
+    } else if (fileRole === UserFileRoleSchema.enum.VIEWER) {
       permissions.add(FILE_VIEW);
     }
     return Array.from(permissions);

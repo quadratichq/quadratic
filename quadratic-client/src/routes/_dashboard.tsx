@@ -15,7 +15,7 @@ import { CircularProgress } from '@mui/material';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import { ExternalLinkIcon, FileIcon, HamburgerMenuIcon, MixIcon, PlusIcon, Share2Icon } from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -43,12 +43,14 @@ export const Component = () => {
   const location = useLocation();
   const isLoading = navigation.state !== 'idle';
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const contentPaneRef = useRef<HTMLDivElement>(null);
 
   const navbar = <Navbar />;
 
-  // When the location changes, close the menu (if it's already open)
+  // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
     setIsOpen((prevIsOpen) => (prevIsOpen ? false : prevIsOpen));
+    if (contentPaneRef.current) contentPaneRef.current.scrollTop = 0;
   }, [location.pathname]);
 
   // Ensure long-running browser sessions still have a token
@@ -57,6 +59,7 @@ export const Component = () => {
   return (
     <div className={`h-full lg:flex lg:flex-row`}>
       <div
+        ref={contentPaneRef}
         className={cn(
           `transition-filter relative order-2 h-full w-full px-4 pb-10 transition-opacity sm:pt-0 lg:px-10`,
           isLoading ? 'overflow-hidden' : 'overflow-scroll',
