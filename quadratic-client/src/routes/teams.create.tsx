@@ -1,10 +1,8 @@
 import { AvatarTeam } from '@/components/AvatarTeam';
 import { TYPE } from '@/constants/appConstants';
 import { Button } from '@/shadcn/ui/button';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shadcn/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shadcn/ui/form';
 import { Input } from '@/shadcn/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/shadcn/ui/radio-group';
-import { cn } from '@/shadcn/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
@@ -12,7 +10,6 @@ import { useForm } from 'react-hook-form';
 import { ActionFunctionArgs, redirect, useSubmit } from 'react-router-dom';
 import z from 'zod';
 import { apiClient } from '../api/apiClient';
-import { ROUTES } from '../constants/routes';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { TeamLogoDialog, TeamLogoInput } from '../dashboard/components/TeamLogo';
 
@@ -27,30 +24,25 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { uuid } = await apiClient.teams.create(data);
   // await new Promise((resolve) => setTimeout(resolve, 5000));
   // TODO make dialog=share a const, or maybe share=1 or share=first for extra UI
-  return redirect(ROUTES.TEAM(uuid) + '?share=team-created');
+
+  const checkoutSessionUrl = await apiClient.teams.billing.getCheckoutSessionUrl(uuid);
+  return redirect(checkoutSessionUrl.url);
 };
 
 const FormSchema = z.object({
   name: TeamSchema.shape.name,
-  billing: z.string(),
 });
-
-const billingOptions = [
-  { label: 'Beta trial', value: '0', price: 'Free' },
-  { label: 'Monthly', value: '1', price: '$--/usr/month', disabled: true },
-  { label: 'Yearly', value: '2', price: '$--/usr/year', disabled: true },
-];
 
 export const Component = () => {
   const [currentLogoUrl, setCurrentLogoUrl] = useState<string>('');
   const [userSelectedLogoUrl, setUserSelectedLogoUrl] = useState<string>('');
+
   const submit = useSubmit();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       name: '',
-      billing: billingOptions[0].value,
     },
   });
 
@@ -61,7 +53,7 @@ export const Component = () => {
 
   return (
     <>
-      <DashboardHeader title="Create team" />
+      <DashboardHeader title="Create a Team" />
 
       <div className={`mt-4 max-w-md space-y-8`}>
         <p className={`${TYPE.body2} text-muted-foreground`}>
@@ -120,48 +112,8 @@ export const Component = () => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="billing"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Billing</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col gap-0 border border-input shadow-sm"
-                    >
-                      {billingOptions.map(({ label, value, price, disabled }, i) => (
-                        <FormItem
-                          key={value}
-                          className={cn(`flex items-center px-2 py-3`, i !== 0 && `border-t border-input`)}
-                        >
-                          <FormControl>
-                            <RadioGroupItem value={value} disabled={disabled} className={cn(disabled && `grayscale`)} />
-                          </FormControl>
-                          <FormLabel
-                            className={cn(
-                              `!mt-0 ml-2 flex flex-1 justify-between p-0`,
-                              disabled && 'text-muted-foreground'
-                            )}
-                          >
-                            <span>{label}</span>
-                            <span className={`font-normal text-muted-foreground`}>{price}</span>
-                          </FormLabel>
-                        </FormItem>
-                      ))}
-                    </RadioGroup>
-                  </FormControl>
-                  <FormDescription>
-                    [Note here about billing, beta plan termination date, free tier limits, etc.]
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <Button type="submit" variant="default">
-              Submit
+              Continue
             </Button>
           </form>
         </Form>

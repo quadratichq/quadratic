@@ -21,6 +21,18 @@ export const TeamPermissionSchema = z.enum([
 ]);
 export type TeamPermission = z.infer<typeof TeamPermissionSchema>;
 
+export const TeamSubscriptionStatusSchema = z.enum([
+  'TRIALING',
+  'ACTIVE',
+  'INCOMPLETE',
+  'INCOMPLETE_EXPIRED',
+  'PAST_DUE',
+  'CANCELED',
+  'UNPAID',
+  'PAUSED',
+]);
+export type TeamSubscriptionStatus = z.infer<typeof TeamSubscriptionStatusSchema>;
+
 export const emailSchema = z
   .string()
   .email()
@@ -240,8 +252,10 @@ export const ApiSchemas = {
       teamPermissions: z.array(TeamPermissionSchema),
       teamRole: UserTeamRoleSchema,
     }),
-    // TODO: still need this data
-    // billing: z.any(),
+    billing: z.object({
+      status: TeamSubscriptionStatusSchema.optional(),
+      currentPeriodEnd: z.string().optional(),
+    }),
     files: z.array(
       z.object({
         file: FileSchema.pick({
@@ -277,6 +291,8 @@ export const ApiSchemas = {
     message: z.string(),
     redirect: z.boolean().optional(),
   }),
+  '/v0/teams/:uuid/billing/portal/session.POST.response': z.object({ url: z.string() }),
+  '/v0/teams/:uuid/billing/checkout/session.POST.response': z.object({ url: z.string() }),
 };
 
 type ApiKeys = keyof typeof ApiSchemas;

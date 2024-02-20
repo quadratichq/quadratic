@@ -6,16 +6,10 @@ import CreateFileButton from '@/dashboard/components/CreateFileButton';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { Button } from '@/shadcn/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shadcn/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { CaretDownIcon, ExclamationTriangleIcon, FileIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { ApiTypes, TeamSubscriptionStatus } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import {
   ActionFunctionArgs,
@@ -158,6 +152,7 @@ export const Component = () => {
     files,
     users,
     userMakingRequest: { teamPermissions },
+    billing,
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
@@ -171,11 +166,13 @@ export const Component = () => {
 
   const handleClose = () => setIsRenaming(false);
   const canEdit = teamPermissions.includes('TEAM_EDIT');
+  const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
   const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
 
   return (
     <>
+      <TeamBillingIssue billingStatus={billing.status} teamUuid={team.uuid} canEditBilling={canEditBilling} />
       <DashboardHeader
         title={name}
         titleStart={<AvatarTeam src={team.picture} className="mr-3 h-9 w-9" />}
@@ -191,7 +188,7 @@ export const Component = () => {
                 <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <label>
-                    Upload logo
+                    Change logo
                     <TeamLogoInput
                       onChange={(url: string) => {
                         handleClose();
@@ -200,9 +197,18 @@ export const Component = () => {
                   </label>
                 </DropdownMenuItem>
                 {teamPermissions.includes('TEAM_BILLING_EDIT') && (
-                  <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      // Get the billing session URL
+                      apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                        window.location.href = data.url;
+                      });
+                    }}
+                  >
+                    Update billing
+                  </DropdownMenuItem>
                 )}
-                {teamPermissions.includes('TEAM_DELETE') && [
+                {/* {teamPermissions.includes('TEAM_DELETE') && [
                   <DropdownMenuSeparator key={1} />,
                   <DropdownMenuItem
                     key={2}
@@ -212,7 +218,7 @@ export const Component = () => {
                   >
                     Delete
                   </DropdownMenuItem>,
-                ]}
+                ]} */}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null
@@ -361,5 +367,127 @@ export const ErrorBoundary = () => {
       }
       severity="error"
     />
+  );
+};
+
+const TeamBillingIssue = (props: {
+  teamUuid: string;
+  billingStatus: TeamSubscriptionStatus | undefined;
+  canEditBilling: boolean;
+}) => {
+  const { billingStatus, teamUuid, canEditBilling } = props;
+
+  // There is no issue if the billing status is active or trialing.
+  if (billingStatus === 'ACTIVE' || billingStatus === 'TRIALING') {
+    return null;
+  }
+
+  const buttonActionGoToBillingPortal = () => {
+    apiClient.teams.billing.getPortalSessionUrl(teamUuid).then((data) => {
+      window.location.href = data.url;
+    });
+  };
+
+  const buttonActionResubscribe = () => {
+    apiClient.teams.billing.getCheckoutSessionUrl(teamUuid).then((data) => {
+      window.location.href = data.url;
+    });
+  };
+
+  // Otherwise, show the billing issue overlay.
+  let headingDefault = 'Team Billing Issue';
+
+  const statusOptions = {
+    CANCELED: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription has been canceled. Please resubscribe.',
+      buttonLabel: 'Resubscribe',
+      buttonAction: buttonActionResubscribe,
+    },
+    INCOMPLETE: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is incomplete. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    INCOMPLETE_EXPIRED: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is incomplete. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionResubscribe,
+    },
+    PAST_DUE: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is past due. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    UNPAID: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is unpaid. Please pay to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionResubscribe,
+    },
+    PAUSED: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is paused. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    undefined: {
+      heading: 'Subscribe to Teams',
+      description: 'You must have an active subscription to access Quadratic Teams. Subscribe to continue.',
+      buttonLabel: 'Continue',
+      buttonAction: buttonActionResubscribe,
+    },
+  };
+
+  let heading = statusOptions[billingStatus ?? 'undefined'].heading;
+  let description = statusOptions[billingStatus ?? 'undefined'].description;
+  let buttonLabel = statusOptions[billingStatus ?? 'undefined'].buttonLabel;
+  let buttonAction = statusOptions[billingStatus ?? 'undefined'].buttonAction;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.25)', // Semi-transparent black overlay
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 9999, // Ensure it's above other content
+        backdropFilter: 'blur(5px)', // Apply blur effect to background
+      }}
+    >
+      <div className="rounded bg-white p-4">
+        <Empty
+          title={heading}
+          description={
+            canEditBilling
+              ? description
+              : 'Your Team’s subscription is inactive. Please contact the Team owner to reactivate.'
+          }
+          Icon={ExclamationTriangleIcon}
+          actions={
+            <div className={`flex justify-center gap-2`}>
+              <Button asChild variant="outline">
+                <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+                  Get help
+                </a>
+              </Button>
+              {canEditBilling && (
+                <Button variant="default" onClick={buttonAction}>
+                  <span>{buttonLabel}</span>
+                </Button>
+              )}
+            </div>
+          }
+        />
+      </div>
+    </div>
   );
 };

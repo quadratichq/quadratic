@@ -3,6 +3,7 @@ import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { lookupUsersFromAuth0ByEmail } from '../../auth0/profile';
 import dbClient from '../../dbClient';
+import { addUserToTeam } from '../../internal/addUserToTeam';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -146,15 +147,7 @@ async function handler(req: Request, res: Response) {
     }
 
     // If not, add them!
-    await dbClient.userTeamRole.create({
-      data: {
-        userId: dbUser.id,
-        teamId,
-        role,
-      },
-    });
-
-    // TODO: send them an email
+    await addUserToTeam({ userId: dbUser.id, teamId, role });
 
     // TODO: what to return exactly...?
     const data: ApiTypes['/v0/teams/:uuid/invites.POST.response'] = { email, role, id: dbUser.id };

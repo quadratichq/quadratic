@@ -47,6 +47,22 @@ export const apiClient = {
         ApiSchemas['/v0/teams.POST.response']
       );
     },
+    billing: {
+      async getPortalSessionUrl(uuid: string) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/portal/session`,
+          { method: 'POST' },
+          ApiSchemas['/v0/teams/:uuid/billing/portal/session.POST.response']
+        );
+      },
+      async getCheckoutSessionUrl(uuid: string) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/checkout/session`,
+          { method: 'POST' },
+          ApiSchemas['/v0/teams/:uuid/billing/checkout/session.POST.response']
+        );
+      },
+    },
     invites: {
       async create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
         return fetchFromApi(
