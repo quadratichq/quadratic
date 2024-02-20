@@ -1,4 +1,12 @@
-import { CellFormatSummary, JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
+import {
+  CellAlign,
+  CellFormatSummary,
+  JsCodeCell,
+  JsRenderCell,
+  JsRenderCodeCell,
+  JsRenderFill,
+  SheetId,
+} from '@/quadratic-core/types';
 
 export interface ClientCoreLoad {
   type: 'clientCoreLoad';
@@ -40,6 +48,20 @@ export interface ClientCoreGetCodeCell {
 export interface CoreClientGetCodeCell {
   type: 'coreClientGetCodeCell';
   cell: JsCodeCell | undefined;
+  id: number;
+}
+
+export interface ClientCoreGetRenderCell {
+  type: 'clientCoreGetRenderCell';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
+export interface CoreClientGetRenderCell {
+  type: 'coreClientGetRenderCell';
+  cell: JsRenderCell | undefined;
   id: number;
 }
 
@@ -145,6 +167,128 @@ export interface CoreClientSummarizeSelection {
     | undefined;
 }
 
+export interface ClientCoreSetCellBold {
+  type: 'clientCoreSetCellBold';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  bold: boolean;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellItalic {
+  type: 'clientCoreSetCellItalic';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  italic: boolean;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellFillColor {
+  type: 'clientCoreSetCellFillColor';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fillColor?: string;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellTextColor {
+  type: 'clientCoreSetCellTextColor';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color?: string;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellAlign {
+  type: 'clientCoreSetCellAlign';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  align?: CellAlign;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCurrency {
+  type: 'clientCoreSetCurrency';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  symbol: string;
+  cursor?: string;
+}
+
+export interface ClientCoreSetPercentage {
+  type: 'clientCoreSetPercentage';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cursor?: string;
+}
+
+export interface ClientCoreSetExponential {
+  type: 'clientCoreSetExponential';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cursor?: string;
+}
+
+export interface ClientCoreRemoveCellNumericFormat {
+  type: 'clientCoreRemoveCellNumericFormat';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cursor?: string;
+}
+
+export interface ClientCoreChangeDecimals {
+  type: 'clientCoreChangeDecimals';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  delta: number;
+  cursor?: string;
+}
+
+export interface ClientCoreClearFormatting {
+  type: 'clientCoreClearFormatting';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cursor?: string;
+}
+
+export interface CoreClientFillSheetsModified {
+  type: 'coreClientFillSheetsModified';
+  sheetIds: SheetId[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -155,7 +299,19 @@ export type ClientCoreMessage =
   | ClientCoreSetCellValue
   | ClientCoreGetCellFormatSummary
   | ClientCoreInitMultiplayer
-  | ClientCoreSummarizeSelection;
+  | ClientCoreSummarizeSelection
+  | ClientCoreSetCellBold
+  | ClientCoreSetCellItalic
+  | ClientCoreSetCellFillColor
+  | ClientCoreSetCellTextColor
+  | ClientCoreSetCellAlign
+  | ClientCoreSetCurrency
+  | ClientCoreSetPercentage
+  | ClientCoreSetExponential
+  | ClientCoreRemoveCellNumericFormat
+  | ClientCoreChangeDecimals
+  | ClientCoreClearFormatting
+  | ClientCoreGetRenderCell;
 
 export type CoreClientMessage =
   | CoreClientLoad
@@ -165,4 +321,6 @@ export type CoreClientMessage =
   | CoreClientGetEditCell
   | CoreClientCellHasContent
   | CoreClientGetCellFormatSummary
-  | CoreClientSummarizeSelection;
+  | CoreClientSummarizeSelection
+  | CoreClientFillSheetsModified
+  | CoreClientGetRenderCell;

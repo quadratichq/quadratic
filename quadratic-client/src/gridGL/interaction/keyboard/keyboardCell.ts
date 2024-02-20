@@ -98,7 +98,7 @@ export async function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = sheet.getRenderCell(x, y);
+    const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
     if (cell?.language) {
       if (editorInteractionState.showCodeEditor) {
         // Open code editor, or move change editor if already open.

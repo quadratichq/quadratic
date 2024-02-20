@@ -5,7 +5,15 @@
  */
 
 import { metadata } from '@/grid/controller/metadata';
-import { CellFormatSummary, JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+import {
+  CellAlign,
+  CellFormatSummary,
+  JsCodeCell,
+  JsRenderCell,
+  JsRenderCodeCell,
+  JsRenderFill,
+} from '@/quadratic-core/types';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
@@ -14,6 +22,7 @@ import {
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
   ClientCoreGetEditCell,
+  ClientCoreGetRenderCell,
   ClientCoreGetRenderCodeCells,
   ClientCoreLoad,
   ClientCoreMessage,
@@ -22,6 +31,7 @@ import {
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetEditCell,
+  CoreClientGetRenderCell,
   CoreClientGetRenderCodeCells,
   CoreClientLoad,
   CoreClientMessage,
@@ -40,6 +50,11 @@ class QuadraticCore {
   }
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
+    if (e.data.type === 'coreClientFillSheetsModified') {
+      pixiApp.cellsSheets.updateFills(e.data.sheetIds);
+      return;
+    }
+
     // handle responses
     if (e.data.id !== undefined) {
       if (this.waitingForResponse[e.data.id]) {
@@ -89,7 +104,7 @@ class QuadraticCore {
   }
 
   // Gets a code cell from a sheet
-  async getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
+  getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       const message: ClientCoreGetCodeCell = {
@@ -100,6 +115,23 @@ class QuadraticCore {
         id,
       };
       this.waitingForResponse[id] = (message: CoreClientGetCodeCell) => {
+        resolve(message.cell);
+      };
+      this.send(message);
+    });
+  }
+
+  getRenderCell(sheetId: string, x: number, y: number): Promise<JsRenderCell | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreGetRenderCell = {
+        type: 'clientCoreGetRenderCell',
+        sheetId,
+        x,
+        y,
+        id,
+      };
+      this.waitingForResponse[id] = (message: CoreClientGetRenderCell) => {
         resolve(message.cell);
       };
       this.send(message);
@@ -223,6 +255,145 @@ class QuadraticCore {
         resolve(message.summary);
       };
       this.send(message);
+    });
+  }
+
+  setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellBold',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      bold,
+      cursor,
+    });
+  }
+
+  setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor?: string, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellFillColor',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      fillColor,
+      cursor,
+    });
+  }
+
+  setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellItalic',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      italic,
+      cursor,
+    });
+  }
+
+  setCellTextColor(sheetId: string, rectangle: Rectangle, color?: string, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellTextColor',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      color,
+      cursor,
+    });
+  }
+
+  setCellAlign(sheetId: string, rectangle: Rectangle, align?: CellAlign, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellAlign',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      align,
+      cursor,
+    });
+  }
+
+  setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCurrency',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      symbol,
+      cursor,
+    });
+  }
+
+  setCellPercentage(sheetId: string, rectangle: Rectangle, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetPercentage',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      cursor,
+    });
+  }
+
+  setCellExponential(sheetId: string, rectangle: Rectangle, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetExponential',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      cursor,
+    });
+  }
+
+  removeCellNumericFormat(sheetId: string, rectangle: Rectangle, cursor?: string) {
+    this.send({
+      type: 'clientCoreRemoveCellNumericFormat',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      cursor,
+    });
+  }
+
+  changeDecimalPlaces(sheetId: string, x: number, y: number, rectangle: Rectangle, delta: number, cursor?: string) {
+    this.send({
+      type: 'clientCoreChangeDecimals',
+      sheetId,
+      x,
+      y,
+      width: rectangle.width,
+      height: rectangle.height,
+      delta,
+      cursor,
+    });
+  }
+
+  clearFormatting(sheetId: string, rectangle: Rectangle, cursor?: string) {
+    this.send({
+      type: 'clientCoreClearFormatting',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      cursor,
     });
   }
 }

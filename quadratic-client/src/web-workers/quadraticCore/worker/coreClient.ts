@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
+import { SheetId } from '@/quadratic-core/types';
 import {
   ClientCoreLoad,
   ClientCoreMessage,
@@ -46,6 +47,14 @@ class CoreClient {
           type: 'coreClientGetAllRenderFills',
           id: e.data.id,
           fills: core.getAllRenderFills(e.data.sheetId),
+        });
+        break;
+
+      case 'clientCoreGetRenderCell':
+        this.send({
+          type: 'coreClientGetRenderCell',
+          id: e.data.id,
+          cell: core.getRenderCell(e.data.sheetId, e.data.x, e.data.y),
         });
         break;
 
@@ -97,6 +106,46 @@ class CoreClient {
         });
         break;
 
+      case 'clientCoreSetCellBold':
+        core.setCellBold(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.bold, e.data.cursor);
+        break;
+
+      case 'clientCoreSetCellItalic':
+        core.setCellItalic(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.italic,
+          e.data.cursor
+        );
+        break;
+
+      case 'clientCoreSetCellTextColor':
+        core.setCellTextColor(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.color ?? '',
+          e.data.cursor
+        );
+        break;
+
+      case 'clientCoreSetCellFillColor':
+        core.setCellFillColor(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.fillColor ?? '',
+          e.data.cursor
+        );
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
@@ -105,6 +154,10 @@ class CoreClient {
   init(id: number, metadata: GridMetadata) {
     self.postMessage({ type: 'coreClientLoad', metadata, id } as CoreClientLoad);
     if (debugWebWorkers) console.log('[coreClient] initialized.');
+  }
+
+  fillSheetsModified(sheetIds: SheetId[]) {
+    this.send({ type: 'coreClientFillSheetsModified', sheetIds });
   }
 }
 

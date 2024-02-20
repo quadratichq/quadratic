@@ -2,9 +2,9 @@ import { SheetOffsets } from '@/quadratic-grid-metadata/quadratic_grid_metadata'
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
-import { Pos } from '../../quadratic-core/quadratic_core';
-import { CellAlign, CellFormatSummary, FormattingSummary, JsRenderCell } from '../../quadratic-core/types';
+import { CellAlign, CellFormatSummary } from '../../quadratic-core/types';
 import { grid } from '../controller/Grid';
+import { sheets } from '../controller/Sheets';
 import { metadata } from '../controller/metadata';
 import { SheetCursor } from './SheetCursor';
 
@@ -67,17 +67,17 @@ export class Sheet {
 
   //#region get grid information
 
-  getRenderCells(rectangle: Rectangle): JsRenderCell[] {
-    return grid.getRenderCells(this.id, rectangle);
-  }
+  // getRenderCells(rectangle: Rectangle): JsRenderCell[] {
+  //   return grid.getRenderCells(this.id, rectangle);
+  // }
 
-  getRenderCell(x: number, y: number): JsRenderCell | undefined {
-    return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
-  }
+  // getRenderCell(x: number, y: number): JsRenderCell | undefined {
+  //   return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
+  // }
 
-  getFormattingSummary(rectangle: Rectangle): FormattingSummary {
-    return grid.getFormattingSummary(this.id, rectangle);
-  }
+  // getFormattingSummary(rectangle: Rectangle): FormattingSummary {
+  //   return grid.getFormattingSummary(this.id, rectangle);
+  // }
 
   // getCellFormatSummary(x: number, y: number): CellFormatSummary {
   //   return grid.getCellFormatSummary(this.id, x, y);
@@ -99,52 +99,54 @@ export class Sheet {
   //#region set grid information
 
   setCellFillColor(rectangle: Rectangle, fillColor?: string) {
-    return grid.setCellFillColor(this.id, rectangle, fillColor);
+    quadraticCore.setCellFillColor(this.id, rectangle, fillColor, sheets.getCursorPosition());
   }
 
-  setCellBold(rectangle: Rectangle, bold: boolean): void {
-    grid.setCellBold(this.id, rectangle, bold);
+  setCellBold(rectangle: Rectangle, bold: boolean) {
+    quadraticCore.setCellBold(this.id, rectangle, bold, sheets.getCursorPosition());
   }
 
   setCellItalic(rectangle: Rectangle, italic: boolean): void {
-    grid.setCellItalic(this.id, rectangle, italic);
+    quadraticCore.setCellItalic(this.id, rectangle, italic, sheets.getCursorPosition());
   }
 
   setCellTextColor(rectangle: Rectangle, color?: string): void {
-    grid.setCellTextColor(this.id, rectangle, color);
+    quadraticCore.setCellTextColor(this.id, rectangle, color, sheets.getCursorPosition());
   }
 
   setCellAlign(rectangle: Rectangle, align?: CellAlign): void {
-    grid.setCellAlign(this.id, rectangle, align);
+    quadraticCore.setCellAlign(this.id, rectangle, align, sheets.getCursorPosition());
   }
 
   setCurrency(rectangle: Rectangle, symbol: string = '$') {
-    grid.setCellCurrency(this.id, rectangle, symbol);
+    quadraticCore.setCellCurrency(this.id, rectangle, symbol, sheets.getCursorPosition());
   }
 
   setPercentage(rectangle: Rectangle) {
-    grid.setCellPercentage(this.id, rectangle);
+    quadraticCore.setCellPercentage(this.id, rectangle, sheets.getCursorPosition());
   }
 
   setExponential(rectangle: Rectangle) {
-    grid.setCellExponential(this.id, rectangle);
+    quadraticCore.setCellExponential(this.id, rectangle, sheets.getCursorPosition());
   }
 
   removeCellNumericFormat(rectangle: Rectangle) {
-    grid.removeCellNumericFormat(this.id, rectangle);
+    quadraticCore.removeCellNumericFormat(this.id, rectangle, sheets.getCursorPosition());
   }
 
   changeDecimals(delta: number): void {
-    grid.changeDecimalPlaces(
+    quadraticCore.changeDecimalPlaces(
       this.id,
-      new Pos(this.cursor.originPosition.x, this.cursor.originPosition.y),
+      this.cursor.originPosition.x,
+      this.cursor.originPosition.y,
       this.cursor.getRectangle(),
-      delta
+      delta,
+      sheets.getCursorPosition()
     );
   }
 
   clearFormatting(): void {
-    grid.clearFormatting(this.id, this.cursor.getRectangle());
+    quadraticCore.clearFormatting(this.id, this.cursor.getRectangle());
   }
 
   async getFormatPrimaryCell(): Promise<CellFormatSummary> {

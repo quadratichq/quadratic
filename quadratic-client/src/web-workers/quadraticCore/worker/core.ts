@@ -215,6 +215,64 @@ class Core {
       return result;
     }
   }
+
+  setCellBold(sheetId: string, x: number, y: number, width: number, height: number, bold: boolean, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.setCellBold(sheetId, pointsToRect(x, y, width, height), bold, cursor);
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
+  }
+
+  setCellItalic(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    italic: boolean,
+    cursor?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.setCellItalic(sheetId, pointsToRect(x, y, width, height), italic, cursor);
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
+  }
+
+  setCellTextColor(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: string,
+    cursor?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.setCellTextColor(sheetId, pointsToRect(x, y, width, height), color, cursor);
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
+  }
+
+  setCellFillColor(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fillColor: string,
+    cursor?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.setCellFillColor(sheetId, pointsToRect(x, y, width, height), fillColor, cursor);
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
+  }
+
+  getRenderCell(sheetId: string, x: number, y: number): JsRenderCell | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const results = JSON.parse(this.gridController.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(x, y))));
+    return results[0];
+  }
 }
 
 export const core = new Core();

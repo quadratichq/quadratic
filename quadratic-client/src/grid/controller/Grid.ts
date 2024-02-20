@@ -21,13 +21,9 @@ import init, {
   TransientResize,
 } from '../../quadratic-core/quadratic_core';
 import {
-  CellAlign,
-  CellWrap,
   CodeCellLanguage,
-  FormattingSummary,
   JsClipboard,
   JsHtmlOutput,
-  JsRenderCell,
   Rect,
   SearchOptions,
   SheetPos,
@@ -275,133 +271,133 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
-  setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined) {
-    const summary = this.gridController.setCellAlign(
-      sheetId,
-      rectangleToRect(rectangle),
-      align,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined) {
+  //   const summary = this.gridController.setCellAlign(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     align,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap) {
-    const summary = this.gridController.setCellWrap(
-      sheetId,
-      rectangleToRect(rectangle),
-      wrap,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap) {
+  //   const summary = this.gridController.setCellWrap(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     wrap,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string) {
-    const summary = this.gridController.setCellCurrency(
-      sheetId,
-      rectangleToRect(rectangle),
-      symbol,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string) {
+  //   const summary = this.gridController.setCellCurrency(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     symbol,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellPercentage(sheetId: string, rectangle: Rectangle) {
-    const summary = this.gridController.setCellPercentage(
-      sheetId,
-      rectangleToRect(rectangle),
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellPercentage(sheetId: string, rectangle: Rectangle) {
+  //   const summary = this.gridController.setCellPercentage(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellExponential(sheetId: string, rectangle: Rectangle) {
-    const summary = this.gridController.setCellExponential(
-      sheetId,
-      rectangleToRect(rectangle),
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellExponential(sheetId: string, rectangle: Rectangle) {
+  //   const summary = this.gridController.setCellExponential(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  toggleCommas(sheetId: string, source: Pos, rectangle: Rectangle) {
-    const summary = this.gridController.toggleCommas(
-      sheetId,
-      source,
-      rectangleToRect(rectangle),
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // toggleCommas(sheetId: string, source: Pos, rectangle: Rectangle) {
+  //   const summary = this.gridController.toggleCommas(
+  //     sheetId,
+  //     source,
+  //     rectangleToRect(rectangle),
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  removeCellNumericFormat(sheetId: string, rectangle: Rectangle) {
-    const summary = this.gridController.removeCellNumericFormat(
-      sheetId,
-      rectangleToRect(rectangle),
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // removeCellNumericFormat(sheetId: string, rectangle: Rectangle) {
+  //   const summary = this.gridController.removeCellNumericFormat(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean) {
-    const summary = this.gridController.setCellBold(
-      sheetId,
-      rectangleToRect(rectangle),
-      bold,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean) {
+  //   const summary = this.gridController.setCellBold(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     bold,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean) {
-    const summary = this.gridController.setCellItalic(
-      sheetId,
-      rectangleToRect(rectangle),
-      italic,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean) {
+  //   const summary = this.gridController.setCellItalic(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     italic,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellTextColor(sheetId: string, rectangle: Rectangle, textColor: string | undefined) {
-    const summary = this.gridController.setCellTextColor(
-      sheetId,
-      rectangleToRect(rectangle),
-      textColor,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellTextColor(sheetId: string, rectangle: Rectangle, textColor: string | undefined) {
+  //   const summary = this.gridController.setCellTextColor(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     textColor,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor: string | undefined) {
-    const summary = this.gridController.setCellFillColor(
-      sheetId,
-      rectangleToRect(rectangle),
-      fillColor,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor: string | undefined) {
+  //   const summary = this.gridController.setCellFillColor(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     fillColor,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  changeDecimalPlaces(sheetId: string, source: Pos, rectangle: Rectangle, delta: number) {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-    const summary = this.gridController.changeDecimalPlaces(
-      sheetId,
-      source,
-      rectangleToRect(rectangle),
-      delta,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // changeDecimalPlaces(sheetId: string, source: Pos, rectangle: Rectangle, delta: number) {
+  //   if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+  //   const summary = this.gridController.changeDecimalPlaces(
+  //     sheetId,
+  //     source,
+  //     rectangleToRect(rectangle),
+  //     delta,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  clearFormatting(sheetId: string, rectangle: Rectangle) {
-    const summary = this.gridController.clearFormatting(
-      sheetId,
-      rectangleToRect(rectangle),
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // clearFormatting(sheetId: string, rectangle: Rectangle) {
+  //   const summary = this.gridController.clearFormatting(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
   setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
     const summary = this.gridController.setRegionBorders(
@@ -429,22 +425,22 @@ export class Grid {
   //#region get grid information
   // ---------------------------
 
-  getEditCell(sheetId: string, pos: Pos): string {
-    return this.gridController.getEditCell(sheetId, pos);
-  }
+  // getEditCell(sheetId: string, pos: Pos): string {
+  //   return this.gridController.getEditCell(sheetId, pos);
+  // }
 
-  getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
-    const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
-    return JSON.parse(data);
-  }
+  // getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
+  //   const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
+  //   return JSON.parse(data);
+  // }
 
   // getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
   //   return this.gridController.getCellFormatSummary(sheetId, new Pos(x, y));
   // }
 
-  getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
-    return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
-  }
+  // getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
+  //   return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
+  // }
 
   // todo...
   getHtmlOutput(sheetId: string): JsHtmlOutput[] {

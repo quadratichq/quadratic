@@ -98,6 +98,9 @@ export class CellsSheets extends Container<CellsSheet> {
     this.children.forEach((cellsSheet) => {
       if (sheetIds.find((id) => id.id === cellsSheet.sheet.id)) {
         cellsSheet.updateFill();
+        if (sheets.sheet.id === cellsSheet.sheet.id) {
+          pixiApp.setViewportDirty();
+        }
       }
     });
   }
