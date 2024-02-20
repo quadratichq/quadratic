@@ -22,7 +22,6 @@ export const SelectionSummary = () => {
       sheets.sheet.id,
       sheets.sheet.cursor.getRectangle()
     );
-    console.log(result);
     if (result) {
       setCount(result.count.toString());
       setSum(result.sum !== undefined ? result.sum.toString() : undefined);
