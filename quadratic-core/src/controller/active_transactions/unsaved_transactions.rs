@@ -50,18 +50,23 @@ impl UnsavedTransactions {
     pub fn insert_or_replace(&mut self, pending: &PendingTransaction, send: bool) {
         let forward = pending.to_forward_transaction();
         let reverse = pending.to_undo_transaction();
-
+        dbgjs!("STARTING HERE");
+        dbgjs!(&forward);
+        dbgjs!(&reverse);
         match self
             .iter_mut()
             .enumerate()
             .find(|(_, unsaved_transaction)| unsaved_transaction.id() == forward.id)
         {
             None => {
+                dbgjs!("NONE");
                 let transaction = UnsavedTransaction {
                     forward,
                     reverse,
                     sent_to_server: false,
                 };
+                dbgjs!(&transaction);
+                dbgjs!("transaction should be printed...");
                 if !cfg!(test) && !cfg!(feature = "multiplayer") && send {
                     if let Ok(stringified) = serde_json::to_string(&transaction) {
                         crate::wasm_bindings::js::addUnsentTransaction(
@@ -73,8 +78,12 @@ impl UnsavedTransactions {
                 self.transactions.push(transaction);
             }
             Some((_, unsaved_transaction)) => {
+                dbgjs!("SOME");
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
+
+                dbgjs!(&unsaved_transaction);
+
                 if !cfg!(test) && !cfg!(feature = "multiplayer") && send {
                     if let Ok(stringified) = serde_json::to_string(&unsaved_transaction) {
                         crate::wasm_bindings::js::addUnsentTransaction(
