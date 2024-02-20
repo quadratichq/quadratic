@@ -701,13 +701,13 @@ export class Grid {
   //#region Summarize
   //-----------------
 
-  summarizeSelection(decimal_places: number = 9) {
-    return this.gridController.summarizeSelection(
-      sheets.sheet.id,
-      rectangleToRect(sheets.sheet.cursor.getRectangle()),
-      BigInt(decimal_places)
-    );
-  }
+  // summarizeSelection(decimal_places: number = 9) {
+  //   return this.gridController.summarizeSelection(
+  //     sheets.sheet.id,
+  //     rectangleToRect(sheets.sheet.cursor.getRectangle()),
+  //     BigInt(decimal_places)
+  //   );
+  // }
 
   //#endregion
 

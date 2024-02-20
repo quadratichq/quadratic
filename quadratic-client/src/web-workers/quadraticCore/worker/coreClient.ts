@@ -89,6 +89,14 @@ class CoreClient {
         coreMultiplayer.init(e.ports[0]);
         break;
 
+      case 'clientCoreSummarizeSelection':
+        this.send({
+          type: 'coreClientSummarizeSelection',
+          id: e.data.id,
+          summary: core.summarizeSelection(e.data),
+        });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

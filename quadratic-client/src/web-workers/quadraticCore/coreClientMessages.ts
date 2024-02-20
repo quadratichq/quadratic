@@ -122,6 +122,29 @@ export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
 }
 
+export interface ClientCoreSummarizeSelection {
+  type: 'clientCoreSummarizeSelection';
+  sheetId: string;
+  decimalPlaces: number;
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface CoreClientSummarizeSelection {
+  type: 'coreClientSummarizeSelection';
+  id: number;
+  summary:
+    | {
+        count: number;
+        sum: number | undefined;
+        average: number | undefined;
+      }
+    | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -131,7 +154,8 @@ export type ClientCoreMessage =
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
   | ClientCoreGetCellFormatSummary
-  | ClientCoreInitMultiplayer;
+  | ClientCoreInitMultiplayer
+  | ClientCoreSummarizeSelection;
 
 export type CoreClientMessage =
   | CoreClientLoad
@@ -140,4 +164,5 @@ export type CoreClientMessage =
   | CoreClientGetRenderCodeCells
   | CoreClientGetEditCell
   | CoreClientCellHasContent
-  | CoreClientGetCellFormatSummary;
+  | CoreClientGetCellFormatSummary
+  | CoreClientSummarizeSelection;

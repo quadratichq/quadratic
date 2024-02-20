@@ -12,7 +12,7 @@ import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
 } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import { ClientCoreLoad, GridMetadata } from '../coreClientMessages';
+import { ClientCoreLoad, ClientCoreSummarizeSelection, GridMetadata } from '../coreClientMessages';
 import { GridRenderMetadata } from '../coreRenderMessages';
 import { coreClient } from './coreClient';
 import { coreMultiplayer } from './coreMultiplayer';
@@ -197,6 +197,23 @@ class Core {
     // } else {
     //   this.state = 'connected';
     // }
+  }
+
+  summarizeSelection(
+    message: ClientCoreSummarizeSelection
+  ): { count: number; sum: number | undefined; average: number | undefined } | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const rect = pointsToRect(message.x, message.y, message.width, message.height);
+    const summary = this.gridController.summarizeSelection(message.sheetId, rect, BigInt(message.decimalPlaces));
+    if (summary) {
+      const result = {
+        count: Number(summary.count),
+        sum: summary.sum,
+        average: summary.average,
+      };
+      summary.free();
+      return result;
+    }
   }
 }
 

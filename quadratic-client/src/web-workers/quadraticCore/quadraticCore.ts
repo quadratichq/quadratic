@@ -6,6 +6,7 @@
 
 import { metadata } from '@/grid/controller/metadata';
 import { CellFormatSummary, JsCodeCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
+import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,
@@ -16,6 +17,7 @@ import {
   ClientCoreGetRenderCodeCells,
   ClientCoreLoad,
   ClientCoreMessage,
+  ClientCoreSummarizeSelection,
   CoreClientGetAllRenderFills,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
@@ -23,6 +25,7 @@ import {
   CoreClientGetRenderCodeCells,
   CoreClientLoad,
   CoreClientMessage,
+  CoreClientSummarizeSelection,
 } from './coreClientMessages';
 
 class QuadraticCore {
@@ -197,6 +200,30 @@ class QuadraticCore {
 
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
+  }
+
+  summarizeSelection(
+    decimalPlaces: number,
+    sheetId: string,
+    rectangle: Rectangle
+  ): Promise<{ count: number; sum: number | undefined; average: number | undefined } | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreSummarizeSelection = {
+        type: 'clientCoreSummarizeSelection',
+        id,
+        sheetId,
+        decimalPlaces,
+        x: rectangle.x,
+        y: rectangle.y,
+        width: rectangle.width,
+        height: rectangle.height,
+      };
+      this.waitingForResponse[id] = (message: CoreClientSummarizeSelection) => {
+        resolve(message.summary);
+      };
+      this.send(message);
+    });
   }
 }
 
