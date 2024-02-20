@@ -8,6 +8,7 @@
 
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/debugFlags';
 import { Sheet } from '@/grid/sheet/Sheet';
+import { intersects } from '@/gridGL/helpers/intersects';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
@@ -87,15 +88,15 @@ export class CellsLabels extends Container {
       this.cellsTextDebug.clear();
     }
     this.cellsTextHashes.children.forEach((cellsTextHash) => {
-      // if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
-      cellsTextHash.show();
-      if (debugShowCellsHashBoxes) {
-        cellsTextHash.drawDebugBox(this.cellsTextDebug);
+      if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
+        cellsTextHash.show();
+        if (debugShowCellsHashBoxes) {
+          cellsTextHash.drawDebugBox(this.cellsTextDebug);
+        }
+        count++;
+      } else {
+        cellsTextHash.hide();
       }
-      count++;
-      //   } else {
-      //     cellsTextHash.hide();
-      //   }
     });
     if (debugShowCellsSheetCulling) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
