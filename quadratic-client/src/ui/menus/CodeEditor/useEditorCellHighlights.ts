@@ -1,7 +1,7 @@
 import { parsePython } from '@/helpers/parseEditorPythonCell';
 import { CodeCellLanguage } from '@/quadratic-core/types';
-import monaco from 'monaco-editor';
-import { useEffect } from 'react';
+import monaco, { editor } from 'monaco-editor';
+import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -45,6 +45,7 @@ export const useEditorCellHighlights = (
   language?: CodeCellLanguage
 ) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  let decorations = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
 
   // Dynamically generate the classnames we'll use for cell references by pulling
   // the colors from the same colors used in pixi and stick them in the DOM
@@ -74,8 +75,9 @@ export const useEditorCellHighlights = (
 
     if (!model) return;
 
-    let oldDecorations: string[] = [];
     const onChangeModel = async () => {
+      if (decorations) decorations.current?.clear();
+
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
       const cellsMatches: CellMatch = new Map();
@@ -122,16 +124,17 @@ export const useEditorCellHighlights = (
               inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
             },
           });
+
           cellsMatches.set(cellId, range);
+
           const editorCursorPosition = editor.getPosition();
+
           if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
             pixiApp.highlightedCells.setHighlightedCell(index);
           }
         });
 
-        // todo: this should use editor.createDecorationCollection() instead
-        const decorationsIds = editor.deltaDecorations(oldDecorations, newDecorations);
-        oldDecorations = decorationsIds;
+        decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
       }
     };
 
