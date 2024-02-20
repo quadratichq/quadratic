@@ -27,17 +27,14 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const {
     user: { id: userMakingRequestId },
   } = req as RequestWithUser;
-  const {
-    team: { id: teamId, name, picture },
-    userMakingRequest,
-  } = await getTeam({ uuid, userId: userMakingRequestId });
+  const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
-  await updateBillingIfNecessary(teamId);
+  await updateBillingIfNecessary(team);
 
   // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({
     where: {
-      id: teamId,
+      id: team.id,
     },
     include: {
       UserTeamRole: {
@@ -55,7 +52,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       },
       File: {
         where: {
-          ownerTeamId: teamId,
+          ownerTeamId: team.id,
           deleted: false,
         },
         include: {
@@ -94,10 +91,10 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
 
   const response = {
     team: {
-      id: teamId,
+      id: team.id,
       uuid,
-      name,
-      ...(picture ? { picture } : {}),
+      name: team.name,
+      ...(team.picture ? { picture: team.picture } : {}),
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

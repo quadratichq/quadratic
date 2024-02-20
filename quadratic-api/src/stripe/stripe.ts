@@ -1,4 +1,4 @@
-import { SubscriptionStatus } from '@prisma/client';
+import { SubscriptionStatus, Team } from '@prisma/client';
 import Stripe from 'stripe';
 import dbClient from '../dbClient';
 
@@ -77,7 +77,7 @@ export const updateCustomer = async (customerId: string, name: string) => {
   });
 };
 
-export const createBillingPortalSession = async (teamUuid: string) => {
+export const createBillingPortalSession = async (teamUuid: string, returnUrlBase: string) => {
   const team = await dbClient.team.findUnique({
     where: {
       uuid: teamUuid,
@@ -90,12 +90,11 @@ export const createBillingPortalSession = async (teamUuid: string) => {
 
   return stripe.billingPortal.sessions.create({
     customer: team?.stripeCustomerId,
-    // TODO: change this to the actual frontend URL
-    return_url: `http://localhost:3000/teams/${teamUuid}`,
+    return_url: `${returnUrlBase}/teams/${teamUuid}`,
   });
 };
 
-export const createCheckoutSession = async (teamUuid: string, priceId: string) => {
+export const createCheckoutSession = async (teamUuid: string, priceId: string, returnUrlBase: string) => {
   const team = await dbClient.team.findUnique({
     where: {
       uuid: teamUuid,
@@ -115,8 +114,8 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string) =
       },
     ],
     mode: 'subscription',
-    success_url: `http://localhost:3000/teams/${teamUuid}`,
-    cancel_url: `http://localhost:3000/teams/${teamUuid}`,
+    success_url: `${returnUrlBase}/teams/${teamUuid}`,
+    cancel_url: `${returnUrlBase}/teams/${teamUuid}`,
   });
 };
 
@@ -192,20 +191,8 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
   updateTeamStatus(stripeSubscriptionId, status, customer, new Date(event.current_period_end * 1000));
 };
 
-export const updateBillingIfNecessary = async (teamId: number) => {
+export const updateBillingIfNecessary = async (team: Team) => {
   console.log('updateBillingIfNecessary');
-
-  const team = await dbClient.team.findUnique({
-    where: {
-      id: teamId,
-    },
-  });
-
-  // All teams should have a stripe customer, so this should not happen
-  if (!team?.stripeCustomerId) {
-    console.error('Unexpected Error: Team does not have a stripe customer.');
-    return;
-  }
 
   // if not updated in the last 24 hours, update the customer
   if (
@@ -238,7 +225,7 @@ export const updateBillingIfNecessary = async (teamId: number) => {
   } else if (customer.subscriptions && customer.subscriptions.data.length === 0) {
     // if we have zero subscriptions, update the team
     await dbClient.team.update({
-      where: { id: teamId },
+      where: { id: team.id },
       data: {
         stripeSubscriptionId: null,
         stripeSubscriptionStatus: null,

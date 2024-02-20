@@ -370,31 +370,70 @@ const TeamBillingIssue = (props: {
     return null;
   }
 
-  // Otherwise, show the billing issue overlay.
-  let heading = 'Team Billing Issue';
-  let description = '';
-  let buttonLabel = 'Fix payment';
-  if (billingStatus === 'CANCELED') {
-    description = 'Your Team’s subscription has been canceled. Please resubscribe.';
-    buttonLabel = 'Resubscribe';
-  } else if (billingStatus === 'INCOMPLETE' || billingStatus === 'INCOMPLETE_EXPIRED') {
-    description = 'Your Team’s subscription is incomplete. Please update your payment method to reactivate.';
-  } else if (billingStatus === 'PAST_DUE') {
-    description = 'Your Team’s subscription is past due. Please update your payment method to reactivate.';
-  } else if (billingStatus === 'UNPAID') {
-    description = 'Your Team’s subscription is unpaid. Please update your payment method to reactivate.';
-  } else if (billingStatus === 'PAUSED') {
-    description = 'Your Team’s subscription is paused. Please update your payment method to reactivate.';
-  } else if (billingStatus === undefined) {
-    // If the billing status is undefined, the user never subscribed.
-    heading = 'Subscribe to Teams';
-    description = 'You must have an active subscription to access Quadratic Teams. Subscribe to continue.';
-    buttonLabel = 'Continue';
-  }
+  const buttonActionGoToBillingPortal = () => {
+    apiClient.teams.billing.getPortalSessionUrl(teamUuid).then((data) => {
+      window.location.href = data.url;
+    });
+  };
 
-  if (!canEditBilling) {
-    description = 'Your Team’s subscription is inactive. Please contact the Team owner to reactivate.';
-  }
+  const buttonActionResubscribe = () => {
+    apiClient.teams.billing.getCheckoutSessionUrl(teamUuid).then((data) => {
+      window.location.href = data.url;
+    });
+  };
+
+  // Otherwise, show the billing issue overlay.
+  let headingDefault = 'Team Billing Issue';
+
+  const statusOptions = {
+    CANCELED: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription has been canceled. Please resubscribe.',
+      buttonLabel: 'Resubscribe',
+      buttonAction: buttonActionResubscribe,
+    },
+    INCOMPLETE: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is incomplete. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    INCOMPLETE_EXPIRED: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is incomplete. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionResubscribe,
+    },
+    PAST_DUE: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is past due. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    UNPAID: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is unpaid. Please pay to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionResubscribe,
+    },
+    PAUSED: {
+      heading: headingDefault,
+      description: 'Your Team’s subscription is paused. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    undefined: {
+      heading: 'Subscribe to Teams',
+      description: 'You must have an active subscription to access Quadratic Teams. Subscribe to continue.',
+      buttonLabel: 'Continue',
+      buttonAction: buttonActionResubscribe,
+    },
+  };
+
+  let heading = statusOptions[billingStatus ?? 'undefined'].heading;
+  let description = statusOptions[billingStatus ?? 'undefined'].description;
+  let buttonLabel = statusOptions[billingStatus ?? 'undefined'].buttonLabel;
+  let buttonAction = statusOptions[billingStatus ?? 'undefined'].buttonAction;
 
   return (
     <div
@@ -404,7 +443,7 @@ const TeamBillingIssue = (props: {
         left: 0,
         width: '100%',
         height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent black overlay
+        backgroundColor: 'rgba(0, 0, 0, 0.25)', // Semi-transparent black overlay
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
@@ -415,7 +454,11 @@ const TeamBillingIssue = (props: {
       <div className="rounded bg-white p-4">
         <Empty
           title={heading}
-          description={description}
+          description={
+            canEditBilling
+              ? description
+              : 'Your Team’s subscription is inactive. Please contact the Team owner to reactivate.'
+          }
           Icon={ExclamationTriangleIcon}
           actions={
             <div className={`flex justify-center gap-2`}>
@@ -425,28 +468,7 @@ const TeamBillingIssue = (props: {
                 </a>
               </Button>
               {canEditBilling && (
-                <Button
-                  variant="default"
-                  onClick={() => {
-                    if (
-                      // If the billing status is undefined, the user never subscribed.
-                      billingStatus === undefined ||
-                      // If the billing status is incomplete and expired, the user must resubscribe.
-                      billingStatus === 'INCOMPLETE_EXPIRED' ||
-                      // If the billing status is canceled or unpaid, the user must resubscribe.
-                      billingStatus === 'CANCELED' ||
-                      billingStatus === 'UNPAID'
-                    ) {
-                      apiClient.teams.billing.getCheckoutSessionUrl(teamUuid).then((data) => {
-                        window.open(data.url);
-                      });
-                    } else {
-                      apiClient.teams.billing.getPortalSessionUrl(teamUuid).then((data) => {
-                        window.open(data.url, '_blank');
-                      });
-                    }
-                  }}
-                >
+                <Button variant="default" onClick={buttonAction}>
                   <span>{buttonLabel}</span>
                 </Button>
               )}

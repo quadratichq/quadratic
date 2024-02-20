@@ -37,7 +37,7 @@ async function handler(req: Request, res: Response) {
 
   const monthlyPriceId = await getMonthlyPriceId();
 
-  const session = await createCheckoutSession(uuid, monthlyPriceId);
+  const session = await createCheckoutSession(uuid, monthlyPriceId, req.headers.origin || 'http://localhost:3000');
 
   if (!session.url) {
     return res.status(500).json({ error: { message: 'Failed to create checkout session' } });

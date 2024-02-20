@@ -35,7 +35,7 @@ async function handler(req: Request, res: Response) {
       .json({ error: { message: 'User does not have permission to access billing for this team.' } });
   }
 
-  const session = await createBillingPortalSession(uuid);
+  const session = await createBillingPortalSession(uuid, req.headers.origin || 'http://localhost:3000');
   const data: ApiTypes['/v0/teams/:uuid/billing/portal/session.POST.response'] = { url: session.url };
   return res.status(200).json(data);
 }
