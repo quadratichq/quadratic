@@ -106,4 +106,20 @@ Concord,NH,United States,42605
         print!("{}", &result.unwrap().operations.unwrap().len());
         // assert!(result.is_ok())
     }
+
+    #[test]
+    fn import_problematic_line() {
+        let mut gc = GridController::test();
+        let csv = "980E92207901934";
+        let ops = gc
+            .import_csv_operations(
+                gc.grid.sheets()[0].id,
+                csv.as_bytes(),
+                "bad line",
+                Pos { x: 0, y: 0 },
+            )
+            .unwrap();
+        let op = &ops[0];
+        serde_json::to_string(op).unwrap();
+    }
 }

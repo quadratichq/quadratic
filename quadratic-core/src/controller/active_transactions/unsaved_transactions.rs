@@ -72,7 +72,6 @@ impl UnsavedTransactions {
                 self.transactions.push(transaction);
             }
             Some((_, unsaved_transaction)) => {
-                dbgjs!("SOME");
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
                 if !cfg!(test) && !cfg!(feature = "multiplayer") && send {
