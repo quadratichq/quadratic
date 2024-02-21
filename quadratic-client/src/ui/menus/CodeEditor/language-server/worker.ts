@@ -56,17 +56,19 @@ const pyright = (uri: string): LanguageServerClient | undefined => {
   // start listenen for messages
   connection.listen();
 
-  const client = new LanguageServerClient(connection, 'file:///src');
+  const client = new LanguageServerClient(connection, '');
 
   connection.onUnhandledNotification(
-    (params: any) => params.message && console.log('[Pyright WebWorker]', params.message)
+    (params: any) => params.message && console.log('[Pyright WebWorker] Unhandled: ', params.message)
   );
+  
   connection.onNotification(LogMessageNotification.type, (params) =>
-    console.log('[Pyright WebWorker]', params.message)
+    console.log('[Pyright WebWorker] Log: ', params.message)
   );
+  
   connection.onRequest(RegistrationRequest.type, () => {});
 
-  client.initialize().then(() => console.log('[Pyright WebWorker] initialized'));
+  client.initialize().then(() => console.log('[Pyright WebWorker] Initialized'));
 
   return client;
 };

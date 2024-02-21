@@ -80,6 +80,7 @@ export class LanguageServerClient extends EventEmitter {
         this.emit('diagnostics', params);
       });
 
+      console.log("*** starting to initialize");
       const initializeParams: InitializeParams = {
         locale: 'en',
         capabilities: {
@@ -135,6 +136,10 @@ export class LanguageServerClient extends EventEmitter {
           },
         ],
       };
+
+      console.log('*** initializeParams', initializeParams.initializationOptions.files);
+
+      
 
       const { capabilities } = await this.connection.sendRequest(
         InitializeRequest.type,
