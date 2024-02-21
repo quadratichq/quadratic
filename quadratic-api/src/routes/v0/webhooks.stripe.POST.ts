@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { STRIPE_WEBHOOK_SECRET, handleSubscriptionWebhookEvent, stripe } from '../../stripe/stripe';
+import { STRIPE_WEBHOOK_SECRET } from '../../env-vars';
+import { handleSubscriptionWebhookEvent, stripe } from '../../stripe/stripe';
 
 export default [handler];
 
