@@ -7,6 +7,14 @@ export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   typescript: true,
 });
 
+const getTeamSeatQuantity = async (teamId: number) => {
+  return dbClient.userTeamRole.count({
+    where: {
+      teamId,
+    },
+  });
+};
+
 export const updateSeatQuantity = async (teamId: number) => {
   const team = await dbClient.team.findUnique({
     where: {
@@ -18,11 +26,7 @@ export const updateSeatQuantity = async (teamId: number) => {
   }
 
   // Get the number of users on the team
-  const numUsersOnTeam = await dbClient.userTeamRole.count({
-    where: {
-      teamId,
-    },
-  });
+  const numUsersOnTeam = await getTeamSeatQuantity(teamId);
 
   // Get the subscription item id
   const subscription = await stripe.subscriptions.retrieve(team.stripeSubscriptionId);
@@ -38,18 +42,6 @@ export const updateSeatQuantity = async (teamId: number) => {
       {
         id: subscriptionItems[0].id,
         quantity: numUsersOnTeam,
-      },
-    ],
-  });
-};
-
-export const createSubscription = async (customerId: string, priceId: string, quantity: number) => {
-  return stripe.subscriptions.create({
-    customer: customerId,
-    items: [
-      {
-        price: priceId,
-        quantity,
       },
     ],
   });
@@ -96,12 +88,15 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     throw new Error('Team does not have a stripe customer. Cannot create checkout session.');
   }
 
+  // get the number of users on the team
+  const numUsersOnTeam = await getTeamSeatQuantity(team.id);
+
   return stripe.checkout.sessions.create({
     customer: team?.stripeCustomerId,
     line_items: [
       {
         price: priceId,
-        quantity: 1,
+        quantity: numUsersOnTeam,
       },
     ],
     mode: 'subscription',
@@ -183,15 +178,13 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
 };
 
 export const updateBillingIfNecessary = async (team: Team) => {
-  console.log('updateBillingIfNecessary');
-
   // if not updated in the last 24 hours, update the customer
-  if (
-    team.stripeSubscriptionLastUpdated &&
-    Date.now() - team.stripeSubscriptionLastUpdated.getTime() < 24 * 60 * 60 * 1000
-  ) {
-    return;
-  }
+  //   if (
+  //     team.stripeSubscriptionLastUpdated &&
+  //     Date.now() - team.stripeSubscriptionLastUpdated.getTime() < 24 * 60 * 60 * 1000
+  //   ) {
+  //     return;
+  //   }
 
   // retrieve the customer
   const customer = await stripe.customers.retrieve(team.stripeCustomerId, {
