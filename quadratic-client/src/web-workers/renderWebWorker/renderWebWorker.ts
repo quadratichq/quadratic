@@ -31,12 +31,16 @@ class RenderWebWorker {
       return;
     }
     switch (e.data.type) {
-      case 'cellsTextHashClear':
+      case 'renderClientCellsTextHashClear':
         pixiApp.cellsSheets.cellsTextHashClear(e.data);
         break;
 
-      case 'labelMeshEntry':
+      case 'renderClientLabelMeshEntry':
         pixiApp.cellsSheets.labelMeshEntry(e.data);
+        break;
+
+      case 'renderClientFirstRenderComplete':
+        pixiApp.firstRenderComplete();
         break;
 
       default:

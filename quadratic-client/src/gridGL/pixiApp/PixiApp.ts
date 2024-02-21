@@ -34,6 +34,7 @@ const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update!: Update;
+  private waitingForFirstRender?: Function;
 
   highlightedCells = new HighlightedCells();
   canvas!: HTMLCanvasElement;
@@ -68,7 +69,20 @@ export class PixiApp {
       // keep a reference of app on window, used for Playwright tests
       //@ts-expect-error
       window.pixiapp = this;
+      this.waitingForFirstRender = resolve;
     });
+  }
+
+  // called after RenderText has no more updates to send
+  firstRenderComplete() {
+    if (this.waitingForFirstRender) {
+      // perform a render to warm up the GPU
+      this.cellsSheets.showAll(sheets.sheet.id);
+      pixiApp.renderer.render(pixiApp.stage);
+
+      this.waitingForFirstRender();
+      this.waitingForFirstRender = undefined;
+    }
   }
 
   private initCanvas() {

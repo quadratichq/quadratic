@@ -8,7 +8,7 @@ export interface ClientRenderInit {
 
 // also includes sending the data as transferable ArrayBuffers
 export interface RenderClientLabelMeshEntry {
-  type: 'labelMeshEntry';
+  type: 'renderClientLabelMeshEntry';
   sheetId: string;
   hashX: number;
   hashY: number;
@@ -23,7 +23,7 @@ export interface RenderClientLabelMeshEntry {
 }
 
 export interface RenderClientCellsTextHashClear {
-  type: 'cellsTextHashClear';
+  type: 'renderClientCellsTextHashClear';
   sheetId: string;
   hashX: number;
   hashY: number;
@@ -36,5 +36,13 @@ export interface ClientRenderViewport {
   bounds: Rectangle;
 }
 
-export type RenderClientMessage = RenderClientLabelMeshEntry | RenderClientCellsTextHashClear;
+export interface RenderClientFirstRenderComplete {
+  type: 'renderClientFirstRenderComplete';
+}
+
+export type RenderClientMessage =
+  | RenderClientLabelMeshEntry
+  | RenderClientCellsTextHashClear
+  | RenderClientFirstRenderComplete;
+
 export type ClientRenderMessage = ClientRenderInit | ClientRenderViewport;

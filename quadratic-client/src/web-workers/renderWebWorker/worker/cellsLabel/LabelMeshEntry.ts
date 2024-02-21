@@ -51,7 +51,7 @@ export class LabelMeshEntry {
       throw new Error('Expected LabelMeshEntries.finalize to have buffers');
     }
     const message: RenderClientLabelMeshEntry = {
-      type: 'labelMeshEntry',
+      type: 'renderClientLabelMeshEntry',
       sheetId: this.labelMesh.sheetId,
       hashX: this.labelMesh.hashX,
       hashY: this.labelMesh.hashY,

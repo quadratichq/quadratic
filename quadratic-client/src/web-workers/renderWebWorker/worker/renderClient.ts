@@ -10,6 +10,7 @@ import {
   ClientRenderMessage,
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
+  RenderClientMessage,
 } from '../renderClientMessages';
 import { renderCore } from './renderCore';
 import { renderText } from './renderText';
@@ -40,21 +41,29 @@ class RenderClient {
     }
   };
 
+  private send(message: RenderClientMessage) {
+    self.postMessage(message);
+  }
+
   // sends a message to the main thread to clear the cellsTextHash for the hashX, hashY
   sendCellsTextHashClear(sheetId: string, hashX: number, hashY: number, viewBounds: Bounds) {
     const message: RenderClientCellsTextHashClear = {
-      type: 'cellsTextHashClear',
+      type: 'renderClientCellsTextHashClear',
       sheetId,
       hashX,
       hashY,
       bounds: viewBounds.toRectangle(),
     };
-    self.postMessage(message);
+    this.send(message);
   }
 
   // sends a rendered LabelMeshEntry to the main thread for rendering
   sendLabelMeshEntry(message: RenderClientLabelMeshEntry, data: ArrayBuffer[]) {
     self.postMessage(message, data);
+  }
+
+  firstRenderComplete() {
+    this.send({ type: 'renderClientFirstRenderComplete' });
   }
 }
 

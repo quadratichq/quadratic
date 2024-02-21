@@ -116,6 +116,11 @@ export class CellsLabels extends Container {
     }
   }
 
+  // used to render all cellsTextHashes to warm up the GPU
+  showAll() {
+    this.cellsTextHashes.children.forEach((cellsTextHash) => cellsTextHash.show());
+  }
+
   // private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
   //   const key = `${hashX},${hashY}`;
   //   const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));

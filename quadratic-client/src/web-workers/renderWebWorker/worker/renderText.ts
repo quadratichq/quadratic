@@ -12,6 +12,7 @@ import { GridRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessag
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
 import { CellsLabels } from './cellsLabel/CellsLabels';
+import { renderClient } from './renderClient';
 
 // We need Rust, Client, and Core to be initialized before we can start rendering
 interface RenderTextStatus {
@@ -21,6 +22,7 @@ interface RenderTextStatus {
 }
 
 class RenderText {
+  private complete = false;
   private status: RenderTextStatus = {
     rust: false,
     client: false,
@@ -73,13 +75,19 @@ class RenderText {
     } else {
       sheetIds = Array.from(this.cellsLabels.keys());
     }
+    let complete = true;
     for (const sheetId of sheetIds) {
       const cellsLabel = this.cellsLabels.get(sheetId);
       if (await cellsLabel?.update()) {
+        complete = false;
         break;
       }
     }
 
+    if (complete && !this.complete) {
+      this.complete = true;
+      renderClient.firstRenderComplete();
+    }
     // defer to the event loop before rendering the next hash
     setTimeout(this.update);
   };
