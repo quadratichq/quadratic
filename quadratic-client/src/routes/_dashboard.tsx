@@ -129,7 +129,7 @@ function Navbar() {
         <div className="grid gap-0.5">
           <SidebarNavLink to={ROUTES.FILES} dropTarget={{ type: 'user', id: ownerUserId }}>
             <FileIcon className={classNameIcons} />
-            Mine
+            My files
           </SidebarNavLink>
           <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
             <Share2Icon className={classNameIcons} />
