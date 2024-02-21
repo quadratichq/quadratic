@@ -170,45 +170,49 @@ export const Component = () => {
   const showShareDialog = shareSearchParamValue !== null;
   const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
 
+  const teamHasBillingIssue = !(billing.status === 'ACTIVE' || billing.status === 'TRIALING');
+
   return (
     <>
       <TeamBillingIssue billingStatus={billing.status} teamUuid={team.uuid} canEditBilling={canEditBilling} />
-      <DashboardHeader
-        title={name}
-        titleStart={<AvatarTeam src={team.picture} className="mr-3 h-9 w-9" />}
-        titleEnd={
-          canEdit ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon-sm" className="ml-1 rounded-full">
-                  <CaretDownIcon />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <label>
-                    Change logo
-                    <TeamLogoInput
-                      onChange={(url: string) => {
-                        handleClose();
-                      }}
-                    />
-                  </label>
-                </DropdownMenuItem>
-                {teamPermissions.includes('TEAM_BILLING_EDIT') && (
-                  <DropdownMenuItem
-                    onClick={() => {
-                      // Get the billing session URL
-                      apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-                        window.location.href = data.url;
-                      });
-                    }}
-                  >
-                    Update billing
+
+      <div {...(teamHasBillingIssue ? { inert: 'inert' } : {})}>
+        <DashboardHeader
+          title={name}
+          titleStart={<AvatarTeam src={team.picture} className="mr-3 h-9 w-9" />}
+          titleEnd={
+            canEdit ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon-sm" className="ml-1 rounded-full">
+                    <CaretDownIcon />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <label>
+                      Change logo
+                      <TeamLogoInput
+                        onChange={(url: string) => {
+                          handleClose();
+                        }}
+                      />
+                    </label>
                   </DropdownMenuItem>
-                )}
-                {/* {teamPermissions.includes('TEAM_DELETE') && [
+                  {teamPermissions.includes('TEAM_BILLING_EDIT') && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // Get the billing session URL
+                        apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                          window.location.href = data.url;
+                        });
+                      }}
+                    >
+                      Update billing
+                    </DropdownMenuItem>
+                  )}
+                  {/* {teamPermissions.includes('TEAM_DELETE') && [
                   <DropdownMenuSeparator key={1} />,
                   <DropdownMenuItem
                     key={2}
@@ -219,91 +223,92 @@ export const Component = () => {
                     Delete
                   </DropdownMenuItem>,
                 ]} */}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null
-        }
-        actions={
-          <div className={`flex items-center gap-2`}>
-            <div className="hidden lg:block">
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null
+          }
+          actions={
+            <div className={`flex items-center gap-2`}>
+              <div className="hidden lg:block">
+                <Button
+                  asChild
+                  variant={null}
+                  onClick={() => {
+                    setShareSearchParamValue('');
+                  }}
+                >
+                  <AvatarGroup
+                    max={4}
+                    sx={{ cursor: 'pointer', pr: 0 }}
+                    slotProps={{ additionalAvatar: { sx: avatarSxProps } }}
+                  >
+                    {users.map((user, key) => (
+                      <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
+                    ))}
+                  </AvatarGroup>
+                </Button>
+              </div>
               <Button
-                asChild
-                variant={null}
+                variant="outline"
                 onClick={() => {
                   setShareSearchParamValue('');
                 }}
               >
-                <AvatarGroup
-                  max={4}
-                  sx={{ cursor: 'pointer', pr: 0 }}
-                  slotProps={{ additionalAvatar: { sx: avatarSxProps } }}
-                >
-                  {users.map((user, key) => (
-                    <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
-                  ))}
-                </AvatarGroup>
+                Members
               </Button>
+              {canEdit && <CreateFileButton />}
             </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShareSearchParamValue('');
-              }}
-            >
-              Members
-            </Button>
-            {canEdit && <CreateFileButton />}
-          </div>
-        }
-      />
-
-      <FilesList
-        files={files.map((data) => ({ ...data.file, permissions: data.userMakingRequest.filePermissions }))}
-        emptyState={
-          <Empty
-            title="No team files"
-            description={`Files created by${canEdit ? ' you or ' : ' '}team members will show up here.`}
-            actions={
-              canEdit ? (
-                <Button asChild variant="secondary">
-                  <Link to={ROUTES.CREATE_FILE_IN_TEAM(team.uuid)}>Create file</Link>
-                </Button>
-              ) : null
-            }
-            Icon={FileIcon}
-          />
-        }
-      />
-
-      {isRenaming && (
-        <DialogRenameItem
-          itemLabel="Team"
-          onClose={() => {
-            setIsRenaming(false);
-          }}
-          value={name}
-          onSave={(name: string) => {
-            setIsRenaming(false);
-            const data: TeamAction['request.update-team'] = { intent: 'update-team', name };
-            fetcher.submit(data, { method: 'POST', encType: 'application/json' });
-          }}
+          }
         />
-      )}
-      {showShareDialog && <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
-      {showDeleteDialog && (
-        <QDialogConfirmDelete
-          entityName={name}
-          entityNoun="team"
-          onClose={() => {
-            setShowDeleteDialog(false);
-          }}
-          onDelete={() => {
-            /* TODO */
-          }}
-        >
-          Deleting this team will delete all associated data (such as files) for all users and billing will cease.
-        </QDialogConfirmDelete>
-      )}
+
+        <FilesList
+          files={files.map((data) => ({ ...data.file, permissions: data.userMakingRequest.filePermissions }))}
+          emptyState={
+            <Empty
+              title="No team files"
+              description={`Files created by${canEdit ? ' you or ' : ' '}team members will show up here.`}
+              actions={
+                canEdit ? (
+                  <Button asChild variant="secondary">
+                    <Link to={ROUTES.CREATE_FILE_IN_TEAM(team.uuid)}>Create file</Link>
+                  </Button>
+                ) : null
+              }
+              Icon={FileIcon}
+            />
+          }
+        />
+
+        {isRenaming && (
+          <DialogRenameItem
+            itemLabel="Team"
+            onClose={() => {
+              setIsRenaming(false);
+            }}
+            value={name}
+            onSave={(name: string) => {
+              setIsRenaming(false);
+              const data: TeamAction['request.update-team'] = { intent: 'update-team', name };
+              fetcher.submit(data, { method: 'POST', encType: 'application/json' });
+            }}
+          />
+        )}
+        {showShareDialog && <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
+        {showDeleteDialog && (
+          <QDialogConfirmDelete
+            entityName={name}
+            entityNoun="team"
+            onClose={() => {
+              setShowDeleteDialog(false);
+            }}
+            onDelete={() => {
+              /* TODO */
+            }}
+          >
+            Deleting this team will delete all associated data (such as files) for all users and billing will cease.
+          </QDialogConfirmDelete>
+        )}
+      </div>
     </>
   );
 };
@@ -437,7 +442,7 @@ const TeamBillingIssue = (props: {
     undefined: {
       heading: 'Subscribe to Teams',
       description: 'You must have an active subscription to access Quadratic Teams. Subscribe to continue.',
-      buttonLabel: 'Continue',
+      buttonLabel: 'Subscribe',
       buttonAction: buttonActionResubscribe,
     },
   };
@@ -448,22 +453,8 @@ const TeamBillingIssue = (props: {
   let buttonAction = statusOptions[billingStatus ?? 'undefined'].buttonAction;
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        backgroundColor: 'rgba(0, 0, 0, 0.25)', // Semi-transparent black overlay
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 9999, // Ensure it's above other content
-        backdropFilter: 'blur(5px)', // Apply blur effect to background
-      }}
-    >
-      <div className="rounded bg-white p-4">
+    <div className="absolute left-0 top-0 z-40 flex h-full w-full items-center justify-center    shadow-md backdrop-blur-sm">
+      <div className="rounded border border-border bg-background px-4 shadow-xl">
         <Empty
           title={heading}
           description={

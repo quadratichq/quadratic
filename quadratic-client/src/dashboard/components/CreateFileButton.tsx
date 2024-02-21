@@ -57,7 +57,7 @@ export default function CreateFileButton() {
             <CaretDownIcon />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent align="end">
           <DropdownMenuItem
             asChild
             onSelect={(e) => {
@@ -67,7 +67,7 @@ export default function CreateFileButton() {
             }}
           >
             <label className="cursor-pointer">
-              Import file
+              Import <span className="mx-1 font-mono">.grid</span> file
               <input
                 type="file"
                 name="content"
