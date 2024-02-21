@@ -60,7 +60,7 @@ export const TeamSchema = z.object({
     .string()
     .min(1, { message: 'Must be at least 1 character.' })
     .max(140, { message: 'Cannot be longer than 140 characters.' }),
-  picture: z.string().url().optional(),
+  // picture: z.string().url().optional(),
   // TODO billing
 });
 

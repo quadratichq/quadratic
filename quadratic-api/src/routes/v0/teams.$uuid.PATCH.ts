@@ -35,10 +35,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     throw new ApiError(403, 'User does not have permission to edit this team.');
   }
 
-  // TODO: what if it's the team avatar?
-
-  // TODO: what if it's billing info?
-
   // Update the team name
   const newTeam = await dbClient.team.update({
     where: {

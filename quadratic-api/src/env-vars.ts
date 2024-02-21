@@ -44,6 +44,8 @@ if (NODE_ENV === 'production') {
 }
 
 function ensureEnvVarExists(key: string) {
+  if (NODE_ENV === 'test') return;
+
   if (!process.env[key]) {
     throw new Error(`Missing required environment variable: ${key}`);
   }
