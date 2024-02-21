@@ -173,7 +173,10 @@ export const Component = () => {
 
   return (
     <>
-      <div {...(teamHasBillingIssue ? { inert: 'inert' } : {})} className={`opacity-30 blur-sm`}>
+      <div
+        {...(teamHasBillingIssue ? { inert: 'inert' } : {})}
+        className={`${teamHasBillingIssue ? 'opacity-30 blur-sm' : ''}`}
+      >
         <DashboardHeader
           title={name}
           titleStart={<AvatarTeam className="mr-3 h-9 w-9" />}
