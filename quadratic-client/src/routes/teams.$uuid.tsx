@@ -428,7 +428,7 @@ const TeamBillingIssue = (props: {
       buttonAction: buttonActionGoToBillingPortal,
     },
     undefined: {
-      heading: 'Subscrition requried',
+      heading: 'Subscription requried',
       description: 'You must have an active subscription to access this team.',
       buttonLabel: 'Subscribe',
       buttonAction: buttonActionResubscribe,
