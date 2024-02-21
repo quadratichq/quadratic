@@ -23,7 +23,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams.GET.respo
           uuid: true,
           name: true,
           createdDate: true,
-          picture: true,
         },
       },
       role: true,
@@ -37,12 +36,8 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams.GET.respo
     ],
   });
 
-  const teams = dbTeams.map(({ team: { picture, ...rest }, role }) => ({
-    // Make picture optional when available
-    team: {
-      ...rest,
-      ...(picture ? { picture } : {}),
-    },
+  const teams = dbTeams.map(({ team, role }) => ({
+    team,
     userMakingRequest: {
       teamPermissions: getTeamPermissions(role),
     },

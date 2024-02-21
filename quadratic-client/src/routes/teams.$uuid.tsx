@@ -168,14 +168,14 @@ export const Component = () => {
   const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
   const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
-
-  const teamHasBillingIssue = !(billing.status === 'ACTIVE' || billing.status === 'TRIALING');
+  const billingStatus = billing.status;
+  const hasBillingIssue = !(billingStatus === 'ACTIVE' || billingStatus === 'TRIALING');
 
   return (
     <>
       <div
-        {...(teamHasBillingIssue ? { inert: 'inert' } : {})}
-        className={`${teamHasBillingIssue ? 'opacity-30 blur-sm' : ''}`}
+        {...(hasBillingIssue ? { inert: 'inert' } : {})}
+        className={`${hasBillingIssue ? 'opacity-30 blur-sm' : ''}`}
       >
         <DashboardHeader
           title={name}
@@ -212,17 +212,6 @@ export const Component = () => {
                       Update billing
                     </DropdownMenuItem>
                   )}
-                  {/* {teamPermissions.includes('TEAM_DELETE') && [
-                  <DropdownMenuSeparator key={1} />,
-                  <DropdownMenuItem
-                    key={2}
-                    onClick={() => {
-                      setShowDeleteDialog(true);
-                    }}
-                  >
-                    Delete
-                  </DropdownMenuItem>,
-                ]} */}
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : null
@@ -310,7 +299,9 @@ export const Component = () => {
         )}
       </div>
 
-      <TeamBillingIssue billingStatus={billing.status} teamUuid={team.uuid} canEditBilling={canEditBilling} />
+      {hasBillingIssue && (
+        <TeamBillingIssue billingStatus={billingStatus} teamUuid={team.uuid} canEditBilling={canEditBilling} />
+      )}
     </>
   );
 };
@@ -379,15 +370,10 @@ export const ErrorBoundary = () => {
 
 const TeamBillingIssue = (props: {
   teamUuid: string;
-  billingStatus: TeamSubscriptionStatus | undefined;
+  billingStatus: Exclude<TeamSubscriptionStatus, 'ACTIVE' | 'TRIALING'> | undefined;
   canEditBilling: boolean;
 }) => {
   const { billingStatus, teamUuid, canEditBilling } = props;
-
-  // There is no issue if the billing status is active or trialing.
-  if (billingStatus === 'ACTIVE' || billingStatus === 'TRIALING') {
-    return null;
-  }
 
   const buttonActionGoToBillingPortal = () => {
     apiClient.teams.billing.getPortalSessionUrl(teamUuid).then((data) => {
@@ -456,7 +442,7 @@ const TeamBillingIssue = (props: {
 
   return (
     <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center">
-      <div className="rounded border border-border bg-background px-4 shadow-xl">
+      <div className="rounded border border-border bg-background px-4 shadow-sm">
         <Empty
           title={heading}
           description={

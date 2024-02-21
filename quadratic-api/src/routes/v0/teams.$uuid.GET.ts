@@ -94,7 +94,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       id: team.id,
       uuid,
       name: team.name,
-      ...(team.picture ? { picture: team.picture } : {}),
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

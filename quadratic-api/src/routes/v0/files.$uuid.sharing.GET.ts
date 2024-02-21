@@ -73,7 +73,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
     owner = {
       type: 'team',
       name: dbFile.ownerTeam.name,
-      picture: dbFile.ownerTeam.picture ? dbFile.ownerTeam.picture : undefined,
     };
   } else if (dbFile.ownerUser) {
     const ownerUser = usersById[dbFile.ownerUser.id];

@@ -167,7 +167,7 @@ export const ApiSchemas = {
       BaseUserSchema.extend({
         type: z.literal('user'),
       }),
-      TeamSchema.pick({ name: true, picture: true }).extend({
+      TeamSchema.pick({ name: true }).extend({
         type: z.literal('team'),
       }),
     ]),
@@ -230,7 +230,7 @@ export const ApiSchemas = {
   '/v0/teams.GET.response': z.object({
     teams: z.array(
       z.object({
-        team: TeamSchema.pick({ id: true, uuid: true, name: true, picture: true }),
+        team: TeamSchema.pick({ id: true, uuid: true, name: true }),
         userMakingRequest: z.object({
           teamPermissions: z.array(TeamPermissionSchema),
         }),
@@ -242,9 +242,8 @@ export const ApiSchemas = {
   }),
   '/v0/teams.POST.request': TeamSchema.pick({
     name: true,
-    picture: true,
   }),
-  '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true, picture: true }),
+  '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
     team: TeamSchema,
     userMakingRequest: z.object({
@@ -274,8 +273,8 @@ export const ApiSchemas = {
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
   }),
-  '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true, picture: true }),
-  '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true, picture: true }),
+  '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true }),
+  '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true }),
 
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': TeamUserSchema.pick({ email: true, role: true }).extend({

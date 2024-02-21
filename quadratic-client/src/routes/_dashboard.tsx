@@ -4,6 +4,7 @@ import { AvatarTeam } from '@/components/AvatarTeam';
 import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { Avatar, AvatarFallback } from '@/shadcn/ui/avatar';
@@ -15,7 +16,7 @@ import { CircularProgress } from '@mui/material';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import { ExternalLinkIcon, FileIcon, HamburgerMenuIcon, MixIcon, PlusIcon, Share2Icon } from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { Dispatch, ReactNode, SetStateAction, createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -31,7 +32,17 @@ import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
 import QuadraticLogotype from '../dashboard/components/quadratic-logotype.svg';
 import { useRootRouteLoaderData } from '../router';
 
-const drawerWidth = 264;
+const DRAWER_WIDTH = 264;
+
+type DashboardState = {
+  showCreateTeamDialog: boolean;
+};
+const initialDashboardState: DashboardState = { showCreateTeamDialog: false };
+const DashboardContext = createContext([initialDashboardState, () => {}] as [
+  DashboardState,
+  Dispatch<SetStateAction<DashboardState>>
+]);
+export const useDashboardContext = () => useContext(DashboardContext);
 
 export const loader = async (): Promise<ApiTypes['/v0/teams.GET.response']> => {
   const data = await apiClient.teams.list();
@@ -39,6 +50,7 @@ export const loader = async (): Promise<ApiTypes['/v0/teams.GET.response']> => {
 };
 
 export const Component = () => {
+  const [dashboardState, setDashboardState] = useState<DashboardState>(initialDashboardState);
   const navigation = useNavigation();
   const location = useLocation();
   const isLoading = navigation.state !== 'idle';
@@ -57,45 +69,52 @@ export const Component = () => {
   useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
-    <div className={`h-full lg:flex lg:flex-row`}>
-      <div
-        ref={contentPaneRef}
-        className={cn(
-          `relative order-2 h-full w-full px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
-          isLoading ? 'overflow-hidden' : 'overflow-scroll',
-          isLoading && 'pointer-events-none opacity-25'
-        )}
-      >
+    <DashboardContext.Provider value={[dashboardState, setDashboardState]}>
+      <div className={`h-full lg:flex lg:flex-row`}>
         <div
-          className={`sticky top-0 z-50 -mx-4 flex min-h-14 items-center justify-between border-b border-border bg-background px-4 lg:hidden`}
+          ref={contentPaneRef}
+          className={cn(
+            `relative order-2 h-full w-full px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
+            isLoading ? 'overflow-hidden' : 'overflow-scroll',
+            isLoading && 'pointer-events-none opacity-25'
+          )}
         >
-          <Link to={'/'} className={`flex items-center gap-2`}>
-            <div className={`flex w-5 items-center justify-center`}>
-              <img src={QuadraticLogo} alt="Quadratic logo glyph" />
-            </div>
-            <img src={QuadraticLogotype} alt="Quadratic logotype" />
-          </Link>
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
-                <HamburgerMenuIcon />
-              </Button>
-            </SheetTrigger>
-            <SheetContent className="p-0" style={{ width: drawerWidth }}>
-              {navbar}
-            </SheetContent>
-          </Sheet>
+          <div
+            className={`sticky top-0 z-50 -mx-4 flex min-h-14 items-center justify-between border-b border-border bg-background px-4 lg:hidden`}
+          >
+            <Link to={'/'} className={`flex items-center gap-2`}>
+              <div className={`flex w-5 items-center justify-center`}>
+                <img src={QuadraticLogo} alt="Quadratic logo glyph" />
+              </div>
+              <img src={QuadraticLogotype} alt="Quadratic logotype" />
+            </Link>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
+                  <HamburgerMenuIcon />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="p-0" style={{ width: DRAWER_WIDTH }}>
+                {navbar}
+              </SheetContent>
+            </Sheet>
+          </div>
+          <Outlet />
         </div>
-        <Outlet />
+        <div
+          className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`}
+          style={{ width: DRAWER_WIDTH }}
+        >
+          {navbar}
+        </div>
+        {dashboardState.showCreateTeamDialog && <CreateTeamDialog />}
       </div>
-      <div className={`order-1 hidden flex-shrink-0 border-r border-r-border lg:block`} style={{ width: drawerWidth }}>
-        {navbar}
-      </div>
-    </div>
+    </DashboardContext.Provider>
   );
 };
 
 function Navbar() {
+  const [, setDashboardState] = useDashboardContext();
   const {
     teams,
     userMakingRequest: { id: ownerUserId },
@@ -175,7 +194,13 @@ function Navbar() {
               </SidebarNavLink>
             );
           })}
-          <SidebarNavLink to={ROUTES.CREATE_TEAM}>
+          <SidebarNavLink
+            to="."
+            onClick={(e) => {
+              e.preventDefault();
+              setDashboardState((prev) => ({ ...prev, showCreateTeamDialog: true }));
+            }}
+          >
             <PlusIcon className={classNameIcons} />
             Create
           </SidebarNavLink>
@@ -209,6 +234,7 @@ function SidebarNavLink({
   className,
   dropTarget,
   isLogo,
+  onClick,
   target,
 }: {
   to: string;
@@ -219,6 +245,7 @@ function SidebarNavLink({
     id: number;
   };
   isLogo?: boolean;
+  onClick?: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   target?: string;
 }) {
   const location = useLocation();
@@ -266,17 +293,20 @@ function SidebarNavLink({
       }
     : {};
 
+  const classes = cn(
+    isActive && !isLogo && 'bg-muted',
+    isDraggingOver && 'bg-primary text-primary-foreground',
+    TYPE.body2,
+    `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,
+    className
+  );
+
   return (
     <NavLink
-      {...(target ? { target } : {})}
       to={to}
-      className={cn(
-        isActive && !isLogo && 'bg-muted',
-        isDraggingOver && 'bg-primary text-primary-foreground',
-        TYPE.body2,
-        `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,
-        className
-      )}
+      className={classes}
+      {...(onClick ? { onClick } : {})}
+      {...(target ? { target } : {})}
       {...dropProps}
     >
       {children}

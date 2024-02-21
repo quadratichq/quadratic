@@ -17,7 +17,6 @@ export const ROUTES = {
   CREATE_FILE_IN_TEAM: (teamUuid: string) => `/files/create?team-uuid=${teamUuid}`,
   TEAMS: `/teams`,
   TEAM: (uuid: string) => `/teams/${uuid}`,
-  CREATE_TEAM: '/teams/create',
   EDIT_TEAM: (uuid: string) => `/teams/${uuid}/edit`,
   EXAMPLES: '/examples',
   ACCOUNT: '/account',
