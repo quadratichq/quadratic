@@ -148,7 +148,7 @@ function Navbar() {
           Teams
         </Type>
         <div className="grid gap-0.5">
-          {teams.map(({ team: { id: ownerTeamId, uuid, name, picture }, userMakingRequest: { teamPermissions } }) => {
+          {teams.map(({ team: { id: ownerTeamId, uuid, name }, userMakingRequest: { teamPermissions } }) => {
             // See if this team has an inflight fetcher that's updating team info
             const inFlightFetcher = fetchers.find(
               (fetcher) =>
@@ -162,7 +162,6 @@ function Navbar() {
             if (inFlightFetcher) {
               const data = inFlightFetcher.json as TeamAction['request.update-team'];
               if (data.name) name = data.name;
-              if (data.picture) picture = data.picture;
             }
 
             return (
@@ -171,7 +170,7 @@ function Navbar() {
                 to={ROUTES.TEAM(uuid)}
                 dropTarget={teamPermissions.includes('TEAM_EDIT') ? { type: 'team', id: ownerTeamId } : undefined}
               >
-                <AvatarTeam className={`-my-0.5 h-6 w-6`} src={picture} />
+                <AvatarTeam className={`-my-0.5 h-6 w-6`} />
                 {name}
               </SidebarNavLink>
             );

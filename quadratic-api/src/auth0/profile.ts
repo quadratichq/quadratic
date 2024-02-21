@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/node';
 import { ManagementClient } from 'auth0';
+import { AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_DOMAIN } from '../env-vars';
 
 // Guide to Setting up on Auth0
 // 1. Create an Auth0 Machine to Machine Application
@@ -11,9 +12,9 @@ import { ManagementClient } from 'auth0';
 // https://auth0.com/docs/customize/extensions/account-link-extension
 
 const auth0 = new ManagementClient({
-  domain: process.env.AUTH0_DOMAIN as string,
-  clientId: process.env.AUTH0_CLIENT_ID,
-  clientSecret: process.env.AUTH0_CLIENT_SECRET,
+  domain: AUTH0_DOMAIN,
+  clientId: AUTH0_CLIENT_ID,
+  clientSecret: AUTH0_CLIENT_SECRET,
   scope: 'read:users',
 });
 

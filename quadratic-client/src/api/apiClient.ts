@@ -51,15 +51,15 @@ export const apiClient = {
       async getPortalSessionUrl(uuid: string) {
         return fetchFromApi(
           `/v0/teams/${uuid}/billing/portal/session`,
-          { method: 'POST' },
-          ApiSchemas['/v0/teams/:uuid/billing/portal/session.POST.response']
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/portal/session.GET.response']
         );
       },
       async getCheckoutSessionUrl(uuid: string) {
         return fetchFromApi(
           `/v0/teams/${uuid}/billing/checkout/session`,
-          { method: 'POST' },
-          ApiSchemas['/v0/teams/:uuid/billing/checkout/session.POST.response']
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
         );
       },
     },

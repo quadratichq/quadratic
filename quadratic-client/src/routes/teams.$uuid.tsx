@@ -7,6 +7,7 @@ import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { Button } from '@/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
+import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { CaretDownIcon, ExclamationTriangleIcon, FileIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { ApiTypes, TeamSubscriptionStatus } from 'quadratic-shared/typesAndSchemas';
@@ -90,9 +91,8 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 
   if (intent === 'update-team') {
     try {
-      // TODO: uploading picture vs. name
-      const { name, picture } = data;
-      await apiClient.teams.update(uuid, { name, picture });
+      const { name } = data;
+      await apiClient.teams.update(uuid, { name });
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -159,9 +159,8 @@ export const Component = () => {
   const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(searchParams.get('share'));
 
   let name = team.name;
-  if (fetcher.state !== 'idle') {
-    name = (fetcher.json as TeamAction['request.update-team']).name as string; // TODO fix zod types
-    // TODO: picture
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
+    name = (fetcher.json as TeamAction['request.update-team']).name;
   }
 
   const handleClose = () => setIsRenaming(false);
@@ -179,7 +178,7 @@ export const Component = () => {
       <div {...(teamHasBillingIssue ? { inert: 'inert' } : {})}>
         <DashboardHeader
           title={name}
-          titleStart={<AvatarTeam src={team.picture} className="mr-3 h-9 w-9" />}
+          titleStart={<AvatarTeam className="mr-3 h-9 w-9" />}
           titleEnd={
             canEdit ? (
               <DropdownMenu>

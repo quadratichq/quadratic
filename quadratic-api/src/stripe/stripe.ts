@@ -1,18 +1,9 @@
 import { SubscriptionStatus, Team } from '@prisma/client';
 import Stripe from 'stripe';
 import dbClient from '../dbClient';
+import { STRIPE_SECRET_KEY } from '../env-vars';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('No STRIPE_SECRET_KEY found');
-}
-
-if (process.env.ENVIRONMENT === 'PRODUCTION' && !process.env.STRIPE_WEBHOOK_SECRET) {
-  throw new Error('No STRIPE_WEBHOOK_SECRET found');
-}
-
-export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
-
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   typescript: true,
 });
 
