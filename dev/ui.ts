@@ -8,6 +8,7 @@ import {
   DONE,
   KILLED,
   NO_LOGS,
+  PERF,
   SPACE,
   WATCH,
 } from "./constants.js";
@@ -127,6 +128,9 @@ export class UI {
       this.write(" " + WATCH, "gray");
     } else {
       this.write(" " + DONE, "green");
+    }
+    if (component === "core" && this.cli.options.perf) {
+      this.write(PERF);
     }
     this.write(SPACE);
   }

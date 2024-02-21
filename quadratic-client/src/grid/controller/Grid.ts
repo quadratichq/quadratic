@@ -1,12 +1,9 @@
 import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
-import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
 import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Coordinate } from '../../gridGL/types/size';
-import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
   BorderSelection,
   BorderStyle,
@@ -134,7 +131,7 @@ export class Grid {
 
     // multiplayer transactions
     if (summary.operations) {
-      multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
+      // multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
     }
 
     if (summary.request_transactions) {
@@ -571,23 +568,23 @@ export class Grid {
 
   //#region Imports
 
-  async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
-    debugTimeReset();
-    const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
-    const file_bytes = await readFileAsArrayBuffer(file);
+  // async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
+  //   debugTimeReset();
+  //   const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
+  //   const file_bytes = await readFileAsArrayBuffer(file);
 
-    try {
-      const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
-      this.transactionResponse(summary);
-    } catch (error) {
-      // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-      // type in the UI.
-      console.error(error);
-      reportError(error as unknown as string);
-      Sentry.captureException(error);
-    }
-    debugTimeCheck(`uploading and processing csv file ${file.name}`);
-  }
+  //   try {
+  //     const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
+  //     this.transactionResponse(summary);
+  //   } catch (error) {
+  //     // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+  //     // type in the UI.
+  //     console.error(error);
+  //     reportError(error as unknown as string);
+  //     Sentry.captureException(error);
+  //   }
+  //   debugTimeCheck(`uploading and processing csv file ${file.name}`);
+  // }
 
   //#endregion
 
@@ -710,10 +707,10 @@ export class Grid {
   //#region Multiplayer
   //-----------------
 
-  multiplayerTransaction(transactionId: string, sequenceNum: number, operations: string) {
-    const summary = this.gridController.multiplayerTransaction(transactionId, sequenceNum, operations);
-    this.transactionResponse(summary);
-  }
+  // multiplayerTransaction(transactionId: string, sequenceNum: number, operations: string) {
+  //   const summary = this.gridController.multiplayerTransaction(transactionId, sequenceNum, operations);
+  //   this.transactionResponse(summary);
+  // }
 
   setMultiplayerSequenceNum(sequenceNum: number) {
     this.gridController.setMultiplayerSequenceNum(sequenceNum);

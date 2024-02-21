@@ -17,7 +17,7 @@ impl GridController {
         let width = csv::ReaderBuilder::new().from_reader(file).headers()?.len() as u32;
 
         if width == 0 {
-            bail!("empty files cannot be processed");
+            bail!("Empty CSV files cannot be processed");
         }
 
         let mut reader = csv::ReaderBuilder::new()

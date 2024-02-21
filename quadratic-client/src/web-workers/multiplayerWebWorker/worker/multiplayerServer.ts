@@ -174,7 +174,7 @@ export class MultiplayerServer {
     if (this.state === 'no internet' || this.connectionTimeout) return;
     console.log(`[Multiplayer] websocket closed. Reconnecting in ${RECONNECT_AFTER_ERROR_TIMEOUT / 1000}s...`);
     this.state = 'waiting to reconnect';
-    this.connectionTimeout = window.setTimeout(async () => {
+    this.connectionTimeout = self.setTimeout(async () => {
       this.state = 'not connected';
       this.connectionTimeout = undefined;
       this.connect();

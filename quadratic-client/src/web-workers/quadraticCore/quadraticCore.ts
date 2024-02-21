@@ -34,6 +34,7 @@ import {
   CoreClientGetEditCell,
   CoreClientGetRenderCell,
   CoreClientGetRenderCodeCells,
+  CoreClientImportCsv,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientSummarizeSelection,
@@ -75,9 +76,9 @@ class QuadraticCore {
     }
   };
 
-  private send(message: ClientCoreMessage, port?: MessagePort) {
-    if (port) {
-      this.worker.postMessage(message, [port]);
+  private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
+    if (extra) {
+      this.worker.postMessage(message, [extra]);
     } else {
       this.worker.postMessage(message);
     }
@@ -228,6 +229,27 @@ class QuadraticCore {
         resolve(message.formatSummary);
       };
       this.send(message);
+    });
+  }
+
+  // Imports a CSV and returns a string with an error if not successful
+  async importCsv(sheetId: string, file: File, fileName: string, x: number, y: number): Promise<string | undefined> {
+    const arrayBuffer = await file.arrayBuffer();
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientImportCsv) => resolve(message.error);
+      this.send(
+        {
+          type: 'clientCoreImportCsv',
+          sheetId,
+          x,
+          y,
+          id,
+          file: arrayBuffer,
+          fileName,
+        },
+        arrayBuffer
+      );
     });
   }
 

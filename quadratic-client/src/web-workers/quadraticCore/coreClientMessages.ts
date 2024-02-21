@@ -301,6 +301,23 @@ export interface ClientCoreToggleCommas {
   cursor?: string;
 }
 
+export interface ClientCoreImportCsv {
+  type: 'clientCoreImportCsv';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+  file: ArrayBuffer;
+  fileName: string;
+  cursor?: string;
+}
+
+export interface CoreClientImportCsv {
+  type: 'coreClientImportCsv';
+  id: number;
+  error: string | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -324,7 +341,8 @@ export type ClientCoreMessage =
   | ClientCoreChangeDecimals
   | ClientCoreClearFormatting
   | ClientCoreGetRenderCell
-  | ClientCoreToggleCommas;
+  | ClientCoreToggleCommas
+  | ClientCoreImportCsv;
 
 export type CoreClientMessage =
   | CoreClientLoad
@@ -336,4 +354,5 @@ export type CoreClientMessage =
   | CoreClientGetCellFormatSummary
   | CoreClientSummarizeSelection
   | CoreClientFillSheetsModified
-  | CoreClientGetRenderCell;
+  | CoreClientGetRenderCell
+  | CoreClientImportCsv;

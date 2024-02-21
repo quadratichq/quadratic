@@ -163,6 +163,15 @@ class CoreClient {
         core.setCurrency(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.symbol, e.data.cursor);
         break;
 
+      case 'clientCoreImportCsv':
+        try {
+          const error = core.importCsv(e.data.sheetId, e.data.x, e.data.y, e.data.file, e.data.fileName, e.data.cursor);
+          this.send({ type: 'coreClientImportCsv', id: e.data.id, error });
+        } catch (error) {
+          this.send({ type: 'coreClientImportCsv', id: e.data.id, error: error as string });
+        }
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

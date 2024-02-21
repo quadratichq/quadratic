@@ -50,5 +50,6 @@ export const KILLED = "☠";
 export const ANIMATE_STATUS = ["◐", "◓", "◑", "◒"];
 export const WATCH = "👀";
 export const NO_LOGS = "🙈"; // AI picked this awesome character
+export const PERF = "🚀";
 
 export const ANIMATION_INTERVAL = 100;

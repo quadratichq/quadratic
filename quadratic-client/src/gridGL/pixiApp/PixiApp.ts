@@ -63,14 +63,15 @@ export class PixiApp {
   async init() {
     this.initialized = true;
     this.initCanvas();
-    await this.rebuild();
 
-    return new Promise((resolve) => {
+    const promise = new Promise((resolve) => {
       // keep a reference of app on window, used for Playwright tests
       //@ts-expect-error
       window.pixiapp = this;
       this.waitingForFirstRender = resolve;
     });
+    await this.rebuild();
+    return promise;
   }
 
   // called after RenderText has no more updates to send

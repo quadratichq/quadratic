@@ -301,6 +301,24 @@ class Core {
     coreMultiplayer.handleSummary(summary);
     handleTransactionSummary(summary);
   }
+
+  importCsv(
+    sheetId: string,
+    x: number,
+    y: number,
+    file: ArrayBuffer,
+    fileName: string,
+    cursor?: string
+  ): string | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, new Pos(x, y), cursor);
+    console.log(summary);
+    if (typeof summary === 'string') {
+      return summary;
+    }
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
+  }
 }
 
 export const core = new Core();

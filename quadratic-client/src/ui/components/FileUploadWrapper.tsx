@@ -1,9 +1,8 @@
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
-import { Coordinate } from '../../gridGL/types/size';
 
 export const FileUploadWrapper = (props: PropsWithChildren) => {
   // drag state
@@ -58,8 +57,8 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
           e.pageY - (clientBoundingRect?.top || 0)
         );
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
-        const insertAtCellLocation = { x: column, y: row } as Coordinate;
-        grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+        const error = await quadraticCore.importCsv(sheets.sheet.id, file, file.name, column, row);
+        if (error) addGlobalSnackbar(error);
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');
       }
