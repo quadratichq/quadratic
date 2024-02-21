@@ -147,7 +147,7 @@ export function FileListItem({
             <DotsVerticalIcon className="h-4 w-4" />
           </Btn>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-48">
+        <DropdownMenuContent align="end" className="w-48">
           {permissions.includes('FILE_VIEW') && <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>}
           {permissions.includes('FILE_EDIT') && (
             <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileWithCurrentOwnerAction.label}</DropdownMenuItem>
