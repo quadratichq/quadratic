@@ -173,9 +173,7 @@ export const Component = () => {
 
   return (
     <>
-      <TeamBillingIssue billingStatus={billing.status} teamUuid={team.uuid} canEditBilling={canEditBilling} />
-
-      <div {...(teamHasBillingIssue ? { inert: 'inert' } : {})}>
+      <div {...(teamHasBillingIssue ? { inert: 'inert' } : {})} className={`opacity-30 blur-sm`}>
         <DashboardHeader
           title={name}
           titleStart={<AvatarTeam className="mr-3 h-9 w-9" />}
@@ -308,6 +306,8 @@ export const Component = () => {
           </QDialogConfirmDelete>
         )}
       </div>
+
+      <TeamBillingIssue billingStatus={billing.status} teamUuid={team.uuid} canEditBilling={canEditBilling} />
     </>
   );
 };
@@ -399,48 +399,48 @@ const TeamBillingIssue = (props: {
   };
 
   // Otherwise, show the billing issue overlay.
-  let headingDefault = 'Team Billing Issue';
+  let headingDefault = 'Team billing issue';
 
   const statusOptions = {
     CANCELED: {
       heading: headingDefault,
-      description: 'Your Team’s subscription has been canceled. Please resubscribe.',
+      description: 'Your team’s subscription has been canceled. Please resubscribe.',
       buttonLabel: 'Resubscribe',
       buttonAction: buttonActionResubscribe,
     },
     INCOMPLETE: {
       heading: headingDefault,
-      description: 'Your Team’s subscription is incomplete. Please update your payment method to reactivate.',
+      description: 'Your team’s subscription is incomplete. Please update your payment method to reactivate.',
       buttonLabel: 'Fix payment',
       buttonAction: buttonActionGoToBillingPortal,
     },
     INCOMPLETE_EXPIRED: {
       heading: headingDefault,
-      description: 'Your Team’s subscription is incomplete. Please update your payment method to reactivate.',
+      description: 'Your team’s subscription is incomplete. Please update your payment method to reactivate.',
       buttonLabel: 'Fix payment',
       buttonAction: buttonActionResubscribe,
     },
     PAST_DUE: {
       heading: headingDefault,
-      description: 'Your Team’s subscription is past due. Please update your payment method to reactivate.',
+      description: 'Your team’s subscription is past due. Please update your payment method to reactivate.',
       buttonLabel: 'Fix payment',
       buttonAction: buttonActionGoToBillingPortal,
     },
     UNPAID: {
       heading: headingDefault,
-      description: 'Your Team’s subscription is unpaid. Please pay to reactivate.',
+      description: 'Your team’s subscription is unpaid. Please pay to reactivate.',
       buttonLabel: 'Fix payment',
       buttonAction: buttonActionResubscribe,
     },
     PAUSED: {
       heading: headingDefault,
-      description: 'Your Team’s subscription is paused. Please update your payment method to reactivate.',
+      description: 'Your team’s subscription is paused. Please update your payment method to reactivate.',
       buttonLabel: 'Fix payment',
       buttonAction: buttonActionGoToBillingPortal,
     },
     undefined: {
-      heading: 'Subscribe to Teams',
-      description: 'You must have an active subscription to access Quadratic Teams. Subscribe to continue.',
+      heading: 'Subscrition requried',
+      description: 'You must have an active subscription to access this team.',
       buttonLabel: 'Subscribe',
       buttonAction: buttonActionResubscribe,
     },
@@ -452,14 +452,14 @@ const TeamBillingIssue = (props: {
   let buttonAction = statusOptions[billingStatus ?? 'undefined'].buttonAction;
 
   return (
-    <div className="absolute left-0 top-0 z-40 flex h-full w-full items-center justify-center    shadow-md backdrop-blur-sm">
+    <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center">
       <div className="rounded border border-border bg-background px-4 shadow-xl">
         <Empty
           title={heading}
           description={
             canEditBilling
               ? description
-              : 'Your Team’s subscription is inactive. Please contact the Team owner to reactivate.'
+              : 'Your team’s subscription is inactive. Please contact the team owner to reactivate.'
           }
           Icon={ExclamationTriangleIcon}
           actions={

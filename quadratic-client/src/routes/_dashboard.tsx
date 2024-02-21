@@ -61,7 +61,7 @@ export const Component = () => {
       <div
         ref={contentPaneRef}
         className={cn(
-          `transition-filter relative order-2 h-full w-full px-4 pb-10 transition-opacity sm:pt-0 lg:px-10`,
+          `relative order-2 h-full w-full px-4 pb-10 transition-all sm:pt-0 lg:px-10`,
           isLoading ? 'overflow-hidden' : 'overflow-scroll',
           isLoading && 'pointer-events-none opacity-25'
         )}
