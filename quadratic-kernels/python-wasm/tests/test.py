@@ -1,3 +1,4 @@
+import importlib
 import inspect
 import sys
 import unittest
@@ -88,6 +89,15 @@ class TestTesting(IsolatedAsyncioTestCase):
 
         l = [run_python.Cell(o), run_python.Cell(o), run_python.Cell(o)]
         self.assertEqual(run_python.ensure_not_cell(l), ["test", "test", "test"])
+
+
+class TestImports(TestCase):
+    def test_example_requirements(self):
+        # Validates that dependencies which are used in examples can be imported
+        # This is not perfect, but it should help protect against breaking example imports
+        importlib.import_module("numpy")
+        importlib.import_module("pandas")
+        importlib.import_module("requests")
 
 
 class TestErrorMessaging(TestCase):
