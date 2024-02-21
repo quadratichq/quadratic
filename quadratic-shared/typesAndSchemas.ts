@@ -291,8 +291,8 @@ export const ApiSchemas = {
     message: z.string(),
     redirect: z.boolean().optional(),
   }),
-  '/v0/teams/:uuid/billing/portal/session.POST.response': z.object({ url: z.string() }),
-  '/v0/teams/:uuid/billing/checkout/session.POST.response': z.object({ url: z.string() }),
+  '/v0/teams/:uuid/billing/portal/session.GET.response': z.object({ url: z.string() }),
+  '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
 };
 
 type ApiKeys = keyof typeof ApiSchemas;
