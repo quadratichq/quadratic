@@ -11,6 +11,11 @@ use crate::{
 
 use super::operation::Operation;
 
+// when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
+// there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
+// see original issue here: https://github.com/akubera/bigdecimal-rs/issues/108
+const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
+
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
     pub(super) fn string_to_cell_value(
@@ -56,13 +61,17 @@ impl GridController {
         } else if let Some(bool) = CellValue::unpack_boolean(value) {
             bool
         } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(value)) {
-            if value.contains(',') {
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
-                });
+            if (bd.fractional_digit_count().abs() as usize) > MAX_BIG_DECIMAL_SIZE {
+                CellValue::Text(value.into())
+            } else {
+                if value.contains(',') {
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
+                    });
+                }
+                CellValue::Number(bd)
             }
-            CellValue::Number(bd)
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
             let numeric_format = NumericFormat {
                 kind: NumericFormatKind::Percentage,
@@ -215,5 +224,20 @@ mod test {
             value,
             CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
         );
+    }
+
+    #[test]
+    fn problematic_number() {
+        let mut gc = GridController::test();
+        let value = "980E92207901934";
+        let (_, cell_value) = gc.string_to_cell_value(
+            SheetPos {
+                sheet_id: gc.sheet_ids()[0],
+                x: 0,
+                y: 0,
+            },
+            value,
+        );
+        dbg!(cell_value.to_string());
     }
 }
