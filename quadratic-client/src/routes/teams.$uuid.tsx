@@ -162,7 +162,6 @@ export const Component = () => {
     name = (fetcher.json as TeamAction['request.update-team']).name;
   }
 
-  const handleClose = () => setIsRenaming(false);
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
