@@ -29,5 +29,6 @@ jest.mock('./src/aws/s3', () => {
 jest.mock('./src/stripe/stripe', () => {
   return {
     updateCustomer: jest.fn().mockImplementation(async () => {}),
+    updateSeatQuantity: jest.fn().mockImplementation(async () => {}),
   };
 });

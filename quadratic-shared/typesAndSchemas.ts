@@ -278,9 +278,19 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true }),
 
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
-  '/v0/teams/:uuid/invites.POST.response': TeamUserSchema.pick({ email: true, role: true }).extend({
-    id: TeamUserSchema.shape.id,
-  }),
+  '/v0/teams/:uuid/invites.POST.response': z
+    .object({
+      email: emailSchema,
+      id: z.number(),
+      role: UserTeamRoleSchema,
+    })
+    .or(
+      z.object({
+        userId: TeamUserSchema.shape.id,
+        id: z.number(),
+        role: UserTeamRoleSchema,
+      })
+    ),
   '/v0/teams/:uuid/invites/:inviteId.DELETE.response': z.object({ message: z.string() }),
 
   '/v0/teams/:uuid/users/:userId.PATCH.request': TeamUserSchema.pick({ role: true }),

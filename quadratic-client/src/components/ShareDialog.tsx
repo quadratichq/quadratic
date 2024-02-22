@@ -114,7 +114,7 @@ export function ShareTeamDialog({
       description={
         <>
           <span className="font-semibold">
-            {noOfUsers} member{noOfUsers !== 1 ? 's' : ''}
+            {noOfUsers} paid member{noOfUsers !== 1 ? 's' : ''}
           </span>{' '}
           · Invite people to collaborate in this team
         </>
