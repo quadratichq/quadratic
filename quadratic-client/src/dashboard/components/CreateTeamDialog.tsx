@@ -84,7 +84,7 @@ export const CreateTeamDialog = () => {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent onInteractOutside={(event) => event.preventDefault()}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Create a team</DialogTitle>
           <DialogDescription>Teams are a collaborative space for working with other people.</DialogDescription>
