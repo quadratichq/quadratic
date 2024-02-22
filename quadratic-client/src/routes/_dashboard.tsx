@@ -32,6 +32,7 @@ import {
   useLoaderData,
   useLocation,
   useNavigation,
+  useParams,
   useRevalidator,
   useSubmit,
 } from 'react-router-dom';
@@ -131,7 +132,10 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
   const { loggedInUser: user } = useRootRouteLoaderData();
   const fetchers = useFetchers();
   const revalidator = useRevalidator();
+  const params = useParams();
   const classNameIcons = `mx-1 text-muted-foreground`;
+
+  const teamsFiltered = teams.filter((team) => team.team.activated || team.team.uuid === params.uuid);
 
   return (
     <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
@@ -187,7 +191,7 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
           Teams
         </Type>
         <div className="grid gap-0.5">
-          {teams.map(({ team: { id: ownerTeamId, uuid, name }, userMakingRequest: { teamPermissions } }) => {
+          {teamsFiltered.map(({ team: { id: ownerTeamId, uuid, name }, userMakingRequest: { teamPermissions } }) => {
             // See if this team has an inflight fetcher that's updating team info
             const inFlightFetcher = fetchers.find(
               (fetcher) =>
