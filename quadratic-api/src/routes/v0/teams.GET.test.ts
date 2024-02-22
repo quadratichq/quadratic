@@ -18,6 +18,7 @@ beforeEach(async () => {
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
+      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
@@ -32,6 +33,7 @@ beforeEach(async () => {
     data: {
       name: 'Test Team 2',
       uuid: '00000000-0000-4000-8000-000000000002',
+      stripeCustomerId: '2',
       UserTeamRole: {
         create: [
           {
@@ -72,11 +74,11 @@ describe('GET /v0/teams', () => {
         .expect(404)
         .expect(expectError);
     });
-    it('responds with 404 for a team that exists but you don’t have access to', async () => {
+    it('responds with 403 for a team that exists but you don’t have access to', async () => {
       await request(app)
         .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .set('Authorization', `Bearer ValidToken userNoTeam`)
-        .expect(404)
+        .expect(403)
         .expect(expectError);
     });
   });

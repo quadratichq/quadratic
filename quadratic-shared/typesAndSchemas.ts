@@ -246,7 +246,7 @@ export const ApiSchemas = {
   }),
   '/v0/teams.POST.response': TeamSchema.pick({ uuid: true, name: true }),
   '/v0/teams/:uuid.GET.response': z.object({
-    team: TeamSchema,
+    team: TeamSchema.pick({ id: true, uuid: true, name: true }),
     userMakingRequest: z.object({
       id: TeamUserSchema.shape.id,
       teamPermissions: z.array(TeamPermissionSchema),

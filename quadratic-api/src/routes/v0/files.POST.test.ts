@@ -25,6 +25,7 @@ beforeAll(async () => {
     data: {
       name: 'test_team_1',
       uuid: '00000000-0000-4000-8000-000000000001',
+      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
@@ -107,7 +108,7 @@ describe('POST /v0/files', () => {
     });
     it('rejects creating a file in a team you don’t have access to', async () => {
       await createFile({ ...validPayload, teamUuid: '00000000-0000-4000-8000-000000000001' }, 'test_user_3')
-        .expect(404)
+        .expect(403)
         .expect(expectError);
     });
     it('responds with a 201 and creates a file in a team', async () => {

@@ -40,6 +40,7 @@ beforeEach(async () => {
     data: {
       name: 'Team',
       uuid: '00000000-0000-4000-8000-000000000001',
+      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           { userId: userOwner.id, role: 'OWNER' },
@@ -92,7 +93,7 @@ describe('DELETE /v0/teams/:uuid/invites/:inviteId', () => {
       await request(app)
         .delete(`/v0/teams/00000000-0000-4000-8000-000000000001/invites/${inviteId}`)
         .set('Authorization', `Bearer ValidToken userNoRole`)
-        .expect(404)
+        .expect(403)
         .expect(expectError);
     });
     it('responds with a 403 if you belong to the team but don’t have permission to edit it', async () => {

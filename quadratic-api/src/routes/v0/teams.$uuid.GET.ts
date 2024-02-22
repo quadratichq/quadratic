@@ -89,12 +89,11 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     })
   );
 
-  const response = {
+  const response: ApiTypes['/v0/teams/:uuid.GET.response'] = {
     team: {
       id: team.id,
       uuid,
       name: team.name,
-      activated: team.activated,
     },
     billing: {
       status: dbTeam.stripeSubscriptionStatus || undefined,

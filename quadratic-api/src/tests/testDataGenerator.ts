@@ -33,7 +33,6 @@ export async function createTeam({
     data: {
       uuid: teamArgs?.uuid ?? randomUUID(),
       name: teamArgs?.name ?? 'Test Team',
-      picture: teamArgs?.picture ?? null,
       createdDate: teamArgs?.createdDate ?? new Date(),
       stripeCustomerId: '1',
     },
