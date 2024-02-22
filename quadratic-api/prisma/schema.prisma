@@ -101,6 +101,8 @@ model Team {
     UserTeamRole                  UserTeamRole[]
     TeamInvite                    TeamInvite[]
     File                          File[]
+    // Unactivated teams have never completed billing and have never been used
+    activated                     Boolean             @default(false)
     // Billing
     stripeCustomerId              String              @unique @map("stripe_customer_id")
     stripeSubscriptionId          String?             @unique @map("stripe_subscription_id")

@@ -60,6 +60,7 @@ export const TeamSchema = z.object({
     .string()
     .min(1, { message: 'Must be at least 1 character.' })
     .max(140, { message: 'Cannot be longer than 140 characters.' }),
+  activated: z.boolean(),
   // picture: z.string().url().optional(),
   // TODO billing
 });
@@ -230,7 +231,7 @@ export const ApiSchemas = {
   '/v0/teams.GET.response': z.object({
     teams: z.array(
       z.object({
-        team: TeamSchema.pick({ id: true, uuid: true, name: true }),
+        team: TeamSchema.pick({ id: true, uuid: true, name: true, activated: true }),
         userMakingRequest: z.object({
           teamPermissions: z.array(TeamPermissionSchema),
         }),
