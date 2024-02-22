@@ -116,9 +116,9 @@ export const CreateTeamDialog = () => {
                     </ul>
                   </div>
                   {title === 'Team' && (
-                    <div className="">
+                    <div>
                       <Button variant="default" className="mt-2 w-full" onClick={() => setShowPlans(false)}>
-                        Create team
+                        Continue
                       </Button>
                     </div>
                   )}

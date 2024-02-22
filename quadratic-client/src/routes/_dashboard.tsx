@@ -12,9 +12,16 @@ import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
-import { CircularProgress } from '@mui/material';
 import { AvatarImage } from '@radix-ui/react-avatar';
-import { ExternalLinkIcon, FileIcon, HamburgerMenuIcon, MixIcon, PlusIcon, Share2Icon } from '@radix-ui/react-icons';
+import {
+  ExternalLinkIcon,
+  FileIcon,
+  HamburgerMenuIcon,
+  MixIcon,
+  PlusIcon,
+  ReloadIcon,
+  Share2Icon,
+} from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { Dispatch, ReactNode, SetStateAction, createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
@@ -25,6 +32,7 @@ import {
   useLoaderData,
   useLocation,
   useNavigation,
+  useRevalidator,
   useSubmit,
 } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
@@ -53,11 +61,12 @@ export const Component = () => {
   const [dashboardState, setDashboardState] = useState<DashboardState>(initialDashboardState);
   const navigation = useNavigation();
   const location = useLocation();
-  const isLoading = navigation.state !== 'idle';
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
+  const revalidator = useRevalidator();
+  const isLoading = revalidator.state !== 'idle' || navigation.state === 'loading';
 
-  const navbar = <Navbar />;
+  const navbar = <Navbar isLoading={isLoading} />;
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
@@ -113,7 +122,7 @@ export const Component = () => {
   );
 };
 
-function Navbar() {
+function Navbar({ isLoading }: { isLoading: boolean }) {
   const [, setDashboardState] = useDashboardContext();
   const {
     teams,
@@ -121,20 +130,31 @@ function Navbar() {
   } = useLoaderData() as ApiTypes['/v0/teams.GET.response'];
   const { loggedInUser: user } = useRootRouteLoaderData();
   const fetchers = useFetchers();
-  const navigation = useNavigation();
+  const revalidator = useRevalidator();
   const classNameIcons = `mx-1 text-muted-foreground`;
 
   return (
     <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
       <div className={`flex flex-col`}>
         <div className={`flex items-center lg:justify-between`}>
-          <SidebarNavLink to="/files" className={`pr-3`} isLogo={true}>
+          <SidebarNavLink
+            to="."
+            onClick={(e) => {
+              e.preventDefault();
+              revalidator.revalidate();
+            }}
+            className={`w-full`}
+            isLogo={true}
+          >
             <div className={`flex w-5 items-center justify-center`}>
               <img src={QuadraticLogo} alt="Quadratic logo glyph" />
             </div>
             <img src={QuadraticLogotype} alt="Quadratic logotype" />
+
+            <ReloadIcon
+              className={`ml-auto mr-1 animate-spin text-primary transition-opacity ${isLoading ? '' : ' opacity-0'}`}
+            />
           </SidebarNavLink>
-          {navigation.state === 'loading' && <CircularProgress size={18} className="mr-3" />}
         </div>
 
         <Type
@@ -295,9 +315,10 @@ function SidebarNavLink({
 
   const classes = cn(
     isActive && !isLogo && 'bg-muted',
+    !isLogo && 'hover:bg-accent',
     isDraggingOver && 'bg-primary text-primary-foreground',
     TYPE.body2,
-    `relative flex items-center gap-2 p-2 no-underline hover:bg-accent`,
+    `relative flex items-center gap-2 p-2 no-underline`,
     className
   );
 
