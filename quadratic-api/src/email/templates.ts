@@ -52,11 +52,11 @@ export const templates = {
     senderName: string | undefined;
   }) => {
     const teamUrl = `${origin}/teams/${teamUuid}`;
-    const subject = `${senderName ? senderName : 'Somebody'} invited you to a team in Quadratic`;
+    const subject = `${senderName ? senderName : 'Somebody'} added you to a team in Quadratic`;
     const noun = teamRole === 'OWNER' ? 'an owner' : teamRole === 'EDITOR' ? 'an editor' : 'a viewer';
     const html = Layout(/*html*/ `
       ${Paragraph(/*html*/ `
-        ${senderName ? senderName : senderEmail} invited you as ${noun} on the team: ${Link(teamName, {
+        ${senderName ? senderName : senderEmail} added you as ${noun} to the team: ${Link(teamName, {
         to: teamUrl,
       })}.
       `)}
