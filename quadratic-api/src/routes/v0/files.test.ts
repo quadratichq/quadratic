@@ -224,7 +224,7 @@ describe('UPDATE - POST /v0/files/:uuid/thumbnail file not found', () => {
     const res = await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000009/thumbnail')
       .set('Accept', 'application/json')
-      .set('Authorization', `Bearer ValidToken userOwner`)
+      .set('Authorization', `Bearer ValidToken test_user_1`)
       .expect('Content-Type', /json/)
       .expect(404); // Not Found
 
@@ -242,7 +242,7 @@ describe('UPDATE - POST /v0/files/:uuid/thumbnail with auth and owned file updat
       .attach('thumbnail', filePath)
       .set('Accept', 'application/json')
       .set('Content-Type', 'multipart/form-data')
-      .set('Authorization', `Bearer ValidToken userOwner`);
+      .set('Authorization', `Bearer ValidToken test_user_1`);
     // .expect(200); // OK
 
     // expect(res.body).toMatchObject({ message: 'Preview updated' });
