@@ -76,8 +76,8 @@ export const CreateTeamDialog = () => {
     },
     {
       title: 'Team',
-      price: '$18/user/month',
-      features: ['Unlimited files', 'Unlimited sharing', 'Unlimited AI usage ', 'Priority support'],
+      price: '$18 / user / month',
+      features: ['Shared team workspace', 'Unlimited sharing', 'Unlimited AI usage ', 'Priority support'],
     },
   ];
   const disabled = submitState === 'submitting';
@@ -103,7 +103,7 @@ export const CreateTeamDialog = () => {
                     <h2 className="text-xl font-semibold">{title}</h2>
                   </div>
                   <div className="mb-4 ml-10">
-                    <p className=" mb-1 text-primary">{price}</p>
+                    <p className="mb-1">{price}</p>
                     <ul className="-ml-10 text-sm text-muted-foreground">
                       {features.map((feature, k) => (
                         <li key={k} className="flex items-start">
