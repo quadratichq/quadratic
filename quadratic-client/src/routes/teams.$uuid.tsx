@@ -27,7 +27,6 @@ import { apiClient } from '../api/apiClient';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { TeamLogoInput } from '../dashboard/components/TeamLogo';
 
 export const useTeamRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.TEAM) as LoaderData | undefined;
 
@@ -190,16 +189,6 @@ export const Component = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
                   <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <label>
-                      Change logo
-                      <TeamLogoInput
-                        onChange={(url: string) => {
-                          handleClose();
-                        }}
-                      />
-                    </label>
-                  </DropdownMenuItem>
                   {teamPermissions.includes('TEAM_BILLING_EDIT') && (
                     <DropdownMenuItem
                       onClick={() => {
