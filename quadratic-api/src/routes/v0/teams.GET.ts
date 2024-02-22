@@ -23,6 +23,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams.GET.respo
           uuid: true,
           name: true,
           createdDate: true,
+          activated: true,
         },
       },
       role: true,

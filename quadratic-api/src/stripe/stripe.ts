@@ -1,7 +1,7 @@
 import { SubscriptionStatus, Team } from '@prisma/client';
 import Stripe from 'stripe';
 import dbClient from '../dbClient';
-import { STRIPE_SECRET_KEY } from '../env-vars';
+import { NODE_ENV, STRIPE_SECRET_KEY } from '../env-vars';
 
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   typescript: true,
@@ -101,7 +101,7 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
     ],
     mode: 'subscription',
     success_url: `${returnUrlBase}/teams/${teamUuid}`,
-    cancel_url: `${returnUrlBase}/teams/${teamUuid}`,
+    cancel_url: `${returnUrlBase}`,
   });
 };
 
@@ -157,6 +157,7 @@ const updateTeamStatus = async (
   await dbClient.team.update({
     where: { stripeCustomerId: customerId },
     data: {
+      activated: true, // activate the team
       stripeSubscriptionId,
       stripeSubscriptionStatus,
       stripeCurrentPeriodEnd: endDate,
@@ -179,12 +180,13 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
 
 export const updateBillingIfNecessary = async (team: Team) => {
   // if not updated in the last 24 hours, update the customer
-  //   if (
-  //     team.stripeSubscriptionLastUpdated &&
-  //     Date.now() - team.stripeSubscriptionLastUpdated.getTime() < 24 * 60 * 60 * 1000
-  //   ) {
-  //     return;
-  //   }
+  if (NODE_ENV === 'production')
+    if (
+      team.stripeSubscriptionLastUpdated &&
+      Date.now() - team.stripeSubscriptionLastUpdated.getTime() < 24 * 60 * 60 * 1000
+    ) {
+      return;
+    }
 
   // retrieve the customer
   const customer = await stripe.customers.retrieve(team.stripeCustomerId, {

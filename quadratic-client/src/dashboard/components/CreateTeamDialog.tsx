@@ -72,12 +72,12 @@ export const CreateTeamDialog = () => {
     {
       title: 'Personal',
       price: 'Free',
-      features: ['Unlimited personal files', 'Limited sharing', 'Throttled AI usage', 'Best effort support'],
+      features: ['Limited personal files', 'Limited file sharing', 'Throttled AI usage', 'Best effort support'],
     },
     {
       title: 'Team',
       price: '$18/user/month',
-      features: ['Unlimited team files', 'Unlimited sharing', 'Unlimited AI usage ', 'Priority support'],
+      features: ['Unlimited files', 'Unlimited sharing', 'Unlimited AI usage ', 'Priority support'],
     },
   ];
   const disabled = submitState === 'submitting';
@@ -102,7 +102,7 @@ export const CreateTeamDialog = () => {
 
                     <h2 className="text-xl font-semibold">{title}</h2>
                   </div>
-                  <div className="ml-10">
+                  <div className="mb-4 ml-10">
                     <p className=" mb-1 text-primary">{price}</p>
                     <ul className="-ml-10 text-sm text-muted-foreground">
                       {features.map((feature, k) => (
@@ -117,7 +117,7 @@ export const CreateTeamDialog = () => {
                   </div>
                   {title === 'Team' && (
                     <div>
-                      <Button variant="default" className="mt-2 w-full" onClick={() => setShowPlans(false)}>
+                      <Button variant="default" className="w-full" onClick={() => setShowPlans(false)}>
                         Continue
                       </Button>
                     </div>
