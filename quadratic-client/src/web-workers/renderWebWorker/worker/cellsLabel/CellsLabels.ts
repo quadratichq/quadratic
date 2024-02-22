@@ -9,6 +9,7 @@
 import { debugShowHashUpdates } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
+import { intersects } from '@/gridGL/helpers/intersects';
 import { CellSheetsModified } from '@/quadratic-core/types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
 import { SheetRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
@@ -16,6 +17,8 @@ import { Container, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
 import { CellsTextHash } from './CellsTextHash';
+
+const MAX_RENDERING_MEMORY = 1024 * 1024 * 1; // 10MB per sheet
 
 export class CellsLabels extends Container {
   sheetId: string;
@@ -233,19 +236,17 @@ export class CellsLabels extends Container {
       let visible: CellsTextHash[] = [];
       let notVisible: CellsTextHash[] = [];
       for (const hash of dirtyHashes) {
-        if (hash.viewRectangle.intersects(bounds)) {
+        if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
           visible.push(hash);
         } else {
           notVisible.push(hash);
         }
       }
-
       // if hashes are visible, sort them by y and return the first one
       if (visible.length) {
         visible.sort((a, b) => a.hashY - b.hashY);
         return { hash: visible[0], visible: true };
       }
-
       // we're done if there are no notVisible hashes
       if (notVisible.length === 0) return;
 
@@ -283,15 +284,11 @@ export class CellsLabels extends Container {
 
     const next = this.findNextDirtyHash();
     if (next) {
-      const memory = this.totalMemory();
-      console.log(memory);
-      if (memory > 1024 * 1024 * 10) {
-        if (!next.visible) {
-          return false;
-        }
+      // don't render if we are over the memory limit and the hash is not visible
+      if (!next.visible && this.totalMemory() > MAX_RENDERING_MEMORY) {
+        return false;
       }
       await next.hash.update();
-      console.log('after', this.totalMemory());
       return next.visible ? 'visible' : true;
     }
 

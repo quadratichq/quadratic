@@ -196,7 +196,8 @@ export class Control {
     clean.on("close", () => {
       this.client = spawn(
         "npm",
-        ["run", "preview", "--workspace=quadratic-client"],
+        // ["run", "preview", "--workspace=quadratic-client"],
+        ["start", "--workspace=quadratic-client"],
         {
           signal: this.signals.client.signal,
         }

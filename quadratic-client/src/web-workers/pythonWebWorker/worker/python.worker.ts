@@ -1,10 +1,12 @@
-import { PyodideInterface, loadPyodide } from 'pyodide';
 import { PythonMessage } from '../pythonTypes';
-const TRY_AGAIN_TIMEOUT = 500;
 
 declare var self: any;
 
+self.importScripts('/pyodide/pyodide.js');
+
 let getCellsMessages: (cells: { x: number; y: number; value: string }[]) => void | undefined;
+
+const TRY_AGAIN_TIMEOUT = 500;
 
 const getCellsDB = async (
   x0: number,
@@ -20,12 +22,12 @@ const getCellsDB = async (
   });
 };
 
-let pyodide: PyodideInterface | undefined;
+let pyodide: any; //PyodideInterface | undefined;
 
 async function pythonWebWorker() {
   try {
     self.postMessage({ type: 'not-loaded' } as PythonMessage);
-    pyodide = await loadPyodide({ indexURL: '/pyodide' });
+    pyodide = await (self as any).loadPyodide({ indexURL: '/pyodide' });
 
     pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage('micropip', { messageCallback: () => {} });

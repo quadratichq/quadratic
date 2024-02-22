@@ -6,6 +6,7 @@
  */
 
 import { Bounds } from '@/grid/sheet/Bounds';
+import { Rectangle } from 'pixi.js';
 import {
   ClientRenderMessage,
   RenderClientCellsTextHashClear,
@@ -31,7 +32,12 @@ class RenderClient {
 
       case 'clientRenderViewport':
         const startUpdate = !renderText.viewport;
-        renderText.viewport = e.data.bounds;
+        renderText.viewport = new Rectangle(
+          e.data.bounds.x,
+          e.data.bounds.y,
+          e.data.bounds.width,
+          e.data.bounds.height
+        );
         renderText.sheetId = e.data.sheetId;
         if (startUpdate) renderText.ready();
         break;
