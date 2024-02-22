@@ -303,6 +303,13 @@ export const ApiSchemas = {
   }),
   '/v0/teams/:uuid/billing/portal/session.GET.response': z.object({ url: z.string() }),
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
+
+  /**
+   *
+   * Users
+   *
+   */
+  '/v0/users.acknowledge.GET.response': z.object({ message: z.string() }),
 };
 
 type ApiKeys = keyof typeof ApiSchemas;

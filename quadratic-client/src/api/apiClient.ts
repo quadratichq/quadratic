@@ -269,6 +269,12 @@ export const apiClient = {
     },
   },
 
+  users: {
+    async acknowledge() {
+      return fetchFromApi(`/v0/users/acknowledge`, { method: 'GET' }, ApiSchemas['/v0/users.acknowledge.GET.response']);
+    },
+  },
+
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
     return fetchFromApi(
       `/v0/feedback`,

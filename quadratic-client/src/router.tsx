@@ -14,6 +14,7 @@ import {
   useRouteError,
   useRouteLoaderData,
 } from 'react-router-dom';
+import { apiClient } from './api/apiClient';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
 import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
@@ -168,6 +169,10 @@ export const router = createBrowserRouter(
             await authClient.handleSigninRedirect();
             let isAuthenticated = await authClient.isAuthenticated();
             if (isAuthenticated) {
+              // Acknowledge the user has just logged in. The backend may need
+              // to run some logic before making any other API calls in parallel
+              await apiClient.users.acknowledge();
+
               let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
               return redirect(redirectTo);
             }
