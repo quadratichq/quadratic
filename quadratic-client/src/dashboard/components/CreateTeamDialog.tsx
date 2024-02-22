@@ -77,7 +77,7 @@ export const CreateTeamDialog = () => {
     {
       title: 'Team',
       price: '$18/user/month',
-      features: ['Unlimited team files', 'Unlimited sharing', 'Unlimited AI usage ', 'Priority support'],
+      features: ['Shared team workspace', 'Unlimited sharing', 'Unlimited AI usage ', 'Priority support'],
     },
   ];
   const disabled = submitState === 'submitting';
@@ -103,7 +103,7 @@ export const CreateTeamDialog = () => {
                     <h2 className="text-xl font-semibold">{title}</h2>
                   </div>
                   <div className="ml-10">
-                    <p className=" mb-1 text-primary">{price}</p>
+                    <p className="mb-1">{price}</p>
                     <ul className="-ml-10 text-sm text-muted-foreground">
                       {features.map((feature, k) => (
                         <li key={k} className="flex items-start">
@@ -117,7 +117,7 @@ export const CreateTeamDialog = () => {
                   </div>
                   {title === 'Team' && (
                     <div>
-                      <Button variant="default" className="mt-2 w-full" onClick={() => setShowPlans(false)}>
+                      <Button variant="default" className="mt-4 w-full" onClick={() => setShowPlans(false)}>
                         Continue
                       </Button>
                     </div>
