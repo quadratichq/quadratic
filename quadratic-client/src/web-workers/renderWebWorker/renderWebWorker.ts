@@ -48,9 +48,10 @@ class RenderWebWorker {
     }
   };
 
-  pixiIsReady() {
+  pixiIsReady(sheetId: string, bounds: Rectangle) {
     this.preloadQueue.forEach((message) => this.handleMessage(message));
     this.preloadQueue = [];
+    this.updateViewport(sheetId, bounds);
   }
 
   updateViewport(sheetId: string, bounds: Rectangle) {

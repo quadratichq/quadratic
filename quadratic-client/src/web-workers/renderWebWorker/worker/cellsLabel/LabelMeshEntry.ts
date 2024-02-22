@@ -15,6 +15,7 @@ import { LabelMesh } from './LabelMesh';
 export class LabelMeshEntry {
   private labelMesh: LabelMesh;
   private total: number;
+  memory: number;
 
   index = 0;
   vertexCount = 0;
@@ -30,6 +31,7 @@ export class LabelMeshEntry {
     this.labelMesh = labelMesh;
     this.total = total;
     this.clear();
+    this.memory = 0;
   }
 
   // used to clear the buffers for reuse
@@ -68,6 +70,7 @@ export class LabelMeshEntry {
         throw new Error('Expected LabelMeshEntries.finalize to have colors');
       }
       message.colors = this.colors;
+      this.memory = this.vertices.byteLength + this.uvs.byteLength + this.indices.byteLength + this.colors.byteLength;
       renderClient.sendLabelMeshEntry(message, [
         this.vertices.buffer,
         this.uvs.buffer,
@@ -75,6 +78,8 @@ export class LabelMeshEntry {
         this.colors.buffer,
       ]);
     } else {
+      this.memory = this.vertices.byteLength + this.uvs.byteLength + this.indices.byteLength;
+
       renderClient.sendLabelMeshEntry(message, [this.vertices.buffer, this.uvs.buffer, this.indices.buffer]);
     }
 

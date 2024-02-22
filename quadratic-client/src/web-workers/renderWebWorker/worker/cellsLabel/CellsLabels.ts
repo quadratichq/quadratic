@@ -80,7 +80,6 @@ export class CellsLabels extends Container {
       this.cellsRows.set(hashY, [cellsHash]);
     }
     return cellsHash;
-    // }
   }
 
   createHashes(): boolean {
@@ -240,13 +239,16 @@ export class CellsLabels extends Container {
           notVisible.push(hash);
         }
       }
+
       // if hashes are visible, sort them by y and return the first one
       if (visible.length) {
         visible.sort((a, b) => a.hashY - b.hashY);
         return { hash: visible[0], visible: true };
       }
-      // if onlyVisible then we're done because we're not going to work on offscreen hashes yet
+
+      // we're done if there are no notVisible hashes
       if (notVisible.length === 0) return;
+
       // otherwise sort notVisible by distance from viewport center
       const viewportCenter = { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
       notVisible.sort((a, b) => {
@@ -264,17 +266,33 @@ export class CellsLabels extends Container {
       });
       return { hash: notVisible[0], visible: false };
     } else {
-      return { hash: dirtyHashes[0], visible: true };
+      return { hash: dirtyHashes[0], visible: false };
     }
   }
 
-  async update(): Promise<boolean | 'headings'> {
+  private totalMemory(): number {
+    let total = 0;
+    this.cellsTextHash.forEach((hash) => {
+      total += hash.totalMemory();
+    });
+    return total;
+  }
+
+  async update(): Promise<boolean | 'headings' | 'visible'> {
     if (this.updateHeadings()) return 'headings';
 
     const next = this.findNextDirtyHash();
     if (next) {
+      const memory = this.totalMemory();
+      console.log(memory);
+      if (memory > 1024 * 1024 * 10) {
+        if (!next.visible) {
+          return false;
+        }
+      }
       await next.hash.update();
-      return true;
+      console.log('after', this.totalMemory());
+      return next.visible ? 'visible' : true;
     }
 
     if (this.dirtyRows.size) {

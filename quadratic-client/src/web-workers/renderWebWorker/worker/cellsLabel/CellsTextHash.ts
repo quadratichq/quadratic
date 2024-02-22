@@ -268,4 +268,8 @@ export class CellsTextHash {
     });
     return max;
   }
+
+  totalMemory(): number {
+    return this.labelMeshes.totalMemory();
+  }
 }

@@ -62,4 +62,8 @@ export class LabelMeshes {
   finalize() {
     this.labelMeshes.forEach((labelMesh) => labelMesh.finalize());
   }
+
+  totalMemory(): number {
+    return this.labelMeshes.reduce((acc, labelMesh) => acc + labelMesh.memory, 0);
+  }
 }

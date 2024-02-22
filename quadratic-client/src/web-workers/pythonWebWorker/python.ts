@@ -1,9 +1,9 @@
 import { SheetPos } from '@/gridGL/types/size';
+import { JsCodeResult } from '@/quadratic-core/quadratic_core';
 import { TransactionSummary } from '@/quadratic-core/types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
-import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 const stringOrNumber = (input: string | number | undefined): string => {

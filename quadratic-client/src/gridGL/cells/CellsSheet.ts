@@ -69,8 +69,9 @@ export class CellsSheet extends Container {
     this.cellsBorders.create();
   }
 
+  // todo...
   showLabel(x: number, y: number, show: boolean) {
-    this.cellsLabels.showLabel(x, y, show);
+    // this.cellsLabels.showLabel(x, y, show);
   }
 
   updateCellsArray() {

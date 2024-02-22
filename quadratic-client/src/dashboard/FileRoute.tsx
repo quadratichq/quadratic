@@ -33,6 +33,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   let data;
   try {
     data = await apiClient.files.get(uuid);
+    console.log(data);
   } catch (error: any) {
     const isLoggedIn = await authClient.isAuthenticated();
     if (error.status === 403 && !isLoggedIn) {

@@ -78,8 +78,12 @@ class RenderText {
     let complete = true;
     for (const sheetId of sheetIds) {
       const cellsLabel = this.cellsLabels.get(sheetId);
-      if (await cellsLabel?.update()) {
-        complete = false;
+      const result = await cellsLabel?.update();
+      if (result) {
+        // for first render, we render all the visible text before starting
+        if (result === 'visible') {
+          complete = false;
+        }
         break;
       }
     }

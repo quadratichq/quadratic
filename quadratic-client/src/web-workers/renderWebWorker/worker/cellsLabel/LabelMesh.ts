@@ -28,6 +28,7 @@ export class LabelMesh {
   hasColor: boolean;
 
   total = 1;
+  memory = 0;
 
   private currentEntry = 0;
   private labelMeshEntries: LabelMeshEntry[] = [];
@@ -56,8 +57,6 @@ export class LabelMesh {
 
   prepare(): void {
     this.currentEntry = 0;
-
-    // todo: perhaps reuse buffers here
     this.labelMeshEntries = [];
     while (this.total > 0) {
       const size = this.total > MAX_VERTICES ? MAX_VERTICES : this.total;
@@ -84,5 +83,6 @@ export class LabelMesh {
 
   finalize(): void {
     this.labelMeshEntries.forEach((entry) => entry.finalize());
+    this.memory = this.labelMeshEntries.reduce((acc, entry) => acc + entry.memory, 0);
   }
 }
