@@ -10,6 +10,7 @@ import {
   CellEdit,
   Heartbeat,
   MessageUserUpdate,
+  MultiplayerServerMessage,
   ReceiveMessages,
   ReceiveRoom,
   SendEnterRoom,
@@ -165,7 +166,7 @@ export class MultiplayerServer {
       code_running: this.userData.codeRunning,
       follow: this.userData.follow,
     };
-    this.websocket.send(JSON.stringify(enterRoom));
+    this.send(enterRoom);
     // offline.loadTransactions();
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${this.fileId}.`);
   }
@@ -262,8 +263,12 @@ export class MultiplayerServer {
     multiplayerClient.sendUsersInRoom(room);
   }
 
-  sendTransaction(transactionMessage: CoreMultiplayerTransaction) {
+  private send(message: MultiplayerServerMessage) {
     if (!this.websocket) throw new Error('Expected websocket to be defined in sendTransaction');
+    this.websocket.send(JSON.stringify(message));
+  }
+
+  sendTransaction(transactionMessage: CoreMultiplayerTransaction) {
     const message: SendTransaction = {
       type: 'Transaction',
       id: transactionMessage.transaction_id,
@@ -271,7 +276,7 @@ export class MultiplayerServer {
       file_id: this.fileId!,
       operations: transactionMessage.operations,
     };
-    this.websocket.send(JSON.stringify(message));
+    this.send(message);
   }
 }
 

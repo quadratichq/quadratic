@@ -136,3 +136,5 @@ export type ReceiveMessages =
   | ReceiveEnterRoom
   | ReceiveError
   | ReceiveCurrentTransaction;
+
+export type MultiplayerServerMessage = SendTransaction | SendEnterRoom;

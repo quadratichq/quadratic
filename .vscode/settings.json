@@ -11,11 +11,14 @@
     "dotenv",
     "endregion",
     "Fuzzysort",
+    "healthcheck",
+    "healthchecks",
     "hljs",
     "htmlescape",
     "indexmap",
     "indicies",
     "itertools",
+    "jwks",
     "MDSL",
     "micropip",
     "msdf",
@@ -38,6 +41,7 @@
     "thiserror",
     "unspill",
     "vals",
+    "websockets",
     "Westborough"
   ],
   "editor.codeActionsOnSave": {

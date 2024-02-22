@@ -14,7 +14,7 @@ impl Sheet {
         if let Some(code_run) = code_run {
             self.code_runs.insert(pos, code_run)
         } else {
-            self.code_runs.remove(&pos)
+            self.code_runs.shift_remove(&pos)
         }
     }
 

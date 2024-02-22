@@ -54,7 +54,7 @@ impl GridController {
             sheet.code_runs.move_index(old_index, index);
             old_code_run
         } else {
-            sheet.code_runs.remove(&pos)
+            sheet.code_runs.shift_remove(&pos)
         };
 
         if let Some(old_code_run) = &old_code_run {
