@@ -37,8 +37,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     throw new ApiError(403, 'User does not have permission to edit this team.');
   }
 
-  // TODO: what if it's the team avatar?
-
   // Update Customer name in Stripe
   await updateCustomer(stripeCustomerId, name);
 
