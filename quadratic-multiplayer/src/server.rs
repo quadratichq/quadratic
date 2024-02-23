@@ -168,6 +168,7 @@ async fn ws_handler(
     );
 
     // upgrade the connection
+    let ws = ws.max_message_size(1024 * 1024 * 1000); // 1GB
     ws.on_upgrade(move |socket| handle_socket(socket, state, addr, pre_connection))
 }
 
