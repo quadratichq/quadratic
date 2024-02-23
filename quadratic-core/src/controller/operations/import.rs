@@ -72,7 +72,15 @@ impl GridController {
 
                 // update the progress bar every time there's a new operation
                 if !cfg!(test) {
-                    crate::wasm_bindings::js::jsProgress(file_name, current_y, height);
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_y,
+                        height * 2,
+                        insert_at.x,
+                        insert_at.y,
+                        width,
+                        height,
+                    );
                 }
             }
         }

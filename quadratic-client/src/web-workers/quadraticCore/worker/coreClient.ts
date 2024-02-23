@@ -186,12 +186,20 @@ class CoreClient {
     this.send({ type: 'coreClientFillSheetsModified', sheetIds });
   }
 
-  sendProgress(filename: string, current: number, total: number) {
+  sendImportProgress(
+    filename: string,
+    current: number,
+    total: number,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) {
     // self.postMessage({ type: 'coreClientProgress', current, total });
-    console.log(filename, current, total);
+    console.log(filename, current, total, x, y, width, height);
   }
 }
 
 export const coreClient = new CoreClient();
 
-(self as any).sendProgress = coreClient.sendProgress;
+(self as any).sendImportProgress = coreClient.sendImportProgress;

@@ -5,7 +5,15 @@ declare var self: WorkerGlobalScope &
     runPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     addTransaction: (transactionId: string, operations: string) => void;
     sendTransaction: (transactionId: string, operations: string) => void;
-    sendProgress: (filename: string, current: number, total: number) => void;
+    sendImportProgress: (
+      filename: string,
+      current: number,
+      total: number,
+      x: number,
+      y: number,
+      width: number,
+      height: number
+    ) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -24,6 +32,14 @@ export const sendTransaction = (transactionId: string, operations: string) => {
 export const jsTime = (name: string) => console.time(name);
 export const jsTimeEnd = (name: string) => console.timeEnd(name);
 
-export const jsProgress = (filename: string, current: number, total: number) => {
-  return self.sendProgress(filename, current, total);
+export const jsImportProgress = (
+  filename: string,
+  current: number,
+  total: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) => {
+  return self.sendImportProgress(filename, current, total, x, y, width, height);
 };
