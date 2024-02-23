@@ -144,6 +144,7 @@ function convertCompletionItem(item: CompletionItem, model?: editor.ITextModel):
 
   // Stash a few additional pieces of information.
   (converted as any).__original = item;
+  
   if (model) {
     (converted as any).model = model;
   }

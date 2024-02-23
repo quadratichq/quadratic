@@ -1,10 +1,9 @@
-from datetime import date, time, datetime, timedelta
-import re
-import traceback
 from contextlib import redirect_stdout, redirect_stderr
-from decimal import Decimal, DecimalException
 from io import StringIO
+from typing import Tuple
 
+from .quadratic_api.quadratic import getCell, getCells
+from .utils import attempt_fix_await, to_quadratic_type
 import getCellsDB
 import micropip
 import pandas as pd
@@ -13,67 +12,7 @@ import pyodide
 from quadratic_py import code_trace, plotly_patch
 
 
-def attempt_fix_await(code):
-    # Insert a "await" keyword between known async functions to improve the UX
-    code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)cell\(", r"\1await cell(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)c\(", r"\1await c(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)getCell\(", r"\1await getCell(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)cells\[", r"\1await cells[", code)
-
-    code = code.replace("await await getCell", "await getCell")
-    code = code.replace("await await getCells", "await getCells")
-    code = code.replace("await await c(", "await c(")
-    code = code.replace("await await cell(", "await cell(")
-    code = code.replace("await await cells(", "await cells(")
-    code = code.replace("await await cells[", "await cells[")
-
-    return code
-
-def to_unix_timestamp(value):
-    return (value - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
-
-def to_interval(value):
-    return (to_unix_timestamp(value.start_time), to_unix_timestamp(value.end_time))
-
-# Convert from python types to quadratic types
-def to_quadratic_type(value):
-    if value in (None, ""):
-        return (None, "blank")
-    elif pd.api.types.is_number(value):
-        return (str(value), "number")
-    elif pd.api.types.is_bool(value):
-        return (str(bool(value)), "logical")
-    elif pd.api.types.is_datetime64_any_dtype(value) or isinstance(value, (pd.Timestamp, date, time, datetime)):
-        return (str(to_unix_timestamp(value)), "instant")
-    elif pd.api.types.is_period_dtype(value) or isinstance(value, (pd.Period, timedelta)):
-        return (str(to_interval(value)), "duration")
-    else :
-        return (str(value), "text")
-
-# Convert from quadratic types to python types
-def to_python_type(value, value_type):
-    if value_type == "number":
-        return number_type(value)
-    elif value_type == "text":
-        return str(value)
-    elif value_type == "logical":
-        return bool(value)
-    else:
-        return value
-
-def number_type(value):
-    try:
-        return int(value)
-    except ValueError:
-        try:
-            return float(value)
-        except ValueError:
-            return value
-
-def stack_line_number():
-    return int(traceback.format_stack()[-3].split(", ")[1].split(" ")[1])
+cells_accessed = []
 
 def error_result(
     error: Exception, code: str, cells_accessed: list[list], sout: StringIO, line_number: int,
@@ -93,70 +32,33 @@ def error_result(
         "formatted_code": code,
     }
 
-async def run_python(code):
-    cells_accessed = []
-        
-    def result_to_value(result):
-        return to_python_type(result.value, result.type_name)
+# Wrapper to getCell() to capture cells_accessed
+async def getCellInner(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
+    cells_accessed.append([p_x, p_y, sheet])
 
-    async def getCells(p0, p1, sheet=None, first_row_header=False):
-        # mark cells as accessed by this cell
-        for x in range(p0[0], p1[0] + 1):
-            for y in range(p0[1], p1[1] + 1):
-                cells_accessed.append([x, y, sheet])
+    return await getCell(p_x, p_y, sheet)
 
-        # Get Cells
-        cells = await getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet, int(stack_line_number()))
+# Wrapper to getCells() to capture cells_accessed
+async def getCellsInner(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> pd.DataFrame:
+    # mark cells as accessed by this cell
+    for x in range(p0[0], p1[0] + 1):
+        for y in range(p0[1], p1[1] + 1):
+            cells_accessed.append([x, y, sheet])
 
-        cell_range_width = p1[0] - p0[0] + 1
-        cell_range_height = p1[1] - p0[1] + 1
+    return await getCells(p0, p1, sheet, first_row_header)
+    
 
-        # return a panda series for a 1d array of cells     
-        if cell_range_width == 1 or cell_range_height == 1:
-            cell_list = [result_to_value(cell) for cell in cells]        
-            return pd.Series(cell_list)
+globals = {
+    "getCells": getCellsInner,
+    "getCell": getCellInner,
+    "c": getCellInner,
+    "result": None,
+    "cell": getCellInner,
+    "cells": getCellsInner,
+}
 
-        # Create empty df of the correct size
-        df = pd.DataFrame(  
-            index=range(cell_range_height),
-            columns=range(cell_range_width),
-        )
-
-        # Fill DF
-        x_offset = p0[0]
-        y_offset = p0[1]
-
-        for cell in cells:
-            value = to_python_type(cell.value, cell.type_name)
-            df.at[cell.y - y_offset, cell.x - x_offset] = value
-
-        # Move the first row to the header
-        if first_row_header:
-            df.rename(columns=df.iloc[0], inplace=True)
-            df.drop(df.index[0], inplace=True)
-            df.reset_index(drop=True, inplace=True)
-
-        return df
-
-    async def getCell(p_x, p_y, sheet=None):
-        cells_accessed.append([p_x, p_y, sheet])
-        result = await getCellsDB(p_x, p_y, p_x, p_y, sheet, int(stack_line_number()))
-
-        if len(result):
-            return result_to_value(result[0])
-        else:
-            return None
-
-    globals = {
-        "getCells": getCells,
-        "getCell": getCell,
-        "c": getCell,
-        "result": None,
-        "cell": getCell,
-        "cells": getCells,
-    }
-
-    sout = StringIO()
+async def run_python(code: str):
+    sout = StringIO()   
     serr = StringIO()
     output_value = None
 

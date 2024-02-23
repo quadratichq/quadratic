@@ -1,8 +1,9 @@
 from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
+from typing import Any
 import pyodide
 
 
-async def inspect_python(code):
+async def inspect_python(code: str) -> dict[str, Any]:
     try:
         runner = pyodide.code.CodeRunner(
             code,

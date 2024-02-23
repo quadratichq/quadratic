@@ -24,7 +24,7 @@ import {
   SignatureHelpParams,
   SignatureHelpRequest,
   TextDocumentContentChangeEvent,
-  TextDocumentItem
+  TextDocumentItem,
 } from 'vscode-languageserver-protocol';
 
 /**
@@ -76,11 +76,11 @@ export class LanguageServerClient extends EventEmitter {
     this.initializePromise = (async () => {
       this.connection.onNotification(PublishDiagnosticsNotification.type, (params) => {
         this.diagnostics.set(params.uri, params.diagnostics);
+        console.log('on diagnostics', params.diagnostics);
         // Republish as you can't listen twice.
         this.emit('diagnostics', params);
       });
 
-      console.log("*** starting to initialize");
       const initializeParams: InitializeParams = {
         locale: 'en',
         capabilities: {
@@ -102,13 +102,15 @@ export class LanguageServerClient extends EventEmitter {
               contextSupport: true,
             },
             signatureHelp: {
+              dynamicRegistration: true,
               signatureInformation: {
-                documentationFormat: ['markdown'],
+                documentationFormat: ['markdown', 'plaintext'],
                 activeParameterSupport: true,
                 parameterInformation: {
                   labelOffsetSupport: true,
                 },
               },
+              contextSupport: true,
             },
             hover: {
               contentFormat: ['markdown'],
@@ -136,10 +138,6 @@ export class LanguageServerClient extends EventEmitter {
           },
         ],
       };
-
-      console.log('*** initializeParams', initializeParams.initializationOptions.files);
-
-      
 
       const { capabilities } = await this.connection.sendRequest(
         InitializeRequest.type,
@@ -200,7 +198,7 @@ export class LanguageServerClient extends EventEmitter {
 
   private async initializationOptions(): Promise<any> {
     const files = await retryAsyncLoad(() => {
-      return import('./typeshed.json');
+      return import('./pyright-initialization.json');
     });
 
     return {
