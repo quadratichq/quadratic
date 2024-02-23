@@ -319,6 +319,13 @@ class Core {
     coreMultiplayer.handleSummary(summary);
     handleTransactionSummary(summary);
   }
+
+  deleteCellValues(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.deleteCellValues(sheetId, pointsToRect(x, y, width, height), cursor);
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
+  }
 }
 
 export const core = new Core();

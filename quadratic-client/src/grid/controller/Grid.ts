@@ -259,14 +259,14 @@ export class Grid {
     return summary.complete;
   }
 
-  deleteCellValues(sheetId: string, rectangle: Rectangle) {
-    const summary = this.gridController.deleteCellValues(
-      sheetId,
-      rectangleToRect(rectangle),
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // deleteCellValues(sheetId: string, rectangle: Rectangle) {
+  //   const summary = this.gridController.deleteCellValues(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
   // setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined) {
   //   const summary = this.gridController.setCellAlign(

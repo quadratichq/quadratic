@@ -177,6 +177,10 @@ class CoreClient {
         this.send({ type: 'coreClientGetGridBounds', id: e.data.id, bounds });
         break;
 
+      case 'clientCoreDeleteCellValues':
+        core.deleteCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

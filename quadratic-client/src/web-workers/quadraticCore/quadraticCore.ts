@@ -452,6 +452,18 @@ class QuadraticCore {
       });
     });
   }
+
+  deleteCellValues(sheetId: string, rectangle: Rectangle, cursor?: string) {
+    this.send({
+      type: 'clientCoreDeleteCellValues',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      cursor,
+    });
+  }
 }
 
 export const quadraticCore = new QuadraticCore();

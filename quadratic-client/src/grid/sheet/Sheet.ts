@@ -59,8 +59,8 @@ export class Sheet {
     }
   }
 
-  deleteCells(rectangle: Rectangle): void {
-    grid.deleteCellValues(this.id, rectangle);
+  deleteCells(rectangle: Rectangle) {
+    quadraticCore.deleteCellValues(this.id, rectangle, sheets.getCursorPosition());
   }
 
   //#endregion

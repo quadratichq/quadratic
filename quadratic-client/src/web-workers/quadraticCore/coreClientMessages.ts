@@ -331,6 +331,16 @@ export interface CoreClientGetGridBounds {
   id: number;
 }
 
+export interface ClientCoreDeleteCellValues {
+  type: 'clientCoreDeleteCellValues';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cursor?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -356,7 +366,8 @@ export type ClientCoreMessage =
   | ClientCoreGetRenderCell
   | ClientCoreToggleCommas
   | ClientCoreImportCsv
-  | ClientCoreGetGridBounds;
+  | ClientCoreGetGridBounds
+  | ClientCoreDeleteCellValues;
 
 export type CoreClientMessage =
   | CoreClientLoad
