@@ -110,13 +110,13 @@ export function ShareTeamDialog({
 
   return (
     <ShareDialog
-      title={`Share ${name}`}
+      title={`${name} Team`}
       description={
         <>
           <span className="font-semibold">
             {noOfUsers} paid member{noOfUsers !== 1 ? 's' : ''}
           </span>{' '}
-          · Invite people to collaborate in this team
+          · Invite people to join the team
         </>
       }
       onClose={onClose}
@@ -260,7 +260,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
             <PersonIcon className="-mr-[2px]" />
             <PersonIcon className="-ml-[2px]" />
           </div>
-          <Type variant="body2">Everyone in {owner.name}</Type>
+          <Type variant="body2">Everyone at {owner.name}</Type>
           <Type variant="body2" className="pr-4">
             Can access
           </Type>
@@ -770,7 +770,7 @@ function ListItemPublicLink({
   };
 
   const optionsByValue: Record<PublicLinkAccess, string> = {
-    NOT_SHARED: 'Cannot view',
+    NOT_SHARED: 'No access',
     READONLY: 'Can view',
     EDIT: 'Can edit',
   };
@@ -784,7 +784,7 @@ function ListItemPublicLink({
       </div>
 
       <div className={`flex flex-col`}>
-        <Type variant="body2">Anyone with the link</Type>
+        <Type variant="body2">Anyone with the public link</Type>
         {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
           <Type variant="caption" className="text-destructive">
             Failed to update

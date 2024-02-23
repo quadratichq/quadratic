@@ -9,7 +9,7 @@ import { Button } from '@/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar, AvatarGroup } from '@mui/material';
-import { CaretDownIcon, ExclamationTriangleIcon, FileIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { ExclamationTriangleIcon, FileIcon, GearIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { ApiTypes, TeamSubscriptionStatus } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
 import {
@@ -183,11 +183,11 @@ export const Component = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon-sm" className="ml-1 rounded-full">
-                    <CaretDownIcon />
+                    <GearIcon />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename team</DropdownMenuItem>
                   {teamPermissions.includes('TEAM_BILLING_EDIT') && (
                     <DropdownMenuItem
                       onClick={() => {
@@ -242,12 +242,12 @@ export const Component = () => {
           files={files.map((data) => ({ ...data.file, permissions: data.userMakingRequest.filePermissions }))}
           emptyState={
             <Empty
-              title="No team files"
-              description={`Files created by${canEdit ? ' you or ' : ' '}team members will show up here.`}
+              title="No team files yet"
+              description={`Files created by${canEdit ? ' you or ' : ' '}your team members will show up here.`}
               actions={
                 canEdit ? (
                   <Button asChild variant="secondary">
-                    <Link to={ROUTES.CREATE_FILE_IN_TEAM(team.uuid)}>Create file</Link>
+                    <Link to={ROUTES.CREATE_FILE_IN_TEAM(team.uuid)}>Create a file</Link>
                   </Button>
                 ) : null
               }
