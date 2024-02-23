@@ -48,6 +48,10 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.hashY = y;
   }
 
+  clear() {
+    this.removeChildren();
+  }
+
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
     this.addChild(new LabelMeshEntry(message));
   }

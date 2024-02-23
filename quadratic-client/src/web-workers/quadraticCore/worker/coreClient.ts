@@ -185,6 +185,13 @@ class CoreClient {
   fillSheetsModified(sheetIds: SheetId[]) {
     this.send({ type: 'coreClientFillSheetsModified', sheetIds });
   }
+
+  sendProgress(filename: string, current: number, total: number) {
+    // self.postMessage({ type: 'coreClientProgress', current, total });
+    console.log(filename, current, total);
+  }
 }
 
 export const coreClient = new CoreClient();
+
+(self as any).sendProgress = coreClient.sendProgress;

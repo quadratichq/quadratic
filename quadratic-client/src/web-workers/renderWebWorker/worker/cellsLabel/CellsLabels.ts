@@ -6,7 +6,7 @@
  * geometries sent to the GPU.
  */
 
-import { debugShowHashUpdates } from '@/debugFlags';
+import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { intersects } from '@/gridGL/helpers/intersects';
@@ -18,7 +18,8 @@ import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
 import { CellsTextHash } from './CellsTextHash';
 
-const MAX_RENDERING_MEMORY = 1024 * 1024 * 1; // 10MB per sheet
+// 500 MB maximum memory per sheet before we start unloading hashes
+const MAX_RENDERING_MEMORY = 1024 * 1024 * 500;
 
 export class CellsLabels extends Container {
   sheetId: string;
@@ -228,46 +229,84 @@ export class CellsLabels extends Container {
     return true;
   }
 
-  private findNextDirtyHash(): { hash: CellsTextHash; visible: boolean } | undefined {
-    const dirtyHashes = Array.from(this.cellsTextHash.values()).filter((hash) => hash.dirty || hash.dirtyBuffers);
-    if (!dirtyHashes.length) return;
+  // distance from viewport center to hash center
+  private hashDistanceSquared(hash: CellsTextHash, bounds: Rectangle): number {
+    const center = {
+      x: hash.viewRectangle.left + hash.viewRectangle.width / 2,
+      y: hash.viewRectangle.top + hash.viewRectangle.height / 2,
+    };
+    return (
+      Math.pow(bounds.left + bounds.width / 2 - center.x, 2) + Math.pow(bounds.top + bounds.height / 2 - center.y, 2)
+    );
+  }
+
+  // Finds the next dirty hash to render. Also handles unloading of hashes.
+  // Note: once the memory limit is reached, the algorithm unloads one cell hash
+  // every time it renders a new one. Therefore the memory usage may grow larger
+  // or smaller based on the relative memory usage of individual hashes.
+  private nextDirtyHash(): { hash: CellsTextHash; visible: boolean } | undefined {
+    const memory = this.totalMemory();
+    let findHashToDelete = memory > MAX_RENDERING_MEMORY;
+
+    const visibleDirtyHashes: CellsTextHash[] = [];
+    const notVisibleDirtyHashes: { hash: CellsTextHash; distance: number }[] = [];
+    const hashesToDelete: { hash: CellsTextHash; distance: number }[] = [];
+
     const bounds = renderText.viewport;
-    if (bounds) {
-      let visible: CellsTextHash[] = [];
-      let notVisible: CellsTextHash[] = [];
-      for (const hash of dirtyHashes) {
-        if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
-          visible.push(hash);
-        } else {
-          notVisible.push(hash);
+    if (!bounds) return;
+
+    this.cellsTextHash.forEach((hash) => {
+      if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+        if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
+          visibleDirtyHashes.push(hash);
+        }
+      } else {
+        if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
+          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
+        }
+        if (findHashToDelete && hash.loaded) {
+          hashesToDelete.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       }
-      // if hashes are visible, sort them by y and return the first one
-      if (visible.length) {
-        visible.sort((a, b) => a.hashY - b.hashY);
-        return { hash: visible[0], visible: true };
-      }
-      // we're done if there are no notVisible hashes
-      if (notVisible.length === 0) return;
+    });
 
-      // otherwise sort notVisible by distance from viewport center
-      const viewportCenter = { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
-      notVisible.sort((a, b) => {
-        const aCenter = {
-          x: a.viewRectangle.left + a.viewRectangle.width / 2,
-          y: a.viewRectangle.top + a.viewRectangle.height / 2,
-        };
-        const bCenter = {
-          x: b.viewRectangle.left + b.viewRectangle.width / 2,
-          y: b.viewRectangle.top + b.viewRectangle.height / 2,
-        };
-        const aDistance = Math.pow(viewportCenter.x - aCenter.x, 2) + Math.pow(viewportCenter.y - aCenter.y, 2);
-        const bDistance = Math.pow(viewportCenter.x - bCenter.x, 2) + Math.pow(viewportCenter.y - bCenter.y, 2);
-        return aDistance - bDistance;
-      });
-      return { hash: notVisible[0], visible: false };
+    if (!visibleDirtyHashes.length && !notVisibleDirtyHashes.length) {
+      return;
+    }
+
+    let hashToDelete: { hash: CellsTextHash; distance: number } | undefined;
+    if (findHashToDelete) {
+      hashesToDelete.sort((a, b) => b.distance - a.distance);
+      hashToDelete = hashesToDelete[0];
+    }
+
+    // if hashes are visible, sort them by y and return the first one
+    if (visibleDirtyHashes.length) {
+      visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
+      hashToDelete?.hash.unload();
+      if (debugShowLoadingHashes)
+        console.log(
+          `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
+        );
+      return { hash: visibleDirtyHashes[0], visible: true };
+    }
+
+    // otherwise sort notVisible by distance from viewport center
+    notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
+    const dirtyHash = notVisibleDirtyHashes[0];
+    if (hashToDelete) {
+      if (dirtyHash.distance < hashToDelete.distance) {
+        hashToDelete.hash.unload();
+        if (debugShowLoadingHashes) {
+          console.log(`[CellsTextHash] rendering offscreen: ${dirtyHash.hash.hashX}, ${dirtyHash.hash.hashY}`);
+        }
+        return { hash: dirtyHash.hash, visible: false };
+      }
     } else {
-      return { hash: dirtyHashes[0], visible: false };
+      if (debugShowLoadingHashes) {
+        console.log(`[CellsTextHash] rendering offscreen: ${dirtyHash.hash.hashX}, ${dirtyHash.hash.hashY}`);
+      }
+      return { hash: dirtyHash.hash, visible: false };
     }
   }
 
@@ -282,12 +321,8 @@ export class CellsLabels extends Container {
   async update(): Promise<boolean | 'headings' | 'visible'> {
     if (this.updateHeadings()) return 'headings';
 
-    const next = this.findNextDirtyHash();
+    const next = this.nextDirtyHash();
     if (next) {
-      // don't render if we are over the memory limit and the hash is not visible
-      if (!next.visible && this.totalMemory() > MAX_RENDERING_MEMORY) {
-        return false;
-      }
       await next.hash.update();
       return next.visible ? 'visible' : true;
     }

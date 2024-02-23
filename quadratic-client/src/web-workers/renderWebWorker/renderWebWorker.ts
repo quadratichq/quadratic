@@ -43,6 +43,10 @@ class RenderWebWorker {
         pixiApp.firstRenderComplete();
         break;
 
+      case 'renderClientUnload':
+        pixiApp.cellsSheets.unload(e.data);
+        break;
+
       default:
         console.warn('Unhandled message type', e.data);
     }

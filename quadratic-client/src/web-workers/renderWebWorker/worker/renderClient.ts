@@ -71,6 +71,10 @@ class RenderClient {
   firstRenderComplete() {
     this.send({ type: 'renderClientFirstRenderComplete' });
   }
+
+  unload(sheetId: string, hashX: number, hashY: number) {
+    this.send({ type: 'renderClientUnload', sheetId, hashX, hashY });
+  }
 }
 
 export const renderClient = new RenderClient();

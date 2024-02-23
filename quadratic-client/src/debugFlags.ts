@@ -54,6 +54,9 @@ export const debugShowCellHashesInfo = debug && false;
 // reports on rendering
 export const debugShowHashUpdates = debug && false;
 
+// reports on loading/unloading hashes
+export const debugShowLoadingHashes = debug && false;
+
 // --------
 // Misc.
 // --------

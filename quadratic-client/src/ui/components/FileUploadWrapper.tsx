@@ -22,10 +22,6 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     sheet.cursor.changePosition({
       cursorPosition: { x: column, y: row },
       keyboardMovePosition: { x: column, y: row },
-      multiCursor: {
-        originPosition: { x: column, y: row },
-        terminalPosition: { x: column, y: row },
-      },
     });
   };
 
@@ -35,7 +31,6 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-
       moveCursor(e);
     } else if (e.type === 'dragleave') {
       setDragActive(false);
@@ -58,6 +53,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
         );
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const error = await quadraticCore.importCsv(sheets.sheet.id, file, file.name, column, row);
+        console.error(error);
         if (error) addGlobalSnackbar(error);
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');

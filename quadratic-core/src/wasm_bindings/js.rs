@@ -30,4 +30,6 @@ extern "C" {
 
     pub fn jsTime(name: String);
     pub fn jsTimeEnd(name: String);
+
+    pub fn jsProgress(file_name: &str, current: u32, total: u32);
 }

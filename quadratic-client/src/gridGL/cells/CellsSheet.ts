@@ -82,15 +82,7 @@ export class CellsSheet extends Container {
     this.cellsFills.create();
   }
 
-  // update(userIsActive: boolean): boolean {
-  //   const update = this.cellsLabels.update(userIsActive);
-  //   if (update === 'headings') {
-  //     // todo: these can be much more efficient
-  //     this.cellsFills.create();
-  //     this.cellsArray.create();
-
-  //     return true;
-  //   }
-  //   return update;
-  // }
+  unload(hashX: number, hashY: number) {
+    this.cellsLabels.unload(hashX, hashY);
+  }
 }

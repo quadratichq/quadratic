@@ -22,8 +22,12 @@ impl GridController {
                 break;
             }
 
-            self.execute_operation(transaction);
+            dbgjs!(format!(
+                "running transaction with {} left",
+                transaction.operations.len()
+            ));
 
+            self.execute_operation(transaction);
             if transaction.waiting_for_async.is_some() {
                 self.transactions.add_async_transaction(transaction);
                 break;

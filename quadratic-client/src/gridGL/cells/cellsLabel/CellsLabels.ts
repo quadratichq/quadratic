@@ -163,4 +163,12 @@ export class CellsLabels extends Container {
     //   }
     // }
   }
+
+  unload(hashX: number, hashY: number) {
+    const key = `${hashX},${hashY}`;
+    const cellsTextHash = this.cellsTextHash.get(key);
+    if (cellsTextHash) {
+      cellsTextHash.clear();
+    }
+  }
 }

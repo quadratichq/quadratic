@@ -40,9 +40,17 @@ export interface RenderClientFirstRenderComplete {
   type: 'renderClientFirstRenderComplete';
 }
 
+export interface RenderClientUnload {
+  type: 'renderClientUnload';
+  sheetId: string;
+  hashX: number;
+  hashY: number;
+}
+
 export type RenderClientMessage =
   | RenderClientLabelMeshEntry
   | RenderClientCellsTextHashClear
-  | RenderClientFirstRenderComplete;
+  | RenderClientFirstRenderComplete
+  | RenderClientUnload;
 
 export type ClientRenderMessage = ClientRenderInit | ClientRenderViewport;

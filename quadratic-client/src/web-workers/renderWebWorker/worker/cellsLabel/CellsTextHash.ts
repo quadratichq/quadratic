@@ -9,7 +9,7 @@
  * webGL buffers do not exceed the maximum size.
  */
 
-import { debugShowHashUpdates } from '@/debugFlags';
+import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
 import { Bounds } from '@/grid/sheet/Bounds';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { JsRenderCell } from '@/quadratic-core/types';
@@ -55,6 +55,8 @@ export class CellsTextHash {
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
+
+  loaded = false;
 
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
@@ -102,6 +104,14 @@ export class CellsTextHash {
     );
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
+  }
+
+  unload() {
+    if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
+    this.labelMeshes.clear();
+    this.loaded = false;
+    this.dirty = true;
+    renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
   }
 
   async update(): Promise<boolean> {
@@ -209,6 +219,7 @@ export class CellsTextHash {
     // finalizes webGL buffers
     renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewBounds);
     this.labelMeshes.finalize();
+    this.loaded = true;
   }
 
   adjustHeadings(options: { delta: number; column?: number; row?: number }): boolean {

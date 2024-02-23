@@ -184,4 +184,12 @@ export class CellsSheets extends Container<CellsSheet> {
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in showLabel');
     cellsSheet.showLabel(x, y, show);
   }
+
+  unload(options: { sheetId: string; hashX: number; hashY: number }): void {
+    const { sheetId, hashX, hashY } = options;
+    const cellsSheet = this.getById(sheetId);
+    if (cellsSheet) {
+      cellsSheet.unload(hashX, hashY);
+    }
+  }
 }
