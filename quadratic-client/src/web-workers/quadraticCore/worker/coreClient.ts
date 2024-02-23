@@ -172,6 +172,11 @@ class CoreClient {
         }
         break;
 
+      case 'clientCoreGetGridBounds':
+        const bounds = core.getGridBounds(e.data);
+        this.send({ type: 'coreClientGetGridBounds', id: e.data.id, bounds });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

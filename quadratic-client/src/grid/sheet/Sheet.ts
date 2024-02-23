@@ -83,12 +83,12 @@ export class Sheet {
   //   return grid.getCellFormatSummary(this.id, x, y);
   // }
 
-  getGridBounds(onlyData: boolean): Rectangle | undefined {
-    return grid.getGridBounds(this.id, onlyData);
+  async getGridBounds(onlyData: boolean): Promise<Rectangle | undefined> {
+    return await quadraticCore.getGridBounds(this.id, onlyData);
   }
 
-  getMinMax(onlyData: boolean): Coordinate[] | undefined {
-    const bounds = this.getGridBounds(onlyData);
+  async getMinMax(onlyData: boolean): Promise<Coordinate[] | undefined> {
+    const bounds = await this.getGridBounds(onlyData);
     if (!bounds) return;
     return [
       { x: bounds.left, y: bounds.top },

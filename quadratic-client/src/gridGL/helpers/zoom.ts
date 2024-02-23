@@ -4,10 +4,10 @@ import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { intersects } from './intersects';
 
-export function zoomToFit(): void {
+export async function zoomToFit() {
   const viewport = pixiApp.viewport;
   const sheet = sheets.sheet;
-  const gridBounds = sheet.getGridBounds(false);
+  const gridBounds = await sheet.getGridBounds(false);
   if (gridBounds) {
     const screenRectangle = sheet.getScreenRectangle(gridBounds.x, gridBounds.y, gridBounds.width, gridBounds.height);
 

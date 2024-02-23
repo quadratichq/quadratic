@@ -450,13 +450,13 @@ export class Grid {
 
   //#region Bounds
 
-  getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
-    const bounds = this.gridController.getGridBounds(sheetId, ignoreFormatting);
-    if (bounds.type === 'empty') {
-      return;
-    }
-    return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
-  }
+  // getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
+  //   const bounds = this.gridController.getGridBounds(sheetId, ignoreFormatting);
+  //   if (bounds.type === 'empty') {
+  //     return;
+  //   }
+  //   return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
+  // }
 
   getColumnBounds(sheetId: string, column: number, ignoreFormatting: boolean): MinMax | undefined {
     return this.gridController.getColumnBounds(sheetId, column, ignoreFormatting);

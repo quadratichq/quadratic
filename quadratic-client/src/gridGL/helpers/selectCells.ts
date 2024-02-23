@@ -1,9 +1,10 @@
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 
-export function selectAllCells(): void {
+export async function selectAllCells() {
   const sheet = sheets.sheet;
-  const bounds = grid.getGridBounds(sheet.id, true);
+  const bounds = await quadraticCore.getGridBounds(sheet.id, true);
 
   if (bounds) {
     sheet.cursor.changePosition({

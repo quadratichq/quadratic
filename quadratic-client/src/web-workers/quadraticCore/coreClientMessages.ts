@@ -318,6 +318,19 @@ export interface CoreClientImportCsv {
   error: string | undefined;
 }
 
+export interface ClientCoreGetGridBounds {
+  type: 'clientCoreGetGridBounds';
+  sheetId: string;
+  id: number;
+  ignoreFormatting: boolean;
+}
+
+export interface CoreClientGetGridBounds {
+  type: 'coreClientGetGridBounds';
+  bounds?: { x: number; y: number; width: number; height: number };
+  id: number;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -342,7 +355,8 @@ export type ClientCoreMessage =
   | ClientCoreClearFormatting
   | ClientCoreGetRenderCell
   | ClientCoreToggleCommas
-  | ClientCoreImportCsv;
+  | ClientCoreImportCsv
+  | ClientCoreGetGridBounds;
 
 export type CoreClientMessage =
   | CoreClientLoad
@@ -355,4 +369,5 @@ export type CoreClientMessage =
   | CoreClientSummarizeSelection
   | CoreClientFillSheetsModified
   | CoreClientGetRenderCell
-  | CoreClientImportCsv;
+  | CoreClientImportCsv
+  | CoreClientGetGridBounds;
