@@ -50,7 +50,6 @@ impl UnsavedTransactions {
     pub fn insert_or_replace(&mut self, pending: &PendingTransaction, send: bool) {
         let forward = pending.to_forward_transaction();
         let reverse = pending.to_undo_transaction();
-
         match self
             .iter_mut()
             .enumerate()
