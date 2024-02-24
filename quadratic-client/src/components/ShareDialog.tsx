@@ -1,3 +1,4 @@
+import { apiClient } from '@/api/apiClient';
 import { ROUTES } from '@/constants/routes';
 import { CONTACT_URL } from '@/constants/urls';
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
@@ -110,13 +111,21 @@ export function ShareTeamDialog({
 
   return (
     <ShareDialog
-      title={`${name} Team`}
+      title={`${name} members`}
       description={
         <>
-          <span className="font-semibold">
-            {noOfUsers} paid member{noOfUsers !== 1 ? 's' : ''}
-          </span>{' '}
-          · Invite people to join the team
+          {noOfUsers} paid member{noOfUsers !== 1 ? 's' : ''} ·{' '}
+          <Button
+            variant="link"
+            onClick={() => {
+              apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
+                window.location.href = data.url;
+              });
+            }}
+            className="h-auto p-0 font-normal leading-4"
+          >
+            Edit billing
+          </Button>
         </>
       }
       onClose={onClose}

@@ -4,10 +4,12 @@ import { TYPE } from '../../constants/appConstants';
 export function DashboardHeader({
   title,
   actions,
+  titleNode,
   titleStart,
   titleEnd,
 }: {
   title: string;
+  titleNode?: ReactNode;
   actions?: ReactNode;
   titleStart?: ReactNode;
   titleEnd?: ReactNode;
@@ -22,11 +24,15 @@ export function DashboardHeader({
     >
       <div className="flex items-center">
         {titleStart}
-        <h1 className={`${TYPE.h4} p-0`}>{title}</h1>
+        {titleNode ? titleNode : <DashboardHeaderTitle>{title}</DashboardHeaderTitle>}
         {titleEnd}
       </div>
 
       {actions && <div className={`lg:block`}>{actions}</div>}
     </header>
   );
+}
+
+export function DashboardHeaderTitle({ children }: { children: string }) {
+  return <h1 className={`${TYPE.h4} p-0`}>{children}</h1>;
 }
