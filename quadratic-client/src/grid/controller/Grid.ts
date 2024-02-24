@@ -87,10 +87,6 @@ export class Grid {
       sheets.repopulate();
     }
 
-    if (summary.cell_sheets_modified.length) {
-      pixiApp.cellsSheets.modified(summary.cell_sheets_modified);
-    }
-
     if (summary.fill_sheets_modified.length) {
       pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
     }
