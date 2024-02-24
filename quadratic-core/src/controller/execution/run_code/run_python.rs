@@ -11,7 +11,7 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
-        if !cfg!(test) {
+        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
             crate::wasm_bindings::js::runPython(
                 transaction.id.to_string(),
                 sheet_pos.x as i32,

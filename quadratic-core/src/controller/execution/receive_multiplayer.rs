@@ -284,7 +284,7 @@ impl GridController {
                 if let Ok(operations) =
                     serde_json::to_string(&unsaved_transaction.forward.operations)
                 {
-                    if !cfg!(test) {
+                    if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
                         crate::wasm_bindings::js::sendTransaction(
                             transaction_id.to_string(),
                             operations,
@@ -311,7 +311,7 @@ impl GridController {
                 .unsaved_transactions
                 .push(unsaved_transaction.clone());
             if let Ok(operations) = serde_json::to_string(&unsaved_transaction.forward.operations) {
-                if !cfg!(test) {
+                if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
                     crate::wasm_bindings::js::sendTransaction(
                         transaction_id.to_string(),
                         operations,

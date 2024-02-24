@@ -231,7 +231,7 @@ pub fn maybe_reverse_range(
 
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(test) || cfg!(feature = "multiplayer") {
+    if cfg!(test) || cfg!(feature = "multiplayer") || cfg!(feature = "files") {
         dbg!(val);
     } else {
         // this unsafe marker is necessary b/c of quadratic-multiplayer uses quadratic-core as a dependency

@@ -36,6 +36,5 @@ fake = { version = "2.9.1", features = ["derive"] }
 
 [features]
 default = ["files"]
-js = []
 multiplayer = []
 files = []
