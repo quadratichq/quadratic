@@ -1,3 +1,4 @@
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { useTeamRouteLoaderData } from '@/routes/teams.$uuid';
 import { Button as Btn } from '@/shadcn/ui/button';
@@ -13,7 +14,7 @@ import { cn } from '@/shadcn/utils';
 import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
-import { Link, SubmitOptions, useFetcher, useLocation } from 'react-router-dom';
+import { Link, SubmitOptions, useFetcher, useLocation, useSubmit } from 'react-router-dom';
 import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
@@ -49,6 +50,7 @@ export function FileListItem({
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
 }) {
+  const submit = useSubmit();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
   const fetcherDuplicate = useFetcher();
@@ -59,11 +61,18 @@ export function FileListItem({
   const teamRouteLoaderData = useTeamRouteLoaderData();
   const location = useLocation();
   const fileDragRef = useRef<HTMLDivElement>(null);
+  const {
+    teams,
+    userMakingRequest: { id: userId },
+  } = useDashboardRouteLoaderData();
 
   // If we're looking at the user's personal files OR a team where they have edit access, they can move stuff
+  const isPersonalFilesRoute = location.pathname === ROUTES.FILES;
+  const isTeamRoute = teamRouteLoaderData !== undefined;
   const canMoveFiles =
-    location.pathname === ROUTES.FILES ||
-    (teamRouteLoaderData && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
+    isPersonalFilesRoute ||
+    (isTeamRoute && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
+
   const { uuid, name, createdDate, updatedDate, publicLinkAccess, thumbnail, permissions } = file;
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
@@ -156,12 +165,67 @@ export function FileListItem({
             <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
           )}
           <DropdownMenuItem onClick={handleDownload}>{downloadFileAction.label}</DropdownMenuItem>
+          {canMoveFiles && (
+            <>
+              <DropdownMenuSeparator />
+              {!isPersonalFilesRoute && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    const data: FileAction['request.move'] = {
+                      action: 'move',
+                      ownerUserId: userId,
+                    };
+                    submit(data, {
+                      method: 'POST',
+                      action: `/files/${uuid}`,
+                      encType: 'application/json',
+                      navigate: false,
+                      fetcherKey: `move-file:${uuid}`,
+                    });
+                  }}
+                >
+                  Move to my files
+                </DropdownMenuItem>
+              )}
+              {teams
+                .filter(
+                  ({ team, userMakingRequest: { teamPermissions } }) =>
+                    team.activated &&
+                    teamPermissions.includes('TEAM_EDIT') &&
+                    (isTeamRoute ? teamRouteLoaderData.team.uuid !== team.uuid : true)
+                )
+                .map(({ team }) => (
+                  <DropdownMenuItem
+                    className="block truncate"
+                    key={team.uuid}
+                    onClick={() => {
+                      const data: FileAction['request.move'] = {
+                        action: 'move',
+                        ownerTeamId: team.id,
+                      };
+                      submit(data, {
+                        method: 'POST',
+                        action: `/files/${uuid}`,
+                        encType: 'application/json',
+                        navigate: false,
+                        fetcherKey: `move-file:${uuid}`,
+                      });
+                    }}
+                  >
+                    Move to {team.name}
+                  </DropdownMenuItem>
+                ))
+                .slice(0, 2)}
+            </>
+          )}
+
           {permissions.includes('FILE_DELETE') && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
             </>
           )}
+          {}
         </DropdownMenuContent>
       </DropdownMenu>
     ),
