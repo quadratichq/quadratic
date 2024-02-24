@@ -1,3 +1,4 @@
+set -euo pipefail
 
 # Setting env vars this way will only work on Vercel
 # AWS_PULL_REQUEST_ID is set on Amplify
@@ -18,7 +19,7 @@ echo 'Installing wasm-pack...'
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 echo 'Packaging quadratic_py'
-./quadratic-kernels/python-wasm/package.sh
+./quadratic-kernels/python-wasm/package.sh --no-poetry
 
 cd quadratic-core
 
