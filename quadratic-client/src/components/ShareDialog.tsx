@@ -466,6 +466,7 @@ export function InviteForm({
     }
   }, [deleteTriggered]);
 
+  // Ensure the input gets focus when the dialog opens
   useEffect(() => {
     setTimeout(() => {
       inputRef.current?.focus();
