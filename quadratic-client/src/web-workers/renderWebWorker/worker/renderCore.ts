@@ -33,10 +33,6 @@ class RenderCore {
         this.renderCells(e.data as CoreRenderCells);
         break;
 
-      case 'coreRenderCellSheetsModified':
-        renderText.cellsSheetModified(e.data.sheetIds);
-        break;
-
       case 'coreRenderCompleteRenderCells':
         renderText.completeRenderCells(e.data);
         break;

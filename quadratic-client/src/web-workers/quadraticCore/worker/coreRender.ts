@@ -6,7 +6,6 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import { CellSheetsModified } from '@/quadratic-core/types';
 import {
   CoreRenderMessage,
   CoreRenderReady,
@@ -50,10 +49,6 @@ class CoreRender {
   getRenderCells(data: RenderCoreRequestRenderCells) {
     const cells = core.getRenderCells(data);
     this.send({ type: 'coreRenderRenderCells', cells, id: data.id });
-  }
-
-  cellSheetsModified(sheetIds: CellSheetsModified[]) {
-    this.send({ type: 'coreRenderCellSheetsModified', sheetIds });
   }
 
   sendCompleteRenderCells(sheetId: string, hashX: number, hashY: number, cells: string) {

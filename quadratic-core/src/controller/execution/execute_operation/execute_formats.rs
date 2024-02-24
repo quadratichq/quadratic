@@ -21,9 +21,7 @@ impl GridController {
             if !matches!(attr, CellFmtArray::RenderSize(_))
                 && !matches!(attr, CellFmtArray::FillColor(_))
             {
-                transaction
-                    .summary
-                    .add_cell_sheets_modified_rect(&sheet_rect);
+                self.send_render_cells(&sheet_rect);
             }
 
             if matches!(attr, CellFmtArray::FillColor(_)) {

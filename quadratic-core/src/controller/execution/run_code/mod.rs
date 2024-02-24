@@ -106,9 +106,7 @@ impl GridController {
         transaction.sheets_with_dirty_bounds.insert(sheet_id);
         transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
         transaction.summary.code_cells_modified.insert(sheet_id);
-        transaction
-            .summary
-            .add_cell_sheets_modified_rect(&sheet_rect);
+        self.send_render_cells(&sheet_rect);
     }
 
     /// continues the calculate cycle after an async call

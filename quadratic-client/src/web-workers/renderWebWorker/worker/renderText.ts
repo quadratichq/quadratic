@@ -6,7 +6,6 @@
  * directly accessed by its siblings.
  */
 
-import { CellSheetsModified } from '@/quadratic-core/types';
 import init from '@/quadratic-grid-metadata/quadratic_grid_metadata';
 import { GridRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
 import { Rectangle } from 'pixi.js';
@@ -95,15 +94,6 @@ class RenderText {
     // defer to the event loop before rendering the next hash
     setTimeout(this.update);
   };
-
-  cellsSheetModified(cellsSheetsModified: CellSheetsModified[]) {
-    this.cellsLabels.forEach((cellsLabel) => {
-      const filtered = cellsSheetsModified.filter((modified) => modified.sheet_id === cellsLabel.sheetId);
-      if (filtered.length) {
-        cellsLabel.modified(filtered);
-      }
-    });
-  }
 
   completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; cells: string }) {
     const cellsLabels = this.cellsLabels.get(message.sheetId);
