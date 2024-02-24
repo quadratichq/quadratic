@@ -83,12 +83,7 @@ export const router = createBrowserRouter(
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
           <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-          <Route
-            path={ROUTES.CREATE_FILE}
-            loader={Create.loader}
-            action={Create.action}
-            shouldRevalidate={() => false}
-          />
+          <Route path={ROUTES.CREATE_FILE} loader={Create.loader} action={Create.action} />
 
           <Route lazy={() => import('./routes/_dashboard')}>
             <Route path={ROUTES.FILES}>
