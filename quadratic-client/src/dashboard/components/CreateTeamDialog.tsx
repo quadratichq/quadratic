@@ -72,7 +72,7 @@ export const CreateTeamDialog = () => {
     {
       title: 'Personal',
       price: 'Free',
-      features: ['Limited personal files', 'Limited file sharing', 'Throttled AI usage', 'Best effort support'],
+      features: ['Unlimited files', 'Limited file sharing', 'Throttled AI usage', 'Best effort support'],
     },
     {
       title: 'Team',
