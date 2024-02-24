@@ -189,8 +189,8 @@ export const Component = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={openShareDialog}>Manage members</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
+                  <DropdownMenuItem onClick={openShareDialog}>Manage members</DropdownMenuItem>
                   {teamPermissions.includes('TEAM_BILLING_EDIT') && (
                     <DropdownMenuItem
                       onClick={() => {
