@@ -97,8 +97,6 @@ class RenderText {
 
   completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; cells: string }) {
     const cellsLabels = this.cellsLabels.get(message.sheetId);
-    if (!cellsLabels) {
-    }
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
     cellsLabels.completeRenderCells(message.hashX, message.hashY, message.cells);
   }

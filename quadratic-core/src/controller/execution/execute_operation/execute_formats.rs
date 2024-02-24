@@ -18,12 +18,6 @@ impl GridController {
                 .sheets_with_dirty_bounds
                 .insert(sheet_rect.sheet_id);
 
-            if !matches!(attr, CellFmtArray::RenderSize(_))
-                && !matches!(attr, CellFmtArray::FillColor(_))
-            {
-                self.send_render_cells(&sheet_rect);
-            }
-
             if matches!(attr, CellFmtArray::FillColor(_)) {
                 transaction
                     .summary
@@ -77,6 +71,12 @@ impl GridController {
                     )
                 }
             };
+
+            if !matches!(attr, CellFmtArray::RenderSize(_))
+                && !matches!(attr, CellFmtArray::FillColor(_))
+            {
+                self.send_render_cells(&sheet_rect);
+            }
 
             transaction
                 .forward_operations
