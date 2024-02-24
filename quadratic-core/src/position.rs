@@ -223,6 +223,15 @@ impl Rect {
     }
 }
 
+impl From<SheetRect> for Rect {
+    fn from(sheet_rect: SheetRect) -> Self {
+        Rect {
+            min: sheet_rect.min,
+            max: sheet_rect.max,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -427,17 +436,6 @@ impl From<SheetRect> for SheetPos {
             x: sheet_rect.min.x,
             y: sheet_rect.min.y,
             sheet_id: sheet_rect.sheet_id,
-        }
-    }
-}
-
-// cannot go from Rect to SheetRect; need to use Rect.to_sheet_rect(sheet_id)
-#[allow(clippy::from_over_into)]
-impl Into<Rect> for SheetRect {
-    fn into(self) -> Rect {
-        Rect {
-            min: self.min,
-            max: self.max,
         }
     }
 }

@@ -46,7 +46,7 @@ export class CellsTextHash {
   viewRectangle: Rectangle;
 
   // rebuild CellsTextHash
-  dirty = true;
+  dirty: boolean | JsRenderCell[] = true;
 
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
@@ -95,13 +95,16 @@ export class CellsTextHash {
   async createLabels() {
     if (debugShowHashUpdates) console.log(`[CellsTextHash] createLabels for ${this.hashX}, ${this.hashY}`);
     this.labels = new Map();
-    const cells = await renderCore.getRenderCells(
-      this.cellsLabels.sheetId,
-      this.AABB.x,
-      this.AABB.y,
-      this.AABB.width,
-      this.AABB.height
-    );
+    const cells =
+      this.dirty !== true
+        ? (this.dirty as JsRenderCell[])
+        : await renderCore.getRenderCells(
+            this.cellsLabels.sheetId,
+            this.AABB.x,
+            this.AABB.y,
+            this.AABB.width,
+            this.AABB.height
+          );
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
   }

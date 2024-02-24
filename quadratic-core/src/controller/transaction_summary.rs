@@ -120,6 +120,8 @@ impl TransactionSummary {
 
     /// Adds a CellSheetsModified region to the summary based on a sheet_rect.
     pub fn add_cell_sheets_modified_rect(&mut self, sheet_rect: &SheetRect) {
+        dbgjs!("add_cell_sheets_modified_rect SHOULD BE REPLACED...");
+
         let mut modified = HashSet::new();
         for y in sheet_rect.y_range() {
             for x in sheet_rect.x_range() {

@@ -10,7 +10,7 @@ import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { intersects } from '@/gridGL/helpers/intersects';
-import { CellSheetsModified } from '@/quadratic-core/types';
+import { CellSheetsModified, JsRenderCell } from '@/quadratic-core/types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
 import { SheetRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
 import { Container, Rectangle } from 'pixi.js';
@@ -374,5 +374,23 @@ export class CellsLabels extends Container {
         cellsHash.dirty = true;
       }
     }
+  }
+
+  completeRenderCells(hashX: number, hashY: number, cells: string): void {
+    console.log(hashX, hashY, cells);
+    const renderCells: JsRenderCell[] = JSON.parse(cells);
+    const key = this.getHashKey(hashX, hashY);
+    let cellsHash = this.cellsTextHash.get(key);
+    if (!cellsHash) {
+      cellsHash = new CellsTextHash(this, hashX, hashY);
+      this.cellsTextHash.set(key, cellsHash);
+    }
+    const row = this.cellsRows.get(hashY);
+    if (row) {
+      row.push(cellsHash);
+    } else {
+      this.cellsRows.set(hashY, [cellsHash]);
+    }
+    cellsHash.dirty = renderCells;
   }
 }

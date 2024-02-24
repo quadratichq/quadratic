@@ -16,6 +16,8 @@ import {
 } from '../coreRenderMessages';
 import { core } from './core';
 
+declare var self: WorkerGlobalScope & typeof globalThis;
+
 class CoreRender {
   private coreRenderPort?: MessagePort;
 
@@ -53,6 +55,12 @@ class CoreRender {
   cellSheetsModified(sheetIds: CellSheetsModified[]) {
     this.send({ type: 'coreRenderCellSheetsModified', sheetIds });
   }
+
+  sendCompleteRenderCells(sheetId: string, hashX: number, hashY: number, cells: string) {
+    this.send({ type: 'coreRenderCompleteRenderCells', sheetId, hashX, hashY, cells });
+  }
 }
 
 export const coreRender = new CoreRender();
+
+(self as any).sendCompleteRenderCells = coreRender.sendCompleteRenderCells.bind(coreRender);

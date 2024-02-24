@@ -9,6 +9,7 @@ pub mod execution;
 pub mod export;
 pub mod formula;
 pub mod operations;
+pub mod send_render;
 pub mod sheet_offsets;
 pub mod sheets;
 pub mod thumbnail;
@@ -16,7 +17,7 @@ pub mod transaction;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod user_actions;
-//
+
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct GridController {

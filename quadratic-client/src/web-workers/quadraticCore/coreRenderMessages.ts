@@ -37,6 +37,18 @@ export interface CoreRenderCellSheetsModified {
   sheetIds: CellSheetsModified[];
 }
 
-export type CoreRenderMessage = CoreRenderCells | CoreRenderReady | CoreRenderCellSheetsModified;
+export interface CoreRenderCompleteRenderCells {
+  type: 'coreRenderCompleteRenderCells';
+  sheetId: string;
+  hashX: number;
+  hashY: number;
+  cells: string;
+}
+
+export type CoreRenderMessage =
+  | CoreRenderCells
+  | CoreRenderReady
+  | CoreRenderCellSheetsModified
+  | CoreRenderCompleteRenderCells;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells;

@@ -14,6 +14,7 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
+    sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -42,4 +43,8 @@ export const jsImportProgress = (
   height: number
 ) => {
   return self.sendImportProgress(filename, current, total, x, y, width, height);
+};
+
+export const jsRenderCellSheets = (sheetId: string, hashX: bigint, hashY: bigint, cells: string /*JsRenderCell[]*/) => {
+  self.sendCompleteRenderCells(sheetId, Number(hashX), Number(hashY), cells);
 };

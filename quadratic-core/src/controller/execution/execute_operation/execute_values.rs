@@ -57,9 +57,12 @@ impl GridController {
                         .insert(sheet_pos.sheet_id);
                     transaction.summary.generate_thumbnail |=
                         self.thumbnail_dirty_sheet_rect(&sheet_rect);
-                    transaction
-                        .summary
-                        .add_cell_sheets_modified_rect(&sheet_rect);
+
+                    self.send_render_cells(&sheet_rect);
+
+                    // transaction
+                    //     .summary
+                    //     .add_cell_sheets_modified_rect(&sheet_rect);
                 }
             }
         }

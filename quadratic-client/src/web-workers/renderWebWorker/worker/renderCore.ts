@@ -37,6 +37,10 @@ class RenderCore {
         renderText.cellsSheetModified(e.data.sheetIds);
         break;
 
+      case 'coreRenderCompleteRenderCells':
+        renderText.completeRenderCells(e.data);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }

@@ -40,4 +40,12 @@ extern "C" {
         w: u32,
         h: u32,
     );
+
+    // cells: Vec<JsRenderCell>
+    pub fn jsRenderCellSheets(
+        sheet_id: String,
+        hash_x: i64,
+        hash_y: i64,
+        cells: String, /*Vec<JsRenderCell>*/
+    );
 }
