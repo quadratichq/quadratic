@@ -17,7 +17,6 @@ export default function CreateFileButton() {
   const actionUrl = uuid ? ROUTES.CREATE_FILE_IN_TEAM(uuid) : ROUTES.CREATE_FILE;
 
   const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
-    console.log('handleImport');
     // If nothing was selected, just exit
     if (!e.target.files) {
       return;
