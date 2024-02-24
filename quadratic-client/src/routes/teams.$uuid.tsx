@@ -26,7 +26,7 @@ import {
 import { apiClient } from '../api/apiClient';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
+import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 
 export const useTeamRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.TEAM) as LoaderData | undefined;
 
@@ -162,6 +162,7 @@ export const Component = () => {
     name = (fetcher.json as TeamAction['request.update-team']).name;
   }
 
+  const openShareDialog = () => setShareSearchParamValue('');
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
   const showShareDialog = shareSearchParamValue !== null;
@@ -177,16 +178,18 @@ export const Component = () => {
       >
         <DashboardHeader
           title={name}
-          titleStart={<AvatarTeam className="mr-3 h-9 w-9" />}
-          titleEnd={
+          titleNode={
             canEdit ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-sm" className="ml-1 rounded-full">
+                  <Button variant="ghost" className="flex items-center gap-2 pl-1 pr-2">
+                    <AvatarTeam className="h-8 w-8" />
+                    <DashboardHeaderTitle>{name}</DashboardHeaderTitle>
                     <CaretDownIcon />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                  <DropdownMenuItem onClick={openShareDialog}>Manage members</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
                   {teamPermissions.includes('TEAM_BILLING_EDIT') && (
                     <DropdownMenuItem
@@ -202,18 +205,17 @@ export const Component = () => {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : null
+            ) : (
+              <div className="flex items-center">
+                <AvatarTeam className="mr-2 h-8 w-8" />
+                <DashboardHeaderTitle>{name}</DashboardHeaderTitle>
+              </div>
+            )
           }
           actions={
             <div className={`flex items-center gap-2`}>
               <div className="hidden lg:block">
-                <Button
-                  asChild
-                  variant={null}
-                  onClick={() => {
-                    setShareSearchParamValue('');
-                  }}
-                >
+                <Button asChild variant={null} onClick={openShareDialog}>
                   <AvatarGroup
                     max={4}
                     sx={{ cursor: 'pointer', pr: 0 }}
@@ -225,12 +227,7 @@ export const Component = () => {
                   </AvatarGroup>
                 </Button>
               </div>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShareSearchParamValue('');
-                }}
-              >
+              <Button variant="outline" onClick={openShareDialog}>
                 Members
               </Button>
               {canEdit && <CreateFileButton />}
@@ -242,12 +239,12 @@ export const Component = () => {
           files={files.map((data) => ({ ...data.file, permissions: data.userMakingRequest.filePermissions }))}
           emptyState={
             <Empty
-              title="No team files"
-              description={`Files created by${canEdit ? ' you or ' : ' '}team members will show up here.`}
+              title="No team files yet"
+              description={`Files created by${canEdit ? ' you or ' : ' '}your team members will show up here.`}
               actions={
                 canEdit ? (
                   <Button asChild variant="secondary">
-                    <Link to={ROUTES.CREATE_FILE_IN_TEAM(team.uuid)}>Create file</Link>
+                    <Link to={ROUTES.CREATE_FILE_IN_TEAM(team.uuid)}>Create a file</Link>
                   </Button>
                 ) : null
               }

@@ -1,3 +1,4 @@
+import { apiClient } from '@/api/apiClient';
 import { ROUTES } from '@/constants/routes';
 import { CONTACT_URL } from '@/constants/urls';
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
@@ -110,13 +111,21 @@ export function ShareTeamDialog({
 
   return (
     <ShareDialog
-      title={`Share ${name}`}
+      title={`${name} members`}
       description={
         <>
-          <span className="font-semibold">
-            {noOfUsers} paid member{noOfUsers !== 1 ? 's' : ''}
-          </span>{' '}
-          · Invite people to collaborate in this team
+          {noOfUsers} paid member{noOfUsers !== 1 ? 's' : ''} ·{' '}
+          <Button
+            variant="link"
+            onClick={() => {
+              apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
+                window.location.href = data.url;
+              });
+            }}
+            className="h-auto p-0 font-normal leading-4"
+          >
+            Edit billing
+          </Button>
         </>
       }
       onClose={onClose}
@@ -260,7 +269,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
             <PersonIcon className="-mr-[2px]" />
             <PersonIcon className="-ml-[2px]" />
           </div>
-          <Type variant="body2">Everyone in {owner.name}</Type>
+          <Type variant="body2">Everyone at {owner.name}</Type>
           <Type variant="body2" className="pr-4">
             Can access
           </Type>
@@ -456,6 +465,13 @@ export function InviteForm({
       inputRef.current?.focus();
     }
   }, [deleteTriggered]);
+
+  // Ensure the input gets focus when the dialog opens
+  useEffect(() => {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  }, []);
 
   return (
     <form className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
@@ -770,7 +786,7 @@ function ListItemPublicLink({
   };
 
   const optionsByValue: Record<PublicLinkAccess, string> = {
-    NOT_SHARED: 'Cannot view',
+    NOT_SHARED: 'No access',
     READONLY: 'Can view',
     EDIT: 'Can edit',
   };
@@ -784,7 +800,7 @@ function ListItemPublicLink({
       </div>
 
       <div className={`flex flex-col`}>
-        <Type variant="body2">Anyone with the link</Type>
+        <Type variant="body2">Anyone with the public link</Type>
         {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
           <Type variant="caption" className="text-destructive">
             Failed to update
