@@ -90,7 +90,7 @@ export const router = createBrowserRouter(
             shouldRevalidate={() => false}
           />
 
-          <Route lazy={() => import('./routes/_dashboard')}>
+          <Route id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route path={ROUTES.FILES}>
               <Route index lazy={() => import('./routes/files')} />
 

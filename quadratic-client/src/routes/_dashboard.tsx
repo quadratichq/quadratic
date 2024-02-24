@@ -34,9 +34,10 @@ import {
   useNavigation,
   useParams,
   useRevalidator,
+  useRouteLoaderData,
   useSubmit,
 } from 'react-router-dom';
-import { ROUTES } from '../constants/routes';
+import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
 import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
 import QuadraticLogotype from '../dashboard/components/quadratic-logotype.svg';
 import { useRootRouteLoaderData } from '../router';
@@ -53,7 +54,9 @@ const DashboardContext = createContext([initialDashboardState, () => {}] as [
 ]);
 export const useDashboardContext = () => useContext(DashboardContext);
 
-export const loader = async (): Promise<ApiTypes['/v0/teams.GET.response']> => {
+type LoaderData = ApiTypes['/v0/teams.GET.response'];
+export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
+export const loader = async (): Promise<LoaderData> => {
   const data = await apiClient.teams.list();
   return data;
 };
@@ -212,9 +215,10 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
                 key={uuid}
                 to={ROUTES.TEAM(uuid)}
                 dropTarget={teamPermissions.includes('TEAM_EDIT') ? { type: 'team', id: ownerTeamId } : undefined}
+                className="truncate"
               >
                 <AvatarTeam className={`-my-0.5 h-6 w-6`} />
-                {name}
+                <span className="block truncate">{name}</span>
               </SidebarNavLink>
             );
           })}
