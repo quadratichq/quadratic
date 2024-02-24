@@ -196,7 +196,7 @@ export class GridHeadings extends Container {
           )
         ) {
           const text = showA1Notation ? getColumnA1Notation(column) : column.toString();
-          this.labels.add({ text, x: xPosition, y });
+          this.labels.add(text, xPosition, y);
         }
       }
       column++;
@@ -308,7 +308,7 @@ export class GridHeadings extends Container {
           )
         ) {
           const text = showA1Notation ? getRowA1Notation(row) : row.toString();
-          this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
+          this.labels.add(text, x + ROW_DIGIT_OFFSET.x, yPosition + ROW_DIGIT_OFFSET.y);
         }
       }
       row++;

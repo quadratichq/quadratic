@@ -1,76 +1,56 @@
-import { BitmapText, Container } from 'pixi.js';
-import { colors } from '../../../theme/colors';
-import { pixiApp } from '../../pixiApp/PixiApp';
+// Draws Grid Heading Labels using as few meshes as possible.
+
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+import { BitmapFont, Container, Loader, Texture } from 'pixi.js';
 import { GRID_HEADER_FONT_SIZE } from './GridHeadings';
+import { GridHeadingsLabel } from './GridHeadingsLabel';
 
-interface LabelData {
-  text: string;
-  x: number;
-  y: number;
-}
+const FONT_NAME = 'OpenSans';
+const CHARACTERS = '0123456789';
 
-export class GridHeadingsLabels extends Container {
-  private labelData: LabelData[] = [];
+export class GridHeadingsLabels extends Container<GridHeadingsLabel> {
+  private gridHeadingsLabels: Map<string, GridHeadingsLabel> = new Map();
+
+  constructor() {
+    super();
+    const resource = Loader.shared.resources[FONT_NAME];
+    const bitmapFont = resource?.bitmapFont;
+    if (!bitmapFont) throw new Error(`Texture not found for font: ${FONT_NAME}`);
+
+    for (const char of CHARACTERS) {
+      const charData = bitmapFont.chars[char.charCodeAt(0)];
+      const baseTexture = charData.texture.baseTexture;
+      if (!baseTexture) throw new Error(`Texture not found for font: ${FONT_NAME} with uid: ${char}`);
+      const pageTexture = this.children.find((label) => label.texture.baseTexture.uid === baseTexture.uid);
+      if (pageTexture) {
+        this.gridHeadingsLabels.set(char, pageTexture);
+      } else {
+        const pageTexture = this.addChild(new GridHeadingsLabel(bitmapFont, new Texture(baseTexture)));
+        this.gridHeadingsLabels.set(char, pageTexture);
+      }
+    }
+  }
 
   clear() {
-    this.labelData = [];
-    this.children.forEach((child) => (child.visible = false));
+    this.gridHeadingsLabels.forEach((label) => label.clear());
   }
 
-  add(label: LabelData): void {
-    this.labelData.push(label);
+  add(text: string, x: number, y: number): void {
+    let xPos = x;
+    let yPos = y;
+    for (const char of text) {
+      const label = this.gridHeadingsLabels.get(char);
+      if (!label) throw new Error(`Label not found for character: ${char} in GridHeadingsLabel`);
+      if (label) {
+        xPos += label.add(char, xPos, yPos);
+      }
+    }
   }
 
-  private addLabelText(): BitmapText {
-    const label = this.addChild(
-      new BitmapText('', {
-        fontName: 'OpenSans',
-        fontSize: GRID_HEADER_FONT_SIZE,
-        tint: colors.gridHeadingLabel,
-      })
-    );
-    label.anchor.set(0.5);
-    return label;
-  }
-
-  // add labels to headings using cached labels
   update() {
-    // keep current children to use as the cache
-    this.children.forEach((child) => (child.visible = false));
-
-    const inverseScale = 1 / pixiApp.viewport.scale.x;
-    const available = [...this.children] as BitmapText[];
-    const leftovers: LabelData[] = [];
-
-    // reuse existing labels that have the same text
-    this.labelData.forEach((data) => {
-      const index = available.findIndex((label) => label.text === data.text);
-      if (index === -1) {
-        leftovers.push(data);
-      } else {
-        const label = available[index];
-        label.scale.set(inverseScale);
-        label.position.set(data.x, data.y);
-        label.visible = true;
-        available.splice(index, 1);
-      }
-    });
-
-    // use existing labels but change the text
-    leftovers.forEach((data, i) => {
-      let label: BitmapText;
-      if (i < available.length) {
-        label = available[i];
-        label.visible = true;
-      }
-
-      // otherwise create new labels
-      else {
-        label = this.addLabelText();
-      }
-      label.scale.set(inverseScale);
-      label.position.set(data.x, data.y);
-      label.text = data.text;
-    });
+    const { distanceFieldRange, size } = BitmapFont.available[FONT_NAME];
+    const fontScale = GRID_HEADER_FONT_SIZE / size;
+    const ufWidth = distanceFieldRange * fontScale * pixiApp.viewport.scale.x;
+    this.children.forEach((label) => label.finalize(ufWidth));
   }
 }

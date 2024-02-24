@@ -19,7 +19,7 @@ export class LabelMeshEntry extends Mesh {
   constructor(message: RenderClientLabelMeshEntry) {
     const geometry = new MeshGeometry();
     const shader = message.hasColor ? shaderTint : shaderNoTint;
-    const resource = Loader.shared.resources[message.fontName]; // Texture.WHITE; //Texture.from(message.fontName);
+    const resource = Loader.shared.resources[message.fontName];
     if (!resource?.bitmapFont) {
       throw new Error(`Texture not found for font: ${message.fontName}`);
     }
