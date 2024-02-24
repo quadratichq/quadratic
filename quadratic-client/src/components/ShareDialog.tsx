@@ -466,6 +466,12 @@ export function InviteForm({
     }
   }, [deleteTriggered]);
 
+  useEffect(() => {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  }, []);
+
   return (
     <form className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
       <div className="flex flex-grow flex-col">
