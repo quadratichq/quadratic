@@ -1,3 +1,4 @@
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import {
   BLEND_MODES,
   BitmapFont,
@@ -39,18 +40,19 @@ export class GridHeadingsLabel extends Mesh {
   }
 
   add(character: string, x: number, y: number): number {
-    const entry = this.bitmapFont.chars[character];
+    const entry = this.bitmapFont.chars[character.charCodeAt(0)];
     this.characters.push({ character, x, y, entry });
-    if (!entry) throw new Error(`Character not found in bitmapFont: ${character}`);
-    return entry.xAdvance;
+    if (!entry) throw new Error(`Character not found in bitmapFont: "${character}"`);
+    const scale = GRID_HEADER_FONT_SIZE / this.bitmapFont.size;
+    return (entry.xAdvance * scale) / pixiApp.viewport.scale.x;
   }
 
   finalize(ufWidth: number) {
-    this.material.uniforms.uFWidth = ufWidth;
-    const size = this.characters.length;
-    const vertices = new Float32Array(4 * 2 * size);
-    const uvs = new Float32Array(4 * 2 * size);
-    const indices = new Uint16Array(6 * size);
+    this.shader.uniforms.uFWidth = ufWidth;
+    const total = this.characters.length;
+    const vertices = new Float32Array(4 * 2 * total);
+    const uvs = new Float32Array(4 * 2 * total);
+    const indices = new Uint16Array(6 * total);
 
     /** Adds the glyphs to the GridHeadingsLabel */
     let index = 0;
@@ -60,8 +62,8 @@ export class GridHeadingsLabel extends Mesh {
       const textureUvs = char.entry.texture._uvs.uvsFloat32;
       const xPos = char.x;
       const yPos = char.y;
-      const right = xPos + textureFrame.width * scale;
-      const bottom = yPos + textureFrame.height * scale;
+      const right = xPos + (textureFrame.width * scale) / pixiApp.viewport.scale.x;
+      const bottom = yPos + (textureFrame.height * scale) / pixiApp.viewport.scale.x;
 
       indices[index * 6 + 0] = 0 + index * 4;
       indices[index * 6 + 1] = 1 + index * 4;
@@ -90,5 +92,9 @@ export class GridHeadingsLabel extends Mesh {
 
       index++;
     }
+
+    this.geometry.getBuffer('aVertexPosition').update(vertices);
+    this.geometry.getBuffer('aTextureCoord').update(uvs);
+    this.geometry.getIndex().update(indices);
   }
 }

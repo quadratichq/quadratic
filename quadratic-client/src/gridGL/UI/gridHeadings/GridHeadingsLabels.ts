@@ -6,7 +6,7 @@ import { GRID_HEADER_FONT_SIZE } from './GridHeadings';
 import { GridHeadingsLabel } from './GridHeadingsLabel';
 
 const FONT_NAME = 'OpenSans';
-const CHARACTERS = '0123456789';
+const CHARACTERS = '-0123456789';
 
 export class GridHeadingsLabels extends Container<GridHeadingsLabel> {
   private gridHeadingsLabels: Map<string, GridHeadingsLabel> = new Map();
@@ -38,11 +38,11 @@ export class GridHeadingsLabels extends Container<GridHeadingsLabel> {
   add(text: string, x: number, y: number): void {
     let xPos = x;
     let yPos = y;
-    for (const char of text) {
-      const label = this.gridHeadingsLabels.get(char);
-      if (!label) throw new Error(`Label not found for character: ${char} in GridHeadingsLabel`);
+    for (const character of text) {
+      const label = this.gridHeadingsLabels.get(character);
+      if (!label) throw new Error(`Label not found for character: "${character}" in GridHeadingsLabel`);
       if (label) {
-        xPos += label.add(char, xPos, yPos);
+        xPos += label.add(character, xPos, yPos);
       }
     }
   }
@@ -50,7 +50,13 @@ export class GridHeadingsLabels extends Container<GridHeadingsLabel> {
   update() {
     const { distanceFieldRange, size } = BitmapFont.available[FONT_NAME];
     const fontScale = GRID_HEADER_FONT_SIZE / size;
-    const ufWidth = distanceFieldRange * fontScale * pixiApp.viewport.scale.x;
+    const { a, b, c, d } = this.transform.worldTransform;
+    const dx = Math.sqrt(a * a + b * b);
+    const dy = Math.sqrt(c * c + d * d);
+    const worldScale = (Math.abs(dx) + Math.abs(dy)) / 2;
+    const resolution = pixiApp.renderer.resolution;
+    const scale = (worldScale * resolution) / pixiApp.viewport.scale.x;
+    const ufWidth = distanceFieldRange * fontScale * scale;
     this.children.forEach((label) => label.finalize(ufWidth));
   }
 }
