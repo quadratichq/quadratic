@@ -1,6 +1,7 @@
 import {
   CellAlign,
   CellFormatSummary,
+  CodeCellLanguage,
   JsCodeCell,
   JsRenderCell,
   JsRenderCodeCell,
@@ -341,6 +342,16 @@ export interface ClientCoreDeleteCellValues {
   cursor?: string;
 }
 
+export interface ClientCoreSetCodeCellValue {
+  type: 'clientCoreSetCodeCellValue';
+  sheetId: string;
+  x: number;
+  y: number;
+  language: CodeCellLanguage;
+  codeString: string;
+  cursor?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -367,7 +378,8 @@ export type ClientCoreMessage =
   | ClientCoreToggleCommas
   | ClientCoreImportCsv
   | ClientCoreGetGridBounds
-  | ClientCoreDeleteCellValues;
+  | ClientCoreDeleteCellValues
+  | ClientCoreSetCodeCellValue;
 
 export type CoreClientMessage =
   | CoreClientLoad

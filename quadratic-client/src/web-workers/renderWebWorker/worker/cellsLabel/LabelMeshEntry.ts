@@ -79,7 +79,6 @@ export class LabelMeshEntry {
       ]);
     } else {
       this.memory = this.vertices.byteLength + this.uvs.byteLength + this.indices.byteLength;
-
       renderClient.sendLabelMeshEntry(message, [this.vertices.buffer, this.uvs.buffer, this.indices.buffer]);
     }
 

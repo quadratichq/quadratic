@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
+import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
@@ -8,7 +9,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
@@ -157,12 +157,13 @@ export const CodeEditor = () => {
     const language = editorInteractionState.mode;
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
-    grid.setCodeCellValue({
+    quadraticCore.setCodeCellValue({
       sheetId: cellLocation.sheetId,
       x: cellLocation.x,
       y: cellLocation.y,
       codeString: editorContent ?? '',
       language,
+      cursor: sheets.getCursorPosition(),
     });
     setCodeString(editorContent ?? '');
     mixpanel.track('[CodeEditor].cellRun', {

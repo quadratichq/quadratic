@@ -74,6 +74,11 @@ export class PixiApp {
     return promise;
   }
 
+  private firstRender() {
+    if (this.waitingForFirstRender) {
+    }
+  }
+
   // called after RenderText has no more updates to send
   firstRenderComplete() {
     if (this.waitingForFirstRender) {

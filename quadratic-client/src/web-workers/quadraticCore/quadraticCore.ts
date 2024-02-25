@@ -10,6 +10,7 @@ import { Coordinate } from '@/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
+  CodeCellLanguage,
   JsCodeCell,
   JsRenderCell,
   JsRenderCodeCell,
@@ -212,6 +213,20 @@ class QuadraticCore {
       y,
       value,
       cursor,
+    });
+  }
+
+  setCodeCellValue(options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    language: CodeCellLanguage;
+    codeString: string;
+    cursor?: string;
+  }) {
+    this.send({
+      type: 'clientCoreSetCodeCellValue',
+      ...options,
     });
   }
 

@@ -79,7 +79,7 @@ class RenderText {
       const cellsLabel = this.cellsLabels.get(sheetId);
       const result = await cellsLabel?.update();
       if (result) {
-        // for first render, we render all the visible text before starting
+        // for first render, we render all the visible text before showing pixiApp
         if (result === 'visible') {
           complete = false;
         }
@@ -87,7 +87,7 @@ class RenderText {
       }
     }
 
-    if (complete && !this.complete) {
+    if (this.sheetId && complete && !this.complete) {
       this.complete = true;
       renderClient.firstRenderComplete();
     }

@@ -55,15 +55,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     data.file.lastCheckpointSequenceNumber
   );
 
-  // todo: handle thumbnail generation when it doesn't exist...
+  // todo: these need to be handled as well...
 
-  // if (!grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber)) {
-  //   Sentry.captureEvent({
-  //     message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-  //     level: 'error',
-  //   });
-  //   throw new Response('File validation failed.', { status: 200 });
-  // }
   // grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
 
   // // If the file is newer than the app, do a (hard) reload.

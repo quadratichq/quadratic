@@ -7,7 +7,14 @@
 
 import { debugWebWorkers } from '@/debugFlags';
 import init, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
-import { CellFormatSummary, JsCodeCell, JsRenderCell, JsRenderCodeCell, JsRenderFill } from '@/quadratic-core/types';
+import {
+  CellFormatSummary,
+  CodeCellLanguage,
+  JsCodeCell,
+  JsRenderCell,
+  JsRenderCodeCell,
+  JsRenderFill,
+} from '@/quadratic-core/types';
 import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -323,6 +330,20 @@ class Core {
   deleteCellValues(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const summary = this.gridController.deleteCellValues(sheetId, pointsToRect(x, y, width, height), cursor);
+    coreMultiplayer.handleSummary(summary);
+    handleTransactionSummary(summary);
+  }
+
+  setCodeCellValue(
+    sheetId: string,
+    x: number,
+    y: number,
+    language: CodeCellLanguage,
+    codeString: string,
+    cursor?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.setCellCode(sheetId, new Pos(x, y), language, codeString, cursor);
     coreMultiplayer.handleSummary(summary);
     handleTransactionSummary(summary);
   }

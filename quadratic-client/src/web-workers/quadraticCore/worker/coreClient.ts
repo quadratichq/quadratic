@@ -181,6 +181,10 @@ class CoreClient {
         core.deleteCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         break;
 
+      case 'clientCoreSetCodeCellValue':
+        core.setCodeCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.language, e.data.codeString, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

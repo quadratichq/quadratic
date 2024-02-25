@@ -18,7 +18,6 @@ import init, {
   TransientResize,
 } from '../../quadratic-core/quadratic_core';
 import {
-  CodeCellLanguage,
   JsClipboard,
   JsHtmlOutput,
   Rect,
@@ -143,17 +142,6 @@ export class Grid {
     this.gridController = GridController.test();
   }
 
-  // import/export
-  openFromContents(contents: string, lastSequenceNum: number): boolean {
-    try {
-      this.gridController = GridController.newFromFile(contents, lastSequenceNum);
-      return true;
-    } catch (e) {
-      console.warn(e);
-      return false;
-    }
-  }
-
   export(): string {
     return this.gridController.exportToFile();
   }
@@ -164,10 +152,6 @@ export class Grid {
 
   //#region get sheet information
   //-------------------------
-
-  sheetIndexToId(index: number): string | undefined {
-    return this.gridController.sheetIndexToId(index);
-  }
 
   getSheetOrder(sheetId: string): string {
     return this.gridController.getSheetOrder(sheetId);
@@ -185,11 +169,6 @@ export class Grid {
 
   //#region set sheet operations
   //------------------------
-
-  getSheetIds(): string[] {
-    const data = this.gridController.getSheetIds();
-    return JSON.parse(data);
-  }
 
   addSheet() {
     const summary = this.gridController.addSheet(sheets.getCursorPosition());
@@ -226,172 +205,6 @@ export class Grid {
   //#region set grid operations
   //-----------------------------
 
-  // setCellValue(options: { sheetId: string; x: number; y: number; value: string }) {
-  //   const summary = this.gridController.setCellValue(
-  //     options.sheetId,
-  //     new Pos(options.x, options.y),
-  //     options.value,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // returns whether the transaction completed
-  setCodeCellValue(options: {
-    sheetId: string;
-    x: number;
-    y: number;
-    language: CodeCellLanguage;
-    codeString: string;
-  }): boolean {
-    const summary = this.gridController.setCellCode(
-      options.sheetId,
-      new Pos(options.x, options.y),
-      options.language,
-      options.codeString,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-    return summary.complete;
-  }
-
-  // deleteCellValues(sheetId: string, rectangle: Rectangle) {
-  //   const summary = this.gridController.deleteCellValues(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellAlign(sheetId: string, rectangle: Rectangle, align: CellAlign | undefined) {
-  //   const summary = this.gridController.setCellAlign(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     align,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellWrap(sheetId: string, rectangle: Rectangle, wrap: CellWrap) {
-  //   const summary = this.gridController.setCellWrap(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     wrap,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string) {
-  //   const summary = this.gridController.setCellCurrency(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     symbol,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellPercentage(sheetId: string, rectangle: Rectangle) {
-  //   const summary = this.gridController.setCellPercentage(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellExponential(sheetId: string, rectangle: Rectangle) {
-  //   const summary = this.gridController.setCellExponential(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // toggleCommas(sheetId: string, source: Pos, rectangle: Rectangle) {
-  //   const summary = this.gridController.toggleCommas(
-  //     sheetId,
-  //     source,
-  //     rectangleToRect(rectangle),
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // removeCellNumericFormat(sheetId: string, rectangle: Rectangle) {
-  //   const summary = this.gridController.removeCellNumericFormat(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean) {
-  //   const summary = this.gridController.setCellBold(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     bold,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean) {
-  //   const summary = this.gridController.setCellItalic(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     italic,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellTextColor(sheetId: string, rectangle: Rectangle, textColor: string | undefined) {
-  //   const summary = this.gridController.setCellTextColor(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     textColor,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor: string | undefined) {
-  //   const summary = this.gridController.setCellFillColor(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     fillColor,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // changeDecimalPlaces(sheetId: string, source: Pos, rectangle: Rectangle, delta: number) {
-  //   if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
-  //   const summary = this.gridController.changeDecimalPlaces(
-  //     sheetId,
-  //     source,
-  //     rectangleToRect(rectangle),
-  //     delta,
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
-  // clearFormatting(sheetId: string, rectangle: Rectangle) {
-  //   const summary = this.gridController.clearFormatting(
-  //     sheetId,
-  //     rectangleToRect(rectangle),
-  //     sheets.getCursorPosition()
-  //   );
-  //   this.transactionResponse(summary);
-  // }
-
   setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
     const summary = this.gridController.setRegionBorders(
       sheetId,
@@ -418,23 +231,6 @@ export class Grid {
   //#region get grid information
   // ---------------------------
 
-  // getEditCell(sheetId: string, pos: Pos): string {
-  //   return this.gridController.getEditCell(sheetId, pos);
-  // }
-
-  // getRenderCells(sheetId: string, rectangle: Rectangle): JsRenderCell[] {
-  //   const data = this.gridController.getRenderCells(sheetId, rectangleToRect(rectangle));
-  //   return JSON.parse(data);
-  // }
-
-  // getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
-  //   return this.gridController.getCellFormatSummary(sheetId, new Pos(x, y));
-  // }
-
-  // getFormattingSummary(sheetId: string, rectangle: Rectangle): FormattingSummary {
-  //   return this.gridController.getFormattingSummary(sheetId, rectangleToRect(rectangle) as RectInternal);
-  // }
-
   // todo...
   getHtmlOutput(sheetId: string): JsHtmlOutput[] {
     // const data = this.gridController.getHtmlOutput(sheetId);
@@ -445,14 +241,6 @@ export class Grid {
   //#endregion
 
   //#region Bounds
-
-  // getGridBounds(sheetId: string, ignoreFormatting: boolean): Rectangle | undefined {
-  //   const bounds = this.gridController.getGridBounds(sheetId, ignoreFormatting);
-  //   if (bounds.type === 'empty') {
-  //     return;
-  //   }
-  //   return new Rectangle(bounds.min.x, bounds.min.y, bounds.max.x - bounds.min.x, bounds.max.y - bounds.min.y);
-  // }
 
   getColumnBounds(sheetId: string, column: number, ignoreFormatting: boolean): MinMax | undefined {
     return this.gridController.getColumnBounds(sheetId, column, ignoreFormatting);
@@ -562,28 +350,6 @@ export class Grid {
 
   //#endregion
 
-  //#region Imports
-
-  // async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
-  //   debugTimeReset();
-  //   const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
-  //   const file_bytes = await readFileAsArrayBuffer(file);
-
-  //   try {
-  //     const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
-  //     this.transactionResponse(summary);
-  //   } catch (error) {
-  //     // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-  //     // type in the UI.
-  //     console.error(error);
-  //     reportError(error as unknown as string);
-  //     Sentry.captureException(error);
-  //   }
-  //   debugTimeCheck(`uploading and processing csv file ${file.name}`);
-  // }
-
-  //#endregion
-
   //#region Exports
 
   exportCsvSelection(): string {
@@ -687,26 +453,8 @@ export class Grid {
 
   //#endregion
 
-  //#region Summarize
-  //-----------------
-
-  // summarizeSelection(decimal_places: number = 9) {
-  //   return this.gridController.summarizeSelection(
-  //     sheets.sheet.id,
-  //     rectangleToRect(sheets.sheet.cursor.getRectangle()),
-  //     BigInt(decimal_places)
-  //   );
-  // }
-
-  //#endregion
-
   //#region Multiplayer
   //-----------------
-
-  // multiplayerTransaction(transactionId: string, sequenceNum: number, operations: string) {
-  //   const summary = this.gridController.multiplayerTransaction(transactionId, sequenceNum, operations);
-  //   this.transactionResponse(summary);
-  // }
 
   setMultiplayerSequenceNum(sequenceNum: number) {
     this.gridController.setMultiplayerSequenceNum(sequenceNum);

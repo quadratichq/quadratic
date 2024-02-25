@@ -68,15 +68,6 @@ impl GridController {
         let sheet_id = SheetId::from_str(&id).unwrap();
         self.grid().sheet_id_to_index(sheet_id)
     }
-    /// Returns the index of the sheet with the given ID.
-    #[wasm_bindgen(js_name = "sheetIndexToId")]
-    pub fn js_sheet_index_to_id(&self, index: usize) -> Result<String, JsValue> {
-        let sheet_id = self.grid().sheet_index_to_id(index);
-        match sheet_id {
-            Some(sheet_id) => Ok(sheet_id.to_string()),
-            None => Err(JsValue::UNDEFINED),
-        }
-    }
 
     #[wasm_bindgen(js_name = "getSheetName")]
     pub fn js_sheet_name(&self, sheet_id: String) -> String {
