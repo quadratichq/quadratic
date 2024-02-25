@@ -6,6 +6,7 @@ import { Sheet } from '../../grid/sheet/Sheet';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { intersects } from '../helpers/intersects';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsSheet } from './CellsSheet';
 import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
@@ -35,11 +36,11 @@ export class CellsArray extends Container {
   }
 
   async create() {
-    this.particles.removeChildren();
-    this.graphics.clear();
     this.lines = [];
     const cursor = sheets.sheet.cursor;
     const codeCells = await quadraticCore.getRenderCodeCells(this.sheet.id);
+    this.particles.removeChildren();
+    this.graphics.clear();
     this.cellsSheet.cellsMarkers.clear();
     const cursorRectangle = cursor.getRectangle();
 
@@ -49,6 +50,7 @@ export class CellsArray extends Container {
     codeCells?.forEach((codeCell) => {
       this.draw(codeCell, cursorRectangle);
     });
+    pixiApp.setViewportDirty();
   }
 
   cheapCull(bounds: Rectangle): void {

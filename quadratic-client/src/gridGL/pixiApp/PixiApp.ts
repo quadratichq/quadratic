@@ -354,7 +354,9 @@ export class PixiApp {
   ): void {
     this.cursor.dirty = true;
     this.headings.dirty = true;
-    this.cellsSheets.updateCellsArray();
+    if (!pixiAppSettings.showCellTypeOutlines) {
+      this.cellsSheets.updateCellsArray();
+    }
     if (options.ensureVisible) ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()

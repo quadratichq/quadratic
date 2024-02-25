@@ -39,7 +39,6 @@ export class CellsSheet extends Container {
     this.cellsFills.create();
     this.cellsBorders.create();
     this.cellsArray.create();
-    // await this.cellsLabels.preload();
   }
 
   // used to render all cellsTextHashes to warm up the GPU
