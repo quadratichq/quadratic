@@ -25,7 +25,6 @@ export class Multiplayer {
   state: MultiplayerState = 'startup';
   sessionId: string;
 
-  private user?: User;
   private anonymous?: boolean;
   private fileId?: string;
   private jwt?: string | void;
@@ -115,7 +114,6 @@ export class Multiplayer {
     const channel = new MessageChannel();
 
     this.fileId = fileId;
-    this.user = user;
     this.anonymous = anonymous;
     if (!this.anonymous) {
       await this.addJwtCookie();

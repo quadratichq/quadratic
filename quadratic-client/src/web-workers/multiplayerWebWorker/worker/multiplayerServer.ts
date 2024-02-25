@@ -100,6 +100,7 @@ export class MultiplayerServer {
   }
   private set state(state: MultiplayerState) {
     this._state = state;
+    multiplayerClient.sendState(state);
   }
 
   private connect() {

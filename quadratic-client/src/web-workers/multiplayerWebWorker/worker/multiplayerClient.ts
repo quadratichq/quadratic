@@ -2,7 +2,7 @@
  * Communication between multiplayer web worker and the main thread
  */
 
-import { ClientMultiplayerMessage, MultiplayerClientMessage } from '../multiplayerClientMessages';
+import { ClientMultiplayerMessage, MultiplayerClientMessage, MultiplayerState } from '../multiplayerClientMessages';
 import { MessageUserUpdate, ReceiveRoom } from '../multiplayerTypes';
 import { multiplayerCore } from './multiplayerCore';
 import { cellEditDefault, multiplayerServer } from './multiplayerServer';
@@ -69,6 +69,13 @@ class MultiplayerClient {
       userUpdate: data.update,
       sessionId: data.session_id,
       fileId: data.file_id,
+    });
+  }
+
+  sendState(data: MultiplayerState) {
+    this.send({
+      type: 'multiplayerClientState',
+      state: data,
     });
   }
 }
