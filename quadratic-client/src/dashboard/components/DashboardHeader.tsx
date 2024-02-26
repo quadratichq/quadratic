@@ -34,5 +34,5 @@ export function DashboardHeader({
 }
 
 export function DashboardHeaderTitle({ children }: { children: string }) {
-  return <h1 className={`${TYPE.h4} p-0`}>{children}</h1>;
+  return <h1 className={`${TYPE.h4} p-0 text-left leading-5`}>{children}</h1>;
 }

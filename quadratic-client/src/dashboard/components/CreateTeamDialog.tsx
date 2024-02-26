@@ -91,38 +91,39 @@ export const CreateTeamDialog = () => {
         </DialogHeader>
         <div>
           {showPlans ? (
-            <div className="flex flex-row gap-8">
+            <div className="flex flex-col sm:flex-row">
               {plans.map(({ title, price, features }, i) => (
-                <div key={i} className={`${title === 'Team' ? 'flex-grow border-l border-border pl-8' : ''}`}>
-                  <div className="flex items-center">
-                    <div className="flex w-10 items-center justify-center">
-                      <PersonIcon />
-                      {title === 'Team' && <PersonIcon className="-ml-1" />}
-                    </div>
+                <>
+                  <div key={i} className={`${title === 'Team' ? 'flex-grow' : ''}`}>
+                    <div className="flex items-center">
+                      <div className="flex w-10 items-center justify-center">
+                        <PersonIcon />
+                        {title === 'Team' && <PersonIcon className="-ml-1" />}
+                      </div>
 
-                    <h2 className="text-xl font-semibold">{title}</h2>
-                  </div>
-                  <div className="mb-4 ml-10">
-                    <p className="mb-1">{price}</p>
-                    <ul className="-ml-10 text-sm text-muted-foreground">
-                      {features.map((feature, k) => (
-                        <li key={k} className="flex items-start">
-                          <div className="flex w-10 items-center justify-center">
-                            <CheckIcon className="mt-0.5 opacity-50" />
-                          </div>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  {title === 'Team' && (
-                    <div>
-                      <Button variant="default" className="w-full" onClick={() => setShowPlans(false)}>
+                      <h2 className="text-xl font-semibold">{title}</h2>
+                    </div>
+                    <div className="ml-10">
+                      <p className="mb-1">{price}</p>
+                      <ul className="-ml-10 text-sm text-muted-foreground">
+                        {features.map((feature, k) => (
+                          <li key={k} className="flex items-start">
+                            <div className="flex w-10 items-center justify-center">
+                              <CheckIcon className="mt-0.5 opacity-50" />
+                            </div>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    {title === 'Team' && (
+                      <Button variant="default" className="mt-4 w-full" onClick={() => setShowPlans(false)}>
                         Continue
                       </Button>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                  {i === 0 && <div className="my-4 h-[1px] w-full bg-border sm:mx-8 sm:my-0 sm:h-auto sm:w-[1px]" />}
+                </>
               ))}
             </div>
           ) : (
