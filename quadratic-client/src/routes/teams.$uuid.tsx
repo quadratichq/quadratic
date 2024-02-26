@@ -6,6 +6,7 @@ import CreateFileButton from '@/dashboard/components/CreateFileButton';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { Button } from '@/shadcn/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar, AvatarGroup } from '@mui/material';
@@ -143,7 +144,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 };
 
 export const Component = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const {
@@ -155,17 +156,23 @@ export const Component = () => {
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
-  const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(searchParams.get('share'));
+  const [showShareDialog, setShowShareDialog] = useState<boolean>(false);
 
   let name = team.name;
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
     name = (fetcher.json as TeamAction['request.update-team']).name;
   }
 
-  const openShareDialog = () => setShareSearchParamValue('');
+  const openShareDialog = () => setShowShareDialog(true);
+  const closeShareDialog = () => setShowShareDialog(false);
+  const closeSubscriptionCreatedDialog = () =>
+    setSearchParams((prev) => {
+      prev.delete('subscription');
+      return prev;
+    });
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
-  const showShareDialog = shareSearchParamValue !== null;
+
   const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
   const billingStatus = billing.status;
   const hasBillingIssue = !(billingStatus === 'ACTIVE' || billingStatus === 'TRIALING');
@@ -267,7 +274,7 @@ export const Component = () => {
             }}
           />
         )}
-        {showShareDialog && <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
+        {showShareDialog && <ShareTeamDialog onClose={closeShareDialog} data={loaderData} />}
         {showDeleteDialog && (
           <QDialogConfirmDelete
             entityName={name}
@@ -287,6 +294,20 @@ export const Component = () => {
       {hasBillingIssue && (
         <TeamBillingIssue billingStatus={billingStatus} teamUuid={team.uuid} canEditBilling={canEditBilling} />
       )}
+
+      <Dialog open={searchParams.get('subscription') === 'created'} onOpenChange={closeSubscriptionCreatedDialog}>
+        <DialogContent>
+          <DialogHeader className={`mr-6 overflow-hidden`}>
+            <DialogTitle>Team created</DialogTitle>
+          </DialogHeader>
+          <div className={`flex flex-col gap-3 text-sm`}>
+            Thank you for subscribing to Quadratic. Your team has been created.
+          </div>
+          <DialogFooter>
+            <Button onClick={closeSubscriptionCreatedDialog}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

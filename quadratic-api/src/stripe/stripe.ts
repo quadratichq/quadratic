@@ -100,7 +100,7 @@ export const createCheckoutSession = async (teamUuid: string, priceId: string, r
       },
     ],
     mode: 'subscription',
-    success_url: `${returnUrlBase}/teams/${teamUuid}`,
+    success_url: `${returnUrlBase}/teams/${teamUuid}?subscription=created`,
     cancel_url: `${returnUrlBase}`,
   });
 };
