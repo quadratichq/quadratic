@@ -99,8 +99,8 @@ export const router = createBrowserRouter(
               <Route path=":uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
             </Route>
             <Route path={ROUTES.FILES_SHARED_WITH_ME} lazy={() => import('./routes/files.shared-with-me')} />
-            <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/ExamplesRoute')} />
-            <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
+            <Route path={ROUTES.EXAMPLES} lazy={() => import('./routes/examples')} />
+            <Route path={ROUTES.ACCOUNT} lazy={() => import('./routes/account')} />
 
             <Route path={ROUTES.TEAMS}>
               <Route index element={<Navigate to={ROUTES.FILES} replace />} />
