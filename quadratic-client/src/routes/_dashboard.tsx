@@ -5,6 +5,7 @@ import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
+import useLocalStorage from '@/hooks/useLocalStorage';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { Avatar, AvatarFallback } from '@/shadcn/ui/avatar';
@@ -14,9 +15,11 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import {
+  Cross2Icon,
   ExternalLinkIcon,
   FileIcon,
   HamburgerMenuIcon,
+  MagicWandIcon,
   MixIcon,
   PlusIcon,
   ReloadIcon,
@@ -25,7 +28,6 @@ import {
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { Dispatch, ReactNode, SetStateAction, createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
-  Link,
   NavLink,
   Outlet,
   useFetchers,
@@ -92,15 +94,7 @@ export const Component = () => {
             isLoading && 'pointer-events-none opacity-25'
           )}
         >
-          <div
-            className={`sticky top-0 z-50 -mx-4 flex min-h-14 items-center justify-between border-b border-border bg-background px-4 lg:hidden`}
-          >
-            <Link to={'/'} className={`flex items-center gap-2`}>
-              <div className={`flex w-5 items-center justify-center`}>
-                <img src={QuadraticLogo} alt="Quadratic logo glyph" />
-              </div>
-              <img src={QuadraticLogotype} alt="Quadratic logotype" />
-            </Link>
+          <div className={`sticky top-0 z-50 -mx-4 flex items-center justify-end bg-background px-2 py-1 lg:hidden`}>
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)}>
@@ -136,9 +130,15 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
   const fetchers = useFetchers();
   const revalidator = useRevalidator();
   const params = useParams();
-  const classNameIcons = `mx-1 text-muted-foreground`;
+  const [hideFancyCreateTeamMsgUserPref, setHideFancyCreateTeamMsgUserPref] = useLocalStorage(
+    'hideFancyCreateTeamMsg',
+    false
+  );
 
   const teamsFiltered = teams.filter((team) => team.team.activated || team.team.uuid === params.uuid);
+  const classNameIcons = `mx-1 text-muted-foreground`;
+  let showTeamsUpgradeMsg = teamsFiltered.length === 0;
+  if (hideFancyCreateTeamMsgUserPref) showTeamsUpgradeMsg = false;
 
   return (
     <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
@@ -222,16 +222,47 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
               </SidebarNavLink>
             );
           })}
-          <SidebarNavLink
-            to="."
-            onClick={(e) => {
-              e.preventDefault();
-              setDashboardState((prev) => ({ ...prev, showCreateTeamDialog: true }));
-            }}
-          >
-            <PlusIcon className={classNameIcons} />
-            Create
-          </SidebarNavLink>
+          {showTeamsUpgradeMsg ? (
+            <div className="relative mb-2 flex flex-col gap-2 rounded bg-accent p-3 text-xs">
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="absolute right-1 top-1 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  setHideFancyCreateTeamMsgUserPref(true);
+                }}
+              >
+                <Cross2Icon />
+              </Button>
+              <div className="flex gap-3">
+                <MagicWandIcon className="mt-1 text-primary" />
+                <div className="">
+                  <h3 className="font-semibold">Create a team</h3>
+                  <p className="text-muted-foreground">Unlock collaboration in Quadratic.</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  setDashboardState((prev) => ({ ...prev, showCreateTeamDialog: true }));
+                }}
+              >
+                Create team
+              </Button>
+            </div>
+          ) : (
+            <SidebarNavLink
+              to="."
+              onClick={(e) => {
+                e.preventDefault();
+                setDashboardState((prev) => ({ ...prev, showCreateTeamDialog: true }));
+              }}
+            >
+              <PlusIcon className={classNameIcons} />
+              Create
+            </SidebarNavLink>
+          )}
         </div>
       </div>
       <div>
@@ -326,7 +357,7 @@ function SidebarNavLink({
     !isLogo && 'hover:bg-accent',
     isDraggingOver && 'bg-primary text-primary-foreground',
     TYPE.body2,
-    `relative flex items-center gap-2 p-2 no-underline`,
+    `relative flex items-center gap-2 p-2 no-underline rounded`,
     className
   );
 
