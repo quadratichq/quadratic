@@ -12,6 +12,7 @@ import { Button } from '@/shadcn/ui/button';
 import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
+import { LiveChatWidget } from '@livechat/widget-react';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import {
   ExternalLinkIcon,
@@ -68,6 +69,7 @@ export const Component = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const isLoading = revalidator.state !== 'idle' || navigation.state === 'loading';
 
   const navbar = <Navbar isLoading={isLoading} />;
@@ -83,6 +85,7 @@ export const Component = () => {
 
   return (
     <DashboardContext.Provider value={[dashboardState, setDashboardState]}>
+      <LiveChatWidget license="14763831" customerEmail={user?.email} customerName={user?.name} />
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
           ref={contentPaneRef}
