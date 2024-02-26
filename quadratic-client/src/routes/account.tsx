@@ -3,8 +3,8 @@ import { Button } from '@/shadcn/ui/button';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
+import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { useRootRouteLoaderData } from '../router';
-import { DashboardHeader } from './components/DashboardHeader';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();

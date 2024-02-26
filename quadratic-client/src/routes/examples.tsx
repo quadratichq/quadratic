@@ -1,7 +1,7 @@
 import { ROUTES } from '@/constants/routes';
 import { Link } from 'react-router-dom';
 import { EXAMPLE_FILES, ExampleFileNames, TYPE } from '../constants/appConstants';
-import { DashboardHeader } from './components/DashboardHeader';
+import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 
 export const Component = () => {
   return (
