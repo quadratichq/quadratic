@@ -26,6 +26,19 @@ async def c(p_x: int, p_y: int, sheet: str = ...) -> int | float | str | bool | 
 async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str = ..., first_row_header: bool = ...) -> pd.DataFrame:
     """
     Reference multiple cells in the grid.
+
+    Args:
+        p0: A tuple of (x, y) coordinates from the grid.
+        p1: A tuple of (x, y) coordinates from the grid
+        sheet: The name of the sheet to reference.  If not provided, the first sheet.
+        first_row_header: If True the first row will be used as the header.
+
+    Returns:
+        A pandas DataFrame of the cells referenced.
+
+    Typical usage example:
+    
+        c = getCells((0, 0), (1, 1))
     """
     ...
 

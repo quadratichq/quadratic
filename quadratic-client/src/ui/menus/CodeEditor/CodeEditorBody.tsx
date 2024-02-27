@@ -122,7 +122,7 @@ export const CodeEditorBody = (props: Props) => {
         onChange={setEditorContent}
         onMount={onMount}
         options={{
-          // theme: 'light',
+          theme: 'light',
           readOnly,
           minimap: { enabled: true },
           overviewRulerLanes: 0,
