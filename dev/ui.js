@@ -153,6 +153,7 @@ export class UI {
         this.statusItem("multiplayer");
         this.statusItem("files");
         this.statusItem("types");
+        this.statusItem("python");
         if (this.help === "cli") {
             this.write(helpCLI);
         }

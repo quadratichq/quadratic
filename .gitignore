@@ -51,7 +51,7 @@ quadratic-api/dist
 quadratic-core/coverage
 
 # Python deployment files
-quadratic-py/dist/
+quadratic-kernels/python-wasm/dist/
 quadratic-client/public/*.whl
 
 quadratic-files/coverage
