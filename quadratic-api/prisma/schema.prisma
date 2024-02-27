@@ -81,15 +81,34 @@ model FileCheckpoint {
     @@index([fileId, sequenceNumber])
 }
 
+enum SubscriptionStatus {
+    TRIALING
+    ACTIVE
+    INCOMPLETE
+    INCOMPLETE_EXPIRED
+    PAST_DUE
+    CANCELED
+    UNPAID
+    PAUSED
+}
+
 model Team {
-    id           Int            @id @default(autoincrement())
-    uuid         String         @unique @default(uuid())
-    name         String
-    picture      String? // S3FileKey
-    createdDate  DateTime       @default(now()) @map("created_date")
-    UserTeamRole UserTeamRole[]
-    TeamInvite   TeamInvite[]
-    File         File[]
+    id                            Int                 @id @default(autoincrement())
+    uuid                          String              @unique @default(uuid())
+    name                          String
+    picture                       String? // S3FileKey
+    createdDate                   DateTime            @default(now()) @map("created_date")
+    UserTeamRole                  UserTeamRole[]
+    TeamInvite                    TeamInvite[]
+    File                          File[]
+    // Unactivated teams have never completed billing and have never been used
+    activated                     Boolean             @default(false)
+    // Billing
+    stripeCustomerId              String              @unique @map("stripe_customer_id")
+    stripeSubscriptionId          String?             @unique @map("stripe_subscription_id")
+    stripeSubscriptionStatus      SubscriptionStatus? @map("stripe_subscription_status")
+    stripeCurrentPeriodEnd        DateTime?           @map("stripe_current_period_end")
+    stripeSubscriptionLastUpdated DateTime?           @map("stripe_subscription_last_updated")
 
     @@index([uuid])
 }

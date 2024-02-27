@@ -1,7 +1,6 @@
 import { apiClient } from '@/api/apiClient';
-import { Loader as FilesLoader } from '@/routes/files';
-import * as Sentry from '@sentry/react';
-import { ActionFunctionArgs } from 'react-router-dom';
+import { ROUTES } from '@/constants/routes';
+import { ActionFunctionArgs, redirectDocument } from 'react-router-dom';
 
 export const loader = async () => null;
 
@@ -15,7 +14,13 @@ export type Action = {
   };
   'request.duplicate': {
     action: 'duplicate';
-    file: FilesLoader[0];
+    withCurrentOwner: boolean;
+    redirect?: boolean;
+  };
+  'request.move': {
+    action: 'move';
+    ownerUserId?: number;
+    ownerTeamId?: number;
   };
   'request.rename': {
     action: 'rename';
@@ -25,6 +30,7 @@ export type Action = {
     | Action['request.delete']
     | Action['request.download']
     | Action['request.duplicate']
+    | Action['request.move']
     | Action['request.rename'];
 };
 
@@ -53,42 +59,9 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'duplicate') {
     try {
-      const {
-        file: { name },
-      } = json as Action['request.duplicate'];
-
-      // Get the file we want to duplicate
-      const {
-        file: { thumbnail },
-        file,
-      } = await apiClient.files.get(uuid);
-
-      // Get the most recent checkpoint for the file
-      const lastCheckpointContents = await fetch(file.lastCheckpointDataUrl).then((res) => res.text());
-
-      // Create it on the server
-      const newFile = await apiClient.files.create({
-        name,
-        version: file.lastCheckpointVersion,
-        contents: lastCheckpointContents,
-      });
-
-      // If present, fetch the thumbnail of the file we just dup'd and
-      // save it to the new file we just created
-      if (thumbnail) {
-        try {
-          const res = await fetch(thumbnail);
-          const blob = await res.blob();
-          await apiClient.files.thumbnail.update(newFile.uuid, blob);
-        } catch (err) {
-          // Not a huge deal if it failed, just tell Sentry and move on
-          Sentry.captureEvent({
-            message: 'Failed to duplicate the thumbnail image when duplicating a file',
-            level: 'info',
-          });
-        }
-      }
-      return { ok: true };
+      const { redirect, withCurrentOwner } = json as Action['request.duplicate'];
+      const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, withCurrentOwner);
+      return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
     } catch (error) {
       return { ok: false };
     }
@@ -98,6 +71,16 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
     try {
       const { name } = json as Action['request.rename'];
       await apiClient.files.update(uuid, { name });
+      return { ok: true };
+    } catch (error) {
+      return { ok: false };
+    }
+  }
+
+  if (action === 'move') {
+    try {
+      const { ownerUserId, ownerTeamId } = json as Action['request.move'];
+      await apiClient.files.update(uuid, { ownerUserId, ownerTeamId });
       return { ok: true };
     } catch (error) {
       return { ok: false };

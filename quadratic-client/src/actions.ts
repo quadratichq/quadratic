@@ -6,9 +6,9 @@ import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
-import { CreateActionRequest } from './dashboard/FilesCreateRoute';
 import { grid } from './grid/controller/Grid';
 import { downloadFile, downloadQuadraticFile } from './helpers/downloadFileInBrowser';
+import { Action } from './routes/files.$uuid';
 import { FileContextType } from './ui/components/FileProvider';
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
@@ -65,17 +65,21 @@ export const renameFileAction = {
   isAvailable: hasPermissionToEditFile,
 };
 
-export const duplicateFileAction = {
+export const duplicateFileWithUserAsOwnerAction = {
+  label: 'Duplicate to my files',
+  isAvailable: isLoggedIn,
+  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
+    const data = { action: 'duplicate', redirect: true, withCurrentOwner: false } as Action['request.duplicate'];
+    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
+  },
+};
+
+export const duplicateFileWithCurrentOwnerAction = {
   label: 'Duplicate',
   isAvailable: isLoggedIn,
-  run({ name, submit }: { name: string; submit: SubmitFunction }) {
-    const data: CreateActionRequest = {
-      name: name + ' (Copy)',
-      contents: grid.export(),
-      version: grid.getVersion(),
-    };
-
-    submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
+  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
+    const data = { action: 'duplicate', redirect: true, withCurrentOwner: true } as Action['request.duplicate'];
+    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
   },
 };
 
@@ -90,7 +94,7 @@ export const downloadFileAction = {
 export const deleteFile = {
   label: 'Delete',
   isAvailable: (permissions: FilePermission[]) => permissions.includes(FILE_DELETE),
-  // TODO enhancement: handle this async operation in the UI similar to /files/create
+  // TODO: (enhancement) handle this async operation in the UI similar to /files/create
   async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {

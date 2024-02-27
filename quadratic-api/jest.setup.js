@@ -25,3 +25,11 @@ jest.mock('./src/aws/s3', () => {
     }),
   };
 });
+
+jest.mock('./src/stripe/stripe', () => {
+  return {
+    updateBillingIfNecessary: jest.fn().mockImplementation(async () => {}),
+    updateCustomer: jest.fn().mockImplementation(async () => {}),
+    updateSeatQuantity: jest.fn().mockImplementation(async () => {}),
+  };
+});

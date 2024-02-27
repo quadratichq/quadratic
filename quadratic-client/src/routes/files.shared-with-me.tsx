@@ -1,22 +1,21 @@
 import { apiClient } from '@/api/apiClient';
-import { FilesList } from '@/dashboard/components/FilesList';
+import { FilesList, FilesListFile } from '@/dashboard/components/FilesList';
 import { ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { Empty } from '../components/Empty';
 import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { debugShowUILogs } from '../debugFlags';
 
-export type Loader = ApiTypes['/v0/files.GET.response'];
-
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const data = await apiClient.files.list({ shared: 'with-me' });
-  return data;
+export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListFile[]> => {
+  const files = await apiClient.files.list({ shared: 'with-me' });
+  // TODO: add these permissions one day
+  const filesWithPermissions = files.map((file) => ({ ...file, permissions: [] }));
+  return filesWithPermissions;
 };
 
 export const Component = () => {
-  const files = useLoaderData() as Loader;
+  const files = useLoaderData() as Awaited<ReturnType<typeof loader>>;
 
   return (
     <>

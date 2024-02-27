@@ -19,11 +19,17 @@ beforeEach(async () => {
       auth0Id: 'team_1_viewer',
     },
   });
+  await dbClient.user.create({
+    data: {
+      auth0Id: 'no_team',
+    },
+  });
 
   await dbClient.team.create({
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
+      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
@@ -46,79 +52,67 @@ afterEach(async () => {
   await dbClient.$transaction([deleteTeamUsers, deleteUsers, deleteTeams]);
 });
 
-describe('POST /v0/teams/:uuid', () => {
+describe('PATCH /v0/teams/:uuid', () => {
   describe('sending a bad request', () => {
     it('responds with a 400 for an invalid UUID', async () => {
       await request(app)
-        .post(`/v0/teams/foo`)
+        .patch(`/v0/teams/foo`)
         .send({ name: 'Foobar' })
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect('Content-Type', /json/)
         .expect(400);
     });
     it('responds with a 400 for sending invalid data', async () => {
       await request(app)
-        .post(`/v0/teams/foo`)
+        .patch(`/v0/teams/foo`)
         .send({ cheese: 'swiss' })
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect('Content-Type', /json/)
         .expect(400);
     });
     it('responds with a 400 for sending valid & invalid data', async () => {
       await request(app)
-        .post(`/v0/teams/foo`)
+        .patch(`/v0/teams/foo`)
         .send({ name: 'Foobar', cheese: 'swiss' })
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect('Content-Type', /json/)
         .expect(400);
     });
   });
 
-  describe('update a team you belong to as an OWNER', () => {
-    it('responds with the updated team name', async () => {
+  describe('update a team', () => {
+    it('accepts change from OWNER', async () => {
       await request(app)
-        .post(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .send({ name: 'Foobar' })
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect('Content-Type', /json/)
         .expect(200)
         .expect((res) => {
-          expect(res.body).toHaveProperty('uuid');
           expect(res.body.name).toBe('Foobar');
         });
     });
-    it.todo('responds with the updated team picture');
-  });
 
-  describe('update a team you belong to as an EDITOR', () => {
-    it('responds with the updated team name', async () => {
+    it('accepts change from EDITOR', async () => {
       await request(app)
-        .post(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .send({ name: 'Foobar' })
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_editor`)
-        .expect('Content-Type', /json/)
         .expect(200)
         .expect((res) => {
-          expect(res.body).toHaveProperty('uuid');
           expect(res.body.name).toBe('Foobar');
         });
     });
-    it.todo('responds with the updated team picture');
-  });
 
-  describe('update a team you belong to as a VIEWER', () => {
-    it('responds with a 403', async () => {
+    it('rejects change from VIEWER', async () => {
       await request(app)
-        .post(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
         .send({ name: 'Foobar' })
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_viewer`)
-        .expect('Content-Type', /json/)
+        .expect(403);
+    });
+
+    it('rejects change from someone who isn’t a team member', async () => {
+      await request(app)
+        .patch(`/v0/teams/00000000-0000-4000-8000-000000000001`)
+        .send({ name: 'Foobar' })
+        .set('Authorization', `Bearer ValidToken no_team`)
         .expect(403);
     });
   });

@@ -21,7 +21,7 @@ beforeEach(async () => {
       FileInvite: {
         create: [
           {
-            email: 'johnDoe@example.com',
+            email: 'johndoe@example.com',
             role: 'EDITOR',
           },
         ],
@@ -34,6 +34,7 @@ beforeEach(async () => {
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000002',
+      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
@@ -45,7 +46,7 @@ beforeEach(async () => {
       TeamInvite: {
         create: [
           {
-            email: 'johnDoe@example.com',
+            email: 'johndoe@example.com',
             role: 'EDITOR',
           },
         ],
@@ -76,7 +77,7 @@ jest.mock('auth0', () => {
           const auth0Users = [
             {
               user_id: 'firstTimeUser',
-              email: 'johnDoe@example.com',
+              email: 'johndoe@example.com',
               name: 'Test User 1',
             },
             {
@@ -118,7 +119,7 @@ describe('A user coming in to the system for the first time', () => {
     it('deletes invites when they log in and gives them access', async () => {
       const invitesBefore = await dbClient.teamInvite.findMany({
         where: {
-          email: 'johnDoe@example.com',
+          email: 'johndoe@example.com',
         },
       });
       expect(invitesBefore.length).toBe(1);
@@ -129,7 +130,7 @@ describe('A user coming in to the system for the first time', () => {
         .expect(200);
       const invitesAfter = await dbClient.teamInvite.findMany({
         where: {
-          email: 'johnDoe@example.com',
+          email: 'johndoe@example.com',
         },
       });
       expect(invitesAfter.length).toBe(0);
@@ -139,7 +140,7 @@ describe('A user coming in to the system for the first time', () => {
     it('deletes invites when they log in and gives them access', async () => {
       const invitesBefore = await dbClient.fileInvite.findMany({
         where: {
-          email: 'johnDoe@example.com',
+          email: 'johndoe@example.com',
         },
       });
       expect(invitesBefore.length).toBe(1);
@@ -150,7 +151,7 @@ describe('A user coming in to the system for the first time', () => {
         .expect(200);
       const invitesAfter = await dbClient.fileInvite.findMany({
         where: {
-          email: 'johnDoe@example.com',
+          email: 'johndoe@example.com',
         },
       });
       expect(invitesAfter.length).toBe(0);

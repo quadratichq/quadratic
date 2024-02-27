@@ -33,11 +33,11 @@ export const apiClient = {
     async get(uuid: string) {
       return fetchFromApi(`/v0/teams/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/teams/:uuid.GET.response']);
     },
-    async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.POST.request']) {
+    async update(uuid: string, body: ApiTypes['/v0/teams/:uuid.PATCH.request']) {
       return fetchFromApi(
         `/v0/teams/${uuid}`,
-        { method: 'POST', body: JSON.stringify(body) },
-        ApiSchemas['/v0/teams/:uuid.POST.response']
+        { method: 'PATCH', body: JSON.stringify(body) },
+        ApiSchemas['/v0/teams/:uuid.PATCH.response']
       );
     },
     async create(body: ApiTypes['/v0/teams.POST.request']) {
@@ -46,6 +46,22 @@ export const apiClient = {
         { method: 'POST', body: JSON.stringify(body) },
         ApiSchemas['/v0/teams.POST.response']
       );
+    },
+    billing: {
+      async getPortalSessionUrl(uuid: string) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/portal/session`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/portal/session.GET.response']
+        );
+      },
+      async getCheckoutSessionUrl(uuid: string) {
+        return fetchFromApi(
+          `/v0/teams/${uuid}/billing/checkout/session`,
+          { method: 'GET' },
+          ApiSchemas['/v0/teams/:uuid/billing/checkout/session.GET.response']
+        );
+      },
     },
     invites: {
       async create(uuid: string, body: ApiTypes['/v0/teams/:uuid/invites.POST.request']) {
@@ -70,11 +86,11 @@ export const apiClient = {
       },
     },
     users: {
-      async update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.POST.request']) {
+      async update(uuid: string, userId: string, body: ApiTypes['/v0/teams/:uuid/users/:userId.PATCH.request']) {
         return fetchFromApi(
           `/v0/teams/${uuid}/users/${userId}`,
-          { method: 'POST', body: JSON.stringify(body) },
-          ApiSchemas['/v0/teams/:uuid/users/:userId.POST.response']
+          { method: 'PATCH', body: JSON.stringify(body) },
+          ApiSchemas['/v0/teams/:uuid/users/:userId.PATCH.response']
         );
       },
       async delete(uuid: string, userId: string) {
@@ -96,15 +112,16 @@ export const apiClient = {
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
     },
     async create(
-      body: ApiTypes['/v0/files.POST.request'] = {
+      file: Omit<ApiTypes['/v0/files.POST.request'], 'teamUuid'> = {
         name: 'Untitled',
         contents: JSON.stringify(DEFAULT_FILE),
         version: DEFAULT_FILE.version,
-      }
+      },
+      teamUuid?: ApiTypes['/v0/files.POST.request']['teamUuid']
     ) {
       return fetchFromApi(
-        `/v0/files/`,
-        { method: 'POST', body: JSON.stringify(body) },
+        `/v0/files`,
+        { method: 'POST', body: JSON.stringify({ ...file, teamUuid }) },
         ApiSchemas['/v0/files.POST.response']
       );
     },
@@ -118,6 +135,49 @@ export const apiClient = {
       const checkpointUrl = file.lastCheckpointDataUrl;
       const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
       downloadQuadraticFile(file.name, checkpointData);
+    },
+    async duplicate(uuid: string, withCurrentOwner: boolean) {
+      mixpanel.track('[Files].duplicateFile', { id: uuid });
+      // Get the file we want to duplicate
+      const {
+        file: { name, lastCheckpointDataUrl, lastCheckpointVersion, thumbnail },
+        team,
+      } = await apiClient.files.get(uuid);
+
+      // Get the most recent checkpoint for the file
+      const lastCheckpointContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
+
+      // Create it on the server
+      const {
+        file: { uuid: newFileUuid },
+      } = await apiClient.files.create(
+        {
+          name: name + ' (Copy)',
+          version: lastCheckpointVersion,
+          contents: lastCheckpointContents,
+        },
+        // If we're duplicating with the current owner, denote the team (if present,
+        // otherwise it duplicates to the user's personal files)
+        withCurrentOwner ? team?.uuid : undefined
+      );
+
+      // If present, fetch the thumbnail of the file we just dup'd and
+      // save it to the new file we just created
+      if (thumbnail) {
+        try {
+          const res = await fetch(thumbnail);
+          const blob = await res.blob();
+          await apiClient.files.thumbnail.update(newFileUuid, blob);
+        } catch (err) {
+          // Not a huge deal if it failed, just tell Sentry and move on
+          Sentry.captureEvent({
+            message: 'Failed to duplicate the thumbnail image when duplicating a file',
+            level: 'info',
+          });
+        }
+      }
+
+      return { uuid: newFileUuid };
     },
     async update(uuid: string, body: ApiTypes['/v0/files/:uuid.PATCH.request']) {
       return fetchFromApi(
@@ -206,6 +266,12 @@ export const apiClient = {
           ApiSchemas['/v0/files/:uuid/users/:userId.DELETE.response']
         );
       },
+    },
+  },
+
+  users: {
+    async acknowledge() {
+      return fetchFromApi(`/v0/users/acknowledge`, { method: 'GET' }, ApiSchemas['/v0/users.acknowledge.GET.response']);
     },
   },
 

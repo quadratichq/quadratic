@@ -6,6 +6,7 @@ import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
+import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
 import ai_chat_router from './routes/ai_chat';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
@@ -13,8 +14,6 @@ import { ApiError } from './utils/ApiError';
 export const app = express();
 
 // Configure Sentry
-const SENTRY_DSN = process.env.SENTRY_DSN || '';
-
 if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
@@ -40,16 +39,24 @@ if (SENTRY_DSN) {
   app.use(Sentry.Handlers.tracingHandler());
 }
 
-app.use(express.json({ limit: '75mb' }));
+app.use((req: express.Request, res: express.Response, next: express.NextFunction): void => {
+  if (req.originalUrl === '/v0/webhooks/stripe') {
+    // If the request is a stripe webhook, use raw parser
+    express.raw({ type: 'application/json' })(req, res, next);
+  } else {
+    // Use JSON parser for all other routes
+    express.json({ limit: '75mb' })(req, res, next);
+  }
+});
+
 app.use(helmet());
 
 // set CORS origin from env variable
-const origin = process.env.CORS || '*';
-app.use(cors({ origin }));
+app.use(cors({ origin: CORS }));
 
 // Middleware to redirect HTTP requests to HTTPS
 app.use((req, res, next) => {
-  if (req.headers['x-forwarded-proto'] !== 'https' && process.env.NODE_ENV === 'production') {
+  if (req.headers['x-forwarded-proto'] !== 'https' && NODE_ENV === 'production') {
     return res.redirect(`https://${req.hostname}${req.url}`);
   }
   return next();
@@ -80,10 +87,10 @@ if (SENTRY_DSN) {
 registerRoutes().then(() => {
   // Error-logging middleware
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    if (process.env.NODE_ENV !== 'test') {
+    if (NODE_ENV !== 'test') {
       if (err.status >= 500) {
         console.error(`[${new Date().toISOString()}] ${err.message}`);
-        if (process.env.NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
+        if (NODE_ENV !== 'production') console.log(`[${new Date().toISOString()}] ${err.message}`);
       }
     }
     next(err);
@@ -150,7 +157,7 @@ async function registerRoutes() {
   }
 
   // Keep around for debugging
-  // if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test') {
+  // if (NODE_ENV !== 'production' && NODE_ENV !== 'test') {
   //   console.log(`Dynamically registered routes: ${registeredRoutes.map((route) => `\n  ${route}`).join('')}`);
   // }
 }

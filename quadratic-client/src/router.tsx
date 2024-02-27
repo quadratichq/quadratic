@@ -11,9 +11,11 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
+  useLocation,
   useRouteError,
   useRouteLoaderData,
 } from 'react-router-dom';
+import { apiClient } from './api/apiClient';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
 import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
@@ -21,8 +23,8 @@ import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
-import * as Create from './dashboard/FilesCreateRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
+import * as Create from './routes/files.create';
 import { initializeAnalytics } from './utils/analytics';
 
 // @ts-expect-error - for testing purposes
@@ -81,7 +83,13 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
-          <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+          <Route
+            index
+            Component={() => {
+              const { search } = useLocation();
+              return <Navigate to={ROUTES.FILES + search} replace />;
+            }}
+          />
           <Route
             path={ROUTES.CREATE_FILE}
             loader={Create.loader}
@@ -89,7 +97,7 @@ export const router = createBrowserRouter(
             shouldRevalidate={() => false}
           />
 
-          <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
+          <Route id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route path={ROUTES.FILES}>
               <Route index lazy={() => import('./routes/files')} />
 
@@ -98,13 +106,12 @@ export const router = createBrowserRouter(
               <Route path=":uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
             </Route>
             <Route path={ROUTES.FILES_SHARED_WITH_ME} lazy={() => import('./routes/files.shared-with-me')} />
-            <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/ExamplesRoute')} />
-            <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
+            <Route path={ROUTES.EXAMPLES} lazy={() => import('./routes/examples')} />
+            <Route path={ROUTES.ACCOUNT} lazy={() => import('./routes/account')} />
 
             <Route path={ROUTES.TEAMS}>
               <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-              <Route path={ROUTES.CREATE_TEAM} lazy={() => import('./routes/teams.create')} />
-              <Route path=":uuid" lazy={() => import('./routes/teams.$uuid')} />
+              <Route path=":uuid" id={ROUTE_LOADER_IDS.TEAM} lazy={() => import('./routes/teams.$uuid')} />
             </Route>
           </Route>
 
@@ -169,6 +176,10 @@ export const router = createBrowserRouter(
             await authClient.handleSigninRedirect();
             let isAuthenticated = await authClient.isAuthenticated();
             if (isAuthenticated) {
+              // Acknowledge the user has just logged in. The backend may need
+              // to run some logic before making any other API calls in parallel
+              await apiClient.users.acknowledge();
+
               let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
               return redirect(redirectTo);
             }
