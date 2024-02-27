@@ -45,8 +45,8 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
     cell_range_width = p1[0] - p0[0] + 1
     cell_range_height = p1[1] - p0[1] + 1
 
-    # return a panda series for a 1d array of cells     
-    if cell_range_width == 1 or cell_range_height == 1:
+    # return a panda series for a 1d vertical array of cells     
+    if cell_range_width == 1:
         cell_list = [result_to_value(cell) for cell in cells]        
         return pd.Series(cell_list)
 

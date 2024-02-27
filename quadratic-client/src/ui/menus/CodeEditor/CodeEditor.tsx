@@ -7,6 +7,7 @@ import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTy
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { Diagnostic } from 'vscode-languageserver-types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
@@ -40,6 +41,7 @@ export const CodeEditor = () => {
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
   const [codeEditorReturn, setCodeEditorReturn] = useState<ComputedPythonReturnType | undefined>(undefined);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   
   const cellLocation = useMemo(() => {
     return {
@@ -125,10 +127,18 @@ export const CodeEditor = () => {
 
   // listen for python-inspect-results in order to display python inspection results
   useEffect(() => {
-    const updateType = () => setCodeEditorReturn(pythonWebWorker.getInspectionResults());
+    const updateType = (e: Event) => setCodeEditorReturn((e as CustomEvent).detail);
     window.addEventListener('python-inspect-results', updateType);
     return () => {
       window.removeEventListener('python-inspect-results', updateType);
+    };
+  }, [updateCodeCell]);
+
+  useEffect(() => {
+    const updateDiagnostics = (e: Event) => setDiagnostics((e as CustomEvent).detail.diagnostics);
+    window.addEventListener('python-diagnostics', updateDiagnostics);
+    return () => {
+      window.removeEventListener('python-diagnostics', updateDiagnostics);
     };
   }, [updateCodeCell]);
 
@@ -168,16 +178,20 @@ export const CodeEditor = () => {
 
   const saveAndRunCell = async () => {
     const language = editorInteractionState.mode;
+    
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
-    grid.setCodeCellValue({
+    
+      grid.setCodeCellValue({
       sheetId: cellLocation.sheetId,
       x: cellLocation.x,
       y: cellLocation.y,
       codeString: editorContent ?? '',
       language,
     });
+
     setCodeString(editorContent ?? '');
+    
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
       code: editorContent,
@@ -299,6 +313,7 @@ export const CodeEditor = () => {
         setEditorContent={setEditorContent}
         closeEditor={closeEditor}
         codeEditorReturn={codeEditorReturn}
+        diagnostics={diagnostics}
       />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
 

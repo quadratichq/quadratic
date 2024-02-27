@@ -44,35 +44,38 @@ class PythonWebWorker {
 
           const transactionId = this.executionStack[0].transactionId;
           const pythonResult = event.results;
+          const nothingReturned = pythonResult.output_type === 'NoneType';
 
           if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
           this.pythonOutputType = pythonResult.output_type;
           this.pythonOutputSize = pythonResult.output_size;
-          this.inspectPython(pythonResult.formatted_code);
+          this.inspectPython(pythonResult.code);
 
-          if (pythonResult.array_output && pythonResult.array_output.length) {
-            if (!Array.isArray(pythonResult.array_output[0][0])) {
-              pythonResult.array_output = [pythonResult.array_output];
+          if (!nothingReturned) {
+            if (pythonResult.array_output && pythonResult.array_output.length) {
+              if (!Array.isArray(pythonResult.array_output[0][0])) {
+                pythonResult.array_output = pythonResult.array_output.map((row: any) => [row]);
+              }
             }
-          }
 
-          if (!pythonResult.success) {
-            pythonResult.error_msg = pythonResult.input_python_stack_trace;
-          }
+            if (!pythonResult.success) {
+              pythonResult.error_msg = pythonResult.input_python_stack_trace;
+            }
 
-          const result = new JsCodeResult(
-            transactionId,
-            pythonResult.success,
-            pythonResult.formatted_code,
-            pythonResult.error_msg,
-            pythonResult.std_out,
-            pythonResult.output,
-            JSON.stringify(pythonResult.array_output),
-            pythonResult.line_number,
-            pythonResult.cancel_compute
-          );
-          grid.calculationComplete(result);
+            const result = new JsCodeResult(
+              transactionId,
+              pythonResult.success,
+              pythonResult.formatted_code,
+              pythonResult.error_msg,
+              pythonResult.std_out,
+              pythonResult.output,
+              JSON.stringify(pythonResult.array_output),
+              pythonResult.line_number,
+              pythonResult.cancel_compute
+            );
+            grid.calculationComplete(result);
+          }
           this.calculationComplete();
 
           break;
@@ -128,7 +131,8 @@ class PythonWebWorker {
 
         case 'inspect-results': {
           this.inspectionResults = event.results;
-          window.dispatchEvent(new CustomEvent('python-inspect-results'));
+          window.dispatchEvent(new CustomEvent('python-inspect-results', { detail: this.getInspectionResults() }));
+          
           break;
         }
 
@@ -144,6 +148,7 @@ class PythonWebWorker {
   }
 
   runPython(transactionId: string, x: number, y: number, sheetId: string, code: string) {
+    this.expectWorker();
     this.executionStack.push({ transactionId, sheetPos: { x, y, sheetId }, code });
     this.next(false);
     this.pythonOutputType = undefined;
@@ -162,10 +167,12 @@ class PythonWebWorker {
     if (complete) {
       this.running = false;
     }
+
     if (!this.worker || !this.loaded || this.running) {
       this.showChange();
       return;
     }
+    
     if (this.executionStack.length) {
       const first = this.executionStack[0];
       if (first) {
@@ -178,6 +185,7 @@ class PythonWebWorker {
     } else if (complete) {
       window.dispatchEvent(new CustomEvent('python-computation-finished'));
     }
+    
     this.showChange();
   }
 
@@ -221,8 +229,8 @@ class PythonWebWorker {
   changeOutput(_: Record<string, PythonReturnType>): void {}
 
   inspectPython(python: string): void {
-    if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
-    this.worker.postMessage({ type: 'inspect', python });
+    this.expectWorker();
+    this.worker?.postMessage({ type: 'inspect', python });
   }
 
   getInspectionResults(): ComputedPythonReturnType {

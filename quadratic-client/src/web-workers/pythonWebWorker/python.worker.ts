@@ -71,7 +71,7 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
         return self.postMessage({
           type: 'inspect-results',
           results: output,
-          python_code: event.python,
+          python: event.python,
         });
       }
     }
@@ -123,13 +123,17 @@ async function inspectPython(
   pythonCode: string,
   pyodide: any = undefined
 ): Promise<InspectPythonReturnType | undefined> {
-  const output = await pyodide.globals.get('inspect_python')(pythonCode);
+  if (!pyodide) {
+    self.postMessage({ type: 'not-loaded' } as PythonMessage);
+  } else {
+    const output = await pyodide.globals.get('inspect_python')(pythonCode);
 
-  if (output === undefined) {
-    return undefined;
+    if (output === undefined) {
+      return undefined;
+    }
+
+    return Object.fromEntries(output.toJs()) as InspectPythonReturnType;
   }
-
-  return Object.fromEntries(output.toJs()) as InspectPythonReturnType;
 }
 
 pythonWebWorker();

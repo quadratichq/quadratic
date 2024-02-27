@@ -76,13 +76,13 @@ export class LanguageServerClient extends EventEmitter {
     this.initializePromise = (async () => {
       this.connection.onNotification(PublishDiagnosticsNotification.type, (params) => {
         this.diagnostics.set(params.uri, params.diagnostics);
-        console.log('on diagnostics', params.diagnostics);
+        window.dispatchEvent(new CustomEvent('python-diagnostics', { detail: params }));
         // Republish as you can't listen twice.
         this.emit('diagnostics', params);
       });
 
       const initializeParams: InitializeParams = {
-        locale: 'en',
+        locale: 'en', 
         capabilities: {
           textDocument: {
             moniker: {},

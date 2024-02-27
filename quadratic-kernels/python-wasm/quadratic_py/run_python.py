@@ -196,6 +196,7 @@ async def run_python(code: str):
             "std_err": serr.getvalue(),
             "success": True,
             "input_python_stack_trace": None,
+            "code": code,
             "formatted_code": formatted_code,
         }
 

@@ -8,7 +8,7 @@ import {
   InsertReplaceEdit,
   MarkupContent,
   Range,
-  TextDocumentContentChangeEvent,
+  TextDocumentContentChangeEvent
 } from 'vscode-languageserver-protocol';
 import { pyrightWorker, uri } from './language-server/worker';
 
@@ -107,6 +107,7 @@ export async function provideHover(
   }
 }
 
+
 function convertCompletionItem(item: CompletionItem, model?: editor.ITextModel): languages.CompletionItem {
   const converted: languages.CompletionItem = {
     label: item.label,
@@ -182,24 +183,3 @@ function convertRange(range: Range): IRange {
     endColumn: range.end.character + 1,
   };
 }
-
-// function createDependencyProposals(range: IRange | languages.CompletionItemRanges): languages.CompletionItem[] {
-//   return [
-//     {
-//       label: 'cell',
-//       kind: languages.CompletionItemKind.Function,
-//       detail: 'Reference a single cell in the grid.',
-//       documentation: 'Reference a single cell in the grid.',
-//       insertText: 'cell(x, y)',
-//       range: range,
-//     },
-//     {
-//       label: 'cells',
-//       kind: languages.CompletionItemKind.Function,
-//       detail: 'Reference a multiple cells in the grid.',
-//       documentation: 'Reference a multiple cells in the grid.',
-//       insertText: 'cells((x1, y1), (x2, y2))',
-//       range: range,
-//     },
-//   ];
-// }

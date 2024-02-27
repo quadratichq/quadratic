@@ -3,6 +3,7 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import monaco, { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { Diagnostic } from 'vscode-languageserver-types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
@@ -12,6 +13,7 @@ import { provideCompletionItems as provideCompletionItemsPython, provideHover as
 import { pyrightWorker, uri } from './language-server/worker';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
+import { useEditorDiagnostics } from './useEditorDiagnostics';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
@@ -22,10 +24,11 @@ interface Props {
   setEditorContent: (value: string | undefined) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
   codeEditorReturn?: ComputedPythonReturnType;
+  diagnostics?: Diagnostic[];
 }
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, codeEditorReturn } = props;
+  const { editorContent, setEditorContent, closeEditor, codeEditorReturn, diagnostics } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
@@ -39,6 +42,7 @@ export const CodeEditorBody = (props: Props) => {
   useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, codeEditorReturn);
+  useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
   // useLanguageServer(isValidRef, editorRef, monacoRef, language);
 
   useEffect(() => {

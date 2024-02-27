@@ -8,4 +8,5 @@
   font-family: OpenSans;
   position: absolute;
   left: 5px;
+  transform: scaleX(-1);
 }

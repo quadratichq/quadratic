@@ -2,10 +2,12 @@ import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import { useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+import { DOCUMENTATION_URL } from '@/constants/urls';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
 import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { Circle, KeyboardReturn } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
@@ -109,26 +111,32 @@ export function Console({
                 <div
                   style={{
                     color: '#777',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: theme.spacing(1),
+                    // display: 'flex',
+                    // alignItems: 'center',
+                    // gap: theme.spacing(1),
                   }}
                 >
                   {!hasUnsavedChanges && (
                     <>
                       <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
-                      {codeEditorReturn?.lineno} returned a
+                      {codeEditorReturn?.lineno} returned a{' '}
+                      <ReturnType>
+                        {codeEditorReturn?.output_size && (
+                          <>
+                            {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
+                          </>
+                        )}
+                        {hasUnsavedChanges ? '…' : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
+                      </ReturnType>
                     </>
                   )}
-                  {!hasUnsavedChanges && (
-                    <ReturnType>
-                      {codeEditorReturn?.output_size && (
-                        <>
-                          {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
-                        </>
-                      )}
-                      {hasUnsavedChanges ? '…' : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
-                    </ReturnType>
+                  {!hasUnsavedChanges && codeEditorReturn?.output_type === 'NoneType' && (
+                    <span  contentEditable="false">                    
+                      ,{' '}<Link
+                        to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
+                        target="_blank"
+                      >read docs</Link> to learn more
+                    </span>
                   )}
                 </div>
                 <br />

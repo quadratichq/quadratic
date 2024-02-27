@@ -17,13 +17,13 @@ async def inspect_python(code: str) -> dict[str, Any]:
 
     if runner.ast.body:
         last_node = runner.ast.body[-1]
-        print("last_node", dir(last_node))
+        # print("last_node", dir(last_node))
 
         # take last_node and get the line number
-        print("last_node.lineno", last_node.lineno)
-        print("last_node.col_offset", last_node.col_offset)
-        print("last_node.end_lineno", last_node.end_lineno)
-        print("last_node.end_col_offset", last_node.end_col_offset)
+        # print("last_node.lineno", last_node.lineno)
+        # print("last_node.col_offset", last_node.col_offset)
+        # print("last_node.end_lineno", last_node.end_lineno)
+        # print("last_node.end_col_offset", last_node.end_col_offset)
 
         return_value = {
             "lineno": last_node.lineno,
@@ -33,14 +33,14 @@ async def inspect_python(code: str) -> dict[str, Any]:
         }
 
         if hasattr(last_node, "value"):
-            print("value", last_node.value)
-            print("dir", dir(last_node.value))
-            print("type", type(last_node.value).__name__)
+            # print("value", last_node.value)
+            # print("dir", dir(last_node.value))
+            # print("type", type(last_node.value).__name__)
             return_value["value_type"] = type(last_node.value).__name__
 
             # if type is name then get the id
             if type(last_node.value).__name__ == "Name":
-                print("id", last_node.value.id)
+                # print("id", last_node.value.id)
                 return_value["value_type"] = "Variable({})".format(last_node.value.id)
 
             # if type is call then get the func
