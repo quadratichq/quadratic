@@ -11,7 +11,7 @@ import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { CaretDownIcon, ExclamationTriangleIcon, FileIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { ApiTypes, TeamSubscriptionStatus } from 'quadratic-shared/typesAndSchemas';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActionFunctionArgs,
   Link,
@@ -143,7 +143,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 };
 
 export const Component = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const {
@@ -155,20 +155,40 @@ export const Component = () => {
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
-  const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(searchParams.get('share'));
+  const [showShareDialog, setShowShareDialog] = useState<boolean>(false);
 
   let name = team.name;
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
     name = (fetcher.json as TeamAction['request.update-team']).name;
   }
 
-  const openShareDialog = () => setShareSearchParamValue('');
+  const openShareDialog = () => setShowShareDialog(true);
+  const closeShareDialog = () => setShowShareDialog(false);
+
   const canEdit = teamPermissions.includes('TEAM_EDIT');
   const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
-  const showShareDialog = shareSearchParamValue !== null;
+
   const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
   const billingStatus = billing.status;
   const hasBillingIssue = !(billingStatus === 'ACTIVE' || billingStatus === 'TRIALING');
+
+  // When the user comes back successfully from stripe, fire off an event to Google
+  useEffect(() => {
+    if (searchParams.get('subscription') === 'created') {
+      const transaction_id = searchParams.get('session_id');
+      // Google Ads Conversion Tracking
+      // @ts-expect-error
+      gtag('event', 'conversion', {
+        send_to: 'AW-11007319783/44KeCMLgpJYZEOe92YAp',
+        transaction_id,
+      });
+      setSearchParams((prev) => {
+        prev.delete('subscription');
+        prev.delete('session_id');
+        return prev;
+      });
+    }
+  }, [searchParams, setSearchParams]);
 
   return (
     <>
@@ -267,7 +287,7 @@ export const Component = () => {
             }}
           />
         )}
-        {showShareDialog && <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
+        {showShareDialog && <ShareTeamDialog onClose={closeShareDialog} data={loaderData} />}
         {showDeleteDialog && (
           <QDialogConfirmDelete
             entityName={name}
