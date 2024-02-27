@@ -32,6 +32,7 @@ pub enum FilePermRole {
     FileView,
     FileEdit,
     FileDelete,
+    FileMove,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
