@@ -11,6 +11,7 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
+  useLocation,
   useRouteError,
   useRouteLoaderData,
 } from 'react-router-dom';
@@ -82,7 +83,13 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
-          <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+          <Route
+            index
+            Component={() => {
+              const { search } = useLocation();
+              return <Navigate to={ROUTES.FILES + search} replace />;
+            }}
+          />
           <Route
             path={ROUTES.CREATE_FILE}
             loader={Create.loader}

@@ -6,6 +6,7 @@ import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { useUpdateQueryStringValueWithoutNavigation } from '@/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { Avatar, AvatarFallback } from '@/shadcn/ui/avatar';
@@ -38,6 +39,7 @@ import {
   useParams,
   useRevalidator,
   useRouteLoaderData,
+  useSearchParams,
   useSubmit,
 } from 'react-router-dom';
 import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
@@ -65,15 +67,18 @@ export const loader = async (): Promise<LoaderData> => {
 };
 
 export const Component = () => {
-  const [dashboardState, setDashboardState] = useState<DashboardState>(initialDashboardState);
+  const [searchParams] = useSearchParams();
+  const [dashboardState, setDashboardState] = useState<DashboardState>({
+    showCreateTeamDialog: searchParams.get('dialog') === 'create-team',
+  });
   const navigation = useNavigation();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const isLoading = revalidator.state !== 'idle' || navigation.state === 'loading';
 
+  const isLoading = revalidator.state !== 'idle' || navigation.state === 'loading';
   const navbar = <Navbar isLoading={isLoading} />;
 
   // When the location changes, close the menu (if it's already open) and reset scroll
@@ -84,6 +89,9 @@ export const Component = () => {
 
   // Ensure long-running browser sessions still have a token
   useCheckForAuthorizationTokenOnWindowFocus();
+
+  // Query string for showing the create team dialog without revalidating loaders
+  useUpdateQueryStringValueWithoutNavigation('dialog', dashboardState.showCreateTeamDialog ? 'create-team' : null);
 
   return (
     <DashboardContext.Provider value={[dashboardState, setDashboardState]}>
@@ -256,7 +264,7 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             </div>
           ) : (
             <SidebarNavLink
-              to="."
+              to="./?dialog=create-team"
               onClick={(e) => {
                 e.preventDefault();
                 setDashboardState((prev) => ({ ...prev, showCreateTeamDialog: true }));
