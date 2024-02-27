@@ -175,14 +175,16 @@ export const Component = () => {
   // When the user comes back successfully from stripe, fire off an event to Google
   useEffect(() => {
     if (searchParams.get('subscription') === 'created') {
+      const transaction_id = searchParams.get('session_id');
       // Google Ads Conversion Tracking
       // @ts-expect-error
       gtag('event', 'conversion', {
         send_to: 'AW-11007319783/44KeCMLgpJYZEOe92YAp',
-        transaction_id: '',
+        transaction_id,
       });
       setSearchParams((prev) => {
         prev.delete('subscription');
+        prev.delete('session_id');
         return prev;
       });
     }
