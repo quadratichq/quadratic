@@ -177,6 +177,15 @@ export const Component = () => {
   const billingStatus = billing.status;
   const hasBillingIssue = !(billingStatus === 'ACTIVE' || billingStatus === 'TRIALING');
 
+  if (searchParams.get('subscription') === 'created') {
+    // Google Ads Conversion Tracking
+    //@ts-expect-error
+    gtag('event', 'conversion', {
+      send_to: 'AW-11007319783/44KeCMLgpJYZEOe92YAp',
+      transaction_id: '',
+    });
+  }
+
   return (
     <>
       <div
