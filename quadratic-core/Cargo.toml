@@ -21,7 +21,7 @@ name = "export_types"
 path = "src/bin/export_types.rs"
 
 [features]
-default = ["console_error_panic_hook", "js", "file-io"]
+default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = [
     "js-sys",
@@ -31,7 +31,6 @@ js = [
     "wasm-bindgen-futures",
 ]
 show-operations = []
-file-io = []
 multiplayer = []
 files = []
 

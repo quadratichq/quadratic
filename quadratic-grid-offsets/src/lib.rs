@@ -14,4 +14,9 @@ impl SheetOffsetsWasm {
             Err(err) => Err(JsValue::from_str(&err.to_string())),
         }
     }
+
+    #[wasm_bindgen(js_name = "empty")]
+    pub fn new() -> SheetOffsets {
+        SheetOffsets::default()
+    }
 }

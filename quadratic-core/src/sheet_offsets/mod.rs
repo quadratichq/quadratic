@@ -1,11 +1,11 @@
-use crate::{grid::offsets::Offsets, THUMBNAIL_WIDTH};
-use crate::{Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT};
+use crate::{Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use self::{resize_transient::TransientResize, sheet_offsets_wasm::OffsetsSizeChanges};
+use self::{offsets::Offsets, resize_transient::TransientResize};
 
+pub mod offsets;
 pub mod resize_transient;
 pub mod sheet_offsets_wasm;
 
@@ -37,17 +37,6 @@ impl Default for SheetOffsets {
 pub type OffsetWidthHeight = (Vec<(i64, f64)>, Vec<(i64, f64)>);
 
 impl SheetOffsets {
-    pub fn new(column_widths: Offsets, row_heights: Offsets) -> Self {
-        let mut offsets = SheetOffsets {
-            column_widths,
-            row_heights,
-            thumbnail: (0, 0),
-            transient_resize: None,
-        };
-        offsets.calculate_thumbnail();
-        offsets
-    }
-
     /// exports offsets to a GridFile
     pub fn export(&self) -> OffsetWidthHeight {
         (
@@ -157,13 +146,6 @@ impl SheetOffsets {
         let (x, w) = self.column_position_size(column);
         let (y, h) = self.row_position_size(row);
         ScreenRect { x, y, w, h }
-    }
-
-    pub fn changes(&self, sheet_offsets: &SheetOffsets) -> OffsetsSizeChanges {
-        OffsetsSizeChanges::new(
-            self.column_widths.changes(&sheet_offsets.column_widths),
-            self.row_heights.changes(&sheet_offsets.row_heights),
-        )
     }
 
     /// calculates thumbnail columns and rows that are visible starting from 0,0

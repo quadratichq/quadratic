@@ -113,36 +113,34 @@ mod test {
         assert_eq!(get_cell(&g), CellValue::Blank);
 
         // test undo/redo of a single cell value and ensure that cell_sheets_modified is properly populated for the renderer
-        let summary = g.set_cell_value(sheet_pos, String::from("a"), None);
-        assert_eq!(summary.cell_sheets_modified, cell_sheets_modified);
+        g.set_cell_value(sheet_pos, String::from("a"), None);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("a")));
 
-        let summary = g.set_cell_value(sheet_pos, String::from("b"), None);
-        assert_eq!(summary.cell_sheets_modified, cell_sheets_modified);
+        g.set_cell_value(sheet_pos, String::from("b"), None);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
-        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        g.undo(None);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("a")));
 
-        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
+        g.redo(None);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
-        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        g.undo(None);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("a")));
 
-        assert_eq!(g.undo(None).cell_sheets_modified, cell_sheets_modified);
+        g.undo(None);
         assert_eq!(get_cell(&g), CellValue::Blank);
 
-        assert_eq!(g.undo(None).cell_sheets_modified, HashSet::default());
+        g.undo(None);
         assert_eq!(get_cell(&g), CellValue::Blank);
 
-        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
+        g.redo(None);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("a")));
 
-        assert_eq!(g.redo(None).cell_sheets_modified, cell_sheets_modified);
+        g.redo(None);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
-        assert_eq!(g.redo(None).cell_sheets_modified, HashSet::default());
+        g.redo(None);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
         // ensure that not found SheetId fails silently

@@ -279,8 +279,8 @@ export class PixiApp {
   }
 
   async rebuild() {
-    sheets.create();
-    await this.cellsSheets.create();
+    // sheets.create();
+    // await this.cellsSheets.create();
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
@@ -372,6 +372,8 @@ export class PixiApp {
     this.cursor.dirty = true;
     this.multiplayerCursor.dirty = true;
   }
+
+  addSheet(sheetId: string, name: string, order: string) {}
 }
 
 export const pixiApp = new PixiApp();

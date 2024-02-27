@@ -1,7 +1,6 @@
 import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import { useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-// import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
 import { Circle } from '@mui/icons-material';

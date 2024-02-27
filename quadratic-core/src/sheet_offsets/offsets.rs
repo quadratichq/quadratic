@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::Range;
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use itertools::Itertools;

@@ -1,7 +1,8 @@
 use super::{
     operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
 };
-use crate::{grid::SheetId, sheet_offsets::resize_transient::TransientResize};
+use crate::grid::SheetId;
+use crate::sheet_offsets::resize_transient::TransientResize;
 
 impl GridController {
     /// Commits a transient resize from a local version of SheetOffsets.

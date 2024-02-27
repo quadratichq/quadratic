@@ -5,7 +5,7 @@
  * directly accessed by its siblings.
  */
 
-import { JsRenderCell } from '@/quadratic-core/types';
+import { JsRenderCell } from '@/quadratic-core-types';
 import {
   CoreRenderCells,
   CoreRenderMessage,

@@ -6,7 +6,7 @@
  * directly accessed by its siblings.
  */
 
-import init from '@/quadratic-grid-metadata/quadratic_grid_metadata';
+import init from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { GridRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';

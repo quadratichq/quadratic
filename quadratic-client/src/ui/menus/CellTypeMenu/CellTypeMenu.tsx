@@ -1,4 +1,4 @@
-import { CodeCellLanguage } from '@/quadratic-core/types';
+import { CodeCellLanguage } from '@/quadratic-core-types';
 import {
   Chip,
   Dialog,

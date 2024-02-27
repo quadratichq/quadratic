@@ -1,9 +1,10 @@
+import { events } from '@/events/events';
+import { SheetId } from '@/quadratic-core-types';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
-import { SheetId } from '../../quadratic-core/types';
 import { Sheet } from '../sheet/Sheet';
 import { grid } from './Grid';
-import { metadata } from './metadata';
 
 class Sheets {
   sheets: Sheet[];
@@ -17,17 +18,25 @@ class Sheets {
   constructor() {
     this.sheets = [];
     this._current = '';
+    events.on('addSheet', this.addSheet);
   }
 
-  async create() {
-    this.sheets = [];
-    const sheetIds = metadata.sheetIds;
-    sheetIds.forEach((sheetId) => {
-      const sheet = new Sheet(sheetId);
-      this.sheets.push(sheet);
-    });
+  // async create() {
+  //   this.sheets = [];
+  //   const sheetIds = metadata.sheetIds;
+  //   sheetIds.forEach((sheetId) => {
+  //     const sheet = new Sheet(sheetId);
+  //     this.sheets.push(sheet);
+  //   });
+  //   this.sort();
+  //   this.current = this.sheets[0].id;
+  // }
+
+  addSheet(sheetId: string, name: string, order: string, color?: string, offsets?: string) {
+    const sheet = new Sheet(sheetId, name, order, color, offsets);
+    this.sheets.push(sheet);
     this.sort();
-    this.current = this.sheets[0].id;
+    this.current = sheet.id;
   }
 
   // TODO...
@@ -53,7 +62,7 @@ class Sheets {
     //     }
     //   }
     // });
-    this.sheets.forEach((sheet) => sheet.updateMetadata());
+    // this.sheets.forEach((sheet) => sheet.updateMetadata());
     this.updateSheetBar();
   }
 
@@ -180,11 +189,8 @@ class Sheets {
     return this.sheets.find((sheet) => sheet.id === id);
   }
 
-  // Sheet operations
-  // ----------------
-
-  createNew() {
-    grid.addSheet();
+  async createNew() {
+    quadraticCore.addSheet(sheets.getCursorPosition());
 
     // sets the current sheet to the new sheet
     this.current = this.sheets[this.sheets.length - 1].id;

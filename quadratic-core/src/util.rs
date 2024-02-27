@@ -263,7 +263,7 @@ macro_rules! jsTime {
 macro_rules! jsTimeEnd {
     ($($arg:tt)*) => {
         if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
-            $crate::wasm_bindings::js::jsTimeEnd($($arg)*)
+            $crate::wasm_bindings::js::jsTimeEnd($($arg)*);
         }
     };
 }

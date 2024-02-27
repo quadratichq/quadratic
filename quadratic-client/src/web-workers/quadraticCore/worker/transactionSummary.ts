@@ -1,4 +1,4 @@
-import { TransactionSummary } from '@/quadratic-core/types';
+import { TransactionSummary } from '@/quadratic-core-types';
 import { coreClient } from './coreClient';
 
 export const handleTransactionSummary = (summary: TransactionSummary) => {

@@ -12,7 +12,7 @@
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
 import { Bounds } from '@/grid/sheet/Bounds';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
-import { JsRenderCell } from '@/quadratic-core/types';
+import { JsRenderCell } from '@/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 import { renderClient } from '../renderClient';
 import { renderCore } from '../renderCore';

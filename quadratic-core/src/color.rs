@@ -2,8 +2,6 @@ use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::num::ParseIntError;
-
-#[cfg(feature = "js")]
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]

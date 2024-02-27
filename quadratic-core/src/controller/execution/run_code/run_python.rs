@@ -122,7 +122,6 @@ mod tests {
             sheet.get_code_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("hello world".into()))
         );
-        assert_eq!(summary.ok().unwrap().cell_sheets_modified.len(), 1);
     }
 
     #[test]
@@ -567,7 +566,6 @@ mod tests {
             None,
         ));
         assert!(result.is_ok());
-        assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
         assert!(result.ok().unwrap().generate_thumbnail);
 
         let summary = gc.set_code_cell(
@@ -610,7 +608,6 @@ mod tests {
             None,
         ));
         assert!(result.is_ok());
-        assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
         assert!(result.ok().unwrap().generate_thumbnail);
 
         let sheet = gc.sheet(sheet_id);

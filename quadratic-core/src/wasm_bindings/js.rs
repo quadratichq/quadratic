@@ -48,4 +48,6 @@ extern "C" {
         hash_y: i64,
         cells: String, /*Vec<JsRenderCell>*/
     );
+
+    pub fn jsSheetInfo(sheets: String); // Vec<JsSheetInfo>
 }

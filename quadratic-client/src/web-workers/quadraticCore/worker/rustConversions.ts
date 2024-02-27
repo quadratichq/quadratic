@@ -2,8 +2,8 @@
  * Conversion between Rust types and TS types.
  */
 
+import { Rect } from '@/quadratic-core-types';
 import { Pos, Rect as RectInternal } from '@/quadratic-core/quadratic_core';
-import { Rect } from '@/quadratic-core/types';
 import { Point, Rectangle } from 'pixi.js';
 
 export const rectangleToRect = (rectangle: Rectangle): RectInternal => {

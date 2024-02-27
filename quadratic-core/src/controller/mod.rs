@@ -1,8 +1,6 @@
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::grid::Grid;
-#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
-
 pub mod active_transactions;
 pub mod dependencies;
 pub mod execution;
@@ -31,11 +29,35 @@ pub struct GridController {
 
 impl GridController {
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        GridController {
+        dbgjs!("IN RUST 0");
+        let grid = GridController {
             grid,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
+        };
+        dbgjs!("IN RUST 1");
+        // collect sheet info to send to the client
+        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            if let Ok(sheet_info) = serde_json::to_string(
+                &grid
+                    .sheet_ids()
+                    .iter()
+                    .filter_map(|sheet_id| {
+                        let sheet = grid.try_sheet(*sheet_id)?;
+                        Some((
+                            sheet_id.to_string(),
+                            sheet.name.clone(),
+                            sheet.color.clone(),
+                            sheet.offsets.export(),
+                        ))
+                    })
+                    .collect::<Vec<_>>(),
+            ) {
+                dbgjs!("IN RUST");
+                crate::wasm_bindings::js::jsSheetInfo(sheet_info);
+            }
         }
+        grid
     }
 
     pub fn grid(&self) -> &Grid {

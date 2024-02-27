@@ -163,7 +163,7 @@ mod test {
         assert_eq!(third_pos.x, 1);
         assert_eq!(first_pos.y, 2);
         assert_eq!(second_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64);
-        assert_eq!(third_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64 * 2 + 150);
+        assert_eq!(third_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64 * 2);
 
         let first_values = match ops.as_ref().unwrap()[0] {
             Operation::SetCellValues { ref values, .. } => values,

@@ -1,9 +1,5 @@
 import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
-import { Point, Rectangle } from 'pixi.js';
-import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
-import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
+import { JsClipboard, JsHtmlOutput, Rect, SearchOptions, SheetPos, TransactionSummary } from '@/quadratic-core-types';
 import init, {
   BorderSelection,
   BorderStyle,
@@ -16,15 +12,12 @@ import init, {
   Rect as RectInternal,
   SheetOffsets,
   TransientResize,
-} from '../../quadratic-core/quadratic_core';
-import {
-  JsClipboard,
-  JsHtmlOutput,
-  Rect,
-  SearchOptions,
-  SheetPos,
-  TransactionSummary,
-} from '../../quadratic-core/types';
+} from '@/quadratic-core/quadratic_core';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { Point, Rectangle } from 'pixi.js';
+import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
+import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
+import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { GridFile } from '../../schemas';
 import { SheetCursorSave } from '../sheet/SheetCursor';
 import { GridPerformanceProxy } from './GridPerformanceProxy';
@@ -153,27 +146,27 @@ export class Grid {
   //#region get sheet information
   //-------------------------
 
-  getSheetOrder(sheetId: string): string {
-    return this.gridController.getSheetOrder(sheetId);
-  }
+  // getSheetOrder(sheetId: string): string {
+  //   return this.gridController.getSheetOrder(sheetId);
+  // }
 
-  getSheetName(sheetId: string): string | undefined {
-    return this.gridController.getSheetName(sheetId);
-  }
+  // getSheetName(sheetId: string): string | undefined {
+  //   return this.gridController.getSheetName(sheetId);
+  // }
 
-  getSheetColor(sheetId: string): string | undefined {
-    return this.gridController.getSheetColor(sheetId);
-  }
+  // getSheetColor(sheetId: string): string | undefined {
+  //   return this.gridController.getSheetColor(sheetId);
+  // }
 
   //#endregion
 
   //#region set sheet operations
   //------------------------
 
-  addSheet() {
-    const summary = this.gridController.addSheet(sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
+  // addSheet() {
+  //   const summary = this.gridController.addSheet(sheets.getCursorPosition());
+  //   this.transactionResponse(summary);
+  // }
 
   deleteSheet(sheetId: string) {
     const summary = this.gridController.deleteSheet(sheetId, sheets.getCursorPosition());

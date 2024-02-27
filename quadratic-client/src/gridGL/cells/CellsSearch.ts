@@ -1,6 +1,6 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { Sheet } from '@/grid/sheet/Sheet';
-import { SheetPos } from '@/quadratic-core/types';
+import { SheetPos } from '@/quadratic-core-types';
 import { colors } from '@/theme/colors';
 import { Graphics } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';

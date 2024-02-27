@@ -10,10 +10,10 @@ use super::{
 impl GridController {
     /// Sends the modified cell sheets to the render web worker
     pub fn send_render_cells(&self, sheet_rect: &SheetRect) {
-        // nothing to do if we're in a test
-        if cfg!(test) || cfg!(feature = "files") || cfg!(feature = "multiplayer") {
+        if cfg!(test) || cfg!(feature = "multiplayer") || cfg!(feature = "files") {
             return;
         }
+
         // calculate the hashes that were updated
         let mut modified = HashSet::new();
         for y in sheet_rect.y_range() {

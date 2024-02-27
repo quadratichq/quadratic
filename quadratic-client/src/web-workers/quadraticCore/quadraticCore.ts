@@ -4,7 +4,7 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { metadata } from '@/grid/controller/metadata';
+import { events } from '@/events/events';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/gridGL/types/size';
 import {
@@ -15,7 +15,7 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-} from '@/quadratic-core/types';
+} from '@/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
@@ -36,7 +36,6 @@ import {
   CoreClientGetRenderCell,
   CoreClientGetRenderCodeCells,
   CoreClientImportCsv,
-  CoreClientLoad,
   CoreClientMessage,
   CoreClientSummarizeSelection,
 } from './coreClientMessages';
@@ -55,6 +54,11 @@ class QuadraticCore {
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
     if (e.data.type === 'coreClientFillSheetsModified') {
       pixiApp.cellsSheets.updateFills(e.data.sheetIds);
+      return;
+    } else if (e.data.type === 'coreClientAddSheet') {
+      events.emit('addSheet', e.data.sheetId);
+      return;
+    } else if (e.data.type === 'coreClientSheetInfo') {
       return;
     }
 
@@ -97,8 +101,7 @@ class QuadraticCore {
         sequenceNumber,
         id,
       };
-      this.waitingForResponse[id] = (message: CoreClientLoad) => {
-        metadata.load(message.metadata);
+      this.waitingForResponse[id] = () => {
         renderWebWorker.init(port.port2);
         resolve(undefined);
       };
@@ -479,6 +482,14 @@ class QuadraticCore {
       cursor,
     });
   }
+
+  //#region Sheet Operations
+
+  addSheet(cursor?: string) {
+    this.send({ type: 'clientCoreAddSheet', cursor });
+  }
+
+  //#endregion
 }
 
 export const quadraticCore = new QuadraticCore();

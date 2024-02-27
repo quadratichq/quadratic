@@ -13,17 +13,19 @@ pub mod formulas;
 pub mod grid;
 mod position;
 mod rle;
+pub mod sheet_offsets;
 mod span;
 pub mod test_util;
 mod values;
+
 #[cfg(feature = "js")]
 pub mod wasm_bindings;
 
 pub use error_run::*;
 pub use ext::*;
-pub use grid::sheet::sheet_offsets;
 pub use position::*;
 pub use rle::RunLengthEncoding;
+
 pub use span::*;
 pub use values::*;
 

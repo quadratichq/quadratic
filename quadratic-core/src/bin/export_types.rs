@@ -10,6 +10,7 @@ use quadratic_core::{
         sheet::search::SearchOptions,
         CodeCellLanguage,
     },
+    sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement},
     Rect, *,
 };
 use ts_rs::TS;
@@ -64,10 +65,12 @@ fn main() {
         Span,
         SearchOptions,
         SheetPos,
+        Placement,
+        ColumnRow
     );
 
-    if create_dir_all("../quadratic-client/src/quadratic-core").is_ok() {
-        std::fs::write("../quadratic-client/src/quadratic-core/types.d.ts", s)
+    if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {
+        std::fs::write("../quadratic-client/src/quadratic-core-types/index.d.ts", s)
             .expect("failed to write types file");
     }
 }

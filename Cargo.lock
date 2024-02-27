@@ -2331,7 +2331,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "quadratic-grid-metadata"
+name = "quadratic-grid-offsets"
 version = "0.1.0"
 dependencies = [
  "quadratic-core",

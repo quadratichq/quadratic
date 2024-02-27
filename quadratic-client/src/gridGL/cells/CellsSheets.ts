@@ -5,7 +5,7 @@ import {
 import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { CellSheetsModified, SheetId } from '../../quadratic-core/types';
+import { CellSheetsModified, SheetId } from '@/quadratic-core-types';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 

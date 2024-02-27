@@ -1,4 +1,4 @@
-import { CellFormatSummary } from '@/quadratic-core/types';
+import { CellFormatSummary } from '@/quadratic-core-types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';

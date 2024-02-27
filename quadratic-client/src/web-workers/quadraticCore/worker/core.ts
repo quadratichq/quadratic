@@ -1,12 +1,11 @@
 /**
- * Interface between the core webworker and quadratic-core
+ * Interface between the core webworker and quadratic-core (Rust)
  *
  * This is a singleton where one instance exists for the web worker and can be
  * directly accessed by its siblings.
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import init, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import {
   CellFormatSummary,
   CodeCellLanguage,
@@ -14,7 +13,8 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-} from '@/quadratic-core/types';
+} from '@/quadratic-core-types';
+import initCore, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
@@ -30,17 +30,18 @@ import { handleTransactionSummary } from './transactionSummary';
 class Core {
   gridController?: GridController;
 
-  private async loadGridFile(file: string) {
+  private async loadGridFile(file: string): Promise<string> {
     const res = await fetch(file);
     return await res.text();
   }
 
   // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort) {
-    const results = await Promise.all([this.loadGridFile(message.url), init()]);
+    console.log('0');
+    const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
+    console.log('[core] Grid loaded');
     this.gridController = GridController.newFromFile(results[0], message.sequenceNumber);
     if (debugWebWorkers) console.log('[core] GridController loaded');
-
     const sheetIds = this.getSheetIds();
 
     // initialize Client with relevant Core metadata
@@ -55,8 +56,8 @@ class Core {
         color: this.getSheetColor(sheetId),
       };
     });
-    coreClient.init(message.id, metadata);
 
+    coreClient.init(message.id, metadata);
     // initialize RenderWebWorker with relevant Core metadata
     const renderMetadata: GridRenderMetadata = {};
     sheetIds.forEach((sheetId) => {
@@ -69,26 +70,17 @@ class Core {
   }
 
   getSheetName(sheetId: string) {
-    if (!this.gridController) {
-      console.warn('Expected gridController to be defined in Core.getSheetName');
-      return '';
-    }
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getSheetName');
     return this.gridController.getSheetName(sheetId);
   }
 
   getSheetOrder(sheetId: string) {
-    if (!this.gridController) {
-      console.warn('Expected gridController to be defined in Core.getSheetOrder');
-      return '';
-    }
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getSheetOrder');
     return this.gridController.getSheetOrder(sheetId);
   }
 
   getSheetColor(sheetId: string) {
-    if (!this.gridController) {
-      console.warn('Expected gridController to be defined in Core.getSheetColor');
-      return '';
-    }
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getSheetColor');
     return this.gridController.getSheetColor(sheetId);
   }
 
@@ -97,11 +89,7 @@ class Core {
     sheetId: string;
     ignoreFormatting: boolean;
   }): { x: number; y: number; width: number; height: number } | undefined {
-    if (!this.gridController) {
-      console.warn('Expected gridController to be defined in Core.getGridBounds');
-      return;
-    }
-
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
     const bounds = this.gridController.getGridBounds(data.sheetId, data.ignoreFormatting);
     if (bounds.type === 'empty') {
       return;
@@ -116,11 +104,7 @@ class Core {
 
   // Gets RenderCell[] for a region of a Sheet.
   getRenderCells(data: { sheetId: string; x: number; y: number; width: number; height: number }): JsRenderCell[] {
-    if (!this.gridController) {
-      console.warn('Expected gridController to be defined in Core.getGridBounds');
-      return [];
-    }
-
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
     const cells = this.gridController.getRenderCells(
       data.sheetId,
       pointsToRect(data.x, data.y, data.width, data.height)
@@ -130,20 +114,12 @@ class Core {
 
   // Gets the SheetIds for the Grid.
   getSheetIds(): string[] {
-    if (!this.gridController) {
-      console.warn('Expected gridController to be defined in Core.getSheetIds');
-      return [];
-    }
-
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getSheetIds');
     return JSON.parse(this.gridController.getSheetIds());
   }
 
   getSheetOffsets(sheetId: string): string {
-    if (!this.gridController) {
-      console.warn('Expected gridController to be defined in Core.getGridOffsets');
-      return '';
-    }
-
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridOffsets');
     return this.gridController.exportOffsets(sheetId);
   }
 
@@ -346,6 +322,12 @@ class Core {
     const summary = this.gridController.setCellCode(sheetId, new Pos(x, y), language, codeString, cursor);
     coreMultiplayer.handleSummary(summary);
     handleTransactionSummary(summary);
+  }
+
+  addSheet(cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const summary = this.gridController.addSheet(cursor);
+    coreMultiplayer.handleSummary(summary);
   }
 }
 

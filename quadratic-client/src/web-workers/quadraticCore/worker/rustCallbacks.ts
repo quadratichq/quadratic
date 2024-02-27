@@ -1,6 +1,6 @@
 // this file cannot include any imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-declare var self: WorkerGlobalScope &
+export declare var self: WorkerGlobalScope &
   typeof globalThis & {
     runPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     addTransaction: (transactionId: string, operations: string) => void;
@@ -15,10 +15,13 @@ declare var self: WorkerGlobalScope &
       height: number
     ) => void;
     sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
+    sendAddSheet: (sheetId: string, name: string, order: string, user: boolean) => void;
+    sendSheetInfo: (sheets: string /*SheetInfo[]*/) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
-  return self.runPython(transactionId, x, y, sheetId, code);
+  console.log('TODO: runPython');
+  // return self.runPython(transactionId, x, y, sheetId, code);
 };
 
 export const addUnsentTransaction = (transactionId: string, operations: string) => {
@@ -47,4 +50,12 @@ export const jsImportProgress = (
 
 export const jsRenderCellSheets = (sheetId: string, hashX: bigint, hashY: bigint, cells: string /*JsRenderCell[]*/) => {
   self.sendCompleteRenderCells(sheetId, Number(hashX), Number(hashY), cells);
+};
+
+export const jsAddSheet = (sheetId: string, name: string, order: string, user: boolean) => {
+  self.sendAddSheet(sheetId, name, order, user);
+};
+
+export const jsSheetInfo = (sheetInfo: string) => {
+  self.sendSheetInfo(sheetInfo);
 };

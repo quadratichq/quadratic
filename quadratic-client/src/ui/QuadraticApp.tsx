@@ -1,3 +1,4 @@
+import { useUndo } from '@/events/useUndo';
 import { useRootRouteLoaderData } from '@/router';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
@@ -87,6 +88,8 @@ export default function QuadraticApp() {
       });
     }
   }, [uuid, loggedInUser]);
+
+  useUndo();
 
   if (loading) {
     return <QuadraticLoading />;

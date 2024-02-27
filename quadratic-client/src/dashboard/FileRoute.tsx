@@ -1,9 +1,9 @@
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
-import { metadata } from '@/grid/controller/metadata';
 import { loadAssets } from '@/gridGL/loadAssets';
 import { isEmbed } from '@/helpers/isEmbed';
+import initGridOffsets from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { Button } from '@/shadcn/ui/button';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
@@ -46,7 +46,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     );
 
   // initialize: Rust metadata and PIXI assets
-  await Promise.all([metadata.init(), loadAssets()]);
+  await Promise.all([initGridOffsets(), loadAssets()]);
 
   // initialize Core web worker
   await quadraticCore.load(

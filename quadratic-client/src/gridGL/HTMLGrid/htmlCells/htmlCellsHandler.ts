@@ -1,6 +1,6 @@
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
-import { JsHtmlOutput } from '@/quadratic-core/types';
+import { JsHtmlOutput } from '@/quadratic-core-types';
 import { HtmlCell } from './HtmlCell';
 
 class HTMLCellsHandler {

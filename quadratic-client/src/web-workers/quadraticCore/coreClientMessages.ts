@@ -7,7 +7,7 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   SheetId,
-} from '@/quadratic-core/types';
+} from '@/quadratic-core-types';
 
 export interface ClientCoreLoad {
   type: 'clientCoreLoad';
@@ -35,7 +35,6 @@ export interface GridMetadata {
 export interface CoreClientLoad {
   type: 'coreClientLoad';
   id: number;
-  metadata: GridMetadata;
 }
 
 export interface CoreClientFillSheetsModified {
@@ -352,6 +351,30 @@ export interface ClientCoreSetCodeCellValue {
   cursor?: string;
 }
 
+export interface ClientCoreAddSheet {
+  type: 'clientCoreAddSheet';
+  cursor?: string;
+}
+
+export interface CoreClientAddSheet {
+  type: 'coreClientAddSheet';
+  sheetId: string;
+  name: string;
+  order: string;
+}
+
+export interface SheetInfo {
+  id: string;
+  name: string;
+  offsets: string;
+  color?: string;
+}
+
+export interface CoreClientSheetInfo {
+  type: 'coreClientSheetInfo';
+  sheets: SheetInfo[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -379,7 +402,8 @@ export type ClientCoreMessage =
   | ClientCoreImportCsv
   | ClientCoreGetGridBounds
   | ClientCoreDeleteCellValues
-  | ClientCoreSetCodeCellValue;
+  | ClientCoreSetCodeCellValue
+  | ClientCoreAddSheet;
 
 export type CoreClientMessage =
   | CoreClientLoad
@@ -393,4 +417,6 @@ export type CoreClientMessage =
   | CoreClientFillSheetsModified
   | CoreClientGetRenderCell
   | CoreClientImportCsv
-  | CoreClientGetGridBounds;
+  | CoreClientGetGridBounds
+  | CoreClientAddSheet
+  | CoreClientSheetInfo;

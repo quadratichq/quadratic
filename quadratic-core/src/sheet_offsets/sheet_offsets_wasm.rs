@@ -1,75 +1,18 @@
-use crate::grid::sheet::sheet_offsets::{resize_transient::TransientResize, SheetOffsets};
+use super::{resize_transient::TransientResize, SheetOffsets};
 use crate::ScreenRect;
-use js_sys::Int32Array;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
 pub struct Placement {
     pub index: i32,
     pub position: f64,
     pub size: i32,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
 pub struct ColumnRow {
     pub column: i32,
     pub row: i32,
-}
-
-struct OffsetSizeChange {
-    index: i64,
-    delta: i64,
-    column: bool,
-}
-
-#[wasm_bindgen]
-pub struct OffsetsSizeChanges {
-    changes: Vec<OffsetSizeChange>,
-}
-
-#[wasm_bindgen]
-impl OffsetsSizeChanges {
-    #[wasm_bindgen(js_name = "getChanges")]
-    pub fn get_changes(&self, columns: bool) -> Int32Array {
-        let mut ret = vec![];
-        for change in &self.changes {
-            if (change.column && columns) || (!change.column && !columns) {
-                ret.push(change.index as i32);
-                ret.push(change.delta as i32);
-            }
-        }
-        Int32Array::from(&ret[..])
-    }
-}
-
-impl OffsetsSizeChanges {
-    pub fn new(
-        columns_width_changes: Vec<(i64, f64)>,
-        row_height_changes: Vec<(i64, f64)>,
-    ) -> Self {
-        let mut change = OffsetsSizeChanges { changes: vec![] };
-        change
-            .changes
-            .extend(
-                columns_width_changes
-                    .iter()
-                    .map(|(index, delta)| OffsetSizeChange {
-                        index: *index,
-                        delta: delta.round() as i64,
-                        column: true,
-                    }),
-            );
-        change.changes.extend(
-            row_height_changes
-                .iter()
-                .map(|(index, delta)| OffsetSizeChange {
-                    index: *index,
-                    delta: delta.round() as i64,
-                    column: false,
-                }),
-        );
-        change
-    }
 }
 
 #[wasm_bindgen]
@@ -84,6 +27,18 @@ impl SheetOffsets {
     #[wasm_bindgen(js_name = "getColumnWidth")]
     pub fn js_column_width(&self, x: i32) -> f32 {
         self.column_width(x as i64) as f32
+    }
+
+    /// Sets the column width. Returns the old width.
+    #[wasm_bindgen(js_name = "setColumnWidth")]
+    pub fn js_set_column_width(&mut self, x: i32, width: f64) -> f64 {
+        self.set_column_width(x as i64, width)
+    }
+
+    /// Resets the row height. Returns the old height.
+    #[wasm_bindgen(js_name = "setRowHeight")]
+    pub fn js_set_row_height(&mut self, y: i32, height: f64) -> f64 {
+        self.set_row_height(y as i64, height)
     }
 
     /// gets the row height from a row index
@@ -171,12 +126,5 @@ impl SheetOffsets {
     #[wasm_bindgen(js_name = "getResizeToApply")]
     pub fn js_get_resize_to_apply(&mut self) -> Option<TransientResize> {
         self.pop_local_transient_resize()
-    }
-
-    /// returns changes between SheetOffsets and the local version of SheetOffsets
-    /// Returns Float32Array structured as [index, size, index, size, ...]
-    #[wasm_bindgen(js_name = "findResizeChanges")]
-    pub fn js_find_resize_changes(&self, old_sheet_offsets: &SheetOffsets) -> OffsetsSizeChanges {
-        self.changes(old_sheet_offsets)
     }
 }

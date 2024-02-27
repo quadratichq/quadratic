@@ -1,4 +1,4 @@
-import { CodeCellLanguage } from '@/quadratic-core/types';
+import { CodeCellLanguage } from '@/quadratic-core-types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';

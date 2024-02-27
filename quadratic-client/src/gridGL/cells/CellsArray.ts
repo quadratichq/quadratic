@@ -1,5 +1,5 @@
 import { sheets } from '@/grid/controller/Sheets';
-import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { JsRenderCodeCell } from '@/quadratic-core-types';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';

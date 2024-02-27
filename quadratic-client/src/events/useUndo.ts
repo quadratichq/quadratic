@@ -1,16 +1,20 @@
+import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { events } from '@/events/events';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 export const useUndo = () => {
-  const [hasUndo, setHasUndo] = useState(false);
-  const [hasRedo, setHasRedo] = useState(false);
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   useEffect(() => {
     events.on('undoRedo', ({ undo, redo }) => {
-      setHasUndo(undo);
-      setHasRedo(redo);
+      setEditorInteractionState((editorInteractionState) => {
+        return {
+          ...editorInteractionState,
+          undo,
+          redo,
+        };
+      });
     });
-  }, []);
-
-  return { hasUndo, hasRedo };
+  }, [setEditorInteractionState]);
 };

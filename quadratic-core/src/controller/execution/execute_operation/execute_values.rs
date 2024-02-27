@@ -59,10 +59,6 @@ impl GridController {
                         self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
                     self.send_render_cells(&sheet_rect);
-
-                    // transaction
-                    //     .summary
-                    //     .add_cell_sheets_modified_rect(&sheet_rect);
                 }
             }
         }
@@ -116,7 +112,7 @@ mod tests {
     fn test_set_cell_values_no_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let summary = gc.set_cell_value(
+        gc.set_cell_value(
             SheetPos {
                 x: 0,
                 y: 0,
@@ -130,10 +126,9 @@ mod tests {
             sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Text("test".to_string()))
         );
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
 
         let no_sheet_id = SheetId::new();
-        let summary = gc.set_cell_value(
+        gc.set_cell_value(
             SheetPos {
                 x: 0,
                 y: 0,
@@ -142,7 +137,6 @@ mod tests {
             "test 2".to_string(),
             None,
         );
-        assert_eq!(summary.cell_sheets_modified.len(), 0);
     }
 }
 
@@ -185,14 +179,12 @@ mod test {
             y: 0,
             sheet_id,
         };
-        let summary = gc.set_cell_value(sheet_pos, "1".to_string(), None);
+        gc.set_cell_value(sheet_pos, "1".to_string(), None);
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
-        let summary = gc.undo(None);
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
+        gc.undo(None);
         assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);
     }
 }

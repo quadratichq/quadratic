@@ -6,18 +6,18 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import { SheetId } from '@/quadratic-core/types';
+import { SheetId } from '@/quadratic-core-types';
 import {
   ClientCoreLoad,
   ClientCoreMessage,
   CoreClientLoad,
   CoreClientMessage,
   GridMetadata,
+  SheetInfo,
 } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
-
-declare var self: WorkerGlobalScope & typeof globalThis;
+import { self } from './rustCallbacks';
 
 class CoreClient {
   constructor() {
@@ -29,8 +29,10 @@ class CoreClient {
   }
 
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
+    console.log(e);
     switch (e.data.type) {
       case 'clientCoreLoad':
+        console.log('here???');
         core.loadFile(e.data as ClientCoreLoad, e.ports[0]);
         break;
 
@@ -185,6 +187,10 @@ class CoreClient {
         core.setCodeCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.language, e.data.codeString, e.data.cursor);
         break;
 
+      case 'clientCoreAddSheet':
+        core.addSheet(e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
@@ -211,8 +217,19 @@ class CoreClient {
     // self.postMessage({ type: 'coreClientProgress', current, total });
     console.log(filename, current, total, x, y, width, height);
   }
+
+  sendAddSheet(sheetId: string, name: string, order: string) {
+    this.send({ type: 'coreClientAddSheet', sheetId, name, order });
+  }
+
+  sendSheetInfo(stringified: string) {
+    const sheets: SheetInfo[] = JSON.parse(stringified);
+    this.send({ type: 'coreClientSheetInfo', sheets });
+  }
 }
 
 export const coreClient = new CoreClient();
 
-(self as any).sendImportProgress = coreClient.sendImportProgress;
+self.sendImportProgress = coreClient.sendImportProgress.bind(self);
+self.sendAddSheet = coreClient.sendAddSheet.bind(self);
+self.sendSheetInfo = coreClient.sendSheetInfo.bind(self);

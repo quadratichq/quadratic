@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-
-use crate::{sheet_offsets::SheetOffsets, CellValue, Rect};
+use crate::CellValue;
 #[cfg(test)]
 use crate::{Array, Pos};
 use block::{Block, BlockContent, SameValue};
@@ -33,17 +31,10 @@ pub mod file;
 pub mod formatting;
 mod ids;
 pub mod js_types;
-mod offsets;
 pub mod search;
 pub mod series;
 pub mod sheet;
 pub mod sheets;
-
-// based on grid_metadata.rs in quadratic-grid-metadata (without the wasm_bindgen)
-#[derive(Serialize, Deserialize)]
-pub struct GridMetaData {
-    metadata: HashMap<String, (SheetOffsets, Option<Rect>, Option<Rect>)>,
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]

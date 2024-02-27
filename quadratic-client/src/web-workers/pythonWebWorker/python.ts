@@ -1,6 +1,6 @@
 import { SheetPos } from '@/gridGL/types/size';
+import { TransactionSummary } from '@/quadratic-core-types';
 import { JsCodeResult } from '@/quadratic-core/quadratic_core';
-import { TransactionSummary } from '@/quadratic-core/types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
@@ -206,6 +206,3 @@ class PythonWebWorker {
 }
 
 export const pythonWebWorker = new PythonWebWorker();
-
-// need to bind to window because rustCallbacks.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
-window.runPython = pythonWebWorker.runPython.bind(pythonWebWorker);

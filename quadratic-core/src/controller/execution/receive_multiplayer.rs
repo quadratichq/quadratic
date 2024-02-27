@@ -280,15 +280,18 @@ impl GridController {
         // first check if we've already applied this transaction
         if let Some(transaction) = self.transactions.unsaved_transactions.find(transaction_id) {
             // send it to the server if we've not successfully sent it to the server
-            if !transaction.sent_to_server {
-                if let Ok(operations) =
-                    serde_json::to_string(&unsaved_transaction.forward.operations)
-                {
-                    if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
-                        crate::wasm_bindings::js::sendTransaction(
-                            transaction_id.to_string(),
-                            operations,
-                        );
+            if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+                if !transaction.sent_to_server {
+                    if let Ok(operations) =
+                        serde_json::to_string(&unsaved_transaction.forward.operations)
+                    {
+                        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files")
+                        {
+                            crate::wasm_bindings::js::sendTransaction(
+                                transaction_id.to_string(),
+                                operations,
+                            );
+                        }
                     }
                 }
             }
@@ -310,8 +313,10 @@ impl GridController {
             self.transactions
                 .unsaved_transactions
                 .push(unsaved_transaction.clone());
-            if let Ok(operations) = serde_json::to_string(&unsaved_transaction.forward.operations) {
-                if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+                if let Ok(operations) =
+                    serde_json::to_string(&unsaved_transaction.forward.operations)
+                {
                     crate::wasm_bindings::js::sendTransaction(
                         transaction_id.to_string(),
                         operations,
@@ -1124,7 +1129,6 @@ mod tests {
         let summary = receive
             .apply_offline_unsaved_transaction(unsaved_transaction.forward.id, unsaved_transaction);
         assert!(summary.generate_thumbnail);
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
         assert_eq!(
             receive.sheet(sheet_id).cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("test".to_string()))

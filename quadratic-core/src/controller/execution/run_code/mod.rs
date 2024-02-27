@@ -299,7 +299,7 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use crate::{controller::transaction_summary::CellSheetsModified, CodeCellValue};
+    use crate::CodeCellValue;
 
     use super::*;
 
@@ -346,11 +346,6 @@ mod test {
         assert_eq!(summary.code_cells_modified.len(), 1);
         assert!(summary.code_cells_modified.contains(&sheet_id));
         assert!(summary.generate_thumbnail);
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
-        assert!(summary
-            .cell_sheets_modified
-            .iter()
-            .any(|c| c == &CellSheetsModified::new(sheet_pos)));
 
         // replace the code_run with another code_run
         // manually create the transaction
@@ -375,11 +370,6 @@ mod test {
         assert_eq!(summary.code_cells_modified.len(), 1);
         assert!(summary.code_cells_modified.contains(&sheet_id));
         assert!(summary.generate_thumbnail);
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
-        assert!(summary
-            .cell_sheets_modified
-            .iter()
-            .any(|c| c == &CellSheetsModified::new(sheet_pos)));
 
         // remove the code_run
         let transaction = &mut PendingTransaction::default();
@@ -392,10 +382,5 @@ mod test {
         assert_eq!(summary.code_cells_modified.len(), 1);
         assert!(summary.code_cells_modified.contains(&sheet_id));
         assert!(summary.generate_thumbnail);
-        assert_eq!(summary.cell_sheets_modified.len(), 1);
-        assert!(summary
-            .cell_sheets_modified
-            .iter()
-            .any(|c| c == &CellSheetsModified::new(sheet_pos)));
     }
 }

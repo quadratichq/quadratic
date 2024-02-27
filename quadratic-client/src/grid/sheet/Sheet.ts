@@ -1,11 +1,10 @@
-import { SheetOffsets } from '@/quadratic-grid-metadata/quadratic_grid_metadata';
+import { CellAlign, CellFormatSummary } from '@/quadratic-core-types';
+import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
-import { CellAlign, CellFormatSummary } from '../../quadratic-core/types';
 import { grid } from '../controller/Grid';
 import { sheets } from '../controller/Sheets';
-import { metadata } from '../controller/metadata';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
@@ -16,37 +15,19 @@ export class Sheet {
   order: string;
   color?: string;
 
-  constructor(sheetId: string) {
-    if (sheetId === 'test') {
-      this.id = 'test';
-      // this.offsets = new SheetOffsets();
-      this.name = 'test';
-      this.order = 'A0';
+  offsets: SheetOffsets;
+
+  constructor(sheetId: string, name: string, order: string, color?: string, offsets?: string) {
+    this.id = sheetId;
+    this.name = name;
+    this.order = order;
+    this.color = color;
+    if (offsets) {
+      this.offsets = SheetOffsetsWasm.load(offsets);
     } else {
-      this.id = sheetId;
-      const sheetInfo = metadata.sheetInfo.get(sheetId);
-      if (!sheetInfo) {
-        throw new Error('Expected sheetInfo to be defined in Sheet constructor');
-      }
-      this.name = sheetInfo.name;
-      this.order = sheetInfo.order;
-      this.color = sheetInfo.color;
+      this.offsets = SheetOffsetsWasm.empty();
     }
     this.cursor = new SheetCursor(this);
-  }
-
-  get offsets(): SheetOffsets {
-    const offsets = metadata.offsets.get(this.id);
-    if (!offsets) {
-      throw new Error('Expected SheetOffsets to be defined in get offsets');
-    }
-    return offsets;
-  }
-
-  updateMetadata() {
-    this.name = grid.getSheetName(this.id) ?? '';
-    this.order = grid.getSheetOrder(this.id);
-    this.color = grid.getSheetColor(this.id);
   }
 
   //#region set sheet actions

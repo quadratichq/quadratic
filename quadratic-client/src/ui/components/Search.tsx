@@ -2,7 +2,7 @@ import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { focusGrid } from '@/helpers/focusGrid';
-import { SearchOptions, SheetPos } from '@/quadratic-core/types';
+import { SearchOptions, SheetPos } from '@/quadratic-core-types';
 import { Button } from '@/shadcn/ui/button';
 import {
   DropdownMenu,

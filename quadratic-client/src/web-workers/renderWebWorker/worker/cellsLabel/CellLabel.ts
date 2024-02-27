@@ -10,7 +10,7 @@
 import { Bounds } from '@/grid/sheet/Bounds';
 import { Coordinate } from '@/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/helpers/convertColor';
-import { CellAlign, JsRenderCell } from '@/quadratic-core/types';
+import { CellAlign, JsRenderCell } from '@/quadratic-core-types';
 import { CellAlignment } from '@/schemas';
 import { colors } from '@/theme/colors';
 import { removeItems } from '@pixi/utils';

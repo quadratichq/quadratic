@@ -6,7 +6,6 @@ use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use self::sheet_offsets::SheetOffsets;
 use super::bounds::GridBounds;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
@@ -14,6 +13,7 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
+use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
@@ -23,7 +23,6 @@ pub mod code;
 pub mod formatting;
 pub mod rendering;
 pub mod search;
-pub mod sheet_offsets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {

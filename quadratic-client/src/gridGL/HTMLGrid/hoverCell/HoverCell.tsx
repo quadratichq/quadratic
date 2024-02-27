@@ -1,6 +1,6 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
-import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { JsRenderCodeCell } from '@/quadratic-core-types';
 import { cn } from '@/shadcn/utils';
 import { useGridSettings } from '@/ui/menus/TopBar/SubMenus/useGridSettings';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';

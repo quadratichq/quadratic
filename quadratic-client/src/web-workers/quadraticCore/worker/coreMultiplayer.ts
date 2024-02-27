@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/debugFlags';
-import { TransactionSummary } from '@/quadratic-core/types';
+import { TransactionSummary } from '@/quadratic-core-types';
 import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../../multiplayerWebWorker/multiplayerCoreMessages';
 import { core } from './core';
 

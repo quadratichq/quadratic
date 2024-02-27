@@ -1,4 +1,4 @@
-import { CellFormatSummary } from '@/quadratic-core/types';
+import { CellFormatSummary } from '@/quadratic-core-types';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useRef, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';

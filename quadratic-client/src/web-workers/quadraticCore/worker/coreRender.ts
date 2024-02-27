@@ -14,8 +14,7 @@ import {
   RenderCoreRequestRenderCells,
 } from '../coreRenderMessages';
 import { core } from './core';
-
-declare var self: WorkerGlobalScope & typeof globalThis;
+import { self } from './rustCallbacks';
 
 class CoreRender {
   private coreRenderPort?: MessagePort;
@@ -58,4 +57,4 @@ class CoreRender {
 
 export const coreRender = new CoreRender();
 
-(self as any).sendCompleteRenderCells = coreRender.sendCompleteRenderCells.bind(coreRender);
+self.sendCompleteRenderCells = coreRender.sendCompleteRenderCells.bind(coreRender);
