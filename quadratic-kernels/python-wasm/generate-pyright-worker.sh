@@ -15,7 +15,7 @@ pushd packages/web-worker/
 npm i
 npm run build
 
-cp dist/pyright.worker.js ../../../../../../quadratic-client/src/ui/menus/CodeEditor/language-server/pyright.worker.js
+cp dist/pyright.worker.js ../../../../../../quadratic-client/src/web-workers/pythonLanguageServer/pyright.worker.js
 
 # go back to the initial directory
 cd "$(dirs -l -0)" && dirs -c

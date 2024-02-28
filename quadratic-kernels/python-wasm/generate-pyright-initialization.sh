@@ -13,7 +13,7 @@ cp typings/quadratic_py/quadratic_api/quadratic.pyi quadratic_py/quadratic_api/p
 python3 quadratic_py/typeshed.py
 
 # copy the converted file to the language server in quadratic-client
-cp dist/pyright-initialization.json ../../quadratic-client/src/ui/menus/CodeEditor/language-server/pyright-initialization.json
+cp dist/pyright-initialization.json ../../quadratic-client/src/web-workers/pythonLanguageServer/pyright-initialization.json
 
 # remove pyright stubs
 rm -rf typings

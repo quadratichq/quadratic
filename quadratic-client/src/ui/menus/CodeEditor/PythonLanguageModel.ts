@@ -10,7 +10,7 @@ import {
   Range,
   TextDocumentContentChangeEvent
 } from 'vscode-languageserver-protocol';
-import { pyrightWorker, uri } from './language-server/worker';
+import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 
 export async function provideCompletionItems(
   model: editor.ITextModel,
