@@ -176,6 +176,8 @@ export const Component = () => {
   useEffect(() => {
     if (searchParams.get('subscription') === 'created') {
       const transaction_id = searchParams.get('session_id');
+      // TODO: pull the session_id from our API and get the amount from the subscription to pass to the conversion
+
       // Google Ads Conversion Tracking
       // @ts-expect-error
       gtag('event', 'conversion', {
