@@ -4,7 +4,7 @@ import { LogMessageNotification, RegistrationRequest } from 'vscode-languageserv
 import { LanguageServerClient } from './client';
 
 // avoid worker caching
-const workerScriptName = './pyright.worker.js?' + Math.random().toString(36).substring(2, 20);
+const workerScriptName = '/pyright.worker.js?url' + Math.random().toString(36).substring(2, 20);
 
 export const uri = 'file:///src/main.py';
 
@@ -61,11 +61,11 @@ const pyright = (uri: string): LanguageServerClient | undefined => {
   connection.onUnhandledNotification(
     (params: any) => params.message && console.log('[Pyright WebWorker] Unhandled: ', params.message)
   );
-  
+
   connection.onNotification(LogMessageNotification.type, (params) =>
     console.log('[Pyright WebWorker] Log: ', params.message)
   );
-  
+
   connection.onRequest(RegistrationRequest.type, () => {});
 
   client.initialize().then(() => console.log('[Pyright WebWorker] Initialized'));

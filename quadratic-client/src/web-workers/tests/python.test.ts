@@ -16,8 +16,10 @@ beforeAll(async () => {
 describe('Python/Pyodide', () => {
   test('can perform a simple calculation', async () => {
     const result = await pyodide.runPython(`
-    10/2
+    x = cell(0, 0)
+    x
   `);
+    console.log(result);
     expect(result).toBe(5);
   });
 });
