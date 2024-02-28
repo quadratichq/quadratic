@@ -4,10 +4,12 @@ import { TYPE } from '../../constants/appConstants';
 export function DashboardHeader({
   title,
   actions,
+  titleNode,
   titleStart,
   titleEnd,
 }: {
   title: string;
+  titleNode?: ReactNode;
   actions?: ReactNode;
   titleStart?: ReactNode;
   titleEnd?: ReactNode;
@@ -17,14 +19,20 @@ export function DashboardHeader({
   }, [title]);
 
   return (
-    <header className={`flex min-h-[60px] flex-row items-center justify-between pb-2 pt-3`}>
+    <header
+      className={`flex min-h-[60px] flex-col gap-2 pb-2 pt-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0`}
+    >
       <div className="flex items-center">
         {titleStart}
-        <h1 className={`${TYPE.h4} p-0`}>{title}</h1>
+        {titleNode ? titleNode : <DashboardHeaderTitle>{title}</DashboardHeaderTitle>}
         {titleEnd}
       </div>
 
-      {actions && <div className={`hidden lg:block`}>{actions}</div>}
+      {actions && <div className={`lg:block`}>{actions}</div>}
     </header>
   );
+}
+
+export function DashboardHeaderTitle({ children }: { children: string }) {
+  return <h1 className={`${TYPE.h4} p-0 text-left leading-5`}>{children}</h1>;
 }

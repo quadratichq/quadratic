@@ -52,11 +52,14 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/use
       },
     });
 
-    // TODO: we could _only_ redirect if the file's public link is NOT_SHARED
-    // becuase the user still may have access to the file. BUT, we'd have to
-    // update the front-end to respond to their new permissions in relation to
-    // the file — which is a bit more work. So we'll always redirect when you
-    // delete yourself.
+    // TODO: we could _only_ redirect in certain scenarios because the user
+    // may still have access to the file. For example:
+    //   1. The user removed themselves from a file whose public link makes it accessible
+    //   2. The user removed themselves from a file they already have access to
+    //      to as a team user.
+    // But to do this, we'd have to update the front-end to respond to their new
+    // permissions in relation to the file — which is a bit more work.
+    // So we'll always redirect when you delete yourself.
     return res.status(200).json({ id: deletedUserFileRole.userId, redirect: true });
   }
 

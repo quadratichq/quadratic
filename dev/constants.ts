@@ -9,6 +9,7 @@ export const COMPONENTS = {
     shortcut: "m",
   },
   files: { color: "yellow", dark: "yellow", name: "Files", shortcut: "f" },
+  python: { color: "blueBright", dark: "blueBright", name: "Python", shortcut: "y" },
   types: { color: "magenta", dark: "cyan", name: "Types", shortcut: "t" },
   db: {
     color: "gray",

@@ -5,6 +5,7 @@ import { ApiTypes, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas
 import z from 'zod';
 import { s3Client } from '../../aws/s3';
 import dbClient from '../../dbClient';
+import { AWS_S3_BUCKET_NAME } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -15,7 +16,7 @@ const { FILE_EDIT } = FilePermissionSchema.enum;
 const uploadThumbnailToS3: multer.Multer = multer({
   storage: multerS3({
     s3: s3Client,
-    bucket: process.env.AWS_S3_BUCKET_NAME as string,
+    bucket: AWS_S3_BUCKET_NAME,
     metadata: (req: Request, file: Express.Multer.File, cb: (error: Error | null, metadata: any) => void) => {
       cb(null, { fieldName: file.fieldname });
     },
