@@ -1,3 +1,4 @@
+import { JsRenderFill } from '@/quadratic-core-types';
 import { Container, Rectangle } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellsArray } from './CellsArray';
@@ -36,7 +37,6 @@ export class CellsSheet extends Container {
   }
 
   async preload(): Promise<void> {
-    this.cellsFills.create();
     this.cellsBorders.create();
     this.cellsArray.create();
   }
@@ -73,12 +73,12 @@ export class CellsSheet extends Container {
     // this.cellsLabels.showLabel(x, y, show);
   }
 
-  updateCellsArray() {
-    this.cellsArray.create();
+  updateFills(sheetFills: JsRenderFill[]) {
+    this.cellsFills.create(sheetFills);
   }
 
-  updateFill(): void {
-    this.cellsFills.create();
+  updateCellsArray() {
+    this.cellsArray.create();
   }
 
   unload(hashX: number, hashY: number) {

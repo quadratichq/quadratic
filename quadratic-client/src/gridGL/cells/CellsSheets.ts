@@ -1,5 +1,5 @@
 import { events } from '@/events/events';
-import { CellSheetsModified, SheetId } from '@/quadratic-core-types';
+import { CellSheetsModified, JsRenderFill, SheetId } from '@/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
@@ -16,6 +16,7 @@ export class CellsSheets extends Container<CellsSheet> {
   constructor() {
     super();
     events.on('sheetInfo', this.create);
+    events.on('sheetFills', this.updateFills);
   }
 
   create = async () => {
@@ -115,16 +116,14 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current?.createBorders();
   }
 
-  updateFills(sheetIds: SheetId[]): void {
-    this.children.forEach((cellsSheet) => {
-      if (sheetIds.find((id) => id.id === cellsSheet.sheet.id)) {
-        cellsSheet.updateFill();
-        if (sheets.sheet.id === cellsSheet.sheet.id) {
-          pixiApp.setViewportDirty();
-        }
-      }
-    });
-  }
+  updateFills = (sheetId: string, fills: JsRenderFill[]) => {
+    const cellsSheet = this.getById(sheetId);
+    if (!cellsSheet) throw new Error('Expected sheet to be defined in CellsSheets.updateFills');
+    cellsSheet.updateFills(fills);
+    if (cellsSheet.sheet.id === sheets.sheet.id) {
+      pixiApp.setViewportDirty();
+    }
+  };
 
   // adjust headings without recalculating the glyph geometries
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {

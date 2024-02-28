@@ -80,7 +80,7 @@ export class Grid {
     }
 
     if (summary.fill_sheets_modified.length) {
-      pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
+      // pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
     }
 
     if (summary.offsets_modified.length) {

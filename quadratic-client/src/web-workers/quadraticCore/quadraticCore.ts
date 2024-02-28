@@ -6,7 +6,6 @@
 
 import { debugWebWorkersMessages } from '@/debugFlags';
 import { events } from '@/events/events';
-import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/gridGL/types/size';
 import {
   CellAlign,
@@ -15,13 +14,11 @@ import {
   JsCodeCell,
   JsRenderCell,
   JsRenderCodeCell,
-  JsRenderFill,
 } from '@/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
   ClientCoreCellHasContent,
-  ClientCoreGetAllRenderFills,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
   ClientCoreGetEditCell,
@@ -30,7 +27,6 @@ import {
   ClientCoreLoad,
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
-  CoreClientGetAllRenderFills,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetEditCell,
@@ -55,18 +51,19 @@ class QuadraticCore {
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
     if (debugWebWorkersMessages) console.log(`[QuadraticCore] message: ${e.data.type}`);
 
-    if (e.data.type === 'coreClientFillSheetsModified') {
-      pixiApp.cellsSheets.updateFills(e.data.sheetIds);
-      return;
-    } else if (e.data.type === 'coreClientAddSheet') {
+    // quadratic-core initiated messages
+    if (e.data.type === 'coreClientAddSheet') {
       events.emit('addSheet', e.data.sheetId);
       return;
     } else if (e.data.type === 'coreClientSheetInfo') {
       events.emit('sheetInfo', e.data.sheetInfo);
       return;
+    } else if (e.data.type === 'coreClientSheetFills') {
+      events.emit('sheetFills', e.data.sheetId, e.data.fills);
+      return;
     }
 
-    // handle responses
+    // handle responses from requests to quadratic-core
     if (e.data.id !== undefined) {
       if (this.waitingForResponse[e.data.id]) {
         this.waitingForResponse[e.data.id](e.data);
@@ -139,21 +136,6 @@ class QuadraticCore {
       };
       this.waitingForResponse[id] = (message: CoreClientGetRenderCell) => {
         resolve(message.cell);
-      };
-      this.send(message);
-    });
-  }
-
-  getAllRenderFills(sheetId: string): Promise<JsRenderFill[]> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientGetAllRenderFills) => {
-        resolve(message.fills);
-      };
-      const message: ClientCoreGetAllRenderFills = {
-        type: 'clientCoreGetAllRenderFills',
-        sheetId,
-        id,
       };
       this.send(message);
     });

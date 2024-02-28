@@ -1,4 +1,4 @@
-import { SheetInfo } from '@/quadratic-core-types';
+import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import EventEmitter from 'eventemitter3';
 
 export interface EventTypes {
@@ -15,6 +15,11 @@ export interface EventTypes {
 
   sheetInfo: {
     sheetInfo: SheetInfo[];
+  };
+
+  sheetFills: {
+    sheetId: string;
+    fills: JsRenderFill[];
   };
 }
 

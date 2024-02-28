@@ -48,4 +48,32 @@ impl GridController {
             }
         });
     }
+
+    /// Sends the modified fills to the client
+    pub fn send_fill_cells(&self, sheet_rect: &SheetRect) {
+        if cfg!(test) || cfg!(feature = "multiplayer") || cfg!(feature = "files") {
+            return;
+        }
+        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+            let fills = sheet.get_all_render_fills();
+            if let Ok(fills) = serde_json::to_string(&fills) {
+                crate::wasm_bindings::js::jsSheetFills(sheet_rect.sheet_id.to_string(), fills);
+            }
+        }
+    }
+
+    /// Sends all fills to the client
+    pub fn send_all_fills(&self) {
+        if cfg!(test) || cfg!(feature = "multiplayer") || cfg!(feature = "files") {
+            return;
+        }
+        for sheet_id in self.sheet_ids() {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                let fills = sheet.get_all_render_fills();
+                if let Ok(fills) = serde_json::to_string(&fills) {
+                    crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
+                }
+            }
+        }
+    }
 }

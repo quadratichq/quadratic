@@ -72,11 +72,11 @@ impl GridController {
                 }
             };
 
-            if !matches!(attr, CellFmtArray::RenderSize(_))
-                && !matches!(attr, CellFmtArray::FillColor(_))
-            {
-                self.send_render_cells(&sheet_rect);
-            }
+            match &attr {
+                CellFmtArray::RenderSize(_) => (),
+                CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
+                _ => self.send_render_cells(&sheet_rect),
+            };
 
             transaction
                 .forward_operations

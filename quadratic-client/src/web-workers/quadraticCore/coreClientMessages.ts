@@ -6,7 +6,6 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
-  SheetId,
   SheetInfo,
 } from '@/quadratic-core-types';
 
@@ -24,11 +23,6 @@ export interface SheetMetadata {
   name: string;
   order: string;
   color?: string;
-}
-
-export interface CoreClientFillSheetsModified {
-  type: 'coreClientFillSheetsModified';
-  sheetIds: SheetId[];
 }
 
 export interface ClientCoreGetCodeCell {
@@ -56,18 +50,6 @@ export interface ClientCoreGetRenderCell {
 export interface CoreClientGetRenderCell {
   type: 'coreClientGetRenderCell';
   cell: JsRenderCell | undefined;
-  id: number;
-}
-
-export interface ClientCoreGetAllRenderFills {
-  type: 'clientCoreGetAllRenderFills';
-  sheetId: string;
-  id: number;
-}
-
-export interface CoreClientGetAllRenderFills {
-  type: 'coreClientGetAllRenderFills';
-  fills: JsRenderFill[];
   id: number;
 }
 
@@ -357,10 +339,15 @@ export interface CoreClientSheetInfo {
   sheetInfo: SheetInfo[];
 }
 
+export interface CoreClientSheetFills {
+  type: 'coreClientSheetFills';
+  sheetId: string;
+  fills: JsRenderFill[];
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
-  | ClientCoreGetAllRenderFills
   | ClientCoreGetRenderCodeCells
   | ClientCoreCellHasContent
   | ClientCoreGetEditCell
@@ -389,15 +376,14 @@ export type ClientCoreMessage =
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
-  | CoreClientGetAllRenderFills
   | CoreClientGetRenderCodeCells
   | CoreClientGetEditCell
   | CoreClientCellHasContent
   | CoreClientGetCellFormatSummary
   | CoreClientSummarizeSelection
-  | CoreClientFillSheetsModified
   | CoreClientGetRenderCell
   | CoreClientImportCsv
   | CoreClientGetGridBounds
   | CoreClientAddSheet
-  | CoreClientSheetInfo;
+  | CoreClientSheetInfo
+  | CoreClientSheetFills;

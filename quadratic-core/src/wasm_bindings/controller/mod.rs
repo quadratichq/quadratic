@@ -26,10 +26,13 @@ impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
     pub fn js_new_from_file(file: &str, last_sequence_num: u32) -> Result<GridController, JsValue> {
-        Ok(GridController::from_grid(
-            file::import(file).map_err(|e| e.to_string())?,
-            last_sequence_num as u64,
-        ))
+        if let Ok(file) = file::import(file).map_err(|e| e.to_string()) {
+            let grid = GridController::from_grid(file, last_sequence_num as u64);
+            grid.send_all_fills();
+            Ok(grid)
+        } else {
+            Err(JsValue::from_str("Failed to import grid"))
+        }
     }
 
     #[wasm_bindgen(js_name = "test")]

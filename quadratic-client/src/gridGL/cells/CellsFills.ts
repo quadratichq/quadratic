@@ -1,4 +1,4 @@
-import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
+import { JsRenderFill } from '@/quadratic-core-types';
 import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { convertColorStringToTint } from '../../helpers/convertColor';
@@ -21,10 +21,9 @@ export class CellsFills extends ParticleContainer {
     return this.cellsSheet.sheet;
   }
 
-  async create() {
+  async create(renderFills: JsRenderFill[]) {
     this.removeChildren();
-    const fills = await quadraticCore.getAllRenderFills(this.cellsSheet.sheet.id);
-    fills.forEach((fill) => {
+    renderFills.forEach((fill) => {
       const sprite = this.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = convertColorStringToTint(fill.color);
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);

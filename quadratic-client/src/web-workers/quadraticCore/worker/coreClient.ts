@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { SheetId, SheetInfo } from '@/quadratic-core-types';
+import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
@@ -24,6 +24,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendAddSheet: (sheetId: string, name: string, order: string) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
+    sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
   };
 
 class CoreClient {
@@ -32,6 +33,7 @@ class CoreClient {
     self.sendImportProgress = coreClient.sendImportProgress;
     self.sendAddSheet = coreClient.sendAddSheet;
     self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
+    self.sendSheetFills = coreClient.sendSheetFills;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -52,14 +54,6 @@ class CoreClient {
           type: 'coreClientGetCodeCell',
           id: e.data.id,
           cell: core.getCodeCell(e.data.sheetId, e.data.x, e.data.y),
-        });
-        break;
-
-      case 'clientCoreGetAllRenderFills':
-        this.send({
-          type: 'coreClientGetAllRenderFills',
-          id: e.data.id,
-          fills: core.getAllRenderFills(e.data.sheetId),
         });
         break;
 
@@ -207,10 +201,6 @@ class CoreClient {
     }
   };
 
-  fillSheetsModified(sheetIds: SheetId[]) {
-    this.send({ type: 'coreClientFillSheetsModified', sheetIds });
-  }
-
   sendImportProgress = (
     filename: string,
     current: number,
@@ -230,6 +220,10 @@ class CoreClient {
 
   sendSheetInfoClient = (sheetInfo: SheetInfo[]) => {
     this.send({ type: 'coreClientSheetInfo', sheetInfo });
+  };
+
+  sendSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
+    this.send({ type: 'coreClientSheetFills', sheetId, fills });
   };
 }
 

@@ -1,6 +1,6 @@
 // this file cannot include any imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import { SheetInfo } from '@/quadratic-core-types';
+import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -20,6 +20,7 @@ declare var self: WorkerGlobalScope &
     sendAddSheet: (sheetId: string, name: string, order: string, user: boolean) => void;
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
+    sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -63,4 +64,9 @@ export const jsSheetInfo = (sheetInfoStringified: string) => {
   const sheetInfo = JSON.parse(sheetInfoStringified);
   self.sendSheetInfoClient(sheetInfo);
   self.sendSheetInfoRender(sheetInfo);
+};
+
+export const jsSheetFills = (sheet_id: string, fills: string) => {
+  const sheet_fills: JsRenderFill[] = JSON.parse(fills);
+  self.sendSheetFills(sheet_id, sheet_fills);
 };

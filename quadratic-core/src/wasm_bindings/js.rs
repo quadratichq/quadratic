@@ -50,4 +50,6 @@ extern "C" {
     );
 
     pub fn jsSheetInfo(sheets: String); // Vec<JsSheetInfo>
+
+    pub fn jsSheetFills(sheet_d: String, fills: String); // JsRenderFill
 }
