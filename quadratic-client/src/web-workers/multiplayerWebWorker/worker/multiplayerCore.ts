@@ -2,6 +2,7 @@
  * Communication between multiplayer web worker and the quadraticCore web worker
  */
 
+import { debugWebWorkersMessages } from '@/debugFlags';
 import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../multiplayerCoreMessages';
 import { ReceiveTransaction } from '../multiplayerTypes';
 import { multiplayerServer } from './multiplayerServer';
@@ -20,6 +21,8 @@ class MultiplayerCore {
   }
 
   private handleMessage(e: MessageEvent<CoreMultiplayerMessage>) {
+    if (debugWebWorkersMessages) console.log(`[multiplayerCore] message: ${e.data.type}`);
+
     switch (e.data.type) {
       case 'coreMultiplayerTransaction':
         multiplayerServer.sendTransaction(e.data);

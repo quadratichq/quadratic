@@ -4,6 +4,7 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
+import { debugWebWorkersMessages } from '@/debugFlags';
 import { events } from '@/events/events';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { Coordinate } from '@/gridGL/types/size';
@@ -48,10 +49,12 @@ class QuadraticCore {
   constructor() {
     this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
-    this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`);
+    this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
   }
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
+    if (debugWebWorkersMessages) console.log(`[QuadraticCore] message: ${e.data.type}`);
+
     if (e.data.type === 'coreClientFillSheetsModified') {
       pixiApp.cellsSheets.updateFills(e.data.sheetIds);
       return;
@@ -59,6 +62,7 @@ class QuadraticCore {
       events.emit('addSheet', e.data.sheetId);
       return;
     } else if (e.data.type === 'coreClientSheetInfo') {
+      events.emit('sheetInfo', e.data.sheetInfo);
       return;
     }
 
@@ -91,22 +95,18 @@ class QuadraticCore {
 
   // Loads a Grid file and initializes renderWebWorker upon response
   async load(url: string, version: string, sequenceNumber: number) {
-    return new Promise((resolve) => {
-      const port = new MessageChannel();
-      const id = this.id++;
-      const message: ClientCoreLoad = {
-        type: 'clientCoreLoad',
-        url,
-        version,
-        sequenceNumber,
-        id,
-      };
-      this.waitingForResponse[id] = () => {
-        renderWebWorker.init(port.port2);
-        resolve(undefined);
-      };
-      this.send(message, port.port1);
-    });
+    // this is the channel between the core worker and the render worker
+    const port = new MessageChannel();
+    renderWebWorker.init(port.port2);
+
+    // load the file and send the render message port to
+    const message: ClientCoreLoad = {
+      type: 'clientCoreLoad',
+      url,
+      version,
+      sequenceNumber,
+    };
+    this.send(message, port.port1);
   }
 
   // Gets a code cell from a sheet

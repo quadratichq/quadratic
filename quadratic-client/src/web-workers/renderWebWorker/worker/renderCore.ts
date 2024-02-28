@@ -5,6 +5,7 @@
  * directly accessed by its siblings.
  */
 
+import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import { JsRenderCell } from '@/quadratic-core-types';
 import {
   CoreRenderCells,
@@ -21,12 +22,15 @@ class RenderCore {
   init(renderPort: MessagePort) {
     this.renderCorePort = renderPort;
     this.renderCorePort.onmessage = this.handleMessage;
+    if (debugWebWorkers) console.log('[renderCore] initialized');
   }
 
   private handleMessage = (e: MessageEvent<CoreRenderMessage>) => {
+    if (debugWebWorkersMessages) console.log(`[renderCore] message: ${e.data.type}`);
+
     switch (e.data.type) {
-      case 'coreRenderReady':
-        renderText.coreInit(e.data.metadata);
+      case 'coreRenderSheetInfo':
+        renderText.coreInit(e.data.sheetInfo);
         break;
 
       case 'coreRenderRenderCells':

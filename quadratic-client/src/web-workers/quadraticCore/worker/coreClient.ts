@@ -5,23 +5,34 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers } from '@/debugFlags';
-import { SheetId } from '@/quadratic-core-types';
-import {
-  ClientCoreLoad,
-  ClientCoreMessage,
-  CoreClientLoad,
-  CoreClientMessage,
-  GridMetadata,
-  SheetInfo,
-} from '../coreClientMessages';
+import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
+import { SheetId, SheetInfo } from '@/quadratic-core-types';
+import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
-import { self } from './rustCallbacks';
+
+declare var self: WorkerGlobalScope &
+  typeof globalThis & {
+    sendImportProgress: (
+      filename: string,
+      current: number,
+      total: number,
+      x: number,
+      y: number,
+      width: number,
+      height: number
+    ) => void;
+    sendAddSheet: (sheetId: string, name: string, order: string) => void;
+    sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
+  };
 
 class CoreClient {
-  constructor() {
+  start() {
     self.onmessage = this.handleMessage;
+    self.sendImportProgress = coreClient.sendImportProgress;
+    self.sendAddSheet = coreClient.sendAddSheet;
+    self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
+    if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
   private send(message: CoreClientMessage) {
@@ -29,10 +40,10 @@ class CoreClient {
   }
 
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
-    console.log(e);
+    if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
+
     switch (e.data.type) {
       case 'clientCoreLoad':
-        console.log('here???');
         core.loadFile(e.data as ClientCoreLoad, e.ports[0]);
         break;
 
@@ -196,16 +207,11 @@ class CoreClient {
     }
   };
 
-  init(id: number, metadata: GridMetadata) {
-    self.postMessage({ type: 'coreClientLoad', metadata, id } as CoreClientLoad);
-    if (debugWebWorkers) console.log('[coreClient] initialized.');
-  }
-
   fillSheetsModified(sheetIds: SheetId[]) {
     this.send({ type: 'coreClientFillSheetsModified', sheetIds });
   }
 
-  sendImportProgress(
+  sendImportProgress = (
     filename: string,
     current: number,
     total: number,
@@ -213,23 +219,18 @@ class CoreClient {
     y: number,
     width: number,
     height: number
-  ) {
+  ) => {
     // self.postMessage({ type: 'coreClientProgress', current, total });
     console.log(filename, current, total, x, y, width, height);
-  }
+  };
 
-  sendAddSheet(sheetId: string, name: string, order: string) {
+  sendAddSheet = (sheetId: string, name: string, order: string) => {
     this.send({ type: 'coreClientAddSheet', sheetId, name, order });
-  }
+  };
 
-  sendSheetInfo(stringified: string) {
-    const sheets: SheetInfo[] = JSON.parse(stringified);
-    this.send({ type: 'coreClientSheetInfo', sheets });
-  }
+  sendSheetInfoClient = (sheetInfo: SheetInfo[]) => {
+    this.send({ type: 'coreClientSheetInfo', sheetInfo });
+  };
 }
 
 export const coreClient = new CoreClient();
-
-self.sendImportProgress = coreClient.sendImportProgress.bind(self);
-self.sendAddSheet = coreClient.sendAddSheet.bind(self);
-self.sendSheetInfo = coreClient.sendSheetInfo.bind(self);

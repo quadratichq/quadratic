@@ -1,5 +1,5 @@
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
-use crate::grid::Grid;
+use crate::{grid::Grid, wasm_bindings::controller::sheet_info::SheetInfo};
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
 pub mod dependencies;
@@ -29,13 +29,11 @@ pub struct GridController {
 
 impl GridController {
     pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
-        dbgjs!("IN RUST 0");
         let grid = GridController {
             grid,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
         };
-        dbgjs!("IN RUST 1");
         // collect sheet info to send to the client
         if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
             if let Ok(sheet_info) = serde_json::to_string(
@@ -44,16 +42,24 @@ impl GridController {
                     .iter()
                     .filter_map(|sheet_id| {
                         let sheet = grid.try_sheet(*sheet_id)?;
-                        Some((
-                            sheet_id.to_string(),
-                            sheet.name.clone(),
-                            sheet.color.clone(),
-                            sheet.offsets.export(),
-                        ))
+                        let bounds = sheet.bounds(false);
+                        let bounds_without_formatting = sheet.bounds(true);
+                        if let Ok(offsets) = serde_json::to_string(&sheet.offsets) {
+                            Some(SheetInfo {
+                                sheet_id: sheet_id.to_string(),
+                                name: sheet.name.clone(),
+                                color: sheet.color.clone(),
+                                order: sheet.order.clone(),
+                                offsets,
+                                bounds,
+                                bounds_without_formatting,
+                            })
+                        } else {
+                            None
+                        }
                     })
                     .collect::<Vec<_>>(),
             ) {
-                dbgjs!("IN RUST");
                 crate::wasm_bindings::js::jsSheetInfo(sheet_info);
             }
         }

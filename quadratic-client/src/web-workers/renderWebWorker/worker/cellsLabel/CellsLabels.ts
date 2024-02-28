@@ -10,9 +10,8 @@ import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { intersects } from '@/gridGL/helpers/intersects';
-import { CellSheetsModified, JsRenderCell } from '@/quadratic-core-types';
+import { CellSheetsModified, JsRenderCell, SheetInfo } from '@/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
-import { SheetRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
 import { Container, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
@@ -30,7 +29,8 @@ export class CellsLabels extends Container {
   // (hashX, hashY) index into cellsTextHashContainer
   cellsTextHash: Map<string, CellsTextHash>;
 
-  bounds?: { x: number; y: number; width: number; height: number };
+  // bounds without formatting
+  bounds?: Rectangle;
 
   // row index into cellsTextHashContainer (used for clipping)
   private cellsRows: Map<number, CellsTextHash[]>;
@@ -42,11 +42,18 @@ export class CellsLabels extends Container {
   private dirtyColumnHeadings: Map<number, number>;
   private dirtyRowHeadings: Map<number, number>;
 
-  constructor(sheetId: string, metadata: SheetRenderMetadata, bitmapFonts: RenderBitmapFonts) {
+  constructor(sheetInfo: SheetInfo, bitmapFonts: RenderBitmapFonts) {
     super();
-    this.sheetId = sheetId;
-    this.bounds = metadata.bounds;
-    this.sheetOffsets = SheetOffsetsWasm.load(metadata.offsets);
+    this.sheetId = sheetInfo.sheet_id;
+    const bounds = sheetInfo.bounds_without_formatting;
+    if (bounds.type === 'nonEmpty' && bounds.min) {
+      const min = bounds.min;
+      const max = bounds.max;
+      if (min && max) {
+        this.bounds = new Rectangle(Number(min.x), Number(min.y), Number(max.x - min.x), Number(max.y - min.y));
+      }
+    }
+    this.sheetOffsets = SheetOffsetsWasm.load(sheetInfo.offsets);
     this.bitmapFonts = bitmapFonts;
     this.cellsTextHash = new Map();
 

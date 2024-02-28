@@ -11,6 +11,7 @@ use quadratic_core::{
         CodeCellLanguage,
     },
     sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement},
+    wasm_bindings::controller::sheet_info::SheetInfo,
     Rect, *,
 };
 use ts_rs::TS;
@@ -66,7 +67,8 @@ fn main() {
         SearchOptions,
         SheetPos,
         Placement,
-        ColumnRow
+        ColumnRow,
+        SheetInfo
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {

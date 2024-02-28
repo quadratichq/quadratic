@@ -1,3 +1,5 @@
+import { events } from '@/events/events';
+import { CellSheetsModified, SheetId } from '@/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
@@ -5,14 +7,18 @@ import {
 import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { CellSheetsModified, SheetId } from '@/quadratic-core-types';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
   current?: CellsSheet;
 
-  async create(): Promise<void> {
+  constructor() {
+    super();
+    events.on('sheetInfo', this.create);
+  }
+
+  create = async () => {
     this.removeChildren();
     if (!sheets.size) return;
 
@@ -24,7 +30,7 @@ export class CellsSheets extends Container<CellsSheet> {
       }
     }
     renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds());
-  }
+  };
 
   isReady(): boolean {
     return !!this.current;

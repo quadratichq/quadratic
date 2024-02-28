@@ -2,7 +2,7 @@
  * Messages between Core web worker and Render web worker.
  */
 
-import { JsRenderCell } from '@/quadratic-core-types';
+import { JsRenderCell, SheetInfo } from '@/quadratic-core-types';
 
 export interface RenderCoreRequestRenderCells {
   type: 'renderCoreRequestRenderCells';
@@ -25,11 +25,9 @@ export type SheetRenderMetadata = {
   bounds?: { x: number; y: number; width: number; height: number };
 };
 
-export type GridRenderMetadata = Record<string, SheetRenderMetadata>;
-
-export interface CoreRenderReady {
-  type: 'coreRenderReady';
-  metadata: GridRenderMetadata;
+export interface CoreRenderSheetInfo {
+  type: 'coreRenderSheetInfo';
+  sheetInfo: SheetInfo[];
 }
 
 export interface CoreRenderCompleteRenderCells {
@@ -40,6 +38,6 @@ export interface CoreRenderCompleteRenderCells {
   cells: string;
 }
 
-export type CoreRenderMessage = CoreRenderCells | CoreRenderReady | CoreRenderCompleteRenderCells;
+export type CoreRenderMessage = CoreRenderCells | CoreRenderSheetInfo | CoreRenderCompleteRenderCells;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells;

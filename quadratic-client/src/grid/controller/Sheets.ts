@@ -1,5 +1,5 @@
 import { events } from '@/events/events';
-import { SheetId } from '@/quadratic-core-types';
+import { SheetId, SheetInfo } from '@/quadratic-core-types';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
@@ -18,26 +18,26 @@ class Sheets {
   constructor() {
     this.sheets = [];
     this._current = '';
+    events.on('sheetInfo', this.create);
     events.on('addSheet', this.addSheet);
   }
 
-  // async create() {
-  //   this.sheets = [];
-  //   const sheetIds = metadata.sheetIds;
-  //   sheetIds.forEach((sheetId) => {
-  //     const sheet = new Sheet(sheetId);
-  //     this.sheets.push(sheet);
-  //   });
-  //   this.sort();
-  //   this.current = this.sheets[0].id;
-  // }
-
-  addSheet(sheetId: string, name: string, order: string, color?: string, offsets?: string) {
-    const sheet = new Sheet(sheetId, name, order, color, offsets);
-    this.sheets.push(sheet);
+  create = (sheetInfo: SheetInfo[]) => {
+    this.sheets = [];
+    sheetInfo.forEach((info) => {
+      const sheet = new Sheet(info);
+      this.sheets.push(sheet);
+    });
     this.sort();
-    this.current = sheet.id;
-  }
+    this._current = this.sheets[0].id;
+  };
+
+  addSheet = (sheetId: string, name: string, order: string, color?: string, offsets?: string) => {
+    // const sheet = new Sheet(sheetId, name, order, color, offsets);
+    // this.sheets.push(sheet);
+    // this.sort();
+    // this.current = sheet.id;
+  };
 
   // TODO...
   // ensures there's a Sheet.ts for every Sheet.rs

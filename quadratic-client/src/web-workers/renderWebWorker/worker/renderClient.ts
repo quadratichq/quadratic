@@ -5,6 +5,7 @@
  * directly accessed by its siblings.
  */
 
+import { debugWebWorkersMessages } from '@/debugFlags';
 import { Bounds } from '@/grid/sheet/Bounds';
 import { Rectangle } from 'pixi.js';
 import {
@@ -24,6 +25,10 @@ class RenderClient {
   }
 
   private handleMessage = (e: MessageEvent<ClientRenderMessage>) => {
+    if (debugWebWorkersMessages && e.data.type !== 'clientRenderViewport') {
+      console.log(`[renderClient] message: ${e.data.type}`);
+    }
+
     switch (e.data.type) {
       case 'clientRenderInit':
         renderText.clientInit(e.data.bitmapFonts);

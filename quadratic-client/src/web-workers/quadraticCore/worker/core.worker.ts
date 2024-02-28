@@ -9,8 +9,8 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-import './core';
-import './coreClient';
-import './coreRender';
+import { coreClient } from './coreClient';
+
+coreClient.start();
 
 if (debugWebWorkers) console.log('[core.worker] created');

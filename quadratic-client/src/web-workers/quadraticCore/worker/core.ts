@@ -19,9 +19,7 @@ import {
   MultiplayerCoreReceiveTransaction,
   MultiplayerCoreReceiveTransactions,
 } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import { ClientCoreLoad, ClientCoreSummarizeSelection, GridMetadata } from '../coreClientMessages';
-import { GridRenderMetadata } from '../coreRenderMessages';
-import { coreClient } from './coreClient';
+import { ClientCoreLoad, ClientCoreSummarizeSelection } from '../coreClientMessages';
 import { coreMultiplayer } from './coreMultiplayer';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
@@ -37,36 +35,10 @@ class Core {
 
   // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort) {
-    console.log('0');
+    coreRender.init(renderPort);
     const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
-    console.log('[core] Grid loaded');
     this.gridController = GridController.newFromFile(results[0], message.sequenceNumber);
     if (debugWebWorkers) console.log('[core] GridController loaded');
-    const sheetIds = this.getSheetIds();
-
-    // initialize Client with relevant Core metadata
-    const metadata: GridMetadata = { undo: false, redo: false, sheets: {} };
-    sheetIds.forEach((sheetId) => {
-      metadata.sheets[sheetId] = {
-        offsets: this.getSheetOffsets(sheetId),
-        bounds: this.getGridBounds({ sheetId, ignoreFormatting: false }),
-        boundsNoFormatting: this.getGridBounds({ sheetId, ignoreFormatting: true }),
-        name: this.getSheetName(sheetId),
-        order: this.getSheetOrder(sheetId),
-        color: this.getSheetColor(sheetId),
-      };
-    });
-
-    coreClient.init(message.id, metadata);
-    // initialize RenderWebWorker with relevant Core metadata
-    const renderMetadata: GridRenderMetadata = {};
-    sheetIds.forEach((sheetId) => {
-      renderMetadata[sheetId] = {
-        offsets: this.getSheetOffsets(sheetId),
-        bounds: this.getGridBounds({ sheetId, ignoreFormatting: true }),
-      };
-    });
-    coreRender.init(renderMetadata, renderPort);
   }
 
   getSheetName(sheetId: string) {

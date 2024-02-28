@@ -7,6 +7,7 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   SheetId,
+  SheetInfo,
 } from '@/quadratic-core-types';
 
 export interface ClientCoreLoad {
@@ -14,7 +15,6 @@ export interface ClientCoreLoad {
   url: string;
   version: string;
   sequenceNumber: number;
-  id: number;
 }
 
 export interface SheetMetadata {
@@ -24,17 +24,6 @@ export interface SheetMetadata {
   name: string;
   order: string;
   color?: string;
-}
-
-export interface GridMetadata {
-  undo: boolean;
-  redo: boolean;
-  sheets: Record<string, SheetMetadata>;
-}
-
-export interface CoreClientLoad {
-  type: 'coreClientLoad';
-  id: number;
 }
 
 export interface CoreClientFillSheetsModified {
@@ -363,16 +352,9 @@ export interface CoreClientAddSheet {
   order: string;
 }
 
-export interface SheetInfo {
-  id: string;
-  name: string;
-  offsets: string;
-  color?: string;
-}
-
 export interface CoreClientSheetInfo {
   type: 'coreClientSheetInfo';
-  sheets: SheetInfo[];
+  sheetInfo: SheetInfo[];
 }
 
 export type ClientCoreMessage =
@@ -406,7 +388,6 @@ export type ClientCoreMessage =
   | ClientCoreAddSheet;
 
 export type CoreClientMessage =
-  | CoreClientLoad
   | CoreClientGetCodeCell
   | CoreClientGetAllRenderFills
   | CoreClientGetRenderCodeCells

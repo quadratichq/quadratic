@@ -1,4 +1,4 @@
-import { debugWebWorkers } from '@/debugFlags';
+import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { Rectangle } from 'pixi.js';
 import { prepareBitmapFontInformation } from './renderBitmapFonts';
@@ -26,6 +26,8 @@ class RenderWebWorker {
   }
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
+    if (debugWebWorkersMessages) console.log(`[RenderWebWorker] message: ${e.data.type}`);
+
     if (!pixiApp.cellsSheets) {
       this.preloadQueue.push(e);
       return;

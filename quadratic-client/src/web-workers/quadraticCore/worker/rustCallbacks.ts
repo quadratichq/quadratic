@@ -1,6 +1,8 @@
 // this file cannot include any imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-export declare var self: WorkerGlobalScope &
+import { SheetInfo } from '@/quadratic-core-types';
+
+declare var self: WorkerGlobalScope &
   typeof globalThis & {
     runPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     addTransaction: (transactionId: string, operations: string) => void;
@@ -16,7 +18,8 @@ export declare var self: WorkerGlobalScope &
     ) => void;
     sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
     sendAddSheet: (sheetId: string, name: string, order: string, user: boolean) => void;
-    sendSheetInfo: (sheets: string /*SheetInfo[]*/) => void;
+    sendSheetInfoClient: (sheets: SheetInfo[]) => void;
+    sendSheetInfoRender: (sheets: SheetInfo[]) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -56,6 +59,8 @@ export const jsAddSheet = (sheetId: string, name: string, order: string, user: b
   self.sendAddSheet(sheetId, name, order, user);
 };
 
-export const jsSheetInfo = (sheetInfo: string) => {
-  self.sendSheetInfo(sheetInfo);
+export const jsSheetInfo = (sheetInfoStringified: string) => {
+  const sheetInfo = JSON.parse(sheetInfoStringified);
+  self.sendSheetInfoClient(sheetInfo);
+  self.sendSheetInfoRender(sheetInfo);
 };

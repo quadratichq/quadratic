@@ -1,4 +1,4 @@
-import { CellAlign, CellFormatSummary } from '@/quadratic-core-types';
+import { CellAlign, CellFormatSummary, SheetInfo } from '@/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -17,16 +17,12 @@ export class Sheet {
 
   offsets: SheetOffsets;
 
-  constructor(sheetId: string, name: string, order: string, color?: string, offsets?: string) {
-    this.id = sheetId;
-    this.name = name;
-    this.order = order;
-    this.color = color;
-    if (offsets) {
-      this.offsets = SheetOffsetsWasm.load(offsets);
-    } else {
-      this.offsets = SheetOffsetsWasm.empty();
-    }
+  constructor(info: SheetInfo) {
+    this.id = info.sheet_id;
+    this.name = info.name;
+    this.order = info.order;
+    this.color = info.color ?? undefined;
+    this.offsets = SheetOffsetsWasm.load(info.offsets);
     this.cursor = new SheetCursor(this);
   }
 

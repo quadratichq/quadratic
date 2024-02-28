@@ -60,23 +60,13 @@ export class PixiApp {
 
   initialized = false;
 
-  async init() {
+  init() {
     this.initialized = true;
     this.initCanvas();
-
-    const promise = new Promise((resolve) => {
-      // keep a reference of app on window, used for Playwright tests
-      //@ts-expect-error
-      window.pixiapp = this;
+    this.rebuild();
+    return new Promise((resolve) => {
       this.waitingForFirstRender = resolve;
     });
-    await this.rebuild();
-    return promise;
-  }
-
-  private firstRender() {
-    if (this.waitingForFirstRender) {
-    }
   }
 
   // called after RenderText has no more updates to send
@@ -278,9 +268,7 @@ export class PixiApp {
     pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
   }
 
-  async rebuild() {
-    // sheets.create();
-    // await this.cellsSheets.create();
+  rebuild() {
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;

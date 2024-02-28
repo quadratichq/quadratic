@@ -1,6 +1,6 @@
 import { hasPermissionToEditFile } from '@/actions';
 import { authClient, parseDomain } from '@/auth';
-import { debugShowMultiplayer } from '@/debugFlags';
+import { debugShowMultiplayer, debugWebWorkersMessages } from '@/debugFlags';
 import { sheets } from '@/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
@@ -62,6 +62,8 @@ export class Multiplayer {
   }
 
   private handleMessage = (e: MessageEvent<MultiplayerClientMessage>) => {
+    if (debugWebWorkersMessages) console.log(`[Multiplayer] message: ${e.data.type}`);
+
     switch (e.data.type) {
       case 'multiplayerClientState':
         this.state = e.data.state;

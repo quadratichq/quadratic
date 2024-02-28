@@ -1,3 +1,4 @@
+import { SheetInfo } from '@/quadratic-core-types';
 import EventEmitter from 'eventemitter3';
 
 export interface EventTypes {
@@ -10,6 +11,10 @@ export interface EventTypes {
     sheetId: string;
     name: string;
     order: string;
+  };
+
+  sheetInfo: {
+    sheetInfo: SheetInfo[];
   };
 }
 

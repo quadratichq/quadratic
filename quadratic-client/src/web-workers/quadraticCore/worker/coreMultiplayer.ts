@@ -1,4 +1,4 @@
-import { debugWebWorkers } from '@/debugFlags';
+import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import { TransactionSummary } from '@/quadratic-core-types';
 import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../../multiplayerWebWorker/multiplayerCoreMessages';
 import { core } from './core';
@@ -19,6 +19,8 @@ class CoreMultiplayer {
   }
 
   private handleMessage = (e: MessageEvent<MultiplayerCoreMessage>) => {
+    if (debugWebWorkersMessages) console.log(`[coreMultiplayer] message: ${e.data.type}`);
+
     switch (e.data.type) {
       case 'multiplayerCoreReceiveTransaction':
         core.receiveTransaction(e.data);

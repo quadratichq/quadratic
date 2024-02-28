@@ -6,8 +6,8 @@
  * directly accessed by its siblings.
  */
 
+import { SheetInfo } from '@/quadratic-core-types';
 import init from '@/quadratic-grid-offsets/quadratic_grid_offsets';
-import { GridRenderMetadata } from '@/web-workers/quadraticCore/coreRenderMessages';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
 import { CellsLabels } from './cellsLabel/CellsLabels';
@@ -17,7 +17,7 @@ import { renderClient } from './renderClient';
 interface RenderTextStatus {
   rust: boolean;
   client: boolean;
-  core: false | GridRenderMetadata;
+  core: false | SheetInfo[];
 }
 
 class RenderText {
@@ -45,22 +45,21 @@ class RenderText {
     this.ready();
   }
 
-  coreInit(metadata: GridRenderMetadata) {
-    this.status.core = metadata;
+  coreInit(sheetInfo: SheetInfo[]) {
+    this.status.core = sheetInfo;
     this.ready();
   }
 
   ready() {
     if (this.status.rust && this.status.core && this.bitmapFonts) {
       if (!this.bitmapFonts) throw new Error('Expected bitmapFonts to be defined in RenderText.ready');
-      const metadata = this.status.core;
-      for (const sheetId in metadata) {
-        this.cellsLabels.set(sheetId, new CellsLabels(sheetId, metadata[sheetId], this.bitmapFonts));
+      for (const sheetInfo of this.status.core) {
+        const sheetId = sheetInfo.sheet_id;
+        this.cellsLabels.set(sheetId, new CellsLabels(sheetInfo, this.bitmapFonts));
       }
 
-      // no need to keep around the metadata
+      // we don't need to keep around SheetInfo
       this.status.core = false;
-
       this.update();
     }
   }

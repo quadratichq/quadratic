@@ -80,3 +80,5 @@ export const debugShowUILogs = debug && false;
 //-----------
 
 export const debugWebWorkers = debug && true;
+
+export const debugWebWorkersMessages = debug && false;
