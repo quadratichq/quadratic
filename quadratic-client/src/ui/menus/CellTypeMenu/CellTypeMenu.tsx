@@ -1,3 +1,4 @@
+import { useCellTypeMenuOpenedCount } from '@/gridGL/HTMLGrid/CodeHint';
 import { CodeCellLanguage } from '@/quadratic-core/types';
 import {
   Chip,
@@ -77,12 +78,15 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
+  const [, setCellTypeMenuOpenedCount] = useCellTypeMenuOpenedCount();
   const searchlabel = 'Choose a cell type…';
 
   const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
+    setCellTypeMenuOpenedCount((count: number) => count + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const close = useCallback(() => {
