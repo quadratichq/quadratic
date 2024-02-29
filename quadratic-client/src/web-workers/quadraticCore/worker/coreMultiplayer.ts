@@ -1,7 +1,11 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { TransactionSummary } from '@/quadratic-core-types';
 import { CoreMultiplayerMessage, MultiplayerCoreMessage } from '../../multiplayerWebWorker/multiplayerCoreMessages';
 import { core } from './core';
+
+declare var self: WorkerGlobalScope &
+  typeof globalThis & {
+    sendTransaction: (transactionId: string, operations: string) => void;
+  };
 
 class CoreMultiplayer {
   private coreMessagePort?: MessagePort;
@@ -35,15 +39,15 @@ class CoreMultiplayer {
     }
   };
 
-  handleSummary(summary: TransactionSummary) {
-    if (summary.operations && summary.transaction_id) {
-      this.send({
-        type: 'coreMultiplayerTransaction',
-        operations: summary.operations,
-        transaction_id: summary.transaction_id,
-      });
-    }
+  sendTransaction(transactionId: string, operations: string) {
+    this.send({
+      type: 'coreMultiplayerTransaction',
+      operations,
+      transaction_id: transactionId,
+    });
   }
 }
 
 export const coreMultiplayer = new CoreMultiplayer();
+
+self.sendTransaction = coreMultiplayer.sendTransaction;

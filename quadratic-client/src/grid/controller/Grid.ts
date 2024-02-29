@@ -1,5 +1,4 @@
-import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import { JsClipboard, JsHtmlOutput, Rect, SearchOptions, SheetPos, TransactionSummary } from '@/quadratic-core-types';
+import { JsClipboard, JsHtmlOutput, Rect, SearchOptions, SheetPos } from '@/quadratic-core-types';
 import init, {
   BorderSelection,
   BorderStyle,
@@ -13,13 +12,10 @@ import init, {
   SheetOffsets,
   TransientResize,
 } from '@/quadratic-core/quadratic_core';
-import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { Point, Rectangle } from 'pixi.js';
 import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { GridFile } from '../../schemas';
-import { SheetCursorSave } from '../sheet/SheetCursor';
 import { GridPerformanceProxy } from './GridPerformanceProxy';
 import { sheets } from './Sheets';
 
@@ -74,61 +70,51 @@ export class Grid {
   private gridController!: GridController;
   thumbnailDirty = false;
 
-  transactionResponse(summary: TransactionSummary) {
-    if (summary.sheet_list_modified) {
-      sheets.repopulate();
-    }
-
-    if (summary.fill_sheets_modified.length) {
-      // pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
-    }
-
-    if (summary.offsets_modified.length) {
-      sheets.updateOffsets(summary.offsets_modified);
-      pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
-      htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
-      pixiApp.cursor.dirty = true;
-      pixiApp.multiplayerCursor.dirty = true;
-    }
-
-    if (summary.code_cells_modified.length) {
-      pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
-      window.dispatchEvent(new CustomEvent('code-cells-update'));
-    }
-
-    if (summary.border_sheets_modified.length) {
-      pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
-    }
-
-    if (summary.generate_thumbnail) {
-      this.thumbnailDirty = true;
-    }
-
-    if (summary.html) {
-      window.dispatchEvent(new CustomEvent('html-update', { detail: summary.html }));
-    }
-
-    const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
-    if (cursor) {
-      sheets.current = cursor.sheetId;
-      sheets.sheet.cursor.load(cursor);
-    }
-    if (summary.save) {
-      window.dispatchEvent(new CustomEvent('transaction-complete'));
-    }
-
-    // multiplayer transactions
-    if (summary.operations) {
-      // multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
-    }
-
-    if (summary.request_transactions) {
-      multiplayer.sendGetTransactions(summary.request_transactions);
-    }
-
-    // todo: this should not be necessary as Update.ts should take care of it; right now
-    //       it renders every time it receives a heartbeat. not a big deal but worth fixing.
-    pixiApp.setViewportDirty();
+  transactionResponse(summary: undefined) {
+    // if (summary.sheet_list_modified) {
+    //   sheets.repopulate();
+    // }
+    // if (summary.fill_sheets_modified.length) {
+    //   // pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
+    // }
+    // if (summary.offsets_modified.length) {
+    //   sheets.updateOffsets(summary.offsets_modified);
+    //   pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
+    //   htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
+    //   pixiApp.cursor.dirty = true;
+    //   pixiApp.multiplayerCursor.dirty = true;
+    // }
+    // if (summary.code_cells_modified.length) {
+    //   pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+    //   window.dispatchEvent(new CustomEvent('code-cells-update'));
+    // }
+    // if (summary.border_sheets_modified.length) {
+    //   pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
+    // }
+    // if (summary.generate_thumbnail) {
+    //   this.thumbnailDirty = true;
+    // }
+    // if (summary.html) {
+    //   window.dispatchEvent(new CustomEvent('html-update', { detail: summary.html }));
+    // }
+    // const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
+    // if (cursor) {
+    //   sheets.current = cursor.sheetId;
+    //   sheets.sheet.cursor.load(cursor);
+    // }
+    // if (summary.save) {
+    //   window.dispatchEvent(new CustomEvent('transaction-complete'));
+    // }
+    // // multiplayer transactions
+    // if (summary.operations) {
+    //   // multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
+    // }
+    // if (summary.request_transactions) {
+    //   multiplayer.sendGetTransactions(summary.request_transactions);
+    // }
+    // // todo: this should not be necessary as Update.ts should take care of it; right now
+    // //       it renders every time it receives a heartbeat. not a big deal but worth fixing.
+    // pixiApp.setViewportDirty();
   }
 
   test() {
@@ -398,12 +384,12 @@ export class Grid {
   //#region Compute
 
   calculationComplete(result: JsCodeResult) {
-    const summaryResult = this.gridController.calculationComplete(result);
-    if (summaryResult.Ok) {
-      this.transactionResponse(summaryResult.Ok);
-    } else {
-      throw new Error(summaryResult.Err);
-    }
+    // const summaryResult = this.gridController.calculationComplete(result);
+    // if (summaryResult.Ok) {
+    //   this.transactionResponse(summaryResult.Ok);
+    // } else {
+    //   throw new Error(summaryResult.Err);
+    // }
   }
 
   // returns undefined if there was an error fetching cells (eg, invalid sheet name)
@@ -428,20 +414,20 @@ export class Grid {
   }
 
   rerunAllCodeCells() {
-    const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());
-    this.transactionResponse(summary);
+    // const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());
+    // this.transactionResponse(summary);
   }
 
   rerunSheetCodeCells() {
-    const sheetId = sheets.sheet.id;
-    const summary = this.gridController.rerunSheetCodeCells(sheetId, sheets.getCursorPosition());
-    this.transactionResponse(summary);
+    // const sheetId = sheets.sheet.id;
+    // const summary = this.gridController.rerunSheetCodeCells(sheetId, sheets.getCursorPosition());
+    // this.transactionResponse(summary);
   }
 
   rerunCodeCell() {
-    const pos = sheets.sheet.cursor.getPos();
-    const summary = this.gridController.rerunCodeCell(sheets.sheet.id, pos, sheets.getCursorPosition());
-    this.transactionResponse(summary);
+    // const pos = sheets.sheet.cursor.getPos();
+    // const summary = this.gridController.rerunCodeCell(sheets.sheet.id, pos, sheets.getCursorPosition());
+    // this.transactionResponse(summary);
   }
 
   //#endregion

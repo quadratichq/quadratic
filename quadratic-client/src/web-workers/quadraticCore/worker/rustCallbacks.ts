@@ -1,4 +1,4 @@
-// this file cannot include any imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
+// this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
 import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 
@@ -21,6 +21,7 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
+    sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -33,7 +34,7 @@ export const addUnsentTransaction = (transactionId: string, operations: string) 
   // return self.addTransaction(transactionId, operations);
 };
 
-export const sendTransaction = (transactionId: string, operations: string) => {
+export const jsSendTransaction = (transactionId: string, operations: string) => {
   return self.sendTransaction(transactionId, operations);
 };
 
@@ -67,6 +68,23 @@ export const jsSheetInfo = (sheetInfoStringified: string) => {
 };
 
 export const jsSheetFills = (sheet_id: string, fills: string) => {
-  const sheet_fills: JsRenderFill[] = JSON.parse(fills);
+  const sheet_fills = JSON.parse(fills);
   self.sendSheetFills(sheet_id, sheet_fills);
+};
+
+export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
+  const sheetInfo = JSON.parse(sheetInfoStringified);
+  self.sheetInfoUpdate(sheetInfo);
+};
+
+export const jsOffsetsModified = (sheetId: string, offsets: string) => {
+  console.log('TODO: jsOffsetsModified', sheetId, offsets);
+};
+
+export const jsUpdateHtml = (sheetId: string, x: number, y: number, html: string) => {
+  console.log('TODO: jsUpdateHtml', sheetId, x, y, html);
+};
+
+export const jsRequestTransactions = (sequenceNum: number) => {
+  console.log('TODO: jsRequestTransactions', sequenceNum);
 };

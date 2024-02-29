@@ -1,5 +1,5 @@
 import { events } from '@/events/events';
-import { CellSheetsModified, JsRenderFill, SheetId } from '@/quadratic-core-types';
+import { JsRenderFill, SheetId } from '@/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
@@ -141,16 +141,6 @@ export class CellsSheets extends Container<CellsSheet> {
   getCellsContentMaxWidth(column: number): number {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
     return this.current.cellsLabels.getCellsContentMaxWidth(column);
-  }
-
-  modified(cellSheetsModified: CellSheetsModified[]): void {
-    for (const cellSheet of this.children) {
-      const modified = cellSheetsModified.filter((modified) => modified.sheet_id === cellSheet.sheet.id);
-      if (modified.length) {
-        cellSheet.updateCellsArray();
-        cellSheet.cellsLabels.modified(modified);
-      }
-    }
   }
 
   updateCodeCells(codeCells: SheetId[]): void {

@@ -20,10 +20,8 @@ import {
   MultiplayerCoreReceiveTransactions,
 } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import { ClientCoreLoad, ClientCoreSummarizeSelection } from '../coreClientMessages';
-import { coreMultiplayer } from './coreMultiplayer';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
-import { handleTransactionSummary } from './transactionSummary';
 
 class Core {
   gridController?: GridController;
@@ -122,9 +120,7 @@ class Core {
 
   setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.setCellValue(sheetId, new Pos(x, y), value, cursor);
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.setCellValue(sheetId, new Pos(x, y), value, cursor);
   }
 
   getCellFormatSummary(sheetId: string, x: number, y: number): CellFormatSummary {
@@ -140,8 +136,7 @@ class Core {
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     const data = message.transaction;
-    const summary = this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
-    handleTransactionSummary(summary);
+    this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
   }
 
   receiveTransactions(message: MultiplayerCoreReceiveTransactions) {
@@ -173,9 +168,7 @@ class Core {
 
   setCellBold(sheetId: string, x: number, y: number, width: number, height: number, bold: boolean, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.setCellBold(sheetId, pointsToRect(x, y, width, height), bold, cursor);
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.setCellBold(sheetId, pointsToRect(x, y, width, height), bold, cursor);
   }
 
   setCellItalic(
@@ -188,9 +181,7 @@ class Core {
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.setCellItalic(sheetId, pointsToRect(x, y, width, height), italic, cursor);
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.setCellItalic(sheetId, pointsToRect(x, y, width, height), italic, cursor);
   }
 
   setCellTextColor(
@@ -203,9 +194,7 @@ class Core {
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.setCellTextColor(sheetId, pointsToRect(x, y, width, height), color, cursor);
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.setCellTextColor(sheetId, pointsToRect(x, y, width, height), color, cursor);
   }
 
   setCellFillColor(
@@ -218,9 +207,7 @@ class Core {
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.setCellFillColor(sheetId, pointsToRect(x, y, width, height), fillColor, cursor);
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.setCellFillColor(sheetId, pointsToRect(x, y, width, height), fillColor, cursor);
   }
 
   toggleCommas(
@@ -234,14 +221,7 @@ class Core {
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.toggleCommas(
-      sheetId,
-      new Pos(sourceX, sourceY),
-      pointsToRect(x, y, width, height),
-      cursor
-    );
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.toggleCommas(sheetId, new Pos(sourceX, sourceY), pointsToRect(x, y, width, height), cursor);
   }
 
   getRenderCell(sheetId: string, x: number, y: number): JsRenderCell | undefined {
@@ -252,9 +232,7 @@ class Core {
 
   setCurrency(sheetId: string, x: number, y: number, width: number, height: number, symbol: string, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.setCellCurrency(sheetId, pointsToRect(x, y, width, height), symbol, cursor);
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.setCellCurrency(sheetId, pointsToRect(x, y, width, height), symbol, cursor);
   }
 
   importCsv(
@@ -266,20 +244,12 @@ class Core {
     cursor?: string
   ): string | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, new Pos(x, y), cursor);
-    console.log(summary);
-    if (typeof summary === 'string') {
-      return summary;
-    }
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    return this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, new Pos(x, y), cursor);
   }
 
   deleteCellValues(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.deleteCellValues(sheetId, pointsToRect(x, y, width, height), cursor);
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.deleteCellValues(sheetId, pointsToRect(x, y, width, height), cursor);
   }
 
   setCodeCellValue(
@@ -291,9 +261,7 @@ class Core {
     cursor?: string
   ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.setCellCode(sheetId, new Pos(x, y), language, codeString, cursor);
-    coreMultiplayer.handleSummary(summary);
-    handleTransactionSummary(summary);
+    this.gridController.setCellCode(sheetId, new Pos(x, y), language, codeString, cursor);
   }
 
   addSheet(cursor?: string) {

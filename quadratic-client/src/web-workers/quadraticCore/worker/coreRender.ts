@@ -10,26 +10,11 @@ import { SheetInfo } from '@/quadratic-core-types';
 import { CoreRenderMessage, RenderCoreMessage, RenderCoreRequestRenderCells } from '../coreRenderMessages';
 import { core } from './core';
 
-declare var self: any;
-
-// declare var self: WorkerGlobalScope &
-//   typeof globalThis & {
-//     runPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
-//     addTransaction: (transactionId: string, operations: string) => void;
-//     sendTransaction: (transactionId: string, operations: string) => void;
-//     sendImportProgress: (
-//       filename: string,
-//       current: number,
-//       total: number,
-//       x: number,
-//       y: number,
-//       width: number,
-//       height: number
-//     ) => void;
-//     sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
-//     sendAddSheet: (sheetId: string, name: string, order: string, user: boolean) => void;
-//     sendSheetInfo: (sheets: string /*SheetInfo[]*/) => void;
-//   };
+declare var self: WorkerGlobalScope &
+  typeof globalThis & {
+    sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
+    sendSheetInfoRender: (sheetInfo: SheetInfo[]) => void;
+  };
 
 class CoreRender {
   private coreRenderPort?: MessagePort;

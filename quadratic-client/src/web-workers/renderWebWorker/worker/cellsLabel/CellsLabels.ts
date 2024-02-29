@@ -10,7 +10,7 @@ import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { intersects } from '@/gridGL/helpers/intersects';
-import { CellSheetsModified, JsRenderCell, SheetInfo } from '@/quadratic-core-types';
+import { JsRenderCell, SheetInfo } from '@/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { Container, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -371,16 +371,6 @@ export class CellsLabels extends Container {
       }
     });
     return max;
-  }
-
-  // update values for cells
-  modified(modified: CellSheetsModified[]): void {
-    for (const update of modified) {
-      const cellsHash = this.getCellsHash(Number(update.x) * sheetHashWidth, Number(update.y) * sheetHashHeight, true);
-      if (cellsHash) {
-        cellsHash.dirty = true;
-      }
-    }
   }
 
   completeRenderCells(hashX: number, hashY: number, cells: string): void {
