@@ -107,7 +107,7 @@ impl PendingTransaction {
     /// Sends the transaction to the multiplayer server (if needed)
     pub fn send_transaction(&self) {
         if self.complete && self.is_user_undo_redo() {
-            if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            if cfg!(target_family = "wasm") {
                 let transaction_id = self.id.to_string();
                 let operations = serde_json::to_string(&self.forward_operations)
                     .expect("Failed to serialize forward operations");

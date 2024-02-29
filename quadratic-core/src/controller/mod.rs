@@ -35,7 +35,7 @@ impl GridController {
             ..Default::default()
         };
         // collect sheet info to send to the client
-        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+        if cfg!(target_family = "wasm") {
             if let Ok(sheet_info) = serde_json::to_string(
                 &grid
                     .sheet_ids()

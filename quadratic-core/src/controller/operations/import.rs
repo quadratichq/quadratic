@@ -71,7 +71,7 @@ impl GridController {
                 cell_values = CellValues::new(width, h);
 
                 // update the progress bar every time there's a new operation
-                if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+                if cfg!(target_family = "wasm") {
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_y,

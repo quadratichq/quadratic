@@ -10,7 +10,7 @@ use super::{
 impl GridController {
     /// Sends the modified cell sheets to the render web worker
     pub fn send_render_cells(&self, sheet_rect: &SheetRect) {
-        if cfg!(test) || cfg!(feature = "multiplayer") || cfg!(feature = "files") {
+        if !cfg!(target_family = "wasm") {
             return;
         }
 
@@ -51,7 +51,7 @@ impl GridController {
 
     /// Sends the modified fills to the client
     pub fn send_fill_cells(&self, sheet_rect: &SheetRect) {
-        if cfg!(test) || cfg!(feature = "multiplayer") || cfg!(feature = "files") {
+        if !cfg!(target_family = "wasm") {
             return;
         }
         if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
@@ -64,7 +64,7 @@ impl GridController {
 
     /// Sends all fills to the client
     pub fn send_all_fills(&self) {
-        if cfg!(test) || cfg!(feature = "multiplayer") || cfg!(feature = "files") {
+        if !cfg!(target_family = "wasm") {
             return;
         }
         for sheet_id in self.sheet_ids() {

@@ -231,15 +231,10 @@ pub fn maybe_reverse_range(
 
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(test) || cfg!(feature = "multiplayer") || cfg!(feature = "files") {
-        dbg!(val);
+    if cfg!(target_family = "wasm") {
+        crate::wasm_bindings::js::log(&(format!("{:?}", val)));
     } else {
-        // this unsafe marker is necessary b/c of quadratic-multiplayer uses quadratic-core as a dependency
-        // (although the feature="multiplayer" should prevent this from ever being called form quadratic-multiplayer)
-        #[allow(unused_unsafe)]
-        unsafe {
-            crate::wasm_bindings::js::log(&(format!("{:?}", val)));
-        }
+        dbg!(val);
     }
 }
 
@@ -253,7 +248,7 @@ macro_rules! dbgjs {
 #[allow(unused_macros)]
 macro_rules! jsTime {
     ($($arg:tt)*) => {
-        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+        if cfg!(target_family = "wasm") {
             $crate::wasm_bindings::js::jsTime($($arg)*)
         }
     };
@@ -262,7 +257,7 @@ macro_rules! jsTime {
 #[allow(unused_macros)]
 macro_rules! jsTimeEnd {
     ($($arg:tt)*) => {
-        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+        if cfg!(target_family = "wasm") {
             $crate::wasm_bindings::js::jsTimeEnd($($arg)*);
         }
     };
