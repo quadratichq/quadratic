@@ -1,6 +1,9 @@
+import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { Rectangle } from 'pixi.js';
 import { useEffect, useMemo, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { Coordinate } from '../types/size';
 
@@ -9,9 +12,26 @@ export const useCellTypeMenuOpenedCount = () => {
 };
 
 export const CodeHint = () => {
+  const [cellHasValue, setCellHasValue] = useState(false);
   const [cellTypeMenuOpenedCount] = useCellTypeMenuOpenedCount();
+  const { showCodeEditor } = useRecoilValue(editorInteractionStateAtom);
 
-  if (cellTypeMenuOpenedCount > 3) {
+  useEffect(() => {
+    const updateCursor = () => {
+      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      const newCellHasValue = sheets.sheet.hasRenderCells(new Rectangle(x, y, 0, 0));
+      setCellHasValue(newCellHasValue);
+    };
+    updateCursor();
+    window.addEventListener('cursor-position', updateCursor);
+    window.addEventListener('change-sheet', updateCursor);
+    return () => {
+      window.removeEventListener('cursor-position', updateCursor);
+      window.removeEventListener('change-sheet', updateCursor);
+    };
+  }, []);
+
+  if (cellHasValue || cellTypeMenuOpenedCount > 3 || showCodeEditor) {
     return null;
   }
 
@@ -39,14 +59,10 @@ export const CodeHintInternal = () => {
 
   return (
     <div
+      className="pointer-events-none absolute whitespace-nowrap text-sm text-muted-foreground"
       style={{
-        position: 'absolute',
         left: offsets.x + CURSOR_THICKNESS,
         top: offsets.y,
-        pointerEvents: 'none',
-        whiteSpace: 'nowrap',
-        opacity: 0.5,
-        fontSize: '14px',
       }}
     >
       Press '=' to code
