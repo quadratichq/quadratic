@@ -11,7 +11,6 @@ use uuid::Uuid;
 use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
-        transaction_summary::TransactionSummary,
     },
     grid::{CodeCellLanguage, SheetId},
     SheetPos, SheetRect,
@@ -39,9 +38,6 @@ pub struct PendingTransaction {
     // tracks whether there are any async calls (which changes how the transaction is finalized)
     pub has_async: bool,
 
-    // tracks the TransactionSummary to return to the TS client for (mostly) rendering updates
-    pub summary: TransactionSummary,
-
     // used by Code Cell execution to track dependencies
     pub cells_accessed: HashSet<SheetRect>,
 
@@ -53,6 +49,9 @@ pub struct PendingTransaction {
 
     // whether transaction is complete
     pub complete: bool,
+
+    // whether to generate a thumbnail after transaction completes
+    pub generate_thumbnail: bool,
 }
 
 impl Default for PendingTransaction {
@@ -66,11 +65,11 @@ impl Default for PendingTransaction {
             forward_operations: Vec::new(),
             sheets_with_dirty_bounds: HashSet::new(),
             has_async: false,
-            summary: TransactionSummary::default(),
             cells_accessed: HashSet::new(),
             current_sheet_pos: None,
             waiting_for_async: None,
             complete: false,
+            generate_thumbnail: false,
         }
     }
 }
@@ -105,19 +104,16 @@ impl PendingTransaction {
         }
     }
 
-    /// returns the TransactionSummary
-    pub fn prepare_summary(&mut self, complete: bool) -> TransactionSummary {
-        if complete && self.is_user_undo_redo() {
-            self.summary.transaction_id = Some(self.id.to_string());
-            self.summary.operations = Some(
-                serde_json::to_string(&self.forward_operations)
-                    .expect("Failed to serialize forward operations"),
-            );
+    /// Sends the transaction to the multiplayer server (if needed)
+    pub fn send_transaction(&self) {
+        if self.complete && self.is_user_undo_redo() {
+            if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+                let transaction_id = self.id.to_string();
+                let operations = serde_json::to_string(&self.forward_operations)
+                    .expect("Failed to serialize forward operations");
+                crate::wasm_bindings::js::jsSendTransaction(transaction_id, operations);
+            }
         }
-        let mut summary = self.summary.clone();
-        summary.save = complete;
-        self.summary.clear(complete);
-        summary
     }
 
     pub fn is_user(&self) -> bool {

@@ -1,6 +1,4 @@
-use super::{
-    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
-};
+use super::{operations::operation::Operation, GridController};
 use crate::grid::SheetId;
 use crate::sheet_offsets::resize_transient::TransientResize;
 
@@ -14,7 +12,7 @@ impl GridController {
         sheet_id: SheetId,
         transient_resize: Option<TransientResize>,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         if let Some(transient_resize) = transient_resize {
             let mut ops = vec![];
             if let Some(column) = transient_resize.column {
@@ -30,9 +28,7 @@ impl GridController {
                     new_size: transient_resize.new_size,
                 });
             }
-            self.start_user_transaction(ops, cursor)
-        } else {
-            TransactionSummary::default()
+            self.start_user_transaction(ops, cursor);
         }
     }
 
@@ -43,7 +39,7 @@ impl GridController {
         row: Option<i32>,
         size: f64,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let transient_resize = match (column, row) {
                 (Some(column), None) => {
@@ -56,9 +52,7 @@ impl GridController {
                 }
                 _ => None,
             };
-            self.commit_offsets_resize(sheet_id, transient_resize, cursor)
-        } else {
-            TransactionSummary::default()
+            self.commit_offsets_resize(sheet_id, transient_resize, cursor);
         }
     }
 }

@@ -22,7 +22,7 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
-    sendAddSheet: (sheetId: string, name: string, order: string) => void;
+    sendAddSheet: (sheetInfo: SheetInfo, change: boolean) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
   };
@@ -214,8 +214,8 @@ class CoreClient {
     console.log(filename, current, total, x, y, width, height);
   };
 
-  sendAddSheet = (sheetId: string, name: string, order: string) => {
-    this.send({ type: 'coreClientAddSheet', sheetId, name, order });
+  sendAddSheet = (sheetInfo: SheetInfo, change: boolean) => {
+    this.send({ type: 'coreClientAddSheet', sheetInfo, change });
   };
 
   sendSheetInfoClient = (sheetInfo: SheetInfo[]) => {

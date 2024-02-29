@@ -26,8 +26,8 @@ extern "C" {
         code: String,
     ) -> JsValue;
     pub fn addUnsentTransaction(transaction_id: String, transaction: String);
-    pub fn sendTransaction(transaction_id: String, transaction: String);
 
+    pub fn jsSendTransaction(transaction_id: String, transaction: String);
     pub fn jsTime(name: String);
     pub fn jsTimeEnd(name: String);
 
@@ -50,6 +50,16 @@ extern "C" {
     );
 
     pub fn jsSheetInfo(sheets: String); // Vec<JsSheetInfo>
-
-    pub fn jsSheetFills(sheet_d: String, fills: String); // JsRenderFill
+    pub fn jsSheetInfoUpdate(sheet: String); // JsSheetInfo
+    pub fn jsSheetFills(sheet_id: String, fills: String); // JsRenderFill
+    pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, change: bool);
+    pub fn jsRequestTransactions(sequence_num: u64);
+    pub fn jsUpdateHtml(sheet_id: String, x: i64, y: i64, html: String /*JsHtmlOutput*/);
+    pub fn jsUpdateCodeCell(
+        sheet_id: String,
+        x: i64,
+        y: i64,
+        code_cell: String, /*JsCodeCell*/
+    );
+    pub fn jsOffsetsModified(sheet_id: String, offsets: String);
 }

@@ -42,21 +42,7 @@ impl GridController {
                     .iter()
                     .filter_map(|sheet_id| {
                         let sheet = grid.try_sheet(*sheet_id)?;
-                        let bounds = sheet.bounds(false);
-                        let bounds_without_formatting = sheet.bounds(true);
-                        if let Ok(offsets) = serde_json::to_string(&sheet.offsets) {
-                            Some(SheetInfo {
-                                sheet_id: sheet_id.to_string(),
-                                name: sheet.name.clone(),
-                                color: sheet.color.clone(),
-                                order: sheet.order.clone(),
-                                offsets,
-                                bounds,
-                                bounds_without_formatting,
-                            })
-                        } else {
-                            None
-                        }
+                        Some(SheetInfo::from(sheet))
                     })
                     .collect::<Vec<_>>(),
             ) {
@@ -74,7 +60,17 @@ impl GridController {
         &mut self.grid
     }
 
+    // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::new(), 0)
+    }
+
+    // get the last active transaction for testing purposes
+    pub fn last_transaction(&self) -> Option<&Transaction> {
+        if let Some(last) = self.active_transactions().unsaved_transactions.last() {
+            Some(&last.forward)
+        } else {
+            None
+        }
     }
 }

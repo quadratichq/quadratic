@@ -6,7 +6,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
         transaction::Transaction,
-        transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+        transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         transaction_types::JsCodeResult,
     },
     error_core::Result,
@@ -31,10 +31,7 @@ impl GridController {
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
-    pub(super) fn finalize_transaction(
-        &mut self,
-        transaction: &mut PendingTransaction,
-    ) -> TransactionSummary {
+    pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
         self.recalculate_sheet_bounds(transaction);
         if transaction.complete {
             match transaction.transaction_type {
@@ -64,14 +61,10 @@ impl GridController {
                 TransactionType::Unset => panic!("Expected a transaction type"),
             }
         }
-        transaction.prepare_summary(transaction.complete)
+        transaction.send_transaction();
     }
 
-    pub fn start_user_transaction(
-        &mut self,
-        operations: Vec<Operation>,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
+    pub fn start_user_transaction(&mut self, operations: Vec<Operation>, cursor: Option<String>) {
         let mut transaction = PendingTransaction {
             transaction_type: TransactionType::User,
             operations: operations.into(),
@@ -79,7 +72,7 @@ impl GridController {
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
-        self.finalize_transaction(&mut transaction)
+        self.finalize_transaction(&mut transaction);
     }
 
     pub fn start_undo_transaction(
@@ -87,15 +80,15 @@ impl GridController {
         transaction: Transaction,
         transaction_type: TransactionType,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let mut pending = transaction.to_undo_transaction(transaction_type, cursor);
         pending.id = Uuid::new_v4();
         self.start_transaction(&mut pending);
-        self.finalize_transaction(&mut pending)
+        self.finalize_transaction(&mut pending);
     }
 
     /// Externally called when an async calculation completes
-    pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
+    pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<()> {
         let transaction_id = Uuid::parse_str(&result.transaction_id())?;
 
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
@@ -223,15 +216,6 @@ mod tests {
     }
 
     #[test]
-    fn test_transactions_transaction_summary() {
-        let mut transaction = PendingTransaction::default();
-        assert_eq!(
-            transaction.prepare_summary(false),
-            TransactionSummary::default()
-        );
-    }
-
-    #[test]
     fn test_transactions_updated_bounds_in_transaction() {
         let mut gc = GridController::test();
         let (operation, _) = get_operations(&mut gc);
@@ -264,7 +248,7 @@ mod tests {
     fn test_js_calculation_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let summary = gc.set_code_cell(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 0,
@@ -274,10 +258,11 @@ mod tests {
             "1 + 1".into(),
             None,
         );
-        assert!(summary.transaction_id.is_some());
+
+        let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc.calculation_complete(JsCodeResult::new(
-            summary.transaction_id.unwrap(),
+            transaction_id.to_string(),
             true,
             None,
             None,

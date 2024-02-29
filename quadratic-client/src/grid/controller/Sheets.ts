@@ -32,11 +32,13 @@ class Sheets {
     this._current = this.sheets[0].id;
   };
 
-  addSheet = (sheetId: string, name: string, order: string, color?: string, offsets?: string) => {
-    // const sheet = new Sheet(sheetId, name, order, color, offsets);
-    // this.sheets.push(sheet);
-    // this.sort();
-    // this.current = sheet.id;
+  addSheet = (sheetInfo: SheetInfo, change: boolean) => {
+    const sheet = new Sheet(sheetInfo);
+    this.sheets.push(sheet);
+    this.sort();
+    if (change) {
+      this.current = sheet.id;
+    }
   };
 
   // TODO...

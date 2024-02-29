@@ -5,6 +5,7 @@ pub mod run_code;
 pub mod spills;
 
 use super::active_transactions::pending_transaction::PendingTransaction;
+use super::active_transactions::ActiveTransactions;
 use crate::controller::GridController;
 use serde::{Deserialize, Serialize};
 
@@ -37,10 +38,7 @@ impl GridController {
     }
 }
 
-#[cfg(test)]
-use super::active_transactions::ActiveTransactions;
-
-#[cfg(test)]
+// for testing purposes...
 impl GridController {
     /// Gets ActiveTransaction for test purposes
     pub fn active_transactions(&self) -> &ActiveTransactions {

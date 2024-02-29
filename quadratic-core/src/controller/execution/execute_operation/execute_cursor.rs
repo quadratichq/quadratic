@@ -28,7 +28,7 @@ struct CursorTypescript {
 }
 
 impl GridController {
-    // Changes the cursor for TransactionSummary.
+    // Updates the cursor position
     pub(crate) fn execute_set_cursor(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -54,7 +54,7 @@ impl GridController {
                 },
             };
             if let Ok(json) = serde_json::to_string(&cursor) {
-                transaction.summary.cursor = Some(json);
+                transaction.cursor = Some(json);
             }
         }
     }
@@ -80,7 +80,7 @@ mod test {
         };
         gc.execute_set_cursor(&mut transaction, op);
         assert_eq!(
-            transaction.summary.cursor,
+            transaction.cursor,
             Some(
                 r#"{"sheetId":"00000000-0000-0000-0000-000000000000","keyboardMovePosition":{"x":1,"y":2},"cursorPosition":{"x":1,"y":2},"multiCursor":{"originPosition":{"x":1,"y":2},"terminalPosition":{"x":3,"y":4}}}"#.to_string()
             )

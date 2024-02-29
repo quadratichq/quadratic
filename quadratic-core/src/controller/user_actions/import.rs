@@ -1,4 +1,4 @@
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::GridController;
 use crate::{grid::SheetId, Pos};
 use anyhow::Result;
 
@@ -13,9 +13,10 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
-        Ok(self.start_user_transaction(ops, cursor))
+        self.start_user_transaction(ops, cursor);
+        Ok(())
     }
 }
 
@@ -103,8 +104,7 @@ Concord,NH,United States,42605
             Pos { x: 0, y: 0 },
             None,
         );
-        print!("{}", &result.unwrap().operations.unwrap().len());
-        // assert!(result.is_ok())
+        assert!(result.is_ok())
     }
 
     #[test]

@@ -13,12 +13,14 @@ impl GridController {
                 transaction
                     .sheets_with_dirty_bounds
                     .insert(sheet_rect.sheet_id);
-                transaction
-                    .summary
-                    .border_sheets_modified
-                    .insert(sheet_rect.sheet_id);
-                transaction.summary.generate_thumbnail |=
-                    self.thumbnail_dirty_sheet_rect(&sheet_rect);
+
+                // todo: need to send the border change to TS
+                // transaction
+                // .summary
+                // .border_sheets_modified
+                // .insert(sheet_rect.sheet_id);
+
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
                 let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) else {
                     // sheet may have been deleted
@@ -26,7 +28,6 @@ impl GridController {
                 };
                 let old_borders = sheet.set_region_borders(&sheet_rect.into(), borders.clone());
 
-                // should be removed
                 transaction.forward_operations.push(Operation::SetBorders {
                     sheet_rect,
                     borders,

@@ -329,9 +329,8 @@ export interface ClientCoreAddSheet {
 
 export interface CoreClientAddSheet {
   type: 'coreClientAddSheet';
-  sheetId: string;
-  name: string;
-  order: string;
+  sheetInfo: SheetInfo;
+  change: boolean;
 }
 
 export interface CoreClientSheetInfo {

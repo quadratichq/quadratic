@@ -40,8 +40,17 @@ impl GridController {
         );
 
         let old_code_run = if let Some(new_code_run) = &new_code_run {
-            if new_code_run.is_html() {
-                transaction.summary.html.insert(sheet_id);
+            if new_code_run.is_html() && cfg!(target_family = "wasm") {
+                if let Some(html) = sheet.get_single_html_output(pos) {
+                    if let Ok(html) = serde_json::to_string(&html) {
+                        crate::wasm_bindings::js::jsUpdateHtml(
+                            sheet_id.to_string(),
+                            pos.x,
+                            pos.y,
+                            html,
+                        );
+                    }
+                }
             }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
 
@@ -58,8 +67,17 @@ impl GridController {
         };
 
         if let Some(old_code_run) = &old_code_run {
-            if old_code_run.is_html() {
-                transaction.summary.html.insert(sheet_id);
+            if old_code_run.is_html() && cfg!(target_family = "wasm") {
+                if let Some(html) = sheet.get_single_html_output(pos) {
+                    if let Ok(html) = serde_json::to_string(&html) {
+                        crate::wasm_bindings::js::jsUpdateHtml(
+                            sheet_id.to_string(),
+                            pos.x,
+                            pos.y,
+                            html,
+                        );
+                    }
+                }
             }
         }
 
@@ -104,8 +122,26 @@ impl GridController {
         }
 
         transaction.sheets_with_dirty_bounds.insert(sheet_id);
-        transaction.summary.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
-        transaction.summary.code_cells_modified.insert(sheet_id);
+        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
+
+        if cfg!(target_family = "wasm") {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                if let Some(html) = sheet.get_single_html_output(pos) {
+                    if let Ok(html) = serde_json::to_string(&html) {
+                        crate::wasm_bindings::js::jsUpdateHtml(
+                            sheet_id.to_string(),
+                            pos.x,
+                            pos.y,
+                            html,
+                        );
+                    }
+                }
+            }
+        }
+
+        // todo: we need to return the code cell to JS here as well (could be we send all the code cells in the sheet for simplicity)
+        // transaction.summary.code_cells_modified.insert(sheet_id);
+
         self.send_render_cells(&sheet_rect);
     }
 
@@ -220,10 +256,6 @@ impl GridController {
             },
         };
         self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
-        transaction
-            .summary
-            .code_cells_modified
-            .insert(sheet_pos.sheet_id);
         transaction.waiting_for_async = None;
         Ok(())
     }
@@ -342,10 +374,12 @@ mod test {
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
-        let summary = transaction.prepare_summary(true);
-        assert_eq!(summary.code_cells_modified.len(), 1);
-        assert!(summary.code_cells_modified.contains(&sheet_id));
-        assert!(summary.generate_thumbnail);
+
+        // todo: need a way to test the js functions as that replaced these
+        // let summary = transaction.send_transaction(true);
+        // assert_eq!(summary.code_cells_modified.len(), 1);
+        // assert!(summary.code_cells_modified.contains(&sheet_id));
+        // assert!(summary.generate_thumbnail);
 
         // replace the code_run with another code_run
         // manually create the transaction
@@ -366,10 +400,12 @@ mod test {
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.code_run(sheet_pos.into()), Some(&new_code_run));
-        let summary = transaction.prepare_summary(true);
-        assert_eq!(summary.code_cells_modified.len(), 1);
-        assert!(summary.code_cells_modified.contains(&sheet_id));
-        assert!(summary.generate_thumbnail);
+
+        // todo: need a way to test the js functions as that replaced these
+        // let summary = transaction.send_transaction(true);
+        // assert_eq!(summary.code_cells_modified.len(), 1);
+        // assert!(summary.code_cells_modified.contains(&sheet_id));
+        // assert!(summary.generate_thumbnail);
 
         // remove the code_run
         let transaction = &mut PendingTransaction::default();
@@ -378,9 +414,11 @@ mod test {
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.code_run(sheet_pos.into()), None);
-        let summary = transaction.prepare_summary(true);
-        assert_eq!(summary.code_cells_modified.len(), 1);
-        assert!(summary.code_cells_modified.contains(&sheet_id));
-        assert!(summary.generate_thumbnail);
+
+        // todo: need a way to test the js functions as that replaced these
+        // let summary = transaction.send_transaction(true);
+        // assert_eq!(summary.code_cells_modified.len(), 1);
+        // assert!(summary.code_cells_modified.contains(&sheet_id));
+        // assert!(summary.generate_thumbnail);
     }
 }

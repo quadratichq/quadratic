@@ -1,7 +1,5 @@
 use crate::cell_values::CellValues;
-use crate::controller::{
-    operations::clipboard::Clipboard, transaction_summary::TransactionSummary, GridController,
-};
+use crate::controller::{operations::clipboard::Clipboard, GridController};
 use crate::Rect;
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use htmlescape;
@@ -183,10 +181,10 @@ impl GridController {
         &mut self,
         sheet_rect: SheetRect,
         cursor: Option<String>,
-    ) -> (TransactionSummary, String, String) {
+    ) -> (String, String) {
         let (ops, plain_text, html) = self.cut_to_clipboard_operations(sheet_rect);
-        let summary = self.start_user_transaction(ops, cursor);
-        (summary, plain_text, html)
+        self.start_user_transaction(ops, cursor);
+        (plain_text, html)
     }
 
     pub fn paste_from_clipboard(
@@ -196,7 +194,7 @@ impl GridController {
         html: Option<String>,
         special: PasteSpecial,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(sheet_pos, html, special) {
@@ -207,9 +205,7 @@ impl GridController {
         // first try html
         if let Some(plain_text) = plain_text {
             let ops = self.paste_plain_text_operations(sheet_pos, plain_text, special);
-            self.start_user_transaction(ops, cursor)
-        } else {
-            TransactionSummary::default()
+            self.start_user_transaction(ops, cursor);
         }
     }
 }

@@ -1,7 +1,6 @@
 use std::fs::create_dir_all;
 
 use quadratic_core::{
-    controller::transaction_summary::{CellSheetsModified, TransactionSummary},
     grid::{
         js_types::{
             JsCodeCell, JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
@@ -31,8 +30,6 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        TransactionSummary,
-        CellSheetsModified,
         CodeCellLanguage,
         JsHtmlOutput,
         JsCodeCell,

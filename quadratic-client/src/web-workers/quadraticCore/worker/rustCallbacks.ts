@@ -17,7 +17,7 @@ declare var self: WorkerGlobalScope &
       height: number
     ) => void;
     sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
-    sendAddSheet: (sheetId: string, name: string, order: string, user: boolean) => void;
+    sendAddSheet: (sheetInfo: SheetInfo, user: boolean) => void;
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
@@ -56,8 +56,8 @@ export const jsRenderCellSheets = (sheetId: string, hashX: bigint, hashY: bigint
   self.sendCompleteRenderCells(sheetId, Number(hashX), Number(hashY), cells);
 };
 
-export const jsAddSheet = (sheetId: string, name: string, order: string, user: boolean) => {
-  self.sendAddSheet(sheetId, name, order, user);
+export const jsAddSheet = (sheetInfo: string, user: boolean) => {
+  self.sendAddSheet(JSON.parse(sheetInfo), user);
 };
 
 export const jsSheetInfo = (sheetInfoStringified: string) => {

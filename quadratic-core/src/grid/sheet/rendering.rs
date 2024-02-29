@@ -247,6 +247,27 @@ impl Sheet {
         render_cells
     }
 
+    pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
+        let run = self.code_runs.get(&pos)?;
+        if !run.is_html() {
+            return None;
+        }
+        let (w, h) = if let Some(render_size) = self.render_size(pos) {
+            (Some(render_size.w), Some(render_size.h))
+        } else {
+            (None, None)
+        };
+        let output = run.cell_value_at(0, 0)?;
+        Some(JsHtmlOutput {
+            sheet_id: self.id.to_string(),
+            x: pos.x,
+            y: pos.y,
+            html: output.to_display(None, None, None),
+            w,
+            h,
+        })
+    }
+
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
         self.code_runs
             .iter()

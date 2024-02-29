@@ -19,7 +19,16 @@ impl GridController {
                     // update individual cell values and collect old_values
                     let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
                     if values.into_iter().any(|(_, _, value)| value.is_html()) {
-                        transaction.summary.html.insert(sheet_pos.sheet_id);
+                        if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
+                            if let Ok(html) = serde_json::to_string(&html) {
+                                crate::wasm_bindings::js::jsUpdateHtml(
+                                    sheet_pos.sheet_id.to_string(),
+                                    sheet_pos.x,
+                                    sheet_pos.y,
+                                    html,
+                                );
+                            }
+                        }
                     };
 
                     let min = sheet_pos.into();
@@ -55,8 +64,7 @@ impl GridController {
                     transaction
                         .sheets_with_dirty_bounds
                         .insert(sheet_pos.sheet_id);
-                    transaction.summary.generate_thumbnail |=
-                        self.thumbnail_dirty_sheet_rect(&sheet_rect);
+                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
                     self.send_render_cells(&sheet_rect);
                 }

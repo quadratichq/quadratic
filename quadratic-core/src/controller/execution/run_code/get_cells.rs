@@ -2,8 +2,7 @@ use uuid::Uuid;
 
 use crate::{
     controller::{
-        execution::TransactionType, transaction_summary::TransactionSummary,
-        transaction_types::JsComputeGetCells, GridController,
+        execution::TransactionType, transaction_types::JsComputeGetCells, GridController,
     },
     error_core::CoreError,
 };
@@ -29,24 +28,24 @@ impl GridController {
     pub fn calculation_get_cells(
         &mut self,
         get_cells: JsComputeGetCells,
-    ) -> Result<GetCellsResponse, TransactionSummary> {
+    ) -> Result<GetCellsResponse, CoreError> {
         let Ok(transaction_id) = Uuid::parse_str(&get_cells.transaction_id()) else {
-            return Err(TransactionSummary::error(CoreError::TransactionNotFound(
+            return Err(CoreError::TransactionNotFound(
                 "Transaction Id is invalid".into(),
-            )));
+            ));
         };
         let Ok(mut transaction) = self.transactions.remove_awaiting_async(transaction_id) else {
-            return Err(TransactionSummary::error(CoreError::TransactionNotFound(
+            return Err(CoreError::TransactionNotFound(
                 "Transaction Id not found".into(),
-            )));
+            ));
         };
 
         let current_sheet = if let Some(current_sheet_pos) = transaction.current_sheet_pos {
             current_sheet_pos.sheet_id
         } else {
-            return Err(TransactionSummary::error(CoreError::TransactionNotFound(
+            return Err(CoreError::TransactionNotFound(
                 "Transaction's position not found".to_string(),
-            )));
+            ));
         };
 
         // if sheet_name is None, use the sheet_id from the pos
@@ -60,16 +59,20 @@ impl GridController {
                 } else {
                     format!("Sheet '{}' not found", sheet_name)
                 };
-                match self.code_cell_sheet_error(&mut transaction, msg, get_cells.line_number()) {
+                match self.code_cell_sheet_error(
+                    &mut transaction,
+                    msg.clone(),
+                    get_cells.line_number(),
+                ) {
                     Ok(_) => {
                         self.start_transaction(&mut transaction);
-                        return Err(self.finalize_transaction(&mut transaction));
+                        self.finalize_transaction(&mut transaction);
+                        return Err(CoreError::CodeCellSheetError(msg));
                     }
                     Err(err) => {
                         self.start_transaction(&mut transaction);
-                        let mut summary = self.finalize_transaction(&mut transaction);
-                        summary.error = Some(err);
-                        return Err(summary);
+                        self.finalize_transaction(&mut transaction);
+                        return Err(err);
                     }
                 }
             }
@@ -77,15 +80,16 @@ impl GridController {
             sheet
         } else {
             self.start_transaction(&mut transaction);
-            return Err(self.finalize_transaction(&mut transaction));
+            self.finalize_transaction(&mut transaction);
+            return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 
         let transaction_type = transaction.transaction_type.clone();
         if transaction_type != TransactionType::User {
             // this should only be called for a user transaction
-            return Err(TransactionSummary::error(CoreError::TransactionNotFound(
+            return Err(CoreError::TransactionNotFound(
                 "getCells can only be called for non-user transaction".to_string(),
-            )));
+            ));
         }
 
         let rect = get_cells.rect();
@@ -160,22 +164,20 @@ mod test {
     fn test_calculation_get_cells_sheet_name_not_found() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let transaction_id = gc
-            .set_code_cell(
-                SheetPos {
-                    x: 0,
-                    y: 0,
-                    sheet_id,
-                },
-                CodeCellLanguage::Python,
-                "".to_string(),
-                None,
-            )
-            .transaction_id
-            .unwrap();
+        gc.set_code_cell(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc.calculation_get_cells(JsComputeGetCells::new(
-            transaction_id,
+            transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             Some("bad sheet name".to_string()),
             None,
@@ -208,7 +210,7 @@ mod test {
             None,
         );
         // async python
-        let summary = gc.set_code_cell(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 1,
@@ -218,9 +220,10 @@ mod test {
             "".to_string(),
             None,
         );
+        let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc.calculation_get_cells(JsComputeGetCells::new(
-            summary.transaction_id.unwrap(),
+            transaction_id.to_string(),
             Rect::from_numbers(0, 1, 1, 1),
             None,
             None,
@@ -256,21 +259,20 @@ mod test {
             None,
         );
 
-        let transaction_id = gc
-            .set_code_cell(
-                SheetPos {
-                    x: 1,
-                    y: 1,
-                    sheet_id,
-                },
-                CodeCellLanguage::Python,
-                "".to_string(),
-                None,
-            )
-            .transaction_id
-            .unwrap();
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id;
+
         let result = gc.calculation_get_cells(JsComputeGetCells::new(
-            transaction_id,
+            transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,

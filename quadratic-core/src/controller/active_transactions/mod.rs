@@ -67,7 +67,6 @@ impl ActiveTransactions {
     }
 
     /// Returns the async_transactions for testing purposes
-    #[cfg(test)]
     pub fn async_transactions(&self) -> &[PendingTransaction] {
         &self.async_transactions
     }

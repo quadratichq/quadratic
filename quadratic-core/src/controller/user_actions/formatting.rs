@@ -1,6 +1,4 @@
-use crate::controller::{
-    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
-};
+use crate::controller::{operations::operation::Operation, GridController};
 use crate::{
     grid::{
         formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
@@ -30,19 +28,15 @@ impl GridController {
         sheet_rect: &SheetRect,
         symbol: Option<String>,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let ops = self.set_currency_operations(sheet_rect, symbol);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(ops, cursor);
     }
 
     /// Sets NumericFormat and NumericDecimals to None
-    pub fn remove_number_formatting(
-        &mut self,
-        sheet_rect: &SheetRect,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
+    pub fn remove_number_formatting(&mut self, sheet_rect: &SheetRect, cursor: Option<String>) {
         let ops = self.remove_number_formatting_operations(sheet_rect);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(ops, cursor);
     }
 
     pub fn change_decimal_places(
@@ -51,9 +45,9 @@ impl GridController {
         sheet_rect: SheetRect,
         delta: isize,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let ops = self.change_decimal_places_operations(source, sheet_rect, delta);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(ops, cursor);
     }
 
     pub fn toggle_commas(
@@ -61,9 +55,9 @@ impl GridController {
         source: SheetPos,
         sheet_rect: SheetRect,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let ops = self.toggle_commas_operations(source, sheet_rect);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(ops, cursor);
     }
 
     pub fn get_all_cell_formats(&self, sheet_rect: SheetRect) -> Vec<CellFmtArray> {
@@ -130,11 +124,11 @@ macro_rules! impl_set_cell_fmt_method {
                 sheet_rect: SheetRect,
                 value: Option<<$cell_fmt_attr_type as CellFmtAttr>::Value>,
                 cursor: Option<String>,
-            ) -> TransactionSummary {
+            ) {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, sheet_rect.len()));
                 let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-                self.start_user_transaction(ops, cursor)
+                self.start_user_transaction(ops, cursor);
             }
         }
     };

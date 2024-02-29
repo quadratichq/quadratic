@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use super::{
     active_transactions::pending_transaction::PendingTransaction, execution::TransactionType,
-    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
+    operations::operation::Operation, GridController,
 };
 
 // Transaction created by client
@@ -26,7 +26,6 @@ impl Transaction {
             cursor,
             transaction_type,
             operations: self.operations.clone().into(),
-            summary: TransactionSummary::cursor(self.cursor.clone()),
             ..Default::default()
         }
     }

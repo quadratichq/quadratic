@@ -298,8 +298,7 @@ class Core {
 
   addSheet(cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const summary = this.gridController.addSheet(cursor);
-    coreMultiplayer.handleSummary(summary);
+    this.gridController.addSheet(cursor);
   }
 }
 

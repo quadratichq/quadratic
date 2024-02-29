@@ -53,7 +53,7 @@ class QuadraticCore {
 
     // quadratic-core initiated messages
     if (e.data.type === 'coreClientAddSheet') {
-      events.emit('addSheet', e.data.sheetId);
+      events.emit('addSheet', e.data.sheetInfo, e.data.change);
       return;
     } else if (e.data.type === 'coreClientSheetInfo') {
       events.emit('sheetInfo', e.data.sheetInfo);
