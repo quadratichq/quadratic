@@ -27,7 +27,7 @@ export const CodeEditor = () => {
 
   // code info
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
-  const [evaluationResult, setEvaluationResult] = useState<any>(undefined);
+  const [evaluationResult, setEvaluationResult] = useState<string | null>(null);
   const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
 
   const [editorWidth, setEditorWidth] = useState<number>(
