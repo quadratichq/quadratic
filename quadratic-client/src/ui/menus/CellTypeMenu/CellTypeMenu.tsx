@@ -35,17 +35,6 @@ export interface CellTypeOption {
 
 let CELL_TYPE_OPTIONS = [
   {
-    name: 'Formula',
-    mode: 'Formula',
-    icon: <Formula sx={{ color: colors.languageFormula }} />,
-    description: (
-      <>
-        Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
-        <LinkNewTabWrapper href={DOCUMENTATION_FORMULAS_URL}>and more</LinkNewTabWrapper>.
-      </>
-    ),
-  },
-  {
     name: 'Python',
     mode: 'Python',
     icon: <Python sx={{ color: colors.languagePython }} />,
@@ -53,6 +42,17 @@ let CELL_TYPE_OPTIONS = [
       <>
         Script with Pandas, NumPy, SciPy, Micropip,{' '}
         <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTabWrapper>.
+      </>
+    ),
+  },
+  {
+    name: 'Formula',
+    mode: 'Formula',
+    icon: <Formula sx={{ color: colors.languageFormula }} />,
+    description: (
+      <>
+        Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
+        <LinkNewTabWrapper href={DOCUMENTATION_FORMULAS_URL}>and more</LinkNewTabWrapper>.
       </>
     ),
   },
