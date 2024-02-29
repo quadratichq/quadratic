@@ -59,10 +59,10 @@ export const CodeHintInternal = () => {
 
   return (
     <div
-      className="pointer-events-none absolute whitespace-nowrap text-sm text-muted-foreground"
+      className="pointer-events-none absolute whitespace-nowrap bg-white pr-0.5 text-sm leading-3 text-muted-foreground"
       style={{
         left: offsets.x + CURSOR_THICKNESS,
-        top: offsets.y,
+        top: offsets.y + CURSOR_THICKNESS * 2,
       }}
     >
       Press '=' to code
