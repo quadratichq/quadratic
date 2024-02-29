@@ -18,6 +18,9 @@ extern "C" {
     module = "/../quadratic-client/src/web-workers/quadraticCore/worker/rustCallbacks.ts"
 )]
 extern "C" {
+    pub fn jsTime(name: String);
+    pub fn jsTimeEnd(name: String);
+
     pub fn runPython(
         transactionId: String,
         x: i32,
@@ -28,8 +31,6 @@ extern "C" {
     pub fn addUnsentTransaction(transaction_id: String, transaction: String);
 
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
-    pub fn jsTime(name: String);
-    pub fn jsTimeEnd(name: String);
 
     pub fn jsImportProgress(
         file_name: &str,
@@ -52,7 +53,10 @@ extern "C" {
     pub fn jsSheetInfo(sheets: String); // Vec<JsSheetInfo>
     pub fn jsSheetInfoUpdate(sheet: String); // JsSheetInfo
     pub fn jsSheetFills(sheet_id: String, fills: String); // JsRenderFill
+
+    #[cfg(not(test))]
     pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, change: bool);
+
     pub fn jsRequestTransactions(sequence_num: u64);
     pub fn jsUpdateHtml(sheet_id: String, x: i64, y: i64, html: String /*JsHtmlOutput*/);
     pub fn jsUpdateCodeCell(

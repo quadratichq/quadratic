@@ -21,7 +21,7 @@ impl GridController {
             }
             let sheet_id = self.grid.add_sheet(Some(sheet.clone()));
 
-            if cfg!(target_family = "wasm") {
+            if cfg!(target_family = "wasm") || cfg!(test) {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     let sheet_info = SheetInfo::from(sheet);
                     if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
@@ -215,6 +215,8 @@ mod tests {
         let mut gc = GridController::test();
         gc.add_sheet(None);
         assert_eq!(gc.grid.sheets().len(), 2);
+
+        // was jsAdSheet called with the right stuff
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
     }
