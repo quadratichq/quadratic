@@ -39,13 +39,13 @@ class CoreMultiplayer {
     }
   };
 
-  sendTransaction(transactionId: string, operations: string) {
+  sendTransaction = (transactionId: string, operations: string) => {
     this.send({
       type: 'coreMultiplayerTransaction',
       operations,
       transaction_id: transactionId,
     });
-  }
+  };
 }
 
 export const coreMultiplayer = new CoreMultiplayer();

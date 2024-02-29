@@ -1,6 +1,7 @@
 import { hasPermissionToEditFile } from '@/actions';
 import { authClient, parseDomain } from '@/auth';
 import { debugShowMultiplayer, debugWebWorkersMessages } from '@/debugFlags';
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
@@ -58,7 +59,7 @@ export class Multiplayer {
       }
     };
     window.addEventListener('beforeunload', alertUser);
-    window.addEventListener('change-sheet', this.sendChangeSheet);
+    events.on('changeSheet', this.sendChangeSheet);
   }
 
   private handleMessage = (e: MessageEvent<MultiplayerClientMessage>) => {

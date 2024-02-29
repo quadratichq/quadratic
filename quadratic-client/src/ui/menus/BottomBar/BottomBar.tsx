@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { useRootRouteLoaderData } from '@/router';
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
@@ -36,10 +37,10 @@ export const BottomBar = () => {
     };
     updateCursor();
     window.addEventListener('cursor-position', updateCursor);
-    window.addEventListener('change-sheet', updateCursor);
+    events.on('changeSheet', updateCursor);
     return () => {
       window.removeEventListener('cursor-position', updateCursor);
-      window.removeEventListener('change-sheet', updateCursor);
+      events.off('changeSheet', updateCursor);
     };
   }, []);
 

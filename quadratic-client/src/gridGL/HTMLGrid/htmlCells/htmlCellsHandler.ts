@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core-types';
@@ -19,7 +20,7 @@ class HTMLCellsHandler {
     this.div = this.div ?? document.createElement('div');
     this.div.className = 'html-cells';
     this.updateHtmlCells();
-    window.addEventListener('change-sheet', this.changeSheet);
+    events.on('changeSheet', this.changeSheet);
     window.addEventListener('html-update', this.updateHtmlCellsBySheetId);
     if (parent) {
       this.attach(parent);
@@ -27,7 +28,7 @@ class HTMLCellsHandler {
   }
 
   destroy() {
-    window.removeEventListener('change-sheet', this.changeSheet);
+    events.off('changeSheet', this.changeSheet);
     window.removeEventListener('html-update', this.updateHtmlCellsBySheetId);
   }
 

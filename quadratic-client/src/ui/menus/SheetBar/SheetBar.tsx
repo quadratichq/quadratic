@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { Stack, useTheme } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
@@ -35,8 +36,10 @@ export const SheetBar = (): JSX.Element => {
       setTrigger((trigger) => trigger + 1);
       setActiveSheet(sheets.current);
     };
-    window.addEventListener('change-sheet', updateSheet);
-    return () => window.removeEventListener('change-sheet', updateSheet);
+    events.on('changeSheet', updateSheet);
+    return () => {
+      events.off('changeSheet', updateSheet);
+    };
   }, []);
 
   // handle disabling left arrow and right arrow

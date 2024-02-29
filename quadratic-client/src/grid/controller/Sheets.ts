@@ -71,7 +71,7 @@ class Sheets {
   // updates the SheetBar UI
   private updateSheetBar(): void {
     this.sort();
-    window.dispatchEvent(new CustomEvent('change-sheet'));
+    events.emit('changeSheet');
   }
 
   private sort(): void {

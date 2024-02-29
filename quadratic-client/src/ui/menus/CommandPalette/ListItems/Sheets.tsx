@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { useEffect, useMemo, useState } from 'react';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { grid } from '../../../../grid/controller/Grid';
@@ -80,8 +81,10 @@ const ListItems = () => {
 
   useEffect(() => {
     const updateTrigger = () => setTrigger((trigger) => trigger + 1);
-    window.addEventListener('change-sheet', updateTrigger);
-    return window.removeEventListener('change-sheet', updateTrigger);
+    events.on('changeSheet', updateTrigger);
+    return () => {
+      events.off('changeSheet', updateTrigger);
+    };
   }, []);
 
   return items;

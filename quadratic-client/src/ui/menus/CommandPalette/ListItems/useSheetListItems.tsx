@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import { useEffect, useState } from 'react';
 import { sheets } from '../../../../grid/controller/Sheets';
@@ -19,8 +20,10 @@ export const useSheetListItems = (): Commands[] => {
   };
 
   useEffect(() => {
-    window.addEventListener('change-sheet', updateCommands);
-    return () => window.removeEventListener('change-sheet', updateCommands);
+    events.on('changeSheet', updateCommands);
+    return () => {
+      events.off('changeSheet', updateCommands);
+    }
   }, []);
 
   useEffect(() => updateCommands(), []);

@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
@@ -44,11 +45,11 @@ export const CodeRunning = () => {
     };
 
     window.addEventListener('python-change', updateCode);
-    window.addEventListener('change-sheet', updateCode);
+    events.on('changeSheet', updateCode);
     updateCode();
     return () => {
       window.addEventListener('python-change', updateCode);
-      window.removeEventListener('change-sheet', updateCode);
+      events.off('changeSheet', updateCode);
     };
   }, []);
 

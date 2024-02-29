@@ -21,6 +21,8 @@ export interface EventTypes {
     sheetId: string;
     fills: JsRenderFill[];
   };
+
+  changeSheet: {};
 }
 
 export const events = new EventEmitter<EventTypes>();

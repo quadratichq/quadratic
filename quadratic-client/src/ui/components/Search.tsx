@@ -1,4 +1,5 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { events } from '@/events/events';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { focusGrid } from '@/helpers/focusGrid';
@@ -106,9 +107,9 @@ export function Search() {
           return prev;
         }
       });
-    window.addEventListener('change-sheet', changeSheet);
+    events.on('changeSheet', changeSheet);
     return () => {
-      window.removeEventListener('change-sheet', changeSheet);
+      events.off('changeSheet', changeSheet);
     };
   }, []);
 
