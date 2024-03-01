@@ -13,6 +13,11 @@ export interface EventTypes {
     order: string;
   };
 
+  deleteSheet: {
+    sheetId: string;
+    user: boolean;
+  };
+
   sheetInfo: {
     sheetInfo: SheetInfo[];
   };

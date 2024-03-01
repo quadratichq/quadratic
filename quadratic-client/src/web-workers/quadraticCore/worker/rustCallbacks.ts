@@ -17,12 +17,14 @@ declare var self: WorkerGlobalScope &
       height: number
     ) => void;
     sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
-    sendAddSheet: (sheetInfo: SheetInfo, user: boolean) => void;
-    sendDeleteSheet: (sheetId: string, user: boolean) => void;
+    sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
+    sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
+    sendAddSheetRender: (sheetInfo: SheetInfo) => void;
+    sendDeleteSheetRender: (sheetId: string) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -58,12 +60,15 @@ export const jsRenderCellSheets = (sheetId: string, hashX: bigint, hashY: bigint
   self.sendCompleteRenderCells(sheetId, Number(hashX), Number(hashY), cells);
 };
 
-export const jsAddSheet = (sheetInfo: string, user: boolean) => {
-  self.sendAddSheet(JSON.parse(sheetInfo), user);
+export const jsAddSheet = (sheetInfoStringified: string, user: boolean) => {
+  const sheetInfo = JSON.parse(sheetInfoStringified);
+  self.sendAddSheetClient(sheetInfo, user);
+  self.sendAddSheetRender(sheetInfo);
 };
 
 export const jsDeleteSheet = (sheetId: string, user: boolean) => {
-  self.sendDeleteSheet(sheetId, user);
+  self.sendDeleteSheetClient(sheetId, user);
+  self.sendDeleteSheetRender(sheetId);
 };
 
 export const jsSheetInfo = (sheetInfoStringified: string) => {

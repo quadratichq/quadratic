@@ -53,13 +53,16 @@ class QuadraticCore {
 
     // quadratic-core initiated messages
     if (e.data.type === 'coreClientAddSheet') {
-      events.emit('addSheet', e.data.sheetInfo, e.data.change);
+      events.emit('addSheet', e.data.sheetInfo, e.data.user);
       return;
     } else if (e.data.type === 'coreClientSheetInfo') {
       events.emit('sheetInfo', e.data.sheetInfo);
       return;
     } else if (e.data.type === 'coreClientSheetFills') {
       events.emit('sheetFills', e.data.sheetId, e.data.fills);
+      return;
+    } else if (e.data.type === 'coreClientDeleteSheet') {
+      events.emit('deleteSheet', e.data.sheetId, e.data.user);
       return;
     }
 

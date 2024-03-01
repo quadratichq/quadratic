@@ -428,7 +428,7 @@ export const SheetBar = (): JSX.Element => {
         <SheetBarButton
           onClick={() => {
             mixpanel.track('[Sheets].add');
-            sheets.createNew();
+            sheets.userAddSheet();
             focusGrid();
           }}
           style={{ borderTop: `1px solid ${theme.palette.divider}` }}

@@ -104,6 +104,10 @@ class RenderText {
     if (!this.bitmapFonts) throw new Error('Expected bitmapFonts to be defined in RenderText.addSheet');
     this.cellsLabels.set(sheetInfo.sheet_id, new CellsLabels(sheetInfo, this.bitmapFonts));
   }
+
+  deleteSheet(sheetId: string) {
+    this.cellsLabels.delete(sheetId);
+  }
 }
 
 export const renderText = new RenderText();

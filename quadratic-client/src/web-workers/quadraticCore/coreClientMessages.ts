@@ -350,13 +350,19 @@ export interface ClientCoreAddSheet {
 export interface CoreClientAddSheet {
   type: 'coreClientAddSheet';
   sheetInfo: SheetInfo;
-  change: boolean;
+  user: boolean;
 }
 
 export interface ClientCoreDeleteSheet {
   type: 'clientCoreDeleteSheet';
   sheetId: string;
   cursor: string;
+}
+
+export interface CoreClientDeleteSheet {
+  type: 'coreClientDeleteSheet';
+  sheetId: string;
+  user: boolean;
 }
 
 //#endregion
@@ -403,4 +409,5 @@ export type CoreClientMessage =
   | CoreClientGetGridBounds
   | CoreClientAddSheet
   | CoreClientSheetInfo
-  | CoreClientSheetFills;
+  | CoreClientSheetFills
+  | CoreClientDeleteSheet;

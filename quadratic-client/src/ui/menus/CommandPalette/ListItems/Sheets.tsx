@@ -17,7 +17,7 @@ const ListItems = () => {
         label: 'Sheet: Create',
         isAvailable: hasPermissionToEditFile,
         Component: (props: any) => {
-          return <CommandPaletteListItem {...props} action={() => sheets.createNew()} />;
+          return <CommandPaletteListItem {...props} action={() => sheets.userAddSheet()} />;
         },
       },
       {
@@ -29,7 +29,7 @@ const ListItems = () => {
               {...props}
               action={() => {
                 if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
-                  sheets.deleteSheet(sheets.sheet.id);
+                  sheets.userDeleteSheet(sheets.sheet.id);
                 }
                 setTimeout(focusGrid);
               }}

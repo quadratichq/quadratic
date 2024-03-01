@@ -43,10 +43,16 @@ export interface CoreRenderAddSheet {
   sheetInfo: SheetInfo;
 }
 
+export interface CoreRenderDeleteSheet {
+  type: 'coreRenderDeleteSheet';
+  sheetId: string;
+}
+
 export type CoreRenderMessage =
   | CoreRenderCells
   | CoreRenderSheetInfo
   | CoreRenderCompleteRenderCells
-  | CoreRenderAddSheet;
+  | CoreRenderAddSheet
+  | CoreRenderDeleteSheet;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells;

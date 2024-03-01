@@ -29,7 +29,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             if (!contextMenu) return;
             if (window.confirm(`Are you sure you want to delete ${contextMenu.name}?`)) {
               mixpanel.track('[Sheets].delete');
-              sheets.deleteSheet(sheets.sheet.id);
+              sheets.userDeleteSheet(sheets.sheet.id);
               handleClose();
             }
             handleClose();

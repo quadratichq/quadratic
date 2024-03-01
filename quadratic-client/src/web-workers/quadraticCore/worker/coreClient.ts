@@ -23,7 +23,8 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
-    sendAddSheet: (sheetInfo: SheetInfo, change: boolean) => void;
+    sendAddSheet: (sheetInfo: SheetInfo, user: boolean) => void;
+    sendDeleteSheet: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
   };
@@ -33,6 +34,7 @@ class CoreClient {
     self.onmessage = this.handleMessage;
     self.sendImportProgress = coreClient.sendImportProgress;
     self.sendAddSheet = coreClient.sendAddSheet;
+    self.sendDeleteSheet = coreRender.sendDeleteSheet;
     self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
@@ -219,9 +221,12 @@ class CoreClient {
     console.log(filename, current, total, x, y, width, height);
   };
 
-  sendAddSheet = (sheetInfo: SheetInfo, change: boolean) => {
-    this.send({ type: 'coreClientAddSheet', sheetInfo, change });
-    coreRender.sendAddSheet(sheetInfo);
+  sendAddSheet = (sheetInfo: SheetInfo, user: boolean) => {
+    this.send({ type: 'coreClientAddSheet', sheetInfo, user });
+  };
+
+  sendDeleteSheet = (sheetId: string, user: boolean) => {
+    this.send({ type: 'coreClientDeleteSheet', sheetId, user });
   };
 
   sendSheetInfoClient = (sheetInfo: SheetInfo[]) => {

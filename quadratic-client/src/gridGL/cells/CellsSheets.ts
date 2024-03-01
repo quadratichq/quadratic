@@ -1,5 +1,5 @@
 import { events } from '@/events/events';
-import { JsRenderFill, SheetId } from '@/quadratic-core-types';
+import { JsRenderFill, SheetId, SheetInfo } from '@/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
@@ -17,6 +17,7 @@ export class CellsSheets extends Container<CellsSheet> {
     super();
     events.on('sheetInfo', this.create);
     events.on('addSheet', this.addSheet);
+    events.on('deleteSheet', this.deleteSheet);
     events.on('sheetFills', this.updateFills);
   }
 
@@ -38,19 +39,16 @@ export class CellsSheets extends Container<CellsSheet> {
     return !!this.current;
   }
 
-  async addSheet(sheetId: string) {
-    console.log('adding sheet???');
-    this.addChild(new CellsSheet(sheetId));
-  }
+  private addSheet = (sheetInfo: SheetInfo, user: boolean) => {
+    this.addChild(new CellsSheet(sheetInfo.sheet_id));
+  };
 
-  deleteSheet(id: string): void {
-    const cellsSheet = this.children.find((cellsSheet) => cellsSheet.sheetId === id);
-    if (!cellsSheet) {
-      throw new Error('Expected to find cellsSheet in CellSheets.delete');
-    }
+  private deleteSheet = (sheetId: string) => {
+    const cellsSheet = this.children.find((cellsSheet) => cellsSheet.sheetId === sheetId);
+    if (!cellsSheet) throw new Error('Expected to find cellsSheet in CellSheets.delete');
     this.removeChild(cellsSheet);
     cellsSheet.destroy();
-  }
+  };
 
   // used to render all cellsTextHashes to warm up the GPU
   showAll(id: string) {

@@ -20,9 +20,10 @@ class Sheets {
     this._current = '';
     events.on('sheetInfo', this.create);
     events.on('addSheet', this.addSheet);
+    events.on('deleteSheet', this.deleteSheet);
   }
 
-  create = (sheetInfo: SheetInfo[]) => {
+  private create = (sheetInfo: SheetInfo[]) => {
     this.sheets = [];
     sheetInfo.forEach((info) => {
       const sheet = new Sheet(info);
@@ -32,41 +33,29 @@ class Sheets {
     this._current = this.sheets[0].id;
   };
 
-  addSheet = (sheetInfo: SheetInfo, change: boolean) => {
+  private addSheet = (sheetInfo: SheetInfo, user: boolean) => {
     const sheet = new Sheet(sheetInfo);
     this.sheets.push(sheet);
     this.sort();
-    if (change) {
-      this.current = sheet.id;
+    if (user) {
+      // the timeout is needed because cellsSheets receives the addSheet message after sheets receives the message
+      setTimeout(() => (this.current = sheet.id), 0);
     }
   };
 
-  // TODO...
-  // ensures there's a Sheet.ts for every Sheet.rs
-  repopulate() {
-    // const sheetIds = metadata.sheetIds;
-    // ensure the sheets exist
-    // sheetIds.forEach((sheetId, index) => {
-    //   if (!this.sheets.find((search) => search.id === sheetId)) {
-    //     const sheet = new Sheet(index);
-    //     this.sheets.push(sheet);
-    //     pixiApp.cellsSheets.addSheet(sheet.id);
-    //   }
-    // });
-
-    // // delete any sheets that no longer exist
-    // this.sheets.forEach((sheet, index) => {
-    //   if (!sheetIds.includes(sheet.id)) {
-    //     this.sheets.splice(index, 1);
-    //     pixiApp.cellsSheets.deleteSheet(sheet.id);
-    //     if (this.current === sheet.id) {
-    //       this.current = this.sheets[0].id;
-    //     }
-    //   }
-    // });
-    // this.sheets.forEach((sheet) => sheet.updateMetadata());
-    this.updateSheetBar();
-  }
+  private deleteSheet = (sheetId: string, user: boolean) => {
+    const index = this.sheets.findIndex((sheet) => sheet.id === sheetId);
+    if (index === -1) throw new Error('Expected to find sheet based on id');
+    this.sheets.splice(index, 1);
+    if (user) {
+      // the timeout is needed because cellsSheets receives the deleteSheet message after sheets receives the message
+      setTimeout(() => {
+        if (this.sheets.length) {
+          this.current = this.sheets[0].id;
+        }
+      }, 0);
+    }
+  };
 
   // updates the SheetBar UI
   private updateSheetBar(): void {
@@ -191,11 +180,8 @@ class Sheets {
     return this.sheets.find((sheet) => sheet.id === id);
   }
 
-  async createNew() {
+  userAddSheet() {
     quadraticCore.addSheet(sheets.getCursorPosition());
-
-    // sets the current sheet to the new sheet
-    this.current = this.sheets[this.sheets.length - 1].id;
   }
 
   duplicate() {
@@ -211,7 +197,7 @@ class Sheets {
     this.sort();
   }
 
-  deleteSheet(id: string) {
+  userDeleteSheet(id: string) {
     quadraticCore.deleteSheet(id, this.getCursorPosition());
 
     // // set current to next sheet (before this.sheets is updated)

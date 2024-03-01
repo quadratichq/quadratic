@@ -45,6 +45,10 @@ class RenderCore {
         renderText.addSheet(e.data.sheetInfo);
         break;
 
+      case 'coreRenderDeleteSheet':
+        renderText.deleteSheet(e.data.sheetId);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }

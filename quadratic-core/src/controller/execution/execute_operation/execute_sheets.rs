@@ -21,7 +21,7 @@ impl GridController {
             }
             let sheet_id = self.grid.add_sheet(Some(sheet.clone()));
 
-            if cfg!(target_family = "wasm") || cfg!(test) {
+            if cfg!(target_family = "wasm") {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     let sheet_info = SheetInfo::from(sheet);
                     if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
@@ -97,7 +97,7 @@ impl GridController {
                 );
 
                 // otherwise we need to send the deleted sheet information to the workers
-                if cfg!(target_family = "wasm") || cfg!(test) {
+                if cfg!(target_family = "wasm") {
                     crate::wasm_bindings::js::jsDeleteSheet(
                         sheet_id.to_string(),
                         transaction.is_user(),

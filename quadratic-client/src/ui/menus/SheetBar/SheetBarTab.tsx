@@ -56,6 +56,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               left: '0',
               right: '0',
               boxShadow: `inset 1px 0 0 ${theme.palette.divider}, inset -1px 0 0 ${theme.palette.divider}`,
+              zIndex: 1,
             }
           : {}),
       }}

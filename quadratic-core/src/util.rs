@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fmt;
 use std::ops::Range;
 
@@ -208,13 +207,17 @@ pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Opt
 }
 
 pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
-    let already_used_numbers: HashSet<usize> = already_used
+    let last_number: Option<usize> = already_used
         .iter()
         .filter_map(|s| s.strip_prefix(prefix)?.trim().parse().ok())
-        .collect();
+        .sorted()
+        .last();
 
-    // Find the first number that's not already used.
-    let i = (1..).find(|i| !already_used_numbers.contains(i)).unwrap();
+    // Find the last number
+    let i = match last_number {
+        Some(i) => i + 1,
+        None => 1,
+    };
     format!("{prefix} {i}")
 }
 
@@ -439,5 +442,13 @@ mod tests {
         assert_eq!(round(1.23456789, 2), 1.23);
         assert_eq!(round(1.23456789, 3), 1.235);
         assert_eq!(round(1.23456789, 4), 1.2346);
+    }
+
+    #[test]
+    fn test_unused_name() {
+        let used = ["Sheet 1", "Sheet 2"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 3");
+        let used = ["Sheet 2", "Sheet 3"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 4");
     }
 }

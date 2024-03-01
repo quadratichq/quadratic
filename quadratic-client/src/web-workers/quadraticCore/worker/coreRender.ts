@@ -14,6 +14,8 @@ declare var self: WorkerGlobalScope &
   typeof globalThis & {
     sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
     sendSheetInfoRender: (sheetInfo: SheetInfo[]) => void;
+    sendAddSheetRender: (sheetInfo: SheetInfo) => void;
+    sendDeleteSheetRender: (sheetId: string) => void;
   };
 
 class CoreRender {
@@ -62,9 +64,15 @@ class CoreRender {
   sendAddSheet = (sheetInfo: SheetInfo) => {
     this.send({ type: 'coreRenderAddSheet', sheetInfo });
   };
+
+  sendDeleteSheet = (sheetId: string) => {
+    this.send({ type: 'coreRenderDeleteSheet', sheetId });
+  };
 }
 
 export const coreRender = new CoreRender();
 
 self.sendCompleteRenderCells = coreRender.sendCompleteRenderCells;
 self.sendSheetInfoRender = coreRender.sendSheetInfoRender;
+self.sendAddSheetRender = coreRender.sendAddSheet;
+self.sendDeleteSheetRender = coreRender.sendDeleteSheet;
