@@ -1,5 +1,6 @@
 import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import { useFileContext } from '@/ui/components/FileProvider';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import {
   ContentCopy,
   ContentCut,
@@ -30,7 +31,6 @@ import {
   fullClipboardSupport,
   pasteFromClipboard,
 } from '../../../../grid/actions/clipboard/clipboard';
-import { grid } from '../../../../grid/controller/Grid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
 import { CopyAsPNG } from '../../../icons';
@@ -45,7 +45,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<Undo />}
-          action={grid.undo}
+          action={quadraticCore.undo}
           shortcut="Z"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -60,7 +60,7 @@ const ListItems = [
         <CommandPaletteListItem
           {...props}
           icon={<Redo />}
-          action={grid.redo}
+          action={quadraticCore.redo}
           shortcut={isMac ? 'Z' : 'Y'}
           shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
         />

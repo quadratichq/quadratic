@@ -399,6 +399,18 @@ export interface ClientCoreDuplicateSheet {
 
 //#endregion
 
+//#region Undo/Redo
+
+export interface ClientCoreUndo {
+  type: 'clientCoreUndo';
+  cursor: string;
+}
+
+export interface ClientCoreRedo {
+  type: 'clientCoreRedo';
+  cursor: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -431,7 +443,9 @@ export type ClientCoreMessage =
   | ClientCoreMoveSheet
   | ClientCoreSetSheetName
   | ClientCoreSetSheetColor
-  | ClientCoreDuplicateSheet;
+  | ClientCoreDuplicateSheet
+  | ClientCoreUndo
+  | ClientCoreRedo;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

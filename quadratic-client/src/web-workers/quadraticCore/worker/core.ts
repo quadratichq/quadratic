@@ -293,6 +293,16 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.duplicateSheet(sheetId, cursor);
   }
+
+  undo(cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.undo(cursor);
+  }
+
+  redo(cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.redo(cursor);
+  }
 }
 
 export const core = new Core();

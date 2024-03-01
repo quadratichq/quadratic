@@ -19,9 +19,10 @@ export const CodeRunning = () => {
 
   useEffect(() => {
     const updateCode = () => {
+      if (code?.length === 0) return;
       const cells = pythonWebWorker.getRunningCells(sheets.sheet.id);
       const sheet = sheets.sheet;
-      const code = cells.map((cell) => {
+      const codeCells = cells.map((cell) => {
         const rectangle = sheet.getCellOffsets(cell.x, cell.y);
         return {
           left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
@@ -33,7 +34,7 @@ export const CodeRunning = () => {
         user.parsedCodeRunning.forEach((cell) => {
           if (cell.sheetId === sheet.id) {
             const rectangle = sheet.getCellOffsets(cell.x, cell.y);
-            code.push({
+            codeCells.push({
               left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
               top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
               color: user.colorString,
@@ -41,7 +42,7 @@ export const CodeRunning = () => {
           }
         });
       });
-      setCode(code);
+      setCode(codeCells);
     };
 
     window.addEventListener('python-change', updateCode);
@@ -51,7 +52,7 @@ export const CodeRunning = () => {
       window.addEventListener('python-change', updateCode);
       events.off('changeSheet', updateCode);
     };
-  }, []);
+  }, [code?.length]);
 
   return (
     <div className="code-running-container">

@@ -62,15 +62,18 @@ class Sheets {
   };
 
   private updateSheet = (sheetInfo: SheetInfo) => {
+    console.log('received update sheet...');
     const sheet = this.getById(sheetInfo.sheet_id);
     if (!sheet) throw new Error('Expected to find sheet based on sheetInfo.sheet_id in updateSheet');
     sheet.updateSheetInfo(sheetInfo);
+    this.updateSheetBar();
   };
 
   // updates the SheetBar UI
-  private updateSheetBar(): void {
+  private updateSheetBar() {
     this.sort();
-    events.emit('changeSheet');
+    // this avoids React complaints about rendering one component while another one is rendering
+    setTimeout(() => events.emit('changeSheet'), 0);
   }
 
   private sort(): void {

@@ -6,6 +6,7 @@
 
 import { debugWebWorkersMessages } from '@/debugFlags';
 import { events } from '@/events/events';
+import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate } from '@/gridGL/types/size';
 import {
   CellAlign,
@@ -495,6 +496,18 @@ class QuadraticCore {
 
   duplicateSheet(sheetId: string, cursor: string) {
     this.send({ type: 'clientCoreDuplicateSheet', sheetId, cursor });
+  }
+
+  //#endregion
+
+  //#region Undo/redo
+
+  undo() {
+    this.send({ type: 'clientCoreUndo', cursor: sheets.getCursorPosition() });
+  }
+
+  redo() {
+    this.send({ type: 'clientCoreRedo', cursor: sheets.getCursorPosition() });
   }
 
   //#endregion

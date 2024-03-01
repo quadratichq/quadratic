@@ -99,7 +99,10 @@ export function Search() {
   };
 
   useEffect(() => {
-    const changeSheet = () =>
+    const changeSheet = () => {
+      if (!editorInteractionState.showSearch) {
+        return;
+      }
       setSearchOptions((prev) => {
         if (prev.sheet_id) {
           return { ...prev, sheet_id: sheets.sheet.id };
@@ -107,11 +110,12 @@ export function Search() {
           return prev;
         }
       });
+    };
     events.on('changeSheet', changeSheet);
     return () => {
       events.off('changeSheet', changeSheet);
     };
-  }, []);
+  }, [editorInteractionState.showSearch]);
 
   useEffect(() => {
     if (!editorInteractionState.showSearch) {

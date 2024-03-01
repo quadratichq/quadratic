@@ -278,15 +278,15 @@ export class Grid {
 
   //#region Undo/redo
   //-----------------
-  undo() {
-    const summary = this.gridController.undo(sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
+  // undo() {
+  //   const summary = this.gridController.undo(sheets.getCursorPosition());
+  //   this.transactionResponse(summary);
+  // }
 
-  redo() {
-    const summary = this.gridController.redo(sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
+  // redo() {
+  //   const summary = this.gridController.redo(sheets.getCursorPosition());
+  //   this.transactionResponse(summary);
+  // }
 
   //#endregion
 

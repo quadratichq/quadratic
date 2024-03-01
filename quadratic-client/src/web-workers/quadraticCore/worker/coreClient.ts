@@ -220,6 +220,14 @@ class CoreClient {
         core.duplicateSheet(e.data.sheetId, e.data.cursor);
         break;
 
+      case 'clientCoreUndo':
+        core.undo(e.data.cursor);
+        break;
+
+      case 'clientCoreRedo':
+        core.redo(e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
