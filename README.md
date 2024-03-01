@@ -52,7 +52,7 @@ _Quadratic is in Beta._
 - [x] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
 - [x] Multiplayer Support
 - [x] Charts and Graphs
-- [ ] Teams support 
+- [x] Teams support 
 - [ ] JS support 
 - [ ] SQL Database Support
 - [ ] AI Auto Complete
