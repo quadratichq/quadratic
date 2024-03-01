@@ -3,6 +3,7 @@ import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useMemo, useState } from 'react';
+import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { Coordinate } from '../types/size';
@@ -10,7 +11,7 @@ import { Coordinate } from '../types/size';
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);
   const cellTypeMenuOpenedCount = useRecoilValue(cellTypeMenuOpenedCountAtom);
-  const { showCodeEditor } = useRecoilValue(editorInteractionStateAtom);
+  const { showCodeEditor, permissions } = useRecoilValue(editorInteractionStateAtom);
 
   useEffect(() => {
     const updateCursor = () => {
@@ -27,7 +28,7 @@ export const CodeHint = () => {
     };
   }, []);
 
-  if (cellHasValue || cellTypeMenuOpenedCount > 3 || showCodeEditor) {
+  if (cellHasValue || cellTypeMenuOpenedCount > 3 || showCodeEditor || !permissions.includes('FILE_EDIT') || isMobile) {
     return null;
   }
 
