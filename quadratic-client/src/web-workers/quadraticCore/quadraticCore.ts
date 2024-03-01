@@ -49,7 +49,7 @@ class QuadraticCore {
   }
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[QuadraticCore] message: ${e.data.type}`);
+    if (debugWebWorkersMessages) console.log(`[quadraticCore] message: ${e.data.type}`);
 
     // quadratic-core initiated messages
     if (e.data.type === 'coreClientAddSheet') {
@@ -62,6 +62,7 @@ class QuadraticCore {
       events.emit('sheetFills', e.data.sheetId, e.data.fills);
       return;
     } else if (e.data.type === 'coreClientDeleteSheet') {
+      console.log('qc received');
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
       return;
     }

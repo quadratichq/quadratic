@@ -10,7 +10,6 @@ import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
-import { coreRender } from './coreRender';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -23,8 +22,8 @@ declare var self: WorkerGlobalScope &
       width: number,
       height: number
     ) => void;
-    sendAddSheet: (sheetInfo: SheetInfo, user: boolean) => void;
-    sendDeleteSheet: (sheetId: string, user: boolean) => void;
+    sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
+    sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
   };
@@ -33,8 +32,8 @@ class CoreClient {
   start() {
     self.onmessage = this.handleMessage;
     self.sendImportProgress = coreClient.sendImportProgress;
-    self.sendAddSheet = coreClient.sendAddSheet;
-    self.sendDeleteSheet = coreRender.sendDeleteSheet;
+    self.sendAddSheetClient = coreClient.sendAddSheet;
+    self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
     self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
@@ -226,6 +225,7 @@ class CoreClient {
   };
 
   sendDeleteSheet = (sheetId: string, user: boolean) => {
+    console.log('sendDeleteSheet', sheetId, user);
     this.send({ type: 'coreClientDeleteSheet', sheetId, user });
   };
 

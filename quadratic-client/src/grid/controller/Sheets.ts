@@ -50,7 +50,9 @@ class Sheets {
     if (user) {
       // the timeout is needed because cellsSheets receives the deleteSheet message after sheets receives the message
       setTimeout(() => {
-        if (this.sheets.length) {
+        if (index - 1 >= 0 && index - 1 < this.sheets.length) {
+          this.current = this.sheets[index - 1].id;
+        } else {
           this.current = this.sheets[0].id;
         }
       }, 0);
