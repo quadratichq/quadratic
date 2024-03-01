@@ -1,6 +1,7 @@
+import { sheets } from '@/grid/controller/Sheets';
+import { JsRenderBorder, JsRenderBorders } from '@/quadratic-core/quadratic_core';
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { JsRenderBorder, JsRenderBorders } from '../../quadratic-core/quadratic_core';
 import { CellsSheet } from './CellsSheet';
 import { BorderCull, drawCellBorder } from './drawBorders';
 
@@ -15,7 +16,9 @@ export class CellsBorders extends Container {
   }
 
   private get sheet(): Sheet {
-    return this.cellsSheet.sheet;
+    const sheet = sheets.getById(this.cellsSheet.sheetId);
+    if (!sheet) throw new Error(`Expected sheet to be defined in CellsBorders.sheet`);
+    return sheet;
   }
 
   clear(): void {

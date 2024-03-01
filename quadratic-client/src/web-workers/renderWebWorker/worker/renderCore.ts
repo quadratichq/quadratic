@@ -41,6 +41,10 @@ class RenderCore {
         renderText.completeRenderCells(e.data);
         break;
 
+      case 'coreRenderAddSheet':
+        renderText.addSheet(e.data.sheetInfo);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }

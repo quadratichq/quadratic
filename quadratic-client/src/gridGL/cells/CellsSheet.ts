@@ -1,6 +1,5 @@
 import { JsRenderFill } from '@/quadratic-core-types';
 import { Container, Rectangle } from 'pixi.js';
-import { Sheet } from '../../grid/sheet/Sheet';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
@@ -19,15 +18,15 @@ export class CellsSheet extends Container {
   // friend of CellsArray
   cellsMarkers: CellsMarkers;
 
-  sheet: Sheet;
+  sheetId: string;
 
-  constructor(sheet: Sheet) {
+  constructor(sheetId: string) {
     super();
-    this.sheet = sheet;
+    this.sheetId = sheetId;
     this.cellsFills = this.addChild(new CellsFills(this));
 
     // may need to clean this up if we ever move to a SPA
-    this.addChild(new CellsSearch(sheet));
+    this.addChild(new CellsSearch(sheetId));
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsArray = this.addChild(new CellsArray(this));

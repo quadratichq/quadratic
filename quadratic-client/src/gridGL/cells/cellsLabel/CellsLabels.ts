@@ -8,7 +8,6 @@
 
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/debugFlags';
 import { sheets } from '@/grid/controller/Sheets';
-import { Sheet } from '@/grid/sheet/Sheet';
 import { intersects } from '@/gridGL/helpers/intersects';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import {
@@ -38,6 +37,10 @@ export class CellsLabels extends Container {
     this.cellsTextHash = new Map();
     this.cellsTextHashes = this.addChild(new Container<CellsTextHash>());
     this.cellsTextDebug = this.addChild(new Graphics());
+  }
+
+  get sheetId(): string {
+    return this.cellsSheet.sheetId;
   }
 
   // received a clear message before a new set of labelMeshEntries
@@ -73,7 +76,7 @@ export class CellsLabels extends Container {
     cellsTextHash.addLabelMeshEntry(message);
 
     // refresh viewport if necessary
-    if (sheets.sheet.id === this.cellsSheet.sheet.id) {
+    if (sheets.sheet.id === this.cellsSheet.sheetId) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
         cellsTextHash.show();
@@ -82,10 +85,6 @@ export class CellsLabels extends Container {
         cellsTextHash.hide();
       }
     }
-  }
-
-  get sheet(): Sheet {
-    return this.cellsSheet.sheet;
   }
 
   static getHash(x: number, y: number): { x: number; y: number } {

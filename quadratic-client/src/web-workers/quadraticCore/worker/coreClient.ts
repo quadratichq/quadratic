@@ -10,6 +10,7 @@ import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
+import { coreRender } from './coreRender';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -196,6 +197,10 @@ class CoreClient {
         core.addSheet(e.data.cursor);
         break;
 
+      case 'clientCoreDeleteSheet':
+        core.deleteSheet(e.data.sheetId, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
@@ -216,6 +221,7 @@ class CoreClient {
 
   sendAddSheet = (sheetInfo: SheetInfo, change: boolean) => {
     this.send({ type: 'coreClientAddSheet', sheetInfo, change });
+    coreRender.sendAddSheet(sheetInfo);
   };
 
   sendSheetInfoClient = (sheetInfo: SheetInfo[]) => {

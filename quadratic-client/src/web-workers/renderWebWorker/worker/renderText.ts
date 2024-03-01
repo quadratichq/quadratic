@@ -99,6 +99,11 @@ class RenderText {
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
     cellsLabels.completeRenderCells(message.hashX, message.hashY, message.cells);
   }
+
+  addSheet(sheetInfo: SheetInfo) {
+    if (!this.bitmapFonts) throw new Error('Expected bitmapFonts to be defined in RenderText.addSheet');
+    this.cellsLabels.set(sheetInfo.sheet_id, new CellsLabels(sheetInfo, this.bitmapFonts));
+  }
 }
 
 export const renderText = new RenderText();

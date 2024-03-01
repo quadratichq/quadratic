@@ -212,21 +212,20 @@ class Sheets {
   }
 
   deleteSheet(id: string) {
-    const order = this.sheet.order;
-    grid.deleteSheet(id);
+    quadraticCore.deleteSheet(id, this.getCursorPosition());
 
-    // set current to next sheet (before this.sheets is updated)
-    if (this.sheets.length) {
-      const next = this.getNext(order);
-      if (next) {
-        this.current = next.id;
-      } else {
-        const first = this.getFirst();
-        if (first) {
-          this.current = first.id;
-        }
-      }
-    }
+    // // set current to next sheet (before this.sheets is updated)
+    // if (this.sheets.length) {
+    //   const next = this.getNext(order);
+    //   if (next) {
+    //     this.current = next.id;
+    //   } else {
+    //     const first = this.getFirst();
+    //     if (first) {
+    //       this.current = first.id;
+    //     }
+    //   }
+    // }
   }
 
   moveSheet(options: { id: string; toBefore?: string; delta?: number }) {

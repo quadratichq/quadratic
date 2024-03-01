@@ -471,6 +471,10 @@ class QuadraticCore {
     this.send({ type: 'clientCoreAddSheet', cursor });
   }
 
+  deleteSheet(sheetId: string, cursor: string) {
+    this.send({ type: 'clientCoreDeleteSheet', sheetId, cursor });
+  }
+
   //#endregion
 }
 

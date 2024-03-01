@@ -76,6 +76,7 @@ impl GridController {
                     },
                 );
 
+                // if that's the last sheet, then we created a new one and we have to let the workers know
                 if cfg!(target_family = "wasm") {
                     if let Some(sheet) = self.try_sheet(new_first_sheet_id) {
                         let sheet_info = SheetInfo::from(sheet);
@@ -94,6 +95,14 @@ impl GridController {
                         sheet: deleted_sheet,
                     },
                 );
+
+                // otherwise we need to send the deleted sheet information to the workers
+                if cfg!(target_family = "wasm") || cfg!(test) {
+                    crate::wasm_bindings::js::jsDeleteSheet(
+                        sheet_id.to_string(),
+                        transaction.is_user(),
+                    );
+                }
             }
         }
     }

@@ -1,8 +1,8 @@
 import { sheets } from '@/grid/controller/Sheets';
+import { Sheet } from '@/grid/sheet/Sheet';
 import { JsRenderCodeCell } from '@/quadratic-core-types';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
-import { Sheet } from '../../grid/sheet/Sheet';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { intersects } from '../helpers/intersects';
@@ -31,14 +31,14 @@ export class CellsArray extends Container {
     this.lines = [];
   }
 
-  get sheet(): Sheet {
-    return this.cellsSheet.sheet;
+  get sheetId(): string {
+    return this.cellsSheet.sheetId;
   }
 
   async create() {
     this.lines = [];
     const cursor = sheets.sheet.cursor;
-    const codeCells = await quadraticCore.getRenderCodeCells(this.sheet.id);
+    const codeCells = await quadraticCore.getRenderCodeCells(this.sheetId);
     this.particles.removeChildren();
     this.graphics.clear();
     this.cellsSheet.cellsMarkers.clear();
@@ -55,6 +55,12 @@ export class CellsArray extends Container {
 
   cheapCull(bounds: Rectangle): void {
     this.lines.forEach((line) => (line.sprite.visible = intersects.rectangleRectangle(bounds, line.rectangle)));
+  }
+
+  get sheet(): Sheet {
+    const sheet = sheets.getById(this.sheetId);
+    if (!sheet) throw new Error('Expected sheet to be defined in CellsArray.sheet');
+    return sheet;
   }
 
   private draw(codeCell: JsRenderCodeCell, cursorRectangle: Rectangle): void {

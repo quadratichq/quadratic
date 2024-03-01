@@ -154,10 +154,10 @@ export class Grid {
   //   this.transactionResponse(summary);
   // }
 
-  deleteSheet(sheetId: string) {
-    const summary = this.gridController.deleteSheet(sheetId, sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
+  // deleteSheet(sheetId: string) {
+  //   const summary = this.gridController.deleteSheet(sheetId, sheets.getCursorPosition());
+  //   this.transactionResponse(summary);
+  // }
 
   setSheetName(sheetId: string, name: string) {
     const summary = this.gridController.setSheetName(sheetId, name, sheets.getCursorPosition());

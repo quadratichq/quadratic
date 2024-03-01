@@ -9,9 +9,9 @@
  * webGL buffers do not exceed the maximum size.
  */
 
+import { sheets } from '@/grid/controller/Sheets';
 import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
-import { Sheet } from '../../../grid/sheet/Sheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
@@ -61,10 +61,6 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.visibleRectangle = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
   }
 
-  get sheet(): Sheet {
-    return this.cellsLabels.sheet;
-  }
-
   show(): void {
     this.visible = true;
   }
@@ -87,7 +83,9 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
   }
 
   drawDebugBox(g: Graphics) {
-    const screen = this.sheet.getScreenRectangle(this.AABB.left, this.AABB.top, this.AABB.width, this.AABB.height);
+    const sheet = sheets.getById(this.cellsLabels.sheetId);
+    if (!sheet) throw new Error('Expected sheet to be defined in CellsTextHash.drawDebugBox');
+    const screen = sheet.getScreenRectangle(this.AABB.left, this.AABB.top, this.AABB.width, this.AABB.height);
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();

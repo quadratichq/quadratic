@@ -58,6 +58,10 @@ class CoreRender {
   sendSheetInfoRender = (sheetInfo: SheetInfo[]) => {
     this.send({ type: 'coreRenderSheetInfo', sheetInfo });
   };
+
+  sendAddSheet = (sheetInfo: SheetInfo) => {
+    this.send({ type: 'coreRenderAddSheet', sheetInfo });
+  };
 }
 
 export const coreRender = new CoreRender();

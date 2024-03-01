@@ -1,3 +1,4 @@
+import { sheets } from '@/grid/controller/Sheets';
 import { JsRenderFill } from '@/quadratic-core-types';
 import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
@@ -18,7 +19,9 @@ export class CellsFills extends ParticleContainer {
   }
 
   get sheet(): Sheet {
-    return this.cellsSheet.sheet;
+    const sheet = sheets.getById(this.cellsSheet.sheetId);
+    if (!sheet) throw new Error(`Expected sheet to be defined in CellsFills.sheet`);
+    return sheet;
   }
 
   async create(renderFills: JsRenderFill[]) {

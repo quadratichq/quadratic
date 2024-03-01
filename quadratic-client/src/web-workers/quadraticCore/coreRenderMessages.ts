@@ -38,6 +38,15 @@ export interface CoreRenderCompleteRenderCells {
   cells: string;
 }
 
-export type CoreRenderMessage = CoreRenderCells | CoreRenderSheetInfo | CoreRenderCompleteRenderCells;
+export interface CoreRenderAddSheet {
+  type: 'coreRenderAddSheet';
+  sheetInfo: SheetInfo;
+}
+
+export type CoreRenderMessage =
+  | CoreRenderCells
+  | CoreRenderSheetInfo
+  | CoreRenderCompleteRenderCells
+  | CoreRenderAddSheet;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells;

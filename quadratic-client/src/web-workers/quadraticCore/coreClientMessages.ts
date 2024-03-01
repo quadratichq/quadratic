@@ -9,6 +9,8 @@ import {
   SheetInfo,
 } from '@/quadratic-core-types';
 
+//#region Initialize
+
 export interface ClientCoreLoad {
   type: 'clientCoreLoad';
   url: string;
@@ -16,14 +18,13 @@ export interface ClientCoreLoad {
   sequenceNumber: number;
 }
 
-export interface SheetMetadata {
-  offsets: string;
-  bounds?: { x: number; y: number; width: number; height: number };
-  boundsNoFormatting?: { x: number; y: number; width: number; height: number };
-  name: string;
-  order: string;
-  color?: string;
+export interface ClientCoreInitMultiplayer {
+  type: 'clientCoreInitMultiplayer';
 }
+
+//#endregion
+
+//#region Query
 
 export interface ClientCoreGetCodeCell {
   type: 'clientCoreGetCodeCell';
@@ -36,32 +37,6 @@ export interface ClientCoreGetCodeCell {
 export interface CoreClientGetCodeCell {
   type: 'coreClientGetCodeCell';
   cell: JsCodeCell | undefined;
-  id: number;
-}
-
-export interface ClientCoreGetRenderCell {
-  type: 'clientCoreGetRenderCell';
-  sheetId: string;
-  x: number;
-  y: number;
-  id: number;
-}
-
-export interface CoreClientGetRenderCell {
-  type: 'coreClientGetRenderCell';
-  cell: JsRenderCell | undefined;
-  id: number;
-}
-
-export interface ClientCoreGetRenderCodeCells {
-  type: 'clientCoreGetRenderCodeCells';
-  sheetId: string;
-  id: number;
-}
-
-export interface CoreClientGetRenderCodeCells {
-  type: 'coreClientGetRenderCodeCells';
-  codeCells: JsRenderCodeCell[];
   id: number;
 }
 
@@ -93,15 +68,6 @@ export interface CoreClientGetEditCell {
   id: number;
 }
 
-export interface ClientCoreSetCellValue {
-  type: 'clientCoreSetCellValue';
-  sheetId: string;
-  x: number;
-  y: number;
-  value: string;
-  cursor?: string;
-}
-
 export interface ClientCoreGetCellFormatSummary {
   type: 'clientCoreGetCellFormatSummary';
   sheetId: string;
@@ -114,10 +80,6 @@ export interface CoreClientGetCellFormatSummary {
   type: 'coreClientGetCellFormatSummary';
   formatSummary: CellFormatSummary;
   id: number;
-}
-
-export interface ClientCoreInitMultiplayer {
-  type: 'clientCoreInitMultiplayer';
 }
 
 export interface ClientCoreSummarizeSelection {
@@ -141,6 +103,62 @@ export interface CoreClientSummarizeSelection {
         average: number | undefined;
       }
     | undefined;
+}
+
+export interface ClientCoreGetGridBounds {
+  type: 'clientCoreGetGridBounds';
+  sheetId: string;
+  id: number;
+  ignoreFormatting: boolean;
+}
+
+export interface CoreClientGetGridBounds {
+  type: 'coreClientGetGridBounds';
+  bounds?: { x: number; y: number; width: number; height: number };
+  id: number;
+}
+
+//#endregion
+
+//#region Render
+
+export interface ClientCoreGetRenderCell {
+  type: 'clientCoreGetRenderCell';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+}
+
+export interface CoreClientGetRenderCell {
+  type: 'coreClientGetRenderCell';
+  cell: JsRenderCell | undefined;
+  id: number;
+}
+
+export interface ClientCoreGetRenderCodeCells {
+  type: 'clientCoreGetRenderCodeCells';
+  sheetId: string;
+  id: number;
+}
+
+export interface CoreClientGetRenderCodeCells {
+  type: 'coreClientGetRenderCodeCells';
+  codeCells: JsRenderCodeCell[];
+  id: number;
+}
+
+//#endregion
+
+//#region Set values
+
+export interface ClientCoreSetCellValue {
+  type: 'clientCoreSetCellValue';
+  sheetId: string;
+  x: number;
+  y: number;
+  value: string;
+  cursor?: string;
 }
 
 export interface ClientCoreSetCellBold {
@@ -289,19 +307,6 @@ export interface CoreClientImportCsv {
   error: string | undefined;
 }
 
-export interface ClientCoreGetGridBounds {
-  type: 'clientCoreGetGridBounds';
-  sheetId: string;
-  id: number;
-  ignoreFormatting: boolean;
-}
-
-export interface CoreClientGetGridBounds {
-  type: 'coreClientGetGridBounds';
-  bounds?: { x: number; y: number; width: number; height: number };
-  id: number;
-}
-
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
   sheetId: string;
@@ -322,6 +327,21 @@ export interface ClientCoreSetCodeCellValue {
   cursor?: string;
 }
 
+export interface CoreClientSheetFills {
+  type: 'coreClientSheetFills';
+  sheetId: string;
+  fills: JsRenderFill[];
+}
+
+//#endregion
+
+//#region Sheets
+
+export interface CoreClientSheetInfo {
+  type: 'coreClientSheetInfo';
+  sheetInfo: SheetInfo[];
+}
+
 export interface ClientCoreAddSheet {
   type: 'clientCoreAddSheet';
   cursor?: string;
@@ -333,16 +353,13 @@ export interface CoreClientAddSheet {
   change: boolean;
 }
 
-export interface CoreClientSheetInfo {
-  type: 'coreClientSheetInfo';
-  sheetInfo: SheetInfo[];
+export interface ClientCoreDeleteSheet {
+  type: 'clientCoreDeleteSheet';
+  sheetId: string;
+  cursor: string;
 }
 
-export interface CoreClientSheetFills {
-  type: 'coreClientSheetFills';
-  sheetId: string;
-  fills: JsRenderFill[];
-}
+//#endregion
 
 export type ClientCoreMessage =
   | ClientCoreLoad
@@ -371,7 +388,8 @@ export type ClientCoreMessage =
   | ClientCoreGetGridBounds
   | ClientCoreDeleteCellValues
   | ClientCoreSetCodeCellValue
-  | ClientCoreAddSheet;
+  | ClientCoreAddSheet
+  | ClientCoreDeleteSheet;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

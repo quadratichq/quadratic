@@ -16,6 +16,7 @@ export class CellsSheets extends Container<CellsSheet> {
   constructor() {
     super();
     events.on('sheetInfo', this.create);
+    events.on('addSheet', this.addSheet);
     events.on('sheetFills', this.updateFills);
   }
 
@@ -24,7 +25,7 @@ export class CellsSheets extends Container<CellsSheet> {
     if (!sheets.size) return;
 
     for (const sheet of sheets.sheets) {
-      const child = this.addChild(new CellsSheet(sheet));
+      const child = this.addChild(new CellsSheet(sheet.id));
       await child.preload();
       if (sheet.id === sheets.sheet.id) {
         this.current = child;
@@ -37,17 +38,13 @@ export class CellsSheets extends Container<CellsSheet> {
     return !!this.current;
   }
 
-  async addSheet(id: string): Promise<void> {
-    const sheet = sheets.getById(id);
-    if (!sheet) {
-      throw new Error('Expected to find new sheet in cellSheet');
-    }
-    const cellsSheet = this.addChild(new CellsSheet(sheet));
-    await cellsSheet.preload();
+  async addSheet(sheetId: string) {
+    console.log('adding sheet???');
+    this.addChild(new CellsSheet(sheetId));
   }
 
   deleteSheet(id: string): void {
-    const cellsSheet = this.children.find((cellsSheet) => cellsSheet.sheet.id === id);
+    const cellsSheet = this.children.find((cellsSheet) => cellsSheet.sheetId === id);
     if (!cellsSheet) {
       throw new Error('Expected to find cellsSheet in CellSheets.delete');
     }
@@ -58,8 +55,8 @@ export class CellsSheets extends Container<CellsSheet> {
   // used to render all cellsTextHashes to warm up the GPU
   showAll(id: string) {
     this.children.forEach((child) => {
-      if (child.sheet.id === id) {
-        if (this.current?.sheet.id !== child?.sheet.id) {
+      if (child.sheetId === id) {
+        if (this.current?.sheetId !== child?.sheetId) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
         }
@@ -71,8 +68,8 @@ export class CellsSheets extends Container<CellsSheet> {
 
   show(id: string): void {
     this.children.forEach((child) => {
-      if (child.sheet.id === id) {
-        if (this.current?.sheet.id !== child?.sheet.id) {
+      if (child.sheetId === id) {
+        if (this.current?.sheetId !== child?.sheetId) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
         }
@@ -88,7 +85,7 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   private getById(id: string): CellsSheet | undefined {
-    return this.children.find((search) => search.sheet.id === id);
+    return this.children.find((search) => search.sheetId === id);
   }
 
   cellsTextHashClear(message: RenderClientCellsTextHashClear) {
@@ -120,7 +117,7 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected sheet to be defined in CellsSheets.updateFills');
     cellsSheet.updateFills(fills);
-    if (cellsSheet.sheet.id === sheets.sheet.id) {
+    if (cellsSheet.sheetId === sheets.sheet.id) {
       pixiApp.setViewportDirty();
     }
   };
@@ -145,9 +142,9 @@ export class CellsSheets extends Container<CellsSheet> {
 
   updateCodeCells(codeCells: SheetId[]): void {
     this.children.forEach((cellsSheet) => {
-      if (codeCells.find((id) => id.id === cellsSheet.sheet.id)) {
+      if (codeCells.find((id) => id.id === cellsSheet.sheetId)) {
         cellsSheet.updateCellsArray();
-        if (sheets.sheet.id === cellsSheet.sheet.id) {
+        if (sheets.sheet.id === cellsSheet.sheetId) {
           window.dispatchEvent(new CustomEvent('python-computation-complete'));
         }
       }
@@ -161,7 +158,7 @@ export class CellsSheets extends Container<CellsSheet> {
 
   updateBorders(borderSheets: SheetId[]): void {
     this.children.forEach((cellsSheet) => {
-      if (borderSheets.find((id) => id.id === cellsSheet.sheet.id)) {
+      if (borderSheets.find((id) => id.id === cellsSheet.sheetId)) {
         cellsSheet.createBorders();
       }
     });
@@ -169,7 +166,7 @@ export class CellsSheets extends Container<CellsSheet> {
 
   updateBordersString(borderSheets: String[]): void {
     this.children.forEach((cellsSheet) => {
-      if (borderSheets.find((id) => id === cellsSheet.sheet.id)) {
+      if (borderSheets.find((id) => id === cellsSheet.sheetId)) {
         cellsSheet.createBorders();
       }
     });
