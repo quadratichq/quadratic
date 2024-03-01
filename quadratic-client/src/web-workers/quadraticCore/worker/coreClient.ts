@@ -24,6 +24,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
+    sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
   };
@@ -36,6 +37,7 @@ class CoreClient {
     self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
     self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
+    self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -202,6 +204,18 @@ class CoreClient {
         core.deleteSheet(e.data.sheetId, e.data.cursor);
         break;
 
+      case 'clientCoreMoveSheet':
+        core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor);
+        break;
+
+      case 'clientCoreSetSheetName':
+        core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor);
+        break;
+
+      case 'clientCoreSetSheetColor':
+        core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
@@ -235,6 +249,10 @@ class CoreClient {
 
   sendSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
     this.send({ type: 'coreClientSheetFills', sheetId, fills });
+  };
+
+  sendSheetInfoUpdate = (sheetInfo: SheetInfo) => {
+    this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo });
   };
 }
 

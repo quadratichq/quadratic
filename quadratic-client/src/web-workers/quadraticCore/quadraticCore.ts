@@ -62,13 +62,15 @@ class QuadraticCore {
       events.emit('sheetFills', e.data.sheetId, e.data.fills);
       return;
     } else if (e.data.type === 'coreClientDeleteSheet') {
-      console.log('qc received');
       events.emit('deleteSheet', e.data.sheetId, e.data.user);
+      return;
+    } else if (e.data.type === 'coreClientSheetInfoUpdate') {
+      events.emit('sheetInfoUpdate', e.data.sheetInfo);
       return;
     }
 
-    // handle responses from requests to quadratic-core
     if (e.data.id !== undefined) {
+      // handle responses from requests to quadratic-core
       if (this.waitingForResponse[e.data.id]) {
         this.waitingForResponse[e.data.id](e.data);
         delete this.waitingForResponse[e.data.id];
@@ -477,6 +479,18 @@ class QuadraticCore {
 
   deleteSheet(sheetId: string, cursor: string) {
     this.send({ type: 'clientCoreDeleteSheet', sheetId, cursor });
+  }
+
+  moveSheet(sheetId: string, previous: string | undefined, cursor: string) {
+    this.send({ type: 'clientCoreMoveSheet', sheetId, previous, cursor });
+  }
+
+  setSheetName(sheetId: string, name: string, cursor: string) {
+    this.send({ type: 'clientCoreSetSheetName', sheetId, name, cursor });
+  }
+
+  setSheetColor(sheetId: string, color: string | undefined, cursor: string) {
+    this.send({ type: 'clientCoreSetSheetColor', sheetId, color, cursor });
   }
 
   //#endregion

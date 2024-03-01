@@ -22,6 +22,10 @@ export interface EventTypes {
     sheetInfo: SheetInfo[];
   };
 
+  sheetInfoUpdate: {
+    sheetInfo: SheetInfo;
+  };
+
   sheetFills: {
     sheetId: string;
     fills: JsRenderFill[];

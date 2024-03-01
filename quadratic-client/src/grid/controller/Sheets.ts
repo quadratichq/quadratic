@@ -21,6 +21,7 @@ class Sheets {
     events.on('sheetInfo', this.create);
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
+    events.on('sheetInfoUpdate', this.updateSheet);
   }
 
   private create = (sheetInfo: SheetInfo[]) => {
@@ -57,6 +58,12 @@ class Sheets {
         }
       }, 0);
     }
+  };
+
+  private updateSheet = (sheetInfo: SheetInfo) => {
+    const sheet = this.getById(sheetInfo.sheet_id);
+    if (!sheet) throw new Error('Expected to find sheet based on sheetInfo.sheet_id in updateSheet');
+    sheet.updateSheetInfo(sheetInfo);
   };
 
   // updates the SheetBar UI
@@ -229,7 +236,7 @@ class Sheets {
 
         const nextNext = next ? this.getNext(next.order) : undefined;
 
-        grid.moveSheet(id, nextNext?.id);
+        quadraticCore.moveSheet(id, nextNext?.id, this.getCursorPosition());
       } else if (delta === -1) {
         const previous = this.getPrevious(sheet.order);
 
@@ -237,12 +244,12 @@ class Sheets {
         if (!previous) return;
 
         // if not defined, then this is id will become first sheet
-        grid.moveSheet(id, previous?.id);
+        quadraticCore.moveSheet(id, previous?.id, this.getCursorPosition());
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
     } else {
-      grid.moveSheet(id, toBefore);
+      quadraticCore.moveSheet(id, toBefore, this.getCursorPosition());
     }
     this.sort();
   }

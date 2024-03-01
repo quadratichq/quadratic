@@ -159,23 +159,23 @@ export class Grid {
   //   this.transactionResponse(summary);
   // }
 
-  setSheetName(sheetId: string, name: string) {
-    const summary = this.gridController.setSheetName(sheetId, name, sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
+  // setSheetName(sheetId: string, name: string) {
+  //   const summary = this.gridController.setSheetName(sheetId, name, sheets.getCursorPosition());
+  //   this.transactionResponse(summary);
+  // }
 
-  setSheetColor(sheetId: string, color: string | undefined) {
-    const summary = this.gridController.setSheetColor(sheetId, color, sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
+  // setSheetColor(sheetId: string, color: string | undefined) {
+  //   const summary = this.gridController.setSheetColor(sheetId, color, sheets.getCursorPosition());
+  //   this.transactionResponse(summary);
+  // }
+
+  // moveSheet(sheetId: string, leftSheetId: string | undefined) {
+  //   const summary = this.gridController.moveSheet(sheetId, leftSheetId, sheets.getCursorPosition());
+  //   this.transactionResponse(summary);
+  // }
 
   duplicateSheet(sheetId: string) {
     const summary = this.gridController.duplicateSheet(sheetId, sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
-
-  moveSheet(sheetId: string, leftSheetId: string | undefined) {
-    const summary = this.gridController.moveSheet(sheetId, leftSheetId, sheets.getCursorPosition());
     this.transactionResponse(summary);
   }
 

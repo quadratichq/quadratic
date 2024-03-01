@@ -3,7 +3,6 @@ import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadrat
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
-import { grid } from '../controller/Grid';
 import { sheets } from '../controller/Sheets';
 import { SheetCursor } from './SheetCursor';
 
@@ -31,13 +30,20 @@ export class Sheet {
 
   setName(name: string): void {
     if (name !== this.name) {
-      grid.setSheetName(this.id, name);
+      quadraticCore.setSheetName(this.id, name, sheets.getCursorPosition());
       this.name = name;
     }
   }
 
   deleteCells(rectangle: Rectangle) {
     quadraticCore.deleteCellValues(this.id, rectangle, sheets.getCursorPosition());
+  }
+
+  updateSheetInfo(info: SheetInfo) {
+    this.name = info.name;
+    this.order = info.order;
+    this.color = info.color ?? undefined;
+    this.offsets = SheetOffsetsWasm.load(info.offsets);
   }
 
   //#endregion

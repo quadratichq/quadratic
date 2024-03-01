@@ -1,4 +1,5 @@
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
@@ -6,7 +7,6 @@ import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -200,7 +200,7 @@ function TabName({
               setNameExists(false);
               setIsRenaming(false);
               sheet.setName(value);
-              grid.setSheetName(sheet.id, value);
+              quadraticCore.setSheetName(sheet.id, value, sheets.getCursorPosition());
             }
           }
           focusGrid();

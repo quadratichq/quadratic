@@ -273,6 +273,21 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.deleteSheet(sheetId, cursor);
   }
+
+  moveSheet(sheetId: string, previous: string | undefined, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.moveSheet(sheetId, previous, cursor);
+  }
+
+  setSheetName(sheetId: string, name: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setSheetName(sheetId, name, cursor);
+  }
+
+  setSheetColor(sheetId: string, color: string | undefined, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setSheetColor(sheetId, color, cursor);
+  }
 }
 
 export const core = new Core();

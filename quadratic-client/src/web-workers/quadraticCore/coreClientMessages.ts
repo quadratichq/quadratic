@@ -365,6 +365,32 @@ export interface CoreClientDeleteSheet {
   user: boolean;
 }
 
+export interface ClientCoreMoveSheet {
+  type: 'clientCoreMoveSheet';
+  sheetId: string;
+  previous?: string;
+  cursor: string;
+}
+
+export interface CoreClientSheetInfoUpdate {
+  type: 'coreClientSheetInfoUpdate';
+  sheetInfo: SheetInfo;
+}
+
+export interface ClientCoreSetSheetName {
+  type: 'clientCoreSetSheetName';
+  sheetId: string;
+  name: string;
+  cursor: string;
+}
+
+export interface ClientCoreSetSheetColor {
+  type: 'clientCoreSetSheetColor';
+  sheetId: string;
+  color: string | undefined;
+  cursor: string;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -395,7 +421,10 @@ export type ClientCoreMessage =
   | ClientCoreDeleteCellValues
   | ClientCoreSetCodeCellValue
   | ClientCoreAddSheet
-  | ClientCoreDeleteSheet;
+  | ClientCoreDeleteSheet
+  | ClientCoreMoveSheet
+  | ClientCoreSetSheetName
+  | ClientCoreSetSheetColor;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -410,4 +439,5 @@ export type CoreClientMessage =
   | CoreClientAddSheet
   | CoreClientSheetInfo
   | CoreClientSheetFills
-  | CoreClientDeleteSheet;
+  | CoreClientDeleteSheet
+  | CoreClientSheetInfoUpdate;
