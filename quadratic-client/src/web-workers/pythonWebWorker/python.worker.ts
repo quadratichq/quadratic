@@ -4,8 +4,13 @@ import { InspectPythonReturnType, PythonMessage } from './pythonTypes';
 
 const TRY_AGAIN_TIMEOUT = 500;
 
-self.importScripts('/pyodide/pyodide.js');
+let pyodide: any | undefined;
 
+try {
+  self.importScripts('/pyodide/pyodide.js');
+} catch (e) {
+  // do nothing, we're in a test
+}
 let getCellsMessages: (cells: { x: number; y: number; value: string; type_name: string }[]) => void | undefined;
 
 const getCellsDB = async (
@@ -22,12 +27,20 @@ const getCellsDB = async (
   });
 };
 
-let pyodide: any | undefined;
-
 async function pythonWebWorker() {
   try {
     self.postMessage({ type: 'not-loaded' } as PythonMessage);
-    pyodide = await (self as any).loadPyodide();
+
+    try {
+      pyodide = await (self as any).loadPyodide();
+    } catch (e) {
+      // failed, we're in a test
+      pyodide = await require('pyodide').loadPyodide({
+        stdin: () => {},
+        stdout: () => {},
+        stderr: () => {},
+      });
+    }
 
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
     await pyodide.loadPackage('micropip');
@@ -39,7 +52,12 @@ async function pythonWebWorker() {
     await pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
 
     // load our python code
-    await micropip.install('/quadratic_py-0.1.0-py3-none-any.whl');
+    try {
+      await micropip.install('/quadratic_py-0.1.0-py3-none-any.whl');
+    } catch (e) {
+      // failed, we're in a test
+      await micropip.install('file:public/quadratic_py-0.1.0-py3-none-any.whl');
+    }
 
     // make run_python easier to call later
     await pyodide.runPython('from quadratic_py.run_python import run_python');
@@ -66,8 +84,8 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       self.postMessage({ type: 'not-loaded' } as PythonMessage);
     } else {
       if (event.python) {
-        // TODO(ddimaria): is this still needed?
         const output = await inspectPython(event.python, pyodide);
+
         return self.postMessage({
           type: 'inspect-results',
           results: output,

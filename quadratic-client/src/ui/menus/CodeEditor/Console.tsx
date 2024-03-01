@@ -106,41 +106,42 @@ export function Console({
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
-            {codeEditorReturn?.output_type && !consoleOutput?.stdErr && (
-              <>
-                <div
-                  style={{
-                    color: '#777',
-                    // display: 'flex',
-                    // alignItems: 'center',
-                    // gap: theme.spacing(1),
-                  }}
-                >
-                  {!hasUnsavedChanges && (
-                    <>
-                      <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
-                      {codeEditorReturn?.lineno} returned a{' '}
-                      <ReturnType>
-                        {codeEditorReturn?.output_size && (
-                          <>
-                            {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
-                          </>
-                        )}
-                        {hasUnsavedChanges ? '…' : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
-                      </ReturnType>
-                    </>
-                  )}
-                  {!hasUnsavedChanges && codeEditorReturn?.output_type === 'NoneType' && (
-                    <span  contentEditable="false">                    
-                      ,{' '}<Link
-                        to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
-                        target="_blank"
-                      >read docs</Link> to learn more
-                    </span>
-                  )}
-                </div>
-                <br />
-              </>
+            {codeEditorReturn?.output_type && !consoleOutput?.stdErr && !hasUnsavedChanges && (
+              <div
+                style={{
+                  color: '#777',
+                  marginBottom: theme.spacing(2.0),
+                  // display: 'flex',
+                  // alignItems: 'center',
+                  // gap: theme.spacing(1),
+                }}
+              >
+                <>
+                  <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
+                  {codeEditorReturn?.lineno} returned a{' '}
+                  <ReturnType>
+                    {codeEditorReturn?.output_size && (
+                      <>
+                        {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
+                      </>
+                    )}
+                    {hasUnsavedChanges ? '…' : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
+                  </ReturnType>
+                </>
+                {codeEditorReturn?.output_type === 'NoneType' && (
+                  <span contentEditable="false" suppressContentEditableWarning={true}>
+                    ,{' '}
+                    <Link
+                      to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
+                      target="_blank"
+                      rel="nofollow"
+                    >
+                      read docs
+                    </Link>{' '}
+                    to learn more
+                  </span>
+                )}
+              </div>
             )}
 
             {hasOutput ? (

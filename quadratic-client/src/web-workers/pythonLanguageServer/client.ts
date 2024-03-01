@@ -77,12 +77,13 @@ export class LanguageServerClient extends EventEmitter {
       this.connection.onNotification(PublishDiagnosticsNotification.type, (params) => {
         this.diagnostics.set(params.uri, params.diagnostics);
         window.dispatchEvent(new CustomEvent('python-diagnostics', { detail: params }));
+        console.log('pyright-diagnostics', params.diagnostics);
         // Republish as you can't listen twice.
         this.emit('diagnostics', params);
       });
 
       const initializeParams: InitializeParams = {
-        locale: 'en', 
+        locale: 'en',
         capabilities: {
           textDocument: {
             moniker: {},
@@ -104,7 +105,7 @@ export class LanguageServerClient extends EventEmitter {
             signatureHelp: {
               dynamicRegistration: true,
               signatureInformation: {
-                documentationFormat: ['markdown', 'plaintext'],
+                documentationFormat: ['markdown'],
                 activeParameterSupport: true,
                 parameterInformation: {
                   labelOffsetSupport: true,
@@ -113,6 +114,7 @@ export class LanguageServerClient extends EventEmitter {
               contextSupport: true,
             },
             hover: {
+              dynamicRegistration: true,
               contentFormat: ['markdown'],
             },
             publishDiagnostics: {

@@ -32,7 +32,7 @@ def to_interval(value: Tuple[pd.Timestamp | date | time | datetime, pd.Timestamp
 # Convert from python types to quadratic types
 def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | time | datetime | pd.Period | timedelta | None) -> Tuple[str, str]:
     if value in (None, ""):
-        return (None, "blank")
+        return ("", "blank")
     elif pd.api.types.is_number(value):
         return (str(value), "number")
     elif pd.api.types.is_bool(value):

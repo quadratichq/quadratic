@@ -4,7 +4,6 @@ from typing import Tuple
 
 from .quadratic_api.quadratic import getCell, getCells
 from .utils import attempt_fix_await, to_quadratic_type
-import getCellsDB
 import micropip
 import pandas as pd
 import pyodide
@@ -175,7 +174,7 @@ async def run_python(code: str):
                     col_length_2d = len(array_output[row])
                     for col in range(0, length_2d):
                         if col > col_length_2d - 1:
-                            typed_array_output[row][col] = (None, "blank")
+                            typed_array_output[row][col] = ("", "blank")
                         else:
                             typed_array_output[row][col] = to_quadratic_type(array_output[row][col])
 

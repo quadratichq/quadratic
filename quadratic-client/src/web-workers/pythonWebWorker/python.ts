@@ -6,6 +6,8 @@ import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { ComputedPythonReturnType, InspectPythonReturnType, PythonMessage, PythonReturnType } from './pythonTypes';
 
+const IS_TEST = process.env.NODE_ENV === 'test';
+
 interface PythonCode {
   transactionId: string;
   sheetPos: SheetPos;
@@ -32,7 +34,9 @@ class PythonWebWorker {
   }
 
   init() {
-    this.worker = new Worker(new URL('./python.worker.ts', import.meta.url));
+    this.worker = new Worker(new URL('./python.worker.ts', import.meta.url), {
+      /* @vite-ignore */ type: !IS_TEST ? 'classic' : 'module',
+    });
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
@@ -52,30 +56,39 @@ class PythonWebWorker {
           this.pythonOutputSize = pythonResult.output_size;
           this.inspectPython(pythonResult.code);
 
-          if (!nothingReturned) {
+          if (nothingReturned) {
+            pythonResult.array_output = undefined;
+            pythonResult.output = ['', 'blank'];
+          } else {
             if (pythonResult.array_output && pythonResult.array_output.length) {
               if (!Array.isArray(pythonResult.array_output[0][0])) {
                 pythonResult.array_output = pythonResult.array_output.map((row: any) => [row]);
               }
             }
-
-            if (!pythonResult.success) {
-              pythonResult.error_msg = pythonResult.input_python_stack_trace;
-            }
-
-            const result = new JsCodeResult(
-              transactionId,
-              pythonResult.success,
-              pythonResult.formatted_code,
-              pythonResult.error_msg,
-              pythonResult.std_out,
-              pythonResult.output,
-              JSON.stringify(pythonResult.array_output),
-              pythonResult.line_number,
-              pythonResult.cancel_compute
-            );
-            grid.calculationComplete(result);
           }
+
+          if (!pythonResult.success) {
+            pythonResult.error_msg = pythonResult.input_python_stack_trace;
+          }
+
+          // this is used in testing
+          if (IS_TEST) {
+            window.dispatchEvent(new CustomEvent('python-results', { detail: pythonResult }));
+            break;
+          }
+
+          const result = new JsCodeResult(
+            transactionId,
+            pythonResult.success,
+            pythonResult.formatted_code,
+            pythonResult.error_msg,
+            pythonResult.std_out,
+            pythonResult.output,
+            JSON.stringify(pythonResult.array_output),
+            pythonResult.line_number,
+            pythonResult.cancel_compute
+          );
+          grid.calculationComplete(result);
           this.calculationComplete();
 
           break;
@@ -132,7 +145,7 @@ class PythonWebWorker {
         case 'inspect-results': {
           this.inspectionResults = event.results;
           window.dispatchEvent(new CustomEvent('python-inspect-results', { detail: this.getInspectionResults() }));
-          
+
           break;
         }
 
@@ -172,7 +185,7 @@ class PythonWebWorker {
       this.showChange();
       return;
     }
-    
+
     if (this.executionStack.length) {
       const first = this.executionStack[0];
       if (first) {
@@ -185,7 +198,7 @@ class PythonWebWorker {
     } else if (complete) {
       window.dispatchEvent(new CustomEvent('python-computation-finished'));
     }
-    
+
     this.showChange();
   }
 

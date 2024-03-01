@@ -8,7 +8,7 @@ const workerScriptName = '/pyright.worker.js?url' + Math.random().toString(36).s
 
 export const uri = 'file:///src/main.py';
 
-const pyright = (uri: string): LanguageServerClient | undefined => {
+const pyright = (uri: string, enableLogging: boolean = false): LanguageServerClient | undefined => {
   const workerScriptUrl = new URL(workerScriptName, import.meta.url).toString();
   const foreground = new Worker(workerScriptUrl);
   const workers = [foreground];
@@ -58,19 +58,21 @@ const pyright = (uri: string): LanguageServerClient | undefined => {
 
   const client = new LanguageServerClient(connection, '');
 
-  connection.onUnhandledNotification(
-    (params: any) => params.message && console.log('[Pyright WebWorker] Unhandled: ', params.message)
-  );
+  connection.onUnhandledNotification((params: any) => params.message && log(params.message, enableLogging));
 
-  connection.onNotification(LogMessageNotification.type, (params) =>
-    console.log('[Pyright WebWorker] Log: ', params.message)
-  );
+  connection.onNotification(LogMessageNotification.type, (params) => log(params.message, enableLogging));
 
   connection.onRequest(RegistrationRequest.type, () => {});
 
-  client.initialize().then(() => console.log('[Pyright WebWorker] Initialized'));
+  client.initialize().then(() => log('Initialized', true));
 
   return client;
 };
+
+function log(message: string, enableLogging: boolean) {
+  if (enableLogging) {
+    console.log('[Pyright WebWorker] ', message);
+  }
+}
 
 export const pyrightWorker = pyright(uri);
