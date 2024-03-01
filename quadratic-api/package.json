@@ -52,6 +52,7 @@
     "openai": "^3.2.1",
     "stripe": "^14.16.0",
     "supertest": "^6.3.3",
+    "usehooks-ts": "^2.15.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {

@@ -1,9 +1,9 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
-import useLocalStorage from '@/hooks/useLocalStorage';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { useLocalStorage } from 'usehooks-ts';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { Coordinate } from '../types/size';
 
@@ -13,7 +13,7 @@ export const useCellTypeMenuOpenedCount = () => {
 
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);
-  const [cellTypeMenuOpenedCount] = useCellTypeMenuOpenedCount();
+  const [cellTypeMenuOpenedCount] = useLocalStorage('cellTypeMenuOpenedCount', 0);
   const { showCodeEditor } = useRecoilValue(editorInteractionStateAtom);
 
   useEffect(() => {
