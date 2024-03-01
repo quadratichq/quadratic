@@ -68,6 +68,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetInfoUpdate') {
       events.emit('sheetInfoUpdate', e.data.sheetInfo);
       return;
+    } else if (e.data.type === 'coreClientSetCursor') {
+      events.emit('setCursor', e.data.cursor);
+      return;
     }
 
     if (e.data.id !== undefined) {

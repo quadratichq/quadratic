@@ -32,6 +32,10 @@ export interface EventTypes {
   };
 
   changeSheet: {};
+
+  setCursor: {
+    cursor: string;
+  };
 }
 
 export const events = new EventEmitter<EventTypes>();

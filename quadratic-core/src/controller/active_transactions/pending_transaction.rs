@@ -20,7 +20,9 @@ use crate::{
 pub struct PendingTransaction {
     pub id: Uuid,
 
+    // cursor sent as part of this transaction
     pub cursor: Option<String>,
+
     pub transaction_type: TransactionType,
 
     // pending operations
@@ -52,6 +54,9 @@ pub struct PendingTransaction {
 
     // whether to generate a thumbnail after transaction completes
     pub generate_thumbnail: bool,
+
+    // cursor saved for an Undo or Redo
+    pub cursor_undo_redo: Option<String>,
 }
 
 impl Default for PendingTransaction {
@@ -70,6 +75,7 @@ impl Default for PendingTransaction {
             waiting_for_async: None,
             complete: false,
             generate_thumbnail: false,
+            cursor_undo_redo: None,
         }
     }
 }
@@ -112,6 +118,12 @@ impl PendingTransaction {
                 let operations = serde_json::to_string(&self.forward_operations)
                     .expect("Failed to serialize forward operations");
                 crate::wasm_bindings::js::jsSendTransaction(transaction_id, operations);
+
+                if self.is_undo_redo() {
+                    if let Some(cursor) = &self.cursor_undo_redo {
+                        crate::wasm_bindings::js::jsSetCursor(cursor.clone());
+                    }
+                }
             }
         }
     }

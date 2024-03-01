@@ -64,4 +64,6 @@ extern "C" {
         code_cell: String, /*JsCodeCell*/
     );
     pub fn jsOffsetsModified(sheet_id: String, offsets: String);
+
+    pub fn jsSetCursor(cursor: String);
 }

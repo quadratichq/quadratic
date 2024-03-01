@@ -27,6 +27,7 @@ declare var self: WorkerGlobalScope &
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
+    sendSetCursor: (cursor: string) => void;
   };
 
 class CoreClient {
@@ -38,6 +39,7 @@ class CoreClient {
     self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
+    self.sendSetCursor = coreClient.sendSetCursor;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -265,6 +267,10 @@ class CoreClient {
 
   sendSheetInfoUpdate = (sheetInfo: SheetInfo) => {
     this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo });
+  };
+
+  sendSetCursor = (cursor: string) => {
+    this.send({ type: 'coreClientSetCursor', cursor });
   };
 }
 

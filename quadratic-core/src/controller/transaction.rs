@@ -24,6 +24,7 @@ impl Transaction {
         PendingTransaction {
             id: self.id,
             cursor,
+            cursor_undo_redo: self.cursor.clone(),
             transaction_type,
             operations: self.operations.clone().into(),
             ..Default::default()

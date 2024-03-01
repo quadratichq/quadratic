@@ -53,8 +53,10 @@ impl GridController {
                     },
                 },
             };
-            if let Ok(json) = serde_json::to_string(&cursor) {
-                transaction.cursor = Some(json);
+            if cfg!(target_family = "wasm") {
+                if let Ok(json) = serde_json::to_string(&cursor) {
+                    crate::wasm_bindings::js::jsSetCursor(json);
+                }
             }
         }
     }

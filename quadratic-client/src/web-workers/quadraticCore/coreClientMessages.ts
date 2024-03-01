@@ -397,6 +397,11 @@ export interface ClientCoreDuplicateSheet {
   cursor: string;
 }
 
+export interface CoreClientSetCursor {
+  type: 'coreClientSetCursor';
+  cursor: string;
+}
+
 //#endregion
 
 //#region Undo/Redo
@@ -410,6 +415,8 @@ export interface ClientCoreRedo {
   type: 'clientCoreRedo';
   cursor: string;
 }
+
+//#endregion
 
 export type ClientCoreMessage =
   | ClientCoreLoad
@@ -461,4 +468,5 @@ export type CoreClientMessage =
   | CoreClientSheetInfo
   | CoreClientSheetFills
   | CoreClientDeleteSheet
-  | CoreClientSheetInfoUpdate;
+  | CoreClientSheetInfoUpdate
+  | CoreClientSetCursor;

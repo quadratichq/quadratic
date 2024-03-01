@@ -25,6 +25,7 @@ declare var self: WorkerGlobalScope &
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
+    sendSetCursor: (cursor: string) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -97,4 +98,8 @@ export const jsUpdateHtml = (sheetId: string, x: number, y: number, html: string
 
 export const jsRequestTransactions = (sequenceNum: number) => {
   console.log('TODO: jsRequestTransactions', sequenceNum);
+};
+
+export const jsSetCursor = (cursor: string) => {
+  self.sendSetCursor(cursor);
 };

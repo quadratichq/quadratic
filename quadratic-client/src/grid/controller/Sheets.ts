@@ -4,6 +4,7 @@ import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { Sheet } from '../sheet/Sheet';
+import { SheetCursorSave } from '../sheet/SheetCursor';
 
 class Sheets {
   sheets: Sheet[];
@@ -21,6 +22,7 @@ class Sheets {
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
     events.on('sheetInfoUpdate', this.updateSheet);
+    events.on('setCursor', this.setCursor);
   }
 
   private create = (sheetInfo: SheetInfo[]) => {
@@ -67,6 +69,14 @@ class Sheets {
     if (!sheet) throw new Error('Expected to find sheet based on sheetInfo.sheet_id in updateSheet');
     sheet.updateSheetInfo(sheetInfo);
     this.updateSheetBar();
+  };
+
+  private setCursor = (cursorStringified: string) => {
+    const cursor: SheetCursorSave = JSON.parse(cursorStringified);
+    if (cursor.sheetId !== this.current) {
+      this.current = cursor.sheetId;
+    }
+    this.sheet.cursor.load(cursor);
   };
 
   // updates the SheetBar UI
