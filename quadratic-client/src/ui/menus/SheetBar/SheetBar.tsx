@@ -20,10 +20,6 @@ const SCROLLING_INTERVAL = 17;
 const ARROW_REPEAT_INTERVAL = 17;
 
 export const SheetBar = (): JSX.Element => {
-  // used to trigger state change (eg, when sheets change)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, setTrigger] = useState(0);
-
   const theme = useTheme();
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
   const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
@@ -31,9 +27,10 @@ export const SheetBar = (): JSX.Element => {
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);
 
+  const dragTimeOut = useRef<number | undefined>();
+
   useEffect(() => {
     const updateSheet = () => {
-      setTrigger((trigger) => trigger + 1);
       setActiveSheet(sheets.current);
     };
     events.on('changeSheet', updateSheet);
@@ -194,7 +191,7 @@ export const SheetBar = (): JSX.Element => {
           originalOrderIndex,
           actualOrderIndex: originalOrderIndex,
         };
-        setTimeout(() => {
+        dragTimeOut.current = window.setTimeout(() => {
           if (down.current) {
             tab.style.boxShadow = '0rem -0.5rem 0.75rem rgba(0,0,0,0.25)';
           }
@@ -347,6 +344,10 @@ export const SheetBar = (): JSX.Element => {
   }, []);
 
   const handlePointerUp = useCallback(() => {
+    if (dragTimeOut.current) {
+      window.clearTimeout(dragTimeOut.current);
+      dragTimeOut.current = undefined;
+    }
     if (down.current) {
       if (scrolling.current) {
         window.clearInterval(scrolling.current);

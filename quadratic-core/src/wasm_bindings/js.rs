@@ -53,10 +53,7 @@ extern "C" {
     pub fn jsSheetInfo(sheets: String); // Vec<JsSheetInfo>
     pub fn jsSheetInfoUpdate(sheet: String); // JsSheetInfo
     pub fn jsSheetFills(sheet_id: String, fills: String); // JsRenderFill
-
-    #[cfg(not(test))]
     pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, change: bool);
-
     pub fn jsRequestTransactions(sequence_num: u64);
     pub fn jsUpdateHtml(sheet_id: String, x: i64, y: i64, html: String /*JsHtmlOutput*/);
     pub fn jsUpdateCodeCell(

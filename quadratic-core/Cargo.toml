@@ -39,7 +39,6 @@ anyhow = "1.0"
 async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.10.5"
-lazy_static = "1.4"
 rand = "0.8.5"
 getrandom = { version = "*", features = ["js"] }
 regex = "1.7"
@@ -75,6 +74,7 @@ bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
+lazy_static = "1.4.0"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
