@@ -13,7 +13,7 @@ export const useCellTypeMenuOpenedCount = () => {
 
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);
-  const [cellTypeMenuOpenedCount] = useLocalStorage('cellTypeMenuOpenedCount', 0);
+  const [cellTypeMenuOpenedCount] = useCellTypeMenuOpenedCount();
   const { showCodeEditor } = useRecoilValue(editorInteractionStateAtom);
 
   useEffect(() => {
