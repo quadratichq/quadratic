@@ -27,8 +27,6 @@ export const CodeHint = () => {
     };
   }, []);
 
-  console.log('cellTypeMenuOpenedCount', cellTypeMenuOpenedCount);
-
   if (cellHasValue || cellTypeMenuOpenedCount > 3 || showCodeEditor) {
     return null;
   }
