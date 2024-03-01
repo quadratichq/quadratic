@@ -1,4 +1,4 @@
-import { useCellTypeMenuOpenedCount } from '@/gridGL/HTMLGrid/CodeHint';
+import { cellTypeMenuOpenedCountAtom } from '@/atoms/cellTypeMenuOpenedCountAtom';
 import { CodeCellLanguage } from '@/quadratic-core/types';
 import {
   Chip,
@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -78,7 +78,7 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
-  const [, setCellTypeMenuOpenedCount] = useCellTypeMenuOpenedCount();
+  const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
   const searchlabel = 'Choose a cell type…';
 
   const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));

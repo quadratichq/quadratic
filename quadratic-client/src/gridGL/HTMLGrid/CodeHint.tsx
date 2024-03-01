@@ -1,19 +1,15 @@
+import { cellTypeMenuOpenedCountAtom } from '@/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
 import { Rectangle } from 'pixi.js';
 import { useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { useLocalStorage } from 'usehooks-ts';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
 import { Coordinate } from '../types/size';
 
-export const useCellTypeMenuOpenedCount = () => {
-  return useLocalStorage('cellTypeMenuOpenedCount', 0);
-};
-
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);
-  const [cellTypeMenuOpenedCount] = useCellTypeMenuOpenedCount();
+  const cellTypeMenuOpenedCount = useRecoilValue(cellTypeMenuOpenedCountAtom);
   const { showCodeEditor } = useRecoilValue(editorInteractionStateAtom);
 
   useEffect(() => {
@@ -30,6 +26,8 @@ export const CodeHint = () => {
       window.removeEventListener('change-sheet', updateCursor);
     };
   }, []);
+
+  console.log('cellTypeMenuOpenedCount', cellTypeMenuOpenedCount);
 
   if (cellHasValue || cellTypeMenuOpenedCount > 3 || showCodeEditor) {
     return null;
