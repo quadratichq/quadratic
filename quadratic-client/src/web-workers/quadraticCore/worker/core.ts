@@ -288,6 +288,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.setSheetColor(sheetId, color, cursor);
   }
+
+  duplicateSheet(sheetId: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.duplicateSheet(sheetId, cursor);
+  }
 }
 
 export const core = new Core();

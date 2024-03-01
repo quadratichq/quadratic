@@ -493,6 +493,10 @@ class QuadraticCore {
     this.send({ type: 'clientCoreSetSheetColor', sheetId, color, cursor });
   }
 
+  duplicateSheet(sheetId: string, cursor: string) {
+    this.send({ type: 'clientCoreDuplicateSheet', sheetId, cursor });
+  }
+
   //#endregion
 }
 

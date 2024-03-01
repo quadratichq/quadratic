@@ -174,10 +174,10 @@ export class Grid {
   //   this.transactionResponse(summary);
   // }
 
-  duplicateSheet(sheetId: string) {
-    const summary = this.gridController.duplicateSheet(sheetId, sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
+  // duplicateSheet(sheetId: string) {
+  //   const summary = this.gridController.duplicateSheet(sheetId, sheets.getCursorPosition());
+  //   this.transactionResponse(summary);
+  // }
 
   //#endregion
 

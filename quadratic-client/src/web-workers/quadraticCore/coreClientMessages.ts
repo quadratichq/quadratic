@@ -391,6 +391,12 @@ export interface ClientCoreSetSheetColor {
   cursor: string;
 }
 
+export interface ClientCoreDuplicateSheet {
+  type: 'clientCoreDuplicateSheet';
+  sheetId: string;
+  cursor: string;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -424,7 +430,8 @@ export type ClientCoreMessage =
   | ClientCoreDeleteSheet
   | ClientCoreMoveSheet
   | ClientCoreSetSheetName
-  | ClientCoreSetSheetColor;
+  | ClientCoreSetSheetColor
+  | ClientCoreDuplicateSheet;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

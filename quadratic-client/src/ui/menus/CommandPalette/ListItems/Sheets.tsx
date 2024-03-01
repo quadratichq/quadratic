@@ -1,7 +1,7 @@
 import { events } from '@/events/events';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useMemo, useState } from 'react';
 import { hasPermissionToEditFile } from '../../../../actions';
-import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -41,7 +41,12 @@ const ListItems = () => {
         label: 'Sheet: Duplicate',
         isAvailable: hasPermissionToEditFile,
         Component: (props: any) => {
-          return <CommandPaletteListItem {...props} action={() => grid.duplicateSheet(sheets.sheet.id)} />;
+          return (
+            <CommandPaletteListItem
+              {...props}
+              action={() => quadraticCore.duplicateSheet(sheets.sheet.id, sheets.getCursorPosition())}
+            />
+          );
         },
       },
     ];

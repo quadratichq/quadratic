@@ -4,7 +4,6 @@ import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { Sheet } from '../sheet/Sheet';
-import { grid } from './Grid';
 
 class Sheets {
   sheets: Sheet[];
@@ -48,6 +47,8 @@ class Sheets {
     const index = this.sheets.findIndex((sheet) => sheet.id === sheetId);
     if (index === -1) throw new Error('Expected to find sheet based on id');
     this.sheets.splice(index, 1);
+
+    // todo: this code should be in quadratic-core, not here
     if (user) {
       // the timeout is needed because cellsSheets receives the deleteSheet message after sheets receives the message
       setTimeout(() => {
@@ -194,16 +195,16 @@ class Sheets {
   }
 
   duplicate() {
-    const oldSheetId = this.current;
-    grid.duplicateSheet(this.current);
+    // const oldSheetId = this.current;
+    quadraticCore.duplicateSheet(this.current, sheets.getCursorPosition());
 
-    // sets the current sheet to the duplicated sheet
-    const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
-    if (currentIndex === -1) throw new Error('Expected to find current sheet in duplicateSheet');
-    const duplicate = this.sheets[currentIndex + 1];
-    if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
-    this.current = duplicate.id;
-    this.sort();
+    // // sets the current sheet to the duplicated sheet
+    // const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
+    // if (currentIndex === -1) throw new Error('Expected to find current sheet in duplicateSheet');
+    // const duplicate = this.sheets[currentIndex + 1];
+    // if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
+    // this.current = duplicate.id;
+    // this.sort();
   }
 
   userDeleteSheet(id: string) {

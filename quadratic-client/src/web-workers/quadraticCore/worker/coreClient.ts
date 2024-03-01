@@ -216,6 +216,10 @@ class CoreClient {
         core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor);
         break;
 
+      case 'clientCoreDuplicateSheet':
+        core.duplicateSheet(e.data.sheetId, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
