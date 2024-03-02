@@ -14,6 +14,7 @@ import {
   ReceiveMessages,
   ReceiveRoom,
   SendEnterRoom,
+  SendGetTransactions,
   SendTransaction,
   UserUpdate,
 } from '../multiplayerTypes';
@@ -236,8 +237,7 @@ export class MultiplayerServer {
         break;
 
       case 'Transactions':
-        console.log('todo: receiveTransactions');
-        // this.receiveTransactions(data);
+        multiplayerCore.receiveTransactions(data.transactions);
         break;
 
       case 'EnterRoom':
@@ -276,6 +276,18 @@ export class MultiplayerServer {
       session_id: this.sessionId!,
       file_id: this.fileId!,
       operations: transactionMessage.operations,
+    };
+    this.send(message);
+  }
+
+  requestTransactions(sequenceNum: number) {
+    if (!this.sessionId) throw new Error('Expected sessionId to be defined in requestTransactions');
+    if (!this.fileId) throw new Error('Expected fileId to be defined in requestTransactions');
+    const message: SendGetTransactions = {
+      type: 'GetTransactions',
+      session_id: this.sessionId,
+      file_id: this.fileId,
+      min_sequence_num: sequenceNum,
     };
     this.send(message);
   }

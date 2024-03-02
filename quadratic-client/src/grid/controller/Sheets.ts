@@ -1,5 +1,5 @@
 import { events } from '@/events/events';
-import { SheetId, SheetInfo } from '@/quadratic-core-types';
+import { SheetInfo } from '@/quadratic-core-types';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
@@ -23,6 +23,7 @@ class Sheets {
     events.on('deleteSheet', this.deleteSheet);
     events.on('sheetInfoUpdate', this.updateSheet);
     events.on('setCursor', this.setCursor);
+    events.on('sheetOffsets', this.updateOffsets);
   }
 
   private create = (sheetInfo: SheetInfo[]) => {
@@ -47,7 +48,9 @@ class Sheets {
 
   private deleteSheet = (sheetId: string, user: boolean) => {
     const index = this.sheets.findIndex((sheet) => sheet.id === sheetId);
-    if (index === -1) throw new Error('Expected to find sheet based on id');
+
+    // it's possible we deleted the sheet locally before receiving the message
+    if (index === -1) return;
     this.sheets.splice(index, 1);
 
     // todo: this code should be in quadratic-core, not here
@@ -64,11 +67,24 @@ class Sheets {
   };
 
   private updateSheet = (sheetInfo: SheetInfo) => {
-    console.log('received update sheet...');
     const sheet = this.getById(sheetInfo.sheet_id);
-    if (!sheet) throw new Error('Expected to find sheet based on sheetInfo.sheet_id in updateSheet');
+
+    // it's possible we deleted the sheet locally before receiving the message
+    if (!sheet) return;
     sheet.updateSheetInfo(sheetInfo);
     this.updateSheetBar();
+  };
+
+  private updateOffsets = (sheetId: string, offsets: string) => {
+    const sheet = this.getById(sheetId);
+
+    // it's possible we deleted the sheet locally before receiving the message
+    if (!sheet) return;
+    sheet.updateSheetOffsets(offsets);
+    pixiApp.headings.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.cursor.dirty = true;
+    pixiApp.multiplayerCursor.dirty = true;
   };
 
   private setCursor = (cursorStringified: string) => {
@@ -270,19 +286,6 @@ class Sheets {
 
   getCursorPosition(): string {
     return JSON.stringify(this.sheet.cursor.save());
-  }
-
-  // handle changes to sheet offsets by only updating columns/rows impacted by resize
-  updateOffsets(sheetIds: SheetId[]) {
-    sheetIds.forEach((sheetId) => {
-      const sheet = this.getById(sheetId.id);
-      if (!sheet) throw new Error('Expected sheet to be defined in updateOffsets');
-      sheet.updateSheetOffsets();
-    });
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
   }
 
   getMultiplayerSelection(): string {

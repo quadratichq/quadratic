@@ -5,6 +5,7 @@ import { core } from './core';
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     sendTransaction: (transactionId: string, operations: string) => void;
+    requestTransactions: (sequenceNum: number) => void;
   };
 
 class CoreMultiplayer {
@@ -34,6 +35,10 @@ class CoreMultiplayer {
         core.receiveSequenceNum(e.data.sequenceNum);
         break;
 
+      case 'multiplayerCoreReceiveTransactions':
+        core.receiveTransactions(e.data.transactions);
+        break;
+
       default:
         console.warn('[coreMultiplayer] Unhandled message type', e.data);
     }
@@ -46,8 +51,16 @@ class CoreMultiplayer {
       transaction_id: transactionId,
     });
   };
+
+  requestTransactions = (sequenceNum: number) => {
+    this.send({
+      type: 'coreMultiplayerRequestTransactions',
+      sequenceNum,
+    });
+  };
 }
 
 export const coreMultiplayer = new CoreMultiplayer();
 
 self.sendTransaction = coreMultiplayer.sendTransaction;
+self.requestTransactions = coreMultiplayer.requestTransactions;

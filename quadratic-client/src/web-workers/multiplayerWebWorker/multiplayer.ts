@@ -360,16 +360,6 @@ export class Multiplayer {
     window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: this.getUsers() }));
     pixiApp.multiplayerCursor.dirty = true;
   }
-
-  // todo: probably not needed
-  sendTransaction(transactionId: string, operations: string) {
-    console.log('todo: multiplayer.sendTransaction');
-  }
-
-  // todo: probably not needed
-  sendGetTransactions(id: bigint) {
-    console.log('todo: multiplayer.sendGetTransactions');
-  }
 }
 
 export const multiplayer = new Multiplayer();

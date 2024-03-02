@@ -402,6 +402,12 @@ export interface CoreClientSetCursor {
   cursor: string;
 }
 
+export interface CoreClientSheetOffsets {
+  type: 'coreClientSheetOffsets';
+  sheetId: string;
+  offsets: string;
+}
+
 //#endregion
 
 //#region Undo/Redo
@@ -469,4 +475,5 @@ export type CoreClientMessage =
   | CoreClientSheetFills
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
-  | CoreClientSetCursor;
+  | CoreClientSetCursor
+  | CoreClientSheetOffsets;

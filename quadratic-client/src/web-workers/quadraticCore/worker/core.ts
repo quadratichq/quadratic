@@ -15,10 +15,7 @@ import {
   JsRenderFill,
 } from '@/quadratic-core-types';
 import initCore, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
-import {
-  MultiplayerCoreReceiveTransaction,
-  MultiplayerCoreReceiveTransactions,
-} from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import { MultiplayerCoreReceiveTransaction } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import { ClientCoreLoad, ClientCoreSummarizeSelection } from '../coreClientMessages';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
@@ -139,9 +136,9 @@ class Core {
     this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
   }
 
-  receiveTransactions(message: MultiplayerCoreReceiveTransactions) {
+  receiveTransactions(transactions: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.receiveMultiplayerTransactions(message.transactions.transactions);
+    this.gridController.receiveMultiplayerTransactions(transactions);
     // if (await offline.unsentTransactionsCount()) {
     //   this.state = 'syncing';
     // } else {

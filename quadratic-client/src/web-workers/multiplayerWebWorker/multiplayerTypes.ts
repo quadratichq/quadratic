@@ -99,7 +99,7 @@ export interface SendGetTransactions {
   type: 'GetTransactions';
   session_id: string;
   file_id: string;
-  min_sequence_num: bigint;
+  min_sequence_num: number;
 }
 
 export interface ReceiveTransactions {
@@ -137,4 +137,4 @@ export type ReceiveMessages =
   | ReceiveError
   | ReceiveCurrentTransaction;
 
-export type MultiplayerServerMessage = SendTransaction | SendEnterRoom;
+export type MultiplayerServerMessage = SendTransaction | SendEnterRoom | SendGetTransactions;

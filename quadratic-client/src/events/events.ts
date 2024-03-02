@@ -36,6 +36,11 @@ export interface EventTypes {
   setCursor: {
     cursor: string;
   };
+
+  sheetOffsets: {
+    sheetId: string;
+    offsets: string;
+  };
 }
 
 export const events = new EventEmitter<EventTypes>();

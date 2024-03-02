@@ -28,6 +28,10 @@ class MultiplayerCore {
         multiplayerServer.sendTransaction(e.data);
         break;
 
+      case 'coreMultiplayerRequestTransactions':
+        multiplayerServer.requestTransactions(e.data.sequenceNum);
+        break;
+
       default:
         console.warn('[multiplayerCore] Unhandled message type', e.data);
     }
@@ -44,6 +48,13 @@ class MultiplayerCore {
     this.send({
       type: 'multiplayerCoreReceiveCurrentTransaction',
       sequenceNum,
+    });
+  }
+
+  receiveTransactions(transactions: string) {
+    this.send({
+      type: 'multiplayerCoreReceiveTransactions',
+      transactions,
     });
   }
 }

@@ -71,8 +71,10 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSetCursor') {
       events.emit('setCursor', e.data.cursor);
       return;
+    } else if (e.data.type === 'coreClientSheetOffsets') {
+      events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
+      return;
     }
-
     if (e.data.id !== undefined) {
       // handle responses from requests to quadratic-core
       if (this.waitingForResponse[e.data.id]) {

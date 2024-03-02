@@ -1,4 +1,4 @@
-import { ReceiveTransaction, ReceiveTransactions } from './multiplayerTypes';
+import { ReceiveTransaction } from './multiplayerTypes';
 
 export interface MultiplayerCoreSequenceNum {
   type: 'multiplayerCoreSequenceNum';
@@ -13,7 +13,7 @@ export interface CoreMultiplayerTransaction {
 
 export interface MultiplayerCoreReceiveTransactions {
   type: 'multiplayerCoreReceiveTransactions';
-  transactions: ReceiveTransactions;
+  transactions: string;
 }
 
 export interface MultiplayerCoreReceiveTransaction {
@@ -26,10 +26,15 @@ export interface MultiplayerCoreReceiveCurrentTransaction {
   sequenceNum: number;
 }
 
+export interface CoreMultiplayerRequestTransactions {
+  type: 'coreMultiplayerRequestTransactions';
+  sequenceNum: number;
+}
+
 export type MultiplayerCoreMessage =
   | MultiplayerCoreSequenceNum
   | MultiplayerCoreReceiveTransactions
   | MultiplayerCoreReceiveTransaction
   | MultiplayerCoreReceiveCurrentTransaction;
 
-export type CoreMultiplayerMessage = CoreMultiplayerTransaction;
+export type CoreMultiplayerMessage = CoreMultiplayerTransaction | CoreMultiplayerRequestTransactions;

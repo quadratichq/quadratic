@@ -26,6 +26,9 @@ declare var self: WorkerGlobalScope &
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
+    requestTransactions: (sequenceNum: number) => void;
+    sendSheetOffsetsClient: (sheetId: string, offsets: string) => void;
+    sendSheetOffsetsRender: (sheetId: string, offsets: string) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -89,15 +92,16 @@ export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
 };
 
 export const jsOffsetsModified = (sheetId: string, offsets: string) => {
-  console.log('TODO: jsOffsetsModified', sheetId, offsets);
+  self.sendSheetOffsetsClient(sheetId, offsets);
+  self.sendSheetOffsetsRender(sheetId, offsets);
 };
 
 export const jsUpdateHtml = (sheetId: string, x: number, y: number, html: string) => {
   console.log('TODO: jsUpdateHtml', sheetId, x, y, html);
 };
 
-export const jsRequestTransactions = (sequenceNum: number) => {
-  console.log('TODO: jsRequestTransactions', sequenceNum);
+export const jsRequestTransactions = (sequenceNum: bigint) => {
+  self.requestTransactions(Number(sequenceNum));
 };
 
 export const jsSetCursor = (cursor: string) => {
