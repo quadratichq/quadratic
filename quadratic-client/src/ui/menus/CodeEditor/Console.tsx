@@ -14,7 +14,7 @@ interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
   editorMode: EditorInteractionState['mode'];
   editorContent: string | undefined;
-  evaluationResult?: any;
+  evaluationResult?: string | null | undefined;
   spillError?: Coordinate[];
 }
 
