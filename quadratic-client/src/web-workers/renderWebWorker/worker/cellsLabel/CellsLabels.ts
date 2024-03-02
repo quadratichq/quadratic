@@ -389,4 +389,9 @@ export class CellsLabels extends Container {
     }
     cellsHash.dirty = renderCells;
   }
+
+  setOffsets(offset: string) {
+    this.sheetOffsets.free();
+    this.sheetOffsets = SheetOffsetsWasm.load(offset);
+  }
 }

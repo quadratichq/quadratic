@@ -16,6 +16,7 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoRender: (sheetInfo: SheetInfo[]) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
+    sendSheetOffsetsRender: (sheetId: string, offsets: string) => void;
   };
 
 class CoreRender {
@@ -68,6 +69,10 @@ class CoreRender {
   sendDeleteSheet = (sheetId: string) => {
     this.send({ type: 'coreRenderDeleteSheet', sheetId });
   };
+
+  sendSheetOffsets = (sheetId: string, offsets: string) => {
+    this.send({ type: 'coreRenderSheetOffsets', sheetId, offsets });
+  }
 }
 
 export const coreRender = new CoreRender();
@@ -76,3 +81,4 @@ self.sendCompleteRenderCells = coreRender.sendCompleteRenderCells;
 self.sendSheetInfoRender = coreRender.sendSheetInfoRender;
 self.sendAddSheetRender = coreRender.sendAddSheet;
 self.sendDeleteSheetRender = coreRender.sendDeleteSheet;
+self.sendSheetOffsetsRender = coreRender.sendSheetOffsets;

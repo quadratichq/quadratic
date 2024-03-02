@@ -49,6 +49,10 @@ class RenderCore {
         renderText.deleteSheet(e.data.sheetId);
         break;
 
+      case 'coreRenderSheetOffsets':
+        renderText.sheetOffsets(e.data.sheetId, e.data.offsets);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }

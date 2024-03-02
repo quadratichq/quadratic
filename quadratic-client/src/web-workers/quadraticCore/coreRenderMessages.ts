@@ -48,11 +48,18 @@ export interface CoreRenderDeleteSheet {
   sheetId: string;
 }
 
+export interface CoreRenderSheetOffsets {
+  type: 'coreRenderSheetOffsets';
+  sheetId: string;
+  offsets: string;
+}
+
 export type CoreRenderMessage =
   | CoreRenderCells
   | CoreRenderSheetInfo
   | CoreRenderCompleteRenderCells
   | CoreRenderAddSheet
-  | CoreRenderDeleteSheet;
+  | CoreRenderDeleteSheet
+  | CoreRenderSheetOffsets;
 
 export type RenderCoreMessage = RenderCoreRequestRenderCells;

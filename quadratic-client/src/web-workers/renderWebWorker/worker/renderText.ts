@@ -108,6 +108,12 @@ class RenderText {
   deleteSheet(sheetId: string) {
     this.cellsLabels.delete(sheetId);
   }
+
+  sheetOffsets(sheetId: string, offsets: string) {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsets');
+    cellsLabels.setOffsets(offsets);
+  }
 }
 
 export const renderText = new RenderText();
