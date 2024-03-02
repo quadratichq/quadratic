@@ -391,11 +391,16 @@ export class CellsLabels extends Container {
   }
 
   setOffsets(column: number | undefined, row: number | undefined, size: number) {
+    let delta: number | undefined;
     if (column !== undefined) {
+      delta = this.sheetOffsets.getColumnWidth(column) - size;
       this.sheetOffsets.setColumnWidth(column, size);
     } else if (row !== undefined) {
+      delta = this.sheetOffsets.getRowHeight(row) - size;
       this.sheetOffsets.setRowHeight(row, size);
     }
-    this.adjustHeadings({ delta: 0, column, row });
+    if (delta) {
+      this.adjustHeadings({ delta, column, row });
+    }
   }
 }

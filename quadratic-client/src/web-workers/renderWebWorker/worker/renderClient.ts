@@ -47,6 +47,10 @@ class RenderClient {
         if (startUpdate) renderText.ready();
         break;
 
+      case 'clientRenderSheetOffsetsTransient':
+        renderText.sheetOffsets(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
+        break;
+
       default:
         console.warn('[renderClient] Unhandled message type', e.data);
     }

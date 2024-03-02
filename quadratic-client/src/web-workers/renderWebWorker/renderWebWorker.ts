@@ -2,7 +2,13 @@ import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { Rectangle } from 'pixi.js';
 import { prepareBitmapFontInformation } from './renderBitmapFonts';
-import { ClientRenderInit, ClientRenderViewport, RenderClientMessage } from './renderClientMessages';
+import {
+  ClientRenderInit,
+  ClientRenderMessage,
+  ClientRenderSheetOffsetsTransient,
+  ClientRenderViewport,
+  RenderClientMessage,
+} from './renderClientMessages';
 
 class RenderWebWorker {
   private worker: Worker;
@@ -54,6 +60,10 @@ class RenderWebWorker {
     }
   };
 
+  private send(message: ClientRenderMessage) {
+    this.worker.postMessage(message);
+  }
+
   pixiIsReady(sheetId: string, bounds: Rectangle) {
     this.preloadQueue.forEach((message) => this.handleMessage(message));
     this.preloadQueue = [];
@@ -62,7 +72,18 @@ class RenderWebWorker {
 
   updateViewport(sheetId: string, bounds: Rectangle) {
     const message: ClientRenderViewport = { type: 'clientRenderViewport', sheetId, bounds };
-    this.worker.postMessage(message);
+    this.send(message);
+  }
+
+  updateSheetOffsetsTransient(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
+    const message: ClientRenderSheetOffsetsTransient = {
+      type: 'clientRenderSheetOffsetsTransient',
+      sheetId,
+      column,
+      row,
+      delta,
+    };
+    this.send(message);
   }
 }
 

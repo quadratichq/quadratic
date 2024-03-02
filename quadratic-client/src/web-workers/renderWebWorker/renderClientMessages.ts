@@ -47,10 +47,18 @@ export interface RenderClientUnload {
   hashY: number;
 }
 
+export interface ClientRenderSheetOffsetsTransient {
+  type: 'clientRenderSheetOffsetsTransient';
+  sheetId: string;
+  column?: number;
+  row?: number;
+  delta: number;
+}
+
 export type RenderClientMessage =
   | RenderClientLabelMeshEntry
   | RenderClientCellsTextHashClear
   | RenderClientFirstRenderComplete
   | RenderClientUnload;
 
-export type ClientRenderMessage = ClientRenderInit | ClientRenderViewport;
+export type ClientRenderMessage = ClientRenderInit | ClientRenderViewport | ClientRenderSheetOffsetsTransient;

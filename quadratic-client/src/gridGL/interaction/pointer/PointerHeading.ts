@@ -1,4 +1,5 @@
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '../../../constants/gridConstants';
@@ -173,6 +174,10 @@ export class PointerHeading {
         if (size !== this.resizing.width) {
           this.resizing.width = size;
           offsets.resizeColumnTransiently(this.resizing.column, size);
+          const delta = this.resizing.width ? this.resizing.lastSize - this.resizing.width : undefined;
+          if (delta) {
+            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, this.resizing.column, undefined, delta);
+          }
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
@@ -200,6 +205,10 @@ export class PointerHeading {
         if (size !== this.resizing.height) {
           this.resizing.height = size;
           offsets.resizeRowTransiently(this.resizing.row, size);
+          const delta = this.resizing.height ? this.resizing.lastSize - this.resizing.height : undefined;
+          if (delta) {
+            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, undefined, this.resizing.row, delta);
+          }
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
