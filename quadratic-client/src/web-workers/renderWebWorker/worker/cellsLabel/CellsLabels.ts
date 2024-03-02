@@ -390,8 +390,12 @@ export class CellsLabels extends Container {
     cellsHash.dirty = renderCells;
   }
 
-  setOffsets(offset: string) {
-    this.sheetOffsets.free();
-    this.sheetOffsets = SheetOffsetsWasm.load(offset);
+  setOffsets(column: number | undefined, row: number | undefined, size: number) {
+    if (column !== undefined) {
+      this.sheetOffsets.setColumnWidth(column, size);
+    } else if (row !== undefined) {
+      this.sheetOffsets.setRowHeight(row, size);
+    }
+    this.adjustHeadings({ delta: 0, column, row });
   }
 }

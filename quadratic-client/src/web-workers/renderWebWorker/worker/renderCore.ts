@@ -50,7 +50,7 @@ class RenderCore {
         break;
 
       case 'coreRenderSheetOffsets':
-        renderText.sheetOffsets(e.data.sheetId, e.data.offsets);
+        renderText.sheetOffsets(e.data.sheetId, e.data.column, e.data.row, e.data.size);
         break;
 
       default:

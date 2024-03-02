@@ -170,7 +170,11 @@ export class Sheet {
   }
 
   updateSheetOffsets(column: number | undefined, row: number | undefined, size: number) {
-    this.offsets.update(column, row, size);
+    if (column !== undefined) {
+      this.offsets.setColumnWidth(column, size);
+    } else if (row !== undefined) {
+      this.offsets.setRowHeight(row, size);
+    }
   }
 
   //#endregion
