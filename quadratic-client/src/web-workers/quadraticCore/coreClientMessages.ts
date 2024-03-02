@@ -405,7 +405,9 @@ export interface CoreClientSetCursor {
 export interface CoreClientSheetOffsets {
   type: 'coreClientSheetOffsets';
   sheetId: string;
-  offsets: string;
+  column?: number;
+  row?: number;
+  size: number;
 }
 
 //#endregion

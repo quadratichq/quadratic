@@ -39,7 +39,9 @@ export interface EventTypes {
 
   sheetOffsets: {
     sheetId: string;
-    offsets: string;
+    column?: number;
+    row?: number;
+    size: number;
   };
 }
 

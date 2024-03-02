@@ -27,8 +27,18 @@ declare var self: WorkerGlobalScope &
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
     requestTransactions: (sequenceNum: number) => void;
-    sendSheetOffsetsClient: (sheetId: string, offsets: string) => void;
-    sendSheetOffsetsRender: (sheetId: string, offsets: string) => void;
+    sendSheetOffsetsClient: (
+      sheetId: string,
+      column: bigint | undefined,
+      row: bigint | undefined,
+      size: number
+    ) => void;
+    sendSheetOffsetsRender: (
+      sheetId: string,
+      column: bigint | undefined,
+      row: bigint | undefined,
+      size: number
+    ) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -91,9 +101,14 @@ export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
   self.sheetInfoUpdate(sheetInfo);
 };
 
-export const jsOffsetsModified = (sheetId: string, offsets: string) => {
-  self.sendSheetOffsetsClient(sheetId, offsets);
-  self.sendSheetOffsetsRender(sheetId, offsets);
+export const jsOffsetsModified = (
+  sheetId: string,
+  column: bigint | undefined,
+  row: bigint | undefined,
+  size: number
+) => {
+  self.sendSheetOffsetsClient(sheetId, column, row, size);
+  self.sendSheetOffsetsRender(sheetId, column, row, size);
 };
 
 export const jsUpdateHtml = (sheetId: string, x: number, y: number, html: string) => {

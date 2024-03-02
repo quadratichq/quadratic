@@ -47,9 +47,12 @@ impl GridController {
 
             if cfg!(target_family = "wasm") {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let Ok(offsets) = serde_json::to_string(&sheet.offsets.export()) {
-                        crate::wasm_bindings::js::jsOffsetsModified(sheet.id.to_string(), offsets);
-                    }
+                    crate::wasm_bindings::js::jsOffsetsModified(
+                        sheet.id.to_string(),
+                        Some(column),
+                        None,
+                        new_size,
+                    );
                 }
             }
         }
@@ -92,9 +95,12 @@ impl GridController {
 
             if cfg!(target_family = "wasm") {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let Ok(offsets) = serde_json::to_string(&sheet.offsets.export()) {
-                        crate::wasm_bindings::js::jsOffsetsModified(sheet.id.to_string(), offsets);
-                    }
+                    crate::wasm_bindings::js::jsOffsetsModified(
+                        sheet.id.to_string(),
+                        None,
+                        Some(row),
+                        new_size,
+                    );
                 }
             }
         }

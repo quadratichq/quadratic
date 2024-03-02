@@ -75,12 +75,12 @@ class Sheets {
     this.updateSheetBar();
   };
 
-  private updateOffsets = (sheetId: string, offsets: string) => {
+  private updateOffsets = (sheetId: string, column: number | undefined, row: number | undefined, size: number) => {
     const sheet = this.getById(sheetId);
 
     // it's possible we deleted the sheet locally before receiving the message
     if (!sheet) return;
-    sheet.updateSheetOffsets(offsets);
+    sheet.updateSheetOffsets(column, row, size);
     pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
     pixiApp.cursor.dirty = true;

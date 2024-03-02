@@ -72,7 +72,7 @@ class QuadraticCore {
       events.emit('setCursor', e.data.cursor);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
-      events.emit('sheetOffsets', e.data.sheetId, e.data.offsets);
+      events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size);
       return;
     }
     if (e.data.id !== undefined) {

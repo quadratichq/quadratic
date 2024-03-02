@@ -28,7 +28,12 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSheetOffsetsClient: (sheetId: string, offsets: string) => void;
+    sendSheetOffsetsClient: (
+      sheetId: string,
+      column: bigint | undefined,
+      row: bigint | undefined,
+      size: number
+    ) => void;
   };
 
 class CoreClient {
@@ -275,9 +280,15 @@ class CoreClient {
     this.send({ type: 'coreClientSetCursor', cursor });
   };
 
-  sendSheetOffsets = (sheetId: string, offsets: string) => {
-    this.send({ type: 'coreClientSheetOffsets', sheetId, offsets });
-  }
+  sendSheetOffsets = (sheetId: string, column: bigint | undefined, row: bigint | undefined, size: number) => {
+    this.send({
+      type: 'coreClientSheetOffsets',
+      sheetId,
+      column: column === undefined ? undefined : Number(column),
+      row: row === undefined ? undefined : Number(row),
+      size,
+    });
+  };
 }
 
 export const coreClient = new CoreClient();

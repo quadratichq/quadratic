@@ -51,7 +51,9 @@ export interface CoreRenderDeleteSheet {
 export interface CoreRenderSheetOffsets {
   type: 'coreRenderSheetOffsets';
   sheetId: string;
-  offsets: string;
+  column?: number;
+  row?: number;
+  size: number;
 }
 
 export type CoreRenderMessage =

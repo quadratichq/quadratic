@@ -169,9 +169,8 @@ export class Sheet {
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
   }
 
-  updateSheetOffsets(offsets: string) {
-    this.offsets.free();
-    this.offsets = SheetOffsetsWasm.load(offsets);
+  updateSheetOffsets(column: number | undefined, row: number | undefined, size: number) {
+    this.offsets.update(column, row, size);
   }
 
   //#endregion
