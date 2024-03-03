@@ -13,7 +13,8 @@
     "quadratic-shared",
     "quadratic-client",
     "quadratic-files",
-    "quadratic-multiplayer"
+    "quadratic-multiplayer",
+    "quadratic-grid-offsets"
   ],
   "type": "module",
   "scripts": {

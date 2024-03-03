@@ -13,6 +13,7 @@ export class Control {
     multiplayer;
     files;
     python;
+    gridOffsets;
     db;
     npm;
     rust;
@@ -24,6 +25,7 @@ export class Control {
         multiplayer: false,
         files: false,
         python: false,
+        gridOffsets: false,
         types: false,
         db: false,
         npm: false,
@@ -76,6 +78,7 @@ export class Control {
             this.kill("multiplayer"),
             this.kill("files"),
             this.kill("python"),
+            this.kill("gridOffsets"),
         ]);
         destroyScreen();
         process.exit(0);
@@ -368,12 +371,12 @@ export class Control {
         await this.kill("python");
         this.ui.print("python");
         this.signals.python = new AbortController();
-        this.python = spawn("npm", [
-            "run",
-            this.cli.options.python ? "watch:python" : "build:python",
-        ], { signal: this.signals.python.signal });
+        this.python = spawn("npm", ["run", this.cli.options.python ? "watch:python" : "build:python"], { signal: this.signals.python.signal });
         this.ui.printOutput("python", (data) => this.handleResponse("python", data, {
-            success: ["Built quadratic_py", "clean exit - waiting for changes before restart"],
+            success: [
+                "Built quadratic_py",
+                "clean exit - waiting for changes before restart",
+            ],
             error: "Python error!",
             start: "quadratic-kernels/python-wasm/",
         }));
@@ -381,6 +384,24 @@ export class Control {
     async restartPython() {
         this.cli.options.python = !this.cli.options.python;
         this.runPython();
+    }
+    async runGridOffsets() {
+        if (this.quitting)
+            return;
+        this.status.gridOffsets = false;
+        await this.kill("gridOffsets");
+        this.ui.print("gridOffsets");
+        this.signals.gridOffsets = new AbortController();
+        this.gridOffsets = spawn("npm", [
+            "run",
+            this.cli.options.gridOffsets ? "dev" : "build",
+            "--workspace=quadratic-grid-offsets",
+        ], { signal: this.signals.gridOffsets.signal });
+        this.ui.printOutput("gridOffsets", (data) => this.handleResponse("gridOffsets", data, {
+            success: "Your wasm pkg is ready to publish",
+            error: "error[",
+            start: "[Running ",
+        }));
     }
     async runDb() {
         if (this.quitting)
@@ -476,5 +497,6 @@ export class Control {
         this.runRust();
         this.runDb();
         this.runPython();
+        this.runGridOffsets();
     }
 }

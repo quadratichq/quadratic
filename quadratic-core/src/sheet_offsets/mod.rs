@@ -174,4 +174,12 @@ impl SheetOffsets {
             },
         }
     }
+
+    pub fn total_column_width(&self, start: i64, end: i64) -> f64 {
+        self.column_widths.size(start as i64, end as i64)
+    }
+
+    pub fn total_row_height(&self, start: i64, end: i64) -> f64 {
+        self.row_heights.size(start as i64, end as i64)
+    }
 }

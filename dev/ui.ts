@@ -179,6 +179,7 @@ export class UI {
     this.statusItem("multiplayer");
     this.statusItem("files");
     this.statusItem("types");
+    this.statusItem("gridOffsets");
     this.statusItem("python");
     if (this.help === "cli") {
       this.write(helpCLI);

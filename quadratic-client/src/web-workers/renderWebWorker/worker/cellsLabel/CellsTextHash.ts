@@ -64,9 +64,9 @@ export class CellsTextHash {
     this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
     this.viewBounds = new Bounds();
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    const start = this.cellsLabels.getCellOffsets(this.AABB.left, this.AABB.top);
-    const end = this.cellsLabels.getCellOffsets(this.AABB.right, this.AABB.bottom);
-    this.rawViewRectangle = new Rectangle(start.left, start.top, end.right - start.left, end.bottom - start.top);
+    const width = this.cellsLabels.sheetOffsets.getRangeColumnWidth(this.AABB.left, this.AABB.right);
+    const height = this.cellsLabels.sheetOffsets.getRangeRowHeight(this.AABB.top, this.AABB.bottom);
+    this.rawViewRectangle = new Rectangle(0, 0, width, height);
     this.viewRectangle = this.rawViewRectangle.clone();
     this.hashX = hashX;
     this.hashY = hashY;

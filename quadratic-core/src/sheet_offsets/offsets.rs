@@ -120,6 +120,11 @@ impl Offsets {
         }
     }
 
+    /// Returns the total size of a range of columns/rows.
+    pub fn size(&self, start: i64, end: i64) -> f64 {
+        self.iter_offsets(start..end).last().unwrap_or(0.0)
+    }
+
     /// Iterates over the sizes of all columns/rows.
     pub fn iter_sizes(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.sizes.iter().map(|(&k, &v)| (k, v))
