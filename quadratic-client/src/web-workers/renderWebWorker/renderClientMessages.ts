@@ -28,6 +28,8 @@ export interface RenderClientCellsTextHashClear {
   hashX: number;
   hashY: number;
   bounds?: { x: number; y: number; width: number; height: number };
+  x: number;
+  y: number;
 }
 
 export interface ClientRenderViewport {

@@ -8,7 +8,7 @@
  */
 
 import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
-import { BLEND_MODES, BitmapFont, Loader, Mesh, MeshGeometry, MeshMaterial, Program, Renderer, Texture } from 'pixi.js';
+import { BLEND_MODES, BitmapFont, Loader, Mesh, MeshGeometry, MeshMaterial, Program, Texture } from 'pixi.js';
 import * as shaderNoTint from './cellLabelShader';
 import * as shaderTint from './cellLabelShaderTint';
 
@@ -51,12 +51,11 @@ export class LabelMeshEntry extends Mesh {
     this.blendMode = BLEND_MODES.NORMAL_NPM;
   }
 
-  renderSpecial(renderer: Renderer, scale: number) {
+  setUniforms(scale: number) {
     // Inject the shader code with the correct value
     const { distanceFieldRange, size } = BitmapFont.available[this.fontName];
     const fontScale = this.fontSize / size;
     const ufWidth = distanceFieldRange * fontScale * scale;
     this.shader.uniforms.uFWidth = ufWidth;
-    this.render(renderer);
   }
 }

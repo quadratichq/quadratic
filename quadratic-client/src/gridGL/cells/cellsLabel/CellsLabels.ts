@@ -49,7 +49,7 @@ export class CellsLabels extends Container {
     const cellsTextHash = this.cellsTextHash.get(key);
     if (cellsTextHash) {
       if (message.bounds) {
-        cellsTextHash.clearMeshEntries(message.bounds);
+        cellsTextHash.clearMeshEntries(message.bounds, message.x, message.y);
       } else {
         this.cellsTextHashes.removeChild(cellsTextHash);
         cellsTextHash.destroy();
@@ -58,7 +58,7 @@ export class CellsLabels extends Container {
     } else {
       if (message.bounds) {
         const cellsTextHash = this.cellsTextHashes.addChild(
-          new CellsTextHash(this, message.hashX, message.hashY, message.bounds)
+          new CellsTextHash(this, message.hashX, message.hashY, message.bounds, message.x, message.y)
         );
         this.cellsTextHash.set(key, cellsTextHash);
       }

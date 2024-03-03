@@ -61,13 +61,15 @@ class RenderClient {
   }
 
   // sends a message to the main thread to clear the cellsTextHash for the hashX, hashY
-  sendCellsTextHashClear(sheetId: string, hashX: number, hashY: number, viewBounds: Bounds) {
+  sendCellsTextHashClear(sheetId: string, hashX: number, hashY: number, viewBounds: Bounds, x: number, y: number) {
     const message: RenderClientCellsTextHashClear = {
       type: 'renderClientCellsTextHashClear',
       sheetId,
       hashX,
       hashY,
       bounds: viewBounds.toRectangle(),
+      x,
+      y,
     };
     this.send(message);
   }

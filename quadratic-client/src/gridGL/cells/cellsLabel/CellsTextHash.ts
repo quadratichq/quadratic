@@ -36,16 +36,19 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
 
   constructor(
     cellsLabels: CellsLabels,
+    hashX: number,
+    hashY: number,
+    bounds: { x: number; y: number; width: number; height: number },
     x: number,
-    y: number,
-    bounds: { x: number; y: number; width: number; height: number }
+    y: number
   ) {
     super();
     this.cellsLabels = cellsLabels;
-    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    this.visibleRectangle = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
-    this.hashX = x;
-    this.hashY = y;
+    this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
+    this.visibleRectangle = new Rectangle(bounds.x + x, bounds.y + y, bounds.width, bounds.height);
+    this.hashX = hashX;
+    this.hashY = hashY;
+    this.position.set(x, y);
   }
 
   clear() {
@@ -56,9 +59,11 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.addChild(new LabelMeshEntry(message));
   }
 
-  clearMeshEntries(bounds: { x: number; y: number; width: number; height: number }) {
+  clearMeshEntries(bounds: { x: number; y: number; width: number; height: number }, x: number, y: number) {
     this.removeChildren();
     this.visibleRectangle = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+    this.position.set(x, y);
+    console.log(x, y);
   }
 
   show(): void {
@@ -78,7 +83,8 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
       const worldScale = (Math.abs(dx) + Math.abs(dy)) / 2;
       const resolution = renderer.resolution;
       const scale = worldScale * resolution;
-      this.children.forEach((child) => child.renderSpecial(renderer, scale));
+      this.children.forEach((child) => child.setUniforms(scale));
+      super.render(renderer);
     }
   }
 

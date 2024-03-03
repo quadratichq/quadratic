@@ -87,6 +87,11 @@ export class CellsTextHash {
 
   private createLabel(cell: JsRenderCell): CellLabel {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
+
+    // adjust each label so the origin is 0,0 relative to the textHash
+    rectangle.x -= this.rawViewRectangle.x;
+    rectangle.y -= this.rawViewRectangle.y;
+
     const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
     this.labels.set(this.getKey(cell), cellLabel);
     return cellLabel;
@@ -219,7 +224,14 @@ export class CellsTextHash {
     }
 
     // finalizes webGL buffers
-    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewBounds);
+    renderClient.sendCellsTextHashClear(
+      this.cellsLabels.sheetId,
+      this.hashX,
+      this.hashY,
+      this.viewBounds,
+      this.rawViewRectangle.x,
+      this.rawViewRectangle.y
+    );
     this.labelMeshes.finalize();
     this.loaded = true;
   }
