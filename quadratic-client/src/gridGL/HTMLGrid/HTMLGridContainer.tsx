@@ -2,6 +2,7 @@ import { MultiplayerCursors } from '@/gridGL/HTMLGrid/multiplayerCursor/Mulitpla
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellInput } from './CellInput';
+import { CodeHint } from './CodeHint';
 import { CodeRunning } from './codeRunning/CodeRunning';
 import { HoverCell } from './hoverCell/HoverCell';
 import { HtmlCells } from './htmlCells/HtmlCells';
@@ -91,6 +92,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
         >
           <div style={{ position: 'relative' }}>
             {showInput && <CellInput />}
+            {!showInput && <CodeHint />}
             <MultiplayerCellEdits />
             <HtmlCells />
             <CodeRunning />

@@ -66,7 +66,7 @@ export const renameFileAction = {
 };
 
 export const duplicateFileWithUserAsOwnerAction = {
-  label: 'Duplicate to my files',
+  label: 'Duplicate in my files',
   isAvailable: isLoggedIn,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
     const data = { action: 'duplicate', redirect: true, withCurrentOwner: false } as Action['request.duplicate'];
