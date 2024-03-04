@@ -1,85 +1,158 @@
-import { getFilePermissions } from './permissions';
+import { firstRoleIsHigherThanSecond, getFilePermissions, getTeamPermissions } from './permissions';
+
+describe('firstRoleIsHigherThanSecond', () => {
+  // prettier-ignore
+  const tests: [
+    Parameters<typeof firstRoleIsHigherThanSecond>[0],
+    Parameters<typeof firstRoleIsHigherThanSecond>[1],
+    boolean
+  ][] = [
+    [undefined, undefined, false],
+    ['OWNER',   undefined, true],
+    ['EDITOR',  undefined, true],
+    ['VIEWER',  undefined, true],
+    ['OWNER',   'OWNER',   false],
+    ['EDITOR',  'OWNER',   false],
+    ['VIEWER',  'OWNER',   false],
+    ['OWNER',   'EDITOR',  true],
+    ['EDITOR',  'EDITOR',  false],
+    ['VIEWER',  'EDITOR',  false],
+    ['OWNER',   'VIEWER',  true],
+    ['EDITOR',  'VIEWER',  true],
+    ['VIEWER',  'VIEWER',  false],
+  ];
+  tests.forEach(([first, second, expected]) => {
+    it(`should return ${expected} for: ${first} > ${second}`, () => {
+      expect(firstRoleIsHigherThanSecond(first, second)).toBe(expected);
+    });
+  });
+});
 
 describe('getTeamPermissions', () => {
-  it.todo('to come...');
+  it('returns corrent permissions for an OWNER', async () => {
+    const result = getTeamPermissions('OWNER');
+    expect(result).toContain('TEAM_VIEW');
+    expect(result).toContain('TEAM_EDIT');
+    expect(result).toContain('TEAM_DELETE');
+    expect(result).toContain('TEAM_BILLING_EDIT');
+  });
+  it('returns corrent permissions for an EDITOR', async () => {
+    const result = getTeamPermissions('EDITOR');
+    expect(result).toContain('TEAM_VIEW');
+    expect(result).toContain('TEAM_EDIT');
+    expect(result).not.toContain('TEAM_DELETE');
+    expect(result).not.toContain('TEAM_BILLING_EDIT');
+  });
+  it('returns corrent permissions for a VIEWER', async () => {
+    const result = getTeamPermissions('VIEWER');
+    expect(result).toContain('TEAM_VIEW');
+    expect(result).not.toContain('TEAM_EDIT');
+    expect(result).not.toContain('TEAM_DELETE');
+    expect(result).not.toContain('TEAM_BILLING_EDIT');
+  });
+  it('returns no permissions for an invalid input', async () => {
+    const result = getTeamPermissions('' as any);
+    expect(result).toEqual([]);
+  });
 });
 
 describe('getFilePermissions', () => {
-  // ved: v = view, e = edit, d = delete
+  // vemd: V = View, E = Edit, M = Move, D = Delete
   // prettier-ignore
-  const tests: [Parameters<typeof getFilePermissions>[0], ('ved' | 've-' | 'v--' | '---')][] = [
-    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],    
-    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],
-    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],
-
-    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
-
-    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 'v--'],
-
-
-    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, '---'],
-    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, '---'],
-    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, '---'],
-
-    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'v--'],
-
-    [{ isLoggedIn: false, fileRole: undefined, publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: false, fileRole: 'VIEWER',  publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: false, fileRole: 'EDITOR',  publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'v--'],
-
-
-
-    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, '---'],    
-    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'NOT_SHARED', isFileOwner: false, teamRole: undefined}, 've-'],
-
-    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 'v--'],
-    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'READONLY',   isFileOwner: false, teamRole: undefined}, 've-'],
-
-    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 've-'],
-    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 've-'],
-    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'EDIT',       isFileOwner: false, teamRole: undefined}, 've-'],
-
+  const tests: [Parameters<typeof getFilePermissions>[0], string][] = [
     
-    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, 'ved'],
-    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, 'ved'],
-    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'NOT_SHARED', isFileOwner: true,  teamRole: undefined}, 'ved'],
+    // Logged out user
+    // ---------------
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: undefined }, ''],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: undefined }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: undefined }, 'V'],
 
-    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'ved'],
-    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'ved'],
-    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'READONLY',   isFileOwner: true,  teamRole: undefined}, 'ved'],
+    // Logged in user
+    // --------------
 
-    [{ isLoggedIn: true,  fileRole: undefined, publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'ved'],
-    [{ isLoggedIn: true,  fileRole: 'VIEWER',  publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'ved'],
-    [{ isLoggedIn: true,  fileRole: 'EDITOR',  publicLinkAccess: 'EDIT',       isFileOwner: true,  teamRole: undefined}, 'ved'],
+    // File owned by user making the request
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'me' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'me' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'me' } }, 'VEMD'],
+
+    // File owned by another user
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'another-user', fileRole: undefined } }, ''],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'another-user', fileRole: undefined } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'another-user', fileRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'another-user', fileRole: 'VIEWER'  } }, 'V'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'another-user', fileRole: 'VIEWER'  } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'another-user', fileRole: 'VIEWER'  } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'another-user', fileRole: 'EDITOR'  } }, 'VE'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'another-user', fileRole: 'EDITOR'  } }, 'VE'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'another-user', fileRole: 'EDITOR'  } }, 'VE'],
+
+    // File owned by a team
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'OWNER' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'OWNER' } }, 'VEMD'],
+
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'EDITOR' } }, 'VEMD'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'EDITOR' } }, 'VEMD'],
+
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'VIEWER' } }, 'V'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'VIEWER' } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: 'VIEWER' } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'VIEWER' } }, 'VE'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'VIEWER' } }, 'VE'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: 'VIEWER' } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'VIEWER' } }, 'V'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'VIEWER' } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: 'VIEWER' } }, 'VE'],
+
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: undefined } }, ''],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: undefined } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: undefined, teamRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'EDITOR',  teamRole: undefined } }, 'VE'],
+    [{ publicLinkAccess: 'NOT_SHARED',  userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: undefined } }, 'V'],
+    [{ publicLinkAccess: 'READONLY',    userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: undefined } }, 'V'],
+    [{ publicLinkAccess: 'EDIT',        userFileRelationship: { owner: 'team', fileRole: 'VIEWER',  teamRole: undefined } }, 'VE'],
   ];
 
   tests.forEach(([input, access]) => {
     it(`should allow "${access}" access for ${JSON.stringify(input)}`, () => {
       const res = getFilePermissions(input);
-      if (access === 'ved') {
+      if (access.includes('V')) {
         expect(res).toContain('FILE_VIEW');
-        expect(res).toContain('FILE_EDIT');
-        expect(res).toContain('FILE_DELETE');
-      } else if (access === 've-') {
-        expect(res).toContain('FILE_VIEW');
-        expect(res).toContain('FILE_EDIT');
-        expect(res).not.toContain('FILE_DELETE');
-      } else if (access === 'v--') {
-        expect(res).toContain('FILE_VIEW');
-        expect(res).not.toContain('FILE_EDIT');
-        expect(res).not.toContain('FILE_DELETE');
-      } else if (access === '---') {
-        expect(res.length).toBe(0);
       } else {
-        throw new Error(`Invalid access type: ${access}`);
+        expect(res).not.toContain('FILE_VIEW');
+      }
+      if (access.includes('E')) {
+        expect(res).toContain('FILE_EDIT');
+      } else {
+        expect(res).not.toContain('FILE_EDIT');
+      }
+      if (access.includes('M')) {
+        expect(res).toContain('FILE_MOVE');
+      } else {
+        expect(res).not.toContain('FILE_MOVE');
+      }
+      if (access.includes('D')) {
+        expect(res).toContain('FILE_DELETE');
+      } else {
+        expect(res).not.toContain('FILE_DELETE');
+      }
+      if (access.length === 0) {
+        expect(res.length).toBe(0);
       }
     });
   });

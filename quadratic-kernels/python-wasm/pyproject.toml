@@ -16,7 +16,6 @@ pytz = ">=2022.1"
 requests = ">=2.31.0"
 six = ">=1.16.0"
 
-
 [tool.poetry.group.test.dependencies]
 pytest = ">=7.4.4"
 

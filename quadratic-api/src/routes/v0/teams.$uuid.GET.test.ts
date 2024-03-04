@@ -29,6 +29,7 @@ beforeEach(async () => {
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
+      stripeCustomerId: '1',
       UserTeamRole: {
         create: [
           {
@@ -114,35 +115,24 @@ describe('GET /v0/teams/:uuid', () => {
     it('responds with a team', async () => {
       await request(app)
         .get(`/v0/teams/00000000-0000-4000-8000-000000000001`)
-        .set('Accept', 'application/json')
         .set('Authorization', `Bearer ValidToken team_1_owner`)
-        .expect('Content-Type', /json/)
         .expect(200)
         .expect((res) => {
           expect(res.body).toHaveProperty('team');
           expect(res.body.team.uuid).toBe('00000000-0000-4000-8000-000000000001');
           expect(res.body.team.name).toBe('Test Team 1');
 
-          expect(res.body.team.users[0].email).toBe('team_1_owner@example.com');
-          expect(res.body.team.users[0].role).toBe('OWNER');
-          expect(res.body.team.users[0].name).toBe('Test User 1');
+          expect(res.body.users[0].email).toBe('team_1_owner@example.com');
+          expect(res.body.users[0].role).toBe('OWNER');
+          expect(res.body.users[0].name).toBe('Test User 1');
 
-          expect(res.body.team.users[1].email).toBe('team_1_editor@example.com');
-          expect(res.body.team.users[1].role).toBe('EDITOR');
-          expect(res.body.team.users[1].name).toBe('Test User 2');
+          expect(res.body.users[1].email).toBe('team_1_editor@example.com');
+          expect(res.body.users[1].role).toBe('EDITOR');
+          expect(res.body.users[1].name).toBe('Test User 2');
 
-          expect(res.body.team.users[2].email).toBe('team_1_viewer@example.com');
-          expect(res.body.team.users[2].role).toBe('VIEWER');
-          expect(res.body.team.users[2].name).toBe('Test User 3');
-
-          // TODO files
-          // expect(res.body.team).toHaveProperty('files');
-          expect(res.body).toHaveProperty('user');
-          expect(res.body.user).toHaveProperty('id');
-          expect(res.body.user.role).toBe('OWNER');
-          expect(res.body.user.permissions).toEqual(
-            expect.arrayContaining(['TEAM_EDIT', 'TEAM_VIEW', 'TEAM_DELETE', 'TEAM_BILLING_EDIT'])
-          );
+          expect(res.body.users[2].email).toBe('team_1_viewer@example.com');
+          expect(res.body.users[2].role).toBe('VIEWER');
+          expect(res.body.users[2].name).toBe('Test User 3');
         });
     });
   });

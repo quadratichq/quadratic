@@ -34,6 +34,20 @@ async function handler(req: RequestWithUser, res: Response) {
     );
   }
 
+  if (id === 'inviteToTeam') {
+    return res.status(200).json(
+      templates.inviteToTeam({
+        teamName: '{{teamName}}',
+        // @ts-expect-error
+        teamRole: '{{teamRole}}',
+        teamUuid: '{{teamUuid}}',
+        origin: '{{origin}}',
+        senderName: '{{senderName}}',
+        senderEmail: '{{senderEmail}}',
+      })
+    );
+  }
+
   const keys = Object.keys(templates);
   return res.status(400).json({ error: 'Invalid email template ID. Valid IDs are: ' + keys.join(', ') + '.' });
 }

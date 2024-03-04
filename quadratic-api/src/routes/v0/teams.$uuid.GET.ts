@@ -2,41 +2,39 @@ import { Request, Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { getUsersFromAuth0 } from '../../auth0/profile';
+import { generatePresignedUrl } from '../../aws/s3';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { validateRequestSchema } from '../../middleware/validateRequestSchema';
+import { parseRequest } from '../../middleware/validateRequestSchema';
+import { updateBillingIfNecessary } from '../../stripe/stripe';
 import { RequestWithUser } from '../../types/Request';
+import { getFilePermissions } from '../../utils/permissions';
 
-export default [
-  validateRequestSchema(
-    z.object({
-      params: z.object({
-        uuid: z.string().uuid(),
-      }),
-    })
-  ),
-  validateAccessToken,
-  userMiddleware,
-  handler,
-];
+export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: Request, res: Response) {
+const schema = z.object({
+  params: z.object({
+    uuid: z.string().uuid(),
+  }),
+});
+
+async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET.response']>) {
   const {
     params: { uuid },
-    user: { id: userId },
-  } = req as RequestWithUser;
+  } = parseRequest(req, schema);
   const {
-    team,
-    team: { id: teamId },
-    user: teamUser,
-  } = await getTeam({ uuid, userId });
+    user: { id: userMakingRequestId },
+  } = req as RequestWithUser;
+  const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
-  // Get users in the team
+  await updateBillingIfNecessary(team);
+
+  // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({
     where: {
-      id: teamId,
+      id: team.id,
     },
     include: {
       UserTeamRole: {
@@ -52,43 +50,95 @@ async function handler(req: Request, res: Response) {
           createdDate: 'asc',
         },
       },
+      File: {
+        where: {
+          ownerTeamId: team.id,
+          deleted: false,
+        },
+        include: {
+          UserFileRole: {
+            where: {
+              userId: userMakingRequestId,
+            },
+          },
+        },
+        orderBy: {
+          createdDate: 'asc',
+        },
+      },
     },
   });
 
-  const dbUsers = dbTeam?.UserTeamRole ? dbTeam.UserTeamRole : [];
-  const dbInvites = dbTeam?.TeamInvite ? dbTeam.TeamInvite : [];
+  if (!dbTeam) {
+    return res.status(404).send();
+  }
 
-  // Get auth0 users
+  const dbFiles = dbTeam.File ? dbTeam.File : [];
+  const dbUsers = dbTeam.UserTeamRole ? dbTeam.UserTeamRole : [];
+  const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
+
+  // Get user info from auth0
   const auth0UsersById = await getUsersFromAuth0(dbUsers.map(({ user }) => user));
 
-  // TODO: sort users by createdDate in the team
-  // TODO: invited users, also can we guarantee ordering here?
-  const users = dbUsers.map(({ userId: id, role }) => {
-    const { email, name, picture } = auth0UsersById[id];
-    return {
-      id,
-      email,
-      role,
-      name,
-      picture,
-    };
-  });
+  // Get signed thumbnail URLs
+  await Promise.all(
+    dbFiles.map(async (file) => {
+      if (file.thumbnail) {
+        file.thumbnail = await generatePresignedUrl(file.thumbnail);
+      }
+    })
+  );
 
   const response: ApiTypes['/v0/teams/:uuid.GET.response'] = {
     team: {
-      uuid: team.uuid,
+      id: team.id,
+      uuid,
       name: team.name,
-      ...(team.picture ? { picture: team.picture } : {}),
+    },
+    billing: {
+      status: dbTeam.stripeSubscriptionStatus || undefined,
+      currentPeriodEnd: dbTeam.stripeCurrentPeriodEnd?.toISOString(),
     },
     userMakingRequest: {
-      id: userId,
-      teamRole: teamUser.role,
-      teamPermissions: teamUser.permissions,
+      id: userMakingRequestId,
+      teamRole: userMakingRequest.role,
+      teamPermissions: userMakingRequest.permissions,
     },
-    // TODO we could put this in /sharing and just return the userCount
-    users,
+    // IDEA: (enhancement) we could put this in /sharing and just return the userCount
+    // then require the data for the team share modal to be a seaparte network request
+    users: dbUsers.map(({ userId: id, role }) => {
+      const { email, name, picture } = auth0UsersById[id];
+      return {
+        id,
+        email,
+        role,
+        name,
+        picture,
+      };
+    }),
     invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
-    // files: [],
+    files: dbFiles.map((file) => {
+      return {
+        file: {
+          uuid: file.uuid,
+          name: file.name,
+          createdDate: file.createdDate.toISOString(),
+          updatedDate: file.updatedDate.toISOString(),
+          publicLinkAccess: file.publicLinkAccess,
+          thumbnail: file.thumbnail,
+        },
+        userMakingRequest: {
+          filePermissions: getFilePermissions({
+            publicLinkAccess: file.publicLinkAccess,
+            userFileRelationship: {
+              owner: 'team',
+              teamRole: userMakingRequest.role,
+              fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
+            },
+          }),
+        },
+      };
+    }),
   };
 
   return res.status(200).json(response);
