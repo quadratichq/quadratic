@@ -428,7 +428,7 @@ impl CellValue {
     /// `js_type` is the stringified CelLValue type
     pub fn from_js(
         value: &String,
-        js_type: &String,
+        js_type: &str,
         pos: Pos,
         sheet: &mut Sheet,
     ) -> Result<(CellValue, Vec<Operation>)> {
