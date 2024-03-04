@@ -58,19 +58,21 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   const fileRole =
     file.UserFileRole[0] && file.UserFileRole[0].userId === userId ? file.UserFileRole[0].role : undefined;
 
-  // Determine the user's relationship to the file
   //
   // TODO: probably want to use this as part of the `userMakingRequest` object
   // as it encompasses all _expected_ possibilities of the user's relationship
   // with the file (whereas, for example, `isFileOwner` being true and `teamRole`
   // having a value at the same time is considered an invalid combo in the codebase).
   let userFileRelationship: Parameters<typeof getFilePermissions>[0]['userFileRelationship'] = undefined;
-  if (isFileOwner) {
-    userFileRelationship = { owner: 'me' };
-  } else if (file.ownerUserId) {
-    userFileRelationship = { owner: 'another-user', fileRole };
-  } else if (file.ownerTeamId) {
-    userFileRelationship = { owner: 'team', teamRole, fileRole };
+  // Only define the relationship if they're logged in
+  if (userId !== undefined) {
+    if (isFileOwner) {
+      userFileRelationship = { owner: 'me' };
+    } else if (file.ownerUserId) {
+      userFileRelationship = { owner: 'another-user', fileRole };
+    } else if (file.ownerTeamId) {
+      userFileRelationship = { owner: 'team', teamRole, fileRole };
+    }
   }
 
   const filePermissions = getFilePermissions({
