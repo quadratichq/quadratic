@@ -10,10 +10,14 @@ import { provideCompletionItems, provideHover } from '../../../quadratic-core/qu
 import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
-import { provideCompletionItems as provideCompletionItemsPython, provideHover as provideHoverPython, provideSignatureHelp as provideSignatureHelpPython } from './PythonLanguageModel';
+import {
+  provideCompletionItems as provideCompletionItemsPython,
+  provideHover as provideHoverPython,
+  provideSignatureHelp as provideSignatureHelpPython,
+} from './PythonLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
-import { useEditorDiagnostics } from './useEditorDiagnostics';
+// import { useEditorDiagnostics } from './useEditorDiagnostics';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
@@ -42,7 +46,12 @@ export const CodeEditorBody = (props: Props) => {
   useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, codeEditorReturn);
-  useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
+
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
+
+  // TODO(ddimaria): this looks like a better pattern than the current one for
+  // the language model, consider moving to this
   // useLanguageServer(isValidRef, editorRef, monacoRef, language);
 
   useEffect(() => {
@@ -81,11 +90,13 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.registerSignatureHelpProvider('python', {
         provideSignatureHelp: provideSignatureHelpPython,
         signatureHelpTriggerCharacters: ['(', ','],
-    });
-    monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
+      });
+      monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
 
       // load the document in the python language server
-      pyrightWorker?.openDocument( { textDocument: { text: editorRef.current?.getValue() ?? "", uri, languageId: 'python'}});
+      pyrightWorker?.openDocument({
+        textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
+      });
 
       setDidMount(true);
     },
@@ -101,7 +112,7 @@ export const CodeEditorBody = (props: Props) => {
       );
     }
   }, [closeEditor, didMount]);
-  
+
   useEffect(() => {
     return () => editorRef.current?.dispose();
   }, []);
