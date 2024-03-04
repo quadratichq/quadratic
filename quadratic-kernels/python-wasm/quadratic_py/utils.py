@@ -31,28 +31,34 @@ def to_interval(value: Tuple[pd.Timestamp | date | time | datetime, pd.Timestamp
 
 # Convert from python types to quadratic types
 def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | time | datetime | pd.Period | timedelta | None) -> Tuple[str, str]:
-    if value in (None, ""):
-        return ("", "blank")
-    elif pd.api.types.is_number(value):
-        return (str(value), "number")
-    elif pd.api.types.is_bool(value):
-        return (str(bool(value)), "logical")
-    elif pd.api.types.is_datetime64_any_dtype(value) or isinstance(value, (pd.Timestamp, date, time, datetime)):
-        return (str(to_unix_timestamp(value)), "instant")
-    elif pd.api.types.is_period_dtype(value) or isinstance(value, (pd.Period, timedelta)):
-        return (str(to_interval(value)), "duration")
-    else :
+    try:
+        if value in (None, ""):
+            return ("", "blank")
+        elif pd.api.types.is_number(value):
+            return (str(value), "number")
+        elif pd.api.types.is_bool(value):
+            return (str(bool(value)), "logical")
+        elif pd.api.types.is_datetime64_any_dtype(value) or isinstance(value, (pd.Timestamp, date, time, datetime)):
+            return (str(to_unix_timestamp(value)), "instant")
+        elif pd.api.types.is_period_dtype(value) or isinstance(value, (pd.Period, timedelta)):
+            return (str(to_interval(value)), "duration")
+        else :
+            return (str(value), "text")
+    except:
         return (str(value), "text")
 
 # Convert from quadratic types to python types
 def to_python_type(value: str, value_type: str) -> int | float | str | bool:
-    if value_type == "number":
-        return number_type(value)
-    elif value_type == "text":
-        return str(value)
-    elif value_type == "logical":
-        return bool(value)
-    else:
+    try:
+        if value_type == "number":
+            return number_type(value)
+        elif value_type == "text":
+            return str(value)
+        elif value_type == "logical":
+            return bool(value)
+        else:
+            return value
+    except:
         return value
 
 def number_type(value: str) -> int | float | str:
