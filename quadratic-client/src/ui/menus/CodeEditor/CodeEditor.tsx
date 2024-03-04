@@ -270,6 +270,7 @@ export const CodeEditor = () => {
         minWidth: '350px',
         maxWidth: '90%',
         backgroundColor: '#ffffff',
+        zIndex: 2,
       }}
       onKeyDownCapture={onKeyDownEditor}
       onPointerEnter={() => {
