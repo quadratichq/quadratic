@@ -32,7 +32,7 @@ interface Props {
 }
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, codeEditorReturn, diagnostics } = props;
+  const { editorContent, setEditorContent, closeEditor, codeEditorReturn, diagnostics: _ } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
