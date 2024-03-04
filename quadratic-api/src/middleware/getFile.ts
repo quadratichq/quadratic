@@ -58,6 +58,7 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   const fileRole =
     file.UserFileRole[0] && file.UserFileRole[0].userId === userId ? file.UserFileRole[0].role : undefined;
 
+  // Determine the user's relationship to the file
   //
   // TODO: probably want to use this as part of the `userMakingRequest` object
   // as it encompasses all _expected_ possibilities of the user's relationship
