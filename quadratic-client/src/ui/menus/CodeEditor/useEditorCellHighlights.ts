@@ -52,7 +52,7 @@ export const useEditorCellHighlights = (
     if (language !== 'Formula') return;
 
     const id = 'useEditorCellHighlights';
-    
+
     if (!document.querySelector(id)) {
       const style = document.createElement('style');
       document.head.appendChild(style);

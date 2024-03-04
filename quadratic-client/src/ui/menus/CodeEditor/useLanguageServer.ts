@@ -33,16 +33,14 @@ export const useLanguageServer = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | null>,
   monacoRef: React.MutableRefObject<any | null>,
-  language?: CodeCellLanguage,
+  language?: CodeCellLanguage
 ) => {
-
-
   useEffect(() => {
     if (language === 'Formula') return;
 
     const editor = editorRef.current;
     const monacoInst = monacoRef.current;
-    
+
     if (!isValidRef || !editor || !monacoInst) return;
 
     const model = editor.getModel();
@@ -57,16 +55,9 @@ export const useLanguageServer = (
       triggerCharacters: ['.', '[', '"', "'"],
     });
 
-    const onChangeModel = () => {
-     
-    };
+    const onChangeModel = () => {};
 
     onChangeModel();
     editor.onDidChangeModelContent(() => console.log('model content changed'));
-  }, [
-    isValidRef,
-    editorRef,
-    monacoRef,
-    language,
-  ]);
+  }, [isValidRef, editorRef, monacoRef, language]);
 };

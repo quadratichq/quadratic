@@ -8,9 +8,8 @@ export const useEditorDiagnostics = (
   editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | null>,
   monacoRef: React.MutableRefObject<typeof monaco | null>,
   language?: CodeCellLanguage,
-  diagnostics?: Diagnostic[],
+  diagnostics?: Diagnostic[]
 ) => {
-
   let currentDiagnostics = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
 
   useEffect(() => {
@@ -18,7 +17,7 @@ export const useEditorDiagnostics = (
 
     const editor = editorRef.current;
     const monacoInst = monacoRef.current;
-    
+
     if (!isValidRef || !editor || !monacoInst) return;
 
     const model = editor.getModel();
@@ -26,29 +25,23 @@ export const useEditorDiagnostics = (
     if (!model) return;
 
     const onChangeModel = () => {
-      if(!diagnostics?.length) return;
+      if (!diagnostics?.length) return;
 
       if (currentDiagnostics) currentDiagnostics.current?.clear();
 
       let markers = diagnostics.map(({ message, range, severity }) => ({
-				message,
-				severity: severity as monaco.MarkerSeverity || monacoInst.MarkerSeverity.Error,
-				startLineNumber: range.start.line + 1,
-				startColumn: range.start.character + 1,
-				endLineNumber: range.end.line + 1,
-				endColumn: range.end.character + 1,
-			}));
-      monacoInst.editor.setModelMarkers(model, "owner", markers);
-    }
+        message,
+        severity: (severity as monaco.MarkerSeverity) || monacoInst.MarkerSeverity.Error,
+        startLineNumber: range.start.line + 1,
+        startColumn: range.start.character + 1,
+        endLineNumber: range.end.line + 1,
+        endColumn: range.end.character + 1,
+      }));
+      monacoInst.editor.setModelMarkers(model, 'owner', markers);
+    };
 
     onChangeModel();
 
     editor.onDidChangeModelContent(() => currentDiagnostics.current?.clear());
-  }, [
-    isValidRef,
-    editorRef,
-    monacoRef,
-    language,
-    diagnostics,
-  ]);
+  }, [isValidRef, editorRef, monacoRef, language, diagnostics]);
 };

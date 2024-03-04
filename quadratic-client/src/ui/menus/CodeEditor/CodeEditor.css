@@ -3,7 +3,7 @@
 }
 
 .codeEditorReturnLineDecoration::after {
-  content: "\23CE";
+  content: '\23CE';
   color: black;
   font-family: OpenSans;
   position: absolute;

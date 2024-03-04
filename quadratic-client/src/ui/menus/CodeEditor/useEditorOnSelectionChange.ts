@@ -13,14 +13,14 @@ export const useEditorOnSelectionChange = (
     if (language !== 'Formula') return;
 
     const editor = editorRef.current;
-    
+
     if (!isValidRef || !editor) return;
-    
+
     const model = editor.getModel();
     const monacoInst = monacoRef.current;
-    
+
     if (!monacoInst || !model) return;
-    
+
     editor.onDidChangeCursorPosition((e) => {
       pixiApp.highlightedCells.getHighlightedCells().find((value) => {
         const span = value.span;
@@ -39,7 +39,7 @@ export const useEditorOnSelectionChange = (
         }
 
         pixiApp.highlightedCells.setHighlightedCell(-1);
-        
+
         return false;
       });
     });

@@ -8,7 +8,7 @@ import {
   InsertReplaceEdit,
   MarkupContent,
   Range,
-  TextDocumentContentChangeEvent
+  TextDocumentContentChangeEvent,
 } from 'vscode-languageserver-protocol';
 import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 
@@ -83,10 +83,7 @@ export async function provideSignatureHelp(
   }
 }
 
-export async function provideHover(
-  model: editor.ITextModel,
-  position: Position
-): Promise<languages.Hover | undefined> {
+export async function provideHover(model: editor.ITextModel, position: Position): Promise<languages.Hover | undefined> {
   const textDocument: TextDocumentContentChangeEvent[] = [{ text: model.getValue() }];
   pyrightWorker?.changeDocument(uri, textDocument);
 
@@ -99,14 +96,13 @@ export async function provideHover(
     if (!hoverInfo || !hoverInfo.range) return undefined;
 
     return {
-      contents: [{ value: (hoverInfo.contents as MarkupContent).value || "" }],
+      contents: [{ value: (hoverInfo.contents as MarkupContent).value || '' }],
       range: convertRange(hoverInfo.range),
     };
   } catch (err) {
     console.warn('Error generating a hover:', err);
   }
 }
-
 
 function convertCompletionItem(item: CompletionItem, model?: editor.ITextModel): languages.CompletionItem {
   const converted: languages.CompletionItem = {
@@ -145,7 +141,7 @@ function convertCompletionItem(item: CompletionItem, model?: editor.ITextModel):
 
   // Stash a few additional pieces of information.
   (converted as any).__original = item;
-  
+
   if (model) {
     (converted as any).model = model;
   }
