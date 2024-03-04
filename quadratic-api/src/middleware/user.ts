@@ -1,14 +1,15 @@
 import { NextFunction, Request, Response } from 'express';
 import { getUsersFromAuth0 } from '../auth0/profile';
 import dbClient from '../dbClient';
+import { addUserToTeam } from '../internal/addUserToTeam';
 import { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
 const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.user.create>>) => {
-  const { id, auth0Id } = user;
+  const { id: userId, auth0Id } = user;
 
   // Lookup their email in auth0
-  const usersById = await getUsersFromAuth0([{ id, auth0Id }]);
-  const { email } = usersById[id];
+  const usersById = await getUsersFromAuth0([{ id: userId, auth0Id }]);
+  const { email } = usersById[userId];
 
   // See if they've been invited to any teams and make them team members
   const teamInvites = await dbClient.teamInvite.findMany({
@@ -17,13 +18,9 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
     },
   });
   if (teamInvites.length) {
-    await dbClient.userTeamRole.createMany({
-      data: teamInvites.map(({ teamId, role }) => ({
-        teamId,
-        userId: id,
-        role,
-      })),
-    });
+    for (const { teamId, role } of teamInvites) {
+      await addUserToTeam({ userId, teamId, role });
+    }
     await dbClient.teamInvite.deleteMany({
       where: {
         email,
@@ -41,7 +38,7 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
     await dbClient.userFileRole.createMany({
       data: fileInvites.map(({ fileId, role }) => ({
         fileId,
-        userId: id,
+        userId,
         role,
       })),
     });

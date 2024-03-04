@@ -46,6 +46,9 @@ export class Input {
                 }
                 this.control.restartFiles();
                 break;
+            case "y": // toggle Python
+                this.control.restartPython();
+                break;
             case "p":
                 this.control.togglePerf();
                 break;
@@ -69,6 +72,10 @@ export class Input {
                     this.cli.options.files = true;
                     this.control.restartFiles();
                 }
+                if (this.cli.options.python != true) {
+                    this.cli.options.python = true;
+                    this.control.restartPython();
+                }
                 break;
             case "A": // toggle showing API
                 this.cli.options.hideAPI = !this.cli.options.hideAPI;
@@ -81,6 +88,9 @@ export class Input {
                 break;
             case "F": // toggle showing Files
                 this.cli.options.hideFiles = !this.cli.options.hideFiles;
+                break;
+            case "Y": // toggle showing Python
+                this.cli.options.hidePython = !this.cli.options.hidePython;
                 break;
             case "R": // toggle showing React
                 this.cli.options.hideReact = !this.cli.options.hideReact;

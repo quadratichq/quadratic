@@ -116,11 +116,13 @@ export function protectedRouteLoaderWrapper(loaderFn: LoaderFunction): LoaderFun
     const { request } = loaderFnArgs;
     const isAuthenticated = await authClient.isAuthenticated();
 
-    // If the user isn't authenciated, redirect them to login
+    // If the user isn't authenciated, redirect them to login & preserve their
+    // original request URL
     if (!isAuthenticated) {
-      let params = new URLSearchParams();
-      params.set('from', new URL(request.url).pathname);
-      return redirect(ROUTES.LOGIN + '?' + params.toString());
+      const originalRequestUrl = new URL(request.url);
+      let searchParams = new URLSearchParams();
+      searchParams.set('from', originalRequestUrl.pathname + originalRequestUrl.search);
+      return redirect(ROUTES.LOGIN + '?' + searchParams.toString());
     }
 
     // If the user is authenticated, make sure we have a valid token

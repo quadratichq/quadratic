@@ -1,17 +1,17 @@
+import { AvatarTeam } from '@/components/AvatarTeam';
 import { ShareTeamDialog } from '@/components/ShareDialog';
+import { ROUTES, ROUTE_LOADER_IDS } from '@/constants/routes';
+import { CONTACT_URL } from '@/constants/urls';
+import CreateFileButton from '@/dashboard/components/CreateFileButton';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
+import { FilesList } from '@/dashboard/components/FilesList';
 import { Button } from '@/shadcn/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shadcn/ui/dropdown-menu';
-import { useTheme } from '@mui/material';
-import { CaretDownIcon, ExclamationTriangleIcon, PersonIcon } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useState } from 'react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
+import { isJsonObject } from '@/utils/isJsonObject';
+import { Avatar, AvatarGroup } from '@mui/material';
+import { CaretDownIcon, ExclamationTriangleIcon, FileIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { ApiTypes, TeamSubscriptionStatus } from 'quadratic-shared/typesAndSchemas';
+import { useEffect, useState } from 'react';
 import {
   ActionFunctionArgs,
   Link,
@@ -20,23 +20,41 @@ import {
   useFetcher,
   useLoaderData,
   useRouteError,
+  useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
 import { apiClient } from '../api/apiClient';
-import { AvatarWithLetters } from '../components/AvatarWithLetters';
 import { Empty } from '../components/Empty';
 import { QDialogConfirmDelete } from '../components/QDialog';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { TeamLogoInput } from '../dashboard/components/TeamLogo';
-import { useUpdateQueryStringValueWithoutNavigation } from '../hooks/useUpdateQueryStringValueWithoutNavigation';
+import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const useTeamRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.TEAM) as LoaderData | undefined;
+
+type LoaderData = ApiTypes['/v0/teams/:uuid.GET.response'];
+export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<LoaderData> => {
   const { uuid } = params as { uuid: string };
-  return await apiClient.teams.get(uuid);
+  const data = await apiClient.teams.get(uuid).catch((error) => {
+    const { status } = error;
+    if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
+    throw error;
+  });
+
+  // Sort the users so the logged-in user is first in the list
+  data.users.sort((a, b) => {
+    const loggedInUser = data.userMakingRequest.id;
+    // Move the logged in user to the front
+    if (a.id === loggedInUser && b.id !== loggedInUser) return -1;
+    // Keep the logged in user at the front
+    if (a.id !== loggedInUser && b.id === loggedInUser) return 1;
+    // Leave the order as is for others
+    return 0;
+  });
+
+  return data;
 };
 
 export type TeamAction = {
-  'request.update-team': ApiTypes['/v0/teams/:uuid.POST.request'] & {
+  'request.update-team': ApiTypes['/v0/teams/:uuid.PATCH.request'] & {
     intent: 'update-team';
   };
   'request.create-team-invite': ApiTypes['/v0/teams/:uuid/invites.POST.request'] & {
@@ -46,7 +64,7 @@ export type TeamAction = {
     intent: 'delete-team-invite';
     inviteId: string;
   };
-  'request.update-team-user': ApiTypes['/v0/teams/:uuid/users/:userId.POST.request'] & {
+  'request.update-team-user': ApiTypes['/v0/teams/:uuid/users/:userId.PATCH.request'] & {
     intent: 'update-team-user';
     userId: string;
   };
@@ -70,13 +88,10 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   const { uuid } = params as { uuid: string };
   const { intent } = data;
 
-  await new Promise((resolve, reject) => setTimeout(resolve, 1000));
-
   if (intent === 'update-team') {
     try {
-      // TODO: uploading picture vs. name
-      const { name, picture } = data;
-      await apiClient.teams.update(uuid, { name, picture });
+      const { name } = data;
+      await apiClient.teams.update(uuid, { name });
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -128,151 +143,219 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 };
 
 export const Component = () => {
-  const theme = useTheme();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showDeleteDialog, setShowDeleteDialog] = useState<boolean>(false);
   const loaderData = useLoaderData() as ApiTypes['/v0/teams/:uuid.GET.response'];
   const {
     team,
+    files,
     users,
     userMakingRequest: { teamPermissions },
+    billing,
   } = loaderData;
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const fetcher = useFetcher();
-  const [shareSearchParamValue, setShareSearchParamValue] = useState<string | null>(searchParams.get('share'));
-  useUpdateQueryStringValueWithoutNavigation('share', shareSearchParamValue);
-
-  // const [shareQueryValue, setShareQueryValue] = useState<string>('');
-  // useUpdateQueryStringValueWithoutNavigation("share", queryValue);
+  const [showShareDialog, setShowShareDialog] = useState<boolean>(false);
 
   let name = team.name;
-  if (fetcher.state !== 'idle') {
-    name = (fetcher.json as TeamAction['request.update-team']).name as string; // TODO fix zod types
-    // TODO: picture
+  if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
+    name = (fetcher.json as TeamAction['request.update-team']).name;
   }
 
-  const handleClose = () => setIsRenaming(false);
+  const openShareDialog = () => setShowShareDialog(true);
+  const closeShareDialog = () => setShowShareDialog(false);
 
-  const showShareDialog = shareSearchParamValue !== null;
+  const canEdit = teamPermissions.includes('TEAM_EDIT');
+  const canEditBilling = teamPermissions.includes('TEAM_BILLING_EDIT');
+
+  const avatarSxProps = { width: 24, height: 24, fontSize: '.875rem' };
+  const billingStatus = billing.status;
+  const hasBillingIssue = !(billingStatus === 'ACTIVE' || billingStatus === 'TRIALING');
+
+  // When the user comes back successfully from stripe, fire off an event to Google
+  useEffect(() => {
+    if (searchParams.get('subscription') === 'created') {
+      const transaction_id = searchParams.get('session_id');
+      // TODO: pull the session_id from our API and get the amount from the subscription to pass to the conversion
+
+      // Google Ads Conversion Tracking
+      // @ts-expect-error
+      gtag('event', 'conversion', {
+        send_to: 'AW-11007319783/44KeCMLgpJYZEOe92YAp',
+        transaction_id,
+      });
+      setSearchParams((prev) => {
+        prev.delete('subscription');
+        prev.delete('session_id');
+        return prev;
+      });
+    }
+  }, [searchParams, setSearchParams]);
 
   return (
     <>
-      <DashboardHeader
-        title={name}
-        titleStart={
-          <AvatarWithLetters size="large" src={team.picture} sx={{ mr: theme.spacing(1.5) }}>
-            {name}
-          </AvatarWithLetters>
-        }
-        titleEnd={
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="ml-1 rounded-full">
-                <CaretDownIcon />
+      <div
+        {...(hasBillingIssue ? { inert: 'inert' } : {})}
+        className={`${hasBillingIssue ? 'opacity-30 blur-sm' : ''}`}
+      >
+        <DashboardHeader
+          title={name}
+          titleNode={
+            canEdit ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 pl-1 pr-2">
+                    <AvatarTeam className="h-8 w-8" />
+                    <DashboardHeaderTitle>{name}</DashboardHeaderTitle>
+                    <CaretDownIcon />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
+                  <DropdownMenuItem onClick={openShareDialog}>Manage members</DropdownMenuItem>
+                  {teamPermissions.includes('TEAM_BILLING_EDIT') && (
+                    <DropdownMenuItem
+                      onClick={() => {
+                        // Get the billing session URL
+                        apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+                          window.location.href = data.url;
+                        });
+                      }}
+                    >
+                      Update billing
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex items-center">
+                <AvatarTeam className="mr-2 h-8 w-8" />
+                <DashboardHeaderTitle>{name}</DashboardHeaderTitle>
+              </div>
+            )
+          }
+          actions={
+            <div className={`flex items-center gap-2`}>
+              <div className="hidden lg:block">
+                <Button asChild variant={null} onClick={openShareDialog}>
+                  <AvatarGroup
+                    max={4}
+                    sx={{ cursor: 'pointer', pr: 0 }}
+                    slotProps={{ additionalAvatar: { sx: avatarSxProps } }}
+                  >
+                    {users.map((user, key) => (
+                      <Avatar key={key} alt={user.name} src={user.picture} sx={avatarSxProps} />
+                    ))}
+                  </AvatarGroup>
+                </Button>
+              </div>
+              <Button variant="outline" onClick={openShareDialog}>
+                Members
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setIsRenaming(true)}>Rename</DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <label>
-                  Upload logo
-                  <TeamLogoInput
-                    onChange={(url: string) => {
-                      handleClose();
-                    }}
-                  />
-                </label>
-              </DropdownMenuItem>
-              {teamPermissions.includes('TEAM_BILLING_EDIT') && (
-                <DropdownMenuItem onClick={() => {}}>Edit billing</DropdownMenuItem>
-              )}
-              {teamPermissions.includes('TEAM_DELETE') && [
-                <DropdownMenuSeparator key={1} />,
-                <DropdownMenuItem
-                  key={2}
-                  onClick={() => {
-                    setShowDeleteDialog(true);
-                  }}
-                >
-                  Delete
-                </DropdownMenuItem>,
-              ]}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        }
-        actions={
-          <div className={`flex items-center gap-2`}>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShareSearchParamValue('');
-              }}
-            >
-              <PersonIcon className={`mr-1`} /> {users.length}
-            </Button>
-            <Button variant="outline">Import file</Button>
-            <Button>Create file</Button>
-          </div>
-        }
-      />
-
-      <div className="opacity-1 border border-dashed border-border py-20 text-center">Team files</div>
-
-      {isRenaming && (
-        <DialogRenameItem
-          itemLabel="Team"
-          onClose={() => {
-            setIsRenaming(false);
-          }}
-          value={name}
-          onSave={(name: string) => {
-            setIsRenaming(false);
-            const data: TeamAction['request.update-team'] = { intent: 'update-team', name };
-            fetcher.submit(data, { method: 'POST', encType: 'application/json' });
-          }}
+              {canEdit && <CreateFileButton />}
+            </div>
+          }
         />
-      )}
-      {showShareDialog && <ShareTeamDialog onClose={() => setShareSearchParamValue(null)} data={loaderData} />}
-      {showDeleteDialog && (
-        <QDialogConfirmDelete
-          entityName={name}
-          entityNoun="team"
-          onClose={() => {
-            setShowDeleteDialog(false);
-          }}
-          onDelete={() => {
-            /* TODO */
-          }}
-        >
-          Deleting this team will delete all associated data (such as files) for all users and billing will cease.
-        </QDialogConfirmDelete>
+
+        <FilesList
+          files={files.map((data) => ({ ...data.file, permissions: data.userMakingRequest.filePermissions }))}
+          emptyState={
+            <Empty
+              title="No team files yet"
+              description={`Files created by${canEdit ? ' you or ' : ' '}your team members will show up here.`}
+              actions={
+                canEdit ? (
+                  <Button asChild variant="secondary">
+                    <Link to={ROUTES.CREATE_FILE_IN_TEAM(team.uuid)}>Create a file</Link>
+                  </Button>
+                ) : null
+              }
+              Icon={FileIcon}
+            />
+          }
+        />
+
+        {isRenaming && (
+          <DialogRenameItem
+            itemLabel="Team"
+            onClose={() => {
+              setIsRenaming(false);
+            }}
+            value={name}
+            onSave={(name: string) => {
+              setIsRenaming(false);
+              const data: TeamAction['request.update-team'] = { intent: 'update-team', name };
+              fetcher.submit(data, { method: 'POST', encType: 'application/json' });
+            }}
+          />
+        )}
+        {showShareDialog && <ShareTeamDialog onClose={closeShareDialog} data={loaderData} />}
+        {showDeleteDialog && (
+          <QDialogConfirmDelete
+            entityName={name}
+            entityNoun="team"
+            onClose={() => {
+              setShowDeleteDialog(false);
+            }}
+            onDelete={() => {
+              /* TODO */
+            }}
+          >
+            Deleting this team will delete all associated data (such as files) for all users and billing will cease.
+          </QDialogConfirmDelete>
+        )}
+      </div>
+
+      {hasBillingIssue && (
+        <TeamBillingIssue billingStatus={billingStatus} teamUuid={team.uuid} canEditBilling={canEditBilling} />
       )}
     </>
   );
 };
 
-// TODO: fix when we merge better errors PR
 export const ErrorBoundary = () => {
   const error = useRouteError();
 
+  const actions = (
+    <div className={`flex justify-center gap-2`}>
+      <Button asChild variant="outline">
+        <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+          Get help
+        </a>
+      </Button>
+      <Button asChild variant="default">
+        <Link to="/">Go home</Link>
+      </Button>
+    </div>
+  );
+
   if (isRouteErrorResponse(error)) {
-    console.error(error);
-    // If the future, we can differentiate between the different kinds of file
-    // loading errors and be as granular in the message as we like.
-    // e.g. file found but didn't validate. file couldn't be found on server, etc.
-    // But for now, we'll just show a 404
-    return (
-      <Empty
-        title="404: team not found"
-        description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
-        Icon={ExclamationTriangleIcon}
-        actions={
-          <Button asChild>
-            <Link to="/">Go home</Link>
-          </Button>
-        }
-      />
-    );
+    if (error.status === 400)
+      return (
+        <Empty
+          title="Bad request"
+          description="Ensure you have the right URL for this team and try again."
+          Icon={ExclamationTriangleIcon}
+          actions={actions}
+        />
+      );
+    if (error.status === 403)
+      return (
+        <Empty
+          title="You don’t have access to this team"
+          description="Reach out to the team owner for permission to access this team."
+          Icon={InfoCircledIcon}
+        />
+      );
+    if (error.status === 404)
+      return (
+        <Empty
+          title="Team not found"
+          description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
+          Icon={ExclamationTriangleIcon}
+          actions={actions}
+        />
+      );
   }
 
   // Maybe we log this to Sentry someday...
@@ -289,5 +372,108 @@ export const ErrorBoundary = () => {
       }
       severity="error"
     />
+  );
+};
+
+const TeamBillingIssue = (props: {
+  teamUuid: string;
+  billingStatus: Exclude<TeamSubscriptionStatus, 'ACTIVE' | 'TRIALING'> | undefined;
+  canEditBilling: boolean;
+}) => {
+  const { billingStatus, teamUuid, canEditBilling } = props;
+
+  const buttonActionGoToBillingPortal = () => {
+    apiClient.teams.billing.getPortalSessionUrl(teamUuid).then((data) => {
+      window.location.href = data.url;
+    });
+  };
+
+  const buttonActionResubscribe = () => {
+    apiClient.teams.billing.getCheckoutSessionUrl(teamUuid).then((data) => {
+      window.location.href = data.url;
+    });
+  };
+
+  // Otherwise, show the billing issue overlay.
+  let headingDefault = 'Team billing issue';
+
+  const statusOptions = {
+    CANCELED: {
+      heading: headingDefault,
+      description: 'Your team’s subscription has been canceled. Please resubscribe.',
+      buttonLabel: 'Resubscribe',
+      buttonAction: buttonActionResubscribe,
+    },
+    INCOMPLETE: {
+      heading: headingDefault,
+      description: 'Your team’s subscription is incomplete. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    INCOMPLETE_EXPIRED: {
+      heading: headingDefault,
+      description: 'Your team’s subscription is incomplete. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionResubscribe,
+    },
+    PAST_DUE: {
+      heading: headingDefault,
+      description: 'Your team’s subscription is past due. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    UNPAID: {
+      heading: headingDefault,
+      description: 'Your team’s subscription is unpaid. Please pay to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionResubscribe,
+    },
+    PAUSED: {
+      heading: headingDefault,
+      description: 'Your team’s subscription is paused. Please update your payment method to reactivate.',
+      buttonLabel: 'Fix payment',
+      buttonAction: buttonActionGoToBillingPortal,
+    },
+    undefined: {
+      heading: 'Subscription requried',
+      description: 'You must have an active subscription to access this team.',
+      buttonLabel: 'Subscribe',
+      buttonAction: buttonActionResubscribe,
+    },
+  };
+
+  let heading = statusOptions[billingStatus ?? 'undefined'].heading;
+  let description = statusOptions[billingStatus ?? 'undefined'].description;
+  let buttonLabel = statusOptions[billingStatus ?? 'undefined'].buttonLabel;
+  let buttonAction = statusOptions[billingStatus ?? 'undefined'].buttonAction;
+
+  return (
+    <div className="absolute left-0 top-0 flex h-full w-full items-center justify-center">
+      <div className="rounded border border-border bg-background px-4 shadow-sm">
+        <Empty
+          title={heading}
+          description={
+            canEditBilling
+              ? description
+              : 'Your team’s subscription is inactive. Please contact the team owner to reactivate.'
+          }
+          Icon={ExclamationTriangleIcon}
+          actions={
+            <div className={`flex justify-center gap-2`}>
+              <Button asChild variant="outline">
+                <a href={CONTACT_URL} target="_blank" rel="noreferrer">
+                  Get help
+                </a>
+              </Button>
+              {canEditBilling && (
+                <Button variant="default" onClick={buttonAction}>
+                  <span>{buttonLabel}</span>
+                </Button>
+              )}
+            </div>
+          }
+        />
+      </div>
+    </div>
   );
 };

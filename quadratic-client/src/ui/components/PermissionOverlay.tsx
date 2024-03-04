@@ -6,18 +6,17 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link, useSubmit } from 'react-router-dom';
+import { Link, useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { duplicateFileAction } from '../../actions';
+import { duplicateFileWithUserAsOwnerAction } from '../../actions';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../constants/routes';
-import { useFileContext } from './FileProvider';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
-  const { name } = useFileContext();
+  const { uuid } = useParams() as { uuid: string };
   const theme = useTheme();
   const submit = useSubmit();
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -52,8 +51,13 @@ export function PermissionOverlay() {
         <Type>
           <strong>Read-only.</strong> To edit this file, make a duplicate in your files.
         </Type>
-        <Button variant="outline" size="sm" onClick={() => duplicateFileAction.run({ name, submit })}>
-          {duplicateFileAction.label}
+        <Button
+          className="flex-shrink-0"
+          variant="outline"
+          size="sm"
+          onClick={() => duplicateFileWithUserAsOwnerAction.run({ uuid, submit })}
+        >
+          {duplicateFileWithUserAsOwnerAction.label}
         </Button>
       </Wrapper>
     );
@@ -80,7 +84,7 @@ export function PermissionOverlay() {
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed bottom-16 left-1/2 z-10  flex w-[95%] max-w-xl -translate-x-1/2 flex-row items-center justify-between gap-8 rounded border border-border bg-background px-4 py-3 shadow-lg">
+    <div className="fixed bottom-16 left-1/2 z-10  flex w-[95%] max-w-xl -translate-x-1/2 flex-row items-center justify-between gap-4 rounded border border-border bg-background px-4 py-3 shadow-lg">
       {children}
     </div>
   );

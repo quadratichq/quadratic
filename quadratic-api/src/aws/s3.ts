@@ -1,20 +1,21 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-
-const region = process.env.AWS_S3_REGION as string;
-const accessKeyId = process.env.AWS_S3_ACCESS_KEY_ID as string;
-const secretAccessKey = process.env.AWS_S3_SECRET_ACCESS_KEY as string;
-const bucketName = process.env.AWS_S3_BUCKET_NAME as string;
-const isLocal = (process.env.ENVIRONMENT as string) === 'local';
-const isDocker = (process.env.ENVIRONMENT as string) === 'docker';
-const endpoint = isDocker ? 'http://localstack:4566' : isLocal ? 'http://0.0.0.0:4566' : undefined;
+import {
+  AWS_S3_ACCESS_KEY_ID,
+  AWS_S3_BUCKET_NAME,
+  AWS_S3_REGION,
+  AWS_S3_SECRET_ACCESS_KEY,
+  ENVIRONMENT,
+} from '../env-vars';
+const endpoint =
+  ENVIRONMENT === 'docker' ? 'http://localstack:4566' : ENVIRONMENT === 'local' ? 'http://0.0.0.0:4566' : undefined;
 
 // Initialize S3 client
 export const s3Client = new S3Client({
-  region,
+  region: AWS_S3_REGION,
   credentials: {
-    accessKeyId,
-    secretAccessKey,
+    accessKeyId: AWS_S3_ACCESS_KEY_ID,
+    secretAccessKey: AWS_S3_SECRET_ACCESS_KEY,
   },
   endpoint,
   forcePathStyle: true,
@@ -22,7 +23,7 @@ export const s3Client = new S3Client({
 
 export const uploadStringAsFileS3 = async (fileKey: string, contents: string) => {
   const command = new PutObjectCommand({
-    Bucket: bucketName,
+    Bucket: AWS_S3_BUCKET_NAME,
     Key: fileKey,
     Body: contents,
     // Optionally, you can add other configuration like ContentType
@@ -33,7 +34,7 @@ export const uploadStringAsFileS3 = async (fileKey: string, contents: string) =>
   // Check if the upload was successful
   if (response && response.$metadata.httpStatusCode === 200) {
     return {
-      bucket: bucketName,
+      bucket: AWS_S3_BUCKET_NAME,
       key: fileKey,
     };
   } else {
@@ -44,7 +45,7 @@ export const uploadStringAsFileS3 = async (fileKey: string, contents: string) =>
 // Get file URL from S3
 export const generatePresignedUrl = async (key: string) => {
   const command = new GetObjectCommand({
-    Bucket: bucketName,
+    Bucket: AWS_S3_BUCKET_NAME,
     Key: key,
   });
 

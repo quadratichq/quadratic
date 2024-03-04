@@ -629,6 +629,7 @@ export class Grid {
     } catch (error) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
       // type in the UI.
+      console.error(error);
       reportError(error as unknown as string);
       Sentry.captureException(error);
     }

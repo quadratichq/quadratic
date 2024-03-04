@@ -193,4 +193,18 @@ mod test {
         assert_eq!(iter.next(), Some((1, 1, &CellValue::from("d"))));
         assert_eq!(iter.next(), None);
     }
+
+    #[test]
+    fn cell_values_serialize_large() {
+        let w = 100;
+        let h = 10000;
+        let mut cell_values = CellValues::new(w, h);
+        for x in 0..w {
+            for y in 0..h {
+                cell_values.set(x, y, CellValue::from("a"));
+            }
+        }
+        let json = serde_json::to_string(&cell_values).unwrap();
+        assert!(json.len() > (w * h * 3) as usize);
+    }
 }
