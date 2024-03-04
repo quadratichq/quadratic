@@ -19,12 +19,8 @@ type ActionData = {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  // TODO convert blob URL to File and upload to S3
   const data: ActionData = await request.json();
   const { uuid } = await apiClient.teams.create(data);
-  // await new Promise((resolve) => setTimeout(resolve, 5000));
-  // TODO make dialog=share a const, or maybe share=1 or share=first for extra UI
-
   const checkoutSessionUrl = await apiClient.teams.billing.getCheckoutSessionUrl(uuid);
   return redirect(checkoutSessionUrl.url);
 };
@@ -72,11 +68,11 @@ export const CreateTeamDialog = () => {
     {
       title: 'Personal',
       price: 'Free',
-      features: ['Unlimited personal files', 'Share 1 file with 1 person', 'Throttled AI usage', 'Best effort support'],
+      features: ['Unlimited personal files', 'Limited sharing', 'Throttled AI usage', 'Best effort support'],
     },
     {
       title: 'Team',
-      price: '$18 / user / month',
+      price: '$15/user/month*',
       features: ['Shared team workspace', 'Unlimited sharing', 'Unlimited AI usage ', 'Priority support'],
     },
   ];
@@ -117,12 +113,17 @@ export const CreateTeamDialog = () => {
                       </ul>
                     </div>
                     {title === 'Team' && (
-                      <Button variant="default" className="mt-4 w-full" onClick={() => setShowPlans(false)}>
-                        Continue
-                      </Button>
+                      <>
+                        <Button variant="default" className="mt-4 w-full" onClick={() => setShowPlans(false)}>
+                          Continue
+                        </Button>
+                        <p className="mt-1 text-center text-xs text-muted-foreground">
+                          *Billed annually, $18 billed monthly.
+                        </p>
+                      </>
                     )}
                   </div>
-                  {i === 0 && <div className="my-4 h-[1px] w-full bg-border sm:mx-8 sm:my-0 sm:h-auto sm:w-[1px]" />}
+                  {i === 0 && <div className="my-4 h-[1px] w-full bg-border sm:mx-6 sm:my-0 sm:h-auto sm:w-[1px]" />}
                 </>
               ))}
             </div>
