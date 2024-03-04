@@ -232,6 +232,7 @@ class PythonWebWorker {
       true
     );
     grid.calculationComplete(result);
+    this.calculationComplete();
   }
 
   getCells(cells: string) {

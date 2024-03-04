@@ -42,7 +42,7 @@ export const CodeEditor = () => {
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
   const [codeEditorReturn, setCodeEditorReturn] = useState<ComputedPythonReturnType | undefined>(undefined);
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
-  
+
   const cellLocation = useMemo(() => {
     return {
       x: editorInteractionState.selectedCell.x,
@@ -178,11 +178,11 @@ export const CodeEditor = () => {
 
   const saveAndRunCell = async () => {
     const language = editorInteractionState.mode;
-    
+
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
-    
-      grid.setCodeCellValue({
+
+    grid.setCodeCellValue({
       sheetId: cellLocation.sheetId,
       x: cellLocation.x,
       y: cellLocation.y,
@@ -191,7 +191,7 @@ export const CodeEditor = () => {
     });
 
     setCodeString(editorContent ?? '');
-    
+
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
       code: editorContent,
