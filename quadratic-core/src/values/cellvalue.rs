@@ -435,7 +435,7 @@ impl CellValue {
         let mut ops = vec![];
         let sheet_rect = SheetRect::single_pos(pos, sheet.id);
 
-        let value = match js_type.as_str() {
+        let value = match js_type {
             "text" => {
                 let is_html = value.to_lowercase().starts_with("<html>")
                     || value.to_lowercase().starts_with("<div>");
