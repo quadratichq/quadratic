@@ -355,13 +355,13 @@ export class PixiApp {
     this.cellsSheets.adjustHeadings(options);
     this.cellsSheets.updateBordersString([options.sheetId]);
     htmlCellsHandler.updateOffsets([sheets.sheet.id]);
-    this.headings.dirty = true;
-    this.gridLines.dirty = true;
-    this.cursor.dirty = true;
-    this.multiplayerCursor.dirty = true;
+    if (sheets.sheet.id === options.sheetId) {
+      pixiApp.gridLines.dirty = true;
+      pixiApp.cursor.dirty = true;
+      pixiApp.headings.dirty = true;
+      this.multiplayerCursor.dirty = true;
+    }
   }
-
-  addSheet(sheetId: string, name: string, order: string) {}
 }
 
 export const pixiApp = new PixiApp();

@@ -193,7 +193,7 @@ export class CellsTextHash {
     }
   }
 
-  updateBuffers(): void {
+  updateBuffers(skipClear?: boolean): void {
     if (debugShowHashUpdates) console.log(`[CellsTextHash] updateBuffers for ${this.hashX}, ${this.hashY}`);
 
     // creates labelMeshes webGL buffers based on size
@@ -246,12 +246,12 @@ export class CellsTextHash {
         } else {
           if (column < 0) {
             if (label.location.x < column) {
-              label.adjustX(-delta);
+              label.adjustX(delta);
               changed = true;
             }
           } else {
             if (label.location.x > column) {
-              label.adjustX(delta);
+              label.adjustX(-delta);
               changed = true;
             }
           }
@@ -264,12 +264,12 @@ export class CellsTextHash {
         } else {
           if (row < 0) {
             if (label.location.y < row) {
-              label.adjustY(-delta);
+              label.adjustY(delta);
               changed = true;
             }
           } else {
             if (label.location.y > row) {
-              label.adjustY(delta);
+              label.adjustY(-delta);
               changed = true;
             }
           }

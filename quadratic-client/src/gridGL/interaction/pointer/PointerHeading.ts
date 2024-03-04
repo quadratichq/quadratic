@@ -177,16 +177,16 @@ export class PointerHeading {
           const delta = this.resizing.width ? this.resizing.lastSize - this.resizing.width : undefined;
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, this.resizing.column, undefined, delta);
-          }
-          gridLines.dirty = true;
-          cursor.dirty = true;
-          headings.dirty = true;
+            gridLines.dirty = true;
+            cursor.dirty = true;
+            headings.dirty = true;
 
-          pixiApp.adjustHeadings({
-            sheetId: sheets.sheet.id,
-            column: this.resizing.column,
-            delta: size - this.resizing.lastSize,
-          });
+            pixiApp.adjustHeadings({
+              sheetId: sheets.sheet.id,
+              column: this.resizing.column,
+              delta: size - this.resizing.lastSize,
+            });
+          }
           this.resizing.lastSize = size;
         }
       } else if (this.resizing.row !== undefined) {

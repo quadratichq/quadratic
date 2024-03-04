@@ -109,10 +109,10 @@ class RenderText {
     this.cellsLabels.delete(sheetId);
   }
 
-  sheetOffsets(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+  sheetOffsets(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsets');
-    cellsLabels.setOffsets(column, row, size);
+    cellsLabels.setOffsets(column, row, delta);
   }
 }
 

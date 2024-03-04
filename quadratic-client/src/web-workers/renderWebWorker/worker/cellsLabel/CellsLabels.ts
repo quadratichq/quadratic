@@ -182,25 +182,22 @@ export class CellsLabels extends Container {
     hashes.forEach((hash) => hash.updateBuffers()); // false
   }
 
-  // adjust hashes after a column/row resize
-  // todo: this may need to be scheduled for large data sets
   private updateHeadings(): boolean {
     if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
 
+    // todo: sort by visibility
+
     // hashes that need to update their clipping and buffers
     const hashesToUpdate: Set<CellsTextHash> = new Set();
-
     this.dirtyColumnHeadings.forEach((delta, column) => {
       const columnHash = Math.floor(column / sheetHashWidth);
       this.cellsTextHash.forEach((hash) => {
-        if (columnHash < 0) {
-          if (hash.hashX <= columnHash) {
+        if (hash.hashX === columnHash) {
+          if (columnHash < 0) {
             if (hash.adjustHeadings({ column, delta })) {
               hashesToUpdate.add(hash);
             }
-          }
-        } else {
-          if (hash.hashX >= columnHash) {
+          } else {
             if (hash.adjustHeadings({ column, delta })) {
               hashesToUpdate.add(hash);
             }
@@ -213,14 +210,12 @@ export class CellsLabels extends Container {
     this.dirtyRowHeadings.forEach((delta, row) => {
       const rowHash = Math.floor(row / sheetHashHeight);
       this.cellsTextHash.forEach((hash) => {
-        if (rowHash < 0) {
-          if (hash.hashY <= rowHash) {
+        if (hash.hashY === rowHash) {
+          if (rowHash < 0) {
             if (hash.adjustHeadings({ row, delta })) {
               hashesToUpdate.add(hash);
             }
-          }
-        } else {
-          if (hash.hashY >= rowHash) {
+          } else {
             if (hash.adjustHeadings({ row, delta })) {
               hashesToUpdate.add(hash);
             }
@@ -229,7 +224,6 @@ export class CellsLabels extends Container {
       });
     });
     this.dirtyRowHeadings.clear();
-
     hashesToUpdate.forEach((hash) => hash.overflowClip());
     this.cellsTextHash.forEach((hash) => hash.updateBuffers()); // true
 
@@ -343,8 +337,7 @@ export class CellsLabels extends Container {
   }
 
   // adjust headings without recalculating the glyph geometries
-  adjustHeadings(options: { delta: number; column?: number; row?: number }): void {
-    const { delta, column, row } = options;
+  adjustHeadings(delta: number, column?: number, row?: number): void {
     if (column !== undefined) {
       const existing = this.dirtyColumnHeadings.get(column);
       if (existing) {
@@ -390,17 +383,16 @@ export class CellsLabels extends Container {
     cellsHash.dirty = renderCells;
   }
 
-  setOffsets(column: number | undefined, row: number | undefined, size: number) {
-    let delta: number | undefined;
+  setOffsets(column: number | undefined, row: number | undefined, delta: number) {
     if (column !== undefined) {
-      delta = this.sheetOffsets.getColumnWidth(column) - size;
+      const size = this.sheetOffsets.getColumnWidth(column) + delta;
       this.sheetOffsets.setColumnWidth(column, size);
     } else if (row !== undefined) {
-      delta = this.sheetOffsets.getRowHeight(row) - size;
+      const size = this.sheetOffsets.getRowHeight(row) + delta;
       this.sheetOffsets.setRowHeight(row, size);
     }
     if (delta) {
-      this.adjustHeadings({ delta, column, row });
+      this.adjustHeadings(delta, column, row);
     }
   }
 }

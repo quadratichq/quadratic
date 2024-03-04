@@ -63,7 +63,6 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.removeChildren();
     this.visibleRectangle = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
     this.position.set(x, y);
-    console.log(x, y);
   }
 
   show(): void {
@@ -115,5 +114,18 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     //   label.visible = show;
     //   this.dirtyBuffers = true;
     // }
+  }
+
+  adjust(hashX: number | undefined, hashY: number | undefined, delta: number) {
+    if (hashX !== undefined) {
+      if ((hashX < 0 && this.hashX < hashX) || (hashX >= 0 && this.hashX > hashX)) {
+        this.position.x += delta;
+      }
+    }
+    if (hashY !== undefined) {
+      if ((hashY < 0 && this.hashY < hashY) || (hashY >= 0 && this.hashY > hashY)) {
+        this.position.y += delta;
+      }
+    }
   }
 }

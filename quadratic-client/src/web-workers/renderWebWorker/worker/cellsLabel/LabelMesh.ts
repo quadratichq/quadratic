@@ -58,10 +58,11 @@ export class LabelMesh {
   prepare(): void {
     this.currentEntry = 0;
     this.labelMeshEntries = [];
-    while (this.total > 0) {
-      const size = this.total > MAX_VERTICES ? MAX_VERTICES : this.total;
+    let total = this.total;
+    while (total > 0) {
+      const size = total > MAX_VERTICES ? MAX_VERTICES : total;
       this.labelMeshEntries.push(new LabelMeshEntry(this, size));
-      this.total -= size;
+      total -= size;
     }
   }
 

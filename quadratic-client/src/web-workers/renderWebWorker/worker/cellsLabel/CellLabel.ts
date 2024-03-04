@@ -404,18 +404,12 @@ export class CellLabel {
   }
 
   adjustWidth(delta: number, adjustX?: boolean): void {
-    this.AABB.width += delta;
-    if (adjustX) {
-      this.AABB.x -= delta;
-    }
+    this.AABB.width -= delta;
     this.calculatePosition();
   }
 
   adjustHeight(delta: number, adjustY?: boolean): void {
-    this.AABB.height += delta;
-    if (adjustY) {
-      this.AABB.y -= delta;
-    }
+    this.AABB.height -= delta;
     this.calculatePosition();
   }
 }

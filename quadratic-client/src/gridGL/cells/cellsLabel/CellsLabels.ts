@@ -120,9 +120,16 @@ export class CellsLabels extends Container {
     this.cellsTextHashes.children.forEach((cellsTextHash) => cellsTextHash.show());
   }
 
-  // TODO: remove
-  // adjust headings without recalculating the glyph geometries
-  adjustHeadings(options: { delta: number; column?: number; row?: number }): void {
+  // adjust headings for all cellsTextHashes impacted by headings changed except
+  // for the CellsTextHash that needs to be resized (that will be handled by the
+  // renderWebWorker)
+  adjustHeadings(column: number | undefined, row: number | undefined, delta: number) {
+    const hashX = column !== undefined ? Math.floor(column / sheetHashWidth) : undefined;
+    const hashY = row !== undefined ? Math.floor(row / sheetHashHeight) : undefined;
+    this.cellsTextHashes.children.forEach((cellsTextHash) => {
+      cellsTextHash.adjust(hashX, hashY, delta);
+    });
+
     // const { delta, column, row } = options;
     // if (column !== undefined) {
     //   const existing = this.dirtyColumnHeadings.get(column);
