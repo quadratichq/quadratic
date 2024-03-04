@@ -1,3 +1,4 @@
+import { cellTypeMenuOpenedCountAtom } from '@/atoms/cellTypeMenuOpenedCountAtom';
 import { CodeCellLanguage } from '@/quadratic-core/types';
 import {
   Chip,
@@ -13,7 +14,7 @@ import {
 } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '../../../constants/urls';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -34,17 +35,6 @@ export interface CellTypeOption {
 
 let CELL_TYPE_OPTIONS = [
   {
-    name: 'Formula',
-    mode: 'Formula',
-    icon: <Formula sx={{ color: colors.languageFormula }} />,
-    description: (
-      <>
-        Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
-        <LinkNewTabWrapper href={DOCUMENTATION_FORMULAS_URL}>and more</LinkNewTabWrapper>.
-      </>
-    ),
-  },
-  {
     name: 'Python',
     mode: 'Python',
     icon: <Python sx={{ color: colors.languagePython }} />,
@@ -52,6 +42,17 @@ let CELL_TYPE_OPTIONS = [
       <>
         Script with Pandas, NumPy, SciPy, Micropip,{' '}
         <LinkNewTabWrapper href={DOCUMENTATION_PYTHON_URL}>and more</LinkNewTabWrapper>.
+      </>
+    ),
+  },
+  {
+    name: 'Formula',
+    mode: 'Formula',
+    icon: <Formula sx={{ color: colors.languageFormula }} />,
+    description: (
+      <>
+        Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
+        <LinkNewTabWrapper href={DOCUMENTATION_FORMULAS_URL}>and more</LinkNewTabWrapper>.
       </>
     ),
   },
@@ -77,12 +78,15 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [value, setValue] = React.useState<string>('');
   const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
+  const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
   const searchlabel = 'Choose a cell type…';
 
   const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
+    setCellTypeMenuOpenedCount((count: number) => count + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const close = useCallback(() => {
