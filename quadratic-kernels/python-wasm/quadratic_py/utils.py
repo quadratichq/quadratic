@@ -4,6 +4,7 @@ import traceback
 from typing import Tuple
 
 import pandas as pd
+import numpy as np
 
 def attempt_fix_await(code: str) -> str:
     # Insert a "await" keyword between known async functions to improve the UX
@@ -38,9 +39,9 @@ def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | ti
             return (str(value), "number")
         elif pd.api.types.is_bool(value):
             return (str(bool(value)), "logical")
-        elif pd.api.types.is_datetime64_any_dtype(value) or isinstance(value, (pd.Timestamp, date, time, datetime)):
+        elif isinstance(value, (pd.Timestamp, np.datetime64, date, time, datetime)):
             return (str(to_unix_timestamp(value)), "instant")
-        elif pd.api.types.is_period_dtype(value) or isinstance(value, (pd.Period, timedelta)):
+        elif isinstance(value, (pd.Period, np.timedelta64, timedelta)):
             return (str(to_interval(value)), "duration")
         else :
             return (str(value), "text")
