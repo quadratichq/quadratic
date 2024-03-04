@@ -60,7 +60,7 @@ describe('Python/Pyodide', () => {
       await loadPythonWorker();
 
       let code = `
-5 + 3
+      5 + 3
 `;
       let results = await waitForResults(code);
       console.log('results', results);
