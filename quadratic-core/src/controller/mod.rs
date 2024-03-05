@@ -28,14 +28,15 @@ pub struct GridController {
 }
 
 impl GridController {
-    pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
+    pub fn from_grid(grid: Grid, last_sequence_num: u64, initialize: bool) -> Self {
         let grid = GridController {
             grid,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
         };
+
         // collect sheet info to send to the client
-        if cfg!(target_family = "wasm") {
+        if initialize && cfg!(target_family = "wasm") {
             if let Ok(sheet_info) = serde_json::to_string(
                 &grid
                     .sheet_ids()
@@ -52,6 +53,14 @@ impl GridController {
         grid
     }
 
+    pub fn upgrade_grid(grid: Grid, last_sequence_num: u64) -> Self {
+        GridController {
+            grid,
+            transactions: ActiveTransactions::new(last_sequence_num),
+            ..Default::default()
+        }
+    }
+
     pub fn grid(&self) -> &Grid {
         &self.grid
     }
@@ -62,7 +71,7 @@ impl GridController {
 
     // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
-        Self::from_grid(Grid::new(), 0)
+        Self::from_grid(Grid::new(), 0, false)
     }
 
     // get the last active transaction for testing purposes

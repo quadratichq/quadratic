@@ -1,5 +1,5 @@
 import { JsClipboard, JsHtmlOutput, Rect, SearchOptions, SheetPos } from '@/quadratic-core-types';
-import init, {
+import {
   BorderSelection,
   BorderStyle,
   GridController,
@@ -15,7 +15,6 @@ import init, {
 import { Point, Rectangle } from 'pixi.js';
 import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
-import { GridFile } from '../../schemas';
 import { GridPerformanceProxy } from './GridPerformanceProxy';
 import { sheets } from './Sheets';
 
@@ -47,23 +46,24 @@ export const rectToPoint = (rect: Rect): Point => {
   return new Point(Number(rect.min.x), Number(rect.min.y));
 };
 
-export const upgradeFileRust = async (
-  grid: GridFile,
-  lastSequenceNum: number
-): Promise<{
-  contents: string;
-  version: string;
-} | null> => {
-  await init();
-  try {
-    const gc = GridController.newFromFile(JSON.stringify(grid), lastSequenceNum);
-    const contents = gc.exportToFile();
-    return { contents: contents, version: gc.getVersion() };
-  } catch (e) {
-    console.warn(e);
-    return null;
-  }
-};
+// export const upgradeFileRust = async (
+//   gridFile: GridFile,
+//   lastSequenceNum: number
+// ): Promise<{
+//   contents: string;
+//   version: string;
+// } | null> => {
+//   await init();
+//   try {
+//     const grid = await quadraticCore.upgradeGridFile(JSON.stringify(gridFile), lastSequenceNum);
+//     debugger;
+//     // const contents = gc.exportToFile();
+//     return { contents: JSON.stringify(grid), version: (grid as any).version };
+//   } catch (e) {
+//     console.warn(e);
+//     return null;
+//   }
+// };
 
 // TS wrapper around Grid.rs
 export class Grid {

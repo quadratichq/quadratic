@@ -55,6 +55,10 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.removeChildren();
   }
 
+  // todo: addLabelMeshEntry should reuse the same LabelMeshEntry if it already exists
+  // there needs to be a final message to remove any unused LabelMeshEntry after all
+  // the addLabelMeshEntry messages have been sent
+
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
     this.addChild(new LabelMeshEntry(message));
   }

@@ -18,6 +18,20 @@ export interface ClientCoreLoad {
   sequenceNumber: number;
 }
 
+export interface ClientCoreUpgradeGridFile {
+  type: 'clientCoreUpgradeGridFile';
+  grid: string;
+  sequenceNumber: number;
+  id: number;
+}
+
+export interface CoreClientUpgradeFile {
+  type: 'coreClientUpgradeGridFile';
+  grid: string;
+  version: string;
+  id: number;
+}
+
 export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
 }
@@ -460,7 +474,8 @@ export type ClientCoreMessage =
   | ClientCoreSetSheetColor
   | ClientCoreDuplicateSheet
   | ClientCoreUndo
-  | ClientCoreRedo;
+  | ClientCoreRedo
+  | ClientCoreUpgradeGridFile;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -478,4 +493,5 @@ export type CoreClientMessage =
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor
-  | CoreClientSheetOffsets;
+  | CoreClientSheetOffsets
+  | CoreClientUpgradeFile;

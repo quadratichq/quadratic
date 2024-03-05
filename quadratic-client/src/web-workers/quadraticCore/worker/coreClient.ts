@@ -237,6 +237,11 @@ class CoreClient {
         core.redo(e.data.cursor);
         break;
 
+      case 'clientCoreUpgradeGridFile':
+        const { grid, version } = await core.upgradeGridFile(e.data.grid, e.data.sequenceNumber);
+        this.send({ type: 'coreClientUpgradeGridFile', id: e.data.id, grid, version });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

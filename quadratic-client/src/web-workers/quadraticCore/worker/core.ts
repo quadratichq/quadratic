@@ -32,7 +32,13 @@ class Core {
   async loadFile(message: ClientCoreLoad, renderPort: MessagePort) {
     coreRender.init(renderPort);
     const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
-    this.gridController = GridController.newFromFile(results[0], message.sequenceNumber);
+    try {
+      this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
+    } catch (e) {
+      // todo: this should be messaged back...
+      console.error('Error loading grid file:', e);
+      throw e;
+    }
     if (debugWebWorkers) console.log('[core] GridController loaded');
   }
 
@@ -299,6 +305,14 @@ class Core {
   redo(cursor: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.redo(cursor);
+  }
+
+  async upgradeGridFile(file: string, sequenceNum: number): Promise<{ grid: string; version: string }> {
+    await initCore();
+    const gc = GridController.newFromFile(file, sequenceNum, false);
+    const grid = gc.exportToFile();
+    const version = gc.getVersion();
+    return { grid, version };
   }
 }
 

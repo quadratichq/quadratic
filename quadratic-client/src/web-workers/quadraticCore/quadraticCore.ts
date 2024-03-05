@@ -28,6 +28,7 @@ import {
   ClientCoreLoad,
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
+  ClientCoreUpgradeGridFile,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
   CoreClientGetEditCell,
@@ -36,6 +37,7 @@ import {
   CoreClientImportCsv,
   CoreClientMessage,
   CoreClientSummarizeSelection,
+  CoreClientUpgradeFile,
 } from './coreClientMessages';
 
 class QuadraticCore {
@@ -75,6 +77,7 @@ class QuadraticCore {
       events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size);
       return;
     }
+
     if (e.data.id !== undefined) {
       // handle responses from requests to quadratic-core
       if (this.waitingForResponse[e.data.id]) {
@@ -116,6 +119,22 @@ class QuadraticCore {
       sequenceNumber,
     };
     this.send(message, port.port1);
+  }
+
+  async upgradeGridFile(grid: string, sequenceNumber: number): Promise<{ grid: string; version: string }> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientUpgradeFile) => {
+        resolve({ grid: message.grid, version: message.version });
+      };
+      const message: ClientCoreUpgradeGridFile = {
+        type: 'clientCoreUpgradeGridFile',
+        grid,
+        sequenceNumber,
+        id,
+      };
+      this.send(message);
+    });
   }
 
   // Gets a code cell from a sheet
