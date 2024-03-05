@@ -60,7 +60,7 @@ pub(crate) async fn get_and_load_object(
         .map_err(|e| FilesError::LoadFile(key.into(), bucket.to_string(), e.to_string()))?;
     let grid = load_file(key, body)?;
 
-    Ok(GridController::from_grid(grid, sequence_num))
+    Ok(GridController::from_grid(grid, sequence_num, false))
 }
 
 pub(crate) fn key(file_id: Uuid, sequence: u64) -> String {
@@ -259,7 +259,7 @@ mod tests {
         .unwrap();
 
         // add a cell value to the file
-        let mut gc = GridController::from_grid(file.clone(), 0);
+        let mut gc = GridController::from_grid(file.clone(), 0, false);
         let sheet_id = gc.sheet_ids().first().unwrap().to_owned();
         gc.set_cell_value(
             SheetPos {
