@@ -47,6 +47,10 @@ class RenderWebWorker {
         pixiApp.cellsSheets.labelMeshEntry(e.data);
         break;
 
+      case 'renderClientFinalizeCellsTextHash':
+        pixiApp.cellsSheets.finalizeCellsTextHash(e.data);
+        break;
+
       case 'renderClientFirstRenderComplete':
         pixiApp.firstRenderComplete();
         break;

@@ -57,10 +57,18 @@ export interface ClientRenderSheetOffsetsTransient {
   delta: number;
 }
 
+export interface RenderClientFinalizeCellsTextHash {
+  type: 'renderClientFinalizeCellsTextHash';
+  sheetId: string;
+  hashX: number;
+  hashY: number;
+}
+
 export type RenderClientMessage =
   | RenderClientLabelMeshEntry
   | RenderClientCellsTextHashClear
   | RenderClientFirstRenderComplete
-  | RenderClientUnload;
+  | RenderClientUnload
+  | RenderClientFinalizeCellsTextHash;
 
 export type ClientRenderMessage = ClientRenderInit | ClientRenderViewport | ClientRenderSheetOffsetsTransient;

@@ -223,7 +223,7 @@ export class CellsTextHash {
       this.viewRectangle.height += this.viewBounds.maxY - this.viewRectangle.bottom;
     }
 
-    // finalizes webGL buffers
+    // prepares the client's CellsTextHash for new content
     renderClient.sendCellsTextHashClear(
       this.cellsLabels.sheetId,
       this.hashX,
@@ -232,7 +232,13 @@ export class CellsTextHash {
       this.rawViewRectangle.x,
       this.rawViewRectangle.y
     );
+
+    // completes the rendering for the CellsTextHash
     this.labelMeshes.finalize();
+
+    // signals that all updates have been sent to the client
+    renderClient.finalizeCellsTextHash(this.cellsLabels.sheetId, this.hashX, this.hashY);
+
     this.loaded = true;
   }
 

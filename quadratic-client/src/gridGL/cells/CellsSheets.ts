@@ -2,6 +2,7 @@ import { events } from '@/events/events';
 import { JsRenderFill, SheetId, SheetInfo } from '@/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
+  RenderClientFinalizeCellsTextHash,
   RenderClientLabelMeshEntry,
 } from '@/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
@@ -181,6 +182,13 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.getById(sheetId);
     if (cellsSheet) {
       cellsSheet.unload(hashX, hashY);
+    }
+  }
+
+  finalizeCellsTextHash(message: RenderClientFinalizeCellsTextHash) {
+    const cellsSheet = this.getById(message.sheetId);
+    if (cellsSheet) {
+      cellsSheet.cellsLabels.finalizeCellsTextHash(message.hashX, message.hashY);
     }
   }
 }

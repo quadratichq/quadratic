@@ -86,6 +86,10 @@ class RenderClient {
   unload(sheetId: string, hashX: number, hashY: number) {
     this.send({ type: 'renderClientUnload', sheetId, hashX, hashY });
   }
+
+  finalizeCellsTextHash(sheetId: string, hashX: number, hashY: number) {
+    this.send({ type: 'renderClientFinalizeCellsTextHash', sheetId, hashX, hashY });
+  }
 }
 
 export const renderClient = new RenderClient();

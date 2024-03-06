@@ -20,6 +20,9 @@ import { LabelMeshEntry } from './LabelMeshEntry';
 export class CellsTextHash extends Container<LabelMeshEntry> {
   private cellsLabels: CellsLabels;
 
+  // holds replacement LabelMeshEntry objects that will replace the current children once we receive them all
+  private newChildren: LabelMeshEntry[] = [];
+
   hashX: number;
   hashY: number;
 
@@ -55,16 +58,21 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.removeChildren();
   }
 
-  // todo: addLabelMeshEntry should reuse the same LabelMeshEntry if it already exists
-  // there needs to be a final message to remove any unused LabelMeshEntry after all
-  // the addLabelMeshEntry messages have been sent
-
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
-    this.addChild(new LabelMeshEntry(message));
+    if (!this.children.length) {
+      this.addChild(new LabelMeshEntry(message));
+    } else {
+      this.newChildren.push(new LabelMeshEntry(message));
+    }
+  }
+
+  finalizeLabelMeshEntries() {
+    this.removeChildren();
+    this.newChildren.forEach((child) => this.addChild(child));
+    this.newChildren = [];
   }
 
   clearMeshEntries(bounds: { x: number; y: number; width: number; height: number }, x: number, y: number) {
-    this.removeChildren();
     this.visibleRectangle = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
     this.position.set(x, y);
   }

@@ -74,15 +74,23 @@ export class CellsLabels extends Container {
       return;
     }
     cellsTextHash.addLabelMeshEntry(message);
+  }
 
-    // refresh viewport if necessary
-    if (sheets.sheet.id === this.cellsSheet.sheetId) {
-      const bounds = pixiApp.viewport.getVisibleBounds();
-      if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
-        cellsTextHash.show();
-        pixiApp.setViewportDirty();
-      } else {
-        cellsTextHash.hide();
+  finalizeCellsTextHash(hashX: number, hashY: number) {
+    const key = `${hashX},${hashY}`;
+    const cellsTextHash = this.cellsTextHash.get(key);
+    if (cellsTextHash) {
+      cellsTextHash.finalizeLabelMeshEntries();
+
+      // refresh viewport if necessary
+      if (sheets.sheet.id === this.cellsSheet.sheetId) {
+        const bounds = pixiApp.viewport.getVisibleBounds();
+        if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
+          cellsTextHash.show();
+          pixiApp.setViewportDirty();
+        } else {
+          cellsTextHash.hide();
+        }
       }
     }
   }

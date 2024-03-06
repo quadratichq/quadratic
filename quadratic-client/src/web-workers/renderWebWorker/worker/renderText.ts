@@ -94,6 +94,7 @@ class RenderText {
     setTimeout(this.update);
   };
 
+  // Called before first render when all text visible in the viewport has been rendered and sent to the client
   completeRenderCells(message: { sheetId: string; hashX: number; hashY: number; cells: string }) {
     const cellsLabels = this.cellsLabels.get(message.sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.completeRenderCells');
