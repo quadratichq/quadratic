@@ -59,11 +59,7 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
-    if (!this.children.length) {
-      this.addChild(new LabelMeshEntry(message));
-    } else {
-      this.newChildren.push(new LabelMeshEntry(message));
-    }
+    this.newChildren.push(new LabelMeshEntry(message));
   }
 
   finalizeLabelMeshEntries() {
