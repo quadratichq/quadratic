@@ -10,6 +10,7 @@ import { grid } from './grid/controller/Grid';
 import { downloadFile, downloadQuadraticFile } from './helpers/downloadFileInBrowser';
 import { Action } from './routes/files.$uuid';
 import { FileContextType } from './ui/components/FileProvider';
+import { quadraticCore } from './web-workers/quadraticCore/quadraticCore';
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 export type GenericAction = {
@@ -86,8 +87,8 @@ export const duplicateFileWithCurrentOwnerAction = {
 export const downloadFileAction = {
   label: 'Download local copy',
   isAvailable: isLoggedIn,
-  run({ name }: { name: FileContextType['name'] }) {
-    downloadQuadraticFile(name, grid.export());
+  async run({ name }: { name: FileContextType['name'] }) {
+    downloadQuadraticFile(name, await quadraticCore.export());
   },
 };
 

@@ -242,6 +242,10 @@ class CoreClient {
         this.send({ type: 'coreClientUpgradeGridFile', id: e.data.id, grid, version });
         break;
 
+      case 'clientCoreExport':
+        this.send({ type: 'coreClientExport', id: e.data.id, grid: core.export() });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

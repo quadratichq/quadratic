@@ -121,13 +121,13 @@ export class Grid {
     this.gridController = GridController.test();
   }
 
-  export(): string {
-    return this.gridController.exportToFile();
-  }
+  // export(): string {
+  //   return this.gridController.exportToFile();
+  // }
 
-  getVersion(): string {
-    return this.gridController.getVersion();
-  }
+  // getVersion(): string {
+  //   return this.gridController.getVersion();
+  // }
 
   //#region get sheet information
   //-------------------------

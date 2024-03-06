@@ -314,6 +314,11 @@ class Core {
     const version = gc.getVersion();
     return { grid, version };
   }
+
+  export(): string {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.exportToFile();
+  }
 }
 
 export const core = new Core();

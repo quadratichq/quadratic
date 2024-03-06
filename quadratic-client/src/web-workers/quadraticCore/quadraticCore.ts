@@ -137,6 +137,17 @@ class QuadraticCore {
     });
   }
 
+  async export(): Promise<string> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { grid: string }) => {
+        resolve(message.grid);
+      };
+      this.send({ type: 'clientCoreExport', id });
+    });
+
+  }
+
   // Gets a code cell from a sheet
   getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
     return new Promise((resolve) => {

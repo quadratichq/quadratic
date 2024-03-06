@@ -36,6 +36,17 @@ export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
 }
 
+export interface ClientCoreExport {
+  type: 'clientCoreExport';
+  id: number;
+}
+
+export interface CoreClientExport {
+  type: 'coreClientExport';
+  grid: string;
+  id: number;
+}
+
 //#endregion
 
 //#region Query
@@ -475,7 +486,8 @@ export type ClientCoreMessage =
   | ClientCoreDuplicateSheet
   | ClientCoreUndo
   | ClientCoreRedo
-  | ClientCoreUpgradeGridFile;
+  | ClientCoreUpgradeGridFile
+  | ClientCoreExport;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -494,4 +506,5 @@ export type CoreClientMessage =
   | CoreClientSheetInfoUpdate
   | CoreClientSetCursor
   | CoreClientSheetOffsets
-  | CoreClientUpgradeFile;
+  | CoreClientUpgradeFile
+  | CoreClientExport;
