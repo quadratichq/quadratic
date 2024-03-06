@@ -373,6 +373,16 @@ export interface CoreClientSheetFills {
   fills: JsRenderFill[];
 }
 
+export interface ClientCoreRerunCodeCells {
+  type: 'clientCoreRerunCodeCells';
+  sheetId?: string;
+  x?: number;
+  y?: number;
+  cursor: string;
+}
+
+export interface CoreClientRerunCodeCells {}
+
 //#endregion
 
 //#region Sheets
