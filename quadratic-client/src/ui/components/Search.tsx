@@ -1,6 +1,5 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { events } from '@/events/events';
-import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { focusGrid } from '@/helpers/focusGrid';
 import { SearchOptions, SheetPos } from '@/quadratic-core-types';
@@ -13,6 +12,7 @@ import {
 } from '@/shadcn/ui/dropdown-menu';
 import { Input } from '@/shadcn/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/shadcn/ui/popover';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -32,9 +32,9 @@ export function Search() {
 
   const placeholder = !searchOptions.sheet_id ? 'Find across all sheets...' : 'Find in this sheet...';
 
-  const onChange = (search: string, updatedSearchOptions = searchOptions) => {
+  const onChange = async (search: string, updatedSearchOptions = searchOptions) => {
     if (search.length > 0) {
-      const found = grid.search(search, updatedSearchOptions);
+      const found = await quadraticCore.search(search, updatedSearchOptions);
       if (found.length) {
         setResults(found);
         setCurrent(0);

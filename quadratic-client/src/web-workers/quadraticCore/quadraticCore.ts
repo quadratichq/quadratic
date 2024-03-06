@@ -15,6 +15,8 @@ import {
   JsCodeCell,
   JsRenderCell,
   JsRenderCodeCell,
+  SearchOptions,
+  SheetPos,
 } from '@/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
@@ -36,6 +38,7 @@ import {
   CoreClientGetRenderCodeCells,
   CoreClientImportCsv,
   CoreClientMessage,
+  CoreClientSearch,
   CoreClientSummarizeSelection,
   CoreClientUpgradeFile,
 } from './coreClientMessages';
@@ -145,7 +148,6 @@ class QuadraticCore {
       };
       this.send({ type: 'clientCoreExport', id });
     });
-
   }
 
   // Gets a code cell from a sheet
@@ -504,6 +506,21 @@ class QuadraticCore {
       width: rectangle.width,
       height: rectangle.height,
       cursor,
+    });
+  }
+
+  search(search: string, searchOptions: SearchOptions) {
+    return new Promise<SheetPos[]>((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientSearch) => {
+        resolve(message.results);
+      };
+      this.send({
+        type: 'clientCoreSearch',
+        search,
+        searchOptions,
+        id,
+      });
     });
   }
 

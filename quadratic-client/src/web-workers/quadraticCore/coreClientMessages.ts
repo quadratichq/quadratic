@@ -6,7 +6,9 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  SearchOptions,
   SheetInfo,
+  SheetPos,
 } from '@/quadratic-core-types';
 
 //#region Initialize
@@ -140,6 +142,19 @@ export interface ClientCoreGetGridBounds {
 export interface CoreClientGetGridBounds {
   type: 'coreClientGetGridBounds';
   bounds?: { x: number; y: number; width: number; height: number };
+  id: number;
+}
+
+export interface ClientCoreSearch {
+  type: 'clientCoreSearch';
+  search: string;
+  searchOptions: SearchOptions;
+  id: number;
+}
+
+export interface CoreClientSearch {
+  type: 'coreClientSearch';
+  results: SheetPos[];
   id: number;
 }
 
@@ -487,7 +502,8 @@ export type ClientCoreMessage =
   | ClientCoreUndo
   | ClientCoreRedo
   | ClientCoreUpgradeGridFile
-  | ClientCoreExport;
+  | ClientCoreExport
+  | ClientCoreSearch;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -507,4 +523,5 @@ export type CoreClientMessage =
   | CoreClientSetCursor
   | CoreClientSheetOffsets
   | CoreClientUpgradeFile
-  | CoreClientExport;
+  | CoreClientExport
+  | CoreClientSearch;

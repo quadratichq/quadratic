@@ -246,6 +246,11 @@ class CoreClient {
         this.send({ type: 'coreClientExport', id: e.data.id, grid: core.export() });
         break;
 
+      case 'clientCoreSearch':
+        const results = core.search(e.data.search, e.data.searchOptions);
+        this.send({ type: 'coreClientSearch', id: e.data.id, results });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

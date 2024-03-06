@@ -1,4 +1,4 @@
-import { JsClipboard, JsHtmlOutput, Rect, SearchOptions, SheetPos } from '@/quadratic-core-types';
+import { JsClipboard, JsHtmlOutput, Rect } from '@/quadratic-core-types';
 import {
   BorderSelection,
   BorderStyle,
@@ -435,27 +435,26 @@ export class Grid {
   //#region Multiplayer
   //-----------------
 
-  setMultiplayerSequenceNum(sequenceNum: number) {
-    this.gridController.setMultiplayerSequenceNum(sequenceNum);
-  }
+  // setMultiplayerSequenceNum(sequenceNum: number) {
+  //   this.gridController.setMultiplayerSequenceNum(sequenceNum);
+  // }
 
-  // todo...
-  receiveSequenceNum(sequenceNum: number) {
-    // if (debugShowMultiplayer) console.log(`[Multiplayer] Server is at sequence_num ${sequenceNum}.`);
-    // const summary = this.gridController.receiveSequenceNum(sequenceNum);
-    // this.transactionResponse(summary);
-  }
+  // receiveSequenceNum(sequenceNum: number) {
+  //   if (debugShowMultiplayer) console.log(`[Multiplayer] Server is at sequence_num ${sequenceNum}.`);
+  //   const summary = this.gridController.receiveSequenceNum(sequenceNum);
+  //   this.transactionResponse(summary);
+  // }
 
-  receiveMultiplayerTransactions(transactions: string) {
-    if (debugShowMultiplayer) console.log('[Multiplayer] Received catch-up transactions.');
-    const summaryResponse = this.gridController.receiveMultiplayerTransactions(transactions);
-    if (summaryResponse.Ok) {
-      this.transactionResponse(summaryResponse.Ok);
-    } else {
-      console.error(summaryResponse.Err);
-      throw new Error(summaryResponse.Err);
-    }
-  }
+  // receiveMultiplayerTransactions(transactions: string) {
+  //   if (debugShowMultiplayer) console.log('[Multiplayer] Received catch-up transactions.');
+  //   const summaryResponse = this.gridController.receiveMultiplayerTransactions(transactions);
+  //   if (summaryResponse.Ok) {
+  //     this.transactionResponse(summaryResponse.Ok);
+  //   } else {
+  //     console.error(summaryResponse.Err);
+  //     throw new Error(summaryResponse.Err);
+  //   }
+  // }
 
   applyOfflineUnsavedTransaction(transactionId: string, transaction: string) {
     if (debugShowMultiplayer) console.log('[Multiplayer] Applying an offline unsaved transaction.');
@@ -466,9 +465,9 @@ export class Grid {
   //#endregion
 
   //#region Search
-  search(text: string, options: SearchOptions): SheetPos[] {
-    return this.gridController.search(text, options);
-  }
+  // search(text: string, options: SearchOptions): SheetPos[] {
+  //   return this.gridController.search(text, options);
+  // }
 
   //#endregion
 }

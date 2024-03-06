@@ -13,6 +13,8 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  SearchOptions,
+  SheetPos,
 } from '@/quadratic-core-types';
 import initCore, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
@@ -318,6 +320,11 @@ class Core {
   export(): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.exportToFile();
+  }
+
+  search(search: string, searchOptions: SearchOptions): SheetPos[] {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.search(search, searchOptions);
   }
 }
 
