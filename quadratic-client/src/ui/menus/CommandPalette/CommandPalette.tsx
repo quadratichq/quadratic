@@ -1,3 +1,4 @@
+import { useRootRouteLoaderData } from '@/router';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
@@ -14,10 +15,12 @@ interface Props {
 export const CommandPalette = (props: Props) => {
   // const { confirmSheetDelete } = props;
 
+  // const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
+
+  const { isAuthenticated } = useRootRouteLoaderData();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const [activeSearchValue, setActiveSearchValue] = useState<string>('');
-  // const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
 
   // Fn that closes the command palette and gets passed down to individual ListItems
   const closeCommandPalette = () => {
@@ -37,7 +40,8 @@ export const CommandPalette = (props: Props) => {
 
   // Otherwise, define vars and render the list
   const ListItems = getCommandPaletteListItems({
-    permission,
+    isAuthenticated,
+    permissions,
     closeCommandPalette,
     activeSearchValue: activeSearchValue,
     // selectedListItemIndex: selectedListItemIndex,

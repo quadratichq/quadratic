@@ -12,10 +12,10 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const moveCursor = (e: DragEvent<HTMLDivElement>): void => {
-    const clientBoudingRect = divRef?.current?.getBoundingClientRect();
+    const clientBoundingRect = divRef?.current?.getBoundingClientRect();
     const world = pixiApp.viewport.toWorld(
-      e.pageX - (clientBoudingRect?.left || 0),
-      e.pageY - (clientBoudingRect?.top || 0)
+      e.pageX - (clientBoundingRect?.left || 0),
+      e.pageY - (clientBoundingRect?.top || 0)
     );
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
@@ -52,10 +52,10 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type === 'text/csv' || file.type === 'text/tab-separated-values') {
-        const clientBoudingRect = divRef?.current?.getBoundingClientRect();
+        const clientBoundingRect = divRef?.current?.getBoundingClientRect();
         const world = pixiApp.viewport.toWorld(
-          e.pageX - (clientBoudingRect?.left || 0),
-          e.pageY - (clientBoudingRect?.top || 0)
+          e.pageX - (clientBoundingRect?.left || 0),
+          e.pageY - (clientBoundingRect?.top || 0)
         );
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const insertAtCellLocation = { x: column, y: row } as Coordinate;
@@ -67,7 +67,11 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   };
 
   return (
-    <div ref={divRef} onDragEnter={handleDrag} style={{ flex: 1 }}>
+    <div
+      ref={divRef}
+      onDragEnter={handleDrag}
+      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+    >
       {props.children}
       {dragActive && (
         <div

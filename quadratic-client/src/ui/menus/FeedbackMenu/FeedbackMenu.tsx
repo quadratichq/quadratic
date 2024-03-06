@@ -1,25 +1,22 @@
-import { Button, IconButton, Stack, TextField } from '@mui/material';
-import { useTheme } from '@mui/system';
-import { useState } from 'react';
+import { BUG_REPORT_URL, DISCORD, TWITTER } from '@/constants/urls';
+import { Button } from '@/shadcn/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+import { useRef, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 import { apiClient } from '../../../api/apiClient';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { QDialog } from '../../../components/QDialog';
-import { BUG_REPORT_URL, DISCORD, TWITTER } from '../../../constants/urls';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { useRootRouteLoaderData } from '../../../router';
-import focusInput from '../../../utils/focusInput';
-import { SocialDiscord, SocialGithub, SocialTwitter } from '../../icons';
 
 export const FeedbackMenu = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
-  // We'll keep the user's state around unless they explicitly cancel or get a successful submit
+  // We'll keep the user's state around unless they explicitly cancel or things submitted successfully
   const [value, setValue] = useLocalStorage('feedback-message', '');
-  const [loadState, setLoadState] = useState<'INITIAL' | 'LOADING' | 'LOAD_ERROR'>('INITIAL');
-  const theme = useTheme();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [hasValidationError, setHasValidationError] = useState<boolean>(false);
   const { addGlobalSnackbar } = useGlobalSnackbar();
-  const { user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
 
   const closeMenu = () => {
     setEditorInteractionState((state) => ({
@@ -29,95 +26,98 @@ export const FeedbackMenu = () => {
   };
 
   const onSubmit = async () => {
-    setLoadState('LOADING');
-    try {
-      await apiClient.postFeedback({ feedback: value, userEmail: user?.email });
-      setValue('');
+    const formData = new FormData(formRef.current as HTMLFormElement);
+    const name = String(formData.get('name'));
+    const feedback = String(formData.get('feedback'));
+    const userEmail = user?.email;
+
+    if (feedback.length === 0) {
+      setHasValidationError(true);
+      return;
+    }
+
+    if (name.length > 0) {
+      // Caught you bot!
       closeMenu();
+      setValue('');
+      return;
+    }
+
+    try {
+      closeMenu();
+      await apiClient.postFeedback({ feedback, userEmail });
+      setValue('');
       addGlobalSnackbar('Feedback submitted! Thank you.');
     } catch (error) {
-      setLoadState('LOAD_ERROR');
+      addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
     }
   };
 
-  const isLoading = loadState === 'LOADING';
-  const hasError = loadState === 'LOAD_ERROR';
-
   return (
-    <QDialog onClose={closeMenu}>
-      <QDialog.Title>Provide feedback</QDialog.Title>
-      <QDialog.Content>
-        <TextField
-          aria-label="Feedback"
-          placeholder="Please make Quadratic better by..."
-          InputLabelProps={{ shrink: true }}
-          InputProps={{ sx: { fontSize: '.875rem' } }}
-          inputRef={focusInput}
-          id="feedback"
-          variant="outlined"
-          disabled={isLoading}
-          fullWidth
-          minRows={4}
-          multiline
-          autoFocus
-          value={value}
-          onFocus={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            // If an error exists, reset
-            if (loadState === 'LOAD_ERROR') {
-              setLoadState('INITIAL');
-            }
-            // Ensure cursor position to the end on focus
-            if (value.length > 0) {
-              event.target.setSelectionRange(value.length, value.length);
-            }
+    <Dialog open={true} onOpenChange={closeMenu}>
+      <DialogContent className=" max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Provide feedback</DialogTitle>
+          <DialogDescription>
+            Or reach out to us on{' '}
+            <a href={BUG_REPORT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+              GitHub
+            </a>
+            ,{' '}
+            <a href={TWITTER} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+              Twitter
+            </a>
+            , or{' '}
+            <a href={DISCORD} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+              Discord
+            </a>
+            .
+          </DialogDescription>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit();
           }}
-          // Allow submit via keyboard CMD + Enter
-          onKeyDown={(event) => {
-            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-              onSubmit();
-            }
-          }}
-          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            setValue(event.target.value);
-          }}
-          {...(hasError ? { error: true, helperText: 'Failed to send. Try again.' } : {})}
-        />
-      </QDialog.Content>
-      <QDialog.Actions>
-        <Stack direction="row" alignItems="center" gap={theme.spacing(1)} mr="auto">
-          <IconButton href={BUG_REPORT_URL} target="_blank" color={theme.palette.text.secondary} size="small">
-            <SocialGithub />
-          </IconButton>
-          <IconButton href={TWITTER} target="_blank" color={theme.palette.text.secondary} size="small">
-            <SocialTwitter />
-          </IconButton>
-          <IconButton href={DISCORD} target="_blank" color={theme.palette.text.secondary} size="small">
-            <SocialDiscord />
-          </IconButton>
-        </Stack>
-        <Stack direction="row" gap={theme.spacing(1)}>
+          id="feedback-form"
+          ref={formRef}
+        >
+          <textarea
+            name="feedback"
+            aria-label="Feedback"
+            placeholder="Please make Quadratic better by..."
+            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            rows={6}
+            autoFocus
+            defaultValue={value}
+            onKeyDown={(event) => {
+              // Allow submit via keyboard CMD + Enter
+              if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+                onSubmit();
+              }
+            }}
+            onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+              setValue(event.target.value);
+            }}
+          />
+          {hasValidationError && <p className="mt-1 text-sm text-destructive">Required.</p>}
+          <input type="text" name="name" className="hidden" />
+        </form>
+        <DialogFooter>
           <Button
-            size="small"
-            variant="outlined"
+            variant="outline"
             onClick={() => {
               setValue('');
               closeMenu();
             }}
-            disabled={isLoading}
           >
             Cancel
           </Button>
-          <Button
-            size="small"
-            variant="contained"
-            onClick={onSubmit}
-            disabled={value.length === 0 || isLoading}
-            disableElevation
-          >
-            {isLoading ? 'Submitting…' : 'Submit'}
+          <Button form="feedback-form" type="submit">
+            Submit
           </Button>
-        </Stack>
-      </QDialog.Actions>
-    </QDialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };

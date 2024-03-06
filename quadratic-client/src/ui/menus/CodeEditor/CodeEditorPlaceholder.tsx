@@ -1,38 +1,25 @@
+import monaco from 'monaco-editor';
 import { Fragment, RefObject, useEffect, useState } from 'react';
 import useLocalStorage from '../../../hooks/useLocalStorage';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
-import monaco from 'monaco-editor';
 
 export const snippets = [
   {
     label: 'fetch data',
     // prettier-ignore
     code:
-`import json
-from pyodide.http import pyfetch
+`import requests 
+import pandas as pd 
 
 # Fetch data
-res = await pyfetch(
-  'https://jsonplaceholder.typicode.com/users',
-  method = 'GET',
-  headers = {
-    'Content-Type': 'application/json'
-  }
-)
-users = json.loads(await res.string())
+response = requests.get('https://jsonplaceholder.typicode.com/users')
 
-# Table
-out = []
+# Place data into DataFrame
+df = pd.DataFrame(response.json())
 
-# Headers
-out.append(['Username',  'Email', 'Website'])
-
-# Rows (from json)
-for user in users:
-    out.append([user['username'], user['email'], user['website']])
- 
-# Last line returns to sheet
-out`,
+# Display DataFrame to sheet 
+df
+`,
   },
   {
     label: 'reference cells',
@@ -43,6 +30,32 @@ myCell = cell(x, y)
 
 # Or reference a range of cells (returns a Pandas DataFrame)
 cells((x1, y1), (x2, y2))`,
+  },
+  {
+    label: 'create a chart',
+    // prettier-ignore
+    code:
+`# install plotly 
+import micropip
+await micropip.install('plotly')
+
+# import plotly
+import plotly.express as px
+
+# replace this df with your data
+df = px.data.gapminder().query("country=='Canada'")
+
+# create your chart type, for more chart types: https://plotly.com/python/
+fig = px.line(df, x="year", y="lifeExp", title='Life expectancy in Canada')
+
+# make chart prettier
+fig.update_layout(
+    plot_bgcolor="White",
+)
+
+# display chart 
+fig.show()
+`,
   },
   {
     label: 'return data to the sheet',
@@ -106,7 +119,7 @@ export function CodeEditorPlaceholder({
         <Fragment key={i}>
           <a
             href={`#snippet-${i}`}
-            style={{ color: 'inherit', pointerEvents: 'auto' }}
+            className={`pointer-events-auto text-inherit underline`}
             onClick={(e) => {
               e.preventDefault();
               setEditorContent(snippet.code);

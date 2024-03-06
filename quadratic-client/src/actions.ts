@@ -1,20 +1,20 @@
+import { FilePermission, FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import { NavigateFunction, SubmitFunction } from 'react-router-dom';
 import { SetterOrUpdater } from 'recoil';
 import { apiClient } from './api/apiClient';
-import { Permission, PermissionSchema } from './api/types';
 import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
-import { CreateActionRequest } from './dashboard/FilesCreateRoute';
 import { grid } from './grid/controller/Grid';
 import { downloadFile, downloadQuadraticFile } from './helpers/downloadFileInBrowser';
+import { Action } from './routes/files.$uuid';
 import { FileContextType } from './ui/components/FileProvider';
-const { OWNER, EDITOR, VIEWER } = PermissionSchema.enum;
+const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 export type GenericAction = {
   label: string;
-  isAvailable?: (permission: Permission) => boolean;
+  isAvailable?: (permissions: FilePermission[], isAuthenticated?: boolean) => boolean;
   run?: (args: any) => void;
 
   // Future shortcuts
@@ -47,13 +47,14 @@ export type GenericAction = {
   // shortcut: Shortcut[] | Shortcut
 };
 
-export const isOwner = (permission: Permission) => permission === OWNER;
-export const isEditorOrAbove = (permission: Permission) => permission === EDITOR || isOwner(permission);
-export const isViewerOrAbove = (permission: Permission) => permission === VIEWER || isEditorOrAbove(permission);
+// TODO: create generic hasPermission(permission, permissionToCheck) function
+
+export const hasPermissionToEditFile = (permissions: FilePermission[]) => permissions.includes(FILE_EDIT);
+const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => isAuthenticated;
 
 export const createNewFileAction = {
   label: 'New',
-  isAvailable: isViewerOrAbove,
+  isAvailable: isLoggedIn,
   run({ navigate }: { navigate: NavigateFunction }) {
     navigate(ROUTES.CREATE_FILE);
   },
@@ -61,26 +62,30 @@ export const createNewFileAction = {
 
 export const renameFileAction = {
   label: 'Rename',
-  isAvailable: isOwner,
+  isAvailable: hasPermissionToEditFile,
 };
 
-export const duplicateFileAction = {
-  label: 'Duplicate',
-  isAvailable: isViewerOrAbove,
-  run({ name, submit }: { name: string; submit: SubmitFunction }) {
-    const data: CreateActionRequest = {
-      name: name + ' (Copy)',
-      contents: grid.export(),
-      version: grid.getVersion(),
-    };
+export const duplicateFileWithUserAsOwnerAction = {
+  label: 'Duplicate in my files',
+  isAvailable: isLoggedIn,
+  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
+    const data = { action: 'duplicate', redirect: true, withCurrentOwner: false } as Action['request.duplicate'];
+    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
+  },
+};
 
-    submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
+export const duplicateFileWithCurrentOwnerAction = {
+  label: 'Duplicate',
+  isAvailable: isLoggedIn,
+  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
+    const data = { action: 'duplicate', redirect: true, withCurrentOwner: true } as Action['request.duplicate'];
+    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
   },
 };
 
 export const downloadFileAction = {
   label: 'Download local copy',
-  isAvailable: isViewerOrAbove,
+  isAvailable: isLoggedIn,
   run({ name }: { name: FileContextType['name'] }) {
     downloadQuadraticFile(name, grid.export());
   },
@@ -88,12 +93,12 @@ export const downloadFileAction = {
 
 export const deleteFile = {
   label: 'Delete',
-  isAvailable: isOwner,
-  // TODO enhancement: handle this async operation in the UI similar to /files/create
+  isAvailable: (permissions: FilePermission[]) => permissions.includes(FILE_DELETE),
+  // TODO: (enhancement) handle this async operation in the UI similar to /files/create
   async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
-        await apiClient.deleteFile(uuid);
+        await apiClient.files.delete(uuid);
         window.location.href = ROUTES.FILES;
       } catch (e) {
         addGlobalSnackbar('Failed to delete file. Try again.', { severity: 'error' });
@@ -104,7 +109,7 @@ export const deleteFile = {
 
 export const provideFeedbackAction = {
   label: 'Feedback',
-  isAvailable: isViewerOrAbove,
+  isAvailable: isLoggedIn,
   run({ setEditorInteractionState }: { setEditorInteractionState: SetterOrUpdater<EditorInteractionState> }) {
     setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
   },
@@ -119,26 +124,51 @@ export const viewDocsAction = {
 
 export const cutAction = {
   label: 'Cut',
-  isAvailable: isEditorOrAbove,
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const pasteAction = {
   label: 'Paste',
-  isAvailable: isEditorOrAbove,
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const pasteActionValues = {
+  label: 'Paste values only',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const pasteActionFormats = {
+  label: 'Paste formats only',
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const undoAction = {
   label: 'Undo',
-  isAvailable: isEditorOrAbove,
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const redoAction = {
   label: 'Redo',
-  isAvailable: isEditorOrAbove,
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const copyAction = {
   label: 'Copy',
+};
+
+export const rerunCellAction = {
+  label: 'Run this code cell',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const rerunAction = {
+  label: 'Run all code cells in the file',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const rerunSheetAction = {
+  label: 'Run all code cells in the current sheet',
+  isAvailable: hasPermissionToEditFile,
 };
 
 export const downloadSelectionAsCsvAction = {

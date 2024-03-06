@@ -1,14 +1,17 @@
-import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { SwitchApp } from '@/shadcn/ui/switch';
+import { Search } from '@/ui/components/Search';
+import { Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
+import { isEmbed } from '../../../helpers/isEmbed';
 import { isElectron } from '../../../utils/isElectron';
 import { DataMenu } from './SubMenus/DataMenu';
 import { FormatMenu } from './SubMenus/FormatMenu/FormatMenu';
 import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
-import { TopBarCodeOutlinesSwitch } from './TopBarCodeOutlinesSwitch';
+import { useGridSettings } from './SubMenus/useGridSettings';
 import { TopBarFileMenu } from './TopBarFileMenu';
 import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
@@ -18,8 +21,8 @@ export const TopBar = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const { permission } = editorInteractionState;
-
+  const { permissions } = editorInteractionState;
+  const { showCellTypeOutlines, setShowCellTypeOutlines } = useGridSettings();
   return (
     <Box
       onContextMenu={(event) => {
@@ -37,6 +40,7 @@ export const TopBar = () => {
         borderWidth: '0 0 1px 0',
         borderStyle: 'solid',
         height: theme.spacing(6),
+        position: 'relative',
         ...(isElectron()
           ? {
               paddingLeft: '4.5rem',
@@ -51,17 +55,14 @@ export const TopBar = () => {
       }}
     >
       <div
+        className="flex items-stretch lg:basis-1/3"
         style={{
           //@ts-expect-error
           WebkitAppRegion: 'no-drag',
-          display: 'flex',
-          alignItems: 'stretch',
-          color: theme.palette.text.primary,
-          ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
         <QuadraticMenu />
-        {isEditorOrAbove(permission) && isDesktop && (
+        {hasPermissionToEditFile(permissions) && isDesktop && (
           <>
             <DataMenu />
             <FormatMenu />
@@ -73,26 +74,24 @@ export const TopBar = () => {
       <TopBarFileMenu />
 
       <div
+        className="flex items-center justify-end gap-4 lg:basis-1/3"
         style={{
           // @ts-expect-error
           WebkitAppRegion: 'no-drag',
-          display: 'flex',
-          alignItems: 'stretch',
-          justifyContent: 'flex-end',
-          gap: theme.spacing(),
-          color: theme.palette.text.primary,
-          ...(isDesktop ? { flexBasis: '30%' } : {}),
         }}
       >
-        {isDesktop && (
+        {isDesktop && !isEmbed && (
           <>
-            <TopBarCodeOutlinesSwitch />
             <TopBarUsers />
+            <Tooltip title={`${showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
+              <SwitchApp checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
+            </Tooltip>
             <TopBarShareButton />
           </>
         )}
         <TopBarZoomMenu />
       </div>
+      <Search />
     </Box>
   );
 };

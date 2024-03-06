@@ -1,5 +1,5 @@
 import { TextNoneIcon } from '@radix-ui/react-icons';
-import { isEditorOrAbove } from '../../../../actions';
+import { hasPermissionToEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import {
   clearFormattingAndBorders,
@@ -24,7 +24,7 @@ const TextIcon = ({ children }: any) => {
 const ListItems = [
   {
     label: 'Format: Clear all',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: any) => {
       return (
         <CommandPaletteListItem
@@ -39,49 +39,49 @@ const ListItems = [
   },
   {
     label: 'Format: Number as automatic',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} action={removeCellNumericFormat} />;
     },
   },
   {
     label: 'Format: Number as currency',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: any) => {
       return <CommandPaletteListItem icon={<TextIcon>$</TextIcon>} {...props} action={textFormatSetCurrency} />;
     },
   },
   {
     label: 'Format: Number as percentage',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: any) => {
       return <CommandPaletteListItem icon={<TextIcon>%</TextIcon>} {...props} action={textFormatSetPercentage} />;
     },
   },
   {
     label: 'Format: Number as scientific',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: any) => {
       return <CommandPaletteListItem icon={<TextIcon>Σ</TextIcon>} {...props} action={textFormatSetExponential} />;
     },
   },
   {
     label: 'Format: Number toggle commas',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} action={toggleCommas} />;
     },
   },
   {
     label: 'Format: Increase decimal place',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} action={textFormatIncreaseDecimalPlaces} />;
     },
   },
   {
     label: 'Format: Decrease decimal place',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: any) => {
       return <CommandPaletteListItem {...props} action={textFormatDecreaseDecimalPlaces} />;
     },

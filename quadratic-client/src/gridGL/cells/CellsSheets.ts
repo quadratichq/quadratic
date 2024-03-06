@@ -5,7 +5,7 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
-  private current?: CellsSheet;
+  current?: CellsSheet;
 
   async create(): Promise<void> {
     this.removeChildren();
@@ -31,7 +31,6 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     const cellsSheet = this.addChild(new CellsSheet(sheet));
     await cellsSheet.preload();
-    this.show(sheet.id);
   }
 
   deleteSheet(id: string): void {
@@ -49,7 +48,6 @@ export class CellsSheets extends Container<CellsSheet> {
         if (this.current?.sheet.id !== child?.sheet.id) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.loadViewport();
         }
       } else {
         child.hide();
@@ -67,24 +65,27 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   // this updates the first dirty CellsSheet, always starting with the current sheet
-  update(): void {
+  // * userIsActive indicates whether to hold off on rendering sheets that are not visible
+  update(userIsActive: boolean): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
-    if (this.current.update()) {
-      pixiApp.setViewportDirty();
+    if (this.current.update(userIsActive)) {
       return;
     }
-    for (const child of this.children) {
-      if (this.current !== child) {
-        if (child.update()) {
-          pixiApp.setViewportDirty();
-          return;
+    // if the current sheet is not dirty, check the other sheets
+    if (!userIsActive) {
+      // find the next non-visible sheet to render, and do one per inactive frame
+      for (const child of this.children) {
+        if (this.current !== child) {
+          if (child.update(false)) {
+            return;
+          }
         }
       }
     }
   }
 
-  toggleOutlines(): void {
-    this.current?.toggleOutlines();
+  toggleOutlines(off?: boolean): void {
+    this.current?.toggleOutlines(off);
   }
 
   createBorders(): void {
@@ -105,6 +106,11 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
     cellsSheet.adjustHeadings({ delta, row, column });
+    if (sheets.sheet.id === sheetId) {
+      pixiApp.gridLines.dirty = true;
+      pixiApp.cursor.dirty = true;
+      pixiApp.headings.dirty = true;
+    }
   }
 
   getCellsContentMaxWidth(column: number): number {
@@ -116,6 +122,7 @@ export class CellsSheets extends Container<CellsSheet> {
     for (const cellSheet of this.children) {
       const modified = cellSheetsModified.filter((modified) => modified.sheet_id === cellSheet.sheet.id);
       if (modified.length) {
+        cellSheet.updateCellsArray();
         cellSheet.modified(modified);
       }
     }
@@ -130,6 +137,11 @@ export class CellsSheets extends Container<CellsSheet> {
         }
       }
     });
+  }
+
+  updateCellsArray(): void {
+    if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');
+    this.current.updateCellsArray();
   }
 
   updateBorders(borderSheets: SheetId[]): void {

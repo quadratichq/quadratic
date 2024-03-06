@@ -11,27 +11,28 @@ import {
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
+  useLocation,
   useRouteError,
   useRouteLoaderData,
 } from 'react-router-dom';
+import { apiClient } from './api/apiClient';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
 import { Empty } from './components/Empty';
 import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
-import { action as shareFileMenuAction, loader as shareFileMenuLoader } from './components/ShareFileMenu';
 import { Theme } from './components/Theme';
 import { SUPPORT_EMAIL } from './constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
 import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
-import * as Create from './dashboard/FilesCreateRoute';
 import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
-import { action as filesAction } from './dashboard/components/FilesList';
+import * as Create from './routes/files.create';
 import { initializeAnalytics } from './utils/analytics';
+
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
-  user?: User;
+  loggedInUser?: User;
 };
 
 export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
@@ -43,8 +44,8 @@ export const router = createBrowserRouter(
         path="/"
         loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
           // All other routes get the same data
-          let isAuthenticated = await authClient.isAuthenticated();
-          let user = await authClient.user();
+          const isAuthenticated = await authClient.isAuthenticated();
+          const user = await authClient.user();
 
           // This is where we determine whether we need to run a migration
           // This redirect should trigger for every route _except_ the migration
@@ -56,9 +57,9 @@ export const router = createBrowserRouter(
             }
           }
 
-          initializeAnalytics({ isAuthenticated, user });
+          initializeAnalytics(user);
 
-          return { isAuthenticated, user };
+          return { isAuthenticated, loggedInUser: user };
         }}
         element={<Root />}
         errorElement={<RootError />}
@@ -82,7 +83,13 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
-          <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+          <Route
+            index
+            Component={() => {
+              const { search } = useLocation();
+              return <Navigate to={ROUTES.FILES + search} replace />;
+            }}
+          />
           <Route
             path={ROUTES.CREATE_FILE}
             loader={Create.loader}
@@ -90,11 +97,22 @@ export const router = createBrowserRouter(
             shouldRevalidate={() => false}
           />
 
-          <Route lazy={() => import('./dashboard/components/DashboardLayoutRoute')}>
-            <Route path={ROUTES.FILES} lazy={() => import('./dashboard/FilesRoute')} />
-            <Route path={ROUTES.EXAMPLES} lazy={() => import('./dashboard/ExamplesRoute')} />
-            <Route path={ROUTES.TEAMS} lazy={() => import('./dashboard/TeamsRoute')} />
-            <Route path={ROUTES.ACCOUNT} lazy={() => import('./dashboard/AccountRoute')} />
+          <Route id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
+            <Route path={ROUTES.FILES}>
+              <Route index lazy={() => import('./routes/files')} />
+
+              {/* Resource routes */}
+              <Route path=":uuid" lazy={() => import('./routes/files.$uuid')} />
+              <Route path=":uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
+            </Route>
+            <Route path={ROUTES.FILES_SHARED_WITH_ME} lazy={() => import('./routes/files.shared-with-me')} />
+            <Route path={ROUTES.EXAMPLES} lazy={() => import('./routes/examples')} />
+            <Route path={ROUTES.ACCOUNT} lazy={() => import('./routes/account')} />
+
+            <Route path={ROUTES.TEAMS}>
+              <Route index element={<Navigate to={ROUTES.FILES} replace />} />
+              <Route path=":uuid" id={ROUTE_LOADER_IDS.TEAM} lazy={() => import('./routes/teams.$uuid')} />
+            </Route>
           </Route>
 
           <Route
@@ -102,9 +120,6 @@ export const router = createBrowserRouter(
             element={<CloudFilesMigration.Component />}
             loader={CloudFilesMigration.loader}
           />
-
-          <Route path="/api/files/:uuid" action={filesAction} loader={() => null} />
-          <Route path="/api/files/:uuid/sharing" action={shareFileMenuAction} loader={shareFileMenuLoader} />
         </Route>
 
         <Route
@@ -130,14 +145,14 @@ export const router = createBrowserRouter(
       <Route
         path={ROUTES.LOGIN}
         loader={async ({ request }) => {
-          let isAuthenticated = await authClient.isAuthenticated();
+          const isAuthenticated = await authClient.isAuthenticated();
 
-          // If they’re authenticated, redirect home
+          // If they’re logged in, redirect home
           if (isAuthenticated) {
             return redirect('/');
           }
 
-          // If they’re not authenticated, send them to Auth0
+          // If not, send them to Auth0
           // Watch for a `from` query param, as unprotected routes will redirect
           // to here for them to auth first
           // Also watch for the presence of a `signup` query param, which means
@@ -149,9 +164,6 @@ export const router = createBrowserRouter(
 
           // auth0 will re-route us (above) but telling react-router where we
           // are re-routing to makes sure that this doesn't end up in the history stack
-          // but we have to add an artifical delay that's long enough for
-          // the auth0 navigation to take place
-          await new Promise((resolve) => setTimeout(resolve, 10000));
           return redirect(redirectTo);
         }}
       />
@@ -164,6 +176,10 @@ export const router = createBrowserRouter(
             await authClient.handleSigninRedirect();
             let isAuthenticated = await authClient.isAuthenticated();
             if (isAuthenticated) {
+              // Acknowledge the user has just logged in. The backend may need
+              // to run some logic before making any other API calls in parallel
+              await apiClient.users.acknowledge();
+
               let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
               return redirect(redirectTo);
             }

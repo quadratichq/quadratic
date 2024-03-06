@@ -4,7 +4,7 @@ import mixpanel from 'mixpanel-browser';
 import { MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
@@ -24,8 +24,8 @@ export const SheetBar = (): JSX.Element => {
   const [_, setTrigger] = useState(0);
 
   const theme = useTheme();
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = isEditorOrAbove(permission) && !isMobile;
+  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);
@@ -101,7 +101,7 @@ export const SheetBar = (): JSX.Element => {
         tab.style.zIndex = '';
         tab.style.transform = '';
         tab.style.order = down.current.originalOrder.toString();
-        tab.scrollIntoView();
+        // tab.scrollIntoView();
         down.current = undefined;
       }
     };
@@ -116,7 +116,7 @@ export const SheetBar = (): JSX.Element => {
       const children = [...sheetTabs.children];
       const tab = children.find((child) => child.getAttribute('data-id') === activeSheet);
       if (tab) {
-        tab.scrollIntoView();
+        // tab.scrollIntoView();
       }
     }
   }, [activeSheet, sheetTabs]);
@@ -417,7 +417,13 @@ export const SheetBar = (): JSX.Element => {
       direction="row"
       justifyContent="space-between"
       alignItems="stretch"
-      sx={{ color: theme.palette.text.secondary, height: '2rem', fontSize: '0.7rem' }}
+      sx={{
+        color: theme.palette.text.secondary,
+        height: '2rem',
+        fontSize: '0.7rem',
+        zIndex: 1,
+        backgroundColor: theme.palette.background.paper,
+      }}
       className="sheet-bar"
     >
       {hasPermission && (

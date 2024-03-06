@@ -1,4 +1,4 @@
-import { isEditorOrAbove } from '../../../../actions';
+import { hasPermissionToEditFile } from '../../../../actions';
 import { BorderSelection } from '../../../../quadratic-core/quadratic_core';
 import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
@@ -45,7 +45,7 @@ const ListItems = [
   ].map(generateListItem),
   {
     label: 'Borders: Clear all',
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { clearBorders } = useBorders();
       return (
@@ -80,7 +80,7 @@ function generateListItem({
 }) {
   return {
     label,
-    isAvailable: isEditorOrAbove,
+    isAvailable: hasPermissionToEditFile,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const { changeBorders } = useBorders();
       return (

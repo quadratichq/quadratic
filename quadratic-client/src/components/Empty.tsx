@@ -9,15 +9,17 @@ export function Empty({
   actions,
   Icon,
   severity,
+  className,
 }: {
   title: String;
   description: ReactNode;
   actions?: ReactNode;
   Icon: typeof StopwatchIcon;
   severity?: 'error';
+  className?: string;
 }) {
   return (
-    <div className={`max-w mx-auto my-10 max-w-md px-2 text-center`}>
+    <div className={cn(`max-w mx-auto my-10 max-w-md px-2 text-center`, className)}>
       <div
         className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center border border-border text-muted-foreground`}
       >
@@ -25,9 +27,9 @@ export function Empty({
       </div>
       <h4 className={cn(TYPE.h4, `mb-1`, severity === 'error' && 'text-destructive')}>{title}</h4>
 
-      <p className={`text-sm text-muted-foreground`}>{description}</p>
+      <div className={`text-sm text-muted-foreground`}>{description}</div>
 
-      {actions && <div className={`mt-6`}>{actions}</div>}
+      {actions && <div className={`mt-8`}>{actions}</div>}
     </div>
   );
 }

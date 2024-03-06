@@ -1,15 +1,17 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use quadratic_core::controller::GridController;
 use quadratic_core::grid::Grid;
-use quadratic_core::{Pos, Rect};
+use quadratic_core::{Pos, Rect, SheetPos, SheetRect};
 use std::time::Duration;
 
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let airports =
-        quadratic_core::grid::file::import(include_str!("../examples/airports.grid")).unwrap();
+    let airports = quadratic_core::grid::file::import(include_str!(
+        "../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid"
+    ))
+    .unwrap();
 
     let inputs = vec![
         ("empty", Grid::new()), // empty file
@@ -38,40 +40,62 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     benchmark_grids(c, &inputs, "recalculate_bounds", |b, grid| {
         let mut grid = grid.clone();
-        b.iter(|| grid.sheets_mut()[0].recalculate_bounds());
+        b.iter(|| grid.first_sheet_mut().recalculate_bounds());
     });
 
     benchmark_grids(c, &inputs, "copy_paste_10_x_10", |b, grid| {
-        let mut gc = GridController::from_grid(grid.clone());
+        let mut gc = GridController::from_grid(grid.clone(), 0);
         b.iter(|| {
             let sheet_id = gc.sheet_ids()[0];
-            let rect = Rect {
+            let sheet_rect = SheetRect {
                 min: Pos { x: 0, y: 0 },
                 max: Pos { x: 10, y: 10 },
+                sheet_id,
             };
-            let pos = Pos { x: 10000, y: 10000 };
-            let contents = gc.copy_to_clipboard(sheet_id, rect);
-            gc.paste_from_clipboard(sheet_id, pos, Some(contents.0), Some(contents.1), None);
+            let sheet_pos = SheetPos {
+                x: 10000,
+                y: 10000,
+                sheet_id,
+            };
+            let contents = gc.copy_to_clipboard(sheet_rect);
+            gc.paste_from_clipboard(
+                sheet_pos,
+                Some(contents.0),
+                Some(contents.1),
+                quadratic_core::controller::user_actions::clipboard::PasteSpecial::None,
+                None,
+            );
         });
     });
 
     benchmark_grids(c, &inputs, "copy_paste_100_x_100", |b, grid| {
-        let mut gc = GridController::from_grid(grid.clone());
+        let mut gc = GridController::from_grid(grid.clone(), 0);
         b.iter(|| {
             let sheet_id = gc.sheet_ids()[0];
-            let rect = Rect {
+            let sheet_rect = SheetRect {
                 min: Pos { x: 0, y: 0 },
                 max: Pos { x: 100, y: 100 },
+                sheet_id,
             };
-            let pos = Pos { x: 10000, y: 10000 };
-            let contents = gc.copy_to_clipboard(sheet_id, rect);
-            gc.paste_from_clipboard(sheet_id, pos, Some(contents.0), Some(contents.1), None);
+            let sheet_pos = SheetPos {
+                x: 10000,
+                y: 10000,
+                sheet_id,
+            };
+            let contents = gc.copy_to_clipboard(sheet_rect);
+            gc.paste_from_clipboard(
+                sheet_pos,
+                Some(contents.0),
+                Some(contents.1),
+                quadratic_core::controller::user_actions::clipboard::PasteSpecial::None,
+                None,
+            );
         });
     });
 
     // TOO SLOW
     // benchmark_grids(c, &inputs, "copy_paste_1000_x_1000", |b, grid| {
-    //     let mut gc = GridController::from_grid(grid.clone());
+    //     let mut gc = GridController::from_grid(grid.clone(), 0);
     //     b.iter(|| {
     //         let sheet_id = gc.sheet_ids()[0];
     //         let rect = Rect {
@@ -88,20 +112,21 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let gc = GridController::from_grid(grid.clone());
+                let gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
-                let rect = Rect {
+                let sheet_rect = SheetRect {
                     min: Pos {
                         x: -10000,
                         y: -10000,
                     },
                     max: Pos { x: 10000, y: 10000 },
+                    sheet_id,
                 };
-                (gc, sheet_id, rect)
+                (gc, sheet_rect)
             },
-            |(mut gc, sheet_id, rect)| {
+            |(mut gc, sheet_rect)| {
                 // Test
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_rect, None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -111,16 +136,17 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let mut gc = GridController::from_grid(grid.clone());
+                let mut gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
-                let rect = Rect {
+                let sheet_rect = SheetRect {
                     min: Pos {
                         x: -10000,
                         y: -10000,
                     },
                     max: Pos { x: 10000, y: 10000 },
+                    sheet_id,
                 };
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_rect, None);
                 gc
             },
             |mut gc| {
@@ -135,16 +161,17 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let mut gc = GridController::from_grid(grid.clone());
+                let mut gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
-                let rect = Rect {
+                let sheet_rect = SheetRect {
                     min: Pos {
                         x: -10000,
                         y: -10000,
                     },
                     max: Pos { x: 10000, y: 10000 },
+                    sheet_id,
                 };
-                gc.delete_cell_values(sheet_id, rect, None);
+                gc.delete_cells_rect(sheet_rect, None);
                 gc.undo(None);
                 gc
             },
@@ -160,7 +187,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                GridController::from_grid(grid.clone())
+                GridController::from_grid(grid.clone(), 0)
             },
             |mut gc| {
                 // Test
@@ -172,7 +199,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     benchmark_grids(c, &inputs, "autocomplete_10_to_100", |b, _grid| {
         let grid = Grid::new();
-        let mut gc = GridController::from_grid(grid);
+        let mut gc = GridController::from_grid(grid, 0);
         let sheet_id = gc.sheet_ids()[0];
 
         let small_selection = Rect {
@@ -180,7 +207,8 @@ fn criterion_benchmark(c: &mut Criterion) {
             max: Pos { x: 10, y: 10 },
         };
         // add some data
-        gc.populate_with_random_floats(sheet_id, &small_selection);
+        let sheet = gc.try_sheet_mut(sheet_id).unwrap();
+        sheet.random_numbers(&small_selection);
 
         let expand_to = Rect {
             min: Pos { x: 0, y: 0 },
@@ -205,20 +233,21 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let gc = GridController::from_grid(grid.clone());
+                let gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
-                let rect = Rect {
+                let sheet_rect = SheetRect {
                     min: Pos {
                         x: -10000,
                         y: -10000,
                     },
                     max: Pos { x: 10000, y: 10000 },
+                    sheet_id,
                 };
-                (gc, sheet_id, rect)
+                (gc, sheet_rect)
             },
-            |(mut gc, sheet_id, rect)| {
+            |(mut gc, sheet_rect)| {
                 // Test
-                gc.clear_formatting(sheet_id, rect, None);
+                gc.clear_formatting(sheet_rect, None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -228,7 +257,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let gc = GridController::from_grid(grid.clone());
+                let gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 (gc, sheet_id)
             },
@@ -244,7 +273,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let mut gc = GridController::from_grid(grid.clone());
+                let mut gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 gc.delete_sheet(sheet_id, None);
                 gc
@@ -274,7 +303,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let gc = GridController::from_grid(grid.clone());
+                let gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 let pos = Pos { x: 0, y: 0 };
                 (gc, sheet_id, pos)

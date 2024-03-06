@@ -1,0 +1,256 @@
+Metadata-Version: 2.1
+Name: yt
+Version: 4.1.4
+Summary: An analysis and visualization toolkit for volumetric data
+Home-page: https://github.com/yt-project/yt
+Author: The yt project
+Author-email: yt-dev@python.org
+License: BSD 3-Clause
+Project-URL: Homepage, https://yt-project.org/
+Project-URL: Documentation, https://yt-project.org/doc/
+Project-URL: Source, https://github.com/yt-project/yt/
+Project-URL: Tracker, https://github.com/yt-project/yt/issues
+Keywords: astronomy astrophysics visualization amr adaptivemeshrefinement
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: Framework :: Matplotlib
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: MacOS :: MacOS X
+Classifier: Operating System :: POSIX :: AIX
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: C
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Topic :: Scientific/Engineering :: Astronomy
+Classifier: Topic :: Scientific/Engineering :: Physics
+Classifier: Topic :: Scientific/Engineering :: Visualization
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: COPYING.txt
+Requires-Dist: cmyt >=0.2.2
+Requires-Dist: ipywidgets >=8.0.0
+Requires-Dist: matplotlib !=3.4.2,>=3.1
+Requires-Dist: more-itertools >=8.4
+Requires-Dist: numpy >=1.14.5
+Requires-Dist: packaging >=20.9
+Requires-Dist: pillow >=6.2.0
+Requires-Dist: pyparsing >=2.0.2
+Requires-Dist: tomli-w >=0.4.0
+Requires-Dist: tqdm >=3.4.0
+Requires-Dist: unyt <3.0,>=2.8.0
+Requires-Dist: tomli >=1.2.3 ; python_version < "3.11"
+Requires-Dist: importlib-metadata >=1.4 ; python_version < "3.8"
+Requires-Dist: typing-extensions >=4.2.0 ; python_version < "3.8"
+Provides-Extra: doc
+Requires-Dist: alabaster ; extra == 'doc'
+Requires-Dist: bottle ; extra == 'doc'
+Requires-Dist: jinja2 <3.1.0 ; extra == 'doc'
+Requires-Dist: jupyter-client <7.0 ; extra == 'doc'
+Requires-Dist: nbconvert ==5.6.1 ; extra == 'doc'
+Requires-Dist: pyregion ; extra == 'doc'
+Requires-Dist: pyx >=0.15 ; extra == 'doc'
+Requires-Dist: runnotebook ; extra == 'doc'
+Requires-Dist: scipy <=1.7.1 ; extra == 'doc'
+Requires-Dist: sphinx ==3.1.2 ; extra == 'doc'
+Requires-Dist: sphinx-bootstrap-theme ; extra == 'doc'
+Requires-Dist: sphinx-rtd-theme ; extra == 'doc'
+Provides-Extra: full
+Requires-Dist: arm-pyart !=1.12.5,>=1.11.4 ; extra == 'full'
+Requires-Dist: astropy <6.0.0,>=4.0.1 ; extra == 'full'
+Requires-Dist: f90nml >=1.1.2 ; extra == 'full'
+Requires-Dist: firefly <4.0.0,>=3.2.0 ; extra == 'full'
+Requires-Dist: glueviz >=0.13.3 ; extra == 'full'
+Requires-Dist: h5py <4.0.0,>=3.1.0 ; extra == 'full'
+Requires-Dist: ipython >=2.0.0 ; extra == 'full'
+Requires-Dist: libconf >=1.0.1 ; extra == 'full'
+Requires-Dist: miniballcpp >=0.2.1 ; extra == 'full'
+Requires-Dist: mpi4py >=3.0.3 ; extra == 'full'
+Requires-Dist: netCDF4 !=1.6.1,>=1.5.3 ; extra == 'full'
+Requires-Dist: pandas >=1.1.2 ; extra == 'full'
+Requires-Dist: pooch >=0.7.0 ; extra == 'full'
+Requires-Dist: pyaml >=17.10.0 ; extra == 'full'
+Requires-Dist: pykdtree >=1.3.1 ; extra == 'full'
+Requires-Dist: pyqt5 >=5.15.2 ; extra == 'full'
+Requires-Dist: pyx >=0.15 ; extra == 'full'
+Requires-Dist: requests >=2.20.0 ; extra == 'full'
+Requires-Dist: scipy >=1.5.0 ; extra == 'full'
+Requires-Dist: xarray >=0.16.1 ; extra == 'full'
+Requires-Dist: ratarmount ~=0.8.1 ; (platform_system != "Windows" and platform_system != "Darwin") and extra == 'full'
+Requires-Dist: glue-core !=1.2.4 ; (python_version >= "3.10") and extra == 'full'
+Provides-Extra: mapserver
+Requires-Dist: bottle ; extra == 'mapserver'
+Provides-Extra: minimal
+Requires-Dist: cmyt ==0.2.2 ; extra == 'minimal'
+Requires-Dist: ipywidgets ==8.0.0 ; extra == 'minimal'
+Requires-Dist: matplotlib ==3.1 ; extra == 'minimal'
+Requires-Dist: more-itertools ==8.4 ; extra == 'minimal'
+Requires-Dist: numpy ==1.14.5 ; extra == 'minimal'
+Requires-Dist: pillow ==6.2.0 ; extra == 'minimal'
+Requires-Dist: pyparsing ==2.0.2 ; extra == 'minimal'
+Requires-Dist: tomli-w ==0.4.0 ; extra == 'minimal'
+Requires-Dist: unyt ==2.8.0 ; extra == 'minimal'
+Requires-Dist: tomli ==1.2.3 ; (python_version < "3.11") and extra == 'minimal'
+Requires-Dist: importlib-metadata ==1.4 ; (python_version < "3.8") and extra == 'minimal'
+Provides-Extra: test
+Requires-Dist: nose ~=1.3.7 ; extra == 'test'
+Requires-Dist: nose-exclude ; extra == 'test'
+Requires-Dist: nose-timer ~=1.0.0 ; extra == 'test'
+Requires-Dist: pyaml >=17.10.0 ; extra == 'test'
+Requires-Dist: pytest >=6.1 ; extra == 'test'
+Requires-Dist: sympy !=1.10,!=1.9 ; extra == 'test'
+Provides-Extra: typecheck
+Requires-Dist: mypy ==0.971 ; extra == 'typecheck'
+Requires-Dist: types-PyYAML ==5.4.10 ; extra == 'typecheck'
+Requires-Dist: types-chardet ==4.0.0 ; extra == 'typecheck'
+Requires-Dist: types-requests ==2.25.9 ; extra == 'typecheck'
+Requires-Dist: types-setuptools ==57.4.0 ; extra == 'typecheck'
+
+# The yt Project
+
+[![PyPI](https://img.shields.io/pypi/v/yt)](https://pypi.org/project/yt)
+[![Supported Python Versions](https://img.shields.io/pypi/pyversions/yt)](https://pypi.org/project/yt/)
+[![Latest Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](http://yt-project.org/docs/dev/)
+[![Users' Mailing List](https://img.shields.io/badge/Users-List-lightgrey.svg)](https://mail.python.org/archives/list/yt-users@python.org//)
+[![Devel Mailing List](https://img.shields.io/badge/Devel-List-lightgrey.svg)](https://mail.python.org/archives/list/yt-dev@python.org//)
+[![Data Hub](https://img.shields.io/badge/data-hub-orange.svg)](https://hub.yt/)
+[![Powered by NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A)](http://numfocus.org)
+[![Sponsor our Project](https://img.shields.io/badge/donate-to%20yt-blueviolet)](https://numfocus.salsalabs.org/donate-to-yt/index.html)
+
+<!--- Tests and style --->
+[![Build and Test](https://github.com/yt-project/yt/actions/workflows/build-test.yaml/badge.svg)](https://github.com/yt-project/yt/actions/workflows/build-test.yaml)
+[![CI (bleeding edge)](https://github.com/yt-project/yt/actions/workflows/bleeding-edge.yaml/badge.svg)](https://github.com/yt-project/yt/actions/workflows/bleeding-edge.yaml)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/yt-project/yt/main.svg)](https://results.pre-commit.ci/latest/github/yt-project/yt/main)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
+<!--- [![codecov](https://codecov.io/gh/yt-project/yt/branch/main/graph/badge.svg)](https://codecov.io/gh/yt-project/yt) --->
+
+<a href="http://yt-project.org"><img src="https://raw.githubusercontent.com/yt-project/yt/main/doc/source/_static/yt_logo.png" width="300"></a>
+
+yt is an open-source, permissively-licensed Python library for analyzing and
+visualizing volumetric data.
+
+yt supports structured, variable-resolution meshes, unstructured meshes, and
+discrete or sampled data such as particles. Focused on driving
+physically-meaningful inquiry, yt has been applied in domains such as
+astrophysics, seismology, nuclear engineering, molecular dynamics, and
+oceanography. Composed of a friendly community of users and developers, we want
+to make it easy to use and develop - we'd love it if you got involved!
+
+We've written a [method
+paper](https://ui.adsabs.harvard.edu/abs/2011ApJS..192....9T) you may be interested
+in; if you use yt in the preparation of a publication, please consider citing
+it.
+
+## Code of Conduct
+
+yt abides by a code of conduct partially modified from the PSF code of conduct,
+and is found [in our contributing
+guide](http://yt-project.org/docs/dev/developing/developing.html#yt-community-code-of-conduct).
+
+## Installation
+
+You can install the most recent stable version of yt either with conda from
+[conda-forge](https://conda-forge.org/):
+
+```shell
+conda install -c conda-forge yt
+```
+
+or with pip:
+
+```shell
+python -m pip install yt
+```
+
+More information on the various ways to install yt, and in particular to install from source,
+can be found on [the project's website](https://yt-project.org/docs/dev/installing.html).
+
+## Getting Started
+
+yt is designed to provide meaningful analysis of data.  We have some Quickstart
+example notebooks in the repository:
+
+ * [Introduction](https://github.com/yt-project/yt/tree/main/doc/source/quickstart/1\)_Introduction.ipynb)
+ * [Data Inspection](https://github.com/yt-project/yt/tree/main/doc/source/quickstart/2\)_Data_Inspection.ipynb)
+ * [Simple Visualization](https://github.com/yt-project/yt/tree/main/doc/source/quickstart/3\)_Simple_Visualization.ipynb)
+ * [Data Objects and Time Series](https://github.com/yt-project/yt/tree/main/doc/source/quickstart/4\)_Data_Objects_and_Time_Series.ipynb)
+ * [Derived Fields and Profiles](https://github.com/yt-project/yt/tree/main/doc/source/quickstart/5\)_Derived_Fields_and_Profiles.ipynb)
+ * [Volume Rendering](https://github.com/yt-project/yt/tree/main/doc/source/quickstart/6\)_Volume_Rendering.ipynb)
+
+If you'd like to try these online, you can visit our [yt Hub](https://hub.yt/)
+and run a notebook next to some of our example data.
+
+## Contributing
+
+We love contributions!  yt is open source, built on open source, and we'd love
+to have you hang out in our community.
+
+We have developed some [guidelines](CONTRIBUTING.rst) for contributing to yt.
+
+**Imposter syndrome disclaimer**: We want your help. No, really.
+
+There may be a little voice inside your head that is telling you that you're not
+ready to be an open source contributor; that your skills aren't nearly good
+enough to contribute. What could you possibly offer a project like this one?
+
+We assure you - the little voice in your head is wrong. If you can write code at
+all, you can contribute code to open source. Contributing to open source
+projects is a fantastic way to advance one's coding skills. Writing perfect code
+isn't the measure of a good developer (that would disqualify all of us!); it's
+trying to create something, making mistakes, and learning from those
+mistakes. That's how we all improve, and we are happy to help others learn.
+
+Being an open source contributor doesn't just mean writing code, either. You can
+help out by writing documentation, tests, or even giving feedback about the
+project (and yes - that includes giving feedback about the contribution
+process). Some of these contributions may be the most valuable to the project as
+a whole, because you're coming to the project with fresh eyes, so you can see
+the errors and assumptions that seasoned contributors have glossed over.
+
+(This disclaimer was originally written by
+[Adrienne Lowe](https://github.com/adriennefriend) for a
+[PyCon talk](https://www.youtube.com/watch?v=6Uj746j9Heo), and was adapted by yt
+based on its use in the README file for the
+[MetPy project](https://github.com/Unidata/MetPy))
+
+## Resources
+
+We have some community and documentation resources available.
+
+ * Our latest documentation is always at http://yt-project.org/docs/dev/ and it
+   includes recipes, tutorials, and API documentation
+ * The [discussion mailing
+   list](https://mail.python.org/archives/list/yt-users@python.org//)
+   should be your first stop for general questions
+ * The [development mailing
+   list](https://mail.python.org/archives/list/yt-dev@python.org//) is
+   better suited for more development issues
+ * You can also join us on Slack at yt-project.slack.com ([request an
+   invite](https://yt-project.org/slack.html))
+
+Is your code compatible with yt ? Great ! Please consider giving us a shoutout as a shiny badge in your README
+
+- markdown
+```markdown
+[![yt-project](https://img.shields.io/static/v1?label="works%20with"&message="yt"&color="blueviolet")](https://yt-project.org)
+```
+- rst
+```reStructuredText
+|yt-project|
+
+.. |yt-project| image:: https://img.shields.io/static/v1?label="works%20with"&message="yt"&color="blueviolet"
+   :target: https://yt-project.org
+```
+
+## Powered by NumFOCUS
+
+yt is a fiscally sponsored project of [NumFOCUS](https://numfocus.org/).
+If you're interested in
+supporting the active maintenance and development of this project, consider
+[donating to the project](https://numfocus.salsalabs.org/donate-to-yt/index.html).

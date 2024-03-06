@@ -10,7 +10,9 @@ use itertools::Itertools;
 use regex::Regex;
 
 use super::wildcard_pattern_to_regex;
-use crate::{Array, CellValue, CodeResult, CoerceInto, Error, ErrorMsg, SpannableIterExt, Spanned};
+use crate::{
+    Array, CellValue, CodeResult, CoerceInto, RunError, RunErrorMsg, SpannableIterExt, Spanned,
+};
 
 #[derive(Debug, Clone)]
 pub enum Criterion {
@@ -22,12 +24,14 @@ pub enum Criterion {
     },
 }
 impl TryFrom<Spanned<&CellValue>> for Criterion {
-    type Error = Error;
+    type Error = RunError;
 
     fn try_from(value: Spanned<&CellValue>) -> Result<Self, Self::Error> {
         match &value.inner {
             CellValue::Blank
             | CellValue::Number(_)
+            | CellValue::Html(_)
+            | CellValue::Code(_)
             | CellValue::Logical(_)
             | CellValue::Instant(_)
             | CellValue::Duration(_) => Ok(Criterion::Compare {
@@ -99,6 +103,8 @@ impl Criterion {
                 _ => false,
             },
             CellValue::Error(_) => false,
+            CellValue::Html(_) => false,
+            CellValue::Code(_) => false,
         }
     }
 
@@ -110,7 +116,7 @@ impl Criterion {
     ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
         if let Some(range) = output_values_range {
             if range.inner.size() != eval_range.inner.size() {
-                return Err(ErrorMsg::ExactArraySizeMismatch {
+                return Err(RunErrorMsg::ExactArraySizeMismatch {
                     expected: eval_range.inner.size(),
                     got: range.inner.size(),
                 }

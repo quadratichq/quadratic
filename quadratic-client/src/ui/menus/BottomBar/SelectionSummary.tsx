@@ -8,6 +8,7 @@ import BottomBarItem from './BottomBarItem';
 
 export const SelectionSummary = () => {
   const cursor = sheets.sheet.cursor;
+  const decimal_places = 9;
 
   const isBigEnoughForActiveSelectionStats = useMediaQuery('(min-width:1000px)');
   const [count, setCount] = useState<string | undefined>('');
@@ -16,12 +17,12 @@ export const SelectionSummary = () => {
   const [copied, setCopied] = useState(false);
 
   const runCalculationOnActiveSelection = () => {
-    let result = grid.summarizeSelection();
+    let result = grid.summarizeSelection(decimal_places);
 
     if (result) {
       setCount(result.count.toString());
       setSum(result.sum !== undefined ? result.sum.toString() : undefined);
-      setAvg(result.average !== undefined ? result.average.toFixed(9).toString() : undefined);
+      setAvg(result.average !== undefined ? result.average.toString() : undefined);
     } else {
       setCount(undefined);
       setSum(undefined);

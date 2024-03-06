@@ -7,12 +7,18 @@ use super::Grid;
 pub mod current;
 mod v1_3;
 mod v1_4;
+mod v1_5;
 
-pub static CURRENT_VERSION: &str = "1.4";
+pub static CURRENT_VERSION: &str = "1.5";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.5")]
+    V1_5 {
+        #[serde(flatten)]
+        grid: v1_5::schema::GridSchema,
+    },
     #[serde(rename = "1.4")]
     V1_4 {
         #[serde(flatten)]
@@ -26,10 +32,19 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_4::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_5::schema::GridSchema> {
         match self {
-            GridFile::V1_4 { grid } => Ok(grid),
-            GridFile::V1_3 { grid } => v1_3::file::upgrade(grid),
+            GridFile::V1_5 { grid } => Ok(grid),
+            GridFile::V1_4 { grid } => v1_4::file::upgrade(grid),
+            GridFile::V1_3 { grid } => {
+                if let Ok(v1_4) = v1_3::file::upgrade(grid) {
+                    v1_4::file::upgrade(v1_4)
+                } else {
+                    Err(anyhow!(
+                        "Failed to upgrade from v1.3 to v1.4 (on the way to v1.5"
+                    ))
+                }
+            }
         }
     }
 }
@@ -48,6 +63,12 @@ pub fn import(file_contents: &str) -> Result<Grid> {
 pub fn export(grid: &mut Grid) -> Result<String> {
     let converted = current::export(grid)?;
     let serialized = serde_json::to_string(&converted).map_err(|e| anyhow!(e))?;
+    Ok(serialized)
+}
+
+pub fn export_vec(grid: &mut Grid) -> Result<Vec<u8>> {
+    let converted = current::export(grid)?;
+    let serialized = serde_json::to_vec(&converted).map_err(|e| anyhow!(e))?;
 
     Ok(serialized)
 }
@@ -57,23 +78,25 @@ mod tests {
     use super::*;
     use crate::{
         color::Rgba,
-        grid::{
-            generate_borders, set_region_borders, BorderSelection, BorderStyle, CellBorderLine,
-        },
+        grid::{generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine},
         Pos, Rect,
     };
 
-    const V1_3_FILE: &str = include_str!("../../../examples/v1_3.grid");
-    const V1_3_PYTHON_FILE: &str = include_str!("../../../examples/v1_3_python.grid");
+    const V1_3_FILE: &str = include_str!("../../../../quadratic-rust-shared/data/grid/v1_3.grid");
+    const V1_3_PYTHON_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_python.grid");
     const V1_3_TEXT_ONLY_CODE_CELL_FILE: &str =
-        include_str!("../../../examples/c1_3_python_text_only.grid");
-    const V1_3_SINGLE_FORMULS_CODE_CELL_FILE: &str =
-        include_str!("../../../examples/v1_3_single_formula.grid");
-    const V1_3_NPM_DOWNLOADS_FILE: &str = include_str!("../../../examples/v1_3_fill_color.grid");
-    const V1_3_BORDERS_FILE: &str = include_str!("../../../examples/v1_3_borders.grid");
-    const V1_4_FILE: &str = include_str!("../../../examples/v1_4_simple.grid");
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_python_text_only.grid");
+    const V1_3_SINGLE_FORMULAS_CODE_CELL_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_single_formula.grid");
+    const V1_3_NPM_DOWNLOADS_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_fill_color.grid");
+    const V1_3_BORDERS_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_3_borders.grid");
+    const V1_4_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_4_simple.grid");
     const V1_4_AIRPORTS_DISTANCE_FILE: &str =
-        include_str!("../../../examples/v1_4_airports_distance.grid");
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid");
 
     #[test]
     fn process_a_v1_3_file() {
@@ -99,8 +122,19 @@ mod tests {
 
     #[test]
     fn process_a_v1_3_single_formula_file() {
-        let mut imported = import(V1_3_SINGLE_FORMULS_CODE_CELL_FILE).unwrap();
-        assert!(imported.sheets[0].columns[&0_i64].spills.get(2).is_some());
+        let mut imported = import(V1_3_SINGLE_FORMULAS_CODE_CELL_FILE).unwrap();
+        assert!(imported.sheets[0]
+            .code_runs
+            .get(&Pos { x: 0, y: 2 })
+            .is_some());
+        let cell_value = imported.sheets[0].cell_value(Pos { x: 0, y: 2 }).unwrap();
+
+        match cell_value {
+            crate::grid::CellValue::Code(formula) => {
+                assert_eq!(formula.code, "SUM(A0:A1)");
+            }
+            _ => panic!("Expected a formula"),
+        };
         let _exported = export(&mut imported).unwrap();
     }
 
@@ -147,14 +181,13 @@ mod tests {
         let mut grid = Grid::new();
         let sheets = grid.sheets_mut();
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let region = sheets[0].region(rect);
         let selection = vec![BorderSelection::Bottom];
         let style = BorderStyle {
             color: Rgba::from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
-        let borders = generate_borders(&sheets[0], &region, selection, Some(style));
-        set_region_borders(&mut sheets[0], vec![region.clone()], borders);
+        let borders = generate_borders(&sheets[0], &rect, selection, Some(style));
+        set_rect_borders(&mut sheets[0], &rect, borders);
         // println!("{:#?}", sheets[0].borders);
 
         let _exported = export(&mut grid).unwrap();
@@ -169,5 +202,21 @@ mod tests {
     fn process_a_v1_4_airports_distance_file() {
         let mut imported = import(V1_4_AIRPORTS_DISTANCE_FILE).unwrap();
         let _exported = export(&mut imported).unwrap();
+    }
+
+    const V1_5_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
+
+    #[test]
+    fn imports_and_exports_a_current_grid() {
+        let mut imported = import(V1_5_FILE).unwrap();
+        let exported = export(&mut imported).unwrap();
+        assert_eq!(V1_5_FILE, exported);
+    }
+
+    #[test]
+    fn imports_and_exports_v1_4_default() {
+        let mut imported = import(V1_4_FILE).unwrap();
+        export(&mut imported).unwrap();
     }
 }

@@ -4,7 +4,24 @@ use std::ops::{BitOr, BitOrAssign};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 
+use crate::RunLengthEncoding;
+
 use super::{block::SameValue, Column, ColumnData};
+
+/// Array of a single cell formatting attribute.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum CellFmtArray {
+    Align(RunLengthEncoding<Option<CellAlign>>),
+    Wrap(RunLengthEncoding<Option<CellWrap>>),
+    NumericFormat(RunLengthEncoding<Option<NumericFormat>>),
+    NumericDecimals(RunLengthEncoding<Option<i16>>),
+    NumericCommas(RunLengthEncoding<Option<bool>>),
+    Bold(RunLengthEncoding<Option<bool>>),
+    Italic(RunLengthEncoding<Option<bool>>),
+    TextColor(RunLengthEncoding<Option<String>>),
+    FillColor(RunLengthEncoding<Option<String>>),
+    RenderSize(RunLengthEncoding<Option<RenderSize>>),
+}
 
 /// Cell formatting attribute.
 pub trait CellFmtAttr {
@@ -103,6 +120,16 @@ impl CellFmtAttr for FillColor {
     }
 }
 
+impl CellFmtAttr for RenderSize {
+    type Value = Self;
+    fn column_data_ref(column: &Column) -> &ColumnData<SameValue<Self::Value>> {
+        &column.render_size
+    }
+    fn column_data_mut(column: &mut Column) -> &mut ColumnData<SameValue<Self::Value>> {
+        &mut column.render_size
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -132,8 +159,16 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+/// Measures DOM element size in pixels.
+pub struct RenderSize {
+    pub w: String,
+    pub h: String,
+}
+
 #[derive(
-    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString,
+    Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, Display, EnumString, Copy,
 )]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]

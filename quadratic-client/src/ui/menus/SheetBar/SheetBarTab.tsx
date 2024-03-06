@@ -1,9 +1,10 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -28,8 +29,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
   const [isRenaming, setIsRenaming] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const theme = useTheme();
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
-  const hasPermission = isEditorOrAbove(permission) && !isMobile;
+  const { permissions } = useRecoilValue(editorInteractionStateAtom);
+  const hasPermission = hasPermissionToEditFile(permissions) && !isMobile;
 
   useEffect(() => {
     if (forceRename) {
@@ -54,7 +55,6 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               position: 'sticky',
               left: '0',
               right: '0',
-              zIndex: 10,
               boxShadow: `inset 1px 0 0 ${theme.palette.divider}, inset -1px 0 0 ${theme.palette.divider}`,
             }
           : {}),
@@ -82,8 +82,8 @@ export const SheetBarTab = (props: Props): JSX.Element => {
           setIsRenaming={setIsRenaming}
           sheet={sheet}
         />
+        {sheet.id !== sheets.sheet.id && <TabMultiplayer sheetId={sheet.id} />}
         <TabButton active={active} hasPermission={hasPermission} onContextMenu={onContextMenu} sheet={sheet} />
-
         <Popper open={nameExists} anchorEl={containerRef.current} transition>
           {({ TransitionProps }) => (
             <Fade {...TransitionProps} timeout={350}>
@@ -109,6 +109,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
 
 function TabWrapper({ children, sheet, active }: any) {
   const theme = useTheme();
+  const { follow } = useRecoilValue(editorInteractionStateAtom);
   return (
     <Stack
       direction="row"
@@ -122,7 +123,7 @@ function TabWrapper({ children, sheet, active }: any) {
         cursor: 'pointer',
         transition: 'box-shadow 200ms ease 250ms, background-color 200ms ease',
         whiteSpace: 'nowrap',
-        height: '100%',
+        height: `calc(100% - ${follow ? '3px' : '0px'})`,
         position: 'relative',
         '&::before': {
           content: '""',
@@ -322,4 +323,37 @@ function selectElementContents(el: HTMLDivElement | null) {
   var sel = window.getSelection();
   sel?.removeAllRanges();
   sel?.addRange(range);
+}
+
+function TabMultiplayer({ sheetId }: { sheetId: string }) {
+  const [users, setUsers] = useState<string[]>([]);
+
+  useEffect(() => {
+    const updateUsers = () => {
+      setUsers(
+        multiplayer.getUsers().flatMap((user) => {
+          if (user.sheet_id === sheetId) {
+            return [user.colorString];
+          }
+          return [];
+        })
+      );
+    };
+    updateUsers();
+
+    window.addEventListener('multiplayer-change-sheet', updateUsers);
+    window.addEventListener('multiplayer-update', updateUsers);
+    return () => {
+      window.removeEventListener('multiplayer-change-sheet', updateUsers);
+      window.removeEventListener('multiplayer-update', updateUsers);
+    };
+  }, [sheetId]);
+
+  return (
+    <div style={{ position: 'absolute', display: 'flex', width: '100%', top: 0, gap: '1px' }}>
+      {users.map((color, index) => (
+        <div key={index} style={{ width: '5px', height: '5px', backgroundColor: color }} />
+      ))}
+    </div>
+  );
 }

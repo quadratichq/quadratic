@@ -1,13 +1,13 @@
-import { debugMockLargeData } from '../../debugFlags';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { SheetId } from '../../quadratic-core/types';
 import { Sheet } from '../sheet/Sheet';
 import { grid } from './Grid';
-import { mockLargeData } from './mockLargeData';
 
 class Sheets {
   sheets: Sheet[];
+
+  // current sheet id
   private _current: string;
 
   // set up sheet information
@@ -19,9 +19,6 @@ class Sheets {
   }
 
   async create() {
-    if (debugMockLargeData) {
-      mockLargeData();
-    }
     this.sheets = [];
     const sheetIds = grid.getSheetIds();
     sheetIds.forEach((_, index) => {
@@ -83,18 +80,19 @@ class Sheets {
     return this._current;
   }
   set current(value: string) {
-    if (value !== this._current) {
+    if (value !== this._current && this.sheets.find((sheet) => sheet.id === value)) {
       this._current = value;
       pixiApp.viewport.dirty = true;
       pixiApp.gridLines.dirty = true;
       pixiApp.axesLines.dirty = true;
       pixiApp.headings.dirty = true;
       pixiApp.cursor.dirty = true;
-      // pixiApp.quadrants.changeSheet();
+      pixiApp.multiplayerCursor.dirty = true;
       pixiApp.boxCells.reset();
       pixiAppSettings.changeInput(false);
-      pixiApp.cellsSheets.show(sheets.sheet.id);
+      pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
+      pixiApp.loadViewport();
     }
   }
 
@@ -266,6 +264,11 @@ class Sheets {
     pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
     pixiApp.cursor.dirty = true;
+    pixiApp.multiplayerCursor.dirty = true;
+  }
+
+  getMultiplayerSelection(): string {
+    return this.sheet.cursor.getMultiplayerSelection();
   }
 }
 

@@ -1,8 +1,8 @@
 use regex::{Regex, RegexBuilder};
 
-use crate::{Error, ErrorMsg};
+use crate::{RunError, RunErrorMsg};
 
-pub fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, Error> {
+pub fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, RunError> {
     let mut chars = s.chars();
     let mut regex_string = String::new();
     regex_string.push('^'); // Match whole string using `^...$`.
@@ -25,7 +25,9 @@ pub fn wildcard_pattern_to_regex(s: &str) -> Result<Regex, Error> {
         .case_insensitive(true)
         .build()
         .map_err(|e| {
-            ErrorMsg::InternalError(format!("error building regex for criterion {s:?}: {e}").into())
-                .without_span()
+            RunErrorMsg::InternalError(
+                format!("error building regex for criterion {s:?}: {e}").into(),
+            )
+            .without_span()
         })
 }

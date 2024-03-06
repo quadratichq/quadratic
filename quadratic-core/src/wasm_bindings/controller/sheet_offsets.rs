@@ -8,8 +8,8 @@ impl GridController {
     /// Returns a [`SheetOffsets`].
     #[wasm_bindgen(js_name = "getOffsets")]
     pub fn js_get_offsets(&self, sheet_id: String) -> SheetOffsets {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let sheet = self.sheet(sheet_id);
+        // todo: should return a result
+        let sheet = self.try_sheet_from_string_id(sheet_id).unwrap();
         sheet.offsets.clone()
     }
 

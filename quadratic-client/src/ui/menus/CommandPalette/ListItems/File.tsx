@@ -1,6 +1,11 @@
 import { DownloadIcon, FileIcon, FileMinusIcon, FilePlusIcon } from '@radix-ui/react-icons';
 import { useNavigate, useParams, useSubmit } from 'react-router-dom';
-import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '../../../../actions';
+import {
+  createNewFileAction,
+  deleteFile,
+  downloadFileAction,
+  duplicateFileWithUserAsOwnerAction,
+} from '../../../../actions';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { useFileContext } from '../../../components/FileProvider';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
@@ -17,13 +22,13 @@ const ListItems = [
   },
 
   {
-    label: duplicateFileAction.label,
-    isAvailable: duplicateFileAction.isAvailable,
+    label: duplicateFileWithUserAsOwnerAction.label,
+    isAvailable: duplicateFileWithUserAsOwnerAction.isAvailable,
     Component: (props: CommandPaletteListItemSharedProps) => {
       const submit = useSubmit();
-      const { name } = useFileContext();
+      const { uuid } = useParams() as { uuid: string };
       const action = () => {
-        duplicateFileAction.run({ name, submit });
+        duplicateFileWithUserAsOwnerAction.run({ uuid, submit });
       };
       return <CommandPaletteListItem {...props} icon={<FilePlusIcon />} action={action} />;
     },

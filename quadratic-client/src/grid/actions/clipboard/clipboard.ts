@@ -1,7 +1,8 @@
+import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { GlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
 import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
@@ -19,14 +20,13 @@ export const fullClipboardSupport = (): boolean => {
 //#region document event handler for copy, paste, and cut
 
 // returns if focus is not on the body or canvas or parent of canvas
-const canvasIsTarget = (e: ClipboardEvent) => {
-  return (
-    e.target === document.body || e.target === pixiApp.canvas || (e.target as HTMLElement)?.contains(pixiApp.canvas)
-  );
+const canvasIsTarget = () => {
+  const target = document.activeElement;
+  return target === document.body || target === pixiApp.canvas || (target as HTMLElement)?.contains(pixiApp.canvas);
 };
 
 export const copyToClipboardEvent = (e: ClipboardEvent) => {
-  if (!canvasIsTarget(e)) return;
+  if (!canvasIsTarget()) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
@@ -36,8 +36,8 @@ export const copyToClipboardEvent = (e: ClipboardEvent) => {
 };
 
 export const cutToClipboardEvent = async (e: ClipboardEvent) => {
-  if (!canvasIsTarget(e)) return;
-  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  if (!canvasIsTarget()) return;
+  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
   const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, rectangle);
@@ -52,8 +52,8 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
-  if (!canvasIsTarget(e)) return;
-  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  if (!canvasIsTarget()) return;
+  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
   if (!e.clipboardData) {
     console.warn('clipboardData is not defined');
@@ -77,6 +77,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
       y: cursor.y,
       plainText,
       html,
+      special: PasteSpecial.None,
     });
     debugTimeCheck('[Clipboard] paste to clipboard');
   }
@@ -112,7 +113,7 @@ const toClipboard = (plainText: string, html: string) => {
 };
 
 export const cutToClipboard = async () => {
-  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
   const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
   toClipboard(plainText, html);
@@ -153,8 +154,8 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
   }
 };
 
-export const pasteFromClipboard = async () => {
-  if (!isEditorOrAbove(pixiAppSettings.permission)) return;
+export const pasteFromClipboard = async (special: PasteSpecial = PasteSpecial.None) => {
+  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   const target = sheets.sheet.cursor.originPosition;
 
   if (fullClipboardSupport()) {
@@ -183,6 +184,7 @@ export const pasteFromClipboard = async () => {
       y: target.y,
       plainText,
       html,
+      special,
     });
     debugTimeCheck('paste from clipboard');
   }
@@ -198,6 +200,7 @@ export const pasteFromClipboard = async () => {
         y: target.y,
         plainText: undefined,
         html,
+        special,
       });
       debugTimeCheck('paste from clipboard (firefox)');
     }

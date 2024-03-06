@@ -1,5 +1,7 @@
-import { Button as Btn, Button } from '@/shadcn/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { Action as FileAction } from '@/routes/files.$uuid';
+import { useTeamRouteLoaderData } from '@/routes/teams.$uuid';
+import { Button as Btn } from '@/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,16 +9,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
-import { Input } from '@/shadcn/ui/input';
 import { Separator } from '@/shadcn/ui/separator';
 import { cn } from '@/shadcn/utils';
-import { DotsVerticalIcon } from '@radix-ui/react-icons';
-import React, { useEffect, useState } from 'react';
-import { Link, SubmitOptions, useFetcher } from 'react-router-dom';
-import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '../../actions';
+import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
+import { useEffect, useRef, useState } from 'react';
+import { Link, SubmitOptions, useFetcher, useLocation, useSubmit } from 'react-router-dom';
+import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '../../actions';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
-import { Action, FilesListFile } from './FilesList';
+import { DialogRenameItem } from './DialogRenameItem';
+import { FilesListFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
 import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
@@ -24,7 +27,7 @@ export function FilesListItems({ children, viewPreferences }: any) {
   return (
     <ul
       className={cn(
-        viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4 pb-2'
+        viewPreferences.layout === Layout.Grid && 'grid grid-cols-[repeat(auto-fill,minmax(272px,1fr))] gap-4'
       )}
     >
       {children}
@@ -47,25 +50,39 @@ export function FileListItem({
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
 }) {
+  const submit = useSubmit();
   const fetcherDelete = useFetcher();
   const fetcherDownload = useFetcher();
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
+  const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
+  const teamRouteLoaderData = useTeamRouteLoaderData();
+  const location = useLocation();
+  const fileDragRef = useRef<HTMLDivElement>(null);
+  const {
+    teams,
+    userMakingRequest: { id: userId },
+  } = useDashboardRouteLoaderData();
 
-  const { uuid, name, created_date, updated_date, public_link_access, thumbnail } = file;
+  // If we're looking at the user's personal files OR a team where they have edit access, they can move stuff
+  const isPersonalFilesRoute = location.pathname === ROUTES.FILES;
+  const isTeamRoute = teamRouteLoaderData !== undefined;
+  const canMoveFiles =
+    isPersonalFilesRoute ||
+    (isTeamRoute && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
 
+  const { uuid, name, createdDate, updatedDate, publicLinkAccess, thumbnail, permissions } = file;
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
-    action: ROUTES.API_FILE(uuid),
+    action: ROUTES.FILES_FILE(uuid),
     encType: 'application/json',
   };
-
   const failedToDelete = fetcherDelete.data && !fetcherDelete.data.ok;
   const failedToRename = fetcherRename.data && !fetcherRename.data.ok;
 
-  // If the download files, show an error in the UI
+  // If the download fails, show an error
   // TODO async communication in UI that the file is downloading?
   useEffect(() => {
     if (fetcherDownload.data && !fetcherDownload.data.ok) {
@@ -73,20 +90,27 @@ export function FileListItem({
     }
   }, [addGlobalSnackbar, fetcherDownload.data]);
 
-  // Optimistically hide this file if it's being deleted
-  if (fetcherDelete.state === 'submitting' || fetcherDelete.state === 'loading') {
+  // If the move fails, show an error
+  useEffect(() => {
+    if (fetcherMove.data && !fetcherMove.data.ok) {
+      addGlobalSnackbar('Failed to move file. Try again.', { severity: 'error' });
+    }
+  }, [addGlobalSnackbar, fetcherMove.data]);
+
+  // Optimistically hide this file if it's being deleted or moved
+  if (fetcherDelete.state !== 'idle' || fetcherMove.state !== 'idle') {
     return null;
   }
 
   const renameFile = (value: string) => {
     // Update on the server and optimistically in the UI
-    const data: Action['request.rename'] = { action: 'rename', name: value };
+    const data: FileAction['request.rename'] = { action: 'rename', name: value };
     fetcherRename.submit(data, fetcherSubmitOpts);
   };
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-      const data: Action['request.delete'] = {
+      const data: FileAction['request.delete'] = {
         action: 'delete',
       };
       fetcherDelete.submit(data, fetcherSubmitOpts);
@@ -94,45 +118,36 @@ export function FileListItem({
   };
 
   const handleDownload = () => {
-    const data: Action['request.download'] = {
+    const data: FileAction['request.download'] = {
       action: 'download',
     };
     fetcherDownload.submit(data, fetcherSubmitOpts);
   };
 
   const handleDuplicate = () => {
-    const date = new Date().toISOString();
-    const data: Action['request.duplicate'] = {
+    const data: FileAction['request.duplicate'] = {
       action: 'duplicate',
-
-      // These are the values that will optimistically render in the UI
-      file: {
-        uuid: 'duplicate-' + date,
-        public_link_access: 'NOT_SHARED',
-        name: name + ' (Copy)',
-        thumbnail: null,
-        updated_date: date,
-        created_date: date,
-      },
+      withCurrentOwner: true,
     };
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
 
   const handleShare = () => {
     setActiveShareMenuFileId(uuid);
+    mixpanel.track('[FileSharing].menu.open', { context: 'dashboard', pathname: window.location.pathname });
   };
 
-  const displayName = fetcherRename.json ? (fetcherRename.json as Action['request.rename']).name : name;
-  const isDisabled = uuid.startsWith('duplicate-');
+  const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
+  const isDisabled = uuid.includes('duplicate');
 
   const sharedProps = {
     key: uuid,
     filterValue,
     name: displayName,
     description:
-      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(created_date)}` : `Modified ${timeAgo(updated_date)}`,
+      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(createdDate)}` : `Modified ${timeAgo(updatedDate)}`,
     hasNetworkError: Boolean(failedToDelete || failedToRename),
-    isShared: public_link_access !== 'NOT_SHARED',
+    isShared: publicLinkAccess !== 'NOT_SHARED',
     viewPreferences,
     actions: (
       <DropdownMenu>
@@ -141,25 +156,118 @@ export function FileListItem({
             <DotsVerticalIcon className="h-4 w-4" />
           </Btn>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-48">
-          <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
-          <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileAction.label}</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+        <DropdownMenuContent align="end" className="w-48">
+          {permissions.includes('FILE_VIEW') && <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>}
+          {permissions.includes('FILE_EDIT') && (
+            <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileWithCurrentOwnerAction.label}</DropdownMenuItem>
+          )}
+          {permissions.includes('FILE_EDIT') && (
+            <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={handleDownload}>{downloadFileAction.label}</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+          {canMoveFiles && (
+            <>
+              <DropdownMenuSeparator />
+              {!isPersonalFilesRoute && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    const data: FileAction['request.move'] = {
+                      action: 'move',
+                      ownerUserId: userId,
+                    };
+                    submit(data, {
+                      method: 'POST',
+                      action: `/files/${uuid}`,
+                      encType: 'application/json',
+                      navigate: false,
+                      fetcherKey: `move-file:${uuid}`,
+                    });
+                  }}
+                >
+                  Move to my files
+                </DropdownMenuItem>
+              )}
+              {teams
+                .filter(
+                  ({ team, userMakingRequest: { teamPermissions } }) =>
+                    team.activated &&
+                    teamPermissions.includes('TEAM_EDIT') &&
+                    (isTeamRoute ? teamRouteLoaderData.team.uuid !== team.uuid : true)
+                )
+                .map(({ team }) => (
+                  <DropdownMenuItem
+                    className="block truncate"
+                    key={team.uuid}
+                    onClick={() => {
+                      const data: FileAction['request.move'] = {
+                        action: 'move',
+                        ownerTeamId: team.id,
+                      };
+                      submit(data, {
+                        method: 'POST',
+                        action: `/files/${uuid}`,
+                        encType: 'application/json',
+                        navigate: false,
+                        fetcherKey: `move-file:${uuid}`,
+                      });
+                    }}
+                  >
+                    Move to {team.name}
+                  </DropdownMenuItem>
+                ))
+                .slice(0, 2)}
+            </>
+          )}
+
+          {permissions.includes('FILE_DELETE') && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+            </>
+          )}
+          {}
         </DropdownMenuContent>
       </DropdownMenu>
     ),
   };
 
+  const dragProps = canMoveFiles
+    ? {
+        draggable: true,
+        onDragStart: (event: React.DragEvent<HTMLAnchorElement>) => {
+          if (fileDragRef.current) {
+            fileDragRef.current.style.opacity = '1';
+            event.dataTransfer.setDragImage(fileDragRef.current, 16, 16);
+          }
+          event.dataTransfer.dropEffect = 'move';
+          event.dataTransfer.setData('application/quadratic-file-uuid', uuid);
+        },
+        onDragEnd: (event: React.DragEvent<HTMLAnchorElement>) => {
+          if (fileDragRef.current) {
+            fileDragRef.current.style.opacity = '0';
+          }
+        },
+      }
+    : {};
+
   return (
-    <li>
+    <li className="relative">
+      <div
+        ref={fileDragRef}
+        // FYI: There's some trickery to get this displaying right across all browser
+        // Basically this is hidden behind the file itself and when it's dragged
+        // it becomes visible.
+        className="absolute -top-[1px] left-0 z-0 flex items-center gap-1 rounded-full border border-background bg-primary px-2 py-0.5 text-sm text-primary-foreground opacity-0"
+      >
+        <FileIcon />
+        {file.name.length > 16 ? file.name.slice(0, 16) + '…' : file.name}
+      </div>
       <Link
         key={uuid}
         to={ROUTES.FILE(uuid)}
         reloadDocument
-        className={cn(`text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
+        className={cn(`relative z-10 text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
+        {...dragProps}
       >
         {viewPreferences.layout === Layout.Grid ? (
           <div className="border border-border p-2 hover:bg-accent">
@@ -170,6 +278,7 @@ export function FileListItem({
                   src={thumbnail}
                   alt="File thumbnail screenshot"
                   className="object-cover"
+                  draggable="false"
                 />
               ) : (
                 <div className="flex items-center justify-center">
@@ -179,6 +288,7 @@ export function FileListItem({
                     className={`opacity-10 brightness-0 grayscale`}
                     width="24"
                     height="24"
+                    draggable="false"
                   />
                 </div>
               )}
@@ -198,6 +308,7 @@ export function FileListItem({
                   alt="File thumbnail screenshot"
                   className={`aspect-video object-fill`}
                   width="80"
+                  draggable="false"
                 />
               ) : (
                 <div className="flex aspect-video w-20 items-center justify-center bg-background">
@@ -207,6 +318,7 @@ export function FileListItem({
                     className={`h-4 w-4 opacity-10 brightness-0 grayscale`}
                     width="16"
                     height="16"
+                    draggable="false"
                   />
                 </div>
               )}
@@ -218,7 +330,8 @@ export function FileListItem({
         )}
       </Link>
       {open && (
-        <RenameItemDialog
+        <DialogRenameItem
+          itemLabel={'File'}
           onClose={() => setOpen(false)}
           value={displayName}
           onSave={(newValue: string) => {
@@ -227,76 +340,6 @@ export function FileListItem({
         />
       )}
     </li>
-  );
-}
-
-// Eventually this can be moved to another file so it can be used with "Rename team"
-function RenameItemDialog({
-  onClose,
-  onSave,
-  value,
-}: {
-  onClose: () => void;
-  onSave: (newValue: string) => void;
-  value: string;
-}) {
-  const [localValue, setLocalValue] = useState<string>(value);
-
-  const count = localValue.length;
-  // TODO: one day set a max length on file/team name
-  const disabled = count === 0;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Don't do anything if we're disabled
-    if (disabled) {
-      return;
-    }
-
-    // Don't do anything if the name didn't change
-    if (localValue === value) {
-      onClose();
-      return;
-    }
-
-    onSave(localValue);
-    onClose();
-  };
-
-  const handleInputChange = (e: React.FormEvent<HTMLInputElement>) => {
-    const newValue = e.currentTarget.value;
-    setLocalValue(newValue);
-  };
-
-  const formId = 'rename-item';
-  const inputId = 'rename-item-input';
-
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle asChild>
-            <label htmlFor={inputId}>Rename</label>
-          </DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} id={formId}>
-          <Input id={inputId} value={localValue} autoComplete="off" onChange={handleInputChange} />
-          {/* <p className={`text-right text-sm ${disabled ? 'text-destructive' : 'text-muted-foreground'}`}>
-            {count} / {FILE_AND_TEAM_NAME_MAX_LENGTH}
-          </p> */}
-        </form>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-
-          <Button disabled={disabled} type="submit" formTarget={formId}>
-            Rename
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
 

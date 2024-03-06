@@ -1,3 +1,4 @@
+import { useRootRouteLoaderData } from '@/router';
 import { ChatBubbleOutline, Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -16,14 +17,14 @@ import SyncState from './SyncState';
 export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const theme = useTheme();
-  const { permission } = editorInteractionState;
-
+  const { permissions } = editorInteractionState;
+  const { isAuthenticated } = useRootRouteLoaderData();
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
-  const cursor = sheets.sheet.cursor;
 
   useEffect(() => {
     const updateCursor = () => {
+      const cursor = sheets.sheet.cursor;
       setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
       if (cursor.multiCursor) {
         setMultiCursorPositionString(
@@ -35,8 +36,12 @@ export const BottomBar = () => {
     };
     updateCursor();
     window.addEventListener('cursor-position', updateCursor);
-    return () => window.removeEventListener('cursor-position', updateCursor);
-  }, [cursor.cursorPosition.x, cursor.cursorPosition.y, cursor.multiCursor]);
+    window.addEventListener('change-sheet', updateCursor);
+    return () => {
+      window.removeEventListener('cursor-position', updateCursor);
+      window.removeEventListener('change-sheet', updateCursor);
+    };
+  }, []);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -70,7 +75,9 @@ export const BottomBar = () => {
     >
       <Stack direction="row">
         {showOnDesktop && <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>}
-        {showOnDesktop && cursor.multiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+        {showOnDesktop && sheets.sheet.cursor.multiCursor && (
+          <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>
+        )}
 
         {/* {showOnDesktop && selectedCell?.last_modified && (
           <BottomBarItem>
@@ -83,17 +90,14 @@ export const BottomBar = () => {
             <div
               className="debug-show-renderer"
               style={{
-                width: '0.7rem',
-                height: '0.7rem',
+                width: '0.5rem',
+                height: '0.5rem',
                 borderRadius: '50%',
+                marginRight: 3,
               }}
             >
               &nbsp;
             </div>
-          </BottomBarItem>
-        )}
-        {debugShowFPS && (
-          <BottomBarItem>
             <span className="debug-show-FPS">--</span> FPS
           </BottomBarItem>
         )}
@@ -109,11 +113,10 @@ export const BottomBar = () => {
         )}
       </Stack>
       <Stack direction="row">
-        <SelectionSummary></SelectionSummary>
+        <SelectionSummary />
         <SyncState />
-
         {showOnDesktop && <PythonStateItem />}
-        {provideFeedbackAction.isAvailable(permission) && (
+        {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem
             icon={<ChatBubbleOutline fontSize="inherit" />}
             onClick={() => {
@@ -123,9 +126,11 @@ export const BottomBar = () => {
             {provideFeedbackAction.label}
           </BottomBarItem>
         )}
-        <BottomBarItem icon={<Commit fontSize="inherit" />}>
-          Quadratic {import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)
-        </BottomBarItem>
+        {showOnDesktop && (
+          <BottomBarItem icon={<Commit fontSize="inherit" />}>
+            Quadratic {import.meta.env.VITE_VERSION?.slice(0, 7)} (BETA)
+          </BottomBarItem>
+        )}
       </Stack>
     </div>
   );

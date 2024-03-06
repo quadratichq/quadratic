@@ -1,5 +1,13 @@
+import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import { Button } from '@/shadcn/ui/button';
-import { AttachMoneyOutlined, Functions, MoreHoriz, Percent } from '@mui/icons-material';
+import {
+  AttachMoneyOutlined,
+  ContentPasteGoOutlined,
+  ContentPasteSearchOutlined,
+  Functions,
+  MoreHoriz,
+  Percent,
+} from '@mui/icons-material';
 import { Divider, IconButton, Toolbar } from '@mui/material';
 import {
   BorderAllIcon,
@@ -11,14 +19,18 @@ import {
   TextAlignRightIcon,
   TextNoneIcon,
 } from '@radix-ui/react-icons';
-import { ControlledMenu, Menu, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
+import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
-import { downloadSelectionAsCsvAction, isEditorOrAbove } from '../../../actions';
+import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../components/GlobalSnackbarProvider';
-import { copySelectionToPNG, fullClipboardSupport } from '../../../grid/actions/clipboard/clipboard';
+import {
+  copySelectionToPNG,
+  fullClipboardSupport,
+  pasteFromClipboard,
+} from '../../../grid/actions/clipboard/clipboard';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
@@ -64,6 +76,21 @@ export const FloatingContextMenu = (props: Props) => {
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
 
+  // close the more menu on escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (moreMenuProps.state === 'open' && e.key === 'Escape') {
+        moreMenuToggle();
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [moreMenuProps.state, moreMenuToggle]);
+
   // Function used to move and scale the Input with the Grid
   const updateContextMenuCSSTransform = useCallback(() => {
     if (!container || !menuDiv.current) return '';
@@ -85,7 +112,6 @@ export const FloatingContextMenu = (props: Props) => {
     let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
 
     const menuHeight = menuDiv.current?.clientHeight || 0;
-    // const menuwidth = menuDiv.current?.clientWidth || 0;
 
     let x = cell_offset_scaled.x + container.offsetLeft - 20;
     let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
@@ -114,7 +140,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (pixiAppSettings.presentationMode) visibility = 'hidden';
 
     // Hide if you don't have edit access
-    if (!isEditorOrAbove(editorInteractionState.permission)) visibility = 'hidden';
+    if (!hasPermissionToEditFile(editorInteractionState.permissions)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
     const terminal_pos = sheet.getCellOffsets(
@@ -137,7 +163,7 @@ export const FloatingContextMenu = (props: Props) => {
      * Menu positioning
      */
 
-    // if ouside of viewport keep it inside
+    // if outside of viewport keep it inside
     if (x < container.offsetLeft + 35) {
       x = container.offsetLeft + 35;
     } // left
@@ -158,7 +184,7 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [container, showContextMenu, editorInteractionState.permission, moreMenuToggle]);
+  }, [container, showContextMenu, editorInteractionState.permissions, moreMenuToggle]);
 
   useEffect(() => {
     const { viewport } = pixiApp;
@@ -167,11 +193,13 @@ export const FloatingContextMenu = (props: Props) => {
     viewport.on('moved', updateContextMenuCSSTransform);
     viewport.on('moved-end', updateContextMenuCSSTransform);
     document.addEventListener('pointerup', updateContextMenuCSSTransform);
+    window.addEventListener('resize', updateContextMenuCSSTransform);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
       viewport.removeListener('moved-end', updateContextMenuCSSTransform);
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
+      window.removeEventListener('resize', updateContextMenuCSSTransform);
     };
   }, [updateContextMenuCSSTransform]);
 
@@ -273,7 +301,7 @@ export const FloatingContextMenu = (props: Props) => {
           />
         </Menu>
 
-        <MenuDivider />
+        <MenuDividerVertical />
 
         <TooltipHint title="Align left">
           <Button size="icon" variant="ghost" onClick={() => setAlignment('left')}>
@@ -291,7 +319,7 @@ export const FloatingContextMenu = (props: Props) => {
           </Button>
         </TooltipHint>
 
-        <MenuDivider />
+        <MenuDividerVertical />
 
         <Menu
           className="color-picker-submenu"
@@ -333,7 +361,7 @@ export const FloatingContextMenu = (props: Props) => {
           {borders}
         </Menu>
 
-        <MenuDivider />
+        <MenuDividerVertical />
 
         <TooltipHint title="Format as automatic">
           <IconButton size="small" onClick={() => removeCellNumericFormat()} color="inherit">
@@ -371,13 +399,13 @@ export const FloatingContextMenu = (props: Props) => {
           </IconButton>
         </TooltipHint>
 
-        <MenuDivider />
+        <MenuDividerVertical />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
           <Button size="icon" variant="ghost" onClick={clearFormattingAndBorders}>
             <TextNoneIcon className="h-4 w-4" />
           </Button>
         </TooltipHint>
-        {fullClipboardSupport() && <MenuDivider />}
+        {fullClipboardSupport() && <MenuDividerVertical />}
         {fullClipboardSupport() && (
           <TooltipHint title="More commands…">
             <IconButton size="small" onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
@@ -390,6 +418,27 @@ export const FloatingContextMenu = (props: Props) => {
           menuStyle={{ padding: '2px 0', color: 'inherit' }}
           anchorRef={moreMenuButtonRef}
         >
+          <MenuItem
+            onClick={() => {
+              pasteFromClipboard(PasteSpecial.Values);
+              moreMenuToggle();
+            }}
+          >
+            <MenuLineItem
+              primary="Paste values only"
+              secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'V'}
+              Icon={ContentPasteGoOutlined}
+            />
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              pasteFromClipboard(PasteSpecial.Formats);
+              moreMenuToggle();
+            }}
+          >
+            <MenuLineItem primary="Paste formatting only" Icon={ContentPasteSearchOutlined} />
+          </MenuItem>
+          <MenuDivider />
           <MenuItem
             onClick={async () => {
               await copySelectionToPNG(addGlobalSnackbar);
@@ -418,7 +467,7 @@ export const FloatingContextMenu = (props: Props) => {
   );
 };
 
-function MenuDivider() {
+function MenuDividerVertical() {
   return (
     <Divider
       orientation="vertical"

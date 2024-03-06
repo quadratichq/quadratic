@@ -3,7 +3,8 @@ use itertools::Itertools;
 pub(crate) use super::*;
 pub(crate) use crate::grid::Grid;
 pub(crate) use crate::values::*;
-pub(crate) use crate::{array, CodeResult, Error, ErrorMsg, Pos, SheetPos, Spanned};
+pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
+use crate::{Pos, SheetPos};
 
 pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Value> {
     println!("Evaluating formula {s:?} at {pos:?}");
@@ -11,16 +12,16 @@ pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Val
     parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx)
 }
 #[track_caller]
-pub(crate) fn eval_at(grid: &Grid, pos: SheetPos, s: &str) -> Value {
-    try_eval_at(grid, pos, s).expect("error evaluating formula")
+pub(crate) fn eval_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> Value {
+    try_eval_at(grid, sheet_pos, s).expect("error evaluating formula")
 }
 #[track_caller]
-pub(crate) fn eval_to_string_at(grid: &Grid, pos: SheetPos, s: &str) -> String {
-    eval_at(grid, pos, s).to_string()
+pub(crate) fn eval_to_string_at(grid: &Grid, sheet_pos: SheetPos, s: &str) -> String {
+    eval_at(grid, sheet_pos, s).to_string()
 }
 
 pub(crate) fn try_eval(grid: &Grid, s: &str) -> CodeResult<Value> {
-    try_eval_at(grid, Pos::ORIGIN.with_sheet(grid.sheets()[0].id), s)
+    try_eval_at(grid, Pos::ORIGIN.to_sheet_pos(grid.sheets()[0].id), s)
 }
 #[track_caller]
 pub(crate) fn eval(grid: &Grid, s: &str) -> Value {
@@ -31,7 +32,7 @@ pub(crate) fn eval_to_string(grid: &Grid, s: &str) -> String {
     eval(grid, s).to_string()
 }
 #[track_caller]
-pub(crate) fn eval_to_err(grid: &Grid, s: &str) -> Error {
+pub(crate) fn eval_to_err(grid: &Grid, s: &str) -> RunError {
     try_eval(grid, s).expect_err("expected error")
 }
 
@@ -40,7 +41,7 @@ pub(crate) fn expect_val(value: impl Into<Value>, ctx: &Grid, s: &str) {
     assert_eq!(value.into(), eval(ctx, s));
 }
 #[track_caller]
-pub(crate) fn expect_err(error_msg: &ErrorMsg, ctx: &Grid, s: &str) {
+pub(crate) fn expect_err(error_msg: &RunErrorMsg, ctx: &Grid, s: &str) {
     assert_eq!(*error_msg, eval_to_err(ctx, s).msg);
 }
 
@@ -50,22 +51,22 @@ fn test_formula_cell_ref() {
 
     let mut g = Grid::new();
     let sheet = &mut g.sheets_mut()[0];
-    sheet.set_cell_value(pos![D4], 1); // $D$4 -> D4
-    sheet.set_cell_value(pos![Bn2], 10); // $B0  -> Bn2
-    sheet.set_cell_value(pos![Cn6], 100); // E$n6 -> Cn6
-    sheet.set_cell_value(pos![nAn2], 1000); // B0   -> nAn2
-    sheet.set_cell_value(pos![nD0], 10000); // nB2  -> nD0
+    let _ = sheet.set_cell_value(pos![D4], 1); // $D$4 -> D4
+    let _ = sheet.set_cell_value(pos![Bn2], 10); // $B0  -> Bn2
+    let _ = sheet.set_cell_value(pos![Cn6], 100); // E$n6 -> Cn6
+    let _ = sheet.set_cell_value(pos![nAn2], 1000); // B0   -> nAn2
+    let _ = sheet.set_cell_value(pos![nD0], 10000); // nB2  -> nD0
     let sheet_id = sheet.id;
 
     // Evaluate at D4, causing a circular reference.
-    let mut ctx = Ctx::new(&g, pos![D4].with_sheet(sheet_id));
+    let mut ctx = Ctx::new(&g, pos![D4].to_sheet_pos(sheet_id));
     assert_eq!(
-        ErrorMsg::CircularReference,
+        RunErrorMsg::CircularReference,
         form.eval(&mut ctx).unwrap_err().msg,
     );
 
     // Evaluate at B2
-    let mut ctx = Ctx::new(&g, pos![B2].with_sheet(sheet_id));
+    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(sheet_id));
     assert_eq!(
         "11111".to_string(),
         form.eval(&mut ctx).unwrap().to_string(),
@@ -77,10 +78,10 @@ fn test_formula_circular_array_ref() {
     let form = parse_formula("$B$0:$C$4", pos![A0]).unwrap();
 
     let g = Grid::new();
-    let mut ctx = Ctx::new(&g, pos![B2].with_sheet(g.sheets()[0].id));
+    let mut ctx = Ctx::new(&g, pos![B2].to_sheet_pos(g.sheets()[0].id));
 
     assert_eq!(
-        ErrorMsg::CircularReference,
+        RunErrorMsg::CircularReference,
         form.eval(&mut ctx).unwrap_err().msg,
     );
 }
@@ -97,7 +98,7 @@ fn test_formula_range_operator() {
     }
 
     assert_eq!(
-        ErrorMsg::Unexpected("ellipsis".into()),
+        RunErrorMsg::Unexpected("ellipsis".into()),
         parse_formula("1...5", Pos::ORIGIN).unwrap_err().msg,
     );
 }
@@ -110,7 +111,10 @@ fn test_formula_blank_array_parsing() {
     assert_eq!(Value::from(array![B; B]), eval(&g, "{;}"));
     assert_eq!(Value::from(array![B, B]), eval(&g, "{,}"));
     assert_eq!(Value::from(array![B, B; B, B]), eval(&g, "{,;,}"));
-    assert_eq!(ErrorMsg::NonRectangularArray, eval_to_err(&g, "{;,;}").msg,);
+    assert_eq!(
+        RunErrorMsg::NonRectangularArray,
+        eval_to_err(&g, "{;,;}").msg,
+    );
 }
 
 #[test]
@@ -119,7 +123,7 @@ fn test_formula_array_op() {
     let sheet = &mut g.sheets_mut()[0];
     for x in 1..=4 {
         for y in 1..=4 {
-            sheet.set_cell_value(Pos { x, y }, x * 10 + y);
+            let _ = sheet.set_cell_value(Pos { x, y }, x * 10 + y);
         }
     }
 
@@ -184,7 +188,7 @@ fn test_array_parsing() {
 
     // Mismatched rows
     assert_eq!(
-        ErrorMsg::NonRectangularArray,
+        RunErrorMsg::NonRectangularArray,
         eval_to_err(&g, "{1; 3, 4}").msg,
     );
 
@@ -217,7 +221,7 @@ fn test_leading_equals() {
 #[test]
 fn test_hyphen_after_cell_ref() {
     let mut g = Grid::new();
-    g.sheets_mut()[0].set_cell_value(pos![Z1], 30);
+    let _ = g.sheets_mut()[0].set_cell_value(pos![Z1], 30);
     assert_eq!("25", eval_to_string(&g, "Z1 - 5"));
     assert_eq!("25", eval_to_string(&g, "Z1-5"));
 }
@@ -227,16 +231,16 @@ fn test_formula_omit_required_argument() {
     let g = Grid::new();
     assert!(eval_to_string(&g, "ATAN2(,1)").starts_with("1.57"));
     assert_eq!("0", eval_to_string(&g, "ATAN2(1,)"));
-    assert_eq!(ErrorMsg::DivideByZero, eval_to_err(&g, "ATAN2(,)").msg,);
+    assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "ATAN2(,)").msg,);
     assert_eq!(
-        ErrorMsg::MissingRequiredArgument {
+        RunErrorMsg::MissingRequiredArgument {
             func_name: "ATAN2".into(),
             arg_name: "x".into(),
         },
         eval_to_err(&g, "ATAN2()").msg,
     );
     assert_eq!(
-        ErrorMsg::MissingRequiredArgument {
+        RunErrorMsg::MissingRequiredArgument {
             func_name: "ATAN2".into(),
             arg_name: "y".into(),
         },
@@ -328,17 +332,17 @@ fn test_sheet_references() {
     let name1 = "MySheet".to_string();
     g.sheets_mut()[0].name = name1.clone();
 
-    let id2 = g.add_sheet(None).unwrap();
+    let id2 = g.add_sheet(None);
     let name2 = "My Other Sheet".to_string();
     g.sheets_mut()[1].name = name2.clone();
 
-    g.sheet_mut_from_id(id1).set_cell_value(pos![A1], 42);
-    g.sheet_mut_from_id(id1).set_cell_value(pos![A3], 6);
-    g.sheet_mut_from_id(id2).set_cell_value(pos![A3], 7);
-    g.sheet_mut_from_id(id2).set_cell_value(pos![A4], 70);
+    let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A1], 42);
+    let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A3], 6);
+    let _ = g.try_sheet_mut(id2).unwrap().set_cell_value(pos![A3], 7);
+    let _ = g.try_sheet_mut(id2).unwrap().set_cell_value(pos![A4], 70);
 
-    let pos1 = Pos::ORIGIN.with_sheet(id1);
-    let pos2 = Pos::ORIGIN.with_sheet(id2);
+    let pos1 = Pos::ORIGIN.to_sheet_pos(id1);
+    let pos2 = Pos::ORIGIN.to_sheet_pos(id2);
 
     assert_eq!("426", eval_to_string_at(&g, pos1, "MySheet!A1 & A3"));
     assert_eq!("427", eval_to_string_at(&g, pos2, "MySheet!A1 & A3"));

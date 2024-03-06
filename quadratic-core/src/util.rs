@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::ops::Range;
 
+use chrono::Utc;
 use itertools::Itertools;
 
 pub(crate) mod btreemap_serde {
@@ -28,38 +29,6 @@ pub(crate) mod btreemap_serde {
     >(
         d: D,
     ) -> Result<BTreeMap<K, V>, D::Error> {
-        Ok(HashMap::<String, V>::deserialize(d)?
-            .into_iter()
-            .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
-            .collect())
-    }
-}
-
-pub(crate) mod hashmap_serde {
-    use std::collections::HashMap;
-    use std::hash::Hash;
-
-    use serde::ser::SerializeMap;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
-        map: &HashMap<K, V>,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        let mut m = s.serialize_map(Some(map.len()))?;
-        for (k, v) in map {
-            m.serialize_entry(&serde_json::to_string(k).unwrap(), v)?;
-        }
-        m.end()
-    }
-    pub fn deserialize<
-        'de,
-        D: Deserializer<'de>,
-        K: for<'k> Deserialize<'k> + Eq + Hash,
-        V: Deserialize<'de>,
-    >(
-        d: D,
-    ) -> Result<HashMap<K, V>, D::Error> {
         Ok(HashMap::<String, V>::deserialize(d)?
             .into_iter()
             .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
@@ -262,11 +231,51 @@ pub fn maybe_reverse_range(
 
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(test) {
+    if cfg!(test) || cfg!(feature = "multiplayer") {
         dbg!(val);
     } else {
-        crate::wasm_bindings::js::log(&(format!("{:?}", val)));
+        // this unsafe marker is necessary b/c of quadratic-multiplayer uses quadratic-core as a dependency
+        // (although the feature="multiplayer" should prevent this from ever being called form quadratic-multiplayer)
+        #[allow(unused_unsafe)]
+        unsafe {
+            crate::wasm_bindings::js::log(&(format!("{:?}", val)));
+        }
     }
+}
+
+#[allow(unused_macros)]
+macro_rules! dbgjs {
+    ($($arg:tt)*) => {
+        $crate::util::dbgjs($($arg)*)
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! jsTime {
+    ($($arg:tt)*) => {
+        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            $crate::wasm_bindings::js::jsTime($($arg)*)
+        }
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! jsTimeEnd {
+    ($($arg:tt)*) => {
+        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            $crate::wasm_bindings::js::jsTimeEnd($($arg)*)
+        }
+    };
+}
+
+pub fn date_string() -> String {
+    let now = Utc::now();
+    now.format("%Y-%m-%d %H:%M:%S").to_string()
+}
+
+pub fn round(number: f64, precision: i64) -> f64 {
+    let y = 10i32.pow(precision as u32) as f64;
+    (number * y).round() / y
 }
 
 #[cfg(test)]
@@ -421,5 +430,19 @@ mod tests {
         assert_eq!(pos![Cn6], crate::Pos { x: 2, y: -6 });
         assert_eq!(pos![nC6], crate::Pos { x: -3, y: 6 });
         assert_eq!(pos![nCn6], crate::Pos { x: -3, y: -6 });
+    }
+
+    #[test]
+    fn test_date_string() {
+        assert_eq!(date_string().len(), 19);
+    }
+
+    #[test]
+    fn test_round() {
+        assert_eq!(round(1.23456789, 0), 1.0);
+        assert_eq!(round(1.23456789, 1), 1.2);
+        assert_eq!(round(1.23456789, 2), 1.23);
+        assert_eq!(round(1.23456789, 3), 1.235);
+        assert_eq!(round(1.23456789, 4), 1.2346);
     }
 }

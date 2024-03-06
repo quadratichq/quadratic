@@ -9,16 +9,13 @@ use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
 use super::formatting::*;
-use super::{Block, BlockContent, CellRef, CellValueBlockContent, ColumnId, SameValue};
-use crate::IsBlank;
+use super::{Block, BlockContent, SameValue};
+use crate::{CellValue, IsBlank};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 pub struct Column {
-    pub id: ColumnId,
-
-    pub values: ColumnData<CellValueBlockContent>,
-    pub spills: ColumnData<SameValue<CellRef>>,
-
+    pub x: i64,
+    pub values: BTreeMap<i64, CellValue>,
     pub align: ColumnData<SameValue<CellAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub numeric_format: ColumnData<SameValue<NumericFormat>>,
@@ -28,37 +25,32 @@ pub struct Column {
     pub italic: ColumnData<SameValue<bool>>,
     pub text_color: ColumnData<SameValue<String>>,
     pub fill_color: ColumnData<SameValue<String>>,
+    pub render_size: ColumnData<SameValue<RenderSize>>,
 }
 impl Column {
-    pub fn new() -> Self {
-        Column::with_id(ColumnId::new())
+    pub fn new(x: i64) -> Self {
+        Self {
+            x,
+            ..Default::default()
+        }
     }
-    pub fn with_id(id: ColumnId) -> Self {
-        Column {
-            id,
 
-            values: ColumnData::default(),
-            spills: ColumnData::default(),
-
-            align: ColumnData::default(),
-            wrap: ColumnData::default(),
-            numeric_format: ColumnData::default(),
-            numeric_decimals: ColumnData::default(),
-            numeric_commas: ColumnData::default(),
-            bold: ColumnData::default(),
-            italic: ColumnData::default(),
-            text_color: ColumnData::default(),
-            fill_color: ColumnData::default(),
+    pub fn values_range(&self) -> Option<Range<i64>> {
+        let min = self.values.first_key_value();
+        let max = self.values.last_key_value();
+        if let (Some(min), Some(max)) = (min, max) {
+            Some(*min.0..*max.0 + 1)
+        } else {
+            None
         }
     }
 
     pub fn range(&self, ignore_formatting: bool) -> Option<Range<i64>> {
         if ignore_formatting {
-            crate::util::union_ranges([self.values.range(), self.spills.range()])
+            self.values_range()
         } else {
             crate::util::union_ranges([
-                self.values.range(),
-                self.spills.range(),
+                self.values_range(),
                 self.align.range(),
                 self.wrap.range(),
                 self.numeric_format.range(),
@@ -72,7 +64,7 @@ impl Column {
     }
 
     pub fn has_data_in_row(&self, y: i64) -> bool {
-        self.values.get(y).is_some_and(|v| !v.is_blank()) || self.spills.get(y).is_some()
+        self.values.get(&y).is_some_and(|v| !v.is_blank())
     }
     pub fn has_anything_in_row(&self, y: i64) -> bool {
         self.has_data_in_row(y)
@@ -84,12 +76,6 @@ impl Column {
             || self.italic.get(y).is_some()
             || self.text_color.get(y).is_some()
             || self.fill_color.get(y).is_some()
-    }
-}
-
-impl Default for Column {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -128,7 +114,10 @@ impl<B: BlockContent> ColumnData<B> {
         let key = block.start();
         self.0.insert(key, block);
     }
-    fn add_blocks(&mut self, blocks: impl IntoIterator<Item = Block<B>>) {
+
+    /// Adds blocks w/o regard to whether they overlap with existing blocks.
+    /// This is temporary and for use with column.values only!
+    pub fn add_blocks(&mut self, blocks: impl IntoIterator<Item = Block<B>>) {
         for block in blocks {
             self.add_block(block);
         }
@@ -362,28 +351,51 @@ impl ColumnData<SameValue<bool>> {
     }
 }
 
-#[test]
-fn test_column_data_set_range() {
-    let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+#[cfg(test)]
+mod test {
+    use super::*;
 
-    // range 0 - 10 (true)
-    cd.set_range(Range { start: -2, end: 10 }, true);
-    assert_eq!(cd.get(-2), Some(true));
-    assert_eq!(cd.get(0), Some(true));
-    assert_eq!(cd.get(10), None);
-    assert_eq!(cd.get(-3), None);
-    assert_eq!(cd.blocks().count(), 1);
+    #[test]
+    fn column_data_set_range() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
 
-    // adding range 11 - 20 (true)
-    cd.set_range(Range { start: 10, end: 20 }, true);
-    assert_eq!(cd.get(11), Some(true));
-    assert_eq!(cd.get(20), None);
-    assert_eq!(cd.blocks().count(), 1);
+        // range 0 - 10 (true)
+        cd.set_range(Range { start: -2, end: 10 }, true);
+        assert_eq!(cd.get(-2), Some(true));
+        assert_eq!(cd.get(0), Some(true));
+        assert_eq!(cd.get(10), None);
+        assert_eq!(cd.get(-3), None);
+        assert_eq!(cd.blocks().count(), 1);
 
-    // adding range 19 - 30 (false) - creating a second block and overlapping previous one
-    cd.set_range(Range { start: 19, end: 30 }, false);
-    assert_eq!(cd.get(19), Some(false));
-    assert_eq!(cd.get(18), Some(true));
-    assert_eq!(cd.get(30), None);
-    assert_eq!(cd.blocks().count(), 2);
+        // adding range 11 - 20 (true)
+        cd.set_range(Range { start: 10, end: 20 }, true);
+        assert_eq!(cd.get(11), Some(true));
+        assert_eq!(cd.get(20), None);
+        assert_eq!(cd.blocks().count(), 1);
+
+        // adding range 19 - 30 (false) - creating a second block and overlapping previous one
+        cd.set_range(Range { start: 19, end: 30 }, false);
+        assert_eq!(cd.get(19), Some(false));
+        assert_eq!(cd.get(18), Some(true));
+        assert_eq!(cd.get(30), None);
+        assert_eq!(cd.blocks().count(), 2);
+    }
+
+    #[test]
+    fn has_blocks_in_range() {
+        let mut cd: ColumnData<SameValue<bool>> = ColumnData::new();
+
+        // range 0 - 10 (true)
+        cd.set_range(Range { start: -2, end: 10 }, true);
+        assert!(cd.has_blocks_in_range(Range { start: -2, end: 10 }));
+        assert!(cd.has_blocks_in_range(Range { start: 0, end: 10 }));
+        assert!(cd.has_blocks_in_range(Range { start: -2, end: 9 }));
+        assert!(cd.has_blocks_in_range(Range { start: -3, end: 10 }));
+        assert!(cd.has_blocks_in_range(Range { start: -3, end: 9 }));
+        assert!(!cd.has_blocks_in_range(Range { start: 11, end: 20 }));
+        assert!(!cd.has_blocks_in_range(Range {
+            start: -10,
+            end: -3
+        }));
+    }
 }

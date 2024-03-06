@@ -1,4 +1,5 @@
 {
-  "buildCommand": "cd quadratic-client && npm run build:ci",
-  "installCommand": "cd quadratic-client && npm install"
+  "buildCommand": "./infra/client/build-client-ci.sh",
+  "installCommand": "npm install",
+  "outputDirectory": "build"
 }

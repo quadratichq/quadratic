@@ -1,36 +1,181 @@
-import { Avatar, AvatarGroup, useTheme } from '@mui/material';
+import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
+import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+import { multiplayer } from '@/multiplayer/multiplayer';
+import { TooltipHint } from '@/ui/components/TooltipHint';
+import { displayInitials, displayName } from '@/utils/userUtil';
+import { Avatar, AvatarGroup, IconButton } from '@mui/material';
+import { EyeOpenIcon } from '@radix-ui/react-icons';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
-import { TooltipHint } from '../../components/TooltipHint';
+import { useMultiplayerUsers } from './useMultiplayerUsers';
+
+const sharedAvatarSxProps = { width: 24, height: 24, fontSize: '.8125rem' };
 
 export const TopBarUsers = () => {
-  const theme = useTheme();
-  const { user } = useRootRouteLoaderData();
-  const displayName = user?.name ? user.name + ' (You)' : '(You)';
-  const initial = user?.name ? user.name[0] : 'Y';
+  const { loggedInUser: user } = useRootRouteLoaderData();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const { users, followers } = useMultiplayerUsers();
+
+  const anonymous = !user
+    ? {
+        index: multiplayer.index,
+        colorString: MULTIPLAYER_COLORS[(multiplayer.index ?? 0) % MULTIPLAYER_COLORS.length],
+      }
+    : undefined;
 
   return (
-    <AvatarGroup sx={{ mr: theme.spacing(1), ml: theme.spacing(-0.5), alignSelf: 'center' }}>
-      {user && <UserAvatar displayName={displayName} initial={initial} picture={user.picture || ''} />}
-    </AvatarGroup>
+    <>
+      <AvatarGroup
+        spacing={16}
+        componentsProps={{ additionalAvatar: { sx: sharedAvatarSxProps } }}
+        sx={{
+          alignSelf: 'center',
+          alignItems: 'center',
+          flexDirection: 'row',
+          // Styles for the "+2" avatar
+          '& > .MuiAvatar-root': { marginRight: '.25rem', backgroundColor: '#aaa', border: `2px solid #aaa` },
+        }}
+        max={5}
+      >
+        {
+          <div className={`ml-2`}>
+            <You
+              displayName={displayName(user ?? anonymous, true)}
+              initial={displayInitials(user ?? anonymous)}
+              picture={user?.picture ?? ''}
+              border={multiplayer.colorString ?? 'black'}
+              bgColor={multiplayer.colorString}
+            />
+          </div>
+        }
+        {users.map((user) => {
+          return (
+            <UserAvatar
+              key={user.session_id}
+              displayName={displayName(user, false)}
+              initial={displayInitials(user)}
+              picture={user.image}
+              border={user.colorString}
+              sessionId={user.session_id}
+              follow={editorInteractionState.follow === user.session_id}
+              follower={followers.includes(user.session_id)}
+              viewport={user.viewport}
+              bgColor={user.colorString}
+            />
+          );
+        })}
+      </AvatarGroup>
+    </>
   );
 };
 
-function UserAvatar({ displayName, initial, picture }: { displayName: string; initial: string; picture: string }) {
+function You({
+  displayName,
+  initial,
+  picture,
+  border,
+  bgColor,
+}: {
+  displayName: string;
+  initial: string;
+  picture: string;
+  border: string;
+  bgColor?: string;
+}) {
   return (
     <TooltipHint title={displayName}>
       <Avatar
         sx={{
-          bgcolor: colors.quadraticSecondary,
-          width: 24,
-          height: 24,
-          fontSize: '0.8rem',
+          bgcolor: bgColor ?? colors.quadraticSecondary,
+          ...sharedAvatarSxProps,
         }}
         alt={displayName}
         src={picture}
+        style={{
+          border: `2px solid ${border}`,
+        }}
       >
         {initial}
       </Avatar>
     </TooltipHint>
+  );
+}
+
+function UserAvatar({
+  displayName,
+  initial,
+  picture,
+  border,
+  sessionId,
+  follow,
+  follower,
+  viewport,
+  bgColor,
+}: {
+  displayName: string;
+  initial: string;
+  picture: string;
+  border: string;
+  sessionId: string;
+  follow: boolean;
+  follower: boolean;
+  viewport: string;
+  bgColor?: string;
+}) {
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const handleFollow = () => {
+    // you cannot follow a user that is following you
+    if (follower) return;
+    setEditorInteractionState((prev) => {
+      if (follow) {
+        multiplayer.sendFollow('');
+        return { ...prev, follow: undefined };
+      }
+      pixiApp.loadMultiplayerViewport(JSON.parse(viewport));
+      multiplayer.sendFollow(sessionId);
+      return { ...prev, follow: sessionId };
+    });
+  };
+
+  return (
+    <div className="relative">
+      <TooltipHint
+        title={displayName}
+        shortcut={follower ? 'following you' : `Click to ${follow ? 'unfollow' : 'follow'}`}
+      >
+        <IconButton sx={{ borderRadius: 0, px: '.25rem' }} onClick={handleFollow}>
+          <div>
+            <Avatar
+              sx={{
+                bgcolor: bgColor ?? colors.quadraticSecondary,
+                ...sharedAvatarSxProps,
+                pointerEvents: 'auto',
+                cursor: 'pointer',
+                position: 'relative',
+              }}
+              alt={displayName}
+              src={picture}
+              style={{
+                border: `2px solid ${border}`,
+              }}
+            >
+              {initial}
+            </Avatar>
+          </div>
+        </IconButton>
+      </TooltipHint>
+      {follow && (
+        <div className="pointer-events-none absolute bottom-1 left-1/2 flex h-5  w-5 items-center justify-center rounded-full bg-white">
+          <EyeOpenIcon />
+        </div>
+      )}
+      {follower && (
+        <div className="pointer-events-none absolute left-1/2 top-1 flex h-5  w-5 items-center justify-center rounded-full bg-white">
+          <EyeOpenIcon />
+        </div>
+      )}
+    </div>
   );
 }

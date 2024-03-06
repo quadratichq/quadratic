@@ -1,6 +1,5 @@
-import { ViewGridIcon } from '@radix-ui/react-icons';
 import { useEffect, useMemo, useState } from 'react';
-import { isEditorOrAbove } from '../../../../actions';
+import { hasPermissionToEditFile } from '../../../../actions';
 import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
@@ -13,22 +12,19 @@ const ListItems = () => {
   const items = useMemo(() => {
     const items /*: Commands[]*/ = [
       {
-        isAvailable: isEditorOrAbove,
-        Component: () => {
-          return (
-            <CommandPaletteListItem
-              icon={<ViewGridIcon />}
-              label="Create"
-              action={() => sheets.createNew()}
-            ></CommandPaletteListItem>
-          );
+        label: 'Sheet: Create',
+        isAvailable: hasPermissionToEditFile,
+        Component: (props: any) => {
+          return <CommandPaletteListItem {...props} action={() => sheets.createNew()} />;
         },
       },
       {
-        isAvailable: isEditorOrAbove,
+        label: 'Sheet: Delete',
+        isAvailable: hasPermissionToEditFile,
         Component: (props: any) => {
           return (
             <CommandPaletteListItem
+              {...props}
               label="Delete"
               action={() => {
                 if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
@@ -41,18 +37,23 @@ const ListItems = () => {
         },
       },
       {
-        isAvailable: isEditorOrAbove,
+        label: 'Sheet: Duplicate',
+        isAvailable: hasPermissionToEditFile,
         Component: (props: any) => {
-          return <CommandPaletteListItem action={() => grid.duplicateSheet(sheets.sheet.id)} label="Duplicate" />;
+          return (
+            <CommandPaletteListItem {...props} action={() => grid.duplicateSheet(sheets.sheet.id)} label="Duplicate" />
+          );
         },
       },
     ];
     sheets.forEach((sheet) => {
+      // @ts-expect-error
       items.push({
         isAvailable: () => sheets.current !== sheet.id,
         Component: (props: any) => {
           return (
             <CommandPaletteListItem
+              {...props}
               label={`Switch to “${sheet.name}”`}
               icon={
                 sheet.color ? (

@@ -12,8 +12,7 @@ import {
   cutAction,
   deleteFile,
   downloadFileAction,
-  duplicateFileAction,
-  isViewerOrAbove,
+  duplicateFileWithUserAsOwnerAction,
   pasteAction,
   provideFeedbackAction,
   redoAction,
@@ -39,14 +38,13 @@ import { useGridSettings } from './useGridSettings';
 export const QuadraticMenu = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const settings = useGridSettings();
-
   const navigate = useNavigate();
   const submit = useSubmit();
   const { uuid } = useParams() as { uuid: string };
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name } = useFileContext();
   const { isAuthenticated } = useRootRouteLoaderData();
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
 
   // For mobile, set Headers to not visible by default
   useEffect(() => {
@@ -66,7 +64,7 @@ export const QuadraticMenu = () => {
           </TopBarMenuItem>
         )}
       >
-        {isViewerOrAbove(permission) && (
+        {isAuthenticated && (
           <>
             <MenuItem href={ROUTES.FILES} style={{ textDecoration: 'none' }}>
               <MenuLineItem primary="Back to files" />
@@ -86,19 +84,19 @@ export const QuadraticMenu = () => {
           <MenuLineItem primary="Command palette" secondary={KeyboardSymbols.Command + 'P'} />
         </MenuItem>
         <MenuDivider />
-        {isViewerOrAbove(permission) && (
+        {isAuthenticated && (
           <SubMenu label={<MenuLineItem primary="File" />}>
-            {createNewFileAction.isAvailable(permission) && (
+            {createNewFileAction.isAvailable(permissions, isAuthenticated) && (
               <MenuItem onClick={() => createNewFileAction.run({ navigate })}>
                 <MenuLineItem primary={createNewFileAction.label} />
               </MenuItem>
             )}
-            {duplicateFileAction.isAvailable(permission) && (
-              <MenuItem onClick={() => duplicateFileAction.run({ name, submit })}>
-                <MenuLineItem primary={duplicateFileAction.label} />
+            {duplicateFileWithUserAsOwnerAction.isAvailable(permissions, isAuthenticated) && (
+              <MenuItem onClick={() => duplicateFileWithUserAsOwnerAction.run({ uuid, submit })}>
+                <MenuLineItem primary={duplicateFileWithUserAsOwnerAction.label} />
               </MenuItem>
             )}
-            {downloadFileAction.isAvailable(permission) && (
+            {downloadFileAction.isAvailable(permissions, isAuthenticated) && (
               <MenuItem
                 onClick={() => {
                   downloadFileAction.run({ name });
@@ -107,7 +105,7 @@ export const QuadraticMenu = () => {
                 <MenuLineItem primary={downloadFileAction.label} />
               </MenuItem>
             )}
-            {deleteFile.isAvailable(permission) && (
+            {deleteFile.isAvailable(permissions) && (
               <>
                 <MenuDivider />
                 <MenuItem
@@ -122,18 +120,18 @@ export const QuadraticMenu = () => {
           </SubMenu>
         )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
-          {undoAction.isAvailable(permission) && (
+          {undoAction.isAvailable(permissions) && (
             <MenuItem onClick={() => grid.undo()} disabled={!grid.hasUndo()}>
               <MenuLineItem primary={undoAction.label} secondary={KeyboardSymbols.Command + 'Z'} />
             </MenuItem>
           )}
-          {redoAction.isAvailable(permission) && (
+          {redoAction.isAvailable(permissions) && (
             <>
               <MenuItem onClick={() => grid.redo()} disabled={!grid.hasRedo()}>
                 <MenuLineItem
                   primary={redoAction.label}
                   secondary={
-                    isMac ? KeyboardSymbols.Command + KeyboardSymbols.Shift + 'Z' : KeyboardSymbols.Command + 'Y'
+                    isMac ? KeyboardSymbols.Shift + KeyboardSymbols.Command + 'Z' : KeyboardSymbols.Command + 'Y'
                   }
                 />
               </MenuItem>
@@ -141,7 +139,7 @@ export const QuadraticMenu = () => {
             </>
           )}
 
-          {cutAction.isAvailable(permission) && (
+          {cutAction.isAvailable(permissions) && (
             <MenuItem onClick={cutToClipboard}>
               <MenuLineItem primary={cutAction.label} secondary={KeyboardSymbols.Command + 'X'} />
             </MenuItem>
@@ -149,11 +147,24 @@ export const QuadraticMenu = () => {
           <MenuItem onClick={copyToClipboard}>
             <MenuLineItem primary={copyAction.label} secondary={KeyboardSymbols.Command + 'C'} />
           </MenuItem>
-          {pasteAction.isAvailable(permission) && (
-            <MenuItem onClick={pasteFromClipboard}>
+          {pasteAction.isAvailable(permissions) && (
+            <MenuItem onClick={() => pasteFromClipboard()}>
               <MenuLineItem primary={pasteAction.label} secondary={KeyboardSymbols.Command + 'V'} />
             </MenuItem>
           )}
+
+          <MenuDivider />
+          <MenuItem onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: true }))}>
+            <MenuLineItem primary="Find in current sheet" secondary={KeyboardSymbols.Command + 'F'} />
+          </MenuItem>
+          <MenuItem
+            onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
+          >
+            <MenuLineItem
+              primary="Find in all sheets"
+              secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + 'F'}
+            />
+          </MenuItem>
         </SubMenu>
         <SubMenu label={<MenuLineItem primary="View" />}>
           <MenuItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
@@ -167,6 +178,9 @@ export const QuadraticMenu = () => {
           </MenuItem>
           <MenuItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
             <MenuLineItem primary="Show code cell outlines" Icon={settings.showCellTypeOutlines && Check} indent />
+          </MenuItem>
+          <MenuItem onClick={() => settings.setShowCodePeek(!settings.showCodePeek)}>
+            <MenuLineItem primary="Show code peek" Icon={settings.showCodePeek && Check} indent />
           </MenuItem>
           <MenuDivider />
           <MenuItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>
@@ -188,7 +202,7 @@ export const QuadraticMenu = () => {
           <MenuItem onClick={() => viewDocsAction.run()}>
             <MenuLineItem primary={viewDocsAction.label} />
           </MenuItem>
-          {provideFeedbackAction.isAvailable(permission) && (
+          {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
             <MenuItem onClick={() => provideFeedbackAction.run({ setEditorInteractionState })}>
               <MenuLineItem primary={provideFeedbackAction.label} />
             </MenuItem>

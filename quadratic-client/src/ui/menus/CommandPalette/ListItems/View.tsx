@@ -4,6 +4,7 @@ import { Checkbox } from '@/shadcn/ui/checkbox';
 import { ZoomInIcon, ZoomOutIcon } from '@radix-ui/react-icons';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
+import { CommandPaletteListItemCheckbox } from '../CommandPaletteListItemCheckbox';
 
 const ListItems = [
   {
@@ -63,6 +64,21 @@ const ListItems = [
           icon={<Checkbox checked={settings.showCellTypeOutlines} />}
           action={() => {
             settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines);
+          }}
+        />
+      );
+    },
+  },
+  {
+    label: 'View: Show code peek (hover to peek at the code)',
+    Component: (props: any) => {
+      const settings = useGridSettings();
+      return (
+        <CommandPaletteListItem
+          {...props}
+          icon={<CommandPaletteListItemCheckbox checked={settings.showCodePeek} />}
+          action={() => {
+            settings.setShowCodePeek(!settings.showCodePeek);
           }}
         />
       );
