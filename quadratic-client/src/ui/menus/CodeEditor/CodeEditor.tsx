@@ -194,7 +194,6 @@ export const CodeEditor = () => {
 
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
-      code: editorContent,
     });
   };
 
