@@ -194,12 +194,14 @@ export const FloatingContextMenu = (props: Props) => {
     viewport.on('moved-end', updateContextMenuCSSTransform);
     document.addEventListener('pointerup', updateContextMenuCSSTransform);
     window.addEventListener('resize', updateContextMenuCSSTransform);
+    window.addEventListener('keyup', updateContextMenuCSSTransform);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
       viewport.removeListener('moved-end', updateContextMenuCSSTransform);
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
       window.removeEventListener('resize', updateContextMenuCSSTransform);
+      window.addEventListener('keyup', updateContextMenuCSSTransform);
     };
   }, [updateContextMenuCSSTransform]);
 

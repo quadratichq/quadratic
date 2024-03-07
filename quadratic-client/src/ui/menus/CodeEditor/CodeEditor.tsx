@@ -166,7 +166,6 @@ export const CodeEditor = () => {
     setCodeString(editorContent ?? '');
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
-      code: editorContent,
     });
   };
 
