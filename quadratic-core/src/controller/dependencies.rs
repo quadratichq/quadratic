@@ -74,6 +74,7 @@ mod test {
                 std_out: None,
                 spill_error: false,
                 result: CodeRunResult::Ok(Value::Single(CellValue::Text("test".to_string()))),
+                return_type: Some("text".into()),
                 cells_accessed: cells_accessed.clone(),
             }),
         );

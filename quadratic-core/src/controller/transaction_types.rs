@@ -10,8 +10,8 @@ pub struct JsCodeResult {
     formatted_code: Option<String>,
     error_msg: Option<String>,
     input_python_std_out: Option<String>,
-    output_value: Option<String>,
-    array_output: Option<Vec<Vec<String>>>,
+    output_value: Option<Vec<String>>,
+    array_output: Option<Vec<Vec<Vec<String>>>>,
     line_number: Option<u32>,
     pub cancel_compute: Option<bool>,
 }
@@ -23,10 +23,10 @@ impl JsCodeResult {
     pub fn success(&self) -> bool {
         self.success
     }
-    pub fn output_value(&self) -> Option<String> {
+    pub fn output_value(&self) -> Option<Vec<String>> {
         self.output_value.clone()
     }
-    pub fn array_output(&self) -> Option<Vec<Vec<String>>> {
+    pub fn array_output(&self) -> Option<Vec<Vec<Vec<String>>>> {
         self.array_output.clone()
     }
     pub fn error_msg(&self) -> Option<String> {
@@ -50,8 +50,8 @@ impl JsCodeResult {
         formatted_code: Option<String>,
         error_msg: Option<String>,
         input_python_std_out: Option<String>,
-        output_value: Option<String>,
-        array_output: Option<Vec<Vec<String>>>,
+        output_value: Option<Vec<String>>,
+        array_output: Option<Vec<Vec<Vec<String>>>>,
         line_number: Option<u32>,
         cancel_compute: Option<bool>,
     ) -> Self {
@@ -79,21 +79,26 @@ impl JsCodeResult {
         formatted_code: Option<String>,
         error_msg: Option<String>,
         input_python_std_out: Option<String>,
-        output_value: Option<String>,
+        output_value: Option<Vec<String>>,
         array_output: Option<String>,
         line_number: Option<u32>,
         cancel_compute: Option<bool>,
     ) -> Self {
-        let array_output: Option<Vec<Vec<String>>> = if let Some(output_value) = array_output {
+        let array_output: Option<Vec<Vec<Vec<String>>>> = if let Some(output_value) = array_output {
             match serde_json::from_str(&output_value) {
                 Ok(array) => Some(array),
-                Err(_) => {
+                Err(e) => {
+                    crate::util::dbgjs(format!(
+                        "Could not parse array_output in JsCodeResult::new: {:?}",
+                        e
+                    ));
                     panic!("Could not parse array_output in JsCodeResult::new")
                 }
             }
         } else {
             None
         };
+
         JsCodeResult {
             transaction_id,
             success,

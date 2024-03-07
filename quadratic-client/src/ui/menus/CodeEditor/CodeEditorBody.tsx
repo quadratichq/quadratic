@@ -1,16 +1,25 @@
+import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import Editor, { Monaco } from '@monaco-editor/react';
-import monaco from 'monaco-editor';
+import monaco, { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import { Diagnostic } from 'vscode-languageserver-types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
+import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
-import { provideCompletionItems as provideCompletionItemsPython } from './PythonLanguageModel';
+import {
+  provideCompletionItems as provideCompletionItemsPython,
+  provideHover as provideHoverPython,
+  provideSignatureHelp as provideSignatureHelpPython,
+} from './PythonLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
+// import { useEditorDiagnostics } from './useEditorDiagnostics';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
+import { useEditorReturn } from './useEditorReturn';
 
 // todo: fix types
 
@@ -18,23 +27,32 @@ interface Props {
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
+  codeEditorReturn?: ComputedPythonReturnType;
+  diagnostics?: Diagnostic[];
 }
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor } = props;
+  const { editorContent, setEditorContent, closeEditor, codeEditorReturn } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const language = editorInteractionState.mode;
   const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
 
-  const language = editorInteractionState.mode;
-
   useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
+  useEditorReturn(isValidRef, editorRef, monacoRef, language, codeEditorReturn);
+
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
+
+  // TODO(ddimaria): this looks like a better pattern than the current one for
+  // the language model, consider moving to this
+  // useLanguageServer(isValidRef, editorRef, monacoRef, language);
 
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {
@@ -67,6 +85,17 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.register({ id: 'python' });
       monaco.languages.registerCompletionItemProvider('python', {
         provideCompletionItems: provideCompletionItemsPython,
+        triggerCharacters: ['.', '[', '"', "'"],
+      });
+      monaco.languages.registerSignatureHelpProvider('python', {
+        provideSignatureHelp: provideSignatureHelpPython,
+        signatureHelpTriggerCharacters: ['(', ','],
+      });
+      monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
+
+      // load the document in the python language server
+      pyrightWorker?.openDocument({
+        textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
       });
 
       setDidMount(true);
@@ -104,6 +133,7 @@ export const CodeEditorBody = (props: Props) => {
         onChange={setEditorContent}
         onMount={onMount}
         options={{
+          theme: 'light',
           readOnly,
           minimap: { enabled: true },
           overviewRulerLanes: 0,
