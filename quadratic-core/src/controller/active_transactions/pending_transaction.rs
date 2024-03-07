@@ -109,6 +109,8 @@ impl PendingTransaction {
     pub fn prepare_summary(&mut self, complete: bool) -> TransactionSummary {
         if complete && self.is_user_undo_redo() {
             self.summary.transaction_id = Some(self.id.to_string());
+            let ops = serde_json::to_string(&self.forward_operations);
+            dbgjs!(ops);
             self.summary.operations = Some(
                 serde_json::to_string(&self.forward_operations)
                     .expect("Failed to serialize forward operations"),
