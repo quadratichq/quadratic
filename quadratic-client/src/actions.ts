@@ -14,7 +14,7 @@ const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 export type GenericAction = {
   label: string;
-  isAvailable?: (permissions: FilePermission[], isAuthenticated?: boolean) => boolean;
+  isAvailable?: (permissions: FilePermission[], isAuthenticated: boolean) => boolean;
   run?: (args: any) => void;
 
   // Future shortcuts
@@ -53,7 +53,7 @@ export const hasPermissionToEditFile = (permissions: FilePermission[]) => permis
 const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => isAuthenticated;
 
 export const createNewFileAction = {
-  label: 'New',
+  label: 'Create',
   isAvailable: isLoggedIn,
   run({ navigate }: { navigate: NavigateFunction }) {
     navigate(ROUTES.CREATE_FILE);

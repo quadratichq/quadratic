@@ -2,11 +2,10 @@ import fuzzysort from 'fuzzysort';
 import { GenericAction } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { CommandPaletteListItemSharedProps } from './CommandPaletteListItem';
-import FileListItems from './ListItems/File';
 
 export interface Commands {
   label: string;
-  keywords?: Array<string> | string;
+  keywords?: Array<string>;
   Component: (props: CommandPaletteListItemSharedProps) => JSX.Element;
   isAvailable?: GenericAction['isAvailable'];
 }
@@ -16,24 +15,25 @@ export const getCommandPaletteListItems = (props: {
   permissions: EditorInteractionState['permissions'];
   closeCommandPalette: Function;
   activeSearchValue: string;
+  commands: Array<Commands>;
 }): Array<JSX.Element> => {
-  // @ts-expect-error
-  const commands: Array<Commands> = [
-    ...FileListItems,
-    //   ...EditListItems,
-    // ...ViewListItems,
-    //   ...ImportListItems,
-    //   ...BordersListItems,
-    // ...TextListItems,
-    // ...FormatListItems,
+  // const commands: Array<Commands> = [
+  //   ...FileListItems,
+  //   ...EditListItems,
+  // ...ViewListItems,
+  //   ...ImportListItems,
+  //   ...BordersListItems,
+  // ...TextListItems,
+  // ...FormatListItems,
 
-    //   ...SheetListItems(),
-    //   ...HelpListItems,
-    // ...CodeItems,
-    // ...SearchItems,
-  ];
-  const { activeSearchValue, permissions, isAuthenticated, ...rest } = props;
+  //   ...SheetListItems(),
+  //   ...HelpListItems,
+  // ...CodeItems,
+  // ...SearchItems,
+  // ];
+  const { activeSearchValue, permissions, isAuthenticated, commands, ...rest } = props;
 
+  // First, get everything that's considered available
   let filteredCommands = commands.filter((action) =>
     action.isAvailable ? action.isAvailable(permissions, isAuthenticated) : true
   );
@@ -48,27 +48,11 @@ export const getCommandPaletteListItems = (props: {
   let out: any = [];
   // let listItemIndex = 0;
   filteredCommands.forEach(({ label, keywords, Component }, i) => {
-    let addKeywords = '';
-    if (keywords) {
-      addKeywords += '|';
-      if (Array.isArray(keywords)) {
-        addKeywords += keywords.join(' ');
-      } else {
-        addKeywords += keywords;
-      }
-    }
-    const result = fuzzysort.single(activeSearchValue, label + addKeywords);
-    if (result) {
-      out.push(
-        <Component
-          {...rest}
-          key={label}
-          // listItemIndex={listItemIndex}
-          label={label}
-          // fuzzysortResult={result}
-          // addKeywords={addKeywords}
-        />
-      );
+    const results = fuzzysort.go(activeSearchValue, [label, ...(keywords ? keywords : [])]);
+    console.log(results, results.total, results.length);
+    if (results.total > 0) {
+      console.warn('has result');
+      out.push(<Component {...rest} key={label} label={label} fuzzysortResult={results[0]} />);
       // listItemIndex++;
     }
   });

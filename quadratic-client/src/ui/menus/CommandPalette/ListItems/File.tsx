@@ -53,6 +53,7 @@ const ListItems = [
       return <CommandPaletteListItem {...props} icon={<FileMinusIcon />} action={action} />;
     },
   },
-].map((item) => ({ ...item, label: 'File: ' + item.label }));
+];
+// .map((item) => ({ ...item, label: 'File: ' + item.label }));
 
 export default ListItems;

@@ -6,6 +6,8 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
 import '../../styles/floating-dialog.css';
+import fileListItems from './ListItems/File';
+import searchListItems from './ListItems/Search';
 import { getCommandPaletteListItems } from './getCommandPaletteListItems';
 
 interface Props {
@@ -39,23 +41,25 @@ export const CommandPalette = (props: Props) => {
   // const sheets = useSheetListItems();
 
   // Otherwise, define vars and render the list
-  const ListItems = getCommandPaletteListItems({
-    isAuthenticated,
-    permissions,
-    closeCommandPalette,
-    activeSearchValue: activeSearchValue,
-    // selectedListItemIndex: selectedListItemIndex,
-    // extraItems: sheets,
-    // confirmDelete: confirmSheetDelete,
-  });
+  // const ListItems = getCommandPaletteListItems({
+  //   isAuthenticated,
+  //   permissions,
+  //   closeCommandPalette,
+  //   activeSearchValue: activeSearchValue,
+  //   // selectedListItemIndex: selectedListItemIndex,
+  //   // extraItems: sheets,
+  //   // confirmDelete: confirmSheetDelete,
+  // });
 
   // const searchLabel = 'Search menus and commands…';
 
   // const renderItems = (items: any) =>
   //   items
-  //     .filter(({ isAvailable }: any) => (isAvailable ? isAvailable(permission) : true))
-  //     .map(({ Component }: any, i: number) => <Component key={i} />);
+  //     .filter(({ isAvailable }: any) => isAvailable || true)
+  //     .map(({ Component, label }: any, i: number) => <Component key={i} label={label} />);
   // const sheetListItems = getSheetListItems();
+  // console.log('fileListItems', renderItems(fileListItems));
+  const sharedProps = { isAuthenticated, permissions, closeCommandPalette, activeSearchValue };
   return (
     <CommandDialog open={editorInteractionState.showCommandPalette} onOpenChange={closeCommandPalette}>
       <CommandInput
@@ -70,11 +74,16 @@ export const CommandPalette = (props: Props) => {
       >
         <CommandEmpty>No results found.</CommandEmpty>
 
-        <CommandGroup>{ListItems}</CommandGroup>
-        {/* <CommandGroup heading="File">{renderItems(fileListItems)}</CommandGroup>
-        <CommandSeparator />
-        <CommandGroup heading="Edit">{renderItems(editListItems)}</CommandGroup>
-        <CommandSeparator />
+        {/* <CommandGroup>{ListItems}</CommandGroup> */}
+        <CommandGroup heading="File">
+          {getCommandPaletteListItems({ ...sharedProps, commands: fileListItems })}
+        </CommandGroup>
+
+        <CommandGroup heading="Search">
+          {getCommandPaletteListItems({ ...sharedProps, commands: searchListItems })}
+        </CommandGroup>
+        {/* <CommandGroup heading="Edit">{{ ...sharedProps, commands: editListItems }}</CommandGroup> */}
+        {/* <CommandSeparator />
         <CommandGroup heading="View">{renderItems(viewListItems)}</CommandGroup>
         <CommandSeparator />
         <CommandGroup heading="Sheet">{renderItems(sheetListItems)}</CommandGroup> */}

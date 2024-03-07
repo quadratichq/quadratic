@@ -1,11 +1,13 @@
 import { CommandItem, CommandShortcut } from '@/shadcn/ui/command';
+import fuzzysort from 'fuzzysort';
 
 // Props generated in the root CommandPalette and passed to every CommandPaletteListItem
 export interface CommandPaletteListItemSharedProps {
   label: string;
   // listItemIndex: number;
   // selectedListItemIndex: number;
-  addKeywords?: string;
+  // addKeywords?: string;
+  fuzzysortResult?: any; // TODO: type
 }
 
 // Contextual props added to each individual <CommandPaletteListItem>
@@ -32,11 +34,11 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
     shortcut,
     shortcutModifiers,
     icon,
-    // fuzzysortResult,
+    fuzzysortResult,
     // addKeywords,
   } = props;
 
-  // let displayText: (string | JSX.Element)[] | null | string = label;
+  let displayText: (string | JSX.Element)[] | null | string = label;
 
   // remove any keywords from the displayed search result
   // if (addKeywords && fuzzysortResult?.target) {
@@ -44,9 +46,9 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
   //     <b key={i}>{m}</b>
   //   ));
   // }
-  // else if (fuzzysortResult) {
-  //   displayText = fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>);
-  // }
+  if (fuzzysortResult && fuzzysortResult.target === label) {
+    displayText = fuzzysort.highlight(fuzzysortResult, (m, i) => <b key={i}>{m}</b>);
+  }
 
   return (
     <CommandItem
@@ -56,8 +58,8 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
       }}
       disabled={disabled}
     >
-      <div className={`mr-2 flex h-5 w-5 items-center text-primary`}>{icon ? icon : null}</div>
-      {label}
+      <div className={`mr-2 flex h-5 w-5 items-center opacity-50`}>{icon ? icon : null}</div>
+      <div>{displayText}</div>
       {shortcut && (
         <CommandShortcut>
           {shortcutModifiers}
