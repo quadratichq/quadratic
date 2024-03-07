@@ -34,6 +34,7 @@ impl Sheet {
     }
 
     pub fn get_cells_response(&self, rect: Rect) -> GetCellsResponse {
+        dbgjs!(format!("get_cells_response: {:?}", rect));
         let mut response = vec![];
         for y in rect.y_range() {
             for x in rect.x_range() {

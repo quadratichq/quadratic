@@ -4,8 +4,11 @@ import sys
 import unittest
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
-from quadratic_py.utils import attempt_fix_await
+from quadratic_py.utils import attempt_fix_await, to_quadratic_type
 
+import pandas as pd
+import numpy as np
+from datetime import datetime
 
 #  Mock definitions
 def mock_GetCellsDB():
@@ -149,6 +152,37 @@ class TestErrorMessaging(TestCase):
             "formatted_code": code
         }
 
+    def test_to_quadratic_type(self):
+        # number
+        assert to_quadratic_type(1) == ("1", "number")
+        assert to_quadratic_type(1.1) == ("1.1", "number")
+        assert to_quadratic_type(-1) == ("-1", "number")
+        assert to_quadratic_type("1") == ("1", "number")
+        assert to_quadratic_type("1.1") == ("1.1", "number")
+        assert to_quadratic_type("-1") == ("-1", "number")
+
+        # logical
+        assert to_quadratic_type(True) == ("True", "logical")
+        assert to_quadratic_type(False) == ("False", "logical")
+        assert to_quadratic_type("True") == ("True", "logical")
+        assert to_quadratic_type("False") == ("False", "logical")
+
+        # string
+        assert to_quadratic_type("abc") == ("abc", "text")
+        assert to_quadratic_type("123abc") == ("123abc", "text")
+        assert to_quadratic_type("abc123") == ("abc123", "text")
+
+        # instant
+        assert to_quadratic_type(pd.Timestamp("2012-11-10")) == ("1352505600", "instant")
+        assert to_quadratic_type(pd.Timestamp("2012-11-10T03:30")) == ("1352518200", "instant")
+        assert to_quadratic_type(np.datetime64("2012-11-10")) == ("1352505600", "instant")
+        assert to_quadratic_type(np.datetime64("2012-11-10T03:30")) == ("1352518200", "instant")
+        assert to_quadratic_type(datetime.strptime("2012-11-10", '%Y-%m-%d')) == ("1352505600", "instant")
+        assert to_quadratic_type(datetime.strptime("2012-11-10 03:30", '%Y-%m-%d %H:%M')) == ("1352518200", "instant")
+        # assert to_quadratic_type("2012-11-10") == ("1352505600", "instant")
+
+        # TODO(ddimaria): implement when we implement duration in Rust
+        # duration
 
 if __name__ == "__main__":
     unittest.main()

@@ -270,7 +270,10 @@ impl GridController {
             } else if let Some(output_value) = js_code_result.output_value() {
                 let (cell_value, ops) =
                     CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)
-                        .unwrap();
+                        .unwrap_or_else(|e| {
+                            dbgjs!(format!("Cannot parse {:?}: {}", output_value, e));
+                            (CellValue::Blank, vec![])
+                        });
                 transaction.reverse_operations.splice(0..0, ops);
                 Value::Single(cell_value)
             } else {

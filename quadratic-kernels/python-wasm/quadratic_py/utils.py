@@ -5,6 +5,7 @@ from typing import Tuple
 
 import pandas as pd
 import numpy as np
+import ast
 
 def attempt_fix_await(code: str) -> str:
     # Insert a "await" keyword between known async functions to improve the UX
@@ -28,25 +29,36 @@ def to_unix_timestamp(value: pd.Timestamp | date | time | datetime):
     return (value - pd.Timestamp("1970-01-01")) // pd.Timedelta('1s')
 
 def to_interval(value: Tuple[pd.Timestamp | date | time | datetime, pd.Timestamp | date | time | datetime]):
-    return (to_unix_timestamp(value.start_time), to_unix_timestamp(value.end_time))
+    return (str(to_unix_timestamp(value.start_time)), str(to_unix_timestamp(value.end_time)))
 
 # Convert from python types to quadratic types
 def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | time | datetime | pd.Period | timedelta | None) -> Tuple[str, str]:
+    
+    if value in (None, ""):
+        return ("", "blank")
+
     try:
-        if value in (None, ""):
-            return ("", "blank")
-        elif pd.api.types.is_number(value):
+        value = ast.literal_eval(value)
+    except:
+        pass
+    
+    try:
+        if type(value) == int or type(value) == float:
             return (str(value), "number")
-        elif pd.api.types.is_bool(value):
+        elif type(value) == bool:
             return (str(bool(value)), "logical")
-        elif isinstance(value, (pd.Timestamp, np.datetime64, date, time, datetime)):
+        elif isinstance(value, (pd.Timestamp, np.datetime64, date, time, datetime)) or pd.api.types.is_datetime64_dtype(value):
             return (str(to_unix_timestamp(value)), "instant")
-        elif isinstance(value, (pd.Period, np.timedelta64, timedelta)):
-            return (str(to_interval(value)), "duration")
+        
+        # TODO(ddimaria): implement when we implement duration in Rust
+        # elif isinstance(value, (pd.Period, np.timedelta64, timedelta)):
+        # elif isinstance(value, pd.Period):
+        #     return (to_interval(value), "duration")
         else :
             return (str(value), "text")
     except:
         return (str(value), "text")
+    
 
 # Convert from quadratic types to python types
 def to_python_type(value: str, value_type: str) -> int | float | str | bool:
@@ -61,6 +73,13 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
             return value
     except:
         return value
+
+def detect_stringified_type(string):
+    try:
+        parsed_object = ast.literal_eval(string)
+        return type(parsed_object)
+    except (SyntaxError, ValueError):
+        return str
 
 def number_type(value: str) -> int | float | str:
     try:

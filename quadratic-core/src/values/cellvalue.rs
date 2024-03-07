@@ -435,7 +435,7 @@ impl CellValue {
         let mut ops = vec![];
         let sheet_rect = SheetRect::single_pos(pos, sheet.id);
 
-        let value = match js_type {
+        let cell_value = match js_type {
             "text" => {
                 let is_html = value.to_lowercase().starts_with("<html>")
                     || value.to_lowercase().starts_with("<div>");
@@ -501,14 +501,17 @@ impl CellValue {
             }
             "instant" => {
                 let parsed: i64 = value.parse()?;
-                let timestamp = Utc.timestamp_opt(parsed, 0).unwrap();
+                let timestamp = match Utc.timestamp_opt(parsed, 0) {
+                    chrono::LocalResult::Single(timestamp) => timestamp,
+                    _ => bail!("Could not parse timestamp: {}", value),
+                };
                 CellValue::Text(timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
             }
             "duration" => CellValue::Text("not implemented".into()),
             _ => CellValue::Text(value.into()),
         };
 
-        Ok((value, ops))
+        Ok((cell_value, ops))
     }
 
     pub fn is_html(&self) -> bool {
