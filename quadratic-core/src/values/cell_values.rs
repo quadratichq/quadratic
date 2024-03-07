@@ -232,4 +232,16 @@ mod test {
         let json = serde_json::to_string(&cell_values).unwrap();
         assert!(json.len() > (w * h * 3) as usize);
     }
+
+    #[test]
+    fn serialize_cell_values_column() {
+        let mut column = CellValuesColumn::default();
+        column.insert(0, CellValue::from("a"));
+        column.insert(1, CellValue::from("b"));
+        let json = serde_json::to_string(&column).unwrap();
+        assert_eq!(
+            json,
+            r#"{"0":{"type":"text","value":"a"},"1":{"type":"text","value":"b"}}"#
+        );
+    }
 }
