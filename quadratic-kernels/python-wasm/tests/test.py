@@ -4,6 +4,7 @@ import sys
 import unittest
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from quadratic_py.utils import attempt_fix_await
 
 
 #  Mock definitions
@@ -28,6 +29,7 @@ sys.modules["plotly.io"] = MagicMock()
 sys.modules["autopep8"] = MagicMock()
 sys.modules["autopep8.fix_code"] = MagicMock()
 
+# import after mocks to in order to use them
 from quadratic_py import run_python, code_trace
 
 run_python.fetch_module = mock_fetch_module
@@ -48,47 +50,39 @@ class TestTesting(IsolatedAsyncioTestCase):
         self.assertEqual(result.get("success"), False)
 
     def test_attempt_fix_await(self):
-        self.assertEqual(run_python.attempt_fix_await("1 + 1"), "1 + 1")
+        self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
 
         # simple adding await
-        self.assertEqual(run_python.attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
-        self.assertEqual(run_python.attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
-        self.assertEqual(run_python.attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
+        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
         self.assertEqual(
-            run_python.attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
+            attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
         )
 
         # simple already has await
         self.assertEqual(
-            run_python.attempt_fix_await("a = await cells(0, 0)"), "a = await cells(0, 0)"
+            attempt_fix_await("a = await cells(0, 0)"), "a = await cells(0, 0)"
         )
         self.assertEqual(
-            run_python.attempt_fix_await("a = await cell(0, 0)"), "a = await cell(0, 0)"
+            attempt_fix_await("a = await cell(0, 0)"), "a = await cell(0, 0)"
         )
-        self.assertEqual(run_python.attempt_fix_await("a = await c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = await c(0, 0)")
         self.assertEqual(
-            run_python.attempt_fix_await("a = await getCells(0, 0)"), "a = await getCells(0, 0)"
+            attempt_fix_await("a = await getCells(0, 0)"), "a = await getCells(0, 0)"
         )
 
         # other
-        self.assertEqual(run_python.attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
-        self.assertEqual(run_python.attempt_fix_await("c(0, 0)"), "await c(0, 0)")
-        self.assertEqual(run_python.attempt_fix_await("int(c(0,0))"), "int(await c(0,0))")
+        self.assertEqual(attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
+        self.assertEqual(attempt_fix_await("c(0, 0)"), "await c(0, 0)")
+        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int(await c(0,0))")
         self.assertEqual(
-            run_python.attempt_fix_await("float((await c(2, -4)).value)"),
+            attempt_fix_await("float((await c(2, -4)).value)"),
             "float((await c(2, -4)).value)",
         )
         self.assertEqual(
-            run_python.attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
+            attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
         )
-
-    def test_not_cell(self):
-        o = value_object(0, 0, "test")
-        c = run_python.Cell(o)
-        self.assertEqual(run_python.not_cell(c), "test")
-
-        l = [run_python.Cell(o), run_python.Cell(o), run_python.Cell(o)]
-        self.assertEqual(run_python.ensure_not_cell(l), ["test", "test", "test"])
 
 
 class TestImports(TestCase):

@@ -408,6 +408,7 @@ mod tests {
                 spill_error: false,
                 cells_accessed: HashSet::new(),
                 result: CodeRunResult::Ok(Value::Single(CellValue::Text("hello".to_string()))),
+                return_type: Some("text".into()),
                 last_modified: Utc::now(),
             }),
         );
@@ -580,7 +581,7 @@ mod tests {
             None,
             None,
             None,
-            Some("<html></html>".into()),
+            Some(vec!["<html></html>".into(), "text".into()]),
             None,
             None,
             None,
@@ -647,6 +648,7 @@ mod tests {
             result: CodeRunResult::Ok(Value::Array(
                 vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
             )),
+            return_type: Some("number".into()),
             spill_error: false,
         };
 

@@ -276,6 +276,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
                 spill_error: code_run.spill_error,
                 cells_accessed,
                 result,
+                return_type: code_run.return_type.to_owned(),
             },
         );
     });
@@ -616,6 +617,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                                     .map(|sheet_rect| current::SheetRect::from(*sheet_rect))
                                     .collect(),
                                 result,
+                                return_type: code_run.return_type.clone(),
                             },
                         )
                     })

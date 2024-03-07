@@ -7,6 +7,8 @@
   "scripts": {
     "build": "./package.sh",
     "dev": "npx nodemon -e py --exec bash ./package.sh",
+    "gen:pyright:initialization": "./generate-pyright-initialization.sh",
+    "gen:pyright:worker": "./generate-pyright-worker.sh",
     "test": "./test.sh",
     "test:watch": "npx nodemon -e py --exec bash ./test.sh"
   }

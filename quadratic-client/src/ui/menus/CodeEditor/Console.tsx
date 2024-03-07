@@ -2,24 +2,49 @@ import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import { useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
+import { DOCUMENTATION_URL } from '@/constants/urls';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
-import { Circle } from '@mui/icons-material';
+import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
+import { Circle, KeyboardReturn } from '@mui/icons-material';
+import { Link } from 'react-router-dom';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
-// todo: fix types
+const ReturnType = ({ children }: any) => (
+  <span
+    style={{
+      background: '#eee',
+      fontWeight: '600',
+      padding: '1px 8px',
+    }}
+  >
+    {children}
+  </span>
+);
 
+// todo: fix types
 interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
   editorMode: EditorInteractionState['mode'];
   editorContent: string | undefined;
   evaluationResult?: string | null | undefined;
   spillError?: Coordinate[];
+  codeEditorReturn?: ComputedPythonReturnType;
+  hasUnsavedChanges: boolean;
 }
 
-export function Console({ consoleOutput, editorMode, editorContent, evaluationResult, spillError }: ConsoleProps) {
+export function Console({
+  consoleOutput,
+  editorMode,
+  editorContent,
+  evaluationResult,
+  spillError,
+  codeEditorReturn,
+  hasUnsavedChanges,
+}: ConsoleProps) {
+  const evaluationResultParsed = evaluationResult ? JSON.parse(evaluationResult) : {};
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -81,6 +106,44 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
+            {codeEditorReturn?.output_type && !consoleOutput?.stdErr && !hasUnsavedChanges && (
+              <div
+                style={{
+                  color: '#777',
+                  marginBottom: theme.spacing(2.0),
+                  // display: 'flex',
+                  // alignItems: 'center',
+                  // gap: theme.spacing(1),
+                }}
+              >
+                <>
+                  <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
+                  {codeEditorReturn?.lineno} returned a{' '}
+                  <ReturnType>
+                    {codeEditorReturn?.output_size && (
+                      <>
+                        {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
+                      </>
+                    )}
+                    {hasUnsavedChanges ? '…' : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
+                  </ReturnType>
+                </>
+                {codeEditorReturn?.output_type === 'NoneType' && (
+                  <span contentEditable="false" suppressContentEditableWarning={true}>
+                    ,{' '}
+                    <Link
+                      to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
+                      target="_blank"
+                      rel="nofollow"
+                    >
+                      read docs
+                    </Link>{' '}
+                    to learn more
+                  </span>
+                )}
+              </div>
+            )}
+
             {hasOutput ? (
               <>
                 {spillError && (
