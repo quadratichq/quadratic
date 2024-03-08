@@ -191,8 +191,8 @@ impl GridController {
 
         let msg = RunErrorMsg::PythonError(error_msg.clone().into());
         let span = line_number.map(|line_number| Span {
-            start: line_number as u32,
-            end: line_number as u32,
+            start: line_number,
+            end: line_number,
         });
         let error = RunError { span, msg };
         let result = CodeRunResult::Err(error);
