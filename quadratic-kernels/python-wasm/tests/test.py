@@ -166,6 +166,8 @@ class TestErrorMessaging(TestCase):
         assert to_quadratic_type(False) == ("False", "logical")
         assert to_quadratic_type("True") == ("True", "logical")
         assert to_quadratic_type("False") == ("False", "logical")
+        assert to_quadratic_type("true") == ("True", "logical")
+        assert to_quadratic_type("false") == ("False", "logical")
 
         # string
         assert to_quadratic_type("abc") == ("abc", "text")

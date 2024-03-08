@@ -36,6 +36,10 @@ def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | ti
     
     if value in (None, ""):
         return ("", "blank")
+    
+    if type(value) == str:
+        value = re.sub('true', 'True', value, count=1, flags=re.IGNORECASE)
+        value = re.sub('false', 'False', value, count=1, flags=re.IGNORECASE)
 
     try:
         value = ast.literal_eval(value)
