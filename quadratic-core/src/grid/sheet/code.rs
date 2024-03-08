@@ -14,7 +14,6 @@ impl Sheet {
     ///
     /// Returns the old value if it was set.
     pub fn set_code_run(&mut self, pos: Pos, code_run: Option<CodeRun>) -> Option<CodeRun> {
-        dbgjs!(format!("set_code_run: {:?} {:?}", pos, code_run));
         if let Some(code_run) = code_run {
             self.code_runs.insert(pos, code_run)
         } else {
@@ -319,7 +318,7 @@ mod test {
                 std_out: None,
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
-                return_info: None,
+                return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
             })
         );
         assert_eq!(
@@ -333,7 +332,7 @@ mod test {
                 std_out: None,
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
-                return_info: None,
+                return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
             })
         );
         assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
