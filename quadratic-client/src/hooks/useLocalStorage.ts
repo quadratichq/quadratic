@@ -7,6 +7,7 @@ declare global {
   interface WindowEventMap {
     'local-storage': CustomEvent;
     'zoom-event': CustomEvent;
+    'run-editor-action': CustomEvent;
   }
 }
 

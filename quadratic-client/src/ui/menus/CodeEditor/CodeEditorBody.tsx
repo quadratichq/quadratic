@@ -11,6 +11,7 @@ import { provideCompletionItems as provideCompletionItemsPython } from './Python
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
+import useEventListener from '@/hooks/useEventListener';
 
 // todo: fix types
 
@@ -44,6 +45,8 @@ export const CodeEditorBody = (props: Props) => {
     }
   }, [editorInteractionState.showCodeEditor]);
 
+  const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run()
+  useEventListener('run-editor-action', runEditorAction);
   const onMount = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
       editorRef.current = editor;
