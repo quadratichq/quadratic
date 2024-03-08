@@ -13,6 +13,8 @@ import {
   deleteFile,
   downloadFileAction,
   duplicateFileWithUserAsOwnerAction,
+  findInSheet,
+  findInSheets,
   pasteAction,
   provideFeedbackAction,
   redoAction,
@@ -155,13 +157,13 @@ export const QuadraticMenu = () => {
 
           <MenuDivider />
           <MenuItem onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: true }))}>
-            <MenuLineItem primary="Find in current sheet" secondary={KeyboardSymbols.Command + 'F'} />
+            <MenuLineItem primary={findInSheet.label} secondary={KeyboardSymbols.Command + 'F'} />
           </MenuItem>
           <MenuItem
             onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
           >
             <MenuLineItem
-              primary="Find in all sheets"
+              primary={findInSheets.label}
               secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + 'F'}
             />
           </MenuItem>

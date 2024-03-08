@@ -49,7 +49,8 @@ export type GenericAction = {
 
 // TODO: create generic hasPermission(permission, permissionToCheck) function
 
-export const hasPermissionToEditFile = (permissions: FilePermission[]) => permissions.includes(FILE_EDIT);
+export const hasPermissionToEditFile = (permissions: FilePermission[], isAuthenticated?: boolean) =>
+  permissions.includes(FILE_EDIT);
 const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => isAuthenticated;
 
 export const createNewFileAction = {
@@ -84,7 +85,7 @@ export const duplicateFileWithCurrentOwnerAction = {
 };
 
 export const downloadFileAction = {
-  label: 'Download local copy',
+  label: 'Download',
   isAvailable: isLoggedIn,
   run({ name }: { name: FileContextType['name'] }) {
     downloadQuadraticFile(name, grid.export());
@@ -176,4 +177,11 @@ export const downloadSelectionAsCsvAction = {
   run({ fileName }: { fileName: string }) {
     downloadFile(fileName, grid.exportCsvSelection(), 'text/plain', 'csv');
   },
+};
+
+export const findInSheet = {
+  label: 'Find in current sheet',
+};
+export const findInSheets = {
+  label: 'Find in all sheets',
 };
