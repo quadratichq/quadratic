@@ -65,6 +65,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ))
         .ok();
 
@@ -112,6 +113,7 @@ mod tests {
             None,
             None,
             Some(vec!["hello world".into(), "text".into()]),
+            None,
             None,
             None,
             None,
@@ -188,6 +190,7 @@ mod tests {
                 None,
                 None,
                 None,
+                None,
             ))
             .is_ok());
 
@@ -248,6 +251,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ));
 
         // replace the value in (0, 0) to trigger the python calculation
@@ -289,6 +293,7 @@ mod tests {
                 None,
                 None,
                 Some(vec!["11".into(), "number".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -342,6 +347,7 @@ mod tests {
                 Some(python_array(vec![1, 2, 3])),
                 None,
                 None,
+                None,
             ))
             .is_ok());
 
@@ -380,6 +386,7 @@ mod tests {
             None,
             None,
             Some(vec!["".into(), "blank".into()]),
+            None,
             None,
             None,
             Some(true),
@@ -425,6 +432,7 @@ mod tests {
                 None,
                 None,
                 None,
+                None,
             ))
             .is_ok());
 
@@ -466,6 +474,7 @@ mod tests {
                 None,
                 None,
                 None,
+                None,
             ))
             .is_ok());
 
@@ -504,6 +513,7 @@ mod tests {
                 None,
                 None,
                 Some(vec!["new output second time".into(), "text".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -571,6 +581,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ));
         assert!(result.is_ok());
         assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
@@ -612,6 +623,7 @@ mod tests {
             None,
             None,
             Some(vec!["3".into(), "number".into()]),
+            None,
             None,
             None,
             None,

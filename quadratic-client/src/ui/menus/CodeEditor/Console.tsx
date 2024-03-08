@@ -5,7 +5,6 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
-import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { Circle, KeyboardReturn } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { colors } from '../../../theme/colors';
@@ -29,9 +28,8 @@ interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
   editorMode: EditorInteractionState['mode'];
   editorContent: string | undefined;
-  evaluationResult?: string | null | undefined;
+  evaluationResult?: any; // TODO(ddimaria): fix type
   spillError?: Coordinate[];
-  codeEditorReturn?: ComputedPythonReturnType;
   hasUnsavedChanges: boolean;
 }
 
@@ -41,10 +39,8 @@ export function Console({
   editorContent,
   evaluationResult,
   spillError,
-  codeEditorReturn,
   hasUnsavedChanges,
 }: ConsoleProps) {
-  const evaluationResultParsed = evaluationResult ? JSON.parse(evaluationResult) : {};
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -106,7 +102,7 @@ export function Console({
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
-            {codeEditorReturn?.output_type && !consoleOutput?.stdErr && !hasUnsavedChanges && (
+            {evaluationResult?.line_number && !consoleOutput?.stdErr && !hasUnsavedChanges && (
               <div
                 style={{
                   color: '#777',
@@ -118,17 +114,10 @@ export function Console({
               >
                 <>
                   <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
-                  {codeEditorReturn?.lineno} returned a{' '}
-                  <ReturnType>
-                    {codeEditorReturn?.output_size && (
-                      <>
-                        {codeEditorReturn.output_size[0]}x{codeEditorReturn.output_size[1]}{' '}
-                      </>
-                    )}
-                    {hasUnsavedChanges ? '…' : codeEditorReturn?.output_type || evaluationResultParsed?.output_type}
-                  </ReturnType>
+                  {evaluationResult?.line_number} returned a{' '}
+                  <ReturnType>{hasUnsavedChanges ? '…' : evaluationResult?.output_type}</ReturnType>
                 </>
-                {codeEditorReturn?.output_type === 'NoneType' && (
+                {evaluationResult?.output_type === 'NoneType' && (
                   <span contentEditable="false" suppressContentEditableWarning={true}>
                     ,{' '}
                     <Link

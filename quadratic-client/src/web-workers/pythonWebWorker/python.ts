@@ -4,7 +4,7 @@ import { TransactionSummary } from '@/quadratic-core/types';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
-import { ComputedPythonReturnType, InspectPythonReturnType, PythonMessage, PythonReturnType } from './pythonTypes';
+import { InspectPythonReturnType, PythonMessage, PythonReturnType } from './pythonTypes';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
 
@@ -52,10 +52,6 @@ class PythonWebWorker {
 
           if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
-          this.pythonOutputType = pythonResult.output_type;
-          this.pythonOutputSize = pythonResult.output_size;
-          this.inspectPython(pythonResult.code);
-
           if (nothingReturned) {
             pythonResult.array_output = undefined;
             pythonResult.output = ['', 'blank'];
@@ -77,6 +73,12 @@ class PythonWebWorker {
             break;
           }
 
+          let outputType = pythonResult.output_type;
+
+          if (pythonResult.output_size) {
+            outputType = `${pythonResult.output_size[0]}x${pythonResult.output_size[1]} ${outputType}`;
+          }
+
           const result = new JsCodeResult(
             transactionId,
             pythonResult.success,
@@ -85,7 +87,8 @@ class PythonWebWorker {
             pythonResult.std_out,
             pythonResult.output,
             JSON.stringify(pythonResult.array_output),
-            pythonResult.line_number,
+            pythonResult.lineno,
+            outputType,
             pythonResult.cancel_compute
           );
           grid.calculationComplete(result);
@@ -142,13 +145,6 @@ class PythonWebWorker {
           break;
         }
 
-        case 'inspect-results': {
-          this.inspectionResults = event.results;
-          window.dispatchEvent(new CustomEvent('python-inspect-results', { detail: this.getInspectionResults() }));
-
-          break;
-        }
-
         default: {
           throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
         }
@@ -164,7 +160,6 @@ class PythonWebWorker {
     this.expectWorker();
     this.executionStack.push({ transactionId, sheetPos: { x, y, sheetId }, code });
     this.next(false);
-    this.pythonOutputType = undefined;
   }
 
   getCodeRunning(): SheetPos[] {
@@ -229,6 +224,7 @@ class PythonWebWorker {
       undefined,
       undefined,
       undefined,
+      '',
       true
     );
     grid.calculationComplete(result);
@@ -241,19 +237,6 @@ class PythonWebWorker {
   }
 
   changeOutput(_: Record<string, PythonReturnType>): void {}
-
-  inspectPython(python: string): void {
-    this.expectWorker();
-    this.worker?.postMessage({ type: 'inspect', python });
-  }
-
-  getInspectionResults(): ComputedPythonReturnType {
-    return {
-      ...this.inspectionResults,
-      output_type: this.pythonOutputType,
-      output_size: this.pythonOutputSize,
-    } as any;
-  }
 }
 
 export const pythonWebWorker = new PythonWebWorker();

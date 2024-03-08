@@ -101,15 +101,19 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       // auto load packages
       await pyodide.loadPackagesFromImports(event.python);
 
-      let output, results;
+      let output, results, inspection_results;
 
       try {
         output = await pyodide.globals.get('run_python')(event.python);
         results = Object.fromEntries(output.toJs());
+        inspection_results = await inspectPython(event.python || '', pyodide);
 
         return self.postMessage({
           type: 'results',
-          results,
+          results: {
+            ...results,
+            ...inspection_results,
+          },
           python_code: event.python,
         });
       } catch (e) {

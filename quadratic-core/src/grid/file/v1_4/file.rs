@@ -283,6 +283,8 @@ fn upgrade_code_runs(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeRun)> {
                         },
                         result,
                         return_type: None,
+                        line_number: None,
+                        output_type: None,
                     },
                 )
             })

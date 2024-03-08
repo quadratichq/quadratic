@@ -473,6 +473,8 @@ mod test {
             cells_accessed: HashSet::new(),
             spill_error: false,
             return_type: None,
+            line_number: None,
+            output_type: None,
             last_modified: Utc::now(),
         };
         sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));
@@ -512,6 +514,8 @@ mod test {
             cells_accessed: HashSet::new(),
             spill_error: false,
             return_type: None,
+            line_number: None,
+            output_type: None,
             last_modified: Utc::now(),
         };
         sheet.set_code_run(Pos { x: 1, y: 2 }, Some(code_run));

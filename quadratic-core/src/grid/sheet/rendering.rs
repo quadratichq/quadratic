@@ -409,6 +409,8 @@ mod tests {
                 cells_accessed: HashSet::new(),
                 result: CodeRunResult::Ok(Value::Single(CellValue::Text("hello".to_string()))),
                 return_type: Some("text".into()),
+                line_number: None,
+                output_type: None,
                 last_modified: Utc::now(),
             }),
         );
@@ -585,6 +587,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ))
         .ok();
         let sheet = gc.sheet(sheet_id);
@@ -650,6 +653,8 @@ mod tests {
             )),
             return_type: Some("number".into()),
             spill_error: false,
+            line_number: None,
+            output_type: None,
         };
 
         // render rect is larger than code rect

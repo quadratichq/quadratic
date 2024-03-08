@@ -807,6 +807,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ));
         assert!(result.is_ok());
 
@@ -904,6 +905,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ));
         assert!(result.is_ok());
 
@@ -968,6 +970,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ));
         let summary = result.ok().unwrap();
         (summary.transaction_id.unwrap(), summary.operations.unwrap())
@@ -1004,6 +1007,7 @@ mod tests {
             None,
             None,
             Some(vec!["3".into(), "number".into()]),
+            None,
             None,
             None,
             None,
