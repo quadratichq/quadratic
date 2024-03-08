@@ -275,6 +275,7 @@ pub(crate) mod tests {
     use uuid::Uuid;
 
     use super::*;
+    use crate::message::min_version::MinVersion;
     use crate::state::user::{CellEdit, UserStateUpdate};
     use crate::test_util::{integration_test_receive, new_user, setup};
 
@@ -390,6 +391,7 @@ pub(crate) mod tests {
 
         let response = MessageResponse::UsersInRoom {
             users: vec![user_2.clone()],
+            min_version: MinVersion::load(),
         };
 
         let users_in_room = state.get_room(&file_id).await.unwrap().users;

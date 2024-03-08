@@ -11,6 +11,7 @@ import { displayName } from '@/utils/userUtil';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
+import sharedConstants from '../../../minVersion.json';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '../gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
@@ -25,6 +26,7 @@ import {
   SendEnterRoom,
   SendGetTransactions,
   SendTransaction,
+  Version,
 } from './multiplayerTypes';
 
 const UPDATE_TIME = 1000 / 30;
@@ -55,6 +57,8 @@ export class Multiplayer {
   private jwt?: string | void;
   private lastMouseMove: { x: number; y: number } | undefined;
   private connectionTimeout: number | undefined;
+  private minVersion: Version;
+
   brokenConnection = false;
 
   // server-assigned index of current user
@@ -97,6 +101,8 @@ export class Multiplayer {
       }
     };
     window.addEventListener('beforeunload', alertUser);
+
+    this.minVersion = sharedConstants;
   }
 
   get state() {
@@ -381,6 +387,16 @@ export class Multiplayer {
 
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
+    console.log(room);
+    if (room.min_version.requiredVersion > this.minVersion.requiredVersion) {
+      window.dispatchEvent(new CustomEvent('need-refresh', { detail: true }));
+      console.log('requiredVersion');
+    } else if (room.min_version.recommendedVersion > this.minVersion.recommendedVersion) {
+      window.dispatchEvent(new CustomEvent('need-refresh', { detail: false }));
+      console.log('recommendedVersion');
+    } else {
+      console.log('no dispatch');
+    }
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id === this.sessionId) {

@@ -166,13 +166,18 @@ export class Control {
         this.signals.client = new AbortController();
         // clean the node_modules/.vite directory to avoid client errors
         const clean = exec("rm -rf quadratic-client/node_modules/.vite");
+        console.log(this.cli.options.react);
         clean.on("close", () => {
-            this.client = spawn("npm", ["start", "--workspace=quadratic-client"], {
+            this.client = spawn("npm", [
+                "run",
+                this.cli.options.react ? "start:no-hmr" : "start",
+                "--workspace=quadratic-client",
+            ], {
                 signal: this.signals.client.signal,
             });
             this.ui.printOutput("client", (data) => {
                 this.handleResponse("client", data, {
-                    success: "Found 0 errors.",
+                    success: ["Found 0 errors.", "Accepting connections"],
                     error: ["ERROR(", "npm ERR!"],
                     start: "> quadratic-client@",
                 });
@@ -182,6 +187,10 @@ export class Control {
                 }
             });
         });
+    }
+    restartClient() {
+        this.cli.options.react = !this.cli.options.react;
+        this.runClient();
     }
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;
@@ -366,12 +375,12 @@ export class Control {
         await this.kill("python");
         this.ui.print("python");
         this.signals.python = new AbortController();
-        this.python = spawn("npm", [
-            "run",
-            this.cli.options.python ? "watch:python" : "build:python",
-        ], { signal: this.signals.python.signal });
+        this.python = spawn("npm", ["run", this.cli.options.python ? "watch:python" : "build:python"], { signal: this.signals.python.signal });
         this.ui.printOutput("python", (data) => this.handleResponse("python", data, {
-            success: ["Built quadratic_py", "clean exit - waiting for changes before restart"],
+            success: [
+                "Built quadratic_py",
+                "clean exit - waiting for changes before restart",
+            ],
             error: "Python error!",
             start: "quadratic-kernels/python-wasm/",
         }));
