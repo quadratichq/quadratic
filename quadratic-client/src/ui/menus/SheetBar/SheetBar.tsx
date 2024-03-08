@@ -426,7 +426,13 @@ export const SheetBar = (): JSX.Element => {
       direction="row"
       justifyContent="space-between"
       alignItems="stretch"
-      sx={{ color: theme.palette.text.secondary, height: '2rem', fontSize: '0.7rem' }}
+      sx={{
+        color: theme.palette.text.secondary,
+        height: '2rem',
+        fontSize: '0.7rem',
+        zIndex: 1,
+        backgroundColor: theme.palette.background.paper,
+      }}
       className="sheet-bar"
     >
       {hasPermission && (

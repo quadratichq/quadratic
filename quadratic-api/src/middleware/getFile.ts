@@ -65,12 +65,15 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   // with the file (whereas, for example, `isFileOwner` being true and `teamRole`
   // having a value at the same time is considered an invalid combo in the codebase).
   let userFileRelationship: Parameters<typeof getFilePermissions>[0]['userFileRelationship'] = undefined;
-  if (isFileOwner) {
-    userFileRelationship = { owner: 'me' };
-  } else if (file.ownerUserId) {
-    userFileRelationship = { owner: 'another-user', fileRole };
-  } else if (file.ownerTeamId) {
-    userFileRelationship = { owner: 'team', teamRole, fileRole };
+  // Only define the relationship if they're logged in
+  if (userId !== undefined) {
+    if (isFileOwner) {
+      userFileRelationship = { owner: 'me' };
+    } else if (file.ownerUserId) {
+      userFileRelationship = { owner: 'another-user', fileRole };
+    } else if (file.ownerTeamId) {
+      userFileRelationship = { owner: 'team', teamRole, fileRole };
+    }
   }
 
   const filePermissions = getFilePermissions({

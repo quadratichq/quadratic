@@ -181,7 +181,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
           right: '1rem',
           padding: '1rem 0 .5rem 1rem',
           background: 'linear-gradient(0deg, rgba(255,255,255,1) 85%, rgba(255,255,255,0) 100%)',
-          zIndex: 100,
+          zIndex: 10,
         }}
       >
         <FormControl fullWidth>

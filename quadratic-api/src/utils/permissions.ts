@@ -45,10 +45,15 @@ export const getFilePermissions = ({
   userFileRelationship,
 }: {
   publicLinkAccess: PublicLinkAccess;
+  // prettier-ignore
   userFileRelationship:
+    // Not logged in
     | undefined
+    // Logged in + i'm the owner
     | { owner: 'me' }
+    // Logged in + another user owns the file but it's shared with me
     | { owner: 'another-user'; fileRole?: UserFileRole }
+    // Logged in + a team owns the file
     | { owner: 'team'; teamRole?: UserTeamRole; fileRole?: UserFileRole };
 }) => {
   const permissions = new Set<FilePermission>();

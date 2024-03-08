@@ -168,7 +168,11 @@ export const CodeEditor = () => {
     setCodeString(editorContent ?? '');
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
-      code: editorContent,
+    });
+    // Google Ads Conversion for running a cell
+    //@ts-expect-error
+    gtag('event', 'conversion', {
+      send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
     });
   };
 
@@ -244,6 +248,7 @@ export const CodeEditor = () => {
         minWidth: '350px',
         maxWidth: '90%',
         backgroundColor: '#ffffff',
+        zIndex: 2,
       }}
       onKeyDownCapture={onKeyDownEditor}
       onPointerEnter={() => {
