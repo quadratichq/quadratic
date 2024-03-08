@@ -1,3 +1,4 @@
+import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { SwitchApp } from '@/shadcn/ui/switch';
 import { Search } from '@/ui/components/Search';
 import { CommandPaletteIcon } from '@/ui/icons/radix';
@@ -70,7 +71,7 @@ export const TopBar = () => {
             <FormatMenu />
             <NumberFormatMenu />
             <TopBarMenuItem
-              title="Command palette"
+              title={`Command palette (${KeyboardSymbols.Command + 'P'})`}
               noDropdown
               buttonProps={{
                 style: { alignSelf: 'stretch' },
