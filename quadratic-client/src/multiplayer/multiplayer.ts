@@ -389,12 +389,8 @@ export class Multiplayer {
   private receiveUsersInRoom(room: ReceiveRoom) {
     if (room.min_version.requiredVersion > this.minVersion.requiredVersion) {
       window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'required' }));
-      console.log('requiredVersion');
     } else if (room.min_version.recommendedVersion > this.minVersion.recommendedVersion) {
       window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'recommended' }));
-      console.log('recommendedVersion');
-    } else {
-      console.log('no dispatch');
     }
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
