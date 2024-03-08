@@ -4,7 +4,7 @@ export const QuadraticSnackBar = (props: SnackbarProps) => {
   return (
     <Snackbar
       anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      autoHideDuration={props.autoHideDuration ?? 4000}
+      autoHideDuration={4000}
       TransitionComponent={Fade}
       {...props}
     />
