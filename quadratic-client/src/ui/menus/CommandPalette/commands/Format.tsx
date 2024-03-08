@@ -1,4 +1,13 @@
-import { TextNoneIcon } from '@radix-ui/react-icons';
+import {
+  CommaIcon,
+  DecimalDecreaseIcon,
+  DecimalIncreaseIcon,
+  DollarIcon,
+  FunctionIcon,
+  MagicWandIcon,
+  PercentIcon,
+  TextNoneIcon,
+} from '@/ui/icons/radix';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import {
@@ -12,14 +21,6 @@ import {
   toggleCommas,
 } from '../../TopBar/SubMenus/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
-
-const TextIcon = ({ children }: { children: string }) => {
-  return (
-    <div className="relative h-5 w-5 text-center text-xl">
-      <span style={{ lineHeight: 0, top: '-.333rem', position: 'relative' }}>{children}</span>
-    </div>
-  );
-};
 
 const commands: CommandGroup = {
   heading: 'Format',
@@ -43,49 +44,53 @@ const commands: CommandGroup = {
       label: 'Automatic',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={removeCellNumericFormat} />;
+        return <CommandPaletteListItem {...props} action={removeCellNumericFormat} icon={<MagicWandIcon />} />;
       },
     },
     {
       label: 'Currency',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem icon={<TextIcon>$</TextIcon>} {...props} action={textFormatSetCurrency} />;
+        return <CommandPaletteListItem {...props} action={textFormatSetCurrency} icon={<DollarIcon />} />;
       },
     },
     {
       label: 'Percentage',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem icon={<TextIcon>%</TextIcon>} {...props} action={textFormatSetPercentage} />;
+        return <CommandPaletteListItem {...props} action={textFormatSetPercentage} icon={<PercentIcon />} />;
       },
     },
     {
       label: 'Scientific',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem icon={<TextIcon>Σ</TextIcon>} {...props} action={textFormatSetExponential} />;
+        return <CommandPaletteListItem {...props} action={textFormatSetExponential} icon={<FunctionIcon />} />;
       },
     },
     {
       label: 'Toggle commas',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={toggleCommas} />;
+        return <CommandPaletteListItem {...props} action={toggleCommas} icon={<CommaIcon />} />;
       },
     },
     {
       label: 'Increase decimal',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={textFormatIncreaseDecimalPlaces} />;
+        return (
+          <CommandPaletteListItem {...props} action={textFormatIncreaseDecimalPlaces} icon={<DecimalIncreaseIcon />} />
+        );
       },
     },
     {
       label: 'Decrease decimal',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={textFormatDecreaseDecimalPlaces} />;
+        return (
+          <CommandPaletteListItem {...props} action={textFormatDecreaseDecimalPlaces} icon={<DecimalDecreaseIcon />} />
+        );
       },
     },
   ],

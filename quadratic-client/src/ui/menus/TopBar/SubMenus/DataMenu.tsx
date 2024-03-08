@@ -1,8 +1,8 @@
 import { downloadSelectionAsCsvAction } from '@/actions';
 import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { useFileContext } from '@/ui/components/FileProvider';
-import { DataObjectOutlined, Download, StorageOutlined } from '@mui/icons-material';
-import { Menu, MenuDivider, MenuHeader, MenuItem } from '@szhsin/react-menu';
+import { DatabaseIcon } from '@/ui/icons/radix';
+import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
@@ -17,20 +17,19 @@ export const DataMenu = () => {
     <>
       <Menu
         menuButton={({ open }) => (
-          <TopBarMenuItem title="Data import" open={open}>
-            <DataObjectOutlined fontSize="small" />
+          <TopBarMenuItem title="Data" open={open}>
+            <DatabaseIcon className="h-5 w-5" />
           </TopBarMenuItem>
         )}
       >
-        <MenuHeader>Import</MenuHeader>
         <MenuItem
           onClick={() => {
             addGlobalSnackbar(CSV_IMPORT_MESSAGE);
           }}
         >
-          <MenuLineItem primary="CSV" />
+          <MenuLineItem primary="Import CSV" />
         </MenuItem>
-        <MenuHeader>Export</MenuHeader>
+
         <MenuItem
           onClick={() => {
             downloadSelectionAsCsvAction.run({ fileName });
@@ -38,14 +37,12 @@ export const DataMenu = () => {
         >
           <MenuLineItem
             primary={downloadSelectionAsCsvAction.label}
-            Icon={Download}
             secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
           />
         </MenuItem>
         <MenuDivider />
-        <MenuHeader>Connect</MenuHeader>
         <MenuItem disabled>
-          <MenuLineItem primary="Database (coming soon)" Icon={StorageOutlined} />
+          <MenuLineItem primary="Connect database (coming soon)" />
         </MenuItem>
       </Menu>
     </>

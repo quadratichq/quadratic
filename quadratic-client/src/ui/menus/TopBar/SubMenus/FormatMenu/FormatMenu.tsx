@@ -1,15 +1,15 @@
 import {
-  BorderAll,
-  FormatAlignCenter,
-  FormatAlignLeft,
-  FormatAlignRight,
-  FormatBold,
-  FormatClear,
-  FormatColorFill,
-  FormatColorText,
-  FormatItalic,
-  PaletteOutlined,
-} from '@mui/icons-material';
+  BorderNoneIcon,
+  FontBoldIcon,
+  FontItalicIcon,
+  PaintBucketIcon,
+  TextAlignCenterIcon,
+  TextAlignLeftIcon,
+  TextAlignRightIcon,
+  TextColorIcon,
+  TextIcon,
+  TextNoneIcon,
+} from '@/ui/icons/radix';
 import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback } from 'react';
 import { focusGrid } from '../../../../../helpers/focusGrid';
@@ -44,49 +44,49 @@ export const FormatMenu = () => {
       onMenuChange={onMenuChange}
       menuButton={({ open }) => (
         <TopBarMenuItem title="Cell format" open={open}>
-          <PaletteOutlined fontSize="small"></PaletteOutlined>
+          <TextIcon className="h-5 w-5" />
         </TopBarMenuItem>
       )}
     >
       <MenuItem onClick={() => setBold(!(formatPrimaryCell?.bold === true))}>
-        <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FormatBold} />
+        <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FontBoldIcon} />
       </MenuItem>
       <MenuItem onClick={() => setItalic(!(formatPrimaryCell?.italic === true))}>
-        <MenuLineItem primary="Italic" secondary={KeyboardSymbols.Command + 'I'} Icon={FormatItalic} />
+        <MenuLineItem primary="Italic" secondary={KeyboardSymbols.Command + 'I'} Icon={FontItalicIcon} />
       </MenuItem>
       <SubMenu
         className="color-picker-submenu"
         id="TextColorMenuID"
-        label={<MenuLineItem primary="Text color" Icon={FormatColorText} />}
+        label={<MenuLineItem primary="Text color" Icon={TextColorIcon} />}
       >
         <QColorPicker onChangeComplete={setTextColor} onClear={() => setTextColor()} />
       </SubMenu>
 
       <MenuDivider />
       <MenuItem onClick={() => setAlignment('left')}>
-        <MenuLineItem primary="Left" Icon={FormatAlignLeft} secondary="" />
+        <MenuLineItem primary="Left" Icon={TextAlignLeftIcon} secondary="" />
       </MenuItem>
       <MenuItem onClick={() => setAlignment('center')}>
-        <MenuLineItem primary="Center" Icon={FormatAlignCenter} />
+        <MenuLineItem primary="Center" Icon={TextAlignRightIcon} />
       </MenuItem>
       <MenuItem onClick={() => setAlignment('right')}>
-        <MenuLineItem primary="Right" Icon={FormatAlignRight} />
+        <MenuLineItem primary="Right" Icon={TextAlignCenterIcon} />
       </MenuItem>
 
       <MenuDivider />
       <SubMenu
         className="color-picker-submenu"
         id="FillColorMenuID"
-        label={<MenuLineItem primary="Fill color" Icon={FormatColorFill} />}
+        label={<MenuLineItem primary="Fill color" Icon={PaintBucketIcon} />}
       >
         <QColorPicker onChangeComplete={setFillColor} onClear={() => setFillColor()} />
       </SubMenu>
 
-      <SubMenu label={<MenuLineItem primary="Border" Icon={BorderAll} />}>{borders}</SubMenu>
+      <SubMenu label={<MenuLineItem primary="Border" Icon={BorderNoneIcon} />}>{borders}</SubMenu>
 
       <MenuDivider />
       <MenuItem onClick={clearFormattingAndBorders}>
-        <MenuLineItem primary="Clear formatting" secondary={KeyboardSymbols.Command + '\\'} Icon={FormatClear} />
+        <MenuLineItem primary="Clear formatting" secondary={KeyboardSymbols.Command + '\\'} Icon={TextNoneIcon} />
       </MenuItem>
     </Menu>
   );

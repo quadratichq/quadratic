@@ -1,7 +1,6 @@
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 
 import '@szhsin/react-menu/dist/index.css';
-import { Icon123 } from '../../../icons';
 import { MenuLineItem } from '../MenuLineItem';
 import {
   removeCellNumericFormat,
@@ -13,6 +12,16 @@ import {
   toggleCommas,
 } from './formatCells';
 
+import {
+  CommaIcon,
+  DecimalDecreaseIcon,
+  DecimalIncreaseIcon,
+  DollarIcon,
+  FunctionIcon,
+  MagicWandIcon,
+  NumberFormatIcon,
+  PercentIcon,
+} from '@/ui/icons/radix';
 import '@szhsin/react-menu/dist/index.css';
 import { TopBarMenuItem } from '../TopBarMenuItem';
 
@@ -21,24 +30,25 @@ export const NumberFormatMenu = () => {
     <Menu
       menuButton={({ open }) => (
         <TopBarMenuItem title="Number format" open={open}>
-          <Icon123 style={{ fontSize: '1.8125rem' }} />
+          <NumberFormatIcon className="h-5 w-5" />
+          {/* <Icon123 style={{ fontSize: '1.8125rem' }} /> */}
         </TopBarMenuItem>
       )}
     >
       <MenuItem onClick={() => removeCellNumericFormat()}>
-        <MenuLineItem primary="Automatic" secondary={<code className="text-xs">999.99</code>} />
+        <MenuLineItem primary="Automatic" secondary={<code className="text-xs">999.99</code>} Icon={MagicWandIcon} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetCurrency()}>
-        <MenuLineItem primary="Currency" secondary={<code className="text-xs">$9,999.99</code>} />
+        <MenuLineItem primary="Currency" secondary={<code className="text-xs">$9,999.99</code>} Icon={DollarIcon} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetPercentage()}>
-        <MenuLineItem primary="Percent" secondary={<code className="text-xs">99.99%</code>} />
+        <MenuLineItem primary="Percent" secondary={<code className="text-xs">99.99%</code>} Icon={PercentIcon} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetExponential()}>
-        <MenuLineItem primary="Scientific" secondary={<code className="text-xs">6.02E+23</code>} />
+        <MenuLineItem primary="Scientific" secondary={<code className="text-xs">6.02E+23</code>} Icon={FunctionIcon} />
       </MenuItem>
       <MenuItem onClick={() => toggleCommas()}>
-        <MenuLineItem primary="Toggle commas" secondary={<code className="text-xs">9,999.99</code>} />
+        <MenuLineItem primary="Toggle commas" secondary={<code className="text-xs">9,999.99</code>} Icon={CommaIcon} />
       </MenuItem>
 
       <MenuDivider />
@@ -48,14 +58,22 @@ export const NumberFormatMenu = () => {
           textFormatIncreaseDecimalPlaces();
         }}
       >
-        <MenuLineItem primary="Increase decimals" secondary={<code className="text-xs">.0000</code>} />
+        <MenuLineItem
+          primary="Increase decimals"
+          secondary={<code className="text-xs">.0000</code>}
+          Icon={DecimalIncreaseIcon}
+        />
       </MenuItem>
       <MenuItem
         onClick={() => {
           textFormatDecreaseDecimalPlaces();
         }}
       >
-        <MenuLineItem primary="Decrease decimals" secondary={<code className="text-xs">.0</code>} />
+        <MenuLineItem
+          primary="Decrease decimals"
+          secondary={<code className="text-xs">.0</code>}
+          Icon={DecimalDecreaseIcon}
+        />
       </MenuItem>
     </Menu>
   );
