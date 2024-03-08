@@ -1,5 +1,5 @@
 import { CodeCellLanguage } from '@/quadratic-core/types';
-import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import monaco, { Range, editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 
@@ -9,7 +9,8 @@ export const useEditorReturn = (
   editorRef: React.MutableRefObject<editor.IStandaloneCodeEditor | null>,
   monacoRef: React.MutableRefObject<typeof monaco | null>,
   language?: CodeCellLanguage,
-  codeEditorReturn?: ComputedPythonReturnType
+  evaluationResult?: EvaluationResult
+  // codeEditorReturn?: ComputedPythonReturnType
 ) => {
   let decorations = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
 
@@ -26,7 +27,7 @@ export const useEditorReturn = (
     if (!model) return;
 
     const onChangeModel = () => {
-      if (codeEditorReturn === undefined) return;
+      if (evaluationResult === undefined) return;
 
       if (decorations) decorations.current?.clear();
 
@@ -47,24 +48,21 @@ export const useEditorReturn = (
       //   },
       // ]);
 
-      decorations.current = editorRef.current?.createDecorationsCollection([
-        {
-          range: new Range(
-            codeEditorReturn.lineno,
-            codeEditorReturn.col_offset,
-            codeEditorReturn.lineno,
-            codeEditorReturn.col_offset
-          ),
-          options: {
-            linesDecorationsClassName: 'codeEditorReturnLineDecoration',
+      if (evaluationResult.line_number) {
+        decorations.current = editorRef.current?.createDecorationsCollection([
+          {
+            range: new Range(evaluationResult.line_number, 0, evaluationResult.line_number, 0),
+            options: {
+              linesDecorationsClassName: 'codeEditorReturnLineDecoration',
+            },
           },
-        },
-      ]);
+        ]);
+      }
     };
 
     onChangeModel();
 
     // remove the return hightlight and decoration when the model changes
     editor.onDidChangeModelContent(() => decorations.current?.clear());
-  }, [isValidRef, editorRef, monacoRef, language, codeEditorReturn]);
+  }, [isValidRef, editorRef, monacoRef, language, evaluationResult]);
 };

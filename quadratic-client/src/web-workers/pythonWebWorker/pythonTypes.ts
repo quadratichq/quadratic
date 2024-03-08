@@ -46,3 +46,16 @@ export interface InspectPythonReturnType {
 }
 
 export type ComputedPythonReturnType = InspectPythonReturnType & { output_type?: string; output_size?: string };
+
+export type EvaluationResult = {
+  output_type?: string;
+  line_number?: number;
+
+  // single value
+  type?: string;
+  value?: string;
+
+  // array value
+  size?: { w: number; h: number };
+  values?: { type: string; value: string }[];
+};

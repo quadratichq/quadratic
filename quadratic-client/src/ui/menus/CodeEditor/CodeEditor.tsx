@@ -3,6 +3,7 @@ import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { Pos } from '@/quadratic-core/types';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -30,7 +31,7 @@ export const CodeEditor = () => {
 
   // code info
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
-  const [evaluationResult, setEvaluationResult] = useState<string | null>(null);
+  const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | undefined>(undefined);
   const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
 
   const [editorWidth, setEditorWidth] = useState<number>(
@@ -101,12 +102,11 @@ export const CodeEditor = () => {
 
         const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
-        console.log('codeCell', codeCell);
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
         if (updateEditorContent) setEditorContent('');
-        setEvaluationResult('');
+        setEvaluationResult(undefined);
         setOut(undefined);
       }
     },
@@ -305,6 +305,7 @@ export const CodeEditor = () => {
         editorContent={editorContent}
         setEditorContent={setEditorContent}
         closeEditor={closeEditor}
+        evaluationResult={evaluationResult}
         diagnostics={diagnostics}
       />
       <ResizeControl setState={setConsoleHeight} position="TOP" />

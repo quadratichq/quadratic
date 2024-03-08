@@ -5,6 +5,7 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { Circle, KeyboardReturn } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import { colors } from '../../../theme/colors';
@@ -28,7 +29,7 @@ interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
   editorMode: EditorInteractionState['mode'];
   editorContent: string | undefined;
-  evaluationResult?: any; // TODO(ddimaria): fix type
+  evaluationResult?: EvaluationResult;
   spillError?: Coordinate[];
   hasUnsavedChanges: boolean;
 }

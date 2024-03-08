@@ -1,4 +1,3 @@
-import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import Editor, { Monaco } from '@monaco-editor/react';
 import monaco, { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -18,6 +17,7 @@ import {
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
@@ -27,12 +27,12 @@ interface Props {
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
-  codeEditorReturn?: ComputedPythonReturnType;
+  evaluationResult?: EvaluationResult;
   diagnostics?: Diagnostic[];
 }
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, codeEditorReturn } = props;
+  const { editorContent, setEditorContent, closeEditor, evaluationResult } = props;
 
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
@@ -45,7 +45,7 @@ export const CodeEditorBody = (props: Props) => {
 
   useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
-  useEditorReturn(isValidRef, editorRef, monacoRef, language, codeEditorReturn);
+  useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
