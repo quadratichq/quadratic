@@ -1,5 +1,6 @@
+import { sheets } from '@/grid/controller/Sheets';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { rerunAction, rerunCellAction, rerunSheetAction } from '../../../../actions';
-import { grid } from '../../../../grid/controller/Grid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { CommandPaletteListItem, CommandPaletteListItemSharedProps } from '../CommandPaletteListItem';
 
@@ -11,7 +12,10 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={grid.rerunCodeCell}
+          action={() => {
+            const cursor = sheets.sheet.cursor.cursorPosition;
+            quadraticCore.rerunCodeCells(sheets.sheet.id, cursor.x, cursor.y, sheets.getCursorPosition());
+          }}
           shortcut="Enter"
           shortcutModifiers={[KeyboardSymbols.Command]}
         />
@@ -25,7 +29,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={grid.rerunSheetCodeCells}
+          action={() => quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition())}
           shortcut="Enter"
           shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}
         />
@@ -39,7 +43,7 @@ const ListItems = [
       return (
         <CommandPaletteListItem
           {...props}
-          action={grid.rerunAllCodeCells}
+          action={() => quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition())}
           shortcut="Enter"
           shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Alt, KeyboardSymbols.Command]}
         />

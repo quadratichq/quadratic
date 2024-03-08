@@ -27,6 +27,7 @@ import {
   ClientCoreGetEditCell,
   ClientCoreGetRenderCell,
   ClientCoreGetRenderCodeCells,
+  ClientCoreHasRenderCells,
   ClientCoreLoad,
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
@@ -36,6 +37,7 @@ import {
   CoreClientGetEditCell,
   CoreClientGetRenderCell,
   CoreClientGetRenderCodeCells,
+  CoreClientHasRenderCells,
   CoreClientImportCsv,
   CoreClientMessage,
   CoreClientSearch,
@@ -229,6 +231,25 @@ class QuadraticCore {
       };
       this.waitingForResponse[id] = (message: CoreClientGetEditCell) => {
         resolve(message.cell);
+      };
+      this.send(message);
+    });
+  }
+
+  hasRenderCells(sheetId: string, column: number, row: number, width: number, height: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      const message: ClientCoreHasRenderCells = {
+        type: 'clientCoreHasRenderCells',
+        sheetId,
+        x: column,
+        y: row,
+        width,
+        height,
+        id,
+      };
+      this.waitingForResponse[id] = (message: CoreClientHasRenderCells) => {
+        resolve(message.hasRenderCells);
       };
       this.send(message);
     });

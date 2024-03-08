@@ -326,6 +326,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.search(search, searchOptions);
   }
+
+  hasRenderCells(sheetId: string, x: number, y: number, width: number, height: number): boolean {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.hasRenderCells(sheetId, pointsToRect(x, y, width, height));
+  }
 }
 
 export const core = new Core();

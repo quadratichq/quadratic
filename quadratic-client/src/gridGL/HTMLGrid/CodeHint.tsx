@@ -1,7 +1,7 @@
 import { cellTypeMenuOpenedCountAtom } from '@/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
-import { Rectangle } from 'pixi.js';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useMemo, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
@@ -14,9 +14,9 @@ export const CodeHint = () => {
   const { showCodeEditor, permissions } = useRecoilValue(editorInteractionStateAtom);
 
   useEffect(() => {
-    const updateCursor = () => {
+    const updateCursor = async () => {
       const { x, y } = sheets.sheet.cursor.cursorPosition;
-      const newCellHasValue = sheets.sheet.hasRenderCells(new Rectangle(x, y, 0, 0));
+      const newCellHasValue = await quadraticCore.hasRenderCells(sheets.sheet.id, x, y, 0, 0);
       setCellHasValue(newCellHasValue);
     };
     updateCursor();

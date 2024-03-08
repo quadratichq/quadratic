@@ -158,6 +158,22 @@ export interface CoreClientSearch {
   id: number;
 }
 
+export interface ClientCoreHasRenderCells {
+  type: 'clientCoreHasRenderCells';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface CoreClientHasRenderCells {
+  type: 'coreClientHasRenderCells';
+  id: number;
+  hasRenderCells: boolean;
+}
+
 //#endregion
 
 //#region Render
@@ -381,8 +397,6 @@ export interface ClientCoreRerunCodeCells {
   cursor: string;
 }
 
-export interface CoreClientRerunCodeCells {}
-
 //#endregion
 
 //#region Sheets
@@ -513,7 +527,9 @@ export type ClientCoreMessage =
   | ClientCoreRedo
   | ClientCoreUpgradeGridFile
   | ClientCoreExport
-  | ClientCoreSearch;
+  | ClientCoreSearch
+  | ClientCoreRerunCodeCells
+  | ClientCoreHasRenderCells;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -534,4 +550,5 @@ export type CoreClientMessage =
   | CoreClientSheetOffsets
   | CoreClientUpgradeFile
   | CoreClientExport
-  | CoreClientSearch;
+  | CoreClientSearch
+  | CoreClientHasRenderCells;

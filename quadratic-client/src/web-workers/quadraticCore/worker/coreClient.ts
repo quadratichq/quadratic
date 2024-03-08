@@ -251,6 +251,11 @@ class CoreClient {
         this.send({ type: 'coreClientSearch', id: e.data.id, results });
         break;
 
+      case 'clientCoreHasRenderCells':
+        const hasRenderCells = core.hasRenderCells(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        this.send({ type: 'coreClientHasRenderCells', id: e.data.id, hasRenderCells });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
