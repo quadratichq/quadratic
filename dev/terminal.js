@@ -1,13 +1,3 @@
-const esc = "\x1b";
-export const createScreen = () => {
-    // process.stdout.write(`${esc}[?1049h`);
-};
-export const destroyScreen = () => {
-    // process.stdout.write(`${esc}[?1049l`);
-};
-export const moveToBottom = () => {
-    // process.stdout.write(`${esc}[999;1H`);
-};
 export const getCursorPos = async () => {
     return new Promise((resolve) => {
         process.stdin.once("data", (data) => {

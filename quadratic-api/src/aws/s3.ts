@@ -49,5 +49,5 @@ export const generatePresignedUrl = async (key: string) => {
     Key: key,
   });
 
-  return await getSignedUrl(s3Client, command, { expiresIn: 60 * 2 }); // 2 minutes
+  return await getSignedUrl(s3Client, command, { expiresIn: 60 * 60 * 24 * 7 }); // 7 days
 };

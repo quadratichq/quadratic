@@ -188,6 +188,11 @@ export const CodeEditor = () => {
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
     });
+    // Google Ads Conversion for running a cell
+    //@ts-expect-error
+    gtag('event', 'conversion', {
+      send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
+    });
   };
 
   const cancelPython = () => {
