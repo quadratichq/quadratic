@@ -1,35 +1,10 @@
 use crate::CellValue;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::BTreeMap,
-    ops::{Deref, DerefMut},
-};
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct CellValuesColumn {
-    #[serde(flatten)]
-    #[serde(with = "crate::util::btreemap_serde")]
-    pub values: BTreeMap<u64, CellValue>,
-}
-
-impl Deref for CellValuesColumn {
-    type Target = BTreeMap<u64, CellValue>;
-
-    fn deref(&self) -> &BTreeMap<u64, CellValue> {
-        &self.values
-    }
-}
-
-impl DerefMut for CellValuesColumn {
-    fn deref_mut(&mut self) -> &mut BTreeMap<u64, CellValue> {
-        &mut self.values
-    }
-}
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CellValues {
-    pub columns: Vec<CellValuesColumn>,
-
+    pub columns: Vec<BTreeMap<u64, CellValue>>,
     pub w: u32,
     pub h: u32,
 }
@@ -37,7 +12,7 @@ pub struct CellValues {
 impl CellValues {
     pub fn new(w: u32, h: u32) -> Self {
         Self {
-            columns: vec![CellValuesColumn::default(); w as usize],
+            columns: vec![BTreeMap::new(); w as usize],
             w,
             h,
         }
@@ -70,7 +45,7 @@ impl CellValues {
             w * h == values.len() as u32,
             "CellValues::flat_array size mismatch"
         );
-        let mut columns = vec![CellValuesColumn::default(); w as usize];
+        let mut columns = vec![BTreeMap::new(); w as usize];
         for (i, value) in values.into_iter().enumerate() {
             let x = (i as u32) % w;
             let y = (i as u32) / w;
@@ -97,7 +72,7 @@ impl From<Vec<Vec<CellValue>>> for CellValues {
     fn from(values: Vec<Vec<CellValue>>) -> Self {
         let w = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
         let h = values.len() as u32;
-        let mut columns = vec![CellValuesColumn::default(); w as usize];
+        let mut columns = vec![BTreeMap::new(); w as usize];
         for (y, col) in values.into_iter().enumerate() {
             for (x, value) in col.into_iter().enumerate() {
                 if value != CellValue::Blank {
@@ -118,7 +93,7 @@ impl From<Vec<Vec<&str>>> for CellValues {
     fn from(values: Vec<Vec<&str>>) -> Self {
         let w = values.len() as u32;
         let h = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
-        let mut columns = vec![CellValuesColumn::default(); w as usize];
+        let mut columns = vec![BTreeMap::new(); w as usize];
         for (x, col) in values.into_iter().enumerate() {
             for (y, value) in col.into_iter().enumerate() {
                 if !value.is_empty() {
@@ -231,17 +206,5 @@ mod test {
         }
         let json = serde_json::to_string(&cell_values).unwrap();
         assert!(json.len() > (w * h * 3) as usize);
-    }
-
-    #[test]
-    fn serialize_cell_values_column() {
-        let mut column = CellValuesColumn::default();
-        column.insert(0, CellValue::from("a"));
-        column.insert(1, CellValue::from("b"));
-        let json = serde_json::to_string(&column).unwrap();
-        assert_eq!(
-            json,
-            r#"{"0":{"type":"text","value":"a"},"1":{"type":"text","value":"b"}}"#
-        );
     }
 }

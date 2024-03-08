@@ -1,3 +1,5 @@
+use lexicon_fractional_index::key_between;
+
 use crate::{
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
@@ -164,6 +166,57 @@ impl GridController {
             );
         }
     }
+
+    pub(crate) fn execute_duplicate_sheet(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::DuplicateSheet {
+            sheet_id,
+            new_sheet_id,
+        } = op
+        {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
+            let mut new_sheet = sheet.clone();
+            new_sheet.id = new_sheet_id;
+            let right = self.grid.next_sheet(sheet_id);
+            let right_order = right.map(|right| right.order.clone());
+            new_sheet.order = key_between(&Some(sheet.order.clone()), &right_order).unwrap();
+            let name = format!("{} Copy", sheet.name);
+            let sheet_names = self.sheet_names();
+            if !sheet_names.contains(&name.as_str()) {
+                new_sheet.name = name;
+            } else {
+                new_sheet.name = crate::util::unused_name(&name, &self.sheet_names());
+            }
+            self.grid.add_sheet(Some(new_sheet.clone()));
+
+            transaction.summary.sheet_list_modified = true;
+            transaction.summary.html.insert(new_sheet_id);
+            transaction
+                .forward_operations
+                .push(Operation::DuplicateSheet {
+                    sheet_id,
+                    new_sheet_id,
+                });
+            transaction
+                .forward_operations
+                .push(Operation::DuplicateSheet {
+                    sheet_id,
+                    new_sheet_id,
+                });
+            transaction.reverse_operations.insert(
+                0,
+                Operation::DeleteSheet {
+                    sheet_id: new_sheet_id,
+                },
+            );
+        }
+    }
 }
 
 #[cfg(test)]
@@ -264,5 +317,35 @@ mod tests {
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
         assert!(summary.save);
         assert!(summary.sheet_list_modified);
+    }
+
+    #[test]
+    fn duplicate_sheet() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let summary = gc.duplicate_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 2);
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
+        gc.undo(None);
+        assert_eq!(gc.grid.sheets().len(), 1);
+        assert!(summary.save);
+        assert!(summary.sheet_list_modified);
+
+        gc.duplicate_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 2);
+        gc.duplicate_sheet(sheet_id, None);
+        assert_eq!(gc.grid.sheets().len(), 3);
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
+        assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");
+
+        gc.undo(None);
+        assert_eq!(gc.grid.sheets().len(), 2);
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
+
+        gc.redo(None);
+        assert_eq!(gc.grid.sheets().len(), 3);
+        assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
     }
 }
