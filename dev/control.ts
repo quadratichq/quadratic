@@ -6,7 +6,6 @@ import {
 } from "node:child_process";
 import treeKill from "tree-kill";
 import { CLI } from "./cli.js";
-import { destroyScreen } from "./terminal.js";
 import { UI } from "./ui.js";
 export class Control {
   private cli: CLI;
@@ -83,7 +82,6 @@ export class Control {
       this.kill("files"),
       this.kill("python"),
     ]);
-    destroyScreen();
     process.exit(0);
   }
 
@@ -435,15 +433,15 @@ export class Control {
     this.signals.python = new AbortController();
     this.python = spawn(
       "npm",
-      [
-        "run",
-        this.cli.options.python ? "watch:python" : "build:python",
-      ],
+      ["run", this.cli.options.python ? "watch:python" : "build:python"],
       { signal: this.signals.python.signal }
     );
     this.ui.printOutput("python", (data) =>
       this.handleResponse("python", data, {
-        success: ["Built quadratic_py", "clean exit - waiting for changes before restart"],
+        success: [
+          "Built quadratic_py",
+          "clean exit - waiting for changes before restart",
+        ],
         error: "Python error!",
         start: "quadratic-kernels/python-wasm/",
       })
