@@ -107,7 +107,10 @@ async def run_python(code: str):
 
         # Convert DF to array_output
         if isinstance(output_value, pd.DataFrame):
-            output_size = output_value.shape
+            # flip the dataframe shape
+            shape = output_value.shape
+            output_size = (shape[1], shape[0])
+            
             # If output_value columns is not the default (RangeIndex)
             if type(output_value.columns) != pd.core.indexes.range.RangeIndex:
                 # Return Column names and values

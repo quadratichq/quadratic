@@ -101,6 +101,7 @@ export const CodeEditor = () => {
 
         const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
+        console.log('codeCell', codeCell);
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
