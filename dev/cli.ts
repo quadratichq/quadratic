@@ -5,7 +5,6 @@ export class CLI {
     client: boolean;
     api: boolean;
     core: boolean;
-    react: boolean;
     multiplayer: boolean;
     files: boolean;
     python: boolean;
@@ -56,7 +55,7 @@ export class CLI {
 
     program.parse();
     this.options = program.opts();
-
+    this.options.client = !program.opts().react;
     if (this.options.all) {
       this.options.api = true;
       this.options.core = true;

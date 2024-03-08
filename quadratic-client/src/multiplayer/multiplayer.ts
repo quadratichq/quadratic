@@ -387,12 +387,11 @@ export class Multiplayer {
 
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
-    console.log(room);
     if (room.min_version.requiredVersion > this.minVersion.requiredVersion) {
-      window.dispatchEvent(new CustomEvent('need-refresh', { detail: true }));
+      window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'required' }));
       console.log('requiredVersion');
     } else if (room.min_version.recommendedVersion > this.minVersion.recommendedVersion) {
-      window.dispatchEvent(new CustomEvent('need-refresh', { detail: false }));
+      window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'recommended' }));
       console.log('recommendedVersion');
     } else {
       console.log('no dispatch');

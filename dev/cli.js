@@ -26,6 +26,7 @@ export class CLI {
             .showHelpAfterError();
         program.parse();
         this.options = program.opts();
+        this.options.client = !program.opts().react;
         if (this.options.all) {
             this.options.api = true;
             this.options.core = true;
