@@ -27,7 +27,8 @@ export class SheetOffsets {
   }
 
   load(offsets: string) {
-    const { columns, rows } = JSON.parse(offsets);
+    const { column_widths, row_heights } = JSON.parse(offsets);
+    debugger;
     this.columns.clear();
     columns.forEach((entry: number[]) => this.columns.set(entry[0], entry[1]));
     this.rows.clear();
