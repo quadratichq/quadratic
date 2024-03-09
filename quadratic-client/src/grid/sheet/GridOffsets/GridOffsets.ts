@@ -1,6 +1,5 @@
+import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
-import { Heading } from './gridTypes';
-import { HeadingSize } from './useHeadings';
 import { GridOffsetsCache } from './GridOffsetsCache';
 
 export interface HeadingResizing {
@@ -16,16 +15,17 @@ export interface HeadingResizing {
 
 /** Stores all column and row locations; helper functions to translate between screen and coordinate */
 export class GridOffsets {
-  private columns: Map<number, Heading> = new Map();
-  private rows: Map<number, Heading> = new Map();
+  private columns: Map<number, number> = new Map();
+  private rows: Map<number, number> = new Map();
   private gridOffsetsCache = new GridOffsetsCache(this);
   headingResizing: HeadingResizing | undefined;
 
-  populate(columns: Heading[], rows: Heading[]): void {
+  // todo...
+  populate(): void {
     this.columns.clear();
-    columns.forEach((entry) => this.columns.set(entry.id, entry));
+    // columns.forEach((entry) => this.columns.set(entry.index, entry));
     this.rows.clear();
-    rows.forEach((entry) => this.rows.set(entry.id, entry));
+    // rows.forEach((entry) => this.rows.set(entry.index, entry));
     this.gridOffsetsCache.clear();
   }
 
@@ -48,13 +48,13 @@ export class GridOffsets {
   getCommittedColumnWidth(column: number): number {
     // get last saved width
     const entry = this.columns.get(column);
-    return entry?.size ?? CELL_WIDTH;
+    return entry ?? CELL_WIDTH;
   }
 
   getCommittedRowHeight(row: number): number {
     // get last saved height
     const entry = this.rows.get(row);
-    return entry?.size ?? CELL_HEIGHT;
+    return entry ?? CELL_HEIGHT;
   }
 
   /**
@@ -163,43 +163,11 @@ export class GridOffsets {
     options.columns.forEach((column) => this.columns.delete(column));
   }
 
-  update(change: HeadingSize): void {
-    if (change.row !== undefined) {
-      const entry = this.rows.get(change.row);
-      if (entry) {
-        entry.size = change.size;
-      } else {
-        this.rows.set(change.row, { id: change.row, size: change.size });
-      }
-    } else if (change.column !== undefined) {
-      const entry = this.columns.get(change.column);
-      if (entry) {
-        entry.size = change.size;
-      } else {
-        this.columns.set(change.column, { id: change.column, size: change.size });
-      }
-    }
+  updateColumn(column: number, size: number) {
+    this.columns.set(column, size);
   }
 
-  debugRowsColumns(): { rows: Heading[]; columns: Heading[] } {
-    const rows = this.getRowsArray();
-    const columns = this.getColumnsArray();
-    return { rows, columns };
-  }
-
-  debugCache(): void {
-    this.gridOffsetsCache.debugSize();
-  }
-
-  getColumnsArray(): Heading[] {
-    const columns: Heading[] = [];
-    this.columns.forEach((column) => columns.push(column));
-    return columns;
-  }
-
-  getRowsArray(): Heading[] {
-    const rows: Heading[] = [];
-    this.rows.forEach((row) => rows.push(row));
-    return rows;
+  updateRow(row: number, size: number) {
+    this.rows.set(row, size);
   }
 }

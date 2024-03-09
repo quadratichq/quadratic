@@ -1,6 +1,6 @@
 import { GridOffsets } from './GridOffsets';
 
-const GRID_OFFSETS_CACHE_SIZE = 1000;
+const GRID_OFFSETS_CACHE_SIZE = 10000;
 
 export class GridOffsetsCache {
   private gridOffsets: GridOffsets;
