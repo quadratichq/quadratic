@@ -7,11 +7,11 @@
  */
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
+import { SheetOffsets } from '@/grid/sheet/GridOffsets/SheetOffsets';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { intersects } from '@/gridGL/helpers/intersects';
 import { JsRenderCell, SheetInfo } from '@/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { Container, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
@@ -53,7 +53,7 @@ export class CellsLabels extends Container {
         this.bounds = new Rectangle(Number(min.x), Number(min.y), Number(max.x - min.x), Number(max.y - min.y));
       }
     }
-    this.sheetOffsets = SheetOffsetsWasm.load(sheetInfo.offsets);
+    this.sheetOffsets = new SheetOffsets(sheetInfo.offsets);
     this.bitmapFonts = bitmapFonts;
     this.cellsTextHash = new Map();
 
@@ -67,9 +67,7 @@ export class CellsLabels extends Container {
 
   getCellOffsets(x: number, y: number) {
     const screenRect = this.sheetOffsets.getCellOffsets(x, y);
-    const rect = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
-    screenRect.free();
-    return rect;
+    return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
   }
 
   static getHash(x: number, y: number): { x: number; y: number } {

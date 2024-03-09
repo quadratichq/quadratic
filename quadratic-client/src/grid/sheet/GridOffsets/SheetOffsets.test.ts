@@ -1,21 +1,24 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
-import { QUADRANT_COLUMNS, QUADRANT_ROWS } from '../../../gridGL/quadrants/quadrantConstants';
-import { GridOffsets, HeadingResizing } from './GridOffsets';
+import { HeadingResizing, SheetOffsets } from './SheetOffsets';
 
 describe('gridOffsets', () => {
-  let gridOffsets: GridOffsets;
+  let gridOffsets: SheetOffsets;
 
   beforeEach(() => {
-    gridOffsets = new GridOffsets();
+    gridOffsets = new SheetOffsets();
   });
 
+  const load = (columns: number[][], rows: number[][]) => {
+    gridOffsets.load(JSON.stringify({ columns, rows }));
+  };
+
   it('populates rows and columns', () => {
-    gridOffsets.populate(
-      [{ id: 3, size: 10 }],
+    load(
+      [[3, 10]],
       [
-        { id: 4, size: 5 },
-        { id: 5, size: 6 },
+        [4, 5],
+        [5, 6],
       ]
     );
     const { rows, columns } = gridOffsets.debugRowsColumns();
@@ -24,33 +27,33 @@ describe('gridOffsets', () => {
   });
 
   it('gets column default width', () => {
-    gridOffsets.populate([], []);
+    load([], []);
     expect(gridOffsets.getColumnWidth(0)).toBe(CELL_WIDTH);
   });
 
   it('gets column width', () => {
-    gridOffsets.populate([{ id: 3, size: 10 }], []);
+    load([[3, 10]], []);
     expect(gridOffsets.getColumnWidth(3)).toBe(10);
   });
 
   it('gets column width w/headingResize', () => {
-    gridOffsets.populate([{ id: 3, size: 10 }], []);
+    load([[3, 10]], []);
     gridOffsets.headingResizing = { column: 3, width: 15 } as any as HeadingResizing;
     expect(gridOffsets.getColumnWidth(3)).toBe(15);
   });
 
   it('gets row default height', () => {
-    gridOffsets.populate([], []);
+    load([], []);
     expect(gridOffsets.getRowHeight(0)).toBe(CELL_HEIGHT);
   });
 
   it('gets row height', () => {
-    gridOffsets.populate([], [{ id: 3, size: 10 }]);
+    load([], [[3, 10]]);
     expect(gridOffsets.getRowHeight(3)).toBe(10);
   });
 
   it('gets row height w/headingResize', () => {
-    gridOffsets.populate([], [{ id: 3, size: 10 }]);
+    load([], [[3, 10]]);
     gridOffsets.headingResizing = { row: 3, height: 15 } as any as HeadingResizing;
     expect(gridOffsets.getRowHeight(3)).toBe(15);
   });
@@ -97,11 +100,11 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of columns (positive to positive)', () => {
-    gridOffsets.populate(
+    load(
       [
-        { id: 1, size: 5 },
-        { id: 2, size: 6 },
-        { id: 3, size: 7 },
+        [1, 5],
+        [2, 6],
+        [3, 7],
       ],
       []
     );
@@ -118,11 +121,11 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of columns (negative to 0)', () => {
-    gridOffsets.populate(
+    load(
       [
-        { id: -1, size: 5 },
-        { id: -2, size: 6 },
-        { id: -3, size: 7 },
+        [-1, 5],
+        [-2, 6],
+        [-3, 7],
       ],
       []
     );
@@ -132,11 +135,11 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of columns (negative to negative)', () => {
-    gridOffsets.populate(
+    load(
       [
-        { id: -1, size: 5 },
-        { id: -2, size: 6 },
-        { id: -3, size: 7 },
+        [-1, 5],
+        [-2, 6],
+        [-3, 7],
       ],
       []
     );
@@ -146,11 +149,11 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of columns (negative) to < 0', () => {
-    gridOffsets.populate(
+    load(
       [
-        { id: -1, size: 5 },
-        { id: -2, size: 6 },
-        { id: -3, size: 7 },
+        [-1, 5],
+        [-2, 6],
+        [-3, 7],
       ],
       []
     );
@@ -160,12 +163,12 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of columns (negative) to > 0', () => {
-    gridOffsets.populate(
+    load(
       [
-        { id: -1, size: 5 },
-        { id: -2, size: 6 },
-        { id: -3, size: 7 },
-        { id: 0, size: 4 },
+        [-1, 5],
+        [-2, 6],
+        [-3, 7],
+        [0, 4],
       ],
       []
     );
@@ -190,12 +193,12 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of columns (rows to negative)', () => {
-    gridOffsets.populate(
+    load(
       [],
       [
-        { id: -1, size: 5 },
-        { id: -2, size: 6 },
-        { id: -3, size: 7 },
+        [-1, 5],
+        [-2, 6],
+        [-3, 7],
       ]
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 3);
@@ -204,12 +207,12 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of row (positive)', () => {
-    gridOffsets.populate(
+    load(
       [],
       [
-        { id: 1, size: 5 },
-        { id: 2, size: 6 },
-        { id: 3, size: 7 },
+        [1, 5],
+        [2, 6],
+        [3, 7],
       ]
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(0, 5);
@@ -218,12 +221,12 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of rows (negative) to 0', () => {
-    gridOffsets.populate(
+    load(
       [],
       [
-        { id: -1, size: 5 },
-        { id: -2, size: 6 },
-        { id: -3, size: 7 },
+        [-1, 5],
+        [-2, 6],
+        [-3, 7],
       ]
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 5);
@@ -232,12 +235,12 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of rows (negative) to < 0', () => {
-    gridOffsets.populate(
+    load(
       [],
       [
-        { id: -1, size: 5 },
-        { id: -2, size: 6 },
-        { id: -3, size: 7 },
+        [-1, 5],
+        [-2, 6],
+        [-3, 7],
       ]
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 4);
@@ -246,13 +249,13 @@ describe('gridOffsets', () => {
   });
 
   it('gets the start and end of a range of rows (negative) to > 0', () => {
-    gridOffsets.populate(
+    load(
       [],
       [
-        { id: -1, size: 5 },
-        { id: -2, size: 6 },
-        { id: -3, size: 7 },
-        { id: 0, size: 4 },
+        [-1, 5],
+        [-2, 6],
+        [-3, 7],
+        [0, 4],
       ]
     );
     const { yStart, yEnd } = gridOffsets.getRowsStartEnd(-5, 7);
@@ -299,9 +302,9 @@ describe('gridOffsets', () => {
   });
 
   it('ensure that getScreenRectangle and getColumnIndex return the same value (positive)', () => {
-    const rectangle = gridOffsets.getScreenRectangle(20, 0, QUADRANT_COLUMNS, QUADRANT_ROWS);
-    expect(rectangle.width).toBe(CELL_WIDTH * QUADRANT_COLUMNS - 1);
-    expect(rectangle.height).toBe(CELL_HEIGHT * QUADRANT_ROWS - 1);
+    const rectangle = gridOffsets.getScreenRectangle(20, 0, 100, 200);
+    expect(rectangle.width).toBe(CELL_WIDTH * 100 - 1);
+    expect(rectangle.height).toBe(CELL_HEIGHT * 200 - 1);
     expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(20);
     expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(0);
 

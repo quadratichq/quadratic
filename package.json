@@ -13,8 +13,7 @@
     "quadratic-shared",
     "quadratic-client",
     "quadratic-files",
-    "quadratic-multiplayer",
-    "quadratic-grid-offsets"
+    "quadratic-multiplayer"
   ],
   "type": "module",
   "scripts": {
@@ -27,8 +26,6 @@
     "build:wasm:javascript": "cd quadratic-core && wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs",
     "watch:wasm:perf:javascript": "cd quadratic-core && cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs'",
     "build:wasm:perf:javascript": "cd quadratic-core && wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core --weak-refs",
-    "watch:grid-offsets": "cd quadratic-grid-offsets && cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-grid-offsets --weak-refs'",
-    "build:grid-offsets": "cd quadratic-grid-offsets && wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-grid-offsets --weak-refs",
     "watch:python": "cd quadratic-kernels/python-wasm && npm run dev",
     "build:python": "./quadratic-kernels/python-wasm/package.sh",
     "coverage:wasm:gen": "cd quadratic-core && cd quadratic-core && CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='coverage/cargo-test-%p-%m.profraw' cargo test",

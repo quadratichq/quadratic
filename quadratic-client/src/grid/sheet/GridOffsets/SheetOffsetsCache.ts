@@ -1,16 +1,16 @@
-import { GridOffsets } from './GridOffsets';
+import { SheetOffsets } from './SheetOffsets';
 
 const GRID_OFFSETS_CACHE_SIZE = 10000;
 
-export class GridOffsetsCache {
-  private gridOffsets: GridOffsets;
+export class SheetOffsetsCache {
+  private sheetOffsets: SheetOffsets;
   private columnCache: number[] = [];
   private rowCache: number[] = [];
   private columnNegativeCache: number[] = [];
   private rowNegativeCache: number[] = [];
 
-  constructor(gridOffsets: GridOffsets) {
-    this.gridOffsets = gridOffsets;
+  constructor(gridOffsets: SheetOffsets) {
+    this.sheetOffsets = gridOffsets;
     this.clear();
   }
 
@@ -24,7 +24,7 @@ export class GridOffsetsCache {
   getColumnPlacement(column: number): { x: number; width: number } {
     let position = 0;
     if (column === 0) {
-      return { x: 0, width: this.gridOffsets.getColumnWidth(0) };
+      return { x: 0, width: this.sheetOffsets.getColumnWidth(0) };
     }
 
     if (column > 0) {
@@ -38,7 +38,7 @@ export class GridOffsetsCache {
             this.columnCache[x / GRID_OFFSETS_CACHE_SIZE] = position;
           }
 
-          position += this.gridOffsets.getColumnWidth(x);
+          position += this.sheetOffsets.getColumnWidth(x);
         }
       }
 
@@ -50,11 +50,11 @@ export class GridOffsetsCache {
             this.columnCache[x / GRID_OFFSETS_CACHE_SIZE] = position;
           }
 
-          position += this.gridOffsets.getColumnWidth(x);
+          position += this.sheetOffsets.getColumnWidth(x);
         }
       }
 
-      return { x: position, width: this.gridOffsets.getColumnWidth(column) };
+      return { x: position, width: this.sheetOffsets.getColumnWidth(column) };
     }
 
     // calculate in the negative
@@ -69,7 +69,7 @@ export class GridOffsetsCache {
             this.columnNegativeCache[-x / GRID_OFFSETS_CACHE_SIZE] = position;
           }
           if (x !== 0) {
-            position -= this.gridOffsets.getColumnWidth(x);
+            position -= this.sheetOffsets.getColumnWidth(x);
           }
         }
       }
@@ -83,11 +83,11 @@ export class GridOffsetsCache {
           }
 
           if (x !== 0) {
-            position -= this.gridOffsets.getColumnWidth(x);
+            position -= this.sheetOffsets.getColumnWidth(x);
           }
         }
       }
-      return { x: position, width: this.gridOffsets.getColumnWidth(column) };
+      return { x: position, width: this.sheetOffsets.getColumnWidth(column) };
     }
   }
 
@@ -97,11 +97,11 @@ export class GridOffsetsCache {
       while (this.columnCache[cacheIndex + 1] < x) cacheIndex++;
       let position = this.columnCache[cacheIndex];
       let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
-      let nextWidth = this.gridOffsets.getColumnWidth(index);
+      let nextWidth = this.sheetOffsets.getColumnWidth(index);
       while (position + nextWidth <= x) {
         position += nextWidth;
         index++;
-        nextWidth = this.gridOffsets.getColumnWidth(index);
+        nextWidth = this.sheetOffsets.getColumnWidth(index);
       }
       return { index, position };
     } else {
@@ -111,7 +111,7 @@ export class GridOffsetsCache {
       let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
       while (position > x) {
         index++;
-        position -= this.gridOffsets.getColumnWidth(-index);
+        position -= this.sheetOffsets.getColumnWidth(-index);
       }
       return { index: -index, position };
     }
@@ -120,7 +120,7 @@ export class GridOffsetsCache {
   getRowPlacement(row: number): { y: number; height: number } {
     let position = 0;
     if (row === 0) {
-      return { y: 0, height: this.gridOffsets.getRowHeight(0) };
+      return { y: 0, height: this.sheetOffsets.getRowHeight(0) };
     }
 
     if (row > 0) {
@@ -134,7 +134,7 @@ export class GridOffsetsCache {
             this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
           }
 
-          position += this.gridOffsets.getRowHeight(y);
+          position += this.sheetOffsets.getRowHeight(y);
         }
       }
 
@@ -146,11 +146,11 @@ export class GridOffsetsCache {
             this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
           }
 
-          position += this.gridOffsets.getRowHeight(y);
+          position += this.sheetOffsets.getRowHeight(y);
         }
       }
 
-      return { y: position, height: this.gridOffsets.getRowHeight(row) };
+      return { y: position, height: this.sheetOffsets.getRowHeight(row) };
     }
 
     // calculate in the negative
@@ -165,7 +165,7 @@ export class GridOffsetsCache {
             this.rowNegativeCache[-y / GRID_OFFSETS_CACHE_SIZE] = position;
           }
           if (y !== 0) {
-            position -= this.gridOffsets.getRowHeight(y);
+            position -= this.sheetOffsets.getRowHeight(y);
           }
         }
       }
@@ -179,11 +179,11 @@ export class GridOffsetsCache {
           }
 
           if (y !== 0) {
-            position -= this.gridOffsets.getRowHeight(y);
+            position -= this.sheetOffsets.getRowHeight(y);
           }
         }
       }
-      return { y: position, height: this.gridOffsets.getRowHeight(row) };
+      return { y: position, height: this.sheetOffsets.getRowHeight(row) };
     }
   }
 
@@ -193,11 +193,11 @@ export class GridOffsetsCache {
       while (this.rowCache[cacheIndex + 1] < y) cacheIndex++;
       let position = this.rowCache[cacheIndex];
       let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
-      let nextHeight = this.gridOffsets.getRowHeight(index);
+      let nextHeight = this.sheetOffsets.getRowHeight(index);
       while (position + nextHeight <= y) {
         position += nextHeight;
         index++;
-        nextHeight = this.gridOffsets.getRowHeight(index);
+        nextHeight = this.sheetOffsets.getRowHeight(index);
       }
       return { index, position };
     } else {
@@ -207,7 +207,7 @@ export class GridOffsetsCache {
       let index = cacheIndex * GRID_OFFSETS_CACHE_SIZE;
       while (position > y) {
         index++;
-        position -= this.gridOffsets.getRowHeight(-index);
+        position -= this.sheetOffsets.getRowHeight(-index);
       }
       return { index: -index, position };
     }

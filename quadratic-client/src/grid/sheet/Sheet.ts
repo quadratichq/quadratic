@@ -1,9 +1,9 @@
 import { CellAlign, CellFormatSummary, SheetInfo } from '@/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { sheets } from '../controller/Sheets';
+import { SheetOffsets } from './GridOffsets/SheetOffsets';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
@@ -21,7 +21,7 @@ export class Sheet {
     this.name = info.name;
     this.order = info.order;
     this.color = info.color ?? undefined;
-    this.offsets = SheetOffsetsWasm.load(info.offsets);
+    this.offsets = new SheetOffsets(info.offsets);
     this.cursor = new SheetCursor(this);
   }
 
@@ -43,7 +43,7 @@ export class Sheet {
     this.name = info.name;
     this.order = info.order;
     this.color = info.color ?? undefined;
-    this.offsets = SheetOffsetsWasm.load(info.offsets);
+    this.offsets.load(info.offsets);
   }
 
   //#endregion
@@ -158,7 +158,6 @@ export class Sheet {
   getColumnRow(x: number, y: number): Coordinate {
     const columnRow = this.offsets.getColumnRowFromScreen(x, y);
     const result = { x: columnRow.column, y: columnRow.row };
-    columnRow.free();
     return result;
   }
 

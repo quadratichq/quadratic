@@ -47,12 +47,6 @@ export const COMPONENTS = {
     dark: "gray",
     name: "Redis",
   },
-  gridOffsets: {
-    name: "Offsets",
-    color: "gray",
-    dark: "gray",
-    shortcut: "o",
-  },
 };
 
 export const SPACE = "     ";

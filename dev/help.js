@@ -8,7 +8,6 @@ export const helpCLI = "\n\nOptions:" +
     "\n     -m, --multiplayer     Watch the quadratic-multiplayer directory" +
     "\n     -f, --files           Watch the quadratic-files directory" +
     "\n     -y, --python          Watch the quadratic-kernel/python-wasm directory" +
-    "\n     -o, --gridOffsets     Watch the quadratic-grid-offsets directory" +
     "\n     -s, --skipTypes       Skip WASM types compilation" +
     "\n     -l, --all             Watch all directories" +
     "\n     -p, --perf            Run quadratic-core in perf mode (slower linking but faster runtime)" +
@@ -18,7 +17,6 @@ export const helpCLI = "\n\nOptions:" +
     "\n     -P, --hideMultiplayer Hide Multiplayer output" +
     "\n     -F, --hideFiles       Hide Files output" +
     "\n     -Y, --hidePython      Hide Python output" +
-    "\n     -O, --hideGridOffsets Hide GridOffsets output" +
     "\n     -T, --hideTypes       Hide Types output" +
     "\n     -d, --dark            Use dark theme" +
     "\n     -h, --help            Display help for command" +

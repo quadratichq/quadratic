@@ -1,6 +1,6 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { Rectangle } from 'pixi.js';
-import { GridOffsetsCache } from './GridOffsetsCache';
+import { SheetOffsetsCache } from './SheetOffsetsCache';
 
 export interface HeadingResizing {
   x: number;
@@ -14,18 +14,24 @@ export interface HeadingResizing {
 }
 
 /** Stores all column and row locations; helper functions to translate between screen and coordinate */
-export class GridOffsets {
+export class SheetOffsets {
   private columns: Map<number, number> = new Map();
   private rows: Map<number, number> = new Map();
-  private gridOffsetsCache = new GridOffsetsCache(this);
+  private gridOffsetsCache = new SheetOffsetsCache(this);
   headingResizing: HeadingResizing | undefined;
 
-  // todo...
-  populate(): void {
+  constructor(offsets?: string) {
+    if (offsets) {
+      this.load(offsets);
+    }
+  }
+
+  load(offsets: string) {
+    const { columns, rows } = JSON.parse(offsets);
     this.columns.clear();
-    // columns.forEach((entry) => this.columns.set(entry.index, entry));
+    columns.forEach((entry: number[]) => this.columns.set(entry[0], entry[1]));
     this.rows.clear();
-    // rows.forEach((entry) => this.rows.set(entry.index, entry));
+    rows.forEach((entry: number[]) => this.rows.set(entry[0], entry[1]));
     this.gridOffsetsCache.clear();
   }
 
@@ -123,7 +129,7 @@ export class GridOffsets {
    * @param y
    * @returns row and column
    */
-  getRowColumnFromWorld(x: number, y: number): { column: number; row: number } {
+  getColumnRowFromScreen(x: number, y: number): { column: number; row: number } {
     return { column: this.getColumnIndex(x).index, row: this.getRowIndex(y).index };
   }
 
@@ -133,14 +139,14 @@ export class GridOffsets {
    * @param row
    * @returns
    */
-  getCell(column: number, row: number): { x: number; y: number; width: number; height: number } {
+  getCellOffsets(column: number, row: number): { x: number; y: number; w: number; h: number } {
     const columnPlacement = this.getColumnPlacement(column);
     const rowPlacement = this.getRowPlacement(row);
     return {
       x: columnPlacement.x,
       y: rowPlacement.y,
-      width: columnPlacement.width,
-      height: rowPlacement.height,
+      w: columnPlacement.width,
+      h: rowPlacement.height,
     };
   }
 
@@ -163,11 +169,18 @@ export class GridOffsets {
     options.columns.forEach((column) => this.columns.delete(column));
   }
 
-  updateColumn(column: number, size: number) {
+  setColumnWidth(column: number, size: number) {
     this.columns.set(column, size);
   }
 
-  updateRow(row: number, size: number) {
+  setRowHeight(row: number, size: number) {
     this.rows.set(row, size);
+  }
+
+  debugRowsColumns(): { columns: number[]; rows: number[] } {
+    return {
+      columns: Array.from(this.columns.keys()),
+      rows: Array.from(this.rows.keys()),
+    };
   }
 }

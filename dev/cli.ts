@@ -7,7 +7,6 @@ export class CLI {
     multiplayer: boolean;
     files: boolean;
     python: boolean;
-    gridOffsets: boolean;
     skipTypes: boolean;
     all: boolean;
     perf: boolean;
@@ -32,7 +31,6 @@ export class CLI {
       .option("-c, --core", "Watch the quadratic-core directory")
       .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
       .option("-f, --files", "Watch the quadratic-files directory")
-      .option("-g, --gridOffsets", "Watch the quadratic-grid-offsets directory")
       .option(
         "-y, --python",
         "Watch the quadratic-kernels/python-wasm directory"
@@ -50,7 +48,6 @@ export class CLI {
       .option("-M, --hideMultiplayer", "Hide Multiplayer output")
       .option("-F, --hideFiles", "Hide Files output")
       .option("-Y, --hidePython", "Hide Python output")
-      .option("-g, --gridOffsets", "Hide grid offsets")
       .option("-d, --dark", "Use dark theme")
       .showHelpAfterError();
 
@@ -62,7 +59,6 @@ export class CLI {
       this.options.core = true;
       this.options.multiplayer = true;
       this.options.files = true;
-      this.options.gridOffsets = true;
       this.options.python = true;
     }
   }
