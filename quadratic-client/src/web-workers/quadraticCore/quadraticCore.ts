@@ -545,6 +545,10 @@ class QuadraticCore {
     });
   }
 
+  setHeadingSize(sheetId: string, size: number, column?: number, row?: number) {
+    console.warn('TODO setHeadingSize');
+  }
+
   rerunCodeCells(sheetId: string | undefined, x: number | undefined, y: number | undefined, cursor: string) {
     this.send({
       type: 'clientCoreRerunCodeCells',

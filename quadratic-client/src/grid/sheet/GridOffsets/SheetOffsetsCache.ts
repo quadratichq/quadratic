@@ -21,10 +21,10 @@ export class SheetOffsetsCache {
     this.rowNegativeCache = [0];
   }
 
-  getColumnPlacement(column: number): { x: number; width: number } {
+  getColumnPlacement(column: number): { position: number; size: number } {
     let position = 0;
     if (column === 0) {
-      return { x: 0, width: this.sheetOffsets.getColumnWidth(0) };
+      return { position: 0, size: this.sheetOffsets.getColumnWidth(0) };
     }
 
     if (column > 0) {
@@ -54,7 +54,7 @@ export class SheetOffsetsCache {
         }
       }
 
-      return { x: position, width: this.sheetOffsets.getColumnWidth(column) };
+      return { position: position, size: this.sheetOffsets.getColumnWidth(column) };
     }
 
     // calculate in the negative
@@ -87,7 +87,7 @@ export class SheetOffsetsCache {
           }
         }
       }
-      return { x: position, width: this.sheetOffsets.getColumnWidth(column) };
+      return { position: position, size: this.sheetOffsets.getColumnWidth(column) };
     }
   }
 
@@ -117,10 +117,10 @@ export class SheetOffsetsCache {
     }
   }
 
-  getRowPlacement(row: number): { y: number; height: number } {
+  getRowPlacement(row: number): { position: number; size: number } {
     let position = 0;
     if (row === 0) {
-      return { y: 0, height: this.sheetOffsets.getRowHeight(0) };
+      return { position: 0, size: this.sheetOffsets.getRowHeight(0) };
     }
 
     if (row > 0) {
@@ -150,7 +150,7 @@ export class SheetOffsetsCache {
         }
       }
 
-      return { y: position, height: this.sheetOffsets.getRowHeight(row) };
+      return { position: position, size: this.sheetOffsets.getRowHeight(row) };
     }
 
     // calculate in the negative
@@ -183,7 +183,7 @@ export class SheetOffsetsCache {
           }
         }
       }
-      return { y: position, height: this.sheetOffsets.getRowHeight(row) };
+      return { position: position, size: this.sheetOffsets.getRowHeight(row) };
     }
   }
 

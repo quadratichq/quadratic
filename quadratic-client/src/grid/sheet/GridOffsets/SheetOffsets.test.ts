@@ -60,43 +60,43 @@ describe('gridOffsets', () => {
 
   it('gets column position using cache', () => {
     // double calls to check cache values
-    expect(gridOffsets.getColumnPlacement(0).x).toBe(0);
-    expect(gridOffsets.getColumnPlacement(0).x).toBe(0);
+    expect(gridOffsets.getColumnPlacement(0).position).toBe(0);
+    expect(gridOffsets.getColumnPlacement(0).position).toBe(0);
 
-    expect(gridOffsets.getColumnPlacement(1).x).toBe(CELL_WIDTH);
-    expect(gridOffsets.getColumnPlacement(1).x).toBe(CELL_WIDTH);
+    expect(gridOffsets.getColumnPlacement(1).position).toBe(CELL_WIDTH);
+    expect(gridOffsets.getColumnPlacement(1).position).toBe(CELL_WIDTH);
 
-    expect(gridOffsets.getColumnPlacement(1000).x).toBe(CELL_WIDTH * 1000);
-    expect(gridOffsets.getColumnPlacement(1000).x).toBe(CELL_WIDTH * 1000);
+    expect(gridOffsets.getColumnPlacement(1000).position).toBe(CELL_WIDTH * 1000);
+    expect(gridOffsets.getColumnPlacement(1000).position).toBe(CELL_WIDTH * 1000);
 
-    expect(gridOffsets.getColumnPlacement(1000001).x).toBe(CELL_WIDTH * 1000001);
-    expect(gridOffsets.getColumnPlacement(1000001).x).toBe(CELL_WIDTH * 1000001);
+    expect(gridOffsets.getColumnPlacement(1000001).position).toBe(CELL_WIDTH * 1000001);
+    expect(gridOffsets.getColumnPlacement(1000001).position).toBe(CELL_WIDTH * 1000001);
 
-    expect(gridOffsets.getColumnPlacement(-1).x).toBe(-CELL_WIDTH);
-    expect(gridOffsets.getColumnPlacement(-1).x).toBe(-CELL_WIDTH);
+    expect(gridOffsets.getColumnPlacement(-1).position).toBe(-CELL_WIDTH);
+    expect(gridOffsets.getColumnPlacement(-1).position).toBe(-CELL_WIDTH);
 
-    expect(gridOffsets.getColumnPlacement(-1000).x).toBe(-CELL_WIDTH * 1000);
-    expect(gridOffsets.getColumnPlacement(-1000).x).toBe(-CELL_WIDTH * 1000);
+    expect(gridOffsets.getColumnPlacement(-1000).position).toBe(-CELL_WIDTH * 1000);
+    expect(gridOffsets.getColumnPlacement(-1000).position).toBe(-CELL_WIDTH * 1000);
 
-    expect(gridOffsets.getColumnPlacement(-1000001).x).toBe(-CELL_WIDTH * 1000001);
-    expect(gridOffsets.getColumnPlacement(-1000001).x).toBe(-CELL_WIDTH * 1000001);
+    expect(gridOffsets.getColumnPlacement(-1000001).position).toBe(-CELL_WIDTH * 1000001);
+    expect(gridOffsets.getColumnPlacement(-1000001).position).toBe(-CELL_WIDTH * 1000001);
   });
 
   it('gets column position using cache w/resizing', () => {
     gridOffsets.headingResizing = { column: 0, width: 15 } as any as HeadingResizing;
 
     // double calls to check cache values
-    expect(gridOffsets.getColumnPlacement(0).x).toBe(0);
-    expect(gridOffsets.getColumnPlacement(0).x).toBe(0);
+    expect(gridOffsets.getColumnPlacement(0).position).toBe(0);
+    expect(gridOffsets.getColumnPlacement(0).position).toBe(0);
 
-    expect(gridOffsets.getColumnPlacement(1).x).toBe(15);
-    expect(gridOffsets.getColumnPlacement(1).x).toBe(15);
+    expect(gridOffsets.getColumnPlacement(1).position).toBe(15);
+    expect(gridOffsets.getColumnPlacement(1).position).toBe(15);
 
-    expect(gridOffsets.getColumnPlacement(1000).x).toBe(15 + CELL_WIDTH * 999);
-    expect(gridOffsets.getColumnPlacement(1000).x).toBe(15 + CELL_WIDTH * 999);
+    expect(gridOffsets.getColumnPlacement(1000).position).toBe(15 + CELL_WIDTH * 999);
+    expect(gridOffsets.getColumnPlacement(1000).position).toBe(15 + CELL_WIDTH * 999);
 
-    expect(gridOffsets.getColumnPlacement(1000001).x).toBe(15 + CELL_WIDTH * 1000000);
-    expect(gridOffsets.getColumnPlacement(1000001).x).toBe(15 + CELL_WIDTH * 1000000);
+    expect(gridOffsets.getColumnPlacement(1000001).position).toBe(15 + CELL_WIDTH * 1000000);
+    expect(gridOffsets.getColumnPlacement(1000001).position).toBe(15 + CELL_WIDTH * 1000000);
   });
 
   it('gets the start and end of a range of columns (positive to positive)', () => {
@@ -179,17 +179,17 @@ describe('gridOffsets', () => {
 
   it('gets row position using cache', () => {
     // double calls to check cache values
-    expect(gridOffsets.getRowPlacement(0).y).toBe(0);
-    expect(gridOffsets.getRowPlacement(0).y).toBe(0);
+    expect(gridOffsets.getRowPlacement(0).position).toBe(0);
+    expect(gridOffsets.getRowPlacement(0).position).toBe(0);
 
-    expect(gridOffsets.getRowPlacement(1).y).toBe(CELL_HEIGHT);
-    expect(gridOffsets.getRowPlacement(1).y).toBe(CELL_HEIGHT);
+    expect(gridOffsets.getRowPlacement(1).position).toBe(CELL_HEIGHT);
+    expect(gridOffsets.getRowPlacement(1).position).toBe(CELL_HEIGHT);
 
-    expect(gridOffsets.getRowPlacement(1000).y).toBe(CELL_HEIGHT * 1000);
-    expect(gridOffsets.getRowPlacement(1000).y).toBe(CELL_HEIGHT * 1000);
+    expect(gridOffsets.getRowPlacement(1000).position).toBe(CELL_HEIGHT * 1000);
+    expect(gridOffsets.getRowPlacement(1000).position).toBe(CELL_HEIGHT * 1000);
 
-    expect(gridOffsets.getRowPlacement(1000001).y).toBe(CELL_HEIGHT * 1000001);
-    expect(gridOffsets.getRowPlacement(1000001).y).toBe(CELL_HEIGHT * 1000001);
+    expect(gridOffsets.getRowPlacement(1000001).position).toBe(CELL_HEIGHT * 1000001);
+    expect(gridOffsets.getRowPlacement(1000001).position).toBe(CELL_HEIGHT * 1000001);
   });
 
   it('gets the start and end of a range of columns (rows to negative)', () => {
@@ -289,34 +289,34 @@ describe('gridOffsets', () => {
 
   it('ensure that getScreenRectangle and getColumnIndex return the same value (negative)', () => {
     const rectangle = gridOffsets.getScreenRectangle(-9, -10, 5, 6);
-    expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(-9);
-    expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(-10);
-    expect(gridOffsets.getColumnIndex(rectangle.right).index).toBe(-9 + 5 - 1);
-    expect(gridOffsets.getRowIndex(rectangle.bottom).index).toBe(-10 + 6 - 1);
+    expect(gridOffsets.getXPlacement(rectangle.left).index).toBe(-9);
+    expect(gridOffsets.getYPlacement(rectangle.top).index).toBe(-10);
+    expect(gridOffsets.getXPlacement(rectangle.right).index).toBe(-9 + 5 - 1);
+    expect(gridOffsets.getYPlacement(rectangle.bottom).index).toBe(-10 + 6 - 1);
 
     // check the cache
-    expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(-9);
-    expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(-10);
-    expect(gridOffsets.getColumnIndex(rectangle.right).index).toBe(-9 + 5 - 1);
-    expect(gridOffsets.getRowIndex(rectangle.bottom).index).toBe(-10 + 6 - 1);
+    expect(gridOffsets.getXPlacement(rectangle.left).index).toBe(-9);
+    expect(gridOffsets.getYPlacement(rectangle.top).index).toBe(-10);
+    expect(gridOffsets.getXPlacement(rectangle.right).index).toBe(-9 + 5 - 1);
+    expect(gridOffsets.getYPlacement(rectangle.bottom).index).toBe(-10 + 6 - 1);
   });
 
   it('ensure that getScreenRectangle and getColumnIndex return the same value (positive)', () => {
     const rectangle = gridOffsets.getScreenRectangle(20, 0, 100, 200);
     expect(rectangle.width).toBe(CELL_WIDTH * 100 - 1);
     expect(rectangle.height).toBe(CELL_HEIGHT * 200 - 1);
-    expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(20);
-    expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(0);
+    expect(gridOffsets.getXPlacement(rectangle.left).index).toBe(20);
+    expect(gridOffsets.getYPlacement(rectangle.top).index).toBe(0);
 
     // check the cache
-    expect(gridOffsets.getColumnIndex(rectangle.left).index).toBe(20);
-    expect(gridOffsets.getRowIndex(rectangle.top).index).toBe(0);
+    expect(gridOffsets.getXPlacement(rectangle.left).index).toBe(20);
+    expect(gridOffsets.getYPlacement(rectangle.top).index).toBe(0);
   });
 
   it('gets columnIndex for large index', () => {
-    expect(gridOffsets.getColumnIndex(1000000).index).toBe(1000000 / CELL_WIDTH);
-    expect(gridOffsets.getColumnIndex(1000000).position).toBe(1000000);
-    expect(gridOffsets.getColumnIndex(1000005).index).toBe(1000000 / CELL_WIDTH);
-    expect(gridOffsets.getColumnIndex(1000005).position).toBe(1000000);
+    expect(gridOffsets.getXPlacement(1000000).index).toBe(1000000 / CELL_WIDTH);
+    expect(gridOffsets.getXPlacement(1000000).position).toBe(1000000);
+    expect(gridOffsets.getXPlacement(1000005).index).toBe(1000000 / CELL_WIDTH);
+    expect(gridOffsets.getXPlacement(1000005).position).toBe(1000000);
   });
 });

@@ -3,10 +3,10 @@ import { Rectangle } from 'pixi.js';
 import { SheetOffsetsCache } from './SheetOffsetsCache';
 
 export interface HeadingResizing {
-  x: number;
-  y: number;
-  start: number;
-  end: number;
+  // x: number;
+  // y: number;
+  // start: number;
+  // end: number;
   column?: number;
   row?: number;
   width?: number;
@@ -68,7 +68,7 @@ export class SheetOffsets {
    * @param column
    * @returns x position and width of column
    */
-  getColumnPlacement(column: number): { x: number; width: number } {
+  getColumnPlacement(column: number): { position: number; size: number } {
     return this.gridOffsetsCache.getColumnPlacement(column);
   }
 
@@ -81,7 +81,7 @@ export class SheetOffsets {
   getColumnsStartEnd(column: number, width: number): { xStart: number; xEnd: number } {
     const start = this.gridOffsetsCache.getColumnPlacement(column);
     const end = this.gridOffsetsCache.getColumnPlacement(column + width);
-    return { xStart: start.x, xEnd: end.x - 1 };
+    return { xStart: start.position, xEnd: end.position - 1 };
   }
 
   /**
@@ -89,7 +89,7 @@ export class SheetOffsets {
    * @param row
    * @returns y position and height of column
    */
-  getRowPlacement(row: number): { y: number; height: number } {
+  getRowPlacement(row: number): { position: number; size: number } {
     return this.gridOffsetsCache.getRowPlacement(row);
   }
 
@@ -102,7 +102,7 @@ export class SheetOffsets {
   getRowsStartEnd(row: number, height: number): { yStart: number; yEnd: number } {
     const start = this.gridOffsetsCache.getRowPlacement(row);
     const end = this.gridOffsetsCache.getRowPlacement(row + height);
-    return { yStart: start.y, yEnd: end.y - 1 };
+    return { yStart: start.position, yEnd: end.position - 1 };
   }
 
   /**
@@ -110,8 +110,9 @@ export class SheetOffsets {
    * @param x
    * @returns column and x-position of that column
    */
-  getColumnIndex(x: number): { index: number; position: number } {
-    return this.gridOffsetsCache.getColumnIndex(x);
+  getXPlacement(x: number): { index: number; position: number; size: number } {
+    const result = this.gridOffsetsCache.getColumnIndex(x);
+    return { ...result, size: this.getColumnWidth(result.index) };
   }
 
   /**
@@ -119,8 +120,9 @@ export class SheetOffsets {
    * @param x
    * @returns row and y-position of that row
    */
-  getRowIndex(y: number): { index: number; position: number } {
-    return this.gridOffsetsCache.getRowIndex(y);
+  getYPlacement(y: number): { index: number; position: number; size: number } {
+    const result = this.gridOffsetsCache.getRowIndex(y);
+    return { ...result, size: this.getRowHeight(result.index) };
   }
 
   /**
@@ -130,7 +132,7 @@ export class SheetOffsets {
    * @returns row and column
    */
   getColumnRowFromScreen(x: number, y: number): { column: number; row: number } {
-    return { column: this.getColumnIndex(x).index, row: this.getRowIndex(y).index };
+    return { column: this.getXPlacement(x).index, row: this.getYPlacement(y).index };
   }
 
   /**
@@ -143,10 +145,10 @@ export class SheetOffsets {
     const columnPlacement = this.getColumnPlacement(column);
     const rowPlacement = this.getRowPlacement(row);
     return {
-      x: columnPlacement.x,
-      y: rowPlacement.y,
-      w: columnPlacement.width,
-      h: rowPlacement.height,
+      x: columnPlacement.position,
+      y: rowPlacement.position,
+      w: columnPlacement.size,
+      h: rowPlacement.size,
     };
   }
 
@@ -182,5 +184,41 @@ export class SheetOffsets {
       columns: Array.from(this.columns.keys()),
       rows: Array.from(this.rows.keys()),
     };
+  }
+
+  cancelResize() {
+    this.headingResizing = undefined;
+  }
+
+  resizeColumnTransiently(column: number, size: number = CELL_WIDTH) {
+    this.headingResizing = { column, width: size };
+  }
+
+  resizeRowTransiently(row: number, size: number = CELL_HEIGHT) {
+    this.headingResizing = { row, height: size };
+  }
+
+  getResizeToApply(): { column?: number; row?: number; size: number } | undefined {
+    if (this.headingResizing?.column !== undefined) {
+      return { column: this.headingResizing.column, size: this.headingResizing.width ?? CELL_WIDTH };
+    } else if (this.headingResizing?.row !== undefined) {
+      return { row: this.headingResizing.row, size: this.headingResizing.height ?? CELL_HEIGHT };
+    }
+  }
+
+  getRangeColumnWidth(columnStart: number, columnEnd: number): number {
+    let width = 0;
+    for (let i = columnStart; i <= columnEnd; i++) {
+      width += this.columns.get(i) ?? CELL_WIDTH;
+    }
+    return width;
+  }
+
+  getRangeRowHeight(rowStart: number, rowEnd: number): number {
+    let height = 0;
+    for (let i = rowStart; i <= rowEnd; i++) {
+      height += this.rows.get(i) ?? CELL_HEIGHT;
+    }
+    return height;
   }
 }

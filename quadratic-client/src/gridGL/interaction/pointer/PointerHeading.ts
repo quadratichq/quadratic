@@ -1,4 +1,5 @@
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -237,7 +238,14 @@ export class PointerHeading {
       if (headingResizing) {
         const transientResize = sheets.sheet.offsets.getResizeToApply();
         if (transientResize) {
-          grid.commitTransientResize(sheets.sheet.id, transientResize);
+          quadraticCore.setHeadingSize(
+            sheets.sheet.id,
+            transientResize.size,
+            transientResize.column,
+            transientResize.row
+          );
+          console.warn('todo...');
+          // grid.commitTransientResize(sheets.sheet.id, transientResize);
         }
         this.resizing = undefined;
 
