@@ -352,7 +352,7 @@ export const FloatingContextMenu = (props: Props) => {
 
         <TooltipHint title="Format automatically">
           <Button size="icon-sm" variant="ghost" onClick={() => removeCellNumericFormat()}>
-            <MagicWandIcon fontSize={iconSize} />
+            <MagicWandIcon fontSize={iconSize} className="h-5 w-5" />
           </Button>
         </TooltipHint>
 
@@ -376,13 +376,13 @@ export const FloatingContextMenu = (props: Props) => {
 
         <TooltipHint title="Decrease decimal places">
           <Button size="icon-sm" variant="ghost" onClick={() => textFormatDecreaseDecimalPlaces()}>
-            <DecimalDecreaseIcon />
+            <DecimalDecreaseIcon className="h-5 w-5" />
           </Button>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
           <Button size="icon-sm" variant="ghost" onClick={() => textFormatIncreaseDecimalPlaces()}>
-            <DecimalIncreaseIcon />
+            <DecimalIncreaseIcon className="h-5 w-5" />
           </Button>
         </TooltipHint>
 
