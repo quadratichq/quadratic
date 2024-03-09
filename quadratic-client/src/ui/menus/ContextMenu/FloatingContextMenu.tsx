@@ -213,7 +213,7 @@ export const FloatingContextMenu = (props: Props) => {
   return (
     <div
       ref={menuDiv}
-      className={`bg-background shadow-lg`}
+      className={`border border-border bg-background shadow-xl`}
       style={{
         display: 'block',
         position: 'absolute',

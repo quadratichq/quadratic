@@ -70,18 +70,6 @@ export const TopBar = () => {
             <DataMenu />
             <FormatMenu />
             <NumberFormatMenu />
-            <TopBarMenuItem
-              title={`Command palette (${KeyboardSymbols.Command + 'P'})`}
-              noDropdown
-              buttonProps={{
-                style: { alignSelf: 'stretch' },
-                onClick: () => {
-                  setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }));
-                },
-              }}
-            >
-              <CommandPaletteIcon className="h-4 w-4" />
-            </TopBarMenuItem>
           </>
         )}
       </div>
@@ -104,7 +92,21 @@ export const TopBar = () => {
             <TopBarShareButton />
           </>
         )}
-        <TopBarZoomMenu />
+        <div className="flex self-stretch">
+          <TopBarMenuItem
+            title={`Command palette (${KeyboardSymbols.Command + 'P'})`}
+            noDropdown
+            buttonProps={{
+              style: { alignSelf: 'stretch' },
+              onClick: () => {
+                setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }));
+              },
+            }}
+          >
+            <CommandPaletteIcon className="h-4 w-4" />
+          </TopBarMenuItem>
+          <TopBarZoomMenu />
+        </div>
       </div>
       <Search />
     </Box>
