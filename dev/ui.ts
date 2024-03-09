@@ -13,8 +13,8 @@ import {
   WATCH,
 } from "./constants.js";
 import { Control } from "./control.js";
-import { help, helpCLI, helpKeyboard } from "./help.js";
-import { createScreen } from "./terminal.js";
+import { helpCLI, helpKeyboard } from "./help.js";
+import { logo } from "./logo.js";
 
 export class UI {
   private cli: CLI;
@@ -32,6 +32,8 @@ export class UI {
     this.cli = cli;
     this.control = control;
 
+    console.log(logo);
+
     this.interval = setInterval(() => {
       this.spin = (this.spin + 1) % ANIMATE_STATUS.length;
       if (this.showing) {
@@ -39,8 +41,6 @@ export class UI {
         this.prompt();
       }
     }, ANIMATION_INTERVAL);
-
-    createScreen();
   }
 
   quit() {
@@ -171,8 +171,6 @@ export class UI {
   prompt() {
     this.clear();
     this.write("\n");
-    this.write("Quadratic Dev", "underline");
-    this.write(SPACE);
     this.statusItem("client", true);
     this.statusItem("api");
     this.statusItem("core");
@@ -184,8 +182,6 @@ export class UI {
       this.write(helpCLI);
     } else if (this.help) {
       this.write(helpKeyboard);
-    } else {
-      this.write(help);
     }
     this.promptExternal();
     this.showing = true;

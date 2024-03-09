@@ -6,7 +6,6 @@ import {
 } from "node:child_process";
 import treeKill from "tree-kill";
 import { CLI } from "./cli.js";
-import { destroyScreen } from "./terminal.js";
 import { UI } from "./ui.js";
 export class Control {
   private cli: CLI;
@@ -83,7 +82,6 @@ export class Control {
       this.kill("files"),
       this.kill("python"),
     ]);
-    destroyScreen();
     process.exit(0);
   }
 
