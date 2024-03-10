@@ -72,6 +72,16 @@ export class CellsTextHash {
     this.hashY = hashY;
   }
 
+  get visibleRectangle(): Rectangle {
+    const cell = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.x, this.AABB.y);
+    return new Rectangle(
+      cell.x + this.viewRectangle.x,
+      cell.y + this.viewRectangle.y,
+      this.viewRectangle.width,
+      this.viewRectangle.height
+    );
+  }
+
   // key used to find individual cell labels
   private getKey(cell: { x: bigint | number; y: bigint | number }): string {
     return `${cell.x},${cell.y}`;

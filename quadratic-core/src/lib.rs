@@ -13,7 +13,6 @@ pub mod formulas;
 pub mod grid;
 mod position;
 mod rle;
-pub mod sheet_offsets;
 mod span;
 pub mod test_util;
 mod values;

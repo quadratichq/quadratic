@@ -9,7 +9,6 @@
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
 import { SheetOffsets } from '@/grid/sheet/GridOffsets/SheetOffsets';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
-import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { intersects } from '@/gridGL/helpers/intersects';
 import { JsRenderCell, SheetInfo } from '@/quadratic-core-types';
 import { Container, Rectangle } from 'pixi.js';
@@ -92,7 +91,6 @@ export class CellsLabels extends Container {
   }
 
   createHashes(): boolean {
-    debugTimeReset();
     const bounds = this.bounds;
     if (!bounds) return false;
     const xStart = Math.floor(bounds.x / sheetHashWidth);
@@ -104,7 +102,6 @@ export class CellsLabels extends Container {
         this.createHash(x, y);
       }
     }
-    debugTimeCheck('createHashes');
     return true;
   }
 
@@ -255,7 +252,7 @@ export class CellsLabels extends Container {
     if (!bounds) return;
 
     this.cellsTextHash.forEach((hash) => {
-      if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+      if (intersects.rectangleRectangle(hash.visibleRectangle, bounds)) {
         if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
           visibleDirtyHashes.push(hash);
         }

@@ -9,7 +9,6 @@ import {
   PasteSpecial,
   Pos,
   Rect as RectInternal,
-  TransientResize,
 } from '@/quadratic-core/quadratic_core';
 import { Point, Rectangle } from 'pixi.js';
 import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
@@ -347,7 +346,7 @@ export class Grid {
 
   //#region column/row sizes
 
-  commitTransientResize(sheetId: string, transientResize: TransientResize) {
+  commitTransientResize(sheetId: string, transientResize: any) {
     // const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
     // this.transactionResponse(summary);
   }

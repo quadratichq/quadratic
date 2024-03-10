@@ -2,10 +2,9 @@ use crate::{Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
 
-use self::{offsets::Offsets, resize_transient::TransientResize};
+use self::offsets::Offsets;
 
 pub mod offsets;
-pub mod resize_transient;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -14,9 +13,6 @@ pub struct SheetOffsets {
     row_heights: Offsets,
 
     thumbnail: (i64, i64),
-
-    #[serde(skip_serializing, skip_deserializing)]
-    transient_resize: Option<TransientResize>,
 }
 
 impl Default for SheetOffsets {
@@ -25,7 +21,6 @@ impl Default for SheetOffsets {
             column_widths: Offsets::new(crate::DEFAULT_COLUMN_WIDTH),
             row_heights: Offsets::new(crate::DEFAULT_ROW_HEIGHT),
             thumbnail: (0, 0),
-            transient_resize: None,
         };
         offsets.calculate_thumbnail();
         offsets
@@ -52,7 +47,6 @@ impl SheetOffsets {
             ),
             row_heights: Offsets::from_iter(crate::DEFAULT_ROW_HEIGHT, offsets.1.iter().copied()),
             thumbnail: (0, 0),
-            transient_resize: None,
         };
         offsets.calculate_thumbnail();
         offsets
