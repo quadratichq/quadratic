@@ -1,7 +1,7 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
+import { SheetOffsets as SheetOffsetsRust } from '@/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 import { SheetOffsetsCache } from './SheetOffsetsCache';
-
 export interface HeadingResizing {
   // x: number;
   // y: number;
@@ -20,6 +20,9 @@ export class SheetOffsets {
   private gridOffsetsCache = new SheetOffsetsCache(this);
   headingResizing: HeadingResizing | undefined;
 
+  defaultWidth = 0;
+  defaultHeight = 0;
+
   constructor(offsets?: string) {
     if (offsets) {
       this.load(offsets);
@@ -27,12 +30,19 @@ export class SheetOffsets {
   }
 
   load(offsets: string) {
-    const { column_widths, row_heights } = JSON.parse(offsets);
-    debugger;
+    const { column_widths, row_heights } = JSON.parse(offsets) as SheetOffsetsRust;
+    this.defaultWidth = column_widths.default;
+    this.defaultHeight = row_heights.default;
     this.columns.clear();
-    columns.forEach((entry: number[]) => this.columns.set(entry[0], entry[1]));
+    for (const key in column_widths.sizes) {
+      // this is needed since Rust passes the key as a bigint, which cannot be used to iterate over an Record
+      this.columns.set(Number(key), (column_widths.sizes as number[])[Number(key)]);
+    }
     this.rows.clear();
-    rows.forEach((entry: number[]) => this.rows.set(entry[0], entry[1]));
+    for (const key in row_heights.sizes) {
+      // this is needed since Rust passes the key as a bigint, which cannot be used to iterate over an Record
+      this.rows.set(Number(key), (row_heights.sizes as number[])[Number(key)]);
+    }
     this.gridOffsetsCache.clear();
   }
 

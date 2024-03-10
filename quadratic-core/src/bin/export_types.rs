@@ -9,7 +9,7 @@ use quadratic_core::{
         sheet::search::SearchOptions,
         CodeCellLanguage,
     },
-    sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement},
+    sheet_offsets::{offsets::Offsets, SheetOffsets},
     wasm_bindings::controller::sheet_info::SheetInfo,
     Rect, *,
 };
@@ -63,9 +63,9 @@ fn main() {
         Span,
         SearchOptions,
         SheetPos,
-        Placement,
-        ColumnRow,
-        SheetInfo
+        SheetInfo,
+        SheetOffsets,
+        Offsets
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {

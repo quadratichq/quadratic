@@ -34,6 +34,6 @@ export interface Rect { min: Pos, max: Pos, }
 export interface Span { start: number, end: number, }
 export interface SearchOptions { case_sensitive?: boolean, whole_cell?: boolean, search_code?: boolean, sheet_id?: string, }
 export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
-export interface Placement { index: number, position: number, size: number, }
-export interface ColumnRow { column: number, row: number, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
+export interface SheetOffsets { column_widths: Offsets, row_heights: Offsets, thumbnail: [bigint, bigint], }
+export interface Offsets { default: number, sizes: Record<bigint, number>, }

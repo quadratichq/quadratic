@@ -15,11 +15,9 @@ pub mod import;
 pub mod render;
 pub mod search;
 pub mod sheet_info;
-pub mod sheet_offsets;
 pub mod sheets;
 pub mod summarize;
 pub mod transactions;
-pub mod worker;
 
 #[wasm_bindgen]
 impl GridController {

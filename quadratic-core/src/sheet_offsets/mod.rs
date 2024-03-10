@@ -1,16 +1,14 @@
 use crate::{Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
-use wasm_bindgen::prelude::wasm_bindgen;
 
 use self::{offsets::Offsets, resize_transient::TransientResize};
 
 pub mod offsets;
 pub mod resize_transient;
-pub mod sheet_offsets_wasm;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetOffsets {
     column_widths: Offsets,
     row_heights: Offsets,

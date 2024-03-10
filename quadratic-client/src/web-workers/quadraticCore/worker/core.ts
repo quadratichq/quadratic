@@ -93,11 +93,6 @@ class Core {
     return JSON.parse(this.gridController.getSheetIds());
   }
 
-  getSheetOffsets(sheetId: string): string {
-    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridOffsets');
-    return this.gridController.exportOffsets(sheetId);
-  }
-
   getCodeCell(sheetId: string, x: number, y: number): JsCodeCell | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.getCodeCell(sheetId, new Pos(x, y));

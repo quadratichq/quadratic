@@ -1,16 +1,12 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::ops::Range;
 
-#[cfg(feature = "js")]
-use wasm_bindgen::prelude::wasm_bindgen;
-
-use itertools::Itertools;
-
 /// Data structure that tracks column widths or row heights in pixel units,
 /// optimized for converting between column/row indices and pixel units.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Offsets {
     default: f64,
     #[serde(with = "crate::util::btreemap_serde")]

@@ -8,7 +8,6 @@ pub mod export;
 pub mod formula;
 pub mod operations;
 pub mod send_render;
-pub mod sheet_offsets;
 pub mod sheets;
 pub mod thumbnail;
 pub mod transaction;

@@ -9,7 +9,6 @@ import {
   PasteSpecial,
   Pos,
   Rect as RectInternal,
-  SheetOffsets,
   TransientResize,
 } from '@/quadratic-core/quadratic_core';
 import { Point, Rectangle } from 'pixi.js';
@@ -349,17 +348,17 @@ export class Grid {
   //#region column/row sizes
 
   commitTransientResize(sheetId: string, transientResize: TransientResize) {
-    const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
-    this.transactionResponse(summary);
+    // const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
+    // this.transactionResponse(summary);
   }
 
   commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
-    const summary = this.gridController.commitSingleResize(sheetId, column, row, size, sheets.getCursorPosition());
-    this.transactionResponse(summary);
+    // const summary = this.gridController.commitSingleResize(sheetId, column, row, size, sheets.getCursorPosition());
+    // this.transactionResponse(summary);
   }
 
-  getOffsets(sheetId: string): SheetOffsets {
-    return this.gridController.getOffsets(sheetId);
+  getOffsets(sheetId: string): any {
+    // return this.gridController.getOffsets(sheetId);
   }
 
   //#endregion
