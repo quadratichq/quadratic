@@ -1,6 +1,6 @@
 import { SheetOffsets } from './SheetOffsets';
 
-const GRID_OFFSETS_CACHE_SIZE = 10000;
+const GRID_OFFSETS_CACHE_SIZE = 1000;
 
 export class SheetOffsetsCache {
   private sheetOffsets: SheetOffsets;
