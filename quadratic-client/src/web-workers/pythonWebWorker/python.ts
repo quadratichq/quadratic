@@ -4,7 +4,7 @@ import { TransactionSummary } from '@/quadratic-core/types';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { JsCodeResult } from '../../quadratic-core/quadratic_core';
-import { InspectPythonReturnType, PythonMessage, PythonReturnType } from './pythonTypes';
+import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
 
@@ -19,9 +19,6 @@ class PythonWebWorker {
   private loaded = false;
   private running = false;
   private executionStack: PythonCode[] = [];
-  private pythonOutputType?: string;
-  private pythonOutputSize?: string;
-  private inspectionResults?: InspectPythonReturnType;
 
   private expectWorker() {
     if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
@@ -48,7 +45,7 @@ class PythonWebWorker {
 
           const transactionId = this.executionStack[0].transactionId;
           const pythonResult = event.results;
-          const nothingReturned = pythonResult.output_type === 'NoneType';
+          const nothingReturned = pythonResult.output_type === 'NoneType' && pythonResult.output === '';
 
           if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
