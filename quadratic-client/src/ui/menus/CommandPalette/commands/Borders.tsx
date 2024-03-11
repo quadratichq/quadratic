@@ -1,12 +1,16 @@
-import { BorderAll2Icon, BorderHorizontalIcon, BorderInnerIcon, BorderVerticalIcon } from '@/ui/icons/radix';
 import {
   BorderAllIcon,
   BorderBottomIcon,
+  BorderHorizontalIcon,
+  BorderInnerIcon,
   BorderLeftIcon,
   BorderNoneIcon,
+  BorderOuterIcon,
   BorderRightIcon,
   BorderTopIcon,
-} from '@radix-ui/react-icons';
+  BorderVerticalIcon,
+} from '@/ui/icons/radix';
+
 import { hasPermissionToEditFile } from '../../../../actions';
 import { BorderSelection } from '../../../../quadratic-core/quadratic_core';
 import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
@@ -20,12 +24,12 @@ const commands: CommandGroup = {
       {
         label: 'Border all',
         changeBordersArgs: { borderAll: true },
-        icon: <BorderAll2Icon />,
+        icon: <BorderAllIcon />,
       },
       {
         label: 'Border outer',
         changeBordersArgs: { selection: BorderSelection.Outer },
-        icon: <BorderAllIcon />,
+        icon: <BorderOuterIcon />,
       },
       {
         label: 'Border inner',

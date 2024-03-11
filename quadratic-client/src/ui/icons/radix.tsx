@@ -1,5 +1,11 @@
 import {
+  BorderBottomIcon,
+  BorderLeftIcon,
   BorderNoneIcon,
+  BorderAllIcon as BorderOuterIcon,
+  BorderRightIcon,
+  BorderStyleIcon,
+  BorderTopIcon,
   CheckIcon,
   DotsHorizontalIcon,
   FontBoldIcon,
@@ -15,7 +21,13 @@ import {
 import React from 'react';
 
 export {
+  BorderBottomIcon,
+  BorderLeftIcon,
   BorderNoneIcon,
+  BorderOuterIcon,
+  BorderRightIcon,
+  BorderStyleIcon,
+  BorderTopIcon,
   CheckIcon,
   DotsHorizontalIcon,
   FontBoldIcon,
@@ -45,7 +57,7 @@ export interface IconProps extends React.SVGAttributes<SVGElement> {
   color?: string;
 }
 
-export const BorderAll2Icon = React.forwardRef<SVGSVGElement, IconProps>(
+export const BorderAllIcon = React.forwardRef<SVGSVGElement, IconProps>(
   ({ color = 'currentColor', ...props }, forwardedRef) => {
     return (
       <svg
@@ -194,6 +206,35 @@ export const BorderHorizontalIcon = React.forwardRef<SVGSVGElement, IconProps>(
         <rect x="1" y="9.02502" width="1" height="1" rx="0.5" fill={color} />
         <rect x="1" y="11.025" width="1" height="1" rx="0.5" fill={color} />
         <path fillRule="evenodd" clipRule="evenodd" d="M14 8.25L1 8.25L1 6.75L14 6.75L14 8.25Z" fill={color} />
+      </svg>
+    );
+  }
+);
+
+export const BorderColorIcon = React.forwardRef<SVGSVGElement, IconProps>(
+  ({ color = 'currentColor', ...props }, forwardedRef) => {
+    return (
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 15 15"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        {...props}
+        ref={forwardedRef}
+      >
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M10.8534 1.14645C10.7597 1.05268 10.6325 1 10.4999 1C10.3673 1 10.2401 1.05268 10.1463 1.14645L3.71443 7.57836C3.62447 7.66832 3.5525 7.77461 3.50239 7.89155L2.04032 11.303C1.95978 11.491 2.00177 11.709 2.14634 11.8536C2.29091 11.9981 2.50893 12.0401 2.69685 11.9596L6.10835 10.4975C6.22528 10.4474 6.33158 10.3754 6.42153 10.2855L12.8534 3.85355C12.9472 3.75979 12.9999 3.63261 12.9999 3.5C12.9999 3.36739 12.9472 3.24021 12.8534 3.14645L10.8534 1.14645ZM3.78072 9.7807L4.42153 8.28547L10.4999 2.20711L11.7928 3.5L5.71443 9.57836L4.21919 10.2192L3.78072 9.7807Z"
+          fill={color}
+        />
+        <path
+          fillRule="evenodd"
+          clipRule="evenodd"
+          d="M2.75134 13.5001C2.75134 13.0859 3.08713 12.7501 3.50134 12.7501H11.4987C11.9129 12.7501 12.2487 13.0859 12.2487 13.5001C12.2487 13.9143 11.9129 14.2501 11.4987 14.2501H3.50134C3.08713 14.2501 2.75134 13.9143 2.75134 13.5001Z"
+          fill={color}
+        />
       </svg>
     );
   }
