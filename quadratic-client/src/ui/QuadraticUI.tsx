@@ -9,7 +9,7 @@ import { focusGrid } from '../helpers/focusGrid';
 import { isEmbed } from '../helpers/isEmbed';
 import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
-import { VersionControl } from './VersionControl';
+import { VersionControlAlert } from './VersionControl';
 import { useFileContext } from './components/FileProvider';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { Following } from './components/Following';
@@ -103,7 +103,7 @@ export default function QuadraticUI() {
       )}
       {presentationMode && <PresentationModeHint />}
       {!isEmbed && <PermissionOverlay />}
-      <VersionControl />
+      <VersionControlAlert />
     </div>
   );
 }
