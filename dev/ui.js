@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { ANIMATE_STATUS, ANIMATION_INTERVAL, BROKEN, COMPONENTS, DONE, KILLED, NO_LOGS, SPACE, WATCH, } from "./constants.js";
-import { help, helpCLI, helpKeyboard } from "./help.js";
-import { createScreen } from "./terminal.js";
+import { helpCLI, helpKeyboard } from "./help.js";
+import { logo } from "./logo.js";
 export class UI {
     cli;
     control;
@@ -15,6 +15,7 @@ export class UI {
     constructor(cli, control) {
         this.cli = cli;
         this.control = control;
+        console.log(logo);
         this.interval = setInterval(() => {
             this.spin = (this.spin + 1) % ANIMATE_STATUS.length;
             if (this.showing) {
@@ -22,7 +23,6 @@ export class UI {
                 this.prompt();
             }
         }, ANIMATION_INTERVAL);
-        createScreen();
     }
     quit() {
         this.clear();
@@ -145,8 +145,6 @@ export class UI {
     prompt() {
         this.clear();
         this.write("\n");
-        this.write("Quadratic Dev", "underline");
-        this.write(SPACE);
         this.statusItem("client");
         this.statusItem("api");
         this.statusItem("core");
@@ -159,9 +157,6 @@ export class UI {
         }
         else if (this.help) {
             this.write(helpKeyboard);
-        }
-        else {
-            this.write(help);
         }
         this.promptExternal();
         this.showing = true;
