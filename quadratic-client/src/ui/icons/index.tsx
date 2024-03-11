@@ -14,6 +14,7 @@ import {
   BorderTop as BorderTopIcon,
   BorderVertical as BorderVerticalIcon,
   ContentPasteOutlined as ClipboardIcon,
+  ManageSearchOutlined as CommandPaletteIcon,
   ContentCopyOutlined as CopyIcon,
   DataObject as DataIcon,
   AttachMoney as DollarIcon,
@@ -56,6 +57,7 @@ export {
   BorderTopIcon,
   BorderVerticalIcon,
   ClipboardIcon,
+  CommandPaletteIcon,
   CopyIcon,
   DataIcon,
   DollarIcon,
@@ -208,11 +210,5 @@ export const CopyAsPNG = (props: SvgIconProps) => (
     <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" />
     <path d="M9 15V19H18L14.25 14L11.25 18L9 15Z" />
     <path d="M15.425 11.575C15.7083 11.8583 16.0667 12 16.5 12C16.9333 12 17.2917 11.8583 17.575 11.575C17.8583 11.2917 18 10.9333 18 10.5C18 10.0667 17.8583 9.70833 17.575 9.425C17.2917 9.14167 16.9333 9 16.5 9C16.0667 9 15.7083 9.14167 15.425 9.425C15.1417 9.70833 15 10.0667 15 10.5C15 10.9333 15.1417 11.2917 15.425 11.575Z" />
-  </SvgIcon>
-);
-
-export const CommandPaletteIcon = (props: SvgIconProps) => (
-  <SvgIcon {...props}>
-    <path d="M5.42384 17.8649L4.03311 16.4459L8.44371 11.9324L4 7.41892L5.42384 6L11.2583 11.9324L5.42384 17.8649ZM13 18V15.973H21V18H13Z" />
   </SvgIcon>
 );

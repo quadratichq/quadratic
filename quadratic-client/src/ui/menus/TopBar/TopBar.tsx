@@ -103,7 +103,7 @@ export const TopBar = () => {
               },
             }}
           >
-            <CommandPaletteIcon fontSize="small" />
+            <CommandPaletteIcon style={{ fontSize: '22px' }} />
           </TopBarMenuItem>
           <TopBarZoomMenu />
         </div>
