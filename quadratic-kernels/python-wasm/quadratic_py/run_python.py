@@ -128,6 +128,7 @@ async def run_python(code: str):
             import plotly
             if isinstance(output_value, plotly.graph_objs._figure.Figure):
                 output_value = output_value.to_html()
+                output_type = "Chart"
         except:
             pass
 
@@ -156,6 +157,7 @@ async def run_python(code: str):
                 )
             else:
                 output_value = plotly_html.result
+                output_type = "Chart"
 
         typed_array_output = None
 
