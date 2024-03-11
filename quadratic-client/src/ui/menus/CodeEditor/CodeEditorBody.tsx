@@ -21,8 +21,6 @@ import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
-// todo: fix types
-
 interface Props {
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
@@ -30,6 +28,9 @@ interface Props {
   evaluationResult?: EvaluationResult;
   diagnostics?: Diagnostic[];
 }
+
+// need to track globally since monaco is a singleton
+let registered = false;
 
 export const CodeEditorBody = (props: Props) => {
   const { editorContent, setEditorContent, closeEditor, evaluationResult } = props;
@@ -74,7 +75,7 @@ export const CodeEditorBody = (props: Props) => {
       monaco.editor.setTheme('quadratic');
 
       // Only register language once
-      if (didMount) return;
+      if (registered) return;
 
       monaco.languages.register({ id: 'Formula' });
       monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
@@ -83,10 +84,12 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.registerHoverProvider('Formula', { provideHover });
 
       monaco.languages.register({ id: 'python' });
+
       monaco.languages.registerCompletionItemProvider('python', {
         provideCompletionItems: provideCompletionItemsPython,
         triggerCharacters: ['.', '[', '"', "'"],
       });
+
       monaco.languages.registerSignatureHelpProvider('python', {
         provideSignatureHelp: provideSignatureHelpPython,
         signatureHelpTriggerCharacters: ['(', ','],
@@ -97,6 +100,8 @@ export const CodeEditorBody = (props: Props) => {
       pyrightWorker?.openDocument({
         textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
       });
+
+      registered = true;
 
       setDidMount(true);
     },
