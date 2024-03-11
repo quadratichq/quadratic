@@ -212,3 +212,85 @@ export const CopyAsPNG = (props: SvgIconProps) => (
     <path d="M15.425 11.575C15.7083 11.8583 16.0667 12 16.5 12C16.9333 12 17.2917 11.8583 17.575 11.575C17.8583 11.2917 18 10.9333 18 10.5C18 10.0667 17.8583 9.70833 17.575 9.425C17.2917 9.14167 16.9333 9 16.5 9C16.0667 9 15.7083 9.14167 15.425 9.425C15.1417 9.70833 15 10.0667 15 10.5C15 10.9333 15.1417 11.2917 15.425 11.575Z" />
   </SvgIcon>
 );
+
+export const FileDeleteIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M4.588 21.413C4.97933 21.8043 5.45 22 6 22H12V20H6V4H13V9H18V12H20V8L14 2H6C5.45 2 4.97933 2.19567 4.588 2.587C4.196 2.979 4 3.45 4 4V20C4 20.55 4.196 21.021 4.588 21.413Z"
+    />
+    <rect x="15" y="18" width="8" height="2" />
+  </SvgIcon>
+);
+
+export const FileDowndloadIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M4.588 21.413C4.97933 21.8043 5.45 22 6 22H12V20H6V4H13V9H18V12H20V8L14 2H6C5.45 2 4.97933 2.19567 4.588 2.587C4.196 2.979 4 3.45 4 4V20C4 20.55 4.196 21.021 4.588 21.413Z"
+    />
+    <path d="M18 15L20 15L20 19.175L21.575 17.6L23 19L19 23L15 19L16.4 17.575L18 19.175L18 15Z" />
+  </SvgIcon>
+);
+
+export const FileDuplicateIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M4.588 21.413C4.97933 21.8043 5.45 22 6 22H12V20H6V4H13V9H18V12H20V8L14 2H6C5.45 2 4.97933 2.19567 4.588 2.587C4.196 2.979 4 3.45 4 4V20C4 20.55 4.196 21.021 4.588 21.413Z"
+    />
+    <rect x="15" y="18" width="8" height="2" />
+    <rect x="20" y="15" width="8" height="2" transform="rotate(90 20 15)" />
+  </SvgIcon>
+);
+
+export const SheetIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path d="M2 6C2 5.45 2.19567 4.97933 2.587 4.588C2.979 4.196 3.45 4 4 4L20 4C20.55 4 21.021 4.196 21.413 4.588C21.8043 4.97933 22 5.45 22 6C22 6 22 17.5 22 18C22 18.5 21.8035 19.0297 21.4202 19.413C21.0368 19.7963 20.5 20 20 20C19.5 20 4 20 4 20C3.45 20 2.979 19.8043 2.587 19.413C2.19567 19.021 2 18.55 2 18L2 6ZM20 18L20 13L20 6L4 6L4 18L15 18L20 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M7 18L7 6L9 6L9 18L7 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M20 11H4V9H20V11Z" />
+  </SvgIcon>
+);
+
+export const SheetDuplicateIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2.587 4.588C2.19567 4.97933 2 5.45 2 6V18C2 18.55 2.19567 19.021 2.587 19.413C2.979 19.8043 3.45 20 4 20H12V18L4 18L4 6L20 6V12H22V6C22 5.45 21.8043 4.97933 21.413 4.588C21.021 4.196 20.55 4 20 4H4C3.45 4 2.979 4.196 2.587 4.588Z"
+    />
+    <rect x="15" y="18" width="8" height="2" />
+    <rect x="20" y="15" width="8" height="2" transform="rotate(90 20 15)" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M7 18L7 6L9 6L9 18L7 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M20 11H4V9H20V11Z" />
+  </SvgIcon>
+);
+
+export const SheetDeleteIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2.587 4.588C2.19567 4.97933 2 5.45 2 6V18C2 18.55 2.19567 19.021 2.587 19.413C2.979 19.8043 3.45 20 4 20H12V18L4 18L4 6L20 6V12H22V6C22 5.45 21.8043 4.97933 21.413 4.588C21.021 4.196 20.55 4 20 4H4C3.45 4 2.979 4.196 2.587 4.588Z"
+    />
+    <rect x="15" y="16" width="8" height="2" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M7 18L7 6L9 6L9 18L7 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M20 11H4V9H20V11Z" />
+  </SvgIcon>
+);
+
+export const SheetGoToIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2.587 4.588C2.19567 4.97933 2 5.45 2 6V18C2 18.55 2.19567 19.021 2.587 19.413C2.979 19.8043 3.45 20 4 20H12V18L4 18L4 6L20 6V12H22V6C22 5.45 21.8043 4.97933 21.413 4.588C21.021 4.196 20.55 4 20 4H4C3.45 4 2.979 4.196 2.587 4.588Z"
+    />
+    <path fillRule="evenodd" clipRule="evenodd" d="M7 18L7 6L9 6L9 18L7 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M20 11H4V9H20V11Z" />
+    <path d="M15 20L15 18L19.175 18L17.6 16.425L19 15L23 19L19 23L17.575 21.6L19.175 20L15 20Z" />
+  </SvgIcon>
+);

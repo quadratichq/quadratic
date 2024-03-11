@@ -1,4 +1,4 @@
-// import { SheetDeleteIcon, SheetDuplicateIcon, SheetIcon, SheetSwitchIcon } from '@/ui/icons/radix';
+import { SheetDeleteIcon, SheetDuplicateIcon, SheetGoToIcon, SheetIcon } from '@/ui/icons';
 import { useEffect, useMemo, useState } from 'react';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { grid } from '../../../../grid/controller/Grid';
@@ -19,13 +19,7 @@ const ListItems = () => {
           keywords: ['create sheets', 'new sheets'],
           isAvailable: hasPermissionToEditFile,
           Component: (props) => {
-            return (
-              <CommandPaletteListItem
-                {...props}
-                action={() => sheets.createNew()}
-                // icon={<SheetIcon />}
-              />
-            );
+            return <CommandPaletteListItem {...props} action={() => sheets.createNew()} icon={<SheetIcon />} />;
           },
         },
         {
@@ -36,7 +30,7 @@ const ListItems = () => {
               <CommandPaletteListItem
                 {...props}
                 action={() => grid.duplicateSheet(sheets.sheet.id)}
-                // icon={<SheetDuplicateIcon />}
+                icon={<SheetDuplicateIcon />}
               />
             );
           },
@@ -54,7 +48,7 @@ const ListItems = () => {
                   }
                   setTimeout(focusGrid);
                 }}
-                // icon={<SheetDeleteIcon />}
+                icon={<SheetDeleteIcon />}
               />
             );
           },
@@ -69,7 +63,7 @@ const ListItems = () => {
                 return (
                   <CommandPaletteListItem
                     {...props}
-                    // icon={<SheetSwitchIcon color={sheet.color ? sheet.color : 'currentColor'} />}
+                    icon={<SheetGoToIcon style={{ color: sheet.color ? sheet.color : 'currentColor' }} />}
                     action={() => (sheets.current = sheet.id)}
                   />
                 );

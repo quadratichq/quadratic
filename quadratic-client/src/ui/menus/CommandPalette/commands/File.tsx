@@ -1,4 +1,7 @@
 import {
+  FileDeleteIcon,
+  FileDowndloadIcon,
+  FileDuplicateIcon,
   // FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon,
   FileIcon,
 } from '@/ui/icons';
@@ -36,7 +39,7 @@ const commands: CommandGroup = {
         const action = () => {
           duplicateFileWithUserAsOwnerAction.run({ uuid, submit });
         };
-        return <CommandPaletteListItem {...props} action={action} />;
+        return <CommandPaletteListItem {...props} action={action} icon={<FileDuplicateIcon />} />;
       },
     },
     {
@@ -44,7 +47,13 @@ const commands: CommandGroup = {
       isAvailable: downloadFileAction.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
-        return <CommandPaletteListItem {...props} action={() => downloadFileAction.run({ name })} />;
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => downloadFileAction.run({ name })}
+            icon={<FileDowndloadIcon />}
+          />
+        );
       },
     },
     {
@@ -54,7 +63,7 @@ const commands: CommandGroup = {
         const { uuid } = useParams() as { uuid: string };
         const { addGlobalSnackbar } = useGlobalSnackbar();
         const action = () => deleteFile.run({ uuid, addGlobalSnackbar });
-        return <CommandPaletteListItem {...props} action={action} />;
+        return <CommandPaletteListItem {...props} action={action} icon={<FileDeleteIcon />} />;
       },
     },
   ],
