@@ -238,7 +238,6 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
           <IconButton
             size="small"
-            color="inherit"
             onClick={() => {
               const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
               setBold(!formatPrimaryCell?.bold);
@@ -251,7 +250,6 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
           <IconButton
             size="small"
-            color="inherit"
             onClick={() => {
               const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
               setItalic(!formatPrimaryCell?.italic);
@@ -266,7 +264,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text color">
-                <IconButton size="small" color="inherit">
+                <IconButton size="small">
                   <TextColorIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -290,17 +288,17 @@ export const FloatingContextMenu = (props: Props) => {
         <MenuDividerVertical />
 
         <TooltipHint title="Align left">
-          <IconButton size="small" color="inherit" onClick={() => setAlignment('left')}>
+          <IconButton size="small" onClick={() => setAlignment('left')}>
             <TextAlignLeftIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <TooltipHint title="Align center">
-          <IconButton size="small" color="inherit" onClick={() => setAlignment('center')}>
+          <IconButton size="small" onClick={() => setAlignment('center')}>
             <TextAlignCenterIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <TooltipHint title="Align right">
-          <IconButton size="small" color="inherit" onClick={() => setAlignment('right')}>
+          <IconButton size="small" onClick={() => setAlignment('right')}>
             <TextAlignRightIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -313,7 +311,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Fill color">
-                <IconButton size="small" color="inherit">
+                <IconButton size="small">
                   <PaintBucketIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -337,7 +335,7 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Borders">
-                <IconButton size="small" color="inherit">
+                <IconButton size="small">
                   <BorderNoneIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
@@ -350,51 +348,51 @@ export const FloatingContextMenu = (props: Props) => {
         <MenuDividerVertical />
 
         <TooltipHint title="Format automatically">
-          <IconButton size="small" color="inherit" onClick={() => removeCellNumericFormat()}>
+          <IconButton size="small" onClick={() => removeCellNumericFormat()}>
             <MagicWandIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as currency">
-          <IconButton size="small" color="inherit" onClick={() => textFormatSetCurrency()}>
+          <IconButton size="small" onClick={() => textFormatSetCurrency()}>
             <DollarIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as percentage">
-          <IconButton size="small" color="inherit" onClick={() => textFormatSetPercentage()}>
+          <IconButton size="small" onClick={() => textFormatSetPercentage()}>
             <PercentIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as scientific">
-          <IconButton size="small" color="inherit" onClick={() => textFormatSetExponential()}>
+          <IconButton size="small" onClick={() => textFormatSetExponential()}>
             <FunctionIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Decrease decimal places">
-          <IconButton size="small" color="inherit" onClick={() => textFormatDecreaseDecimalPlaces()}>
+          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()}>
             <DecimalDecreaseIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
-          <IconButton size="small" color="inherit" onClick={() => textFormatIncreaseDecimalPlaces()}>
+          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()}>
             <DecimalIncreaseIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <MenuDividerVertical />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton size="small" color="inherit" onClick={clearFormattingAndBorders}>
+          <IconButton size="small" onClick={clearFormattingAndBorders}>
             <TextNoneIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         {fullClipboardSupport() && <MenuDividerVertical />}
         {fullClipboardSupport() && (
           <TooltipHint title="More commands…">
-            <IconButton size="small" color="inherit" onClick={() => moreMenuToggle()} ref={moreMenuButtonRef}>
+            <IconButton size="small" onClick={() => moreMenuToggle()} ref={moreMenuButtonRef}>
               <DotsHorizontalIcon fontSize={iconSize} />
             </IconButton>
           </TooltipHint>
