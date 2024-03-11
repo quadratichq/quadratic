@@ -14,6 +14,10 @@ interface PythonCode {
   code: string;
 }
 
+function isEmpty(value: string | null | undefined) {
+  return value == null || (typeof value === 'string' && value.trim().length === 0);
+}
+
 class PythonWebWorker {
   private worker?: Worker;
   private loaded = false;
@@ -45,7 +49,7 @@ class PythonWebWorker {
 
           const transactionId = this.executionStack[0].transactionId;
           const pythonResult = event.results;
-          const nothingReturned = pythonResult.output_type === 'NoneType' && pythonResult.output === '';
+          const nothingReturned = pythonResult.output_type === 'NoneType' && isEmpty(pythonResult.output);
 
           if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
