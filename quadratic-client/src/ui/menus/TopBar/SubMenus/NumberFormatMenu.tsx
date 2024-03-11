@@ -13,7 +13,6 @@ import {
 } from './formatCells';
 
 import {
-  CommaIcon,
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
   DollarIcon,
@@ -21,6 +20,7 @@ import {
   MagicWandIcon,
   NumberFormatIcon,
   PercentIcon,
+  QuoteIcon,
 } from '@/ui/icons/radix';
 import '@szhsin/react-menu/dist/index.css';
 import { TopBarMenuItem } from '../TopBarMenuItem';
@@ -48,7 +48,7 @@ export const NumberFormatMenu = () => {
         <MenuLineItem primary="Scientific" secondary={<code className="text-xs">6.02E+23</code>} Icon={FunctionIcon} />
       </MenuItem>
       <MenuItem onClick={() => toggleCommas()}>
-        <MenuLineItem primary="Toggle commas" secondary={<code className="text-xs">9,999.99</code>} Icon={CommaIcon} />
+        <MenuLineItem primary="Toggle commas" secondary={<code className="text-xs">9,999.99</code>} Icon={QuoteIcon} />
       </MenuItem>
 
       <MenuDivider />

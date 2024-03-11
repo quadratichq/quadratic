@@ -1,11 +1,11 @@
 import {
-  CommaIcon,
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
   DollarIcon,
   FunctionIcon,
   MagicWandIcon,
   PercentIcon,
+  QuoteIcon,
   TextNoneIcon,
 } from '@/ui/icons/radix';
 import { hasPermissionToEditFile } from '../../../../actions';
@@ -72,7 +72,7 @@ const commands: CommandGroup = {
       label: 'Toggle commas',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={toggleCommas} icon={<CommaIcon />} />;
+        return <CommandPaletteListItem {...props} action={toggleCommas} icon={<QuoteIcon />} />;
       },
     },
     {
