@@ -232,9 +232,11 @@ export class CellsLabels extends Container {
 
   // distance from viewport center to hash center
   private hashDistanceSquared(hash: CellsTextHash, bounds: Rectangle): number {
+    const viewRectangle = hash.viewBounds.toRectangle();
+    if (!viewRectangle) return Infinity;
     const center = {
-      x: hash.viewRectangle.left + hash.viewRectangle.width / 2,
-      y: hash.viewRectangle.top + hash.viewRectangle.height / 2,
+      x: viewRectangle.left + viewRectangle.width / 2,
+      y: viewRectangle.top + viewRectangle.height / 2,
     };
     return (
       Math.pow(bounds.left + bounds.width / 2 - center.x, 2) + Math.pow(bounds.top + bounds.height / 2 - center.y, 2)
