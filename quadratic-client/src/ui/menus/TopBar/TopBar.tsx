@@ -103,7 +103,7 @@ export const TopBar = () => {
               },
             }}
           >
-            <CommandPaletteIcon className="h-4 w-4" />
+            <CommandPaletteIcon fontSize="small" />
           </TopBarMenuItem>
           <TopBarZoomMenu />
         </div>

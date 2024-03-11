@@ -1,7 +1,7 @@
 import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import { colors } from '@/theme/colors';
 import {
-  BorderNoneIcon,
+  BorderAllIcon,
   DecimalDecreaseIcon,
   DecimalIncreaseIcon,
   DollarIcon,
@@ -336,7 +336,7 @@ export const FloatingContextMenu = (props: Props) => {
             <div>
               <TooltipHint title="Borders">
                 <IconButton size="small">
-                  <BorderNoneIcon fontSize={iconSize} />
+                  <BorderAllIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
             </div>
