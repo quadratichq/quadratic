@@ -17,11 +17,11 @@ import {
   DecimalIncreaseIcon,
   DollarIcon,
   FunctionIcon,
+  Icon123,
   MagicWandIcon,
-  NumberFormatIcon,
   PercentIcon,
   QuoteIcon,
-} from '@/ui/icons/radix';
+} from '@/ui/icons';
 import '@szhsin/react-menu/dist/index.css';
 import { TopBarMenuItem } from '../TopBarMenuItem';
 
@@ -30,8 +30,7 @@ export const NumberFormatMenu = () => {
     <Menu
       menuButton={({ open }) => (
         <TopBarMenuItem title="Number format" open={open}>
-          <NumberFormatIcon className="h-5 w-5" />
-          {/* <Icon123 style={{ fontSize: '1.8125rem' }} /> */}
+          <Icon123 style={{ fontSize: '1.8125rem' }} />
         </TopBarMenuItem>
       )}
     >

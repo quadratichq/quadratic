@@ -9,8 +9,7 @@ import {
   BorderRightIcon,
   BorderTopIcon,
   BorderVerticalIcon,
-} from '@/ui/icons/radix';
-
+} from '@/ui/icons';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { BorderSelection } from '../../../../quadratic-core/quadratic_core';
 import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';

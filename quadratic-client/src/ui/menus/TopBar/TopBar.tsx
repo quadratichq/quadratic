@@ -1,7 +1,7 @@
 import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { SwitchApp } from '@/shadcn/ui/switch';
 import { Search } from '@/ui/components/Search';
-import { CommandPaletteIcon } from '@/ui/icons/radix';
+import { CommandPaletteIcon } from '@/ui/icons';
 import { Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useRecoilState } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';

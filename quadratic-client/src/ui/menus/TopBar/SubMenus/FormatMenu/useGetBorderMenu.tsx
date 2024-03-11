@@ -11,7 +11,7 @@ import {
   BorderStyleIcon,
   BorderTopIcon,
   BorderVerticalIcon,
-} from '@/ui/icons/radix';
+} from '@/ui/icons';
 import { Tooltip } from '@mui/material';
 import { ClickEvent, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useState } from 'react';

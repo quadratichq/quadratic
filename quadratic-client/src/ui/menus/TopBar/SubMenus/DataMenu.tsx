@@ -1,7 +1,7 @@
 import { downloadSelectionAsCsvAction } from '@/actions';
 import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { useFileContext } from '@/ui/components/FileProvider';
-import { DataIcon } from '@/ui/icons/radix';
+import { DataIcon } from '@/ui/icons';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
@@ -18,7 +18,7 @@ export const DataMenu = () => {
       <Menu
         menuButton={({ open }) => (
           <TopBarMenuItem title="Data" open={open}>
-            <DataIcon className="h-5 w-5" />
+            <DataIcon fontSize="small" />
           </TopBarMenuItem>
         )}
       >

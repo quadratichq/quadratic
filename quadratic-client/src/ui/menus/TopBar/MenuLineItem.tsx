@@ -28,7 +28,7 @@ export const MenuLineItem = (props: IMenuLineItem): JSX.Element => {
           ...(indent && !Icon ? { paddingLeft: '2.25rem' } : {}),
         }}
       >
-        {Icon && <Icon className="h-5 w-5" />}
+        {Icon && <Icon style={{ color: 'inherit' }} fontSize="small" />}
         {primary}
       </div>
       {secondary && (

@@ -1,7 +1,7 @@
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/gridGL/helpers/zoom';
 import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { Checkbox } from '@/shadcn/ui/checkbox';
-import { ZoomInIcon, ZoomOutIcon } from '@radix-ui/react-icons';
+import { ZoomInIcon, ZoomOutIcon } from '@/ui/icons';
 import { useGridSettings } from '../../TopBar/SubMenus/useGridSettings';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 

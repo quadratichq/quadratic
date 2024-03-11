@@ -3,13 +3,13 @@ import {
   FontBoldIcon,
   FontItalicIcon,
   PaintBucketIcon,
+  PaletteOutlined,
   TextAlignCenterIcon,
   TextAlignLeftIcon,
   TextAlignRightIcon,
   TextColorIcon,
-  TextIcon,
   TextNoneIcon,
-} from '@/ui/icons/radix';
+} from '@/ui/icons';
 import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback } from 'react';
 import { focusGrid } from '../../../../../helpers/focusGrid';
@@ -44,7 +44,7 @@ export const FormatMenu = () => {
       onMenuChange={onMenuChange}
       menuButton={({ open }) => (
         <TopBarMenuItem title="Cell format" open={open}>
-          <TextIcon className="h-5 w-5" />
+          <PaletteOutlined fontSize="small" />
         </TopBarMenuItem>
       )}
     >

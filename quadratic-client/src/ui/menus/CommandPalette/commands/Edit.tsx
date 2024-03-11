@@ -7,7 +7,7 @@ import {
 } from '@/grid/actions/clipboard/clipboard';
 import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import { useFileContext } from '@/ui/components/FileProvider';
-import { ClipboardIcon, CopyIcon, ResetIcon, ScissorsIcon } from '@radix-ui/react-icons';
+import { ClipboardIcon, CopyIcon, RedoIcon, ScissorsIcon, UndoIcon } from '@/ui/icons';
 import { useRecoilState } from 'recoil';
 import {
   copyAction,
@@ -37,7 +37,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={grid.undo}
-            icon={<ResetIcon />}
+            icon={<UndoIcon />}
             shortcut={KeyboardSymbols.Command + 'Z'}
           />
         );
@@ -51,7 +51,7 @@ const data: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={grid.redo}
-            icon={<ResetIcon className={'rotate-180'} />}
+            icon={<RedoIcon />}
             shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
             shortcut={isMac ? 'Z' : 'Y'}
           />

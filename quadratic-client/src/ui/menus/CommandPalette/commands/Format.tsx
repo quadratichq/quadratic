@@ -7,7 +7,7 @@ import {
   PercentIcon,
   QuoteIcon,
   TextNoneIcon,
-} from '@/ui/icons/radix';
+} from '@/ui/icons';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import {

@@ -1,10 +1,4 @@
-import {
-  FontBoldIcon,
-  FontItalicIcon,
-  TextAlignCenterIcon,
-  TextAlignLeftIcon,
-  TextAlignRightIcon,
-} from '@radix-ui/react-icons';
+import { FontBoldIcon, FontItalicIcon, TextAlignCenterIcon, TextAlignLeftIcon, TextAlignRightIcon } from '@/ui/icons';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';

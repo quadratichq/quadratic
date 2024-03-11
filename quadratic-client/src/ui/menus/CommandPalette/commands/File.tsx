@@ -1,5 +1,7 @@
-import { FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon } from '@/ui/icons/radix';
-import { FileIcon } from '@radix-ui/react-icons';
+import {
+  // FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon,
+  FileIcon,
+} from '@/ui/icons';
 import { useNavigate, useParams, useSubmit } from 'react-router-dom';
 import {
   createNewFileAction,
@@ -34,7 +36,7 @@ const commands: CommandGroup = {
         const action = () => {
           duplicateFileWithUserAsOwnerAction.run({ uuid, submit });
         };
-        return <CommandPaletteListItem {...props} action={action} icon={<FileDuplicateIcon />} />;
+        return <CommandPaletteListItem {...props} action={action} />;
       },
     },
     {
@@ -42,13 +44,7 @@ const commands: CommandGroup = {
       isAvailable: downloadFileAction.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
-        return (
-          <CommandPaletteListItem
-            {...props}
-            action={() => downloadFileAction.run({ name })}
-            icon={<FileDownloadIcon />}
-          />
-        );
+        return <CommandPaletteListItem {...props} action={() => downloadFileAction.run({ name })} />;
       },
     },
     {
@@ -58,7 +54,7 @@ const commands: CommandGroup = {
         const { uuid } = useParams() as { uuid: string };
         const { addGlobalSnackbar } = useGlobalSnackbar();
         const action = () => deleteFile.run({ uuid, addGlobalSnackbar });
-        return <CommandPaletteListItem {...props} action={action} icon={<FileDeleteIcon />} />;
+        return <CommandPaletteListItem {...props} action={action} />;
       },
     },
   ],

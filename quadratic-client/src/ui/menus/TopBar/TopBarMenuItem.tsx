@@ -26,6 +26,7 @@ export const TopBarMenuItem = forwardRef((props: Props, ref) => {
         className={className}
         disableRipple
         sx={{
+          color: theme.palette.text.secondary,
           p: theme.spacing(1),
           ...(open ? { ...activeStyle, '& .top-bar-dropdown-icon': activeIconStyle } : {}),
           '&:hover': activeStyle,

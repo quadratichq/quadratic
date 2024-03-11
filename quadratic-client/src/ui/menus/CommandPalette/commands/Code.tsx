@@ -14,7 +14,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={grid.rerunCodeCell}
-            shortcut="Enter"
+            shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Command]}
           />
         );
@@ -28,7 +28,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={grid.rerunSheetCodeCells}
-            shortcut="Enter"
+            shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}
           />
         );
@@ -42,7 +42,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={grid.rerunAllCodeCells}
-            shortcut="Enter"
+            shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Alt, KeyboardSymbols.Command]}
           />
         );

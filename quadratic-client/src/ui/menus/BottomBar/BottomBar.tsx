@@ -1,5 +1,6 @@
 import { useRootRouteLoaderData } from '@/router';
-import { ChatBubbleOutline, Commit } from '@mui/icons-material';
+import { FeedbackIcon } from '@/ui/icons';
+import { Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -118,7 +119,7 @@ export const BottomBar = () => {
         {showOnDesktop && <PythonStateItem />}
         {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem
-            icon={<ChatBubbleOutline fontSize="inherit" />}
+            icon={<FeedbackIcon fontSize="inherit" />}
             onClick={() => {
               setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
             }}
