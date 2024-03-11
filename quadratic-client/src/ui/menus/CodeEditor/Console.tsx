@@ -2,46 +2,23 @@ import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import { useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
-import { DOCUMENTATION_URL } from '@/constants/urls';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
-import { Circle, KeyboardReturn } from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import { Circle } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
-const ReturnType = ({ children }: any) => (
-  <span
-    style={{
-      background: '#eee',
-      fontWeight: '600',
-      padding: '1px 8px',
-    }}
-  >
-    {children}
-  </span>
-);
-
-// todo: fix types
 interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
   editorMode: EditorInteractionState['mode'];
   editorContent: string | undefined;
   evaluationResult?: EvaluationResult;
   spillError?: Coordinate[];
-  hasUnsavedChanges: boolean;
 }
 
-export function Console({
-  consoleOutput,
-  editorMode,
-  editorContent,
-  evaluationResult,
-  spillError,
-  hasUnsavedChanges,
-}: ConsoleProps) {
+export function Console({ consoleOutput, editorMode, editorContent, evaluationResult, spillError }: ConsoleProps) {
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -103,37 +80,6 @@ export function Console({
             data-gramm_editor="false"
             data-enable-grammarly="false"
           >
-            {evaluationResult?.line_number && !consoleOutput?.stdErr && !hasUnsavedChanges && (
-              <div
-                style={{
-                  color: '#777',
-                  marginBottom: theme.spacing(2.0),
-                  // display: 'flex',
-                  // alignItems: 'center',
-                  // gap: theme.spacing(1),
-                }}
-              >
-                <>
-                  <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
-                  {evaluationResult?.line_number} returned a{' '}
-                  <ReturnType>{hasUnsavedChanges ? '…' : evaluationResult?.output_type}</ReturnType>
-                </>
-                {evaluationResult?.output_type === 'NoneType' && (
-                  <span contentEditable="false" suppressContentEditableWarning={true}>
-                    ,{' '}
-                    <Link
-                      to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
-                      target="_blank"
-                      rel="nofollow"
-                    >
-                      read docs
-                    </Link>{' '}
-                    to learn more
-                  </span>
-                )}
-              </div>
-            )}
-
             {hasOutput ? (
               <>
                 {spillError && (

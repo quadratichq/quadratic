@@ -19,6 +19,7 @@ import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
+import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
 export const CodeEditor = () => {
@@ -314,6 +315,22 @@ export const CodeEditor = () => {
         diagnostics={diagnostics}
       />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
+      {evaluationResult?.line_number &&
+        !out?.stdErr &&
+        !unsaved &&
+        (editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
+          <div
+            style={{
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              background: '#fff',
+              height: `70px`,
+            }}
+          >
+            <ReturnTypeInspector evaluationResult={evaluationResult} />
+          </div>
+        )}
 
       {/* Console Wrapper */}
       <div
@@ -333,7 +350,6 @@ export const CodeEditor = () => {
             editorContent={editorContent}
             evaluationResult={evaluationResult}
             spillError={spillError}
-            hasUnsavedChanges={unsaved}
           />
         )}
       </div>
