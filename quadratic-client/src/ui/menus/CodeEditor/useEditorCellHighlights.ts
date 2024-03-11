@@ -67,7 +67,6 @@ export const useEditorCellHighlights = (
   }, [language]);
 
   useEffect(() => {
-    // if (language !== 'Formula') return;
     const editor = editorRef.current;
     const monacoInst = monacoRef.current;
     if (!isValidRef || !editor || !monacoInst) return;
@@ -100,6 +99,8 @@ export const useEditorCellHighlights = (
           editorInteractionState.selectedCell,
           editorInteractionState.selectedCellSheet
         );
+
+        if (language !== 'Formula') return;
 
         const extractedCells = extractCellsFromParseFormula(parsed);
 

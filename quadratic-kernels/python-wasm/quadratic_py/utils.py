@@ -33,15 +33,15 @@ def to_interval(value: Tuple[pd.Timestamp | date | time | datetime, pd.Timestamp
 
 # Convert from python types to quadratic types
 def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | time | datetime | pd.Period | timedelta | None) -> Tuple[str, str]:
-    
-    if value in (None, ""):
-        return ("", "blank")
-    
-    if type(value) == str:
-        value = re.sub('true', 'True', value, count=1, flags=re.IGNORECASE)
-        value = re.sub('false', 'False', value, count=1, flags=re.IGNORECASE)
 
-    try:
+    try:    
+        if value == None or value == "":
+            return ("", "blank")
+        
+        if type(value) == str:
+            value = re.sub('true', 'True', value, count=1, flags=re.IGNORECASE)
+            value = re.sub('false', 'False', value, count=1, flags=re.IGNORECASE)
+            
         value = ast.literal_eval(value)
     except:
         pass

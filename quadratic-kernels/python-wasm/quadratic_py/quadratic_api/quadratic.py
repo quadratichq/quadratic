@@ -17,7 +17,7 @@ async def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bo
     Args:
         p_x: The X coordinate on the grid.
         p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference.  If not provided, the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the first sheet.
 
     Returns:
         The value of the cell referenced.
@@ -41,13 +41,12 @@ async def cell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool 
     Args:
         p_x: The X coordinate on the grid.
         p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference.  If not provided, the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the first sheet.
 
     Returns:
         The value of the cell referenced.
 
-    Typical usage example:
-    
+    Typical usage example:    
         c = cell(0, 0)
     """
 
@@ -60,13 +59,12 @@ async def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | N
     Args:
         p_x: The X coordinate on the grid.
         p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference.  If not provided, the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the first sheet.
 
     Returns:
         The value of the cell referenced.
 
-    Typical usage example:
-    
+    Typical usage example:    
         c = c(0, 0)
     """
 
@@ -80,14 +78,13 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
     Args:
         p0: A tuple of (x, y) coordinates on the grid.
         p1: A tuple of (x, y) coordinates on the grid
-        sheet: The name of the sheet to reference.  If not provided, the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the first sheet.
         first_row_header: If True the first row will be used as the header.
 
     Returns:
         A pandas DataFrame of the cells referenced.
 
-    Typical usage example:
-    
+    Typical usage example:    
         c = getCells((0, 0), (1, 1))
     """
 
@@ -130,14 +127,13 @@ async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first
     Args:
         p0: A tuple of (x, y) coordinates on the grid.
         p1: A tuple of (x, y) coordinates on the grid
-        sheet: The name of the sheet to reference.  If not provided, the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the first sheet.
         first_row_header: If True the first row will be used as the header.
 
     Returns:
         A pandas DataFrame of the cells referenced.
 
-    Typical usage example:
-    
+    Typical usage example:    
         c = cells((0, 0), (1, 1))
     """
 
