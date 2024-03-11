@@ -18,12 +18,15 @@ pub enum JsRenderCellSpecial {
     False,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
     pub x: i64,
     pub y: i64,
+
+    pub screen_x: f64,
+    pub screen_y: f64,
 
     pub value: String,
 
@@ -47,10 +50,19 @@ pub struct JsRenderCell {
 
 #[cfg(test)]
 impl JsRenderCell {
-    pub fn new_number(x: i64, y: i64, value: isize, language: Option<CodeCellLanguage>) -> Self {
+    pub fn new_number(
+        x: i64,
+        y: i64,
+        screen_x: f64,
+        screen_y: f64,
+        value: isize,
+        language: Option<CodeCellLanguage>,
+    ) -> Self {
         Self {
             x,
             y,
+            screen_x,
+            screen_y,
             value: value.to_string(),
             language,
             align: Some(CellAlign::Right),
@@ -68,6 +80,8 @@ impl From<Pos> for JsRenderCell {
         Self {
             x: pos.x,
             y: pos.y,
+            screen_x: 0f64,
+            screen_y: 0f64,
             value: "".to_string(),
             language: None,
             align: None,

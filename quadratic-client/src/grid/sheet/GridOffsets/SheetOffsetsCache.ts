@@ -22,73 +22,75 @@ export class SheetOffsetsCache {
   }
 
   getColumnPlacement(column: number): { position: number; size: number } {
-    let position = 0;
-    if (column === 0) {
-      return { position: 0, size: this.sheetOffsets.getColumnWidth(0) };
-    }
+    return { position: column * this.sheetOffsets.defaultWidth, size: this.sheetOffsets.defaultWidth };
 
-    if (column > 0) {
-      // use cache if available
-      const closestIndex = Math.floor(column / GRID_OFFSETS_CACHE_SIZE);
-      if (this.columnCache.length > closestIndex) {
-        position = this.columnCache[closestIndex];
-        for (let x = closestIndex * GRID_OFFSETS_CACHE_SIZE; x < column; x++) {
-          // add to cache when needed
-          if (x % GRID_OFFSETS_CACHE_SIZE === 0) {
-            this.columnCache[x / GRID_OFFSETS_CACHE_SIZE] = position;
-          }
+    // let position = 0;
+    // if (column === 0) {
+    //   return { position: 0, size: this.sheetOffsets.getColumnWidth(0) };
+    // }
 
-          position += this.sheetOffsets.getColumnWidth(x);
-        }
-      }
+    // if (column > 0) {
+    //   // use cache if available
+    //   const closestIndex = Math.floor(column / GRID_OFFSETS_CACHE_SIZE);
+    //   if (this.columnCache.length > closestIndex) {
+    //     position = this.columnCache[closestIndex];
+    //     for (let x = closestIndex * GRID_OFFSETS_CACHE_SIZE; x < column; x++) {
+    //       // add to cache when needed
+    //       if (x % GRID_OFFSETS_CACHE_SIZE === 0) {
+    //         this.columnCache[x / GRID_OFFSETS_CACHE_SIZE] = position;
+    //       }
 
-      // otherwise calculate the cache as you iterate
-      else {
-        for (let x = 0; x < column; x++) {
-          // add to cache when needed
-          if (x % GRID_OFFSETS_CACHE_SIZE === 0) {
-            this.columnCache[x / GRID_OFFSETS_CACHE_SIZE] = position;
-          }
+    //       position += this.sheetOffsets.getColumnWidth(x);
+    //     }
+    //   }
 
-          position += this.sheetOffsets.getColumnWidth(x);
-        }
-      }
+    //   // otherwise calculate the cache as you iterate
+    //   else {
+    //     for (let x = 0; x < column; x++) {
+    //       // add to cache when needed
+    //       if (x % GRID_OFFSETS_CACHE_SIZE === 0) {
+    //         this.columnCache[x / GRID_OFFSETS_CACHE_SIZE] = position;
+    //       }
 
-      return { position: position, size: this.sheetOffsets.getColumnWidth(column) };
-    }
+    //       position += this.sheetOffsets.getColumnWidth(x);
+    //     }
+    //   }
 
-    // calculate in the negative
-    else {
-      // use cache if available
-      const closestIndex = Math.floor(-column / GRID_OFFSETS_CACHE_SIZE);
-      if (this.columnNegativeCache.length > closestIndex) {
-        position = this.columnNegativeCache[closestIndex];
-        for (let x = -closestIndex * GRID_OFFSETS_CACHE_SIZE; x >= column; x--) {
-          // add to cache when needed
-          if (-x % GRID_OFFSETS_CACHE_SIZE === 0) {
-            this.columnNegativeCache[-x / GRID_OFFSETS_CACHE_SIZE] = position;
-          }
-          if (x !== 0) {
-            position -= this.sheetOffsets.getColumnWidth(x);
-          }
-        }
-      }
+    //   return { position: position, size: this.sheetOffsets.getColumnWidth(column) };
+    // }
 
-      // otherwise calculate the cache as you iterate
-      else {
-        for (let x = -1; x >= column; x--) {
-          // add to cache when needed
-          if (-x % GRID_OFFSETS_CACHE_SIZE === 0) {
-            this.columnNegativeCache[-x / GRID_OFFSETS_CACHE_SIZE] = position;
-          }
+    // // calculate in the negative
+    // else {
+    //   // use cache if available
+    //   const closestIndex = Math.floor(-column / GRID_OFFSETS_CACHE_SIZE);
+    //   if (this.columnNegativeCache.length > closestIndex) {
+    //     position = this.columnNegativeCache[closestIndex];
+    //     for (let x = -closestIndex * GRID_OFFSETS_CACHE_SIZE; x >= column; x--) {
+    //       // add to cache when needed
+    //       if (-x % GRID_OFFSETS_CACHE_SIZE === 0) {
+    //         this.columnNegativeCache[-x / GRID_OFFSETS_CACHE_SIZE] = position;
+    //       }
+    //       if (x !== 0) {
+    //         position -= this.sheetOffsets.getColumnWidth(x);
+    //       }
+    //     }
+    //   }
 
-          if (x !== 0) {
-            position -= this.sheetOffsets.getColumnWidth(x);
-          }
-        }
-      }
-      return { position: position, size: this.sheetOffsets.getColumnWidth(column) };
-    }
+    //   // otherwise calculate the cache as you iterate
+    //   else {
+    //     for (let x = -1; x >= column; x--) {
+    //       // add to cache when needed
+    //       if (-x % GRID_OFFSETS_CACHE_SIZE === 0) {
+    //         this.columnNegativeCache[-x / GRID_OFFSETS_CACHE_SIZE] = position;
+    //       }
+
+    //       if (x !== 0) {
+    //         position -= this.sheetOffsets.getColumnWidth(x);
+    //       }
+    //     }
+    //   }
+    //   return { position: position, size: this.sheetOffsets.getColumnWidth(column) };
+    // }
   }
 
   getColumnIndex(x: number): { index: number; position: number } {
@@ -118,73 +120,75 @@ export class SheetOffsetsCache {
   }
 
   getRowPlacement(row: number): { position: number; size: number } {
-    let position = 0;
-    if (row === 0) {
-      return { position: 0, size: this.sheetOffsets.getRowHeight(0) };
-    }
+    return { position: row * this.sheetOffsets.defaultHeight, size: this.sheetOffsets.defaultHeight };
 
-    if (row > 0) {
-      // use cache if available
-      const closestIndex = Math.floor(row / GRID_OFFSETS_CACHE_SIZE);
-      if (this.rowCache.length > closestIndex) {
-        position = this.rowCache[closestIndex];
-        for (let y = closestIndex * GRID_OFFSETS_CACHE_SIZE; y < row; y++) {
-          // add to cache when needed
-          if (y % GRID_OFFSETS_CACHE_SIZE === 0) {
-            this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
-          }
+    // let position = 0;
+    // if (row === 0) {
+    //   return { position: 0, size: this.sheetOffsets.getRowHeight(0) };
+    // }
 
-          position += this.sheetOffsets.getRowHeight(y);
-        }
-      }
+    // if (row > 0) {
+    //   // use cache if available
+    //   const closestIndex = Math.floor(row / GRID_OFFSETS_CACHE_SIZE);
+    //   if (this.rowCache.length > closestIndex) {
+    //     position = this.rowCache[closestIndex];
+    //     for (let y = closestIndex * GRID_OFFSETS_CACHE_SIZE; y < row; y++) {
+    //       // add to cache when needed
+    //       if (y % GRID_OFFSETS_CACHE_SIZE === 0) {
+    //         this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
+    //       }
 
-      // otherwise calculate the cache as you iterate
-      else {
-        for (let y = 0; y < row; y++) {
-          // add to cache when needed
-          if (y % GRID_OFFSETS_CACHE_SIZE === 0) {
-            this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
-          }
+    //       position += this.sheetOffsets.getRowHeight(y);
+    //     }
+    //   }
 
-          position += this.sheetOffsets.getRowHeight(y);
-        }
-      }
+    //   // otherwise calculate the cache as you iterate
+    //   else {
+    //     for (let y = 0; y < row; y++) {
+    //       // add to cache when needed
+    //       if (y % GRID_OFFSETS_CACHE_SIZE === 0) {
+    //         this.rowCache[y / GRID_OFFSETS_CACHE_SIZE] = position;
+    //       }
 
-      return { position: position, size: this.sheetOffsets.getRowHeight(row) };
-    }
+    //       position += this.sheetOffsets.getRowHeight(y);
+    //     }
+    //   }
 
-    // calculate in the negative
-    else {
-      // use cache if available
-      const closestIndex = Math.floor(-row / GRID_OFFSETS_CACHE_SIZE);
-      if (this.rowNegativeCache.length > closestIndex) {
-        position = this.columnNegativeCache[closestIndex];
-        for (let y = -closestIndex * GRID_OFFSETS_CACHE_SIZE; y >= row; y--) {
-          // add to cache when needed
-          if (-y % GRID_OFFSETS_CACHE_SIZE === 0) {
-            this.rowNegativeCache[-y / GRID_OFFSETS_CACHE_SIZE] = position;
-          }
-          if (y !== 0) {
-            position -= this.sheetOffsets.getRowHeight(y);
-          }
-        }
-      }
+    //   return { position: position, size: this.sheetOffsets.getRowHeight(row) };
+    // }
 
-      // otherwise calculate the cache as you iterate
-      else {
-        for (let y = -1; y >= row; y--) {
-          // add to cache when needed
-          if (-y % GRID_OFFSETS_CACHE_SIZE === 0) {
-            this.rowNegativeCache[-y / GRID_OFFSETS_CACHE_SIZE] = position;
-          }
+    // // calculate in the negative
+    // else {
+    //   // use cache if available
+    //   const closestIndex = Math.floor(-row / GRID_OFFSETS_CACHE_SIZE);
+    //   if (this.rowNegativeCache.length > closestIndex) {
+    //     position = this.columnNegativeCache[closestIndex];
+    //     for (let y = -closestIndex * GRID_OFFSETS_CACHE_SIZE; y >= row; y--) {
+    //       // add to cache when needed
+    //       if (-y % GRID_OFFSETS_CACHE_SIZE === 0) {
+    //         this.rowNegativeCache[-y / GRID_OFFSETS_CACHE_SIZE] = position;
+    //       }
+    //       if (y !== 0) {
+    //         position -= this.sheetOffsets.getRowHeight(y);
+    //       }
+    //     }
+    //   }
 
-          if (y !== 0) {
-            position -= this.sheetOffsets.getRowHeight(y);
-          }
-        }
-      }
-      return { position: position, size: this.sheetOffsets.getRowHeight(row) };
-    }
+    //   // otherwise calculate the cache as you iterate
+    //   else {
+    //     for (let y = -1; y >= row; y--) {
+    //       // add to cache when needed
+    //       if (-y % GRID_OFFSETS_CACHE_SIZE === 0) {
+    //         this.rowNegativeCache[-y / GRID_OFFSETS_CACHE_SIZE] = position;
+    //       }
+
+    //       if (y !== 0) {
+    //         position -= this.sheetOffsets.getRowHeight(y);
+    //       }
+    //     }
+    //   }
+    //   return { position: position, size: this.sheetOffsets.getRowHeight(row) };
+    // }
   }
 
   getRowIndex(y: number): { index: number; position: number } {

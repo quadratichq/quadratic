@@ -35,10 +35,13 @@ impl Sheet {
         value: CellValue,
         language: Option<CodeCellLanguage>,
     ) -> JsRenderCell {
+        let screen = self.offsets.cell_offsets(x, y);
         if let CellValue::Html(_) = value {
             return JsRenderCell {
                 x,
                 y,
+                screen_x: screen.x,
+                screen_y: screen.y,
                 value: "".to_string(),
                 language,
                 align: None,
@@ -53,6 +56,8 @@ impl Sheet {
             return JsRenderCell {
                 x,
                 y,
+                screen_x: screen.x,
+                screen_y: screen.y,
                 value: "".into(),
                 language,
                 align: None,
@@ -78,6 +83,8 @@ impl Sheet {
                 JsRenderCell {
                     x,
                     y,
+                    screen_x: screen.x,
+                    screen_y: screen.y,
                     value: value.to_display(None, None, None),
                     language,
                     align,
@@ -122,6 +129,8 @@ impl Sheet {
                 JsRenderCell {
                     x,
                     y,
+                    screen_x: screen.x,
+                    screen_y: screen.y,
                     value,
                     language,
                     align,
@@ -222,6 +231,7 @@ impl Sheet {
             column.values.range(rect.y_range()).for_each(|(y, value)| {
                 // ignore code cells when rendering since they will be taken care in the next part
                 if !matches!(value, CellValue::Code(_)) {
+                    let rect = self.offsets.cell_offsets(x, *y);
                     render_cells.push(self.get_render_cell(
                         x,
                         *y,
@@ -488,11 +498,14 @@ mod tests {
 
         assert_eq!(get(0, 0), None);
 
+        let offsets = sheet.offsets.cell_offsets(1, 2);
         assert_eq!(
             *get(1, 2).unwrap(),
             JsRenderCell {
                 x: 1,
                 y: 2,
+                screen_x: offsets.x,
+                screen_y: offsets.y,
                 value: "test".to_string(),
                 language: None,
                 align: Some(CellAlign::Center),
@@ -503,11 +516,14 @@ mod tests {
                 special: None,
             },
         );
+        let offsets = sheet.offsets.cell_offsets(1, 3);
         assert_eq!(
             *get(1, 3).unwrap(),
             JsRenderCell {
                 x: 1,
                 y: 3,
+                screen_x: offsets.x,
+                screen_y: offsets.y,
                 value: "123".to_string(),
                 language: None,
                 align: Some(CellAlign::Right),
@@ -518,11 +534,14 @@ mod tests {
                 special: None,
             },
         );
+        let offsets = sheet.offsets.cell_offsets(2, 4);
         assert_eq!(
             *get(2, 4).unwrap(),
             JsRenderCell {
                 x: 2,
                 y: 4,
+                screen_x: offsets.x,
+                screen_y: offsets.y,
                 value: "".to_string(),
                 language: None,
                 align: None,
@@ -533,11 +552,14 @@ mod tests {
                 special: Some(JsRenderCellSpecial::Chart),
             },
         );
+        let offsets = sheet.offsets.cell_offsets(2, 5);
         assert_eq!(
             *get(2, 5).unwrap(),
             JsRenderCell {
                 x: 2,
                 y: 5,
+                screen_x: offsets.x,
+                screen_y: offsets.y,
                 value: "".to_string(),
                 language: None,
                 align: None,
@@ -548,11 +570,14 @@ mod tests {
                 special: Some(JsRenderCellSpecial::True),
             },
         );
+        let offsets = sheet.offsets.cell_offsets(2, 6);
         assert_eq!(
             *get(2, 6).unwrap(),
             JsRenderCell {
                 x: 2,
                 y: 6,
+                screen_x: offsets.x,
+                screen_y: offsets.y,
                 value: "".to_string(),
                 language: None,
                 align: None,
@@ -563,11 +588,14 @@ mod tests {
                 special: Some(JsRenderCellSpecial::SpillError),
             },
         );
+        let offsets = sheet.offsets.cell_offsets(3, 3);
         assert_eq!(
             *get(3, 3).unwrap(),
             JsRenderCell {
                 x: 3,
                 y: 3,
+                screen_x: offsets.x,
+                screen_y: offsets.y,
                 value: "".to_string(),
                 language: None,
                 align: None,
@@ -722,12 +750,15 @@ mod tests {
             "1 + 1".to_string(),
             None,
         );
+        let offsets = gc.sheet(sheet_id).offsets.cell_offsets(1, 2);
         assert_eq!(
             gc.sheet(sheet_id)
                 .get_render_cells(Rect::from_numbers(1, 2, 1, 1)),
             vec![JsRenderCell {
                 x: 1,
                 y: 2,
+                screen_x: offsets.x,
+                screen_y: offsets.y,
                 value: "2".to_string(),
                 language: Some(CodeCellLanguage::Formula),
                 align: Some(CellAlign::Right),

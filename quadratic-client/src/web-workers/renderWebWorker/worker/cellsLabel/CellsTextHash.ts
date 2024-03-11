@@ -39,10 +39,7 @@ export class CellsTextHash {
   // shows bounds of the hash with content
   viewBounds: Bounds;
 
-  // rectangle of the hash on the screen regardless of content (does not include overflow cells)
-  rawViewRectangle: Rectangle;
-
-  // rectangle of the hash including overflowed cells
+  // rectangle of the hash including overflowed cells with an origin of 0,0 (used to render the hash)
   viewRectangle: Rectangle;
 
   // rebuild CellsTextHash
@@ -58,25 +55,30 @@ export class CellsTextHash {
 
   loaded = false;
 
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
     this.labels = new Map();
     this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
     this.viewBounds = new Bounds();
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    const width = this.cellsLabels.sheetOffsets.getRangeColumnWidth(this.AABB.left, this.AABB.right);
-    const height = this.cellsLabels.sheetOffsets.getRangeRowHeight(this.AABB.top, this.AABB.bottom);
-    this.rawViewRectangle = new Rectangle(0, 0, width, height);
-    this.viewRectangle = this.rawViewRectangle.clone();
+    this.x = this.cellsLabels.sheetOffsets.getColumnPlacement(this.AABB.x).position;
+    this.y = this.cellsLabels.sheetOffsets.getRowPlacement(this.AABB.y).position;
+    this.width = this.cellsLabels.sheetOffsets.getRangeColumnWidth(this.AABB.left, this.AABB.right);
+    this.height = this.cellsLabels.sheetOffsets.getRangeRowHeight(this.AABB.top, this.AABB.bottom);
+    this.viewRectangle = new Rectangle(0, 0, this.width, this.height);
     this.hashX = hashX;
     this.hashY = hashY;
   }
 
   get visibleRectangle(): Rectangle {
-    const cell = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.x, this.AABB.y);
     return new Rectangle(
-      cell.x + this.viewRectangle.x,
-      cell.y + this.viewRectangle.y,
+      this.x + this.viewRectangle.x,
+      this.y + this.viewRectangle.y,
       this.viewRectangle.width,
       this.viewRectangle.height
     );
@@ -97,11 +99,6 @@ export class CellsTextHash {
 
   private createLabel(cell: JsRenderCell): CellLabel {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
-
-    // adjust each label so the origin is 0,0 relative to the textHash
-    rectangle.x -= this.rawViewRectangle.x;
-    rectangle.y -= this.rawViewRectangle.y;
-
     const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
     this.labels.set(this.getKey(cell), cellLabel);
     return cellLabel;
@@ -203,7 +200,7 @@ export class CellsTextHash {
     }
   }
 
-  updateBuffers(skipClear?: boolean): void {
+  updateBuffers(): void {
     if (debugShowHashUpdates) console.log(`[CellsTextHash] updateBuffers for ${this.hashX}, ${this.hashY}`);
 
     // creates labelMeshes webGL buffers based on size
@@ -217,7 +214,7 @@ export class CellsTextHash {
     });
 
     // adjust viewRectangle by viewBounds overflow
-    this.viewRectangle = this.rawViewRectangle.clone();
+    this.viewRectangle = new Rectangle(0, 0, this.width, this.height);
     if (this.viewBounds.minX < this.viewRectangle.left) {
       this.viewRectangle.width += this.viewRectangle.left - this.viewBounds.minX;
       this.viewRectangle.x = this.viewBounds.minX;
@@ -239,8 +236,8 @@ export class CellsTextHash {
       this.hashX,
       this.hashY,
       this.viewBounds,
-      this.rawViewRectangle.x,
-      this.rawViewRectangle.y
+      this.x + this.viewRectangle.x,
+      this.y + this.viewRectangle.y
     );
 
     // completes the rendering for the CellsTextHash
