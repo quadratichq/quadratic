@@ -51,10 +51,6 @@ export const CodeEditorBody = (props: Props) => {
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
-  // TODO(ddimaria): this looks like a better pattern than the current one for
-  // the language model, consider moving to this
-  // useLanguageServer(isValidRef, editorRef, monacoRef, language);
-
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {
       // focus editor on show editor change
