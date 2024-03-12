@@ -6,22 +6,43 @@ type ThemePreference = null | Theme;
 export const themes: Theme[] = ['light', 'dark', 'system'];
 
 export const useTheme = () => {
-  const value = useLocalStorage('theme', null) as [ThemePreference, Dispatch<SetStateAction<ThemePreference>>];
-  const [theme] = value;
+  const state = useLocalStorage('theme', null) as [ThemePreference, Dispatch<SetStateAction<ThemePreference>>];
+  const [theme] = state;
+  const darkModePreference = window.matchMedia('(prefers-color-scheme: dark)');
+  const lightModePreference = window.matchMedia('(prefers-color-scheme: light)');
 
+  // User change prefernce via UI preference
   useEffect(() => {
-    if (theme === 'dark') {
-      document.body.classList.add('dark');
-    } else if (theme === 'light') {
-      document.body.classList.remove('dark');
+    if (theme === 'dark' || theme === 'light') {
+      changeTheme(theme);
     } else if (theme === 'system') {
-      if (window.matchMedia('(prefers-color-scheme: dark)')) {
-        document.body.classList.add('dark');
-      } else {
-        document.body.classList.remove('dark');
-      }
+      changeTheme(darkModePreference.matches ? 'dark' : 'light');
     }
-  }, [theme]);
+  }, [theme, darkModePreference]);
 
-  return value;
+  // User change preference via browser
+  useEffect(() => {
+    const handleMatch = (e: MediaQueryListEvent) => {
+      if (theme === 'system' && e.matches) {
+        changeTheme(e.media.includes('dark') ? 'dark' : 'light');
+      }
+    };
+
+    darkModePreference.addEventListener('change', handleMatch);
+    lightModePreference.addEventListener('change', handleMatch);
+    return () => {
+      darkModePreference.removeEventListener('change', handleMatch);
+      lightModePreference.removeEventListener('change', handleMatch);
+    };
+  }, [theme, darkModePreference, lightModePreference]);
+
+  return state;
 };
+
+function changeTheme(newTheme: 'light' | 'dark') {
+  if (newTheme === 'dark') {
+    document.body.classList.add('dark');
+  } else {
+    document.body.classList.remove('dark');
+  }
+}
