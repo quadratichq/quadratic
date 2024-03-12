@@ -2,7 +2,6 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import monaco, { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Diagnostic } from 'vscode-languageserver-types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
@@ -16,7 +15,9 @@ import {
 } from './PythonLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
+// TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
+// import { Diagnostic } from 'vscode-languageserver-types';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
@@ -26,7 +27,8 @@ interface Props {
   setEditorContent: (value: string | undefined) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
   evaluationResult?: EvaluationResult;
-  diagnostics?: Diagnostic[];
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // diagnostics?: Diagnostic[];
 }
 
 // need to track globally since monaco is a singleton

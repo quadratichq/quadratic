@@ -7,7 +7,7 @@ import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Diagnostic } from 'vscode-languageserver-types';
+// import { Diagnostic } from 'vscode-languageserver-types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
@@ -41,7 +41,7 @@ export const CodeEditor = () => {
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
-  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
   const cellLocation = useMemo(() => {
     return {
@@ -128,13 +128,14 @@ export const CodeEditor = () => {
     };
   }, [updateCodeCell]);
 
-  useEffect(() => {
-    const updateDiagnostics = (e: Event) => setDiagnostics((e as CustomEvent).detail.diagnostics);
-    window.addEventListener('python-diagnostics', updateDiagnostics);
-    return () => {
-      window.removeEventListener('python-diagnostics', updateDiagnostics);
-    };
-  }, [updateCodeCell]);
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // useEffect(() => {
+  //   const updateDiagnostics = (e: Event) => setDiagnostics((e as CustomEvent).detail.diagnostics);
+  //   window.addEventListener('python-diagnostics', updateDiagnostics);
+  //   return () => {
+  //     window.removeEventListener('python-diagnostics', updateDiagnostics);
+  //   };
+  // }, [updateCodeCell]);
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
@@ -312,7 +313,6 @@ export const CodeEditor = () => {
         setEditorContent={setEditorContent}
         closeEditor={closeEditor}
         evaluationResult={evaluationResult}
-        diagnostics={diagnostics}
       />
       {evaluationResult?.line_number &&
         !out?.stdErr &&
