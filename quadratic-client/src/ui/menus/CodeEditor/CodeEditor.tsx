@@ -318,17 +318,7 @@ export const CodeEditor = () => {
         !out?.stdErr &&
         !unsaved &&
         (editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
-          <div
-            style={{
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              background: '#fff',
-              height: `70px`,
-            }}
-          >
-            <ReturnTypeInspector evaluationResult={evaluationResult} />
-          </div>
+          <ReturnTypeInspector evaluationResult={evaluationResult} />
         )}
 
       <ResizeControl setState={setConsoleHeight} position="TOP" />
