@@ -61,47 +61,51 @@ export const CodeEditorBody = (props: Props) => {
     }
   }, [editorInteractionState.showCodeEditor]);
 
-  const onMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-    setIsValidRef(true);
+  const onMount = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+      editorRef.current = editor;
+      monacoRef.current = monaco;
+      setIsValidRef(true);
 
-    editor.focus();
+      editor.focus();
 
-    monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
-    monaco.editor.setTheme('quadratic');
+      monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
+      monaco.editor.setTheme('quadratic');
 
-    // Only register language once
-    if (registered) return;
+      // this needs to be before the register conditional below
+      setDidMount(true);
 
-    monaco.languages.register({ id: 'Formula' });
-    monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
-    monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
-    monaco.languages.registerCompletionItemProvider('Formula', { provideCompletionItems });
-    monaco.languages.registerHoverProvider('Formula', { provideHover });
+      // Only register language once
+      if (registered) return;
 
-    monaco.languages.register({ id: 'python' });
+      monaco.languages.register({ id: 'Formula' });
+      monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
+      monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
+      monaco.languages.registerCompletionItemProvider('Formula', { provideCompletionItems });
+      monaco.languages.registerHoverProvider('Formula', { provideHover });
 
-    monaco.languages.registerCompletionItemProvider('python', {
-      provideCompletionItems: provideCompletionItemsPython,
-      triggerCharacters: ['.', '[', '"', "'"],
-    });
+      monaco.languages.register({ id: 'python' });
 
-    monaco.languages.registerSignatureHelpProvider('python', {
-      provideSignatureHelp: provideSignatureHelpPython,
-      signatureHelpTriggerCharacters: ['(', ','],
-    });
-    monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
+      monaco.languages.registerCompletionItemProvider('python', {
+        provideCompletionItems: provideCompletionItemsPython,
+        triggerCharacters: ['.', '[', '"', "'"],
+      });
 
-    // load the document in the python language server
-    pyrightWorker?.openDocument({
-      textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
-    });
+      monaco.languages.registerSignatureHelpProvider('python', {
+        provideSignatureHelp: provideSignatureHelpPython,
+        signatureHelpTriggerCharacters: ['(', ','],
+      });
+      monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
 
-    registered = true;
+      // load the document in the python language server
+      pyrightWorker?.openDocument({
+        textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
+      });
 
-    setDidMount(true);
-  }, []);
+      registered = true;
+    },
+    [setDidMount]
+  );
 
   useEffect(() => {
     if (editorRef.current && monacoRef.current && didMount) {
