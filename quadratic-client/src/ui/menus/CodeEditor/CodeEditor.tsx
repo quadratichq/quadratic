@@ -7,7 +7,8 @@ import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Diagnostic } from 'vscode-languageserver-types';
+// TODO(ddimaria): leave this as we're looking to add this back in once improved
+// import { Diagnostic } from 'vscode-languageserver-types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
@@ -41,7 +42,8 @@ export const CodeEditor = () => {
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
-  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
   const cellLocation = useMemo(() => {
     return {
@@ -128,13 +130,14 @@ export const CodeEditor = () => {
     };
   }, [updateCodeCell]);
 
-  useEffect(() => {
-    const updateDiagnostics = (e: Event) => setDiagnostics((e as CustomEvent).detail.diagnostics);
-    window.addEventListener('python-diagnostics', updateDiagnostics);
-    return () => {
-      window.removeEventListener('python-diagnostics', updateDiagnostics);
-    };
-  }, [updateCodeCell]);
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // useEffect(() => {
+  //   const updateDiagnostics = (e: Event) => setDiagnostics((e as CustomEvent).detail.diagnostics);
+  //   window.addEventListener('python-diagnostics', updateDiagnostics);
+  //   return () => {
+  //     window.removeEventListener('python-diagnostics', updateDiagnostics);
+  //   };
+  // }, [updateCodeCell]);
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
@@ -161,6 +164,8 @@ export const CodeEditor = () => {
 
   // handle when escape is pressed when escape does not have focus
   useEffect(() => {
+    console.log('editorInteractionState.editorEscapePressed', editorInteractionState.editorEscapePressed);
+    console.log('unsaved', unsaved);
     if (editorInteractionState.editorEscapePressed) {
       if (unsaved) {
         setShowSaveChangesAlert(true);
@@ -312,26 +317,15 @@ export const CodeEditor = () => {
         setEditorContent={setEditorContent}
         closeEditor={closeEditor}
         evaluationResult={evaluationResult}
-        diagnostics={diagnostics}
       />
-      <ResizeControl setState={setConsoleHeight} position="TOP" />
       {evaluationResult?.line_number &&
         !out?.stdErr &&
         !unsaved &&
         (editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
-          <div
-            style={{
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              background: '#fff',
-              height: `70px`,
-            }}
-          >
-            <ReturnTypeInspector evaluationResult={evaluationResult} />
-          </div>
+          <ReturnTypeInspector evaluationResult={evaluationResult} />
         )}
 
+      <ResizeControl setState={setConsoleHeight} position="TOP" />
       {/* Console Wrapper */}
       <div
         style={{

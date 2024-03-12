@@ -1,5 +1,91 @@
 import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
 
+import {
+  BorderAll as BorderAllIcon,
+  BorderBottom as BorderBottomIcon,
+  BorderColor as BorderColorIcon,
+  BorderHorizontal as BorderHorizontalIcon,
+  BorderInner as BorderInnerIcon,
+  BorderLeft as BorderLeftIcon,
+  BorderClear as BorderNoneIcon,
+  BorderAll as BorderOuterIcon,
+  BorderRight as BorderRightIcon,
+  BorderStyle as BorderStyleIcon,
+  BorderTop as BorderTopIcon,
+  BorderVertical as BorderVerticalIcon,
+  ContentPasteOutlined as ClipboardIcon,
+  ManageSearchOutlined as CommandPaletteIcon,
+  ContentCopyOutlined as CopyIcon,
+  DataObject as DataIcon,
+  AttachMoney as DollarIcon,
+  MoreHorizRounded as DotsHorizontalIcon,
+  OpenInNew as ExternalLinkIcon,
+  ChatBubbleOutline as FeedbackIcon,
+  InsertDriveFileOutlined as FileIcon,
+  FormatBold as FontBoldIcon,
+  FormatItalic as FontItalicIcon,
+  Functions as FunctionIcon,
+  AutoFixHigh as MagicWandIcon,
+  Search as MagnifyingGlassIcon,
+  FormatColorFill as PaintBucketIcon,
+  PaletteOutlined,
+  Percent as PercentIcon,
+  FormatQuote as QuoteIcon,
+  RedoOutlined as RedoIcon,
+  ContentCutOutlined as ScissorsIcon,
+  FormatAlignCenter as TextAlignCenterIcon,
+  FormatAlignLeft as TextAlignLeftIcon,
+  FormatAlignRight as TextAlignRightIcon,
+  FormatColorText as TextColorIcon,
+  FormatClear as TextNoneIcon,
+  UndoOutlined as UndoIcon,
+  ZoomInOutlined as ZoomInIcon,
+  ZoomOutOutlined as ZoomOutIcon,
+} from '@mui/icons-material';
+
+export {
+  BorderAllIcon,
+  BorderBottomIcon,
+  BorderColorIcon,
+  BorderHorizontalIcon,
+  BorderInnerIcon,
+  BorderLeftIcon,
+  BorderNoneIcon,
+  BorderOuterIcon,
+  BorderRightIcon,
+  BorderStyleIcon,
+  BorderTopIcon,
+  BorderVerticalIcon,
+  ClipboardIcon,
+  CommandPaletteIcon,
+  CopyIcon,
+  DataIcon,
+  DollarIcon,
+  DotsHorizontalIcon,
+  ExternalLinkIcon,
+  FeedbackIcon,
+  FileIcon,
+  FontBoldIcon,
+  FontItalicIcon,
+  FunctionIcon,
+  MagicWandIcon,
+  MagnifyingGlassIcon,
+  PaintBucketIcon,
+  PaletteOutlined,
+  PercentIcon,
+  QuoteIcon,
+  RedoIcon,
+  ScissorsIcon,
+  TextAlignCenterIcon,
+  TextAlignLeftIcon,
+  TextAlignRightIcon,
+  TextColorIcon,
+  TextNoneIcon,
+  UndoIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+};
+
 // Built on doc guidance from material UI:
 // https://mui.com/material-ui/icons/
 //
@@ -53,13 +139,13 @@ export const BorderThick = (props: SvgIconProps) => (
   </SvgIcon>
 );
 
-export const DecimalIncrease = (props: SvgIconProps) => (
+export const DecimalIncreaseIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <path d="m18 22-1.4-1.4 1.575-1.6H12v-2h6.175L16.6 15.4 18 14l4 4ZM2 13v-3h3v3Zm7.5 0q-1.45 0-2.475-1.025Q6 10.95 6 9.5v-4q0-1.45 1.025-2.475Q8.05 2 9.5 2q1.45 0 2.475 1.025Q13 4.05 13 5.5v4q0 1.45-1.025 2.475Q10.95 13 9.5 13Zm9 0q-1.45 0-2.475-1.025Q15 10.95 15 9.5v-4q0-1.45 1.025-2.475Q17.05 2 18.5 2q1.45 0 2.475 1.025Q22 4.05 22 5.5v4q0 1.45-1.025 2.475Q19.95 13 18.5 13Zm-9-2q.625 0 1.062-.438Q11 10.125 11 9.5v-4q0-.625-.438-1.062Q10.125 4 9.5 4t-1.062.438Q8 4.875 8 5.5v4q0 .625.438 1.062Q8.875 11 9.5 11Zm9 0q.625 0 1.062-.438Q20 10.125 20 9.5v-4q0-.625-.438-1.062Q19.125 4 18.5 4t-1.062.438Q17 4.875 17 5.5v4q0 .625.438 1.062.437.438 1.062.438Z" />
   </SvgIcon>
 );
 
-export const DecimalDecrease = (props: SvgIconProps) => (
+export const DecimalDecreaseIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <path d="m16 22-4-4 4-4 1.4 1.4-1.575 1.6H22v2h-6.175l1.575 1.6ZM2 13v-3h3v3Zm7.5 0q-1.45 0-2.475-1.025Q6 10.95 6 9.5v-4q0-1.45 1.025-2.475Q8.05 2 9.5 2q1.45 0 2.475 1.025Q13 4.05 13 5.5v4q0 1.45-1.025 2.475Q10.95 13 9.5 13Zm0-2q.625 0 1.062-.438Q11 10.125 11 9.5v-4q0-.625-.438-1.062Q10.125 4 9.5 4t-1.062.438Q8 4.875 8 5.5v4q0 .625.438 1.062Q8.875 11 9.5 11Z" />
   </SvgIcon>
@@ -127,38 +213,84 @@ export const CopyAsPNG = (props: SvgIconProps) => (
   </SvgIcon>
 );
 
-export const SocialDiscord = (props: SvgIconProps) => (
+export const FileDeleteIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <path
       fillRule="evenodd"
       clipRule="evenodd"
-      d="M17.7123 20C22.2534 19.85 24 16.7429 24 16.7429C24 9.84296 21.0411 4.25016 21.0411 4.25016C18.0822 1.93589 15.2671 2.00018 15.2671 2.00018L14.9795 2.34303C18.4726 3.45731 20.0959 5.06443 20.0959 5.06443C17.9589 3.84302 15.863 3.24302 13.911 3.00731C12.4315 2.83588 11.0137 2.87874 9.76027 3.05017L9.41096 3.09302C8.69178 3.15731 6.94521 3.43588 4.74658 4.44301C3.9863 4.80729 3.53425 5.06443 3.53425 5.06443C3.53425 5.06443 5.23973 3.37159 8.93836 2.25732L8.73288 2.00018C8.73288 2.00018 5.91781 1.93589 2.9589 4.25016C2.9589 4.25016 0 9.84296 0 16.7429C0 16.7429 1.72603 19.85 6.26712 20C6.26712 20 7.0274 19.0357 7.64384 18.2214C5.03425 17.4072 4.04794 15.6929 4.04794 15.6929L4.62329 16.0572L4.70548 16.1215L4.78596 16.1697L4.80993 16.1804L4.89041 16.2286C5.40411 16.5286 5.91781 16.7643 6.39041 16.9572C7.23288 17.3 8.23973 17.6429 9.41096 17.8786C10.9521 18.1786 12.7603 18.2857 14.7329 17.9C15.6986 17.7286 16.6849 17.4286 17.7123 16.9786C18.4315 16.7 19.2329 16.2929 20.0753 15.7143C20.0753 15.7143 19.0479 17.4715 16.3562 18.2643C16.9726 19.0786 17.7123 20 17.7123 20ZM8.15753 9.99296C6.9863 9.99296 6.06164 11.0644 6.06164 12.3715C6.06164 13.6786 7.00685 14.7501 8.15753 14.7501C9.32877 14.7501 10.2534 13.6786 10.2534 12.3715C10.274 11.0644 9.32877 9.99296 8.15753 9.99296ZM15.6575 9.99296C14.4863 9.99296 13.5616 11.0644 13.5616 12.3715C13.5616 13.6786 14.5068 14.7501 15.6575 14.7501C16.8288 14.7501 17.7534 13.6786 17.7534 12.3715C17.7534 11.0644 16.8288 9.99296 15.6575 9.99296Z"
+      d="M4.588 21.413C4.97933 21.8043 5.45 22 6 22H12V20H6V4H13V9H18V12H20V8L14 2H6C5.45 2 4.97933 2.19567 4.588 2.587C4.196 2.979 4 3.45 4 4V20C4 20.55 4.196 21.021 4.588 21.413Z"
     />
+    <rect x="15" y="18" width="8" height="2" />
   </SvgIcon>
 );
 
-export const SocialTwitter = (props: SvgIconProps) => (
+export const FileDowndloadIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
-    <g clipPath="url(#clip0_310_5)">
-      <path d="M24 4.55699C23.117 4.94899 22.168 5.21299 21.172 5.33199C22.189 4.72299 22.97 3.75799 23.337 2.60799C22.386 3.17199 21.332 3.58199 20.21 3.80299C19.313 2.84599 18.032 2.24799 16.616 2.24799C13.437 2.24799 11.101 5.21399 11.819 8.29299C7.728 8.08799 4.1 6.12799 1.671 3.14899C0.381 5.36199 1.002 8.25699 3.194 9.72299C2.388 9.69699 1.628 9.47599 0.965 9.10699C0.911 11.388 2.546 13.522 4.914 13.997C4.221 14.185 3.462 14.229 2.69 14.081C3.316 16.037 5.134 17.46 7.29 17.5C5.22 19.123 2.612 19.848 0 19.54C2.179 20.937 4.768 21.752 7.548 21.752C16.69 21.752 21.855 14.031 21.543 7.10599C22.505 6.41099 23.34 5.54399 24 4.55699Z" />
-    </g>
-    <defs>
-      <clipPath id="clip0_310_5">
-        <rect width="24" height="24" fill="white" />
-      </clipPath>
-    </defs>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M4.588 21.413C4.97933 21.8043 5.45 22 6 22H12V20H6V4H13V9H18V12H20V8L14 2H6C5.45 2 4.97933 2.19567 4.588 2.587C4.196 2.979 4 3.45 4 4V20C4 20.55 4.196 21.021 4.588 21.413Z"
+    />
+    <path d="M18 15L20 15L20 19.175L21.575 17.6L23 19L19 23L15 19L16.4 17.575L18 19.175L18 15Z" />
   </SvgIcon>
 );
 
-export const SocialGithub = (props: SvgIconProps) => (
+export const FileDuplicateIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
-    <g clipPath="url(#clip0_310_3)">
-      <path d="M12 0C5.374 0 0 5.373 0 12C0 17.302 3.438 21.8 8.207 23.387C8.806 23.498 9 23.126 9 22.81V20.576C5.662 21.302 4.967 19.16 4.967 19.16C4.421 17.773 3.634 17.404 3.634 17.404C2.545 16.659 3.717 16.675 3.717 16.675C4.922 16.759 5.556 17.912 5.556 17.912C6.626 19.746 8.363 19.216 9.048 18.909C9.155 18.134 9.466 17.604 9.81 17.305C7.145 17 4.343 15.971 4.343 11.374C4.343 10.063 4.812 8.993 5.579 8.153C5.455 7.85 5.044 6.629 5.696 4.977C5.696 4.977 6.704 4.655 8.997 6.207C9.954 5.941 10.98 5.808 12 5.803C13.02 5.808 14.047 5.941 15.006 6.207C17.297 4.655 18.303 4.977 18.303 4.977C18.956 6.63 18.545 7.851 18.421 8.153C19.191 8.993 19.656 10.064 19.656 11.374C19.656 15.983 16.849 16.998 14.177 17.295C14.607 17.667 15 18.397 15 19.517V22.81C15 23.129 15.192 23.504 15.801 23.386C20.566 21.797 24 17.3 24 12C24 5.373 18.627 0 12 0Z" />
-    </g>
-    <defs>
-      <clipPath id="clip0_310_3">
-        <rect width="24" height="24" fill="white" />
-      </clipPath>
-    </defs>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M4.588 21.413C4.97933 21.8043 5.45 22 6 22H12V20H6V4H13V9H18V12H20V8L14 2H6C5.45 2 4.97933 2.19567 4.588 2.587C4.196 2.979 4 3.45 4 4V20C4 20.55 4.196 21.021 4.588 21.413Z"
+    />
+    <rect x="15" y="18" width="8" height="2" />
+    <rect x="20" y="15" width="8" height="2" transform="rotate(90 20 15)" />
+  </SvgIcon>
+);
+
+export const SheetIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path d="M2 6C2 5.45 2.19567 4.97933 2.587 4.588C2.979 4.196 3.45 4 4 4L20 4C20.55 4 21.021 4.196 21.413 4.588C21.8043 4.97933 22 5.45 22 6C22 6 22 17.5 22 18C22 18.5 21.8035 19.0297 21.4202 19.413C21.0368 19.7963 20.5 20 20 20C19.5 20 4 20 4 20C3.45 20 2.979 19.8043 2.587 19.413C2.19567 19.021 2 18.55 2 18L2 6ZM20 18L20 13L20 6L4 6L4 18L15 18L20 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M7 18L7 6L9 6L9 18L7 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M20 11H4V9H20V11Z" />
+  </SvgIcon>
+);
+
+export const SheetDuplicateIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2.587 4.588C2.19567 4.97933 2 5.45 2 6V18C2 18.55 2.19567 19.021 2.587 19.413C2.979 19.8043 3.45 20 4 20H12V18L4 18L4 6L20 6V12H22V6C22 5.45 21.8043 4.97933 21.413 4.588C21.021 4.196 20.55 4 20 4H4C3.45 4 2.979 4.196 2.587 4.588Z"
+    />
+    <rect x="15" y="18" width="8" height="2" />
+    <rect x="20" y="15" width="8" height="2" transform="rotate(90 20 15)" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M7 18L7 6L9 6L9 18L7 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M20 11H4V9H20V11Z" />
+  </SvgIcon>
+);
+
+export const SheetDeleteIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2.587 4.588C2.19567 4.97933 2 5.45 2 6V18C2 18.55 2.19567 19.021 2.587 19.413C2.979 19.8043 3.45 20 4 20H12V18L4 18L4 6L20 6V12H22V6C22 5.45 21.8043 4.97933 21.413 4.588C21.021 4.196 20.55 4 20 4H4C3.45 4 2.979 4.196 2.587 4.588Z"
+    />
+    <rect x="15" y="16" width="8" height="2" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M7 18L7 6L9 6L9 18L7 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M20 11H4V9H20V11Z" />
+  </SvgIcon>
+);
+
+export const SheetGoToIcon = (props: SvgIconProps) => (
+  <SvgIcon {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2.587 4.588C2.19567 4.97933 2 5.45 2 6V18C2 18.55 2.19567 19.021 2.587 19.413C2.979 19.8043 3.45 20 4 20H12V18L4 18L4 6L20 6V12H22V6C22 5.45 21.8043 4.97933 21.413 4.588C21.021 4.196 20.55 4 20 4H4C3.45 4 2.979 4.196 2.587 4.588Z"
+    />
+    <path fillRule="evenodd" clipRule="evenodd" d="M7 18L7 6L9 6L9 18L7 18Z" />
+    <path fillRule="evenodd" clipRule="evenodd" d="M20 11H4V9H20V11Z" />
+    <path d="M15 20L15 18L19.175 18L17.6 16.425L19 15L23 19L19 23L17.575 21.6L19.175 20L15 20Z" />
   </SvgIcon>
 );

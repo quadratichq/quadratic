@@ -2,7 +2,6 @@ import Editor, { Monaco } from '@monaco-editor/react';
 import monaco, { editor } from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Diagnostic } from 'vscode-languageserver-types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
@@ -16,7 +15,9 @@ import {
 } from './PythonLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
+// TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
+// import { Diagnostic } from 'vscode-languageserver-types';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
@@ -26,7 +27,8 @@ interface Props {
   setEditorContent: (value: string | undefined) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
   evaluationResult?: EvaluationResult;
-  diagnostics?: Diagnostic[];
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // diagnostics?: Diagnostic[];
 }
 
 // need to track globally since monaco is a singleton
@@ -51,10 +53,6 @@ export const CodeEditorBody = (props: Props) => {
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
-  // TODO(ddimaria): this looks like a better pattern than the current one for
-  // the language model, consider moving to this
-  // useLanguageServer(isValidRef, editorRef, monacoRef, language);
-
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {
       // focus editor on show editor change
@@ -63,47 +61,51 @@ export const CodeEditorBody = (props: Props) => {
     }
   }, [editorInteractionState.showCodeEditor]);
 
-  const onMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-    setIsValidRef(true);
+  const onMount = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
+      editorRef.current = editor;
+      monacoRef.current = monaco;
+      setIsValidRef(true);
 
-    editor.focus();
+      editor.focus();
 
-    monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
-    monaco.editor.setTheme('quadratic');
+      monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
+      monaco.editor.setTheme('quadratic');
 
-    // Only register language once
-    if (registered) return;
+      // this needs to be before the register conditional below
+      setDidMount(true);
 
-    monaco.languages.register({ id: 'Formula' });
-    monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
-    monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
-    monaco.languages.registerCompletionItemProvider('Formula', { provideCompletionItems });
-    monaco.languages.registerHoverProvider('Formula', { provideHover });
+      // Only register language once
+      if (registered) return;
 
-    monaco.languages.register({ id: 'python' });
+      monaco.languages.register({ id: 'Formula' });
+      monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
+      monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
+      monaco.languages.registerCompletionItemProvider('Formula', { provideCompletionItems });
+      monaco.languages.registerHoverProvider('Formula', { provideHover });
 
-    monaco.languages.registerCompletionItemProvider('python', {
-      provideCompletionItems: provideCompletionItemsPython,
-      triggerCharacters: ['.', '[', '"', "'"],
-    });
+      monaco.languages.register({ id: 'python' });
 
-    monaco.languages.registerSignatureHelpProvider('python', {
-      provideSignatureHelp: provideSignatureHelpPython,
-      signatureHelpTriggerCharacters: ['(', ','],
-    });
-    monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
+      monaco.languages.registerCompletionItemProvider('python', {
+        provideCompletionItems: provideCompletionItemsPython,
+        triggerCharacters: ['.', '[', '"', "'"],
+      });
 
-    // load the document in the python language server
-    pyrightWorker?.openDocument({
-      textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
-    });
+      monaco.languages.registerSignatureHelpProvider('python', {
+        provideSignatureHelp: provideSignatureHelpPython,
+        signatureHelpTriggerCharacters: ['(', ','],
+      });
+      monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
 
-    registered = true;
+      // load the document in the python language server
+      pyrightWorker?.openDocument({
+        textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
+      });
 
-    setDidMount(true);
-  }, []);
+      registered = true;
+    },
+    [setDidMount]
+  );
 
   useEffect(() => {
     if (editorRef.current && monacoRef.current && didMount) {

@@ -1,21 +1,8 @@
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
-import { KeyboardReturn } from '@mui/icons-material';
 import { useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { codeEditorBaseStyles } from './styles';
-
-const ReturnType = ({ children }: any) => (
-  <span
-    style={{
-      background: '#eee',
-      fontWeight: '600',
-      padding: '8px 8px',
-    }}
-  >
-    {children}
-  </span>
-);
 
 interface ReturnTypeInspectorProps {
   evaluationResult?: EvaluationResult;
@@ -25,48 +12,34 @@ export function ReturnTypeInspector({ evaluationResult }: ReturnTypeInspectorPro
   const theme = useTheme();
 
   return (
-    <>
-      <div style={{ flex: '1.5', overflow: 'scroll', fontSize: '.875rem', lineHeight: '1.5' }}>
-        <div
-          style={{
-            outline: 'none',
-            whiteSpace: 'pre-wrap',
-            ...codeEditorBaseStyles,
-          }}
-        >
-          {evaluationResult?.line_number && (
-            <div
-              style={{
-                color: '#777',
-                marginTop: theme.spacing(2.5),
-                marginBottom: theme.spacing(2.0),
-                marginLeft: theme.spacing(2.0),
-                // display: 'flex',
-                // alignItems: 'center',
-                // gap: theme.spacing(1),
-              }}
+    <div
+      className="flex gap-6 whitespace-pre-wrap px-6 py-2 outline-none"
+      style={{
+        color: theme.palette.text.secondary,
+        ...codeEditorBaseStyles,
+      }}
+    >
+      <span style={{ transform: 'scaleX(-1)', display: 'inline-block', fontSize: '10px' }}>⮐</span>
+      <span className="leading-snug">
+        Line {evaluationResult?.line_number} returned a{' '}
+        <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
+          {evaluationResult?.output_type}
+        </span>
+        {evaluationResult?.output_type === 'NoneType' && (
+          <>
+            {' '}
+            <Link
+              to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
+              target="_blank"
+              rel="nofollow"
+              className="underline"
             >
-              <>
-                <KeyboardReturn fontSize="small" style={{ transform: 'scaleX(-1)' }} /> Line{' '}
-                {evaluationResult?.line_number} returned a <ReturnType>{evaluationResult?.output_type}</ReturnType>
-              </>
-              {evaluationResult?.output_type === 'NoneType' && (
-                <>
-                  ,{' '}
-                  <Link
-                    to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
-                    target="_blank"
-                    rel="nofollow"
-                  >
-                    read docs
-                  </Link>{' '}
-                  to learn more
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </>
+              read the docs
+            </Link>{' '}
+            to learn more
+          </>
+        )}
+      </span>
+    </div>
   );
 }
