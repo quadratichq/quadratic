@@ -7,6 +7,7 @@ import { DOCUMENTATION_URL } from '@/constants/urls';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
 import { QuadraticLogoType } from '@/dashboard/components/QuadraticLogoType';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { useTheme } from '@/hooks/useTheme';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
@@ -77,6 +78,7 @@ export const Component = () => {
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
   const { loggedInUser: user } = useRootRouteLoaderData();
+  useTheme(); // Trigger the theme in the root of the app
 
   const isLoading = revalidator.state !== 'idle' || navigation.state === 'loading';
   const navbar = <Navbar isLoading={isLoading} />;
