@@ -717,6 +717,12 @@ export class Grid {
     }
   }
 
+  // get the current position of the code cell
+  calculationGetPos(transactionId: string): [bigint, bigint] | undefined {
+    const result = this.gridController.calculationGetPos(transactionId);
+    return [result.x, result.y];
+  }
+
   // returns undefined if there was an error fetching cells (eg, invalid sheet name)
   calculationGetRelativeCells(): [bigint, bigint] | undefined {
     const pos = sheets.sheet.cursor.getPos();

@@ -31,7 +31,7 @@ const getCellsDB = async (
 const getPos = async (): Promise<{ x: number; y: number }[]> => {
   return new Promise((resolve) => {
     getPosMessages = (cells: { x: number; y: number }[]) => resolve(cells);
-    self.postMessage({ type: 'get-relative-cells' } as PythonMessage);
+    self.postMessage({ type: 'get-pos' } as PythonMessage);
   });
 };
 
@@ -88,7 +88,7 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
     if (event.cells && getCellsMessages) {
       getCellsMessages(event.cells);
     }
-  } else if (event.type === 'get-relative-cells') {
+  } else if (event.type === 'get-pos') {
     if (event.cells && getPosMessages) {
       getPosMessages(event.cells);
     }

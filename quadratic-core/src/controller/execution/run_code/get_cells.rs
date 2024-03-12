@@ -5,7 +5,8 @@ use crate::{
         execution::TransactionType, transaction_summary::TransactionSummary,
         transaction_types::JsComputeGetCells, GridController,
     },
-    error_core::CoreError,
+    error_core::{CoreError, Result},
+    SheetPos,
 };
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +31,7 @@ impl GridController {
     pub fn calculation_get_cells(
         &mut self,
         get_cells: JsComputeGetCells,
-    ) -> Result<GetCellsResponse, TransactionSummary> {
+    ) -> std::result::Result<GetCellsResponse, TransactionSummary> {
         let Ok(transaction_id) = Uuid::parse_str(&get_cells.transaction_id()) else {
             return Err(TransactionSummary::error(CoreError::TransactionNotFound(
                 "Transaction Id is invalid".into(),
@@ -96,6 +97,19 @@ impl GridController {
             .insert(rect.to_sheet_rect(sheet.id));
         self.transactions.add_async_transaction(&transaction);
         Ok(response)
+    }
+
+    /// Get the current position associated with a transaction_id
+    pub fn calculation_get_pos(&self, transaction_id: &str) -> Result<SheetPos> {
+        let transaction_id = Uuid::parse_str(&transaction_id).map_err(|e| {
+            CoreError::TransactionNotFound(format!("Transaction ID is invalid: {}", e))
+        })?;
+
+        let transaction = self.transactions.get_async_transaction(transaction_id)?;
+
+        transaction
+            .current_sheet_pos
+            .ok_or_else(|| CoreError::SheetPosNotFound(transaction_id.to_string()))
     }
 }
 

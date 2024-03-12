@@ -34,6 +34,12 @@ class PythonWebWorker {
     this.next(true);
   }
 
+  private getTransactionId() {
+    if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
+
+    return this.executionStack[0].transactionId;
+  }
+
   init() {
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url), {
       /* @vite-ignore */ type: !IS_TEST ? 'classic' : 'module',
@@ -44,10 +50,7 @@ class PythonWebWorker {
 
       switch (event.type) {
         case 'results': {
-          if (this.executionStack.length === 0)
-            throw new Error('Expected executionStack to have at least one element in python.ts');
-
-          const transactionId = this.executionStack[0].transactionId;
+          const transactionId = this.getTransactionId();
           const pythonResult = event.results;
           const nothingReturned = pythonResult.output_type === 'NoneType' && isEmpty(pythonResult.output);
 
@@ -99,9 +102,7 @@ class PythonWebWorker {
         }
 
         case 'get-cells': {
-          if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
-
-          const transactionId = this.executionStack[0].transactionId;
+          const transactionId = this.getTransactionId();
           const range = event.range;
 
           if (!range) throw new Error('Expected range to be defined in get-cells');
@@ -129,20 +130,20 @@ class PythonWebWorker {
           break;
         }
 
-        case 'get-relative-cells': {
-          if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
+        case 'get-pos': {
+          const transactionId = this.getTransactionId();
 
           try {
-            const cells = grid.calculationGetRelativeCells();
+            const cells = grid.calculationGetPos(transactionId);
 
             // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
             if (cells) {
-              this.worker!.postMessage({ type: 'get-relative-cells', cells });
+              this.worker!.postMessage({ type: 'get-pos', cells });
             } else {
               this.calculationComplete();
             }
           } catch (e) {
-            console.warn('Error in get-relative-cells', e);
+            console.warn('Error in get-pos', e);
             this.calculationComplete();
           }
 
@@ -231,11 +232,10 @@ class PythonWebWorker {
 
   restartFromUser() {
     mixpanel.track('[PythonWebWorker].restartFromUser');
-    if (this.executionStack.length === 0) {
-      throw new Error('Expected executionStack to have at least one element in restartFromUser');
-    }
-    const transactionId = this.executionStack[0].transactionId;
+    const transactionId = this.getTransactionId();
+
     this.restart();
+
     const result = new JsCodeResult(
       transactionId,
       false,
@@ -248,6 +248,7 @@ class PythonWebWorker {
       '',
       true
     );
+
     grid.calculationComplete(result);
     this.calculationComplete();
   }
