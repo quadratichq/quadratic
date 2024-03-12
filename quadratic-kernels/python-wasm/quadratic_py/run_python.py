@@ -2,7 +2,7 @@ from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
 from typing import Tuple
 
-from .quadratic_api.quadratic import getCell, getCells
+from .quadratic_api.quadratic import getCell, getCells, pos
 from .utils import attempt_fix_await, to_quadratic_type
 import micropip
 import pandas as pd
@@ -46,6 +46,11 @@ async def getCellsInner(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=Non
 
     return await getCells(p0, p1, sheet, first_row_header)
     
+async def getPosInner() -> Tuple[int, int] | None:
+    (x, y) = await pos()
+    cells_accessed.append([x, y, None])
+
+    return (x, y)
 
 globals = {
     "getCells": getCellsInner,
@@ -54,6 +59,7 @@ globals = {
     "result": None,
     "cell": getCellInner,
     "cells": getCellsInner,
+    "pos": getPosInner,
 }
 
 async def run_python(code: str):
@@ -128,6 +134,7 @@ async def run_python(code: str):
             import plotly
             if isinstance(output_value, plotly.graph_objs._figure.Figure):
                 output_value = output_value.to_html()
+                output_type = "Chart"
         except:
             pass
 
@@ -156,6 +163,7 @@ async def run_python(code: str):
                 )
             else:
                 output_value = plotly_html.result
+                output_type = "Chart"
 
         typed_array_output = None
 

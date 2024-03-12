@@ -2,6 +2,7 @@ from typing import Tuple
 
 from ..utils import result_to_value, to_python_type, stack_line_number
 import getCellsDB
+import getPos
 from pandas import DataFrame, Series
 
 results = None
@@ -138,4 +139,22 @@ async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first
     """
 
     return getCells(p0, p1, sheet, first_row_header)
+
+async def pos() -> tuple[int, int] | None:
+    """
+    A relative reference to the current cell in the grid.
+
+    Returns:
+        The tuple (x, y) coordinates of the current cell.
+
+    Typical usage example:    
+        (x, y) = pos()
+    """
+
+    result = await getPos()
+
+    if result:
+        return result
+    else:
+        return None
 

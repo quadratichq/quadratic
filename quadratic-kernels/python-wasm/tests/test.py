@@ -14,6 +14,9 @@ from datetime import datetime
 def mock_GetCellsDB():
     return []
 
+def mock_GetPos():
+    return []
+
 class mock_micropip:
     async def install(name):
         return __import__(name)
@@ -26,6 +29,7 @@ async def mock_fetch_module(source: str):
 sys.modules["pyodide"] = MagicMock()
 sys.modules["pyodide.code"] = MagicMock()
 sys.modules["getCellsDB"] = mock_GetCellsDB
+sys.modules["getPos"] = mock_GetPos
 sys.modules["micropip"] = AsyncMock()
 sys.modules["plotly"] = MagicMock()
 sys.modules["plotly.io"] = MagicMock()
