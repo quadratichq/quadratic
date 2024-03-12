@@ -1,6 +1,8 @@
 use std::{fmt, str::FromStr};
 
+use anyhow::{bail, Result};
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
+use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
@@ -420,78 +422,93 @@ impl CellValue {
         }
     }
 
-    // todo: this needs to be reworked under the new paradigm
-    // compare to operations/cell_value.rs, which has a very similar functions, except for the decimal check (which requires Sheet access)
-    /// Converts a string to a CellValue, updates number formatting, and returns reverse Ops
-    pub fn from_string(s: &String, pos: Pos, sheet: &mut Sheet) -> (CellValue, Vec<Operation>) {
-        let mut ops: Vec<Operation> = vec![];
-        let value: CellValue;
+    /// Convert stringified values and types from JS to CellValue
+    ///
+    /// `value` is the stringified value
+    /// `js_type` is the stringified CelLValue type
+    pub fn from_js(
+        value: &String,
+        js_type: &str,
+        pos: Pos,
+        sheet: &mut Sheet,
+    ) -> Result<(CellValue, Vec<Operation>)> {
+        let mut ops = vec![];
         let sheet_rect = SheetRect::single_pos(pos, sheet.id);
 
-        // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(&CellValue::strip_commas(s)) {
-            value = CellValue::Number(number);
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some(currency),
-            };
-            sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+        let value = match js_type {
+            "text" => {
+                let is_html = value.to_lowercase().starts_with("<html>")
+                    || value.to_lowercase().starts_with("<div>");
 
-            ops.push(Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
+                match is_html {
+                    true => CellValue::Html(value.to_string()),
+                    false => CellValue::Text(value.to_string()),
+                }
+            }
+            "number" => {
+                if let Some((currency, number)) = CellValue::unpack_currency(value) {
+                    let numeric_format = NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol: Some(currency),
+                    };
+                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
 
-            // only change decimals if it hasn't already been set
-            if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                });
-            }
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                            Some(numeric_format),
+                            1,
+                        )),
+                    });
 
-            if s.contains(',') {
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
-                });
+                    // only change decimals if it hasn't already been set
+                    if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
+                        sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
+                        ops.push(Operation::SetCellFormats {
+                            sheet_rect,
+                            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
+                                Some(2),
+                                1,
+                            )),
+                        });
+                    }
+
+                    CellValue::Number(number)
+                } else if let Ok(number) = BigDecimal::from_str(value) {
+                    CellValue::Number(number)
+                } else if let Some(number) = CellValue::unpack_percentage(value) {
+                    let numeric_format = NumericFormat {
+                        kind: NumericFormatKind::Percentage,
+                        symbol: None,
+                    };
+                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                            Some(numeric_format),
+                            1,
+                        )),
+                    });
+
+                    CellValue::Number(number)
+                } else {
+                    bail!("Could not parse number: {}", value);
+                }
             }
-        } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(s)) {
-            if s.contains(',') {
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
-                });
+            "logical" => {
+                let is_true = value.eq_ignore_ascii_case("true");
+                CellValue::Logical(is_true)
             }
-            value = CellValue::Number(bd);
-        } else if let Some(percent) = CellValue::unpack_percentage(&CellValue::strip_commas(s)) {
-            value = CellValue::Number(percent);
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            };
-            sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-            ops.push(Operation::SetCellFormats {
-                sheet_rect,
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
-            // note: for percentages, we don't automatically enable commas on conversion
-        } else if s.to_lowercase().starts_with("<html>") || s.to_lowercase().starts_with("<div>") {
-            // todo: probably use a crate here to detect html
-            value = CellValue::Html(s.to_string());
-        } else if let Some(boolean) = CellValue::unpack_boolean(s) {
-            value = boolean;
-        } else {
-            value = CellValue::Text(s.to_string());
-        }
-        (value, ops)
+            "instant" => {
+                let parsed: i64 = value.parse()?;
+                let timestamp = Utc.timestamp_opt(parsed, 0).unwrap();
+                CellValue::Text(timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
+            }
+            "duration" => CellValue::Text("not implemented".into()),
+            _ => CellValue::Text(value.into()),
+        };
+
+        Ok((value, ops))
     }
 
     pub fn is_html(&self) -> bool {

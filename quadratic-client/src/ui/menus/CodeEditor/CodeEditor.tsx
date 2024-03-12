@@ -2,15 +2,19 @@
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
+import { Pos } from '@/quadratic-core/types';
+import { ComputedPythonReturnType } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+import { Diagnostic } from 'vscode-languageserver-types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
+import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
@@ -36,6 +40,8 @@ export const CodeEditor = () => {
   const [consoleHeight, setConsoleHeight] = useState<number>(200);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
+  const [codeEditorReturn, setCodeEditorReturn] = useState<ComputedPythonReturnType | undefined>(undefined);
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
   const cellLocation = useMemo(() => {
     return {
@@ -88,12 +94,13 @@ export const CodeEditor = () => {
         editorInteractionState.selectedCell.x,
         editorInteractionState.selectedCell.y
       );
+
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
         if (updateEditorContent) setEditorContent(codeCell.code_string);
         setEvaluationResult(codeCell.evaluation_result);
-        setSpillError(codeCell.spill_error?.map((c) => ({ x: Number(c.x), y: Number(c.y) })));
+        setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
         if (updateEditorContent) setEditorContent('');
@@ -115,6 +122,23 @@ export const CodeEditor = () => {
     window.addEventListener('code-cells-update', update);
     return () => {
       window.removeEventListener('code-cells-update', update);
+    };
+  }, [updateCodeCell]);
+
+  // listen for python-inspect-results in order to display python inspection results
+  useEffect(() => {
+    const updateType = (e: Event) => setCodeEditorReturn((e as CustomEvent).detail);
+    window.addEventListener('python-inspect-results', updateType);
+    return () => {
+      window.removeEventListener('python-inspect-results', updateType);
+    };
+  }, [updateCodeCell]);
+
+  useEffect(() => {
+    const updateDiagnostics = (e: Event) => setDiagnostics((e as CustomEvent).detail.diagnostics);
+    window.addEventListener('python-diagnostics', updateDiagnostics);
+    return () => {
+      window.removeEventListener('python-diagnostics', updateDiagnostics);
     };
   }, [updateCodeCell]);
 
@@ -154,8 +178,10 @@ export const CodeEditor = () => {
 
   const saveAndRunCell = async () => {
     const language = editorInteractionState.mode;
+
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
+
     grid.setCodeCellValue({
       sheetId: cellLocation.sheetId,
       x: cellLocation.x,
@@ -163,7 +189,9 @@ export const CodeEditor = () => {
       codeString: editorContent ?? '',
       language,
     });
+
     setCodeString(editorContent ?? '');
+
     mixpanel.track('[CodeEditor].cellRun', {
       type: editorMode,
     });
@@ -285,7 +313,13 @@ export const CodeEditor = () => {
         cancelPython={cancelPython}
         closeEditor={() => closeEditor(false)}
       />
-      <CodeEditorBody editorContent={editorContent} setEditorContent={setEditorContent} closeEditor={closeEditor} />
+      <CodeEditorBody
+        editorContent={editorContent}
+        setEditorContent={setEditorContent}
+        closeEditor={closeEditor}
+        codeEditorReturn={codeEditorReturn}
+        diagnostics={diagnostics}
+      />
       <ResizeControl setState={setConsoleHeight} position="TOP" />
 
       {/* Console Wrapper */}
@@ -306,6 +340,8 @@ export const CodeEditor = () => {
             editorContent={editorContent}
             evaluationResult={evaluationResult}
             spillError={spillError}
+            hasUnsavedChanges={unsaved}
+            codeEditorReturn={codeEditorReturn}
           />
         )}
       </div>

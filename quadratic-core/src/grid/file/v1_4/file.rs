@@ -282,6 +282,7 @@ fn upgrade_code_runs(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeRun)> {
                             v1_4::CodeCellRunResult::Err { .. } => vec![],
                         },
                         result,
+                        return_type: None,
                     },
                 )
             })

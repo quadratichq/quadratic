@@ -29,6 +29,7 @@ impl GridController {
                             last_modified: Utc::now(),
                             cells_accessed: transaction.cells_accessed.clone(),
                             result: CodeRunResult::Ok(value),
+                            return_type: None,
                         };
                         self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
                     }
@@ -233,7 +234,7 @@ mod test {
             None,
             None,
             None,
-            Some("$12".into()),
+            Some(vec!["$12".into(), "number".into()]),
             None,
             None,
             None,
@@ -255,6 +256,7 @@ mod test {
                 formatted_code_string: None,
                 last_modified: result.last_modified,
                 result: CodeRunResult::Ok(Value::Single(CellValue::Number(12.into()))),
+                return_type: Some("number".into()),
                 cells_accessed: HashSet::new(),
                 spill_error: false,
             },
@@ -265,9 +267,15 @@ mod test {
     fn test_js_code_result_to_code_cell_value_array() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let array_output: Vec<Vec<String>> = vec![
-            vec!["$1.1".into(), "20%".into()],
-            vec!["3".into(), "Hello".into()],
+        let array_output: Vec<Vec<Vec<String>>> = vec![
+            vec![
+                vec!["$1.1".into(), "number".into()],
+                vec!["20%".into(), "number".into()],
+            ],
+            vec![
+                vec!["3".into(), "number".into()],
+                vec!["Hello".into(), "text".into()],
+            ],
         ];
         let mut transaction = PendingTransaction::default();
         let result = JsCodeResult::new_from_rust(
@@ -309,6 +317,7 @@ mod test {
                 std_err: None,
                 formatted_code_string: None,
                 result: CodeRunResult::Ok(Value::Array(array)),
+                return_type: Some("array".into()),
                 cells_accessed: HashSet::new(),
                 spill_error: false,
                 last_modified: result.last_modified,
