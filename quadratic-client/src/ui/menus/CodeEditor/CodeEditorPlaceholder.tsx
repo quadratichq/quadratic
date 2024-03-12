@@ -45,26 +45,24 @@ export function CodeEditorPlaceholder({
         ...codeEditorCommentStyles,
       }}
     >
-      Start typing to dismiss or{' '}
+      Start typing to dismiss,{' '}
       <button
-        className="cursor-pointer underline"
+        className="cursor-pointer italic underline"
         onClick={() => {
           setShowSnippetsPopover(true);
         }}
       >
         insert a code snippet
       </button>
-      .
-      <br />
-      <br />
+      , or{' '}
       <button
-        className={`pointer-events-auto text-inherit underline`}
+        className={`pointer-events-auto italic underline`}
         onClick={(e) => {
           e.preventDefault();
           setShowPlaceholder(false);
         }}
       >
-        Don’t show this again
+        don’t show this again
       </button>
       .
     </div>

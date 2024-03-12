@@ -5,7 +5,8 @@ import { TooltipHint } from '@/ui/components/TooltipHint';
 import { ExternalLinkIcon } from '@/ui/icons';
 import { IntegrationInstructionsOutlined } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
-import * as React from 'react';
+import mixpanel from 'mixpanel-browser';
+import { ReactNode, useEffect } from 'react';
 import { useCodeEditor } from './CodeEditorContext';
 import snippets from './snippets';
 
@@ -13,6 +14,12 @@ export function SnippetsPopover() {
   const { editorRef } = useCodeEditor();
   const { showSnippetsPopover, setShowSnippetsPopover } = useCodeEditor();
   const theme = useTheme();
+
+  useEffect(() => {
+    if (showSnippetsPopover === true) {
+      mixpanel.track('[Snippets].opened');
+    }
+  }, [showSnippetsPopover]);
 
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>
@@ -43,7 +50,6 @@ export function SnippetsPopover() {
           <CommandInput
             placeholder="Search snippets..."
             onKeyDown={(event) => {
-              // if it's the ESC key just close the menu
               if (event.key === 'Escape') {
                 event.stopPropagation();
                 setShowSnippetsPopover(false);
@@ -58,7 +64,9 @@ export function SnippetsPopover() {
                   key={label}
                   value={label}
                   keywords={[description, ...(keywords || [])]}
-                  onSelect={(currentValue) => {
+                  onSelect={() => {
+                    mixpanel.track('[Snippets].selected', { label });
+
                     if (editorRef.current) {
                       const selection = editorRef.current.getSelection();
                       if (!selection) return;
@@ -79,15 +87,43 @@ export function SnippetsPopover() {
             <CommandEmpty>
               No results.
               <span className="mt-2 block px-2 text-xs text-muted-foreground">
-                Learn more via our <ExternalLink href={WEBSITE_CONNECTIONS}>Connections</ExternalLink>,{' '}
-                <ExternalLink href={WEBSITE_EXAMPLES}>Examples</ExternalLink>, and{' '}
-                <ExternalLink href={WEBSITE_CHANGELOG}>Changelog</ExternalLink> resources.
+                Learn more via our{' '}
+                <ExternalLink
+                  href={WEBSITE_CONNECTIONS}
+                  onClick={() => {
+                    mixpanel.track('[Snippets].clickConnections');
+                  }}
+                >
+                  Connections
+                </ExternalLink>
+                ,{' '}
+                <ExternalLink
+                  href={WEBSITE_EXAMPLES}
+                  onClick={() => {
+                    mixpanel.track('[Snippets].clickExamples');
+                  }}
+                >
+                  Examples
+                </ExternalLink>
+                , and{' '}
+                <ExternalLink
+                  href={WEBSITE_CHANGELOG}
+                  onClick={() => {
+                    mixpanel.track('[Snippets].clickChangelog');
+                  }}
+                >
+                  Changelog
+                </ExternalLink>{' '}
+                resources.
               </span>
             </CommandEmpty>
           </CommandList>
         </Command>
         <ExternalLink
           href={DOCUMENTATION_PYTHON_URL}
+          onClick={() => {
+            mixpanel.track('[Snippets].clickDocs');
+          }}
           className="flex w-full items-center gap-4 border-t border-border px-3 py-2 text-sm text-muted-foreground hover:underline"
         >
           <ExternalLinkIcon style={{ fontSize: '.875rem' }} className="opacity-80" />
@@ -98,9 +134,18 @@ export function SnippetsPopover() {
   );
 }
 
-function ExternalLink({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
+function ExternalLink({
+  children,
+  className,
+  ...props
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+  onClick?: () => void;
+}) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className={`underline ${className ? className : ''}`}>
+    <a {...props} target="_blank" rel="noreferrer" className={`underline ${className ? className : ''}`}>
       {children}
     </a>
   );
