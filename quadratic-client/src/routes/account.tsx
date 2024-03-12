@@ -1,4 +1,5 @@
 import { Type } from '@/components/Type';
+import { themes, useTheme } from '@/hooks/useTheme';
 import { Button } from '@/shadcn/ui/button';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
@@ -8,17 +9,7 @@ import { useRootRouteLoaderData } from '../router';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
-  // const [darkMode, setDarkMode] = useLocalStorage('dark-mode', false);
-  // const hasDarkModeFeature = window.location.origin.includes('localhost');
-  // useEffect(() => {
-  //   if (hasDarkModeFeature) {
-  //     if (darkMode) {
-  //       document.body.classList.add('dark');
-  //     } else {
-  //       document.body.classList.remove('dark');
-  //     }
-  //   }
-  // }, [darkMode, hasDarkModeFeature]);
+  const [theme, setTheme] = useTheme();
 
   return (
     <>
@@ -36,33 +27,32 @@ export const Component = () => {
           </Type>
           <Type variant="body2">{user?.email}</Type>
         </Row>
-        {/*hasDarkModeFeature && (
+
+        {theme !== null && (
           <Row>
             <Type variant="body2" className="font-bold">
               Theme
             </Type>
             <div>
-              <Button
-                disabled={darkMode}
-                variant={darkMode ? 'secondary' : 'outline'}
-                onClick={() => {
-                  setDarkMode((prev) => !prev);
-                }}
-              >
-                Dark mode
-              </Button>
-              <Button
-                disabled={!darkMode}
-                variant={!darkMode ? 'secondary' : 'outline'}
-                onClick={() => {
-                  setDarkMode((prev) => !prev);
-                }}
-              >
-                Light mode
-              </Button>
+              <div className="inline-flex items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
+                {themes.map((t) => (
+                  <Button
+                    className={
+                      'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow'
+                    }
+                    data-state={theme === t ? 'active' : 'inactive'}
+                    variant={null}
+                    onClick={() => {
+                      setTheme(t);
+                    }}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </Button>
+                ))}
+              </div>
             </div>
           </Row>
-              )*/}
+        )}
 
         <Type variant="body2" className="text-muted-foreground">
           Additional account management coming in the future.
