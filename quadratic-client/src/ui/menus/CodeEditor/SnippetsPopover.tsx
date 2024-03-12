@@ -51,7 +51,7 @@ export function SnippetsPopover() {
             }}
           />
 
-          <CommandList>
+          <CommandList className="max-h-48">
             <CommandGroup>
               {snippets.map(({ label, code, description, keywords }) => (
                 <CommandItem
