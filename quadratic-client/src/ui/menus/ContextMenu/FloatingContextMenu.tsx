@@ -211,7 +211,7 @@ export const FloatingContextMenu = (props: Props) => {
   return (
     <div
       ref={menuDiv}
-      className={`border border-border bg-background shadow-xl`}
+      className={` bg-background`}
       style={{
         display: 'block',
         position: 'absolute',
@@ -222,6 +222,8 @@ export const FloatingContextMenu = (props: Props) => {
         pointerEvents: 'auto',
         visibility: 'hidden',
         borderRadius: '2px',
+        boxShadow:
+          'rgba(0, 0, 0, 0.2) 0px 3px 3px -2px, rgba(0, 0, 0, 0.14) 0px 3px 4px 0px, rgba(0, 0, 0, 0.12) 0px 1px 8px 0px',
       }}
       onClick={(e) => {
         mixpanel.track('[FloatingContextMenu].click');
