@@ -30,6 +30,7 @@ export class CellsLabels extends Container {
 
   // used to draw debug boxes for cellsTextHash
   private cellsTextDebug: Graphics;
+  private cellsTextHashDebug: Container;
 
   constructor(cellsSheet: CellsSheet) {
     super();
@@ -37,6 +38,7 @@ export class CellsLabels extends Container {
     this.cellsTextHash = new Map();
     this.cellsTextHashes = this.addChild(new Container<CellsTextHash>());
     this.cellsTextDebug = this.addChild(new Graphics());
+    this.cellsTextHashDebug = this.addChild(new Container());
   }
 
   get sheetId(): string {
@@ -106,12 +108,13 @@ export class CellsLabels extends Container {
     let count = 0;
     if (debugShowCellsHashBoxes) {
       this.cellsTextDebug.clear();
+      this.cellsTextHashDebug.removeChildren();
     }
     this.cellsTextHashes.children.forEach((cellsTextHash) => {
       if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
         cellsTextHash.show();
         if (debugShowCellsHashBoxes) {
-          cellsTextHash.drawDebugBox(this.cellsTextDebug);
+          cellsTextHash.drawDebugBox(this.cellsTextDebug, this.cellsTextHashDebug);
         }
         count++;
       } else {

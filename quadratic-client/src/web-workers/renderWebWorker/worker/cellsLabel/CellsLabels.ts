@@ -12,18 +12,19 @@ import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformanc
 import { intersects } from '@/gridGL/helpers/intersects';
 import { JsRenderCell, SheetInfo } from '@/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
-import { Container, Rectangle } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
 import { CellsTextHash } from './CellsTextHash';
 
-// 500 MB maximum memory per sheet before we start unloading hashes
-const MAX_RENDERING_MEMORY = 1024 * 1024 * 500;
+// 500 MB maximum memory per sheet before we start unloading hashes (right now
+// this is on a per-sheet basis--we will want to change this to a global limit)
+const MAX_RENDERING_MEMORY = 1024 * 1024 * 50; // * 500;
 
-export class CellsLabels extends Container {
+export class CellsLabels {
   sheetId: string;
   sheetOffsets: SheetOffsets;
-
+  last: any;
   bitmapFonts: RenderBitmapFonts;
 
   // (hashX, hashY) index into cellsTextHashContainer
@@ -43,7 +44,6 @@ export class CellsLabels extends Container {
   private dirtyRowHeadings: Map<number, number>;
 
   constructor(sheetInfo: SheetInfo, bitmapFonts: RenderBitmapFonts) {
-    super();
     this.sheetId = sheetInfo.sheet_id;
     const bounds = sheetInfo.bounds_without_formatting;
     if (bounds.type === 'nonEmpty' && bounds.min) {
@@ -231,15 +231,13 @@ export class CellsLabels extends Container {
   }
 
   // distance from viewport center to hash center
-  private hashDistanceSquared(hash: CellsTextHash, bounds: Rectangle): number {
+  private hashDistanceSquared(hash: CellsTextHash, viewportCenter: Point): number {
     const viewRectangle = hash.viewRectangle;
     const center = {
       x: viewRectangle.left + viewRectangle.width / 2,
       y: viewRectangle.top + viewRectangle.height / 2,
     };
-    return (
-      Math.pow(bounds.left + bounds.width / 2 - center.x, 2) + Math.pow(bounds.top + bounds.height / 2 - center.y, 2)
-    );
+    return Math.pow(viewportCenter.x - center.x, 2) + Math.pow(viewportCenter.y - center.y, 2);
   }
 
   // Finds the next dirty hash to render. Also handles unloading of hashes.
@@ -255,6 +253,7 @@ export class CellsLabels extends Container {
 
     const bounds = renderText.viewport;
     if (!bounds) return;
+    const viewportCenter = new Point(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
 
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
@@ -263,10 +262,10 @@ export class CellsLabels extends Container {
         }
       } else {
         if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
-          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
+          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, viewportCenter) });
         }
         if (findHashToDelete && hash.loaded) {
-          hashesToDelete.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
+          hashesToDelete.push({ hash, distance: this.hashDistanceSquared(hash, viewportCenter) });
         }
       }
     });
@@ -279,7 +278,7 @@ export class CellsLabels extends Container {
 
     // if hashes are visible, sort them by y and return the first one
     if (visibleDirtyHashes.length) {
-      visibleDirtyHashes.sort((a, b) => b.hashY - a.hashY);
+      visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
       while (memory > MAX_RENDERING_MEMORY && hashesToDelete.length) {
         hashesToDelete.pop()!.hash.unload();
         memory = this.totalMemory();
@@ -294,30 +293,48 @@ export class CellsLabels extends Container {
 
     // otherwise sort notVisible by distance from viewport center (by smallest to largest so we can use pop)
     notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
-    const dirtyHash = notVisibleDirtyHashes[0];
+    const nextNotVisibleHash = notVisibleDirtyHashes[0];
     if (hashesToDelete.length) {
       while (
         memory > MAX_RENDERING_MEMORY &&
         hashesToDelete.length &&
-        dirtyHash.distance < hashesToDelete[hashesToDelete.length - 1].distance
+        // ensure we're not deleting hashes that are closer than the nextNotVisibleHash
+        nextNotVisibleHash.distance < hashesToDelete[hashesToDelete.length - 1].distance
       ) {
         hashesToDelete.pop()!.hash.unload();
         memory = this.totalMemory();
       }
+
       // if the distance of the dirtyHash is greater than the distance of the
       // first hash to delete, then we do nothing. This ensures we're not constantly
       // deleting and rendering hashes at the edges of memory.
-      if (hashesToDelete.length && dirtyHash.distance > hashesToDelete[hashesToDelete.length - 1].distance) return;
+      if (hashesToDelete.length && nextNotVisibleHash.distance >= hashesToDelete[hashesToDelete.length - 1].distance)
+        return;
+
+      // debugging to find bug in hash unloading
+      // let loadedVisibleCount = 0;
+      // let loadedNotVisibleCount = 0;
+      // this.cellsTextHash.forEach((hash) => {
+      //   if (hash.loaded) {
+      //     if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) loadedVisibleCount++;
+      //     else loadedNotVisibleCount++;
+      //   }
+      // });
+      // console.log({ loadedVisibleCount, loadedNotVisibleCount, hashesToDelete: hashesToDelete.length });
 
       if (debugShowLoadingHashes) {
-        console.log(`[CellsTextHash] rendering offscreen: ${dirtyHash.hash.hashX}, ${dirtyHash.hash.hashY}`);
+        console.log(
+          `[CellsTextHash] rendering offscreen: ${nextNotVisibleHash.hash.hashX}, ${nextNotVisibleHash.hash.hashY}`
+        );
       }
-      return { hash: dirtyHash.hash, visible: false };
+      return { hash: nextNotVisibleHash.hash, visible: false };
     } else {
       if (debugShowLoadingHashes) {
-        console.log(`[CellsTextHash] rendering offscreen: ${dirtyHash.hash.hashX}, ${dirtyHash.hash.hashY}`);
+        console.log(
+          `[CellsTextHash] rendering offscreen: ${nextNotVisibleHash.hash.hashX}, ${nextNotVisibleHash.hash.hashY}`
+        );
       }
-      return { hash: dirtyHash.hash, visible: false };
+      return { hash: nextNotVisibleHash.hash, visible: false };
     }
   }
 

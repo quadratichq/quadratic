@@ -55,7 +55,7 @@ export class CellsTextHash {
     this.labels = new Map();
     this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    const offsets = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.x, this.AABB.y);
+    const offsets = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.left, this.AABB.top);
     const x = offsets.x;
     const y = offsets.y;
     const end = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.right, this.AABB.bottom);

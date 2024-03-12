@@ -11,7 +11,7 @@
 
 import { sheets } from '@/grid/controller/Sheets';
 import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
-import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
+import { Container, Graphics, Rectangle, Renderer, Text } from 'pixi.js';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
@@ -91,13 +91,18 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     }
   }
 
-  drawDebugBox(g: Graphics) {
+  drawDebugBox(g: Graphics, c: Container) {
     const sheet = sheets.getById(this.cellsLabels.sheetId);
     if (!sheet) throw new Error('Expected sheet to be defined in CellsTextHash.drawDebugBox');
     const screen = sheet.getScreenRectangle(this.AABB.left, this.AABB.top, this.AABB.width, this.AABB.height);
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();
+    const text = c.addChild(new Text(`${this.hashX},${this.hashY}`, { fill: 'white', fontSize: 12 }));
+    g.beginFill(0x888888);
+    g.drawRect(screen.x, screen.y, text.width, text.height);
+    g.endFill();
+    text.position.set(screen.x, screen.y);
   }
 
   // TODO: we'll need to send this over as part of the render message
