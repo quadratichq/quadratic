@@ -5,6 +5,7 @@ import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
+import { QuadraticLogoType } from '@/dashboard/components/QuadraticLogoType';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Action as FileAction } from '@/routes/files.$uuid';
@@ -44,7 +45,6 @@ import {
 } from 'react-router-dom';
 import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
 import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
-import QuadraticLogotype from '../dashboard/components/quadratic-logotype.svg';
 import { useRootRouteLoaderData } from '../router';
 
 const DRAWER_WIDTH = 264;
@@ -167,7 +167,7 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             <div className={`flex w-5 items-center justify-center`}>
               <img src={QuadraticLogo} alt="Quadratic logo glyph" />
             </div>
-            <img src={QuadraticLogotype} alt="Quadratic logotype" />
+            <QuadraticLogoType />
 
             <ReloadIcon
               className={`ml-auto mr-1 animate-spin text-primary transition-opacity ${isLoading ? '' : ' opacity-0'}`}
