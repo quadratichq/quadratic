@@ -1,20 +1,18 @@
-import monaco from 'monaco-editor';
-import { Fragment, RefObject, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import useLocalStorage from '../../../hooks/useLocalStorage';
-import snippets from './snippets';
+import { useCodeEditor } from './CodeEditorContext';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 export function CodeEditorPlaceholder({
   editorContent,
-  editorRef,
   setEditorContent,
 }: {
   editorContent: string | undefined;
-  editorRef: RefObject<monaco.editor.IStandaloneCodeEditor | null>;
   setEditorContent: (str: string | undefined) => void;
 }) {
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
   const [shouldRunEffect, setShouldRunEffect] = useState<boolean>(false);
+  const { editorRef, setShowSnippetsPopover } = useCodeEditor();
 
   // When the user chooses to autofill the editor with a predefined snippet,
   // focus the editor and set the initial cursor position
@@ -24,7 +22,8 @@ export function CodeEditorPlaceholder({
       editorRef.current.setPosition({ lineNumber: 0, column: 0 });
       setShouldRunEffect(false);
     }
-  }, [editorRef, editorContent, shouldRunEffect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorContent, shouldRunEffect]);
 
   if (editorContent) {
     return null;
@@ -41,33 +40,23 @@ export function CodeEditorPlaceholder({
         left: '64px',
         right: '14%',
         top: 0,
-        pointerEvents: 'none',
         // Kinda hacky, but we're copying the style of the code editor
         ...codeEditorBaseStyles,
         ...codeEditorCommentStyles,
       }}
     >
-      Start typing to dismiss, or insert a code snippet:
+      Start typing to dismiss or{' '}
+      <button
+        className="cursor-pointer underline"
+        onClick={() => {
+          setShowSnippetsPopover(true);
+        }}
+      >
+        insert a code snippet
+      </button>
+      .
       <br />
       <br />
-      {snippets.map((snippet, i: number) => (
-        <Fragment key={i}>
-          •{' '}
-          <button
-            className={`pointer-events-auto text-inherit underline`}
-            onClick={(e) => {
-              e.preventDefault();
-              setEditorContent(snippet.code);
-              setShouldRunEffect(true);
-            }}
-          >
-            {snippet.label}
-          </button>
-          <br />
-        </Fragment>
-      ))}
-      <br />
-      <br />{' '}
       <button
         className={`pointer-events-auto text-inherit underline`}
         onClick={(e) => {

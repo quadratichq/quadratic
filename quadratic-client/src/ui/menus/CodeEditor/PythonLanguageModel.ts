@@ -41,5 +41,31 @@ function createDependencyProposals(range: IRange | languages.CompletionItemRange
       insertText: 'cells((x1, y1), (x2, y2))',
       range: range,
     },
+    {
+      label: 'api_get_2',
+      kind: languages.CompletionItemKind.Function,
+      detail: 'Reference a multiple cells in the grid.',
+      documentation: 'Reference a multiple cells in the grid.',
+      insertText: 'cells((x1, y1), (x2, y2))',
+      range: range,
+    },
+    {
+      label: 'api_get',
+      kind: languages.CompletionItemKind.Snippet,
+      detail: 'Get data from an API.',
+      documentation: 'Use the fetch API to get data from an API',
+      insertText: `import requests 
+import pandas as pd 
+
+# Fetch data - replace URL with your API
+response = requests.get('https://jsonplaceholder.typicode.com/users')
+
+# Get json response into dataframe
+df = pd.DataFrame(response.json())
+
+# Display dataframe to sheet
+df`,
+      range: range,
+    },
   ];
 }
