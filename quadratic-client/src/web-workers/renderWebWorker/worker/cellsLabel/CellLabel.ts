@@ -7,7 +7,6 @@
  * populates the buffers for the relevant LabelMeshes based on this data.
  */
 
-import { Bounds } from '@/grid/sheet/Bounds';
 import { Coordinate } from '@/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/helpers/convertColor';
 import { CellAlign, JsRenderCell } from '@/quadratic-core-types';
@@ -306,9 +305,7 @@ export class CellLabel {
   }
 
   /** Adds the glyphs to the CellsLabels */
-  updateLabelMesh(labelMeshes: LabelMeshes): Bounds {
-    const bounds = new Bounds();
-
+  updateLabelMesh(labelMeshes: LabelMeshes) {
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
     const scale = this.fontSize / data.size;
@@ -365,8 +362,6 @@ export class CellLabel {
         buffers.uvs![index * 8 + 6] = textureUvs[6];
         buffers.uvs![index * 8 + 7] = textureUvs[7];
 
-        bounds.addRectanglePoints(xPos, yPos, right, bottom);
-
         if (color) {
           buffers.colors![index * 16 + 0] = color[0];
           buffers.colors![index * 16 + 1] = color[1];
@@ -388,7 +383,6 @@ export class CellLabel {
         buffer.index++;
       }
     }
-    return bounds;
   }
 
   // these are used to adjust column/row sizes without regenerating glyphs

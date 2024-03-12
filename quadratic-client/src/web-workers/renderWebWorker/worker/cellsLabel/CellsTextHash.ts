@@ -10,7 +10,6 @@
  */
 
 import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
-import { Bounds } from '@/grid/sheet/Bounds';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { JsRenderCell } from '@/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
@@ -36,9 +35,6 @@ export class CellsTextHash {
   // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
 
-  // shows bounds of the hash with content
-  viewBounds: Bounds;
-
   // rebuild CellsTextHash
   dirty: boolean | JsRenderCell[] = true;
 
@@ -58,7 +54,6 @@ export class CellsTextHash {
     this.cellsLabels = cellsLabels;
     this.labels = new Map();
     this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
-    this.viewBounds = new Bounds();
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
     const offsets = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.x, this.AABB.y);
     const x = offsets.x;
@@ -86,11 +81,6 @@ export class CellsTextHash {
 
   private createLabel(cell: JsRenderCell): CellLabel {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
-
-    // adjust each label so the origin is 0,0 relative to the textHash
-    rectangle.x -= this.viewRectangle.x;
-    rectangle.y -= this.viewRectangle.y;
-
     const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
     this.labels.set(this.getKey(cell), cellLabel);
     return cellLabel;
@@ -199,38 +189,10 @@ export class CellsTextHash {
     this.labelMeshes.prepare();
 
     // populate labelMeshes webGL buffers
-    this.viewBounds.clear();
-    this.labels.forEach((cellLabel) => {
-      const bounds = cellLabel.updateLabelMesh(this.labelMeshes);
-      this.viewBounds.mergeInto(bounds);
-    });
-
-    // adjust viewRectangle by viewBounds overflow
-    // this.viewRectangle = this.rawViewRectangle.clone();
-    // if (this.viewBounds.minX < this.viewRectangle.left) {
-    //   this.viewRectangle.width += this.viewRectangle.left - this.viewBounds.minX;
-    //   this.viewRectangle.x = this.viewBounds.minX;
-    // }
-    // if (this.viewBounds.maxX > this.viewRectangle.right) {
-    //   this.viewRectangle.width += this.viewBounds.maxX - this.viewRectangle.right;
-    // }
-    // if (this.viewBounds.minY < this.viewRectangle.top) {
-    //   this.viewRectangle.height += this.viewRectangle.top - this.viewBounds.minY;
-    //   this.viewRectangle.y = this.viewBounds.minY;
-    // }
-    // if (this.viewBounds.maxY > this.viewRectangle.bottom) {
-    //   this.viewRectangle.height += this.viewBounds.maxY - this.viewRectangle.bottom;
-    // }
+    this.labels.forEach((cellLabel) => cellLabel.updateLabelMesh(this.labelMeshes));
 
     // prepares the client's CellsTextHash for new content
-    renderClient.sendCellsTextHashClear(
-      this.cellsLabels.sheetId,
-      this.hashX,
-      this.hashY,
-      this.viewBounds,
-      this.viewRectangle.x,
-      this.viewRectangle.y
-    );
+    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
 
     // completes the rendering for the CellsTextHash
     this.labelMeshes.finalize();
@@ -300,6 +262,9 @@ export class CellsTextHash {
   }
 
   totalMemory(): number {
-    return this.labelMeshes.totalMemory();
+    if (this.loaded) {
+      return this.labelMeshes.totalMemory();
+    }
+    return 0;
   }
 }

@@ -232,8 +232,7 @@ export class CellsLabels extends Container {
 
   // distance from viewport center to hash center
   private hashDistanceSquared(hash: CellsTextHash, bounds: Rectangle): number {
-    const viewRectangle = hash.viewBounds.toRectangle();
-    if (!viewRectangle) return Infinity;
+    const viewRectangle = hash.viewRectangle;
     const center = {
       x: viewRectangle.left + viewRectangle.width / 2,
       y: viewRectangle.top + viewRectangle.height / 2,
@@ -244,11 +243,10 @@ export class CellsLabels extends Container {
   }
 
   // Finds the next dirty hash to render. Also handles unloading of hashes.
-  // Note: once the memory limit is reached, the algorithm unloads one cell hash
-  // every time it renders a new one. Therefore the memory usage may grow larger
-  // or smaller based on the relative memory usage of individual hashes.
+  // Note: once the memory limit is reached, the algorithm unloads enough cell hashes
+  // until the memory maximum is no longer exceeded.
   private nextDirtyHash(): { hash: CellsTextHash; visible: boolean } | undefined {
-    const memory = this.totalMemory();
+    let memory = this.totalMemory();
     let findHashToDelete = memory > MAX_RENDERING_MEMORY;
 
     const visibleDirtyHashes: CellsTextHash[] = [];
@@ -277,16 +275,16 @@ export class CellsLabels extends Container {
       return;
     }
 
-    let hashToDelete: { hash: CellsTextHash; distance: number } | undefined;
-    if (findHashToDelete) {
-      hashesToDelete.sort((a, b) => b.distance - a.distance);
-      hashToDelete = hashesToDelete[0];
-    }
+    hashesToDelete.sort((a, b) => b.distance - a.distance);
 
     // if hashes are visible, sort them by y and return the first one
     if (visibleDirtyHashes.length) {
-      visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
-      hashToDelete?.hash.unload();
+      visibleDirtyHashes.sort((a, b) => b.hashY - a.hashY);
+      while (memory > MAX_RENDERING_MEMORY && hashesToDelete.length) {
+        hashesToDelete.pop()!.hash.unload();
+        memory = this.totalMemory();
+      }
+
       if (debugShowLoadingHashes)
         console.log(
           `[CellsTextHash] rendering visible: ${visibleDirtyHashes[0].hashX}, ${visibleDirtyHashes[0].hashY}`
@@ -294,17 +292,27 @@ export class CellsLabels extends Container {
       return { hash: visibleDirtyHashes[0], visible: true };
     }
 
-    // otherwise sort notVisible by distance from viewport center
+    // otherwise sort notVisible by distance from viewport center (by smallest to largest so we can use pop)
     notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
     const dirtyHash = notVisibleDirtyHashes[0];
-    if (hashToDelete) {
-      if (dirtyHash.distance < hashToDelete.distance) {
-        hashToDelete.hash.unload();
-        if (debugShowLoadingHashes) {
-          console.log(`[CellsTextHash] rendering offscreen: ${dirtyHash.hash.hashX}, ${dirtyHash.hash.hashY}`);
-        }
-        return { hash: dirtyHash.hash, visible: false };
+    if (hashesToDelete.length) {
+      while (
+        memory > MAX_RENDERING_MEMORY &&
+        hashesToDelete.length &&
+        dirtyHash.distance < hashesToDelete[hashesToDelete.length - 1].distance
+      ) {
+        hashesToDelete.pop()!.hash.unload();
+        memory = this.totalMemory();
       }
+      // if the distance of the dirtyHash is greater than the distance of the
+      // first hash to delete, then we do nothing. This ensures we're not constantly
+      // deleting and rendering hashes at the edges of memory.
+      if (hashesToDelete.length && dirtyHash.distance > hashesToDelete[hashesToDelete.length - 1].distance) return;
+
+      if (debugShowLoadingHashes) {
+        console.log(`[CellsTextHash] rendering offscreen: ${dirtyHash.hash.hashX}, ${dirtyHash.hash.hashY}`);
+      }
+      return { hash: dirtyHash.hash, visible: false };
     } else {
       if (debugShowLoadingHashes) {
         console.log(`[CellsTextHash] rendering offscreen: ${dirtyHash.hash.hashX}, ${dirtyHash.hash.hashY}`);
@@ -315,9 +323,7 @@ export class CellsLabels extends Container {
 
   private totalMemory(): number {
     let total = 0;
-    this.cellsTextHash.forEach((hash) => {
-      total += hash.totalMemory();
-    });
+    this.cellsTextHash.forEach((hash) => (total += hash.totalMemory()));
     return total;
   }
 
@@ -327,6 +333,7 @@ export class CellsLabels extends Container {
     const next = this.nextDirtyHash();
     if (next) {
       await next.hash.update();
+      if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
       return next.visible ? 'visible' : true;
     }
 

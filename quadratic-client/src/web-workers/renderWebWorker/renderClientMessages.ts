@@ -27,9 +27,7 @@ export interface RenderClientCellsTextHashClear {
   sheetId: string;
   hashX: number;
   hashY: number;
-  bounds?: { x: number; y: number; width: number; height: number };
-  x: number;
-  y: number;
+  viewRectangle: { x: number; y: number; width: number; height: number };
 }
 
 export interface ClientRenderViewport {

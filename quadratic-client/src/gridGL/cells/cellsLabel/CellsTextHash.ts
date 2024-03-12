@@ -41,17 +41,14 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     cellsLabels: CellsLabels,
     hashX: number,
     hashY: number,
-    rectangle: { x: number; y: number; width: number; height: number },
-    x: number,
-    y: number
+    viewRectangle: { x: number; y: number; width: number; height: number }
   ) {
     super();
     this.cellsLabels = cellsLabels;
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    this.visibleRectangle = new Rectangle(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
+    this.visibleRectangle = new Rectangle(viewRectangle.x, viewRectangle.y, viewRectangle.width, viewRectangle.height);
     this.hashX = hashX;
     this.hashY = hashY;
-    this.position.set(x, y);
   }
 
   clear() {
@@ -68,9 +65,8 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.newChildren = [];
   }
 
-  clearMeshEntries(bounds: { x: number; y: number; width: number; height: number }, x: number, y: number) {
-    this.visibleRectangle = new Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
-    this.position.set(x, y);
+  clearMeshEntries(viewRectangle: { x: number; y: number; width: number; height: number }) {
+    this.visibleRectangle = new Rectangle(viewRectangle.x, viewRectangle.y, viewRectangle.width, viewRectangle.height);
   }
 
   show(): void {

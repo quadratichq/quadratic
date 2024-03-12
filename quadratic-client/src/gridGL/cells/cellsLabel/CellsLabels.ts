@@ -48,20 +48,20 @@ export class CellsLabels extends Container {
     const key = `${message.hashX},${message.hashY}`;
     const cellsTextHash = this.cellsTextHash.get(key);
     if (cellsTextHash) {
-      if (message.bounds) {
-        cellsTextHash.clearMeshEntries(message.bounds, message.x, message.y);
-      } else {
-        this.cellsTextHashes.removeChild(cellsTextHash);
-        cellsTextHash.destroy();
-        this.cellsTextHash.delete(key);
-      }
+      // if (message.bounds) {
+      cellsTextHash.clearMeshEntries(message.viewRectangle);
+      // } else {
+      //   this.cellsTextHashes.removeChild(cellsTextHash);
+      //   cellsTextHash.destroy();
+      //   this.cellsTextHash.delete(key);
+      // }
     } else {
-      if (message.bounds) {
-        const cellsTextHash = this.cellsTextHashes.addChild(
-          new CellsTextHash(this, message.hashX, message.hashY, message.bounds, message.x, message.y)
-        );
-        this.cellsTextHash.set(key, cellsTextHash);
-      }
+      // if (message.bounds) {
+      const cellsTextHash = this.cellsTextHashes.addChild(
+        new CellsTextHash(this, message.hashX, message.hashY, message.viewRectangle)
+      );
+      this.cellsTextHash.set(key, cellsTextHash);
+      // }
     }
   }
 

@@ -6,7 +6,6 @@
  */
 
 import { debugWebWorkersMessages } from '@/debugFlags';
-import { Bounds } from '@/grid/sheet/Bounds';
 import { Rectangle } from 'pixi.js';
 import {
   ClientRenderMessage,
@@ -61,19 +60,18 @@ class RenderClient {
   }
 
   // sends a message to the main thread to clear the cellsTextHash for the hashX, hashY
-  sendCellsTextHashClear(sheetId: string, hashX: number, hashY: number, viewBounds: Bounds, x: number, y: number) {
-    const rectangle = viewBounds.toRectangle();
-    if (!rectangle) return;
-    rectangle.x += x;
-    rectangle.y += y;
+  sendCellsTextHashClear(
+    sheetId: string,
+    hashX: number,
+    hashY: number,
+    viewRectangle: { x: number; y: number; width: number; height: number }
+  ) {
     const message: RenderClientCellsTextHashClear = {
       type: 'renderClientCellsTextHashClear',
       sheetId,
       hashX,
       hashY,
-      bounds: rectangle,
-      x,
-      y,
+      viewRectangle,
     };
     this.send(message);
   }
