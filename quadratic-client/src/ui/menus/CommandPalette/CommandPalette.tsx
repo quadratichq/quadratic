@@ -42,8 +42,8 @@ export const CommandPalette = () => {
   }, []);
 
   const commandGroups = [
-    fileCommandGroup,
     editCommandGroup,
+    fileCommandGroup,
     viewCommandGroup,
     importCommandGroup,
     borderCommandGroup,
