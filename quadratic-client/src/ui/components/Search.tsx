@@ -1,3 +1,4 @@
+import { findInSheet, findInSheets } from '@/actions';
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
@@ -29,7 +30,7 @@ export function Search() {
   const [current, setCurrent] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const placeholder = !searchOptions.sheet_id ? 'Find across all sheets...' : 'Find in this sheet...';
+  const placeholder = !searchOptions.sheet_id ? findInSheets.label : findInSheet.label;
 
   const onChange = (search: string, updatedSearchOptions = searchOptions) => {
     if (search.length > 0) {
