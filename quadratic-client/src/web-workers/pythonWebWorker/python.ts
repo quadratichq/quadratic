@@ -131,17 +131,10 @@ class PythonWebWorker {
         }
 
         case 'get-pos': {
-          const transactionId = this.getTransactionId();
-
           try {
+            const transactionId = this.getTransactionId();
             const cells = grid.calculationGetPos(transactionId);
-
-            // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
-            if (cells) {
-              this.worker!.postMessage({ type: 'get-pos', cells });
-            } else {
-              this.calculationComplete();
-            }
+            this.worker!.postMessage({ type: 'get-pos', cells });
           } catch (e) {
             console.warn('Error in get-pos', e);
             this.calculationComplete();
