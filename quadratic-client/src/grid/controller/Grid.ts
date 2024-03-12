@@ -46,25 +46,6 @@ export const rectToPoint = (rect: Rect): Point => {
   return new Point(Number(rect.min.x), Number(rect.min.y));
 };
 
-// export const upgradeFileRust = async (
-//   gridFile: GridFile,
-//   lastSequenceNum: number
-// ): Promise<{
-//   contents: string;
-//   version: string;
-// } | null> => {
-//   await init();
-//   try {
-//     const grid = await quadraticCore.upgradeGridFile(JSON.stringify(gridFile), lastSequenceNum);
-//     debugger;
-//     // const contents = gc.exportToFile();
-//     return { contents: JSON.stringify(grid), version: (grid as any).version };
-//   } catch (e) {
-//     console.warn(e);
-//     return null;
-//   }
-// };
-
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;

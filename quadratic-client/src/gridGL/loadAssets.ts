@@ -22,18 +22,15 @@ export function ensureBitmapFontLoaded(resolve: () => void): void {
   waitForLoad();
 }
 
-export function loadAssets(testing?: boolean): Promise<void> {
+export function loadAssets(): Promise<void> {
   return new Promise((resolve) => {
-    // skipBorders is needed for testing (otherwise we need to create a mock canvas)
-    if (!testing) {
-      createBorderTypes();
+    createBorderTypes();
 
-      // Load HTML fonts for Input
-      loadFont('OpenSans');
-      loadFont('OpenSans-Bold');
-      loadFont('OpenSans-Italic');
-      loadFont('OpenSans-BoldItalic');
-    }
+    // Load HTML fonts for Input
+    loadFont('OpenSans');
+    loadFont('OpenSans-Bold');
+    loadFont('OpenSans-Italic');
+    loadFont('OpenSans-BoldItalic');
 
     // Load PixiJS fonts for canvas
     Loader.shared.add('OpenSans', '/fonts/opensans/OpenSans.fnt');
