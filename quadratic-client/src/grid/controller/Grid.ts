@@ -717,6 +717,12 @@ export class Grid {
     }
   }
 
+  // returns undefined if there was an error fetching cells (eg, invalid sheet name)
+  calculationGetRelativeCells(): [bigint, bigint] | undefined {
+    const pos = sheets.sheet.cursor.getPos();
+    return [pos.x, pos.y];
+  }
+
   rerunAllCodeCells() {
     const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());
     this.transactionResponse(summary);

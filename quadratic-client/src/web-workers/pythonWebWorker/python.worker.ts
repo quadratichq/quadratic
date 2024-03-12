@@ -12,6 +12,7 @@ try {
   // do nothing, we're in a test
 }
 let getCellsMessages: (cells: { x: number; y: number; value: string; type_name: string }[]) => void | undefined;
+let getPosMessages: (cells: { x: number; y: number }[]) => void | undefined;
 
 const getCellsDB = async (
   x0: number,
@@ -24,6 +25,13 @@ const getCellsDB = async (
   return new Promise((resolve) => {
     getCellsMessages = (cells: { x: number; y: number; value: string; type_name: string }[]) => resolve(cells);
     self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1, sheet, lineNumber } } as PythonMessage);
+  });
+};
+
+const getPos = async (): Promise<{ x: number; y: number }[]> => {
+  return new Promise((resolve) => {
+    getPosMessages = (cells: { x: number; y: number }[]) => resolve(cells);
+    self.postMessage({ type: 'get-relative-cells' } as PythonMessage);
   });
 };
 
@@ -43,6 +51,7 @@ async function pythonWebWorker() {
     }
 
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
+    await pyodide.registerJsModule('getPos', getPos);
     await pyodide.loadPackage('micropip');
 
     let micropip = await pyodide.pyimport('micropip');
@@ -78,6 +87,10 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
   if (event.type === 'get-cells') {
     if (event.cells && getCellsMessages) {
       getCellsMessages(event.cells);
+    }
+  } else if (event.type === 'get-relative-cells') {
+    if (event.cells && getPosMessages) {
+      getPosMessages(event.cells);
     }
   } else if (event.type === 'inspect') {
     if (!pyodide) {

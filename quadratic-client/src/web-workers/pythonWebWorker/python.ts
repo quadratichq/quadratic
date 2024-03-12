@@ -129,6 +129,26 @@ class PythonWebWorker {
           break;
         }
 
+        case 'get-relative-cells': {
+          if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
+
+          try {
+            const cells = grid.calculationGetRelativeCells();
+
+            // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
+            if (cells) {
+              this.worker!.postMessage({ type: 'get-relative-cells', cells });
+            } else {
+              this.calculationComplete();
+            }
+          } catch (e) {
+            console.warn('Error in get-relative-cells', e);
+            this.calculationComplete();
+          }
+
+          break;
+        }
+
         case 'python-loaded': {
           window.dispatchEvent(new CustomEvent('python-loaded'));
           this.loaded = true;
