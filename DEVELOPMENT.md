@@ -266,4 +266,4 @@ Output will be located in the terminal.
 
 # Prompting user after version change
 
-The current version numbers are stored in `minVersion.json`. This JSON is ready by both the client and the multiplayer server. When the client has a lower version number then the multiplayer (the version is sent by the multiplayer server with the EnterFileRoom message), then the user is prompted to refresh with slightly different experience based on required vs. recommended changes.
+The current version numbers are stored in `updateAlertVersion.json`. This JSON is ready by both the client and the multiplayer server. When the client has a lower version number then the multiplayer (the version is sent by the multiplayer server with the EnterFileRoom message), then the user is prompted to refresh with slightly different experience based on required vs. recommended changes.

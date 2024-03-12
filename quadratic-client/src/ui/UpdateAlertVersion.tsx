@@ -4,7 +4,7 @@ import { RocketIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
 import { FixedBottomAlert } from './components/PermissionOverlay';
 
-export const VersionControlAlert = () => {
+export const UpdateAlertVersion = () => {
   const [showDialog, setShowDialog] = useState<false | 'recommended' | 'required'>(false);
   useEffect(() => {
     const needRefresh = (message: any /* { detail: 'required' | 'recommended' } */) => setShowDialog(message.detail);

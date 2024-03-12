@@ -11,7 +11,7 @@ import { displayName } from '@/utils/userUtil';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
-import sharedConstants from '../../../minVersion.json';
+import sharedConstants from '../../../updateAlertVersion.json';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '../gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import {
   Heartbeat,
@@ -57,7 +57,7 @@ export class Multiplayer {
   private jwt?: string | void;
   private lastMouseMove: { x: number; y: number } | undefined;
   private connectionTimeout: number | undefined;
-  private minVersion: Version;
+  private updateAlertVersion: Version;
 
   brokenConnection = false;
 
@@ -102,7 +102,7 @@ export class Multiplayer {
     };
     window.addEventListener('beforeunload', alertUser);
 
-    this.minVersion = sharedConstants;
+    this.updateAlertVersion = sharedConstants;
   }
 
   get state() {
@@ -387,9 +387,9 @@ export class Multiplayer {
 
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
-    if (room.min_version.requiredVersion > this.minVersion.requiredVersion) {
+    if (room.min_version.requiredVersion > this.updateAlertVersion.requiredVersion) {
       window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'required' }));
-    } else if (room.min_version.recommendedVersion > this.minVersion.recommendedVersion) {
+    } else if (room.min_version.recommendedVersion > this.updateAlertVersion.recommendedVersion) {
       window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'recommended' }));
     }
     const remaining = new Set(this.users.keys());
