@@ -314,7 +314,6 @@ export const CodeEditor = () => {
         evaluationResult={evaluationResult}
         diagnostics={diagnostics}
       />
-      <ResizeControl setState={setConsoleHeight} position="TOP" />
       {evaluationResult?.line_number &&
         !out?.stdErr &&
         !unsaved &&
@@ -332,6 +331,7 @@ export const CodeEditor = () => {
           </div>
         )}
 
+      <ResizeControl setState={setConsoleHeight} position="TOP" />
       {/* Console Wrapper */}
       <div
         style={{
