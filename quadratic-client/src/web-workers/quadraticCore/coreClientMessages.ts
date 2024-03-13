@@ -490,6 +490,56 @@ export interface ClientCoreRedo {
 
 //#endregion
 
+//#region Clipboard
+
+export interface ClientCoreCopyToClipboard {
+  type: 'clientCoreCopyToClipboard';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface CoreClientCopyToClipboard {
+  type: 'coreClientCopyToClipboard';
+  id: number;
+  plainText: string;
+  html: string;
+}
+
+export interface ClientCoreCutToClipboard {
+  type: 'clientCoreCutToClipboard';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cursor: string;
+}
+
+export interface CoreClientCutToClipboard {
+  type: 'coreClientCutToClipboard';
+  id: number;
+  plainText: string;
+  html: string;
+}
+
+export interface ClientCorePasteFromClipboard {
+  type: 'clientCorePasteFromClipboard';
+  sheetId: string;
+  x: number;
+  y: number;
+  plainText?: string;
+  html?: string;
+  special: string;
+  cursor: string;
+}
+
+//#endregion
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -529,7 +579,10 @@ export type ClientCoreMessage =
   | ClientCoreExport
   | ClientCoreSearch
   | ClientCoreRerunCodeCells
-  | ClientCoreHasRenderCells;
+  | ClientCoreHasRenderCells
+  | ClientCoreCopyToClipboard
+  | ClientCoreCutToClipboard
+  | ClientCorePasteFromClipboard;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -551,4 +604,6 @@ export type CoreClientMessage =
   | CoreClientUpgradeFile
   | CoreClientExport
   | CoreClientSearch
-  | CoreClientHasRenderCells;
+  | CoreClientHasRenderCells
+  | CoreClientCopyToClipboard
+  | CoreClientCutToClipboard;

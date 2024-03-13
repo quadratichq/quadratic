@@ -1,4 +1,5 @@
 import { PasteSpecial } from '@/quadratic-core-types';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
@@ -8,7 +9,6 @@ import { debugTimeCheck, debugTimeReset } from '../../../gridGL/helpers/debugPer
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '../../../gridGL/pixiApp/copyAsPNG';
-import { grid } from '../../controller/Grid';
 import { sheets } from '../../controller/Sheets';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';
@@ -25,11 +25,11 @@ const canvasIsTarget = () => {
   return target === document.body || target === pixiApp.canvas || (target as HTMLElement)?.contains(pixiApp.canvas);
 };
 
-export const copyToClipboardEvent = (e: ClipboardEvent) => {
+export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   if (!canvasIsTarget()) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
-  const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, rectangle);
+  const { plainText, html } = await quadraticCore.copyToClipboard(sheets.sheet.id, rectangle);
   toClipboard(plainText, html);
   e.preventDefault();
   debugTimeCheck('copy to clipboard');
@@ -40,7 +40,11 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
-  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, rectangle);
+  const { plainText, html } = await quadraticCore.cutToClipboard(
+    sheets.sheet.id,
+    rectangle,
+    sheets.getCursorPosition()
+  );
   if (!e.clipboardData) {
     console.warn('clipboardData is not defined');
     return;
@@ -70,16 +74,15 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
     plainText = e.clipboardData.getData('text/plain');
   }
   if (plainText || html) {
-    debugTimeReset();
-    grid.pasteFromClipboard({
+    quadraticCore.pasteFromClipboard({
       sheetId: sheets.sheet.id,
       x: cursor.x,
       y: cursor.y,
       plainText,
       html,
       special: 'None',
+      cursor: sheets.getCursorPosition(),
     });
-    debugTimeCheck('[Clipboard] paste to clipboard');
   }
 
   // enables Firefox menu pasting after a ctrl+v paste
@@ -115,14 +118,18 @@ const toClipboard = (plainText: string, html: string) => {
 export const cutToClipboard = async () => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
-  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  const { plainText, html } = await quadraticCore.cutToClipboard(
+    sheets.sheet.id,
+    sheets.sheet.cursor.getRectangle(),
+    sheets.getCursorPosition()
+  );
   toClipboard(plainText, html);
   debugTimeCheck('cut to clipboard (fallback)');
 };
 
-export const copyToClipboard = () => {
+export const copyToClipboard = async () => {
   debugTimeReset();
-  const { plainText, html } = grid.copyToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  const { plainText, html } = await quadraticCore.copyToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
   toClipboard(plainText, html);
   debugTimeCheck('copy to clipboard');
 };
@@ -177,32 +184,30 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
       html = await item.text();
     }
 
-    debugTimeReset();
-    grid.pasteFromClipboard({
+    quadraticCore.pasteFromClipboard({
       sheetId: sheets.sheet.id,
       x: target.x,
       y: target.y,
       plainText,
       html,
       special,
+      cursor: sheets.getCursorPosition(),
     });
-    debugTimeCheck('paste from clipboard');
   }
 
   // handles firefox using localStorage :(
   else {
     const html = (await localforage.getItem(clipboardLocalStorageKey)) as string;
     if (html) {
-      debugTimeReset();
-      grid.pasteFromClipboard({
+      quadraticCore.pasteFromClipboard({
         sheetId: sheets.sheet.id,
         x: target.x,
         y: target.y,
         plainText: undefined,
         html,
         special,
+        cursor: sheets.getCursorPosition(),
       });
-      debugTimeCheck('paste from clipboard (firefox)');
     }
   }
 };

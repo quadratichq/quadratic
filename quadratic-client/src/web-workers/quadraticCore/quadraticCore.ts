@@ -15,6 +15,7 @@ import {
   JsCodeCell,
   JsRenderCell,
   JsRenderCodeCell,
+  PasteSpecial,
   SearchOptions,
   SheetPos,
 } from '@/quadratic-core-types';
@@ -591,6 +592,62 @@ class QuadraticCore {
 
   redo() {
     this.send({ type: 'clientCoreRedo', cursor: sheets.getCursorPosition() });
+  }
+
+  //#endregion
+
+  //#region Clipboard
+
+  copyToClipboard(sheetId: string, rectangle: Rectangle): Promise<{ plainText: string; html: string }> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
+        resolve(message);
+      };
+      this.send({
+        type: 'clientCoreCopyToClipboard',
+        sheetId,
+        x: rectangle.x,
+        y: rectangle.y,
+        width: rectangle.width,
+        height: rectangle.height,
+        id,
+      });
+    });
+  }
+
+  cutToClipboard(sheetId: string, rectangle: Rectangle, cursor: string): Promise<{ plainText: string; html: string }> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
+        resolve(message);
+      };
+      this.send({
+        type: 'clientCoreCutToClipboard',
+        id,
+        sheetId,
+        x: rectangle.x,
+        y: rectangle.y,
+        width: rectangle.width,
+        height: rectangle.height,
+        cursor,
+      });
+    });
+  }
+
+  pasteFromClipboard(options: {
+    sheetId: string;
+    x: number;
+    y: number;
+    plainText: string | undefined;
+    html: string | undefined;
+    special: PasteSpecial;
+    cursor: string;
+  }) {
+    this.send({
+      type: 'clientCorePasteFromClipboard',
+      ...options,
+    });
   }
 
   //#endregion

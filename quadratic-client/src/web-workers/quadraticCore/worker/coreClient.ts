@@ -260,6 +260,35 @@ class CoreClient {
         core.setCellAlign(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.align, e.data.cursor);
         break;
 
+      case 'clientCoreCopyToClipboard':
+        const result = core.copyToClipboard(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        this.send({ type: 'coreClientCopyToClipboard', id: e.data.id, ...result });
+        break;
+
+      case 'clientCoreCutToClipboard':
+        const cutResult = core.cutToClipboard(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.cursor
+        );
+        this.send({ type: 'coreClientCutToClipboard', id: e.data.id, ...cutResult });
+        break;
+
+      case 'clientCorePasteFromClipboard':
+        core.pasteFromClipboard(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.plainText,
+          e.data.html,
+          e.data.special,
+          e.data.cursor
+        );
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

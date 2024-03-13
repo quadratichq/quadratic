@@ -345,6 +345,45 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.setCellAlign(sheetId, pointsToRect(x, y, width, height), align, cursor);
   }
+
+  //#region Clipboard
+  copyToClipboard(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ): { plainText: string; html: string } {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.copyToClipboard(sheetId, pointsToRect(x, y, width, height));
+  }
+
+  cutToClipboard(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    cursor: string
+  ): { plainText: string; html: string } {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.cutToClipboard(sheetId, pointsToRect(x, y, width, height), cursor);
+  }
+
+  pasteFromClipboard(
+    sheetId: string,
+    x: number,
+    y: number,
+    plainText: string | undefined,
+    html: string | undefined,
+    special: string,
+    cursor: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.pasteFromClipboard(sheetId, new Pos(x, y), plainText, html, special, cursor);
+  }
+
+  //#endregion
 }
 
 export const core = new Core();

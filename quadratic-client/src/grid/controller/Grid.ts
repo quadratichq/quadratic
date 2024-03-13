@@ -1,4 +1,4 @@
-import { JsClipboard, JsHtmlOutput, PasteSpecial, Rect } from '@/quadratic-core-types';
+import { JsHtmlOutput, Rect } from '@/quadratic-core-types';
 import {
   BorderSelection,
   BorderStyle,
@@ -272,40 +272,40 @@ export class Grid {
 
   //#region Clipboard
 
-  copyToClipboard(sheetId: string, rectangle: Rectangle): JsClipboard {
-    return this.gridController.copyToClipboard(sheetId, rectangleToRect(rectangle));
-  }
+  // copyToClipboard(sheetId: string, rectangle: Rectangle): JsClipboard {
+  //   return this.gridController.copyToClipboard(sheetId, rectangleToRect(rectangle));
+  // }
 
-  cutToClipboard(sheetId: string, rectangle: Rectangle): { html: string; plainText: string } {
-    const { summary, html, plainText } = this.gridController.cutToClipboard(
-      sheetId,
-      rectangleToRect(rectangle),
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
+  // cutToClipboard(sheetId: string, rectangle: Rectangle): { html: string; plainText: string } {
+  //   const { summary, html, plainText } = this.gridController.cutToClipboard(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
 
-    return { html, plainText };
-  }
+  //   return { html, plainText };
+  // }
 
-  pasteFromClipboard(options: {
-    sheetId: string;
-    x: number;
-    y: number;
-    plainText: string | undefined;
-    html: string | undefined;
-    special: PasteSpecial;
-  }) {
-    const { sheetId, x, y, plainText, html, special } = options;
-    const summary = this.gridController.pasteFromClipboard(
-      sheetId,
-      new Pos(x, y),
-      plainText,
-      html,
-      special,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // pasteFromClipboard(options: {
+  //   sheetId: string;
+  //   x: number;
+  //   y: number;
+  //   plainText: string | undefined;
+  //   html: string | undefined;
+  //   special: PasteSpecial;
+  // }) {
+  //   const { sheetId, x, y, plainText, html, special } = options;
+  //   const summary = this.gridController.pasteFromClipboard(
+  //     sheetId,
+  //     new Pos(x, y),
+  //     plainText,
+  //     html,
+  //     special,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
   //#endregion
 

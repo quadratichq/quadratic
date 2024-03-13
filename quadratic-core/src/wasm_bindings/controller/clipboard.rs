@@ -2,7 +2,7 @@ use std::str::FromStr;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
-    controller::GridController,
+    controller::{user_actions::clipboard::PasteSpecial, GridController},
     grid::{js_types::JsClipboard, SheetId},
     Pos, Rect,
 };
@@ -43,7 +43,14 @@ impl GridController {
         special: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let Ok(special) = serde_json::from_str(&special) else {
+        dbgjs!(&special);
+        let special = if &special == "None" {
+            PasteSpecial::None
+        } else if &special == "Values" {
+            PasteSpecial::Values
+        } else if &special == "Formats" {
+            PasteSpecial::Formats
+        } else {
             return Err(JsValue::from_str("Invalid special"));
         };
         let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
