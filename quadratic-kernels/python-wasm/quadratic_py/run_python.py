@@ -46,6 +46,7 @@ async def getCellsInner(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=Non
 
     return await getCells(p0, p1, sheet, first_row_header)
     
+# Wrapper to pos() to capture cells_accessed
 async def getPosInner() -> Tuple[int, int] | None:
     (x, y) = await pos()
     cells_accessed.append([x, y, None])
@@ -54,9 +55,10 @@ async def getPosInner() -> Tuple[int, int] | None:
 
 # Wrapper to rel_cell() to capture cells_accessed
 async def getRelCellInner(x: int, y: int) -> int | float | str | bool | None:
-    cells_accessed.append([x, y])
+    [result, cells_accessed] = await rel_cell(x, y)
+    cells_accessed.append(cells_accessed)
 
-    return await rel_cell(x, y)
+    return result
 
 globals = {
     "getCells": getCellsInner,
@@ -67,6 +69,7 @@ globals = {
     "cells": getCellsInner,
     "pos": getPosInner,
     "rel_cell": getRelCellInner,
+    "rc": getRelCellInner,
 }
 
 async def run_python(code: str):

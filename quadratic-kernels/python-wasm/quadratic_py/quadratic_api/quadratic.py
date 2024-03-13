@@ -170,12 +170,10 @@ async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
         c = rel_cell(0, 0)
     """
 
-    print("calling getRelCell in quadratic.py", x, y, int(stack_line_number()))
     result = await getRelCell(x, y, int(stack_line_number()))
-    print("result in getRelCell in quadratic.py", result)
 
-    if len(result):
-        return result_to_value(result)
+    if len(result.value):
+        return (result_to_value(result.value[0]), result.cells_accessed)
     else:
         return None
 

@@ -17,6 +17,9 @@ def mock_GetCellsDB():
 def mock_GetPos():
     return []
 
+def mock_GetRelCell():
+    return []
+
 class mock_micropip:
     async def install(name):
         return __import__(name)
@@ -30,6 +33,7 @@ sys.modules["pyodide"] = MagicMock()
 sys.modules["pyodide.code"] = MagicMock()
 sys.modules["getCellsDB"] = mock_GetCellsDB
 sys.modules["getPos"] = mock_GetPos
+sys.modules["getRelCell"] = mock_GetRelCell
 sys.modules["micropip"] = AsyncMock()
 sys.modules["plotly"] = MagicMock()
 sys.modules["plotly.io"] = MagicMock()
@@ -63,6 +67,7 @@ class TestTesting(IsolatedAsyncioTestCase):
         self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
         self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
         self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = await rel_cell(0, 0)")
         self.assertEqual(
             attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
         )

@@ -728,13 +728,17 @@ export class Grid {
     transactionId: string,
     pos: Pos,
     lineNumber: number | undefined
-  ): { x: number; y: number; value: string }[] | undefined {
+  ): { value: { x: number; y: number; value: string }[] | undefined; cells_accessed: bigint[][] } {
     const rel_pos = this.calculationGetPos(transactionId) || [0, 0];
-    console.log('rel_pos', rel_pos, pos.x, pos.y);
     const x = BigInt(rel_pos[0]) + pos.x;
-    const y = BigInt(rel_pos[0]) + pos.y;
-    console.log('x, y', x, y);
-    return this.calculationGetCells(transactionId, posToRect(Number(x), Number(y)), undefined, lineNumber);
+    const y = BigInt(rel_pos[1]) + pos.y;
+    const value = this.calculationGetCells(transactionId, posToRect(Number(x), Number(y)), undefined, lineNumber);
+    const cells_accessed = [[x, y]];
+
+    return {
+      value,
+      cells_accessed,
+    };
   }
 
   rerunAllCodeCells() {
