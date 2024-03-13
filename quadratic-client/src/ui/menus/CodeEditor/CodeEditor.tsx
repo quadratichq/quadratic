@@ -19,6 +19,7 @@ import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorProvider } from './CodeEditorContext';
 import { CodeEditorHeader } from './CodeEditorHeader';
+import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
@@ -327,7 +328,6 @@ export const CodeEditor = () => {
           )}
 
         <ResizeControl setState={setConsoleHeight} position="TOP" />
-
         {/* Console Wrapper */}
         <div
           style={{
