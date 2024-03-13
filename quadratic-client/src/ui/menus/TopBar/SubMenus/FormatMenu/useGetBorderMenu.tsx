@@ -1,18 +1,17 @@
 import {
-  BorderAll,
-  BorderBottom,
-  BorderClear,
-  // BorderClear,
-  BorderColor,
-  BorderHorizontal,
-  BorderInner,
-  BorderLeft,
-  BorderOuter,
-  BorderRight,
-  BorderTop,
-  BorderVertical,
-  LineStyle,
-} from '@mui/icons-material';
+  BorderAllIcon,
+  BorderBottomIcon,
+  BorderColorIcon,
+  BorderHorizontalIcon,
+  BorderInnerIcon,
+  BorderLeftIcon,
+  BorderNoneIcon,
+  BorderOuterIcon,
+  BorderRightIcon,
+  BorderStyleIcon,
+  BorderTopIcon,
+  BorderVerticalIcon,
+} from '@/ui/icons';
 import { Tooltip } from '@mui/material';
 import { ClickEvent, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback, useEffect, useState } from 'react';
@@ -102,50 +101,75 @@ export function useGetBorderMenu(): JSX.Element {
     <div className="borderMenu">
       <div className="borderMenuLines">
         <div className="borderMenuLine">
-          <BorderSelectionButton type={BorderSelection.All} title="All borders" label={<BorderAll />} />
+          <BorderSelectionButton
+            type={BorderSelection.All}
+            title="All borders"
+            label={<BorderAllIcon className="h-5 w-5" />}
+          />
           <BorderSelectionButton
             type={BorderSelection.Inner}
             title="Inner borders"
-            label={<BorderInner />}
+            label={<BorderInnerIcon className="h-5 w-5" />}
             disabled={!cursor.multiCursor}
           />
-          <BorderSelectionButton type={BorderSelection.Outer} title="Outer borders" label={<BorderOuter />} />
+          <BorderSelectionButton
+            type={BorderSelection.Outer}
+            title="Outer borders"
+            label={<BorderOuterIcon className="h-5 w-5" />}
+          />
           <BorderSelectionButton
             type={BorderSelection.Horizontal}
             title="Horizontal borders"
-            label={<BorderHorizontal />}
+            label={<BorderHorizontalIcon className="h-5 w-5" />}
             disabled={!cursor.multiCursor}
           />
           <BorderSelectionButton
             type={BorderSelection.Vertical}
             title="Vertical borders"
-            label={<BorderVertical />}
+            label={<BorderVerticalIcon className="h-5 w-5" />}
             disabled={!cursor.multiCursor}
           />
         </div>
         <div className="borderMenuLine">
-          <BorderSelectionButton type={BorderSelection.Left} title="Left border" label={<BorderLeft />} />
-          <BorderSelectionButton type={BorderSelection.Top} title="Top border" label={<BorderTop />} />
-          <BorderSelectionButton type={BorderSelection.Right} title="Right border" label={<BorderRight />} />
-          <BorderSelectionButton type={BorderSelection.Bottom} title="Bottom border" label={<BorderBottom />} />
-          <BorderSelectionButton type={BorderSelection.Clear} title="Clear borders" label={<BorderClear />} />
+          <BorderSelectionButton
+            type={BorderSelection.Left}
+            title="Left border"
+            label={<BorderLeftIcon className="h-5 w-5" />}
+          />
+          <BorderSelectionButton
+            type={BorderSelection.Top}
+            title="Top border"
+            label={<BorderTopIcon className="h-5 w-5" />}
+          />
+          <BorderSelectionButton
+            type={BorderSelection.Right}
+            title="Right border"
+            label={<BorderRightIcon className="h-5 w-5" />}
+          />
+          <BorderSelectionButton
+            type={BorderSelection.Bottom}
+            title="Bottom border"
+            label={<BorderBottomIcon className="h-5 w-5" />}
+          />
+          <BorderSelectionButton
+            type={BorderSelection.Clear}
+            title="Clear borders"
+            label={<BorderNoneIcon className="h-5 w-5" />}
+          />
         </div>
       </div>
       <div className="borderMenuFormatting">
         <SubMenu
           className="borderSubmenu color-picker-submenu"
           id="FillBorderColorMenuID"
-          menuStyle={{
-            padding: '0px',
-          }}
-          label={<BorderColor style={{ marginRight: '0.25rem' }}></BorderColor>}
+          label={<BorderColorIcon className="mr-1 h-5 w-5"></BorderColorIcon>}
         >
           <QColorPicker onChangeComplete={handleChangeBorderColor} />
         </SubMenu>
         <SubMenu
           id="BorderLineStyleMenuID"
           className="borderSubmenu"
-          label={<LineStyle style={{ marginRight: '0.25rem' }}></LineStyle>}
+          label={<BorderStyleIcon className="mr-1 h-5 w-5" />}
         >
           <MenuItem onClick={(e) => handleChangeBorderType(e)}>
             <div className="lineStyleBorder normalBorder"></div>

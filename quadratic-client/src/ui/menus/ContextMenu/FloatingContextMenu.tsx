@@ -1,23 +1,24 @@
 import { PasteSpecial } from '@/quadratic-core/quadratic_core';
+import { colors } from '@/theme/colors';
 import {
-  AttachMoneyOutlined,
-  BorderAll,
-  ContentPasteGoOutlined,
-  ContentPasteSearchOutlined,
-  Download,
-  FormatAlignCenter,
-  FormatAlignLeft,
-  FormatAlignRight,
-  FormatBold,
-  FormatClear,
-  FormatColorFill,
-  FormatColorText,
-  FormatItalic,
-  Functions,
-  MoreHoriz,
-  Percent,
-} from '@mui/icons-material';
-import { Divider, IconButton, Paper, Toolbar } from '@mui/material';
+  BorderAllIcon,
+  DecimalDecreaseIcon,
+  DecimalIncreaseIcon,
+  DollarIcon,
+  DotsHorizontalIcon,
+  FontBoldIcon,
+  FontItalicIcon,
+  FunctionIcon,
+  MagicWandIcon,
+  PaintBucketIcon,
+  PercentIcon,
+  TextAlignCenterIcon,
+  TextAlignLeftIcon,
+  TextAlignRightIcon,
+  TextColorIcon,
+  TextNoneIcon,
+} from '@/ui/icons';
+import { Divider, IconButton, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef } from 'react';
@@ -35,11 +36,9 @@ import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../../gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { colors } from '../../../theme/colors';
 import { useFileContext } from '../../components/FileProvider';
 import { TooltipHint } from '../../components/TooltipHint';
 import { QColorPicker } from '../../components/qColorPicker';
-import { CopyAsPNG, DecimalDecrease, DecimalIncrease, Icon123 } from '../../icons';
 import { MenuLineItem } from '../TopBar/MenuLineItem';
 import { useGetBorderMenu } from '../TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
@@ -210,8 +209,9 @@ export const FloatingContextMenu = (props: Props) => {
   const iconSize = 'small';
 
   return (
-    <Paper
+    <div
       ref={menuDiv}
+      className={` bg-background`}
       style={{
         display: 'block',
         position: 'absolute',
@@ -221,8 +221,10 @@ export const FloatingContextMenu = (props: Props) => {
         transform,
         pointerEvents: 'auto',
         visibility: 'hidden',
+        borderRadius: '2px',
+        boxShadow:
+          'rgba(0, 0, 0, 0.2) 0px 3px 3px -2px, rgba(0, 0, 0, 0.14) 0px 3px 4px 0px, rgba(0, 0, 0, 0.12) 0px 1px 8px 0px',
       }}
-      elevation={4}
       onClick={(e) => {
         mixpanel.track('[FloatingContextMenu].click');
         e.stopPropagation();
@@ -242,9 +244,8 @@ export const FloatingContextMenu = (props: Props) => {
               const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
               setBold(!formatPrimaryCell?.bold);
             }}
-            color="inherit"
           >
-            <FormatBold fontSize={iconSize} />
+            <FontBoldIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
@@ -255,9 +256,8 @@ export const FloatingContextMenu = (props: Props) => {
               const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
               setItalic(!formatPrimaryCell?.italic);
             }}
-            color="inherit"
           >
-            <FormatItalic fontSize={iconSize} />
+            <FontItalicIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <Menu
@@ -266,8 +266,8 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Text color">
-                <IconButton size="small" color="inherit">
-                  <FormatColorText fontSize={iconSize} />
+                <IconButton size="small">
+                  <TextColorIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -291,17 +291,17 @@ export const FloatingContextMenu = (props: Props) => {
 
         <TooltipHint title="Align left">
           <IconButton size="small" onClick={() => setAlignment('left')}>
-            <FormatAlignLeft fontSize={iconSize} />
+            <TextAlignLeftIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <TooltipHint title="Align center">
           <IconButton size="small" onClick={() => setAlignment('center')}>
-            <FormatAlignCenter fontSize={iconSize} />
+            <TextAlignCenterIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         <TooltipHint title="Align right">
           <IconButton size="small" onClick={() => setAlignment('right')}>
-            <FormatAlignRight fontSize={iconSize} />
+            <TextAlignRightIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
@@ -313,8 +313,8 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Fill color">
-                <IconButton size="small" color="inherit">
-                  <FormatColorFill fontSize={iconSize} />
+                <IconButton size="small">
+                  <PaintBucketIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -337,8 +337,8 @@ export const FloatingContextMenu = (props: Props) => {
           menuButton={
             <div>
               <TooltipHint title="Borders">
-                <IconButton size="small" color="inherit">
-                  <BorderAll fontSize={iconSize} />
+                <IconButton size="small">
+                  <BorderAllIcon fontSize={iconSize} />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -349,53 +349,53 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDividerVertical />
 
-        <TooltipHint title="Format as automatic">
-          <IconButton size="small" onClick={() => removeCellNumericFormat()} color="inherit">
-            <Icon123 fontSize={iconSize} />
+        <TooltipHint title="Format automatically">
+          <IconButton size="small" onClick={() => removeCellNumericFormat()}>
+            <MagicWandIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as currency">
-          <IconButton size="small" onClick={() => textFormatSetCurrency()} color="inherit">
-            <AttachMoneyOutlined fontSize={iconSize} />
+          <IconButton size="small" onClick={() => textFormatSetCurrency()}>
+            <DollarIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as percentage">
-          <IconButton size="small" onClick={() => textFormatSetPercentage()} color="inherit">
-            <Percent fontSize={iconSize} />
+          <IconButton size="small" onClick={() => textFormatSetPercentage()}>
+            <PercentIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Format as scientific">
-          <IconButton size="small" onClick={() => textFormatSetExponential()} color="inherit">
-            <Functions fontSize={iconSize} />
+          <IconButton size="small" onClick={() => textFormatSetExponential()}>
+            <FunctionIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Decrease decimal places">
-          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()} color="inherit">
-            <DecimalDecrease fontSize={iconSize} />
+          <IconButton size="small" onClick={() => textFormatDecreaseDecimalPlaces()}>
+            <DecimalDecreaseIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Increase decimal places">
-          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()} color="inherit">
-            <DecimalIncrease fontSize={iconSize} />
+          <IconButton size="small" onClick={() => textFormatIncreaseDecimalPlaces()}>
+            <DecimalIncreaseIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <MenuDividerVertical />
         <TooltipHint title="Clear formatting" shortcut={KeyboardSymbols.Command + '\\'}>
-          <IconButton size="small" onClick={clearFormattingAndBorders} color="inherit">
-            <FormatClear fontSize={iconSize} />
+          <IconButton size="small" onClick={clearFormattingAndBorders}>
+            <TextNoneIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
         {fullClipboardSupport() && <MenuDividerVertical />}
         {fullClipboardSupport() && (
           <TooltipHint title="More commands…">
-            <IconButton size="small" onClick={() => moreMenuToggle()} color="inherit" ref={moreMenuButtonRef}>
-              <MoreHoriz fontSize={iconSize} />
+            <IconButton size="small" onClick={() => moreMenuToggle()} ref={moreMenuButtonRef}>
+              <DotsHorizontalIcon fontSize={iconSize} />
             </IconButton>
           </TooltipHint>
         )}
@@ -413,7 +413,6 @@ export const FloatingContextMenu = (props: Props) => {
             <MenuLineItem
               primary="Paste values only"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'V'}
-              Icon={ContentPasteGoOutlined}
             />
           </MenuItem>
           <MenuItem
@@ -422,7 +421,7 @@ export const FloatingContextMenu = (props: Props) => {
               moreMenuToggle();
             }}
           >
-            <MenuLineItem primary="Paste formatting only" Icon={ContentPasteSearchOutlined} />
+            <MenuLineItem primary="Paste formatting only" />
           </MenuItem>
           <MenuDivider />
           <MenuItem
@@ -434,7 +433,6 @@ export const FloatingContextMenu = (props: Props) => {
             <MenuLineItem
               primary="Copy selection as PNG"
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'C'}
-              Icon={CopyAsPNG}
             ></MenuLineItem>
           </MenuItem>
           <MenuItem
@@ -446,12 +444,11 @@ export const FloatingContextMenu = (props: Props) => {
             <MenuLineItem
               primary={downloadSelectionAsCsvAction.label}
               secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
-              Icon={Download}
             ></MenuLineItem>
           </MenuItem>
         </ControlledMenu>
       </Toolbar>
-    </Paper>
+    </div>
   );
 };
 

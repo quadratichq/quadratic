@@ -22,6 +22,7 @@
     "@monaco-editor/react": "^4.3.1",
     "@mui/icons-material": "^5.2.0",
     "@mui/material": "^5.2.2",
+    "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-dropdown-menu": "^2.0.6",
@@ -41,6 +42,7 @@
     "@types/ua-parser-js": "^0.7.39",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "cmdk": "^0.2.0",
     "color": "^4.2.3",
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^2.0.4",
@@ -70,6 +72,7 @@
   "main": "public/electron.js",
   "scripts": {
     "start": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=8192 && vite dev",
+    "start:no-hmr": "npm run build && vite preview --port 3000",
     "build": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=8192 && vite build",
     "build:wasm": "npm run build:wasm:javascript && npm run build:wasm:nodejs && npm run build:wasm:types",
     "build:wasm:types": "cd .. && cd quadratic-core && cargo run --bin export_types",
