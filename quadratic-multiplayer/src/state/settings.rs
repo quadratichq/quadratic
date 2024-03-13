@@ -13,7 +13,7 @@ pub struct MinVersion {
 
 impl MinVersion {
     pub fn new() -> Result<Self> {
-        let file = include_str!("../../../updateAlertVersion.json");
+        let file = include_str!("../../updateAlertVersion.json");
         serde_json::from_str(file).map_err(|e| MpError::MinVersion(e.to_string()))
     }
 }
