@@ -3,6 +3,7 @@ from typing import Tuple
 from ..utils import result_to_value, to_python_type, stack_line_number
 import getCellsDB
 import getPos
+import getRelCell
 from pandas import DataFrame, Series
 
 results = None
@@ -140,7 +141,7 @@ async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first
 
     return getCells(p0, p1, sheet, first_row_header)
 
-async def pos() -> tuple[int, int] | None:
+async def pos() -> tuple[int, int]:
     """
     A relative reference to the current cell in the grid.
 
@@ -151,10 +152,30 @@ async def pos() -> tuple[int, int] | None:
         (x, y) = pos()
     """
 
-    result = await getPos()
+    return await getPos()
 
-    if result:
-        return result
+async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
+    """
+    Relative reference to a single cell in the grid.
+
+    Args:
+        x: The X coordinate on the grid.
+        y: The Y coordinate on the grid.
+        
+    Returns:
+        The value of the relative cell referenced.
+
+    Typical usage example:
+    
+        c = rel_cell(0, 0)
+    """
+
+    print("calling getRelCell in quadratic.py", x, y, int(stack_line_number()))
+    result = await getRelCell(x, y, int(stack_line_number()))
+    print("result in getRelCell in quadratic.py", result)
+
+    if len(result):
+        return result_to_value(result)
     else:
         return None
 

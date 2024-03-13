@@ -2,7 +2,7 @@ from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
 from typing import Tuple
 
-from .quadratic_api.quadratic import getCell, getCells, pos
+from .quadratic_api.quadratic import getCell, getCells, pos, rel_cell
 from .utils import attempt_fix_await, to_quadratic_type
 import micropip
 import pandas as pd
@@ -52,6 +52,12 @@ async def getPosInner() -> Tuple[int, int] | None:
 
     return (x, y)
 
+# Wrapper to rel_cell() to capture cells_accessed
+async def getRelCellInner(x: int, y: int) -> int | float | str | bool | None:
+    cells_accessed.append([x, y])
+
+    return await rel_cell(x, y)
+
 globals = {
     "getCells": getCellsInner,
     "getCell": getCellInner,
@@ -60,6 +66,7 @@ globals = {
     "cell": getCellInner,
     "cells": getCellsInner,
     "pos": getPosInner,
+    "rel_cell": getRelCellInner,
 }
 
 async def run_python(code: str):

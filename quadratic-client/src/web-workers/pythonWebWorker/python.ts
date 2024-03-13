@@ -3,7 +3,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import { TransactionSummary } from '@/quadratic-core/types';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
-import { JsCodeResult } from '../../quadratic-core/quadratic_core';
+import { JsCodeResult, Pos } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -138,6 +138,30 @@ class PythonWebWorker {
           } catch (e) {
             console.warn('Error in get-pos', e);
             this.calculationComplete();
+          }
+
+          break;
+        }
+
+        case 'get-rel-cell': {
+          const transactionId = this.getTransactionId();
+          const pos = event.pos;
+
+          if (!pos) throw new Error('Expected pos to be defined in get-cells');
+
+          try {
+            const cells = grid.calculationGetRelCell(transactionId, new Pos(pos.x, pos.y), pos.lineNumber);
+
+            // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
+            if (cells) {
+              this.worker!.postMessage({ type: 'get-rel-cell', cells });
+            } else {
+              this.calculationComplete();
+            }
+          } catch (e) {
+            console.warn('Error in get-rel-cells', e);
+            this.calculationComplete();
+            grid.transactionResponse(e as TransactionSummary);
           }
 
           break;

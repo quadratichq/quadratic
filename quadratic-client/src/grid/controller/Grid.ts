@@ -723,10 +723,18 @@ export class Grid {
     return [result.x, result.y];
   }
 
-  // returns undefined if there was an error fetching cells (eg, invalid sheet name)
-  calculationGetRelativeCells(): [bigint, bigint] | undefined {
-    const pos = sheets.sheet.cursor.getPos();
-    return [pos.x, pos.y];
+  // get the value of a relative code cell position
+  calculationGetRelCell(
+    transactionId: string,
+    pos: Pos,
+    lineNumber: number | undefined
+  ): { x: number; y: number; value: string }[] | undefined {
+    const rel_pos = this.calculationGetPos(transactionId) || [0, 0];
+    console.log('rel_pos', rel_pos, pos.x, pos.y);
+    const x = BigInt(rel_pos[0]) + pos.x;
+    const y = BigInt(rel_pos[0]) + pos.y;
+    console.log('x, y', x, y);
+    return this.calculationGetCells(transactionId, posToRect(Number(x), Number(y)), undefined, lineNumber);
   }
 
   rerunAllCodeCells() {
