@@ -190,7 +190,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
       if (column < currentHash.AABB.x) {
         // find hash to the left of current hash (skip over empty hashes)
         currentHash = this.findPreviousHash(column, row, bounds);
-        if (!currentHash) return;
+        if (!currentHash) break;
       }
       const neighborLabel = currentHash.getLabel(column, row);
       if (neighborLabel) {
@@ -203,20 +203,13 @@ export class CellsTextHash extends Container<LabelMeshes> {
             }
           }
         }
-        const clipLeftResult = label.checkLeftClip(neighborLabel.AABB.right);
-        if (clipLeftResult) {
-          if (currentHash !== this) {
-            clipRight.push({ column, row, hashX: currentHash.hashX, hashY: currentHash.hashY });
-            if (clipLeftResult !== 'same') {
-              currentHash.dirty = true;
-            }
-          }
-        }
-        return;
+        label.checkLeftClip(neighborLabel.AABB.right);
+        break;
       }
       column--;
     }
 
+    currentHash = this;
     column = label.location.x + 1;
     while (column <= bounds.right) {
       if (column > currentHash.AABB.right) {
@@ -226,18 +219,14 @@ export class CellsTextHash extends Container<LabelMeshes> {
       }
       const neighborLabel = currentHash.getLabel(column, row);
       if (neighborLabel) {
-        if (neighborLabel.checkLeftClip(label.AABB.right)) {
-          if (currentHash !== this) {
-            clipRight.push({ column, row, hashX: currentHash.hashX, hashY: currentHash.hashY });
+        const leftClipResult = neighborLabel.checkLeftClip(label.AABB.right);
+        if (leftClipResult && currentHash !== this) {
+          clipRight.push({ column, row, hashX: currentHash.hashX, hashY: currentHash.hashY });
+          if (leftClipResult !== 'same') {
             currentHash.dirty = true;
           }
         }
-        if (label.checkRightClip(neighborLabel.AABB.left)) {
-          if (currentHash !== this) {
-            clipLeft.push({ column, row, hashX: currentHash.hashX, hashY: currentHash.hashY });
-            currentHash.dirty = true;
-          }
-        }
+        label.checkRightClip(neighborLabel.AABB.left);
         return;
       }
       column++;
