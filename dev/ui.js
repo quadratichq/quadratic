@@ -1,13 +1,7 @@
 import chalk from "chalk";
-<<<<<<< HEAD
 import { ANIMATE_STATUS, ANIMATION_INTERVAL, BROKEN, COMPONENTS, DONE, KILLED, NO_LOGS, PERF, SPACE, WATCH, } from "./constants.js";
-import { help, helpCLI, helpKeyboard } from "./help.js";
-import { createScreen } from "./terminal.js";
-=======
-import { ANIMATE_STATUS, ANIMATION_INTERVAL, BROKEN, COMPONENTS, DONE, KILLED, NO_LOGS, SPACE, WATCH, } from "./constants.js";
 import { helpCLI, helpKeyboard } from "./help.js";
 import { logo } from "./logo.js";
->>>>>>> main
 export class UI {
     cli;
     control;

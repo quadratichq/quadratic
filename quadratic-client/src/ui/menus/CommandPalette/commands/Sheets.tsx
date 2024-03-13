@@ -1,7 +1,7 @@
 import { SheetDeleteIcon, SheetDuplicateIcon, SheetGoToIcon, SheetIcon } from '@/ui/icons';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useMemo, useState } from 'react';
 import { hasPermissionToEditFile } from '../../../../actions';
-import { grid } from '../../../../grid/controller/Grid';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { focusGrid } from '../../../../helpers/focusGrid';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -19,7 +19,13 @@ const ListItems = () => {
           keywords: ['create sheets', 'new sheets'],
           isAvailable: hasPermissionToEditFile,
           Component: (props) => {
-            return <CommandPaletteListItem {...props} action={() => sheets.createNew()} icon={<SheetIcon />} />;
+            return (
+              <CommandPaletteListItem
+                {...props}
+                action={() => quadraticCore.addSheet(sheets.getCursorPosition())}
+                icon={<SheetIcon />}
+              />
+            );
           },
         },
         {
@@ -29,7 +35,7 @@ const ListItems = () => {
             return (
               <CommandPaletteListItem
                 {...props}
-                action={() => grid.duplicateSheet(sheets.sheet.id)}
+                action={() => quadraticCore.duplicateSheet(sheets.sheet.id, sheets.getCursorPosition())}
                 icon={<SheetDuplicateIcon />}
               />
             );
@@ -44,7 +50,7 @@ const ListItems = () => {
                 {...props}
                 action={() => {
                   if (window.confirm(`Are you sure you want to delete ${sheets.sheet.name}?`)) {
-                    sheets.deleteSheet(sheets.sheet.id);
+                    quadraticCore.deleteSheet(sheets.sheet.id, sheets.getCursorPosition());
                   }
                   setTimeout(focusGrid);
                 }}

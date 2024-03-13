@@ -1,4 +1,4 @@
-import { JsClipboard, JsHtmlOutput, Rect } from '@/quadratic-core-types';
+import { JsClipboard, JsHtmlOutput, PasteSpecial, Rect } from '@/quadratic-core-types';
 import {
   BorderSelection,
   BorderStyle,
@@ -6,7 +6,6 @@ import {
   JsCodeResult,
   JsComputeGetCells,
   MinMax,
-  PasteSpecial,
   Pos,
   Rect as RectInternal,
   SheetOffsets,

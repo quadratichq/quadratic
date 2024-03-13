@@ -2,7 +2,7 @@ use std::str::FromStr;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
-    controller::{user_actions::clipboard::PasteSpecial, GridController},
+    controller::GridController,
     grid::{js_types::JsClipboard, SheetId},
     Pos, Rect,
 };
@@ -40,10 +40,15 @@ impl GridController {
         pos: Pos,
         plain_text: Option<String>,
         html: Option<String>,
-        special: PasteSpecial,
+        special: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+        let Ok(special) = serde_json::from_str(&special) else {
+            return Err(JsValue::from_str("Invalid special"));
+        };
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            return Ok(JsValue::UNDEFINED);
+        };
         let output = self.paste_from_clipboard(
             pos.to_sheet_pos(sheet_id),
             plain_text,

@@ -37,3 +37,4 @@ export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
 export interface Placement { index: number, position: number, size: number, }
 export interface ColumnRow { column: number, row: number, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
+export type PasteSpecial = "None" | "Values" | "Formats";
