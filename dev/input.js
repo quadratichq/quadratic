@@ -55,6 +55,9 @@ export class Input {
             case "a": // toggle API
                 this.control.restartApi();
                 break;
+            case "r": // toggle client
+                this.control.restartClient();
+                break;
             case "l": // watch all
                 if (this.cli.options.api != true) {
                     this.cli.options.api = true;

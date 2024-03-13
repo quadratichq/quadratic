@@ -72,6 +72,7 @@
   "main": "public/electron.js",
   "scripts": {
     "start": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=8192 && vite dev",
+    "start:no-hmr": "npm run build && vite preview --port 3000",
     "build": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=8192 && vite build",
     "build:wasm": "npm run build:wasm:javascript && npm run build:wasm:nodejs && npm run build:wasm:types",
     "build:wasm:types": "cd .. && cd quadratic-core && cargo run --bin export_types",

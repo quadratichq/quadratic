@@ -165,12 +165,16 @@ export class Control {
         // clean the node_modules/.vite directory to avoid client errors
         const clean = exec("rm -rf quadratic-client/node_modules/.vite");
         clean.on("close", () => {
-            this.client = spawn("npm", ["start", "--workspace=quadratic-client"], {
+            this.client = spawn("npm", [
+                "run",
+                this.cli.options.client ? "start" : "start:no-hmr",
+                "--workspace=quadratic-client",
+            ], {
                 signal: this.signals.client.signal,
             });
             this.ui.printOutput("client", (data) => {
                 this.handleResponse("client", data, {
-                    success: "Found 0 errors.",
+                    success: ["Found 0 errors.", "Network: use --host to expose"],
                     error: ["ERROR(", "npm ERR!"],
                     start: "> quadratic-client@",
                 });
@@ -180,6 +184,10 @@ export class Control {
                 }
             });
         });
+    }
+    restartClient() {
+        this.cli.options.client = !this.cli.options.client;
+        this.runClient();
     }
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;

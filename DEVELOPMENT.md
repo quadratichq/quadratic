@@ -69,7 +69,7 @@ for more more information.
 
 #### Docker Compose
 
-Docker Compose is a utility that's built into Docker Desktop and is a compact 
+Docker Compose is a utility that's built into Docker Desktop and is a compact
 infrastructure-as-code framework.  Services (e.g. running Docker containers) are
 defined, along with configuration information, in the `docker-compose.yml` file.
 Services can talk to each other and can communicate with services in the user's host
@@ -216,7 +216,7 @@ See the README in each crate for more information.
 
 #### Rust Coverage
 
-In CI, coverage is automatically collected and sent to CodeCov.  
+In CI, coverage is automatically collected and sent to CodeCov.
 
 For local coverage information, you'll need to install some dependencies first:
 
@@ -226,7 +226,7 @@ cargo install grcov
 rustup component add llvm-tools-preview
 ```
 
-To run coverage and generate HTML reports, bring up the docker network 
+To run coverage and generate HTML reports, bring up the docker network
 (`npm run docker:up`) and navigate to the individual crate and enter:
 
 ```shell
@@ -258,7 +258,7 @@ Local load testing is performed by [JMeter](https://jmeter.apache.org/).  First,
 brew install jmeter
 ```
 
-Load tests are located in the `/tests/load` directory.  Run run jmeter: 
+Load tests are located in the `/tests/load` directory.  Run run jmeter:
 
 ```shell
 bash jmeter
@@ -279,3 +279,7 @@ JAVA_HOME="/opt/homebrew/opt/openjdk" bash /opt/homebrew/Cellar/jmeter/5.6.3/lib
 ```
 
 Output will be located in the terminal.
+
+# Prompting user after version change
+
+The current version numbers are stored in `updateAlertVersion.json`. This JSON is ready by both the client and the multiplayer server. When the client has a lower version number then the multiplayer (the version is sent by the multiplayer server with the EnterFileRoom message), then the user is prompted to refresh with slightly different experience based on required vs. recommended changes.
