@@ -48,7 +48,10 @@ impl From<DashMap<Uuid, User>> for MessageResponse {
     fn from(users: DashMap<Uuid, User>) -> Self {
         MessageResponse::UsersInRoom {
             users: users.into_iter().map(|user| (user.1)).collect(),
-            min_version: MinVersion::load(),
+            min_version: MinVersion {
+                required_version: 1,
+                recommended_version: 1,
+            },
         }
     }
 }
