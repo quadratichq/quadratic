@@ -38,9 +38,15 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   parsedSelection?: { cursor: Coordinate; rectangle: Rectangle };
 }
 
+export interface Version {
+  recommendedVersion: number;
+  requiredVersion: number;
+}
+
 export interface ReceiveRoom {
   type: 'UsersInRoom';
   users: MultiplayerUser[];
+  min_version: Version;
 }
 
 export interface MessageUserUpdate {
