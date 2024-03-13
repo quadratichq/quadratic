@@ -3,13 +3,13 @@ const snippets = [
     label: 'Read data from the sheet',
     keywords: 'reference cells',
     code: `# Reference a single value from the sheet; replace x,y with coordinates
-myCell = cell(x, y)
+my_cell = cell(x, y)
 
 # Or reference a range of cells (returns a Pandas DataFrame), replace x's and y's with coordinates
 df = cells((x1, y1), (x2, y2), first_row_header=True)
 
 # Reference cell or range of cells in another sheet 
-myCell = cell(2,4, 'Sheet 2')
+my_cell = cell(2, 4, 'Sheet 2')
 df = cells((x1, y1), (x2, y2), 'Sheet 2', first_row_header=True)`,
   },
   {
@@ -138,6 +138,8 @@ fig.show()`,
     keywords: 'micropip install',
     code: `# only necessary for libraries that aren't automatically supported by Pyodide
 # https://pyodide.org/en/stable/usage/packages-in-pyodide.html
+# packages from micropip
+# https://pypi.org/search/?q=faker
 import micropip
 await micropip.install('library_name')
 

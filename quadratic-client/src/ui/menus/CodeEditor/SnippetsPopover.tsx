@@ -59,11 +59,11 @@ export function SnippetsPopover() {
 
           <CommandList className="max-h-48">
             <CommandGroup>
-              {snippets.map(({ label, code, description, keywords }) => (
+              {snippets.map(({ label, code, keywords }) => (
                 <CommandItem
                   key={label}
                   value={label}
-                  keywords={[description, ...(keywords || [])]}
+                  keywords={keywords ? [keywords] : []}
                   onSelect={() => {
                     mixpanel.track('[Snippets].selected', { label });
 

@@ -1,4 +1,5 @@
 import Editor, { Monaco } from '@monaco-editor/react';
+import monaco from 'monaco-editor';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';

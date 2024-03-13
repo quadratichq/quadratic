@@ -17,6 +17,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
+import { CodeEditorProvider } from './CodeEditorContext';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
