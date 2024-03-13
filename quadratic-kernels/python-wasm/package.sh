@@ -35,8 +35,8 @@ else
     python3 -m build
 fi
 
-pushd-quiet "${SCRIPT_DIR}/dist/"
+pushd "${SCRIPT_DIR}/dist/"
 find . -name "*.whl" -exec cp '{}' "${SCRIPT_DIR}/../../quadratic-client/public/" \;
-popd-quiet
+popd
 
 popd-quiet

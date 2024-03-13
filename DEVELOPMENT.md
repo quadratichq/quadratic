@@ -51,7 +51,15 @@ cargo install cargo-watch
 
 ## Local Environment Setup
 
-Now that dependencies are installed, all you need to do is run `node dev` to
+First, copy over the example file:
+
+```shell
+cp .env.example .env.local
+```
+
+Enter the missing Auth0 values and save.
+
+Now that dependencies are installed, all you need to do is run `node dev` to 
 bring up the all services.  Invoke `node run --help` for information on how
 to use this script, as you can use it to watch individual (or groups of)
 services during development. See the [Using node dev](Using-node-dev) section
@@ -92,7 +100,15 @@ docker-compose build quadratic-multiplayer
 
 You can also develop Quadratic without using docker
 
-* Set up .env in quadratic-client, quadratic-api, quadratic-multiplayer, and quadratic-files. (todo: better description of how to do this)
+* Set up .env in quadratic-client, quadratic-api, quadratic-multiplayer, and quadratic-files.
+
+```shell
+cp .env.example .env.local
+cp quadratic-client/.env_example quadratic-client/.env.local
+cp quadratic-api/.env_example quadratic-api/.env
+cp quadratic-multiplayer/.env.example quadratic-multiplayer/.env
+cp quadratic-files/.env.example quadratic-files/.env
+```
 
 #### Installing PostgreSQL
 
