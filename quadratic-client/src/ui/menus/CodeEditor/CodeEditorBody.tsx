@@ -1,11 +1,12 @@
 import Editor, { Monaco } from '@monaco-editor/react';
-import monaco, { editor } from 'monaco-editor';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import monaco from 'monaco-editor';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
+import { useCodeEditor } from './CodeEditorContext';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
 import {
@@ -36,15 +37,12 @@ let registered = false;
 
 export const CodeEditorBody = (props: Props) => {
   const { editorContent, setEditorContent, closeEditor, evaluationResult } = props;
-
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
   const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const monacoRef = useRef<Monaco | null>(null);
-
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
+  const { editorRef, monacoRef } = useCodeEditor();
 
   useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
@@ -59,6 +57,7 @@ export const CodeEditorBody = (props: Props) => {
       editorRef.current?.focus();
       editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInteractionState.showCodeEditor]);
 
   const onMount = useCallback(
@@ -104,6 +103,7 @@ export const CodeEditorBody = (props: Props) => {
 
       registered = true;
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [setDidMount]
   );
 
@@ -115,10 +115,12 @@ export const CodeEditorBody = (props: Props) => {
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closeEditor, didMount]);
 
   useEffect(() => {
     return () => editorRef.current?.dispose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -150,11 +152,7 @@ export const CodeEditorBody = (props: Props) => {
         }}
       />
       {language === 'Python' && (
-        <CodeEditorPlaceholder
-          editorContent={editorContent}
-          setEditorContent={setEditorContent}
-          editorRef={editorRef}
-        />
+        <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
       )}
     </div>
   );
