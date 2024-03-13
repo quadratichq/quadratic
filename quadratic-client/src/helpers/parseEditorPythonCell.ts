@@ -1,8 +1,8 @@
 import { ParseFormulaReturnType } from './formulaNotation';
 
 const CELL = /\(\s*(-?\d+\s*,\s*-?\d+\s*)\)/;
-const SIMPLE_CELL = new RegExp(`cell${CELL.source}`, 'g');
-const MULTICURSOR_CELL = new RegExp(`cells\\(\\s*${CELL.source}\\s*,\\s*${CELL.source}\\s*\\)`, 'g');
+const SIMPLE_CELL = new RegExp(`[cell|c|getCell]${CELL.source}`, 'g');
+const MULTICURSOR_CELL = new RegExp(`[cells|getCells]\\(\\s*${CELL.source}\\s*,\\s*${CELL.source}\\s*\\)`, 'g');
 
 export function parsePython(modelContent: string) {
   let matches: RegExpExecArray | null;

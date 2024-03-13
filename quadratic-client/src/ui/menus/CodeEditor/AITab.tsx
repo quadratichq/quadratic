@@ -18,7 +18,7 @@ import { QuadraticDocs } from './QuadraticDocs';
 
 interface Props {
   editorMode: EditorInteractionState['mode'];
-  evalResult: string | null | undefined; // CodeCellRunOutput
+  evalResult?: any; // TODO(ddimaria): fix type
   editorContent: string | undefined;
   isActive: boolean;
 }
@@ -29,7 +29,7 @@ type Message = {
 };
 
 export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
-  const evalResultObj = JSON.parse(evalResult || '{}');
+  const evalResultObj = evalResult;
   const stdErr = evalResultObj?.std_err;
 
   // TODO: Improve these messages. Pass current location and more docs.
