@@ -1,7 +1,20 @@
 const snippets = [
   {
-    label: 'Return data to the sheet',
-    description: 'Return a value, string, number, or DataFrame to the sheet',
+    label: 'Read data from the sheet',
+    keywords: 'reference cells',
+    code: `# Reference a single value from the sheet; replace x,y with coordinates
+myCell = cell(x, y)
+
+# Or reference a range of cells (returns a Pandas DataFrame), replace x's and y's with coordinates
+df = cells((x1, y1), (x2, y2), first_row_header=True)
+
+# Reference cell or range of cells in another sheet 
+myCell = cell(2,4, 'Sheet 2')
+df = cells((x1, y1), (x2, y2), 'Sheet 2', first_row_header=True)`,
+  },
+  {
+    label: 'Write data to the sheet',
+    keywords: 'return value',
     code: `out = []
 for x in range(10):
     out.append(x)
@@ -13,8 +26,7 @@ out
   },
   {
     label: 'Make a GET request',
-    description: 'Fetch data from an API and display it in the sheet',
-    keywords: 'network json',
+    keywords: 'fetch data api network json',
     code: `import requests 
 import pandas as pd 
 
@@ -29,8 +41,7 @@ df`,
   },
   {
     label: 'Make a POST request',
-    description: 'Send data to an API and display the response in the sheet',
-    keywords: 'network json',
+    keywords: 'fetch data api network json',
     code: `import requests
 
 # replace with your API url 
@@ -46,21 +57,7 @@ x = requests.post(url, json = myobj)
 print(x.text)`,
   },
   {
-    label: 'Reference cells',
-    description: 'Reference a single cell or range of cells from the sheet',
-    code: `# Reference a single value from the sheet; replace x,y with coordinates
-myCell = cell(x, y)
-
-# Or reference a range of cells (returns a Pandas DataFrame), replace x's and y's with coordinates
-df = cells((x1, y1), (x2, y2), first_row_header=True)
-
-# Reference cell or range of cells in another sheet 
-myCell = cell(2,4, 'Sheet 2')
-df = cells((x1, y1), (x2, y2), 'Sheet 2', first_row_header=True)`,
-  },
-  {
     label: 'Select DataFrame columns',
-    description: 'Select a one or more columns by name and return to the sheet',
     code: `# reference range of cells from the sheet, or get you data some other way
 df = cells((x1, y1), (x2, y2), first_row_header=True)
 
@@ -75,7 +72,7 @@ col`,
   },
   {
     label: 'Filter a DataFrame',
-    description: 'Query, filter, or slice a DataFrame and return the result to the sheet',
+    keywords: 'query filter slice',
     code: `import pandas as pd 
 
 # reference range of cells from the sheet, or get you data some other way
@@ -98,7 +95,7 @@ filtered_df`,
   },
   {
     label: 'Create a line chart',
-    description: 'Use plotly to create a line chart from a DataFrame',
+    keywords: 'plotly',
     code: `# import plotly
 import plotly.express as px
 
@@ -118,7 +115,7 @@ fig.show()`,
   },
   {
     label: 'Create a bar chart',
-    description: 'Use plotly to create a bar chart from a DataFrame',
+    keywords: 'plotly',
     code: `# import plotly
 import plotly.express as px
 
@@ -138,7 +135,7 @@ fig.show()`,
   },
   {
     label: 'Import a 3rd-party library',
-    description: 'Use micropip to install and import a library not included in Pyodide',
+    keywords: 'micropip install',
     code: `# only necessary for libraries that aren't automatically supported by Pyodide
 # https://pyodide.org/en/stable/usage/packages-in-pyodide.html
 import micropip
