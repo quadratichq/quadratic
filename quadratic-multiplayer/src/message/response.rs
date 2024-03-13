@@ -3,12 +3,11 @@
 //! A central place for websocket messages responses.
 
 use crate::error::MpError;
+use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use super::min_version::MinVersion;
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -44,14 +43,11 @@ pub(crate) enum MessageResponse {
     },
 }
 
-impl From<DashMap<Uuid, User>> for MessageResponse {
-    fn from(users: DashMap<Uuid, User>) -> Self {
+impl From<(DashMap<Uuid, User>, &MinVersion)> for MessageResponse {
+    fn from((users, min_version): (DashMap<Uuid, User>, &MinVersion)) -> Self {
         MessageResponse::UsersInRoom {
             users: users.into_iter().map(|user| (user.1)).collect(),
-            min_version: MinVersion {
-                required_version: 1,
-                recommended_version: 1,
-            },
+            min_version: min_version.to_owned(),
         }
     }
 }

@@ -4,7 +4,11 @@ import sys
 import unittest
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from quadratic_py.utils import attempt_fix_await, to_quadratic_type
 
+import pandas as pd
+import numpy as np
+from datetime import datetime
 
 #  Mock definitions
 def mock_GetCellsDB():
@@ -28,6 +32,7 @@ sys.modules["plotly.io"] = MagicMock()
 sys.modules["autopep8"] = MagicMock()
 sys.modules["autopep8.fix_code"] = MagicMock()
 
+# import after mocks to in order to use them
 from quadratic_py import run_python, code_trace
 
 run_python.fetch_module = mock_fetch_module
@@ -48,47 +53,39 @@ class TestTesting(IsolatedAsyncioTestCase):
         self.assertEqual(result.get("success"), False)
 
     def test_attempt_fix_await(self):
-        self.assertEqual(run_python.attempt_fix_await("1 + 1"), "1 + 1")
+        self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
 
         # simple adding await
-        self.assertEqual(run_python.attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
-        self.assertEqual(run_python.attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
-        self.assertEqual(run_python.attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
+        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
         self.assertEqual(
-            run_python.attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
+            attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
         )
 
         # simple already has await
         self.assertEqual(
-            run_python.attempt_fix_await("a = await cells(0, 0)"), "a = await cells(0, 0)"
+            attempt_fix_await("a = await cells(0, 0)"), "a = await cells(0, 0)"
         )
         self.assertEqual(
-            run_python.attempt_fix_await("a = await cell(0, 0)"), "a = await cell(0, 0)"
+            attempt_fix_await("a = await cell(0, 0)"), "a = await cell(0, 0)"
         )
-        self.assertEqual(run_python.attempt_fix_await("a = await c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = await c(0, 0)")
         self.assertEqual(
-            run_python.attempt_fix_await("a = await getCells(0, 0)"), "a = await getCells(0, 0)"
+            attempt_fix_await("a = await getCells(0, 0)"), "a = await getCells(0, 0)"
         )
 
         # other
-        self.assertEqual(run_python.attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
-        self.assertEqual(run_python.attempt_fix_await("c(0, 0)"), "await c(0, 0)")
-        self.assertEqual(run_python.attempt_fix_await("int(c(0,0))"), "int(await c(0,0))")
+        self.assertEqual(attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
+        self.assertEqual(attempt_fix_await("c(0, 0)"), "await c(0, 0)")
+        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int(await c(0,0))")
         self.assertEqual(
-            run_python.attempt_fix_await("float((await c(2, -4)).value)"),
+            attempt_fix_await("float((await c(2, -4)).value)"),
             "float((await c(2, -4)).value)",
         )
         self.assertEqual(
-            run_python.attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
+            attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
         )
-
-    def test_not_cell(self):
-        o = value_object(0, 0, "test")
-        c = run_python.Cell(o)
-        self.assertEqual(run_python.not_cell(c), "test")
-
-        l = [run_python.Cell(o), run_python.Cell(o), run_python.Cell(o)]
-        self.assertEqual(run_python.ensure_not_cell(l), ["test", "test", "test"])
 
 
 class TestImports(TestCase):
@@ -155,6 +152,39 @@ class TestErrorMessaging(TestCase):
             "formatted_code": code
         }
 
+    def test_to_quadratic_type(self):
+        # number
+        assert to_quadratic_type(1) == ("1", "number")
+        assert to_quadratic_type(1.1) == ("1.1", "number")
+        assert to_quadratic_type(-1) == ("-1", "number")
+        assert to_quadratic_type("1") == ("1", "number")
+        assert to_quadratic_type("1.1") == ("1.1", "number")
+        assert to_quadratic_type("-1") == ("-1", "number")
+
+        # logical
+        assert to_quadratic_type(True) == ("True", "logical")
+        assert to_quadratic_type(False) == ("False", "logical")
+        assert to_quadratic_type("True") == ("True", "logical")
+        assert to_quadratic_type("False") == ("False", "logical")
+        assert to_quadratic_type("true") == ("True", "logical")
+        assert to_quadratic_type("false") == ("False", "logical")
+
+        # string
+        assert to_quadratic_type("abc") == ("abc", "text")
+        assert to_quadratic_type("123abc") == ("123abc", "text")
+        assert to_quadratic_type("abc123") == ("abc123", "text")
+
+        # instant
+        assert to_quadratic_type(pd.Timestamp("2012-11-10")) == ("1352505600", "instant")
+        assert to_quadratic_type(pd.Timestamp("2012-11-10T03:30")) == ("1352518200", "instant")
+        assert to_quadratic_type(np.datetime64("2012-11-10")) == ("1352505600", "instant")
+        assert to_quadratic_type(np.datetime64("2012-11-10T03:30")) == ("1352518200", "instant")
+        assert to_quadratic_type(datetime.strptime("2012-11-10", '%Y-%m-%d')) == ("1352505600", "instant")
+        assert to_quadratic_type(datetime.strptime("2012-11-10 03:30", '%Y-%m-%d %H:%M')) == ("1352518200", "instant")
+        # assert to_quadratic_type("2012-11-10") == ("1352505600", "instant")
+
+        # TODO(ddimaria): implement when we implement duration in Rust
+        # duration
 
 if __name__ == "__main__":
     unittest.main()
