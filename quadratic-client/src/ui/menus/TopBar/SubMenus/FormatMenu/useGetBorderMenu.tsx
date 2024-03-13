@@ -1,3 +1,4 @@
+import { BorderSelection, CellBorderLine } from '@/quadratic-core/quadratic_core';
 import {
   BorderAllIcon,
   BorderBottomIcon,
@@ -18,7 +19,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../../../grid/controller/Sheets';
 import { convertReactColorToString, convertTintToString } from '../../../../../helpers/convertColor';
-import { BorderSelection, CellBorderLine } from '../../../../../quadratic-core/quadratic_core';
 import { colors } from '../../../../../theme/colors';
 import { QColorPicker } from '../../../../components/qColorPicker';
 import { ChangeBorder, useBorders } from '../useBorders';
@@ -26,7 +26,6 @@ import './useGetBorderMenu.css';
 
 export function useGetBorderMenu(): JSX.Element {
   const sheet = sheets.sheet;
-  const cursor = sheet.cursor;
 
   const [lineStyle, setLineStyle] = useState<CellBorderLine | undefined>();
   const [borderSelection, setBorderSelection] = useState<BorderSelection | undefined>();
@@ -35,7 +34,11 @@ export function useGetBorderMenu(): JSX.Element {
 
   const { changeBorders } = useBorders();
 
-  const clearSelection = useCallback(() => setBorderSelection(0), []);
+  const [multiCursor, setMultiCursor] = useState(!!sheet.cursor.multiCursor);
+  const clearSelection = useCallback(() => {
+    setBorderSelection(0);
+    setMultiCursor(!!sheet.cursor.multiCursor);
+  }, [sheet.cursor.multiCursor]);
   // clear border type when changing selection
   useEffect(() => {
     window.addEventListener('cursor-position', clearSelection);
@@ -110,7 +113,7 @@ export function useGetBorderMenu(): JSX.Element {
             type={BorderSelection.Inner}
             title="Inner borders"
             label={<BorderInnerIcon className="h-5 w-5" />}
-            disabled={!cursor.multiCursor}
+            disabled={!multiCursor}
           />
           <BorderSelectionButton
             type={BorderSelection.Outer}
@@ -121,13 +124,13 @@ export function useGetBorderMenu(): JSX.Element {
             type={BorderSelection.Horizontal}
             title="Horizontal borders"
             label={<BorderHorizontalIcon className="h-5 w-5" />}
-            disabled={!cursor.multiCursor}
+            disabled={!multiCursor}
           />
           <BorderSelectionButton
             type={BorderSelection.Vertical}
             title="Vertical borders"
             label={<BorderVerticalIcon className="h-5 w-5" />}
-            disabled={!cursor.multiCursor}
+            disabled={!multiCursor}
           />
         </div>
         <div className="borderMenuLine">

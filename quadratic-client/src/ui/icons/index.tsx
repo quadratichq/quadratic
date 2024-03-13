@@ -8,7 +8,7 @@ import {
   BorderInner as BorderInnerIcon,
   BorderLeft as BorderLeftIcon,
   BorderClear as BorderNoneIcon,
-  BorderAll as BorderOuterIcon,
+  BorderOuter as BorderOuterIcon,
   BorderRight as BorderRightIcon,
   BorderStyle as BorderStyleIcon,
   BorderTop as BorderTopIcon,
