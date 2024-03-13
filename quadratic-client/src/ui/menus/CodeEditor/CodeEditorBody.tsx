@@ -104,7 +104,7 @@ export const CodeEditorBody = (props: Props) => {
       registered = true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [didMount, setDidMount]
+    [setDidMount]
   );
 
   useEffect(() => {
