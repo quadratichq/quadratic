@@ -141,20 +141,37 @@ export class CellLabel extends Container {
     return this.AABB.width;
   }
 
-  checkLeftClip(left: number): void {
+  checkLeftClip(left: number): boolean | 'same' {
     if (this.overflowLeft && this.AABB.left - this.overflowLeft < left) {
-      this.clipLeft = left;
+      if (this.clipLeft !== left) {
+        this.clipLeft = left;
+        return true;
+      } else {
+        return 'same';
+      }
     } else {
-      this.clipLeft = undefined;
+      if (this.clipLeft !== undefined) {
+        this.clipLeft = undefined;
+        return true;
+      }
     }
+    return false;
   }
-
-  checkRightClip(nextLeft: number): void {
+  checkRightClip(nextLeft: number): boolean | 'same' {
     if (this.overflowRight && this.AABB.right + this.overflowRight > nextLeft) {
-      this.clipRight = nextLeft;
+      if (this.clipRight !== nextLeft) {
+        this.clipRight = nextLeft;
+        return true;
+      } else {
+        return 'same';
+      }
     } else {
-      this.clipRight = undefined;
+      if (this.clipRight !== undefined) {
+        this.clipRight = undefined;
+        return true;
+      }
     }
+    return false;
   }
 
   private calculatePosition(): void {
