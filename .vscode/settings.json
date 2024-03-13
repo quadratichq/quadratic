@@ -4,6 +4,7 @@
     "actix",
     "bigdecimal",
     "bindgen",
+    "dashmap",
     "dbgjs",
     "dcell",
     "ddimaria",

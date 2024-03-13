@@ -10,6 +10,7 @@ use crate::message::response::MessageResponse;
 use crate::state::State;
 
 pub mod handle;
+pub mod min_version;
 pub mod request;
 pub mod response;
 

@@ -325,6 +325,7 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 pub(crate) mod tests {
 
     use super::*;
+    use crate::message::min_version::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
     use crate::test_util::{
         add_user_via_ws, integration_test_send_and_receive, new_arc_state, setup,
@@ -415,6 +416,7 @@ pub(crate) mod tests {
         // only the initial user is left in the room
         let expected = MessageResponse::UsersInRoom {
             users: vec![user_1.clone()],
+            min_version: MinVersion::load(),
         };
 
         let response = integration_test_send_and_receive(&socket, request, true, 2).await;
