@@ -24,8 +24,7 @@ async def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bo
     Returns:
         The value of the cell referenced.
 
-    Typical usage example:
-    
+    Typical usage example:    
         c = getCell(0, 0)
     """
 
@@ -159,14 +158,13 @@ async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
     Relative reference to a single cell in the grid.
 
     Args:
-        x: The X coordinate on the grid.
-        y: The Y coordinate on the grid.
+        x: The relative grid X coordinate from the current cell.
+        y: The relative grid Y coordinate from the current cell.
         
     Returns:
         The value of the relative cell referenced.
 
-    Typical usage example:
-    
+    Typical usage example:    
         c = rel_cell(0, 0)
     """
 
