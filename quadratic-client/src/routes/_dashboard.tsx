@@ -5,7 +5,9 @@ import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
+import { QuadraticLogoType } from '@/dashboard/components/QuadraticLogoType';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { useTheme } from '@/hooks/useTheme';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
@@ -44,7 +46,6 @@ import {
 } from 'react-router-dom';
 import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
 import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
-import QuadraticLogotype from '../dashboard/components/quadratic-logotype.svg';
 import { useRootRouteLoaderData } from '../router';
 
 const DRAWER_WIDTH = 264;
@@ -77,6 +78,7 @@ export const Component = () => {
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
   const { loggedInUser: user } = useRootRouteLoaderData();
+  useTheme(); // Trigger the theme in the root of the app
 
   const isLoading = revalidator.state !== 'idle' || navigation.state === 'loading';
   const navbar = <Navbar isLoading={isLoading} />;
@@ -167,7 +169,7 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             <div className={`flex w-5 items-center justify-center`}>
               <img src={QuadraticLogo} alt="Quadratic logo glyph" />
             </div>
-            <img src={QuadraticLogotype} alt="Quadratic logotype" />
+            <QuadraticLogoType />
 
             <ReloadIcon
               className={`ml-auto mr-1 animate-spin text-primary transition-opacity ${isLoading ? '' : ' opacity-0'}`}

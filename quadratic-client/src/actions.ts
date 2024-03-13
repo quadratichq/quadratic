@@ -15,7 +15,7 @@ const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 export type GenericAction = {
   label: string;
-  isAvailable?: (permissions: FilePermission[], isAuthenticated?: boolean) => boolean;
+  isAvailable?: (permissions: FilePermission[], isAuthenticated: boolean) => boolean;
   run?: (args: any) => void;
 
   // Future shortcuts
@@ -50,11 +50,12 @@ export type GenericAction = {
 
 // TODO: create generic hasPermission(permission, permissionToCheck) function
 
-export const hasPermissionToEditFile = (permissions: FilePermission[]) => permissions.includes(FILE_EDIT);
+export const hasPermissionToEditFile = (permissions: FilePermission[], isAuthenticated?: boolean) =>
+  permissions.includes(FILE_EDIT);
 const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => isAuthenticated;
 
 export const createNewFileAction = {
-  label: 'New',
+  label: 'Create',
   isAvailable: isLoggedIn,
   run({ navigate }: { navigate: NavigateFunction }) {
     navigate(ROUTES.CREATE_FILE);
@@ -85,7 +86,7 @@ export const duplicateFileWithCurrentOwnerAction = {
 };
 
 export const downloadFileAction = {
-  label: 'Download local copy',
+  label: 'Download',
   isAvailable: isLoggedIn,
   async run({ name }: { name: FileContextType['name'] }) {
     downloadQuadraticFile(name, await quadraticCore.export());
@@ -177,4 +178,11 @@ export const downloadSelectionAsCsvAction = {
   run({ fileName }: { fileName: string }) {
     downloadFile(fileName, grid.exportCsvSelection(), 'text/plain', 'csv');
   },
+};
+
+export const findInSheet = {
+  label: 'Find in current sheet',
+};
+export const findInSheets = {
+  label: 'Find in all sheets',
 };

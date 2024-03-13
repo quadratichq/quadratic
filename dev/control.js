@@ -1,7 +1,6 @@
 import killPort from "kill-port";
 import { exec, spawn, } from "node:child_process";
 import treeKill from "tree-kill";
-import { destroyScreen } from "./terminal.js";
 export class Control {
     cli;
     ui;
@@ -80,7 +79,6 @@ export class Control {
             this.kill("python"),
             this.kill("gridOffsets"),
         ]);
-        destroyScreen();
         process.exit(0);
     }
     handleResponse(name, data, options, successCallback) {

@@ -14,6 +14,8 @@ import {
   deleteFile,
   downloadFileAction,
   duplicateFileWithUserAsOwnerAction,
+  findInSheet,
+  findInSheets,
   pasteAction,
   provideFeedbackAction,
   redoAction,
@@ -26,7 +28,6 @@ import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider
 import { ROUTES } from '../../../../constants/routes';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
 import { pixiApp } from '../../../../gridGL/pixiApp/PixiApp';
-import { focusGrid } from '../../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
 import { isMac } from '../../../../utils/isMac';
@@ -72,18 +73,6 @@ export const QuadraticMenu = () => {
             <MenuDivider />
           </>
         )}
-        <MenuItem
-          onClick={() => {
-            setEditorInteractionState({
-              ...editorInteractionState,
-              showCommandPalette: true,
-            });
-            focusGrid();
-          }}
-        >
-          <MenuLineItem primary="Command palette" secondary={KeyboardSymbols.Command + 'P'} />
-        </MenuItem>
-        <MenuDivider />
         {isAuthenticated && (
           <SubMenu label={<MenuLineItem primary="File" />}>
             {createNewFileAction.isAvailable(permissions, isAuthenticated) && (
@@ -155,13 +144,13 @@ export const QuadraticMenu = () => {
 
           <MenuDivider />
           <MenuItem onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: true }))}>
-            <MenuLineItem primary="Find in current sheet" secondary={KeyboardSymbols.Command + 'F'} />
+            <MenuLineItem primary={findInSheet.label} secondary={KeyboardSymbols.Command + 'F'} />
           </MenuItem>
           <MenuItem
             onClick={() => setEditorInteractionState((state) => ({ ...state, showSearch: { sheet_id: undefined } }))}
           >
             <MenuLineItem
-              primary="Find in all sheets"
+              primary={findInSheets.label}
               secondary={KeyboardSymbols.Shift + KeyboardSymbols.Command + 'F'}
             />
           </MenuItem>
