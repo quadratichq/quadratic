@@ -1,7 +1,7 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
-import { Close, FiberManualRecord, HelpOutline, PlayArrow, Stop, Subject } from '@mui/icons-material';
+import { Close, FiberManualRecord, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -10,10 +10,10 @@ import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 // import { CodeCellValue } from '../../../quadratic-core/types';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '../../../constants/urls';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
+import { SnippetsPopover } from './SnippetsPopover';
 
 // todo: fix types
 
@@ -111,19 +111,7 @@ export const CodeEditorHeader = (props: Props) => {
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        <TooltipHint title="Read the docs" placement="bottom">
-          <IconButton
-            aria-label="docs"
-            size="small"
-            onClick={() => {
-              if (language === 'Formula') window.open(DOCUMENTATION_FORMULAS_URL, '_blank');
-              else if (language === 'Python') window.open(DOCUMENTATION_PYTHON_URL, '_blank');
-              else window.open(DOCUMENTATION_URL, '_blank');
-            }}
-          >
-            <HelpOutline fontSize="small" />
-          </IconButton>
-        </TooltipHint>
+        {language === 'Python' && <SnippetsPopover />}
         {hasPermission && (
           <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
             <span>

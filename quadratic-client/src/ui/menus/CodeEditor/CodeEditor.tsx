@@ -17,6 +17,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
+import { CodeEditorProvider } from './CodeEditorContext';
 import { CodeEditorHeader } from './CodeEditorHeader';
 import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
@@ -258,93 +259,95 @@ export const CodeEditor = () => {
   }
 
   return (
-    <div
-      id="QuadraticCodeEditorID"
-      style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        width: `${editorWidth}px`,
-        minWidth: '350px',
-        maxWidth: '90%',
-        backgroundColor: '#ffffff',
-        zIndex: 2,
-      }}
-      onKeyDownCapture={onKeyDownEditor}
-      onPointerEnter={() => {
-        // todo: handle multiplayer code editor here
-        multiplayer.sendMouseMove();
-      }}
-      onPointerMove={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      {showSaveChangesAlert && (
-        <SaveChangesAlert
-          onCancel={() => {
-            setShowSaveChangesAlert(!showSaveChangesAlert);
-            setEditorInteractionState((old) => ({
-              ...old,
-              editorEscapePressed: false,
-              waitingForEditorClose: undefined,
-            }));
-          }}
-          onSave={() => {
-            saveAndRunCell();
-            afterDialog();
-          }}
-          onDiscard={() => {
-            afterDialog();
-          }}
-        />
-      )}
-
-      <ResizeControl setState={setEditorWidth} position="LEFT" />
-      <CodeEditorHeader
-        cellLocation={cellLocation}
-        unsaved={unsaved}
-        saveAndRunCell={saveAndRunCell}
-        cancelPython={cancelPython}
-        closeEditor={() => closeEditor(false)}
-      />
-      <CodeEditorBody
-        editorContent={editorContent}
-        setEditorContent={setEditorContent}
-        closeEditor={closeEditor}
-        evaluationResult={evaluationResult}
-      />
-      {evaluationResult?.line_number &&
-        !out?.stdErr &&
-        !unsaved &&
-        (editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
-          <ReturnTypeInspector evaluationResult={evaluationResult} />
-        )}
-
-      <ResizeControl setState={setConsoleHeight} position="TOP" />
-      {/* Console Wrapper */}
+    <CodeEditorProvider>
       <div
+        id="QuadraticCodeEditorID"
         style={{
-          position: 'relative',
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
           display: 'flex',
           flexDirection: 'column',
-          minHeight: '100px',
-          background: '#fff',
-          height: `${consoleHeight}px`,
+          width: `${editorWidth}px`,
+          minWidth: '350px',
+          maxWidth: '90%',
+          backgroundColor: '#ffffff',
+          zIndex: 2,
+        }}
+        onKeyDownCapture={onKeyDownEditor}
+        onPointerEnter={() => {
+          // todo: handle multiplayer code editor here
+          multiplayer.sendMouseMove();
+        }}
+        onPointerMove={(e) => {
+          e.stopPropagation();
         }}
       >
-        {(editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
-          <Console
-            consoleOutput={out}
-            editorMode={editorMode}
-            editorContent={editorContent}
-            evaluationResult={evaluationResult}
-            spillError={spillError}
+        {showSaveChangesAlert && (
+          <SaveChangesAlert
+            onCancel={() => {
+              setShowSaveChangesAlert(!showSaveChangesAlert);
+              setEditorInteractionState((old) => ({
+                ...old,
+                editorEscapePressed: false,
+                waitingForEditorClose: undefined,
+              }));
+            }}
+            onSave={() => {
+              saveAndRunCell();
+              afterDialog();
+            }}
+            onDiscard={() => {
+              afterDialog();
+            }}
           />
         )}
+
+        <ResizeControl setState={setEditorWidth} position="LEFT" />
+        <CodeEditorHeader
+          cellLocation={cellLocation}
+          unsaved={unsaved}
+          saveAndRunCell={saveAndRunCell}
+          cancelPython={cancelPython}
+          closeEditor={() => closeEditor(false)}
+        />
+        <CodeEditorBody
+          editorContent={editorContent}
+          setEditorContent={setEditorContent}
+          closeEditor={closeEditor}
+          evaluationResult={evaluationResult}
+        />
+        {evaluationResult?.line_number &&
+          !out?.stdErr &&
+          !unsaved &&
+          (editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
+            <ReturnTypeInspector evaluationResult={evaluationResult} />
+          )}
+
+        <ResizeControl setState={setConsoleHeight} position="TOP" />
+        {/* Console Wrapper */}
+        <div
+          style={{
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100px',
+            background: '#fff',
+            height: `${consoleHeight}px`,
+          }}
+        >
+          {(editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
+            <Console
+              consoleOutput={out}
+              editorMode={editorMode}
+              editorContent={editorContent}
+              evaluationResult={evaluationResult}
+              spillError={spillError}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </CodeEditorProvider>
   );
 };

@@ -242,7 +242,7 @@ async fn handle_socket(
                 if let Ok(room) = state.get_room(&file_id).await {
                     tracing::info!("Broadcasting room {file_id} after connection close");
 
-                    let message = MessageResponse::from(room.users);
+                    let message = MessageResponse::from((room.users, &state.settings.min_version));
 
                     if let Err(error) = broadcast(
                         vec![connection.session_id],
@@ -325,6 +325,7 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 pub(crate) mod tests {
 
     use super::*;
+    use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
     use crate::test_util::{
         add_user_via_ws, integration_test_send_and_receive, new_arc_state, setup,
@@ -415,6 +416,7 @@ pub(crate) mod tests {
         // only the initial user is left in the room
         let expected = MessageResponse::UsersInRoom {
             users: vec![user_1.clone()],
+            min_version: MinVersion::new().unwrap(),
         };
 
         let response = integration_test_send_and_receive(&socket, request, true, 2).await;
