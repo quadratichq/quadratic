@@ -7,6 +7,7 @@
 
 import { debugWebWorkers } from '@/debugFlags';
 import {
+  CellAlign,
   CellFormatSummary,
   CodeCellLanguage,
   JsCodeCell,
@@ -330,6 +331,19 @@ class Core {
   hasRenderCells(sheetId: string, x: number, y: number, width: number, height: number): boolean {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.hasRenderCells(sheetId, pointsToRect(x, y, width, height));
+  }
+
+  setCellAlign(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    align?: CellAlign,
+    cursor?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setCellAlign(sheetId, pointsToRect(x, y, width, height), align, cursor);
   }
 }
 

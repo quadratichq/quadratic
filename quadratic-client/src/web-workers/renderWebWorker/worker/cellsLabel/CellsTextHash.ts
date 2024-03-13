@@ -196,23 +196,13 @@ export class CellsTextHash {
       const neighborLabel = currentHash.getLabel(column, row);
       if (neighborLabel) {
         const clipRightResult = neighborLabel.checkRightClip(label.AABB.left);
-        if (clipRightResult) {
-          if (currentHash !== this) {
-            leftClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-            if (clipRightResult !== 'same') {
-              currentHash.dirty = true;
-            }
+        if (clipRightResult && currentHash !== this) {
+          leftClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
+          if (clipRightResult !== 'same') {
+            currentHash.dirty = true;
           }
         }
-        const clipLeftResult = label.checkLeftClip(neighborLabel.AABB.right);
-        if (clipLeftResult) {
-          if (currentHash !== this) {
-            rightClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-            if (clipLeftResult !== 'same') {
-              currentHash.dirty = true;
-            }
-          }
-        }
+        label.checkLeftClip(neighborLabel.AABB.right);
         break;
       }
       column--;
@@ -228,18 +218,14 @@ export class CellsTextHash {
       }
       const neighborLabel = currentHash.getLabel(column, row);
       if (neighborLabel) {
-        if (neighborLabel.checkLeftClip(label.AABB.right)) {
-          if (currentHash !== this) {
+        const clipLeftResult = neighborLabel.checkLeftClip(label.AABB.right);
+        if (clipLeftResult && currentHash !== this) {
+          rightClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
+          if (clipLeftResult !== 'same') {
             currentHash.dirty = true;
-            rightClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
           }
         }
-        if (label.checkRightClip(neighborLabel.AABB.left)) {
-          if (currentHash !== this) {
-            currentHash.dirty = true;
-            leftClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-          }
-        }
+        label.checkRightClip(neighborLabel.AABB.left);
         return;
       }
       column++;

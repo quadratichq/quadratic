@@ -256,6 +256,10 @@ class CoreClient {
         this.send({ type: 'coreClientHasRenderCells', id: e.data.id, hasRenderCells });
         break;
 
+      case 'clientCoreSetCellAlign':
+        core.setCellAlign(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.align, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

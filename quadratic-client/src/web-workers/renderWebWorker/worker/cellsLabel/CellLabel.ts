@@ -153,10 +153,10 @@ export class CellLabel {
     return this.AABB.width;
   }
 
-  checkLeftClip(left: number): boolean | 'same' {
-    if (this.overflowLeft && this.AABB.left - this.overflowLeft < left) {
-      if (this.clipLeft !== left) {
-        this.clipLeft = left;
+  checkLeftClip(nextRight: number): boolean | 'same' {
+    if (this.overflowLeft && this.AABB.left - this.overflowLeft < nextRight) {
+      if (this.clipLeft !== nextRight) {
+        this.clipLeft = nextRight;
         return true;
       } else {
         return 'same';
@@ -180,7 +180,6 @@ export class CellLabel {
     } else {
       if (this.clipRight !== undefined) {
         this.clipRight = undefined;
-        return true;
       }
     }
     return false;
