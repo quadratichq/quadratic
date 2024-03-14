@@ -38,3 +38,9 @@ export interface Placement { index: number, position: number, size: number, }
 export interface ColumnRow { column: number, row: number, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
 export type PasteSpecial = "None" | "Values" | "Formats";
+export interface Rgba { red: number, green: number, blue: number, alpha: number, }
+export type CellBorderLine = "line1" | "line2" | "line3" | "dotted" | "dashed" | "double";
+export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertical" | "left" | "top" | "right" | "bottom" | "clear";
+export interface BorderStyle { color: Rgba, line: CellBorderLine, }
+export interface JsRenderBorder { x: bigint, y: bigint, w?: number, h?: number, style: BorderStyle, }
+export interface JsRenderBorders { horizontal: Array<JsRenderBorder>, vertical: Array<JsRenderBorder>, }

@@ -9,6 +9,8 @@ import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate } from '@/gridGL/types/size';
 import {
+  BorderSelection,
+  BorderStyle,
   CellAlign,
   CellFormatSummary,
   CodeCellLanguage,
@@ -647,6 +649,40 @@ class QuadraticCore {
     this.send({
       type: 'clientCorePasteFromClipboard',
       ...options,
+    });
+  }
+
+  //#endregion
+
+  //#region Borders
+
+  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    this.send({
+      type: 'clientCoreSetRegionBorders',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      selection: JSON.stringify(selection),
+      style: style ? JSON.stringify(style) : undefined,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  //#endregion
+
+  //#region HTML
+
+  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number) {
+    this.send({
+      type: 'clientCoreSetCellRenderResize',
+      sheetId,
+      x,
+      y,
+      width,
+      height,
+      cursor: sheets.getCursorPosition(),
     });
   }
 

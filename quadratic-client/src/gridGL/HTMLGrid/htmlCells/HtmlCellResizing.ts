@@ -1,5 +1,5 @@
-import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { HtmlCell } from './HtmlCell';
@@ -97,7 +97,7 @@ export class HtmlCellResizing {
   }
 
   completeResizing() {
-    grid.setCellRenderSize(sheets.sheet.id, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
+    quadraticCore.setCellRenderResize(sheets.sheet.id, this.htmlCell.x, this.htmlCell.y, this.width, this.height);
   }
 
   cancelResizing() {

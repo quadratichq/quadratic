@@ -216,8 +216,10 @@ mod test {
         color::Rgba,
         controller::GridController,
         grid::{
-            generate_borders, js_types::CellFormatSummary, set_rect_borders, BorderSelection,
-            BorderStyle, CellBorderLine, CodeCellLanguage, Sheet,
+            generate_borders,
+            js_types::{CellFormatSummary, JsRenderBorders},
+            set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
+            Sheet,
         },
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };
@@ -598,21 +600,22 @@ mod test {
 
         // weird: can't test them by comparing arrays since the order is seemingly random
         let render = gc.get_render_borders(sheet_id.to_string());
-        assert!(render.get_horizontal().iter().any(|border| {
+        let borders: JsRenderBorders = serde_json::from_str(&render.unwrap()).unwrap();
+        assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 0
                 && border.w == Some(5)
                 && border.h.is_none()
                 && border.style == style
         }));
-        assert!(render.get_horizontal().iter().any(|border| {
+        assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 5
                 && border.w == Some(5)
                 && border.h.is_none()
                 && border.style == style
         }));
-        assert!(render.get_vertical().iter().any(|border| {
+        assert!(borders.vertical.iter().any(|border| {
             border.x == 0
                 && border.y == 0
                 && border.w.is_none()
@@ -620,7 +623,7 @@ mod test {
                 && border.style == style
         }));
 
-        assert!(render.get_vertical().iter().any(|border| {
+        assert!(borders.vertical.iter().any(|border| {
             border.x == 5
                 && border.y == 0
                 && border.w.is_none()
@@ -646,28 +649,29 @@ mod test {
         );
 
         let render = gc.get_render_borders(sheet_id.to_string());
-        assert!(render.get_horizontal().iter().any(|border| {
+        let borders: JsRenderBorders = serde_json::from_str(&render.unwrap()).unwrap();
+        assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 10
                 && border.w == Some(5)
                 && border.h.is_none()
                 && border.style == style
         }));
-        assert!(render.get_horizontal().iter().any(|border| {
+        assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 15
                 && border.w == Some(5)
                 && border.h.is_none()
                 && border.style == style
         }));
-        assert!(render.get_vertical().iter().any(|border| {
+        assert!(borders.vertical.iter().any(|border| {
             border.x == 0
                 && border.y == 10
                 && border.w.is_none()
                 && border.h == Some(5)
                 && border.style == style
         }));
-        assert!(render.get_vertical().iter().any(|border| {
+        assert!(borders.vertical.iter().any(|border| {
             border.x == 5
                 && border.y == 10
                 && border.w.is_none()

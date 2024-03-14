@@ -206,8 +206,12 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                         _ => BorderSelection::Clear,
                     };
                     let style = BorderStyle {
-                        color: Rgba::from_str(&border.color)
-                            .unwrap_or_else(|_| Rgba::new(0, 0, 0, 255)),
+                        color: Rgba::from_str(&border.color).unwrap_or_else(|_| Rgba {
+                            red: 0,
+                            green: 0,
+                            blue: 0,
+                            alpha: 255,
+                        }),
                         line: CellBorderLine::from_str(&border.line)
                             .unwrap_or(CellBorderLine::Line1),
                     };

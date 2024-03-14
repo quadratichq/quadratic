@@ -1,14 +1,15 @@
 use std::fs::create_dir_all;
 
 use quadratic_core::{
+    color::Rgba,
     controller::user_actions::clipboard::PasteSpecial,
     grid::{
         js_types::{
-            JsCodeCell, JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-            JsRenderCodeCellState,
+            JsCodeCell, JsHtmlOutput, JsRenderBorder, JsRenderBorders, JsRenderCell,
+            JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
-        CodeCellLanguage,
+        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
     },
     sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement},
     wasm_bindings::controller::sheet_info::SheetInfo,
@@ -67,7 +68,13 @@ fn main() {
         Placement,
         ColumnRow,
         SheetInfo,
-        PasteSpecial
+        PasteSpecial,
+        Rgba,
+        CellBorderLine,
+        BorderSelection,
+        BorderStyle,
+        JsRenderBorder,
+        JsRenderBorders,
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {

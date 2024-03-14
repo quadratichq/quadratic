@@ -11,61 +11,21 @@ import {
   BorderVerticalIcon,
 } from '@/ui/icons';
 import { hasPermissionToEditFile } from '../../../../actions';
-import { BorderSelection } from '../../../../quadratic-core/quadratic_core';
 import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
   heading: 'Borders',
   commands: [
-    // Convenience to generate all the border component variations
-    ...[
-      {
-        label: 'Border all',
-        changeBordersArgs: { borderAll: true },
-        icon: <BorderAllIcon />,
-      },
-      {
-        label: 'Border outer',
-        changeBordersArgs: { selection: BorderSelection.Outer },
-        icon: <BorderOuterIcon />,
-      },
-      {
-        label: 'Border inner',
-        changeBordersArgs: { selection: BorderSelection.Inner },
-        icon: <BorderInnerIcon />,
-      },
-      {
-        label: 'Border vertical',
-        changeBordersArgs: { selection: BorderSelection.Vertical },
-        icon: <BorderVerticalIcon />,
-      },
-      {
-        label: 'Border horizontal',
-        changeBordersArgs: { selection: BorderSelection.Horizontal },
-        icon: <BorderHorizontalIcon />,
-      },
-      {
-        label: 'Border left',
-        changeBordersArgs: { selection: BorderSelection.Left },
-        icon: <BorderLeftIcon />,
-      },
-      {
-        label: 'Border right',
-        changeBordersArgs: { selection: BorderSelection.Right },
-        icon: <BorderRightIcon />,
-      },
-      {
-        label: 'Border top',
-        changeBordersArgs: { selection: BorderSelection.Top },
-        icon: <BorderTopIcon />,
-      },
-      {
-        label: 'Border bottom',
-        changeBordersArgs: { selection: BorderSelection.Bottom },
-        icon: <BorderBottomIcon />,
-      },
-    ].map(generateListItem),
+    generateListItem('Border all', { selection: 'all' }, <BorderAllIcon />),
+    generateListItem('Border outer', { selection: 'outer' }, <BorderOuterIcon />),
+    generateListItem('Border inner', { selection: 'inner' }, <BorderInnerIcon />),
+    generateListItem('Border vertical', { selection: 'vertical' }, <BorderVerticalIcon />),
+    generateListItem('Border horizontal', { selection: 'horizontal' }, <BorderHorizontalIcon />),
+    generateListItem('Border left', { selection: 'left' }, <BorderLeftIcon />),
+    generateListItem('Border right', { selection: 'right' }, <BorderRightIcon />),
+    generateListItem('Border top', { selection: 'top' }, <BorderTopIcon />),
+    generateListItem('Border bottom', { selection: 'bottom' }, <BorderBottomIcon />),
     {
       label: 'Border none',
       keywords: ['Remove borders', 'Clear borders'],
@@ -95,21 +55,10 @@ const commands: CommandGroup = {
   ],
 };
 
-function generateListItem({
-  label,
-  icon,
-  changeBordersArgs,
-  keywords,
-}: {
-  label: string;
-  icon?: JSX.Element;
-  keywords?: string[];
-  changeBordersArgs: ChangeBorder;
-}) {
+function generateListItem(label: string, changeBordersArgs: ChangeBorder, icon: JSX.Element | undefined) {
   const item: CommandGroup['commands'][0] = {
     label,
     isAvailable: hasPermissionToEditFile,
-    ...(keywords ? { keywords } : {}),
     Component: (props) => {
       const { changeBorders } = useBorders();
       return (

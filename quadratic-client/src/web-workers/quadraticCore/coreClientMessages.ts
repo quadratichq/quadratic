@@ -397,6 +397,28 @@ export interface ClientCoreRerunCodeCells {
   cursor: string;
 }
 
+export interface ClientCoreSetRegionBorders {
+  type: 'clientCoreSetRegionBorders';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  selection: string;
+  style?: string;
+  cursor: string;
+}
+
+export interface ClientCoreSetCellRenderResize {
+  type: 'clientCoreSetCellRenderResize';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cursor: string;
+}
+
 //#endregion
 
 //#region Sheets
@@ -582,7 +604,9 @@ export type ClientCoreMessage =
   | ClientCoreHasRenderCells
   | ClientCoreCopyToClipboard
   | ClientCoreCutToClipboard
-  | ClientCorePasteFromClipboard;
+  | ClientCorePasteFromClipboard
+  | ClientCoreSetRegionBorders
+  | ClientCoreSetCellRenderResize;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

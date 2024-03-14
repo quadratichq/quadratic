@@ -1,5 +1,5 @@
 import { sheets } from '@/grid/controller/Sheets';
-import { JsRenderBorder, JsRenderBorders } from '@/quadratic-core/quadratic_core';
+import { JsRenderBorders } from '@/quadratic-core-types';
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { CellsSheet } from './CellsSheet';
@@ -26,8 +26,7 @@ export class CellsBorders extends Container {
   }
 
   drawHorizontal(borders: JsRenderBorders) {
-    let border: JsRenderBorder | undefined;
-    while ((border = borders.horizontal_next())) {
+    for (const border of borders.horizontal) {
       if (border.w === undefined) throw new Error('Expected border.w to be defined in CellsBorders.drawHorizontal');
       const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.offsets.getCellOffsets(Number(border.x) + border.w, Number(border.y));
@@ -43,8 +42,7 @@ export class CellsBorders extends Container {
   }
 
   drawVertical(borders: JsRenderBorders) {
-    let border: JsRenderBorder | undefined;
-    while ((border = borders.vertical_next())) {
+    for (const border of borders.vertical) {
       if (border.h === undefined) throw new Error('Expected border.h to be defined in CellsBorders.drawVertical');
       const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y) + border.h!);

@@ -289,6 +289,23 @@ class CoreClient {
         );
         break;
 
+      case 'clientCoreSetRegionBorders':
+        core.setRegionBorders(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.selection,
+          e.data.style,
+          e.data.cursor
+        );
+        break;
+
+      case 'clientCoreSetCellRenderResize':
+        core.setCellRenderResize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

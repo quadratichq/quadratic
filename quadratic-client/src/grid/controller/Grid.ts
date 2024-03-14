@@ -1,7 +1,5 @@
 import { JsHtmlOutput, Rect } from '@/quadratic-core-types';
 import {
-  BorderSelection,
-  BorderStyle,
   GridController,
   JsCodeResult,
   JsComputeGetCells,
@@ -164,26 +162,26 @@ export class Grid {
   //#region set grid operations
   //-----------------------------
 
-  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
-    const summary = this.gridController.setRegionBorders(
-      sheetId,
-      rectangleToRect(rectangle),
-      selection,
-      style,
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  // setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+  //   const summary = this.gridController.setRegionBorders(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     selection,
+  //     style,
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
-  setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number) {
-    const summary = this.gridController.setCellRenderSize(
-      sheetId,
-      posToRect(x, y),
-      width.toString(),
-      height.toString()
-    );
-    this.transactionResponse(summary);
-  }
+  // setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number) {
+  //   const summary = this.gridController.setCellRenderSize(
+  //     sheetId,
+  //     posToRect(x, y),
+  //     width.toString(),
+  //     height.toString()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
   //#endregion
 

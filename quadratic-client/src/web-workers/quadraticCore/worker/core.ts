@@ -384,6 +384,25 @@ class Core {
   }
 
   //#endregion
+
+  setRegionBorders(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    border: string,
+    style: string | undefined,
+    cursor: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setRegionBorders(sheetId, pointsToRect(x, y, width, height), border, style, cursor);
+  }
+
+  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setCellRenderSize(sheetId, pointsToRect(x, y, width, height), cursor);
+  }
 }
 
 export const core = new Core();

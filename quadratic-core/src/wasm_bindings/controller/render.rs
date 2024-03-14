@@ -70,13 +70,15 @@ impl GridController {
     /// Returns data for rendering horizontal borders as a string containing a
     /// [`JsRenderBorders`].
     #[wasm_bindgen(js_name = "getRenderBorders")]
-    pub fn get_render_borders(&self, sheet_id: String) -> JsRenderBorders {
-        // todo: should return Result
+    pub fn get_render_borders(&self, sheet_id: String) -> Result<String, JsValue> {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
-            return JsRenderBorders::new(vec![], vec![]);
+            return Result::Err("Sheet not found".into());
         };
         let horizontal = sheet.get_render_horizontal_borders();
         let vertical = sheet.get_render_vertical_borders();
-        JsRenderBorders::new(horizontal, vertical)
+        let Ok(borders) = serde_json::to_string(&JsRenderBorders::new(horizontal, vertical)) else {
+            return Result::Err("Unable to serialize borders".into());
+        };
+        Ok(borders)
     }
 }
