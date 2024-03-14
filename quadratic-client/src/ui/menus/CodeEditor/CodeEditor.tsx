@@ -196,10 +196,12 @@ export const CodeEditor = () => {
       type: editorMode,
     });
     // Google Ads Conversion for running a cell
-    //@ts-expect-error
-    gtag('event', 'conversion', {
-      send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
-    });
+    if (import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG) {
+      //@ts-expect-error
+      gtag('event', 'conversion', {
+        send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
+      });
+    }
   };
 
   const cancelPython = () => {
