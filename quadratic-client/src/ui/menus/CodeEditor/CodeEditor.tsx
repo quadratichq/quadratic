@@ -196,7 +196,7 @@ export const CodeEditor = () => {
       type: editorMode,
     });
     // Google Ads Conversion for running a cell
-    if (!import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none') {
+    if (import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none') {
       //@ts-expect-error
       gtag('event', 'conversion', {
         send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
