@@ -11,8 +11,21 @@ import numpy as np
 from datetime import datetime
 
 #  Mock definitions
-def mock_GetCellsDB():
-    return []
+class Cell:
+    def __init__(self, x, y, value, type_name):
+        self.x = x
+        self.y = y
+        self.value = value
+        self.type_name = type_name
+
+async def mock_GetCellsDB(x1: int, y1: int, x2: int, y2: int, sheet: str=None, line: int=False):
+    out = []
+
+    for x in range(x1, x2 + 1):
+        for y in range(y1, y2 + 1):
+            out.append(Cell(x, y, f"hello {x}", "string"))
+
+    return out
 
 def mock_GetPos():
     return []
@@ -42,6 +55,7 @@ sys.modules["autopep8.fix_code"] = MagicMock()
 
 # import after mocks to in order to use them
 from quadratic_py import run_python, code_trace
+from quadratic_py.quadratic_api.quadratic import getCells
 
 run_python.fetch_module = mock_fetch_module
 
@@ -161,6 +175,20 @@ class TestErrorMessaging(TestCase):
             "formatted_code": code
         }
 
+class TestQuadraticApi(IsolatedAsyncioTestCase):
+    async def test_getCells_2d_array(self):
+        cells = await getCells((0, 0), (1, 1), first_row_header=False)
+        assert cells.equals(pd.DataFrame([["hello 0", "hello 1"], ["hello 0", "hello 1"]], columns=[0, 1]))
+
+    async def test_getCells_1d_array(self):
+        cells = await getCells((0, 0), (0, 1), first_row_header=False)
+        assert cells.equals(pd.DataFrame([["hello 0"], ["hello 0"]], columns=[0]))
+
+    async def test_getCells_1d_array_header(self):
+        cells = await getCells((0, 0), (0, 1), first_row_header=True)
+        assert cells.equals(pd.DataFrame([["hello 0"]], columns=["hello 0"]))
+
+class TestUtils(TestCase):
     def test_to_quadratic_type(self):
         # number
         assert to_quadratic_type(1) == ("1", "number")
