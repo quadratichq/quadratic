@@ -71,7 +71,7 @@ async def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | N
     return getCell(p_x, p_y, sheet)
 
 
-async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame | Series:
+async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame:
     """
     Reference multiple cells in the grid.
 
@@ -93,10 +93,13 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
     cell_range_width = p1[0] - p0[0] + 1
     cell_range_height = p1[1] - p0[1] + 1
 
+    # TODO(ddimaria): consider removing after team decides this is the right approach
+    # for always returning a dataframe.
+    #
     # return a panda series for a 1d vertical array of cells     
-    if cell_range_width == 1:
-        cell_list = [result_to_value(cell) for cell in cells]        
-        return Series(cell_list)
+    # if cell_range_width == 1:
+    #     cell_list = [result_to_value(cell) for cell in cells]        
+    #     return Series(cell_list)
 
     # Create empty df of the correct size
     df = DataFrame(  
@@ -120,7 +123,7 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
 
     return df
 
-async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame | Series:
+async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame:
     """
     Reference multiple cells in the grid.
 
