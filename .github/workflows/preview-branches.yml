@@ -14,7 +14,6 @@ concurrency:
   group: pr-${{ github.event.pull_request.number }}
 
 jobs:
-
   infra:
     needs:
      - files_preview
@@ -121,7 +120,7 @@ jobs:
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-files/Dockerfile .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-   api_preview:
+  api_preview:
     runs-on: ubuntu-latest-8-cores 
     steps:
     - uses: actions/checkout@v4
@@ -148,7 +147,6 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f quadratic-api/Dockerfile .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
 
   # client_preview:
   #   needs: infra
