@@ -35,6 +35,7 @@ impl Sheet {
 
     pub fn get_cells_response(&self, rect: Rect) -> GetCellsResponse {
         let mut response = vec![];
+
         for y in rect.y_range() {
             for x in rect.x_range() {
                 if let Some(cell) = self.display_value(Pos { x, y }) {
@@ -42,16 +43,19 @@ impl Sheet {
                         x,
                         y,
                         value: cell.to_edit(),
+                        type_name: cell.type_name().into(),
                     });
                 } else {
                     response.push(GetCellResponse {
                         x,
                         y,
                         value: "".into(),
+                        type_name: "blank".into(),
                     });
                 }
             }
         }
+
         GetCellsResponse { response }
     }
 
@@ -171,21 +175,25 @@ mod tests {
                         x: 0,
                         y: 0,
                         value: "1".into(),
+                        type_name: "number".into(),
                     },
                     GetCellResponse {
                         x: 1,
                         y: 0,
                         value: "2".into(),
+                        type_name: "number".into(),
                     },
                     GetCellResponse {
                         x: 0,
                         y: 1,
                         value: "3".into(),
+                        type_name: "number".into(),
                     },
                     GetCellResponse {
                         x: 1,
                         y: 1,
                         value: "4".into(),
+                        type_name: "number".into(),
                     },
                 ],
             }

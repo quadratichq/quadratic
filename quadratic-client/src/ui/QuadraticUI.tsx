@@ -9,6 +9,7 @@ import { focusGrid } from '../helpers/focusGrid';
 import { isEmbed } from '../helpers/isEmbed';
 import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
+import { UpdateAlertVersion } from './UpdateAlertVersion';
 import { useFileContext } from './components/FileProvider';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { Following } from './components/Following';
@@ -53,7 +54,7 @@ export default function QuadraticUI() {
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
       {!presentationMode && <TopBar />}
-      {editorInteractionState.showCommandPalette && <CommandPalette confirmSheetDelete={() => 0} />}
+      {editorInteractionState.showCommandPalette && <CommandPalette />}
       {editorInteractionState.showGoToMenu && <GoTo />}
 
       <div
@@ -102,6 +103,7 @@ export default function QuadraticUI() {
       )}
       {presentationMode && <PresentationModeHint />}
       {!isEmbed && <PermissionOverlay />}
+      <UpdateAlertVersion />
     </div>
   );
 }

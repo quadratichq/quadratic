@@ -35,6 +35,9 @@ pub(crate) enum MpError {
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
+    #[error("Error reading MinVersion file: {0}")]
+    MinVersion(String),
+
     #[error("PubSub error: {0}")]
     PubSub(String),
 

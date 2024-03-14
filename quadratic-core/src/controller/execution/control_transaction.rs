@@ -98,7 +98,6 @@ impl GridController {
     /// Externally called when an async calculation completes
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
         let transaction_id = Uuid::parse_str(&result.transaction_id())?;
-
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
         if result.cancel_compute.unwrap_or(false) {
@@ -283,7 +282,8 @@ mod tests {
             None,
             None,
             None,
-            Some("1".into()),
+            Some(vec!["1".into(), "number".into()]),
+            None,
             None,
             None,
             None,

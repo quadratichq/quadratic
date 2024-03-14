@@ -32,15 +32,15 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 // 2. Positions at a fixed position at the top of the screen (rather than the center)
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { overlayProps?: React.ComponentPropsWithoutRef<typeof DialogOverlay> }
+>(({ className, children, overlayProps, ...props }, ref) => (
   <DialogPortal>
-    <DialogOverlay>
+    <DialogOverlay {...overlayProps}>
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
           "overflow-y-scroll max-h-[calc(100%-4rem)]",
-          "fixed left-[50%] top-0 z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-8 gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-0 sm:rounded-lg md:w-full",
+          "fixed left-[50%] top-0 z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-3 gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-0 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-0 sm:rounded-lg md:w-full",
           className
         )}
         {...props}

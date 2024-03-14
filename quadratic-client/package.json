@@ -23,6 +23,7 @@
     "@mui/icons-material": "^5.2.0",
     "@mui/material": "^5.2.2",
     "@radix-ui/react-avatar": "^1.0.4",
+    "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-dropdown-menu": "^2.0.6",
     "@radix-ui/react-icons": "^1.3.0",
@@ -41,6 +42,7 @@
     "@types/ua-parser-js": "^0.7.39",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "cmdk": "^1.0.0",
     "color": "^4.2.3",
     "fontfaceobserver": "^2.3.0",
     "fuzzysort": "^2.0.4",
@@ -61,11 +63,16 @@
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
     "ua-parser-js": "^1.0.37",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "vscode": "npm:@codingame/monaco-vscode-api@>=2.0.0 <2.1.0",
+    "vscode-jsonrpc": "^8.2.0",
+    "vscode-languageclient": "^9.0.1",
+    "vscode-languageserver-protocol": "^3.17.5"
   },
   "main": "public/electron.js",
   "scripts": {
     "start": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=8192 && vite dev",
+    "start:no-hmr": "npm run build && vite preview --port 3000",
     "build": "export VITE_VERSION=$(git rev-parse HEAD) && export NODE_OPTIONS=--max-old-space-size=8192 && vite build",
     "build:wasm": "npm run build:wasm:javascript && npm run build:wasm:nodejs && npm run build:wasm:types",
     "build:wasm:types": "cd .. && cd quadratic-core && cargo run --bin export_types",
@@ -112,6 +119,7 @@
     "@types/react-dom": "^18.2.7",
     "@types/uuid": "^9.0.1",
     "@vitejs/plugin-react": "^4.2.0",
+    "@vitest/web-worker": "^1.3.1",
     "autoprefixer": "^10.4.16",
     "electron": "^23.0.0",
     "electron-is-dev": "^2.0.0",
@@ -122,18 +130,23 @@
     "happy-dom": "^13.0.0",
     "jest-environment-jsdom": "^29.7.0",
     "msdf-bmfont-xml": "^2.7.0",
+    "msw": "^2.2.2",
     "node-fetch": "^3.3.2",
     "postcss": "^8.4.31",
     "prettier-plugin-tailwindcss": "^0.4.1",
-    "pyodide": "^0.24.1",
+    "pyodide": "^0.25.0",
     "sass": "^1.69.5",
     "serve": "^14.2.0",
     "tailwindcss": "^3.3.5",
-    "vite": "^5.0.0",
+    "vite": "^5.1.2",
     "vite-plugin-checker": "^0.6.2",
     "vite-plugin-top-level-await": "^1.4.1",
     "vite-plugin-wasm": "^3.3.0",
     "vite-tsconfig-paths": "^4.2.1",
-    "vitest": "^1.1.3"
+    "vitest": "^1.3.1",
+    "vscode-languageserver-types": "^3.17.5"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.12.0"
   }
 }
