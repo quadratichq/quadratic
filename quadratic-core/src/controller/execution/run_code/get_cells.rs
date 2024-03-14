@@ -101,7 +101,7 @@ impl GridController {
 
     /// Get the current position associated with a transaction_id
     pub fn calculation_get_pos(&self, transaction_id: &str) -> Result<SheetPos> {
-        let transaction_id = Uuid::parse_str(&transaction_id).map_err(|e| {
+        let transaction_id = Uuid::parse_str(transaction_id).map_err(|e| {
             CoreError::TransactionNotFound(format!("Transaction ID is invalid: {}", e))
         })?;
 
