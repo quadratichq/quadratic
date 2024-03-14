@@ -18,6 +18,24 @@ const apiPulumiEscEnvironmentName = config.require(
 const instanceSize = config.require("api-instance-size");
 const domain = config.require("domain");
 
+// postgres setup
+const postgresPassword = "password";
+const postgresUser = "quadratic_api";
+const postgresDB = "quardratic_api";
+
+// Set up any dependencies
+const dependencySetupBashCommand = `
+mkdir -p /var/lib/postgresql/data
+docker run -d \
+	--name ${apiECRName}-postgres \
+	-e POSTGRES_PASSWORD=${postgresPassword} \
+	-e PGDATA=/var/lib/postgresql/data/pgdata \
+  -e POSTGRES_DB=${postgresDB} \
+  -e POSTGRES_USER=${postgresUser} \
+	-v /var/lib/postgresql/data:/var/lib/postgresql/data \
+  -p 5432:5432 \
+	postgres:15
+`;
 
 const instance = new aws.ec2.Instance("api-instance", {
   tags: {
@@ -34,8 +52,10 @@ const instance = new aws.ec2.Instance("api-instance", {
       dockerImageTag,
       apiPulumiEscEnvironmentName,
       {
-        PORT: "80"
+        PORT: "80",
+        DATABASE_URL: `postgres://${postgresUser}:${postgresPassword}@host.docker.internal:5432/${postgresDB}`,
       },
+      dependencySetupBashCommand,
       true
     )
   ),

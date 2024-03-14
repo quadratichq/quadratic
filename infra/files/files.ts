@@ -19,7 +19,7 @@ const filesPulumiEscEnvironmentName = config.require(
 // Configuration from Pulumi ESC
 const instanceSize = config.require("files-instance-size");
 const domain = config.require("domain");
-
+const dependencySetupBashCommand = "";
 
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
@@ -40,6 +40,7 @@ const instance = new aws.ec2.Instance("files-instance", {
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
       },
+      dependencySetupBashCommand,
       true
     )
   ),

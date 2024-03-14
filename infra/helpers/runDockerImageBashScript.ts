@@ -40,6 +40,7 @@ export const runDockerImageBashScript = (
   imageTag: string,
   pulumiEscEnvironmentName: string,
   extraEnvVars: EnvVariables,
+  dependencySetupBashCommand: string = "",
   rebuildOnEveryPulumiRun: boolean = false
 ) => {
   const extraEnvVarsBashCommand = createBashCommandForEnv(extraEnvVars);
@@ -73,6 +74,8 @@ sudo yum install aws-cli -y
 
 echo 'Logging into ECR'
 aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS --password-stdin ${ecrRegistryUrl}
+
+${dependencySetupBashCommand}
 
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}

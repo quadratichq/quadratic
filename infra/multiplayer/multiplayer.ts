@@ -26,6 +26,7 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 const instanceSize = config.require("multiplayer-instance-size");
+const dependencySetupBashCommand = "";
 
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
@@ -47,6 +48,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
       },
+      dependencySetupBashCommand,
       true
     )
   ),
