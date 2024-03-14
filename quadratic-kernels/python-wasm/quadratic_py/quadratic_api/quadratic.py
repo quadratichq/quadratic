@@ -95,7 +95,7 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
 
     # TODO(ddimaria): consider removing after team decides this is the right approach
     # for always returning a dataframe.
-
+    #
     # return a panda series for a 1d vertical array of cells     
     # if cell_range_width == 1:
     #     cell_list = [result_to_value(cell) for cell in cells]        
