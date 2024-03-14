@@ -3,6 +3,7 @@ import {
   CellFormatSummary,
   CodeCellLanguage,
   JsCodeCell,
+  JsHtmlOutput,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -202,6 +203,16 @@ export interface CoreClientGetRenderCodeCells {
   type: 'coreClientGetRenderCodeCells';
   codeCells: JsRenderCodeCell[];
   id: number;
+}
+
+export interface CoreClientHtmlOutput {
+  type: 'coreClientHtmlOutput';
+  html: JsHtmlOutput[];
+}
+
+export interface CoreClientUpdateHtml {
+  type: 'coreClientUpdateHtml';
+  html: JsHtmlOutput;
 }
 
 //#endregion
@@ -630,4 +641,6 @@ export type CoreClientMessage =
   | CoreClientSearch
   | CoreClientHasRenderCells
   | CoreClientCopyToClipboard
-  | CoreClientCutToClipboard;
+  | CoreClientCutToClipboard
+  | CoreClientHtmlOutput
+  | CoreClientUpdateHtml;

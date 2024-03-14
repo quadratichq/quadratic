@@ -76,4 +76,19 @@ impl GridController {
             }
         }
     }
+
+    pub fn send_all_html(&self) {
+        if !cfg!(target_family = "wasm") {
+            return;
+        }
+        let mut html = Vec::new();
+        for sheet_id in self.sheet_ids() {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                html.extend(sheet.get_html_output());
+            }
+        }
+        if let Ok(html) = serde_json::to_string(&html) {
+            crate::wasm_bindings::js::jsHtmlOutput(html);
+        }
+    }
 }

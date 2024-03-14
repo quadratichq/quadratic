@@ -56,7 +56,6 @@ extern "C" {
     pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool);
     pub fn jsDeleteSheet(sheetId: String, user: bool);
     pub fn jsRequestTransactions(sequence_num: u64);
-    pub fn jsUpdateHtml(sheet_id: String, x: i64, y: i64, html: String /*JsHtmlOutput*/);
     pub fn jsUpdateCodeCell(
         sheet_id: String,
         x: i64,
@@ -65,4 +64,6 @@ extern "C" {
     );
     pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64);
     pub fn jsSetCursor(cursor: String);
+    pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
+    pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
 }

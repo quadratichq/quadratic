@@ -1,6 +1,6 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import { JsHtmlOutput, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -39,6 +39,8 @@ declare var self: WorkerGlobalScope &
       row: bigint | undefined,
       size: number
     ) => void;
+    sendSheetHtml: (html: JsHtmlOutput[]) => void;
+    sendUpdateHtml: (html: JsHtmlOutput) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -111,8 +113,9 @@ export const jsOffsetsModified = (
   self.sendSheetOffsetsRender(sheetId, column, row, size);
 };
 
-export const jsUpdateHtml = (sheetId: string, x: number, y: number, html: string) => {
-  console.log('TODO: jsUpdateHtml', sheetId, x, y, html);
+export const jsUpdateHtml = (htmlStringified: string) => {
+  const html: JsHtmlOutput = JSON.parse(htmlStringified);
+  self.sendUpdateHtml(html);
 };
 
 export const jsRequestTransactions = (sequenceNum: bigint) => {
@@ -121,4 +124,9 @@ export const jsRequestTransactions = (sequenceNum: bigint) => {
 
 export const jsSetCursor = (cursor: string) => {
   self.sendSetCursor(cursor);
+};
+
+export const jsHtmlOutput = (htmlStringified: string) => {
+  const html: JsHtmlOutput[] = JSON.parse(htmlStringified);
+  self.sendSheetHtml(html);
 };

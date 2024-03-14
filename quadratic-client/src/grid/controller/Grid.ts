@@ -1,4 +1,4 @@
-import { JsHtmlOutput, Rect } from '@/quadratic-core-types';
+import { Rect } from '@/quadratic-core-types';
 import {
   GridController,
   JsCodeResult,
@@ -188,12 +188,10 @@ export class Grid {
   //#region get grid information
   // ---------------------------
 
-  // todo...
-  getHtmlOutput(sheetId: string): JsHtmlOutput[] {
-    // const data = this.gridController.getHtmlOutput(sheetId);
-    // return JSON.parse(data);
-    return [];
-  }
+  // getHtmlOutput(sheetId: string): JsHtmlOutput[] {
+  //   const data = this.gridController.getHtmlOutput(sheetId);
+  //   return JSON.parse(data);
+  // }
 
   //#endregion
 

@@ -33,6 +33,7 @@ impl GridController {
         if let Ok(file) = file::import(file).map_err(|e| e.to_string()) {
             let grid = GridController::from_grid(file, last_sequence_num as u64, initialize);
             grid.send_all_fills();
+            grid.send_all_html();
             Ok(grid)
         } else {
             Err(JsValue::from_str("Failed to import grid"))

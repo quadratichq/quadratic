@@ -84,6 +84,12 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetOffsets') {
       events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size);
       return;
+    } else if (e.data.type === 'coreClientHtmlOutput') {
+      events.emit('htmlOutput', e.data.html);
+      return;
+    } else if (e.data.type === 'coreClientUpdateHtml') {
+      events.emit('htmlUpdate', e.data.html);
+      return;
     }
 
     if (e.data.id !== undefined) {

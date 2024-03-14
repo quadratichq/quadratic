@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import { JsHtmlOutput, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
@@ -34,6 +34,8 @@ declare var self: WorkerGlobalScope &
       row: bigint | undefined,
       size: number
     ) => void;
+    sendSheetHtml: (html: JsHtmlOutput[]) => void;
+    sendUpdateHtml: (html: JsHtmlOutput) => void;
   };
 
 class CoreClient {
@@ -47,6 +49,8 @@ class CoreClient {
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
     self.sendSetCursor = coreClient.sendSetCursor;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
+    self.sendSheetHtml = coreClient.sendSheetHtml;
+    self.sendUpdateHtml = coreClient.sendUpdateHtml;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -357,6 +361,14 @@ class CoreClient {
       row: row === undefined ? undefined : Number(row),
       size,
     });
+  };
+
+  sendSheetHtml = (html: JsHtmlOutput[]) => {
+    this.send({ type: 'coreClientHtmlOutput', html });
+  };
+
+  sendUpdateHtml = (html: JsHtmlOutput) => {
+    this.send({ type: 'coreClientUpdateHtml', html });
   };
 }
 

@@ -1,5 +1,4 @@
 import { events } from '@/events/events';
-import { grid } from '@/grid/controller/Grid';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsHtmlOutput } from '@/quadratic-core-types';
 import { HtmlCell } from './HtmlCell';
@@ -10,6 +9,37 @@ class HTMLCellsHandler {
   // used to attach the html-cells to react
   private div?: HTMLDivElement;
 
+  // used to hold the data if the div is not yet created
+  private dataWaitingForDiv?: JsHtmlOutput[];
+
+  constructor() {
+    events.on('htmlOutput', this.htmlOutput);
+    events.on('htmlUpdate', this.htmlUpdate);
+  }
+
+  private htmlOutput = (data: JsHtmlOutput[]) => {
+    if (this.div) {
+      this.updateHtmlCells(data);
+    } else {
+      this.dataWaitingForDiv = data;
+    }
+  };
+
+  private htmlUpdate = (data: JsHtmlOutput) => {
+    // update an existing cell
+    for (const cell of this.cells) {
+      if (cell.isOutputEqual(data)) {
+        cell.update(data);
+        return;
+      }
+    }
+
+    // or add a new cell
+    const cell = new HtmlCell(data);
+    this.getParent().appendChild(cell.div);
+    this.cells.add(cell);
+  };
+
   attach(parent: HTMLDivElement) {
     if (this.div) {
       parent.appendChild(this.div);
@@ -19,17 +49,20 @@ class HTMLCellsHandler {
   init(parent: HTMLDivElement | null) {
     this.div = this.div ?? document.createElement('div');
     this.div.className = 'html-cells';
-    this.updateHtmlCells();
     events.on('changeSheet', this.changeSheet);
-    window.addEventListener('html-update', this.updateHtmlCellsBySheetId);
     if (parent) {
       this.attach(parent);
+    }
+    if (this.dataWaitingForDiv) {
+      this.updateHtmlCells(this.dataWaitingForDiv);
+      this.dataWaitingForDiv = undefined;
     }
   }
 
   destroy() {
     events.off('changeSheet', this.changeSheet);
-    window.removeEventListener('html-update', this.updateHtmlCellsBySheetId);
+    events.off('htmlOutput', this.htmlOutput);
+    events.off('htmlUpdate', this.htmlUpdate);
   }
 
   private changeSheet = () => {
@@ -66,18 +99,8 @@ class HTMLCellsHandler {
     });
   }
 
-  private updateHtmlCellsBySheetId = (e: any /*{ detail: { id: string }[] }*/) => {
-    const old: HtmlCell[] = [];
-    const cells = e.detail.flatMap((sheet: { id: string }) => {
-      old.push(...Array.from(this.cells.values()).filter((cell) => cell.isSheet(sheet.id)));
-      return grid.getHtmlOutput(sheet.id);
-    });
-    this.prepareCells(old, cells);
-  };
-
-  private updateHtmlCells() {
-    const cells = sheets.sheets.flatMap((sheet) => [...grid.getHtmlOutput(sheet.id)]);
-    this.prepareCells([...this.cells], cells);
+  updateHtmlCells(htmlCells: JsHtmlOutput[]) {
+    this.prepareCells([...this.cells], htmlCells);
   }
 
   clearHighlightEdges() {

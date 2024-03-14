@@ -1,4 +1,4 @@
-import { JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import { JsHtmlOutput, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import EventEmitter from 'eventemitter3';
 
 export interface EventTypes {
@@ -42,6 +42,14 @@ export interface EventTypes {
     column?: number;
     row?: number;
     size: number;
+  };
+
+  htmlOutput: {
+    html: JsHtmlOutput[];
+  };
+
+  htmlUpdate: {
+    html: JsHtmlOutput;
   };
 }
 

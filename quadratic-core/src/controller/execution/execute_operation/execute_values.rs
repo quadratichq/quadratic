@@ -18,15 +18,12 @@ impl GridController {
                 Some(sheet) => {
                     // update individual cell values and collect old_values
                     let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
-                    if values.into_iter().any(|(_, _, value)| value.is_html()) {
+                    if cfg!(target_family = "wasm")
+                        && values.into_iter().any(|(_, _, value)| value.is_html())
+                    {
                         if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
                             if let Ok(html) = serde_json::to_string(&html) {
-                                crate::wasm_bindings::js::jsUpdateHtml(
-                                    sheet_pos.sheet_id.to_string(),
-                                    sheet_pos.x,
-                                    sheet_pos.y,
-                                    html,
-                                );
+                                crate::wasm_bindings::js::jsUpdateHtml(html);
                             }
                         }
                     };
