@@ -117,6 +117,10 @@ jobs:
         run: |
           npm run build:wasm:javascript
 
+      - name: Build python
+        run: |
+          npm run build:python
+
       - name: Run npm test:ts in quadratic-client
         run: |
           npm install
