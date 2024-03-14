@@ -43,12 +43,7 @@ impl GridController {
             if new_code_run.is_html() && cfg!(target_family = "wasm") {
                 if let Some(html) = sheet.get_single_html_output(pos) {
                     if let Ok(html) = serde_json::to_string(&html) {
-                        crate::wasm_bindings::js::jsUpdateHtml(
-                            sheet_id.to_string(),
-                            pos.x,
-                            pos.y,
-                            html,
-                        );
+                        crate::wasm_bindings::js::jsUpdateHtml(html);
                     }
                 }
             }
@@ -70,12 +65,7 @@ impl GridController {
             if old_code_run.is_html() && cfg!(target_family = "wasm") {
                 if let Some(html) = sheet.get_single_html_output(pos) {
                     if let Ok(html) = serde_json::to_string(&html) {
-                        crate::wasm_bindings::js::jsUpdateHtml(
-                            sheet_id.to_string(),
-                            pos.x,
-                            pos.y,
-                            html,
-                        );
+                        crate::wasm_bindings::js::jsUpdateHtml(html);
                     }
                 }
             }
@@ -128,12 +118,7 @@ impl GridController {
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 if let Some(html) = sheet.get_single_html_output(pos) {
                     if let Ok(html) = serde_json::to_string(&html) {
-                        crate::wasm_bindings::js::jsUpdateHtml(
-                            sheet_id.to_string(),
-                            pos.x,
-                            pos.y,
-                            html,
-                        );
+                        crate::wasm_bindings::js::jsUpdateHtml(html);
                     }
                 }
             }
