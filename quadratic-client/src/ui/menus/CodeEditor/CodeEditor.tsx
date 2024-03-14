@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { googleAnalyticsAvailable } from '@/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
@@ -196,7 +197,7 @@ export const CodeEditor = () => {
       type: editorMode,
     });
     // Google Ads Conversion for running a cell
-    if (import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none') {
+    if (googleAnalyticsAvailable()) {
       //@ts-expect-error
       gtag('event', 'conversion', {
         send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
