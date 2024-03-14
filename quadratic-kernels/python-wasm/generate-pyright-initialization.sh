@@ -15,6 +15,7 @@ git clone git@github.com:quadratichq/typeshed.git
 sed -i '' "s/async//g" quadratic_py/quadratic_api/quadratic.pyi
 
 # copy quadratic.pyi (pyright generated stubs) to typings as __builtins__.pyi to make them globally available
+mkdir quadratic_py/quadratic_api/pyright_initialization quadratic_py/quadratic_api/pyright_initialization/builtins
 cp quadratic_py/quadratic_api/quadratic.pyi quadratic_py/quadratic_api/pyright_initialization/builtins/__builtins__.pyi
 
 popd
