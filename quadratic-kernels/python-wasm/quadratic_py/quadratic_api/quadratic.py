@@ -165,7 +165,7 @@ async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
         The value of the relative cell referenced.
 
     Typical usage example:    
-        c = rel_cell(0, 0)
+        c = rel_cell(-1, 0) # references the cell to the left of this cell
     """
 
     result = await getRelCell(x, y, int(stack_line_number()))
