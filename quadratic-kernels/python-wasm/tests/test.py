@@ -18,6 +18,11 @@ class Cell:
         self.value = value
         self.type_name = type_name
 
+class RelCellResult:
+    def __init__(self, value, cells_accessed):
+        self.value = value
+        self.cells_accessed = cells_accessed
+
 async def mock_GetCellsDB(x1: int, y1: int, x2: int, y2: int, sheet: str=None, line: int=False):
     out = []
 
@@ -27,11 +32,13 @@ async def mock_GetCellsDB(x1: int, y1: int, x2: int, y2: int, sheet: str=None, l
 
     return out
 
-def mock_GetPos():
-    return []
+async def mock_GetPos() -> tuple[int, int]:
+    return (0, 0)
 
-def mock_GetRelCell():
-    return []
+async def mock_GetRelCell(x: int, y: int, line: int=False):
+    result = [Cell(x, y, "hello", "string")]
+    cells_accessed = (0, 0)
+    return RelCellResult(result, cells_accessed)
 
 class mock_micropip:
     async def install(name):
@@ -55,7 +62,7 @@ sys.modules["autopep8.fix_code"] = MagicMock()
 
 # import after mocks to in order to use them
 from quadratic_py import run_python, code_trace
-from quadratic_py.quadratic_api.quadratic import getCells
+from quadratic_py.quadratic_api.quadratic import getCells, pos, rel_cell
 
 run_python.fetch_module = mock_fetch_module
 
@@ -187,6 +194,14 @@ class TestQuadraticApi(IsolatedAsyncioTestCase):
     async def test_getCells_1d_array_header(self):
         cells = await getCells((0, 0), (0, 1), first_row_header=True)
         assert cells.equals(pd.DataFrame([["hello 0"]], columns=["hello 0"]))
+
+    async def test_pos(self):
+        cells = await pos()
+        assert cells == (0, 0)
+
+    async def test_rel_cell(self):
+        cells = await rel_cell(0, 0)
+        assert cells == ('hello', (0, 0))
 
 class TestUtils(TestCase):
     def test_to_quadratic_type(self):
