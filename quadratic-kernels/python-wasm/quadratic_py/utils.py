@@ -15,7 +15,6 @@ def attempt_fix_await(code: str) -> str:
     code = re.sub(r"([^a-zA-Z0-9]|^)getCell\(", r"\1await getCell(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\[", r"\1await cells[", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)pos\(", r"\1await pos(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)rel_await cell\(", r"\1await rel_cell(", code) # intentional
     code = re.sub(r"([^a-zA-Z0-9]|^)rc\(", r"\1await rc(", code)
 
@@ -25,7 +24,6 @@ def attempt_fix_await(code: str) -> str:
     code = code.replace("await await cell(", "await cell(")
     code = code.replace("await await cells(", "await cells(")
     code = code.replace("await await cells[", "await cells[")
-    code = code.replace("await await pos[", "await pos(")
     code = code.replace("await await rel_cell[", "await rel_cell(")
     code = code.replace("await await rc[", "await rc(")
 

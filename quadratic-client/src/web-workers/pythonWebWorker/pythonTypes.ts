@@ -26,8 +26,6 @@ export interface PythonMessage {
     | 'execute'
     | 'not-loaded'
     | 'get-cells'
-    | 'get-pos'
-    | 'get-rel-cell'
     | 'python-loaded'
     | 'python-error'
     | 'inspect'

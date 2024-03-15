@@ -717,30 +717,6 @@ export class Grid {
     }
   }
 
-  // get the current position of the code cell
-  calculationGetPos(transactionId: string): [bigint, bigint] | undefined {
-    const result = this.gridController.calculationGetPos(transactionId);
-    return [result.x, result.y];
-  }
-
-  // get the value of a relative code cell position
-  calculationGetRelCell(
-    transactionId: string,
-    pos: Pos,
-    lineNumber: number | undefined
-  ): { value: { x: number; y: number; value: string }[] | undefined; cells_accessed: bigint[][] } {
-    const rel_pos = this.calculationGetPos(transactionId) || [0, 0];
-    const x = BigInt(rel_pos[0]) + pos.x;
-    const y = BigInt(rel_pos[1]) + pos.y;
-    const value = this.calculationGetCells(transactionId, posToRect(Number(x), Number(y)), undefined, lineNumber);
-    const cells_accessed = [[x, y]];
-
-    return {
-      value,
-      cells_accessed,
-    };
-  }
-
   rerunAllCodeCells() {
     const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());
     this.transactionResponse(summary);

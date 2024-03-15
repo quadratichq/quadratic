@@ -3,7 +3,7 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import { TransactionSummary } from '@/quadratic-core/types';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
-import { JsCodeResult, Pos } from '../../quadratic-core/quadratic_core';
+import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -130,43 +130,6 @@ class PythonWebWorker {
           break;
         }
 
-        case 'get-pos': {
-          try {
-            const transactionId = this.getTransactionId();
-            const cells = grid.calculationGetPos(transactionId);
-            this.worker!.postMessage({ type: 'get-pos', cells });
-          } catch (e) {
-            console.warn('Error in get-pos', e);
-            this.calculationComplete();
-          }
-
-          break;
-        }
-
-        case 'get-rel-cell': {
-          const transactionId = this.getTransactionId();
-          const pos = event.pos;
-
-          if (!pos) throw new Error('Expected pos to be defined in get-cells');
-
-          try {
-            const cells = grid.calculationGetRelCell(transactionId, new Pos(pos.x, pos.y), pos.lineNumber);
-
-            // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
-            if (cells) {
-              this.worker!.postMessage({ type: 'get-rel-cell', cells });
-            } else {
-              this.calculationComplete();
-            }
-          } catch (e) {
-            console.warn('Error in get-rel-cells', e);
-            this.calculationComplete();
-            grid.transactionResponse(e as TransactionSummary);
-          }
-
-          break;
-        }
-
         case 'python-loaded': {
           window.dispatchEvent(new CustomEvent('python-loaded'));
           this.loaded = true;
@@ -227,7 +190,7 @@ class PythonWebWorker {
           this.running = true;
           window.dispatchEvent(new CustomEvent('python-computation-started'));
         }
-        this.worker.postMessage({ type: 'execute', python: first.code });
+        this.worker.postMessage({ type: 'execute', python: first.code, pos: first.sheetPos });
       }
     } else if (complete) {
       window.dispatchEvent(new CustomEvent('python-computation-finished'));

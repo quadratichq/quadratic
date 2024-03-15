@@ -2,7 +2,7 @@ from contextlib import redirect_stdout, redirect_stderr
 from io import StringIO
 from typing import Tuple
 
-from .quadratic_api.quadratic import getCell, getCells, pos, rel_cell
+from .quadratic_api.quadratic import getCell, getCells
 from .utils import attempt_fix_await, to_quadratic_type
 import micropip
 import pandas as pd
@@ -46,20 +46,6 @@ async def getCellsInner(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=Non
 
     return await getCells(p0, p1, sheet, first_row_header)
     
-# Wrapper to pos() to capture cells_accessed
-async def getPosInner() -> Tuple[int, int] | None:
-    (x, y) = await pos()
-    cells_accessed.append([x, y, None])
-
-    return (x, y)
-
-# Wrapper to rel_cell() to capture cells_accessed
-async def getRelCellInner(x: int, y: int) -> int | float | str | bool | None:
-    [result, cells_accessed] = await rel_cell(x, y)
-    cells_accessed.append(cells_accessed)
-
-    return result
-
 globals = {
     "getCells": getCellsInner,
     "getCell": getCellInner,
@@ -67,15 +53,15 @@ globals = {
     "result": None,
     "cell": getCellInner,
     "cells": getCellsInner,
-    "pos": getPosInner,
-    "rel_cell": getRelCellInner,
-    "rc": getRelCellInner,
 }
 
-async def run_python(code: str):
+async def run_python(code: str, pos: Tuple[int, int]):
     sout = StringIO()   
     serr = StringIO()
     output_value = None
+    globals['pos'] = lambda: (pos.x, pos.y)
+    globals['rel_cell'] = lambda x, y: getCellInner(x + pos.x, y + pos.y)
+    globals['rc'] = globals['rel_cell']
 
     try:
         plotly_html = await plotly_patch.intercept_plotly_html(code)

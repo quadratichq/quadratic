@@ -12,8 +12,6 @@ try {
   // do nothing, we're in a test
 }
 let getCellsMessages: (cells: { x: number; y: number; value: string; type_name: string }[]) => void | undefined;
-let getPosMessages: (cells: { x: number; y: number }[]) => void | undefined;
-let getRelCellMessages: (cells: { x: number; y: number }[]) => void | undefined;
 
 const getCellsDB = async (
   x0: number,
@@ -26,20 +24,6 @@ const getCellsDB = async (
   return new Promise((resolve) => {
     getCellsMessages = (cells: { x: number; y: number; value: string; type_name: string }[]) => resolve(cells);
     self.postMessage({ type: 'get-cells', range: { x0, y0, x1, y1, sheet, lineNumber } } as PythonMessage);
-  });
-};
-
-const getPos = async (): Promise<{ x: number; y: number }[]> => {
-  return new Promise((resolve) => {
-    getPosMessages = (cells: { x: number; y: number }[]) => resolve(cells);
-    self.postMessage({ type: 'get-pos' } as PythonMessage);
-  });
-};
-
-const getRelCell = async (x: number, y: number, lineNumber?: number): Promise<{ x: number; y: number }[]> => {
-  return new Promise((resolve) => {
-    getRelCellMessages = (cells: { x: number; y: number }[]) => resolve(cells);
-    self.postMessage({ type: 'get-rel-cell', pos: { x, y, lineNumber } } as PythonMessage);
   });
 };
 
@@ -59,8 +43,6 @@ async function pythonWebWorker() {
     }
 
     await pyodide.registerJsModule('getCellsDB', getCellsDB);
-    await pyodide.registerJsModule('getPos', getPos);
-    await pyodide.registerJsModule('getRelCell', getRelCell);
     await pyodide.loadPackage('micropip');
 
     let micropip = await pyodide.pyimport('micropip');
@@ -97,14 +79,6 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
     if (event.cells && getCellsMessages) {
       getCellsMessages(event.cells);
     }
-  } else if (event.type === 'get-pos') {
-    if (event.cells && getPosMessages) {
-      getPosMessages(event.cells);
-    }
-  } else if (event.type === 'get-rel-cell') {
-    if (event.cells && getRelCellMessages) {
-      getRelCellMessages(event.cells);
-    }
   } else if (event.type === 'inspect') {
     if (!pyodide) {
       self.postMessage({ type: 'not-loaded' } as PythonMessage);
@@ -130,7 +104,7 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       let output, results, inspection_results;
 
       try {
-        output = await pyodide.globals.get('run_python')(event.python);
+        output = await pyodide.globals.get('run_python')(event.python, event.pos);
         results = Object.fromEntries(output.toJs());
         inspection_results = await inspectPython(event.python || '', pyodide);
 
