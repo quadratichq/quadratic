@@ -9,7 +9,7 @@ def generate_json() -> str:
     base_path = "quadratic_py/quadratic_api/pyright_initialization"
     third_party_stubs = ("dist/typings/typeshed/", "/")
     config_path = (f"{base_path}/config/", "/")
-    builtins_path = (f"{base_path}/builtins/", "/")
+    builtins_path = ("dist/typings/builtins/", "/")
     allowed_extensions = (".pyi", ".json")
 
     for (directory, prefix) in (third_party_stubs, config_path, builtins_path):
