@@ -2,7 +2,10 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
-    grid::{js_types::JsCodeCell, CodeRun, RenderSize},
+    grid::{
+        js_types::{JsCodeCell, JsReturnInfo},
+        CodeRun, RenderSize,
+    },
     CellValue, Pos, Rect,
 };
 
@@ -144,7 +147,7 @@ impl Sheet {
             CellValue::Code(code_cell) => {
                 if let Some(code_run) = self.code_run(code_pos) {
                     let evaluation_result =
-                        serde_json::to_string(&code_run.result).unwrap_or("".to_string());
+                        serde_json::to_string(&code_run.result).unwrap_or("".into());
                     let spill_error = if code_run.spill_error {
                         Some(self.find_spill_error_reasons(
                             &code_run.output_rect(code_pos, true),
@@ -162,6 +165,10 @@ impl Sheet {
                         std_out: code_run.std_out.clone(),
                         evaluation_result: Some(evaluation_result),
                         spill_error,
+                        return_info: Some(JsReturnInfo {
+                            line_number: code_run.line_number,
+                            output_type: code_run.output_type.clone(),
+                        }),
                     })
                 } else {
                     Some(JsCodeCell {
@@ -173,6 +180,7 @@ impl Sheet {
                         std_out: None,
                         evaluation_result: None,
                         spill_error: None,
+                        return_info: None,
                     })
                 }
             }
@@ -236,6 +244,9 @@ mod test {
             last_modified: Utc::now(),
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(2)))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: false,
         };
         let old = sheet.set_code_run(Pos { x: 0, y: 0 }, Some(code_run.clone()));
@@ -256,6 +267,9 @@ mod test {
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(2)))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: false,
             last_modified: Utc::now(),
         };
@@ -286,6 +300,9 @@ mod test {
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3"]]))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: false,
             last_modified: Utc::now(),
         };
@@ -301,6 +318,7 @@ mod test {
                 std_out: None,
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
+                return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
             })
         );
         assert_eq!(
@@ -314,6 +332,7 @@ mod test {
                 std_out: None,
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
+                return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
             })
         );
         assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);
@@ -368,6 +387,9 @@ mod test {
                 vec!["2"],
                 vec!["3"],
             ]))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: false,
             last_modified: Utc::now(),
         };
@@ -395,6 +417,9 @@ mod test {
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1", "2", "3'"]]))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: false,
             last_modified: Utc::now(),
         };

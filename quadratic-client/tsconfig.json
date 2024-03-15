@@ -3,6 +3,7 @@
   "compilerOptions": {
     "lib": ["dom", "dom.Iterable", "webworker"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"]
+  "include": ["src", "public/pyright.worker.js"],
+  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

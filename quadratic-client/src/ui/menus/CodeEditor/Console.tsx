@@ -3,18 +3,17 @@ import { useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { Circle } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
-// todo: fix types
-
 interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
   editorMode: EditorInteractionState['mode'];
   editorContent: string | undefined;
-  evaluationResult?: string | null | undefined;
+  evaluationResult?: EvaluationResult;
   spillError?: Coordinate[];
 }
 

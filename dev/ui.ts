@@ -107,7 +107,7 @@ export class UI {
     }
   }
 
-  statusItem(component: string, alwaysWatch?: boolean) {
+  statusItem(component: string) {
     const error = this.control.status[component] === "error";
     const { name, color, dark, shortcut } = COMPONENTS[component];
     const index = name.toLowerCase().indexOf(shortcut.toLowerCase());
@@ -124,7 +124,7 @@ export class UI {
       this.write(" " + KILLED);
     } else if (!this.control.status[component]) {
       this.write(" " + ANIMATE_STATUS[this.spin], "gray");
-    } else if (this.cli.options[component] || alwaysWatch) {
+    } else if (this.cli.options[component]) {
       this.write(" " + WATCH, "gray");
     } else {
       this.write(" " + DONE, "green");
@@ -171,7 +171,7 @@ export class UI {
   prompt() {
     this.clear();
     this.write("\n");
-    this.statusItem("client", true);
+    this.statusItem("client");
     this.statusItem("api");
     this.statusItem("core");
     this.statusItem("multiplayer");

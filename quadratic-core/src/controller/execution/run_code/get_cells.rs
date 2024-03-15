@@ -14,6 +14,7 @@ pub struct GetCellResponse {
     pub x: i64,
     pub y: i64,
     pub value: String,
+    pub type_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -283,7 +284,8 @@ mod test {
                 response: vec![GetCellResponse {
                     x: 0,
                     y: 0,
-                    value: "test".into()
+                    value: "test".into(),
+                    type_name: "text".into()
                 }]
             })
         );

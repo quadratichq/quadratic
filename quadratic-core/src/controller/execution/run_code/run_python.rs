@@ -60,7 +60,8 @@ mod tests {
             None,
             None,
             None,
-            Some("test".to_string()),
+            Some(vec!["test".into(), "text".into()]),
+            None,
             None,
             None,
             None,
@@ -110,7 +111,8 @@ mod tests {
             None,
             None,
             None,
-            Some("hello world".to_string()),
+            Some(vec!["hello world".into(), "text".into()]),
+            None,
             None,
             None,
             None,
@@ -168,7 +170,8 @@ mod tests {
                 response: vec![GetCellResponse {
                     x: 0,
                     y: 0,
-                    value: "9".into()
+                    value: "9".into(),
+                    type_name: "number".into(),
                 }]
             })
         );
@@ -181,7 +184,8 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("10".to_string()),
+                Some(vec!["10".into(), "number".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -241,7 +245,8 @@ mod tests {
             None,
             None,
             None,
-            Some("10".to_string()),
+            Some(vec!["10".into(), "number".into()]),
+            None,
             None,
             None,
             None,
@@ -273,7 +278,8 @@ mod tests {
                 response: vec![GetCellResponse {
                     x: 0,
                     y: 0,
-                    value: "10".into()
+                    value: "10".into(),
+                    type_name: "number".into(),
                 }]
             })
         );
@@ -284,7 +290,8 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("11".to_string()),
+                Some(vec!["11".into(), "number".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -299,8 +306,11 @@ mod tests {
         );
     }
 
-    fn python_array(input: Vec<isize>) -> Vec<Vec<String>> {
-        input.iter().map(|i| vec![i.to_string()]).collect()
+    fn python_array(input: Vec<isize>) -> Vec<Vec<Vec<String>>> {
+        input
+            .iter()
+            .map(|i| vec![vec![i.to_string(), "number".into()]])
+            .collect()
     }
 
     #[test]
@@ -333,6 +343,7 @@ mod tests {
                 None,
                 None,
                 Some(python_array(vec![1, 2, 3])),
+                None,
                 None,
                 None,
             ))
@@ -372,7 +383,8 @@ mod tests {
             None,
             None,
             None,
-            Some("".into()),
+            Some(vec!["".into(), "blank".into()]),
+            None,
             None,
             None,
             Some(true),
@@ -414,7 +426,8 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("original output".to_string()),
+                Some(vec!["original output".into(), "text".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -455,7 +468,8 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("new output".to_string()),
+                Some(vec!["new output".into(), "text".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -496,7 +510,8 @@ mod tests {
                 None,
                 None,
                 None,
-                Some("new output second time".to_string()),
+                Some(vec!["new output second time".into(), "text".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -552,7 +567,8 @@ mod tests {
             GetCellResponse {
                 x: 0,
                 y: 0,
-                value: "1".into()
+                value: "1".into(),
+                type_name: "number".into(),
             }
         );
         let result = gc.calculation_complete(JsCodeResult::new_from_rust(
@@ -561,7 +577,8 @@ mod tests {
             None,
             None,
             None,
-            Some("2".to_string()),
+            Some(vec!["2".into(), "number".into()]),
+            None,
             None,
             None,
             None,
@@ -597,7 +614,8 @@ mod tests {
             GetCellResponse {
                 x: 0,
                 y: 1,
-                value: "2".into()
+                value: "2".into(),
+                type_name: "number".into(),
             }
         );
         let result = gc.calculation_complete(JsCodeResult::new_from_rust(
@@ -606,7 +624,8 @@ mod tests {
             None,
             None,
             None,
-            Some("3".to_string()),
+            Some(vec!["3".into(), "number".into()]),
+            None,
             None,
             None,
             None,

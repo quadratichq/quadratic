@@ -32,7 +32,7 @@ impl GridController {
                 run.spill_error = spill_error;
                 transaction.forward_operations.push(Operation::SetCodeRun {
                     sheet_pos,
-                    code_run: Some(run.clone()),
+                    code_run: Some(run.to_owned()),
                     index,
                 });
             }
@@ -402,6 +402,9 @@ mod tests {
             std_err: None,
             std_out: None,
             result: CodeRunResult::Ok(Value::Array(Array::from(vec![vec!["1"]]))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: false,
             last_modified: Utc::now(),
             cells_accessed: HashSet::new(),

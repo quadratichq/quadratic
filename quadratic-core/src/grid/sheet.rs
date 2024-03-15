@@ -519,6 +519,9 @@ mod test {
             cells_accessed: HashSet::new(),
             last_modified: Utc::now(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(1)))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
         };
 
         // grid.set_code_cell_value((5, 2).into(), Some(code_cell));

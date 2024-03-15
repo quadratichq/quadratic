@@ -61,7 +61,7 @@ impl GridController {
         } else if let Some(bool) = CellValue::unpack_boolean(value) {
             bool
         } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(value)) {
-            if (bd.fractional_digit_count().abs() as usize) > MAX_BIG_DECIMAL_SIZE {
+            if (bd.fractional_digit_count().unsigned_abs() as usize) > MAX_BIG_DECIMAL_SIZE {
                 CellValue::Text(value.into())
             } else {
                 if value.contains(',') {

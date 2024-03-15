@@ -164,6 +164,7 @@ export class CellLabel {
     } else {
       if (this.clipLeft !== undefined) {
         this.clipLeft = undefined;
+        return true;
       }
     }
     return false;
@@ -180,6 +181,7 @@ export class CellLabel {
     } else {
       if (this.clipRight !== undefined) {
         this.clipRight = undefined;
+        return true;
       }
     }
     return false;

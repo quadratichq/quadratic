@@ -200,15 +200,18 @@ export class Control {
     clean.on("close", () => {
       this.client = spawn(
         "npm",
-        // ["run", "preview", "--workspace=quadratic-client"],
-        ["start", "--workspace=quadratic-client"],
+        [
+          "run",
+          this.cli.options.client ? "start" : "start:no-hmr",
+          "--workspace=quadratic-client",
+        ],
         {
           signal: this.signals.client.signal,
         }
       );
       this.ui.printOutput("client", (data) => {
         this.handleResponse("client", data, {
-          success: "Found 0 errors.",
+          success: ["Found 0 errors.", "Network: use --host to expose"],
           error: ["ERROR(", "npm ERR!"],
           start: "> quadratic-client@",
         });
@@ -222,6 +225,11 @@ export class Control {
         }
       });
     });
+  }
+
+  restartClient() {
+    this.cli.options.client = !this.cli.options.client;
+    this.runClient();
   }
 
   togglePerf() {

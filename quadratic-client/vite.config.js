@@ -17,6 +17,7 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+      dedupe: ['monaco-editor', 'vscode'],
     },
     optimizeDeps: {
       exclude: ['pyodide'],

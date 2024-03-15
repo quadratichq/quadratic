@@ -51,6 +51,14 @@ cargo install cargo-watch
 
 ## Local Environment Setup
 
+First, copy over the example file:
+
+```shell
+cp .env.example .env.local
+```
+
+Enter the missing Auth0 values and save.
+
 Now that dependencies are installed, all you need to do is run `node dev` to 
 bring up the all services.  Invoke `node run --help` for information on how
 to use this script, as you can use it to watch individual (or groups of)
@@ -61,7 +69,7 @@ for more more information.
 
 #### Docker Compose
 
-Docker Compose is a utility that's built into Docker Desktop and is a compact 
+Docker Compose is a utility that's built into Docker Desktop and is a compact
 infrastructure-as-code framework.  Services (e.g. running Docker containers) are
 defined, along with configuration information, in the `docker-compose.yml` file.
 Services can talk to each other and can communicate with services in the user's host
@@ -92,7 +100,15 @@ docker-compose build quadratic-multiplayer
 
 You can also develop Quadratic without using docker
 
-* Set up .env in quadratic-client, quadratic-api, quadratic-multiplayer, and quadratic-files. (todo: better description of how to do this)
+* Set up .env in quadratic-client, quadratic-api, quadratic-multiplayer, and quadratic-files.
+
+```shell
+cp .env.example .env.local
+cp quadratic-client/.env_example quadratic-client/.env.local
+cp quadratic-api/.env_example quadratic-api/.env
+cp quadratic-multiplayer/.env.example quadratic-multiplayer/.env
+cp quadratic-files/.env.example quadratic-files/.env
+```
 
 #### Installing PostgreSQL
 
@@ -200,7 +216,7 @@ See the README in each crate for more information.
 
 #### Rust Coverage
 
-In CI, coverage is automatically collected and sent to CodeCov.  
+In CI, coverage is automatically collected and sent to CodeCov.
 
 For local coverage information, you'll need to install some dependencies first:
 
@@ -210,7 +226,7 @@ cargo install grcov
 rustup component add llvm-tools-preview
 ```
 
-To run coverage and generate HTML reports, bring up the docker network 
+To run coverage and generate HTML reports, bring up the docker network
 (`npm run docker:up`) and navigate to the individual crate and enter:
 
 ```shell
@@ -242,7 +258,7 @@ Local load testing is performed by [JMeter](https://jmeter.apache.org/).  First,
 brew install jmeter
 ```
 
-Load tests are located in the `/tests/load` directory.  Run run jmeter: 
+Load tests are located in the `/tests/load` directory.  Run run jmeter:
 
 ```shell
 bash jmeter
@@ -263,3 +279,7 @@ JAVA_HOME="/opt/homebrew/opt/openjdk" bash /opt/homebrew/Cellar/jmeter/5.6.3/lib
 ```
 
 Output will be located in the terminal.
+
+# Prompting user after version change
+
+The current version numbers are stored in `updateAlertVersion.json`. This JSON is ready by both the client and the multiplayer server. When the client has a lower version number then the multiplayer (the version is sent by the multiplayer server with the EnterFileRoom message), then the user is prompted to refresh with slightly different experience based on required vs. recommended changes.

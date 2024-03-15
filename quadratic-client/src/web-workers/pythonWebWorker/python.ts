@@ -5,22 +5,16 @@ import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
-const stringOrNumber = (input: string | number | undefined): string => {
-  if (typeof input === 'undefined') {
-    return '';
-  }
-
-  if (typeof input === 'string') {
-    return input;
-  }
-
-  return input.toString();
-};
+const IS_TEST = process.env.NODE_ENV === 'test';
 
 interface PythonCode {
   transactionId: string;
   sheetPos: SheetPos;
   code: string;
+}
+
+function isEmpty(value: string | null | undefined) {
+  return value == null || (typeof value === 'string' && value.trim().length === 0);
 }
 
 class PythonWebWorker {
@@ -29,6 +23,10 @@ class PythonWebWorker {
   private running = false;
   private executionStack: PythonCode[] = [];
 
+  private expectWorker() {
+    if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
+  }
+
   private calculationComplete() {
     this.running = false;
     this.executionStack.shift();
@@ -36,88 +34,119 @@ class PythonWebWorker {
   }
 
   init() {
-    this.worker = new Worker(new URL('./worker/python.worker.ts', import.meta.url));
+    this.worker = new Worker(new URL('./worker/python.worker.ts', import.meta.url), {
+      /* @vite-ignore */ type: !IS_TEST ? 'classic' : 'module',
+    });
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
 
-      if (event.type === 'results') {
-        if (this.executionStack.length === 0) {
-          throw new Error('Expected executionStack to have at least one element in python.ts');
-        }
+      switch (event.type) {
+        case 'results': {
+          if (this.executionStack.length === 0)
+            throw new Error('Expected executionStack to have at least one element in python.ts');
 
-        const transactionId = this.executionStack[0].transactionId;
-        const pythonResult = event.results;
+          const transactionId = this.executionStack[0].transactionId;
+          const pythonResult = event.results;
+          const nothingReturned = pythonResult.output_type === 'NoneType' && isEmpty(pythonResult.output);
 
-        if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
+          if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 
-        if (pythonResult.array_output) {
-          if (!Array.isArray(pythonResult.array_output[0])) {
-            pythonResult.array_output = pythonResult.array_output.flatMap((entry: string | number | undefined) => [
-              [stringOrNumber(entry)],
-            ]);
+          if (nothingReturned) {
+            pythonResult.array_output = undefined;
+            pythonResult.output = ['', 'blank'];
           } else {
-            pythonResult.array_output = pythonResult.array_output.map((entry: (string | number)[]) =>
-              entry.map((entry: string | number | undefined) => stringOrNumber(entry))
-            );
-
-            // ensure that the 2d array has equally sized rows
-            const size = pythonResult.array_output[0].length;
-            for (let i = 1; i < pythonResult.array_output.length; i++) {
-              while (pythonResult.array_output[i].length < size) {
-                pythonResult.array_output[i].push('');
+            if (pythonResult.array_output && pythonResult.array_output.length) {
+              if (!Array.isArray(pythonResult.array_output[0][0])) {
+                pythonResult.array_output = pythonResult.array_output.map((row: any) => [row]);
               }
             }
           }
-        }
 
-        if (!pythonResult.success) {
-          pythonResult.error_msg = pythonResult.input_python_stack_trace;
-        }
+          if (!pythonResult.success) {
+            pythonResult.error_msg = pythonResult.input_python_stack_trace;
+          }
 
-        const result = new JsCodeResult(
-          transactionId,
-          pythonResult.success,
-          pythonResult.formatted_code,
-          pythonResult.error_msg,
-          pythonResult.std_out,
-          pythonResult.output_value,
-          JSON.stringify(pythonResult.array_output),
-          pythonResult.line_number,
-          pythonResult.cancel_compute
-        );
-        grid.calculationComplete(result);
-        this.calculationComplete();
-      } else if (event.type === 'get-cells') {
-        if (this.executionStack.length === 0) {
-          throw new Error('Expected executionStack to have at least one element in python.ts');
-        }
-        const transactionId = this.executionStack[0].transactionId;
-        const range = event.range;
-        if (!range) {
-          throw new Error('Expected range to be defined in get-cells');
-        }
-        try {
-          const cells = grid.calculationGetCells(
+          // this is used in testing
+          if (IS_TEST) {
+            window.dispatchEvent(new CustomEvent('python-results', { detail: pythonResult }));
+            break;
+          }
+
+          let outputType = pythonResult.output_type;
+
+          if (pythonResult.output_size) {
+            outputType = `${pythonResult.output_size[0]}x${pythonResult.output_size[1]} ${outputType}`;
+          }
+
+          const result = new JsCodeResult(
             transactionId,
-            pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-            range.sheet !== undefined ? range.sheet.toString() : undefined,
-            event.range?.lineNumber
+            pythonResult.success,
+            pythonResult.formatted_code,
+            pythonResult.error_msg,
+            pythonResult.std_out,
+            pythonResult.output,
+            JSON.stringify(pythonResult.array_output),
+            pythonResult.lineno,
+            outputType,
+            pythonResult.cancel_compute
           );
-          this.worker!.postMessage({ type: 'get-cells', cells });
-        } catch (e) {
+          grid.calculationComplete(result);
           this.calculationComplete();
+
+          break;
         }
-      } else if (event.type === 'python-loaded') {
-        window.dispatchEvent(new CustomEvent('python-loaded'));
-        this.loaded = true;
-        this.next(false);
-      } else if (event.type === 'python-error') {
-        window.dispatchEvent(new CustomEvent('python-error'));
-      } else if (event.type === 'not-loaded') {
-        window.dispatchEvent(new CustomEvent('python-loading'));
-      } else {
-        throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
+
+        case 'get-cells': {
+          if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
+
+          const transactionId = this.executionStack[0].transactionId;
+          const range = event.range;
+
+          if (!range) throw new Error('Expected range to be defined in get-cells');
+
+          try {
+            const cells = grid.calculationGetCells(
+              transactionId,
+              pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+              range.sheet !== undefined ? range.sheet.toString() : undefined,
+              event.range?.lineNumber
+            );
+
+            // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
+            if (cells) {
+              this.worker!.postMessage({ type: 'get-cells', cells });
+            } else {
+              this.calculationComplete();
+            }
+          } catch (e) {
+            console.warn('Error in get-cells', e);
+            this.calculationComplete();
+          }
+
+          break;
+        }
+
+        case 'python-loaded': {
+          window.dispatchEvent(new CustomEvent('python-loaded'));
+          this.loaded = true;
+          this.next(false);
+          break;
+        }
+
+        case 'python-error': {
+          window.dispatchEvent(new CustomEvent('python-error'));
+          break;
+        }
+
+        case 'not-loaded': {
+          window.dispatchEvent(new CustomEvent('python-loading'));
+          break;
+        }
+
+        default: {
+          throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
+        }
       }
     };
   }
@@ -127,6 +156,7 @@ class PythonWebWorker {
   }
 
   runPython(transactionId: string, x: number, y: number, sheetId: string, code: string) {
+    this.expectWorker();
     this.executionStack.push({ transactionId, sheetPos: { x, y, sheetId }, code });
     this.next(false);
   }
@@ -144,10 +174,12 @@ class PythonWebWorker {
     if (complete) {
       this.running = false;
     }
+
     if (!this.worker || !this.loaded || this.running) {
       this.showChange();
       return;
     }
+
     if (this.executionStack.length) {
       const first = this.executionStack[0];
       if (first) {
@@ -160,6 +192,7 @@ class PythonWebWorker {
     } else if (complete) {
       window.dispatchEvent(new CustomEvent('python-computation-finished'));
     }
+
     this.showChange();
   }
 
@@ -190,9 +223,11 @@ class PythonWebWorker {
       undefined,
       undefined,
       undefined,
+      '',
       true
     );
     grid.calculationComplete(result);
+    this.calculationComplete();
   }
 
   getCells(cells: string) {

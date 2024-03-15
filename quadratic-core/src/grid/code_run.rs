@@ -17,7 +17,10 @@ pub struct CodeRun {
     pub std_err: Option<String>,
     pub cells_accessed: HashSet<SheetRect>,
     pub result: CodeRunResult,
+    pub return_type: Option<String>,
     pub spill_error: bool,
+    pub line_number: Option<u32>,
+    pub output_type: Option<String>,
     pub last_modified: DateTime<Utc>,
 }
 
@@ -117,6 +120,9 @@ mod test {
             formatted_code_string: None,
             cells_accessed: HashSet::new(),
             result: CodeRunResult::Ok(Value::Single(CellValue::Number(1.into()))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: false,
             last_modified: Utc::now(),
         };
@@ -141,6 +147,9 @@ mod test {
             result: CodeRunResult::Ok(Value::Array(Array::new_empty(
                 ArraySize::new(10, 11).unwrap(),
             ))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: false,
             last_modified: Utc::now(),
         };
@@ -170,6 +179,9 @@ mod test {
             result: CodeRunResult::Ok(Value::Array(Array::new_empty(
                 ArraySize::new(10, 11).unwrap(),
             ))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
             spill_error: true,
             last_modified: Utc::now(),
         };

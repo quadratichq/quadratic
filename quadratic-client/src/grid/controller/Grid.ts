@@ -375,12 +375,7 @@ export class Grid {
     sheetName: string | undefined,
     lineNumber: number | undefined
   ): { x: number; y: number; value: string }[] | undefined {
-    const getCells = new JsComputeGetCells(
-      transactionId,
-      rect,
-      sheetName,
-      lineNumber === undefined ? undefined : BigInt(lineNumber)
-    );
+    const getCells = new JsComputeGetCells(transactionId, rect, sheetName, lineNumber);
     const result = this.gridController.calculationGetCells(getCells);
     if (result.Err) {
       this.transactionResponse(result.Err);
