@@ -229,10 +229,8 @@ class TestUtils(TestCase):
         # logical
         assert to_python_type("True", "logical") == True
         assert to_python_type("False", "logical") == False
-        assert to_python_type("True", "logical") == True
-        assert to_python_type("False", "logical") == False
-        assert to_python_type("True", "logical") == True
-        assert to_python_type("False", "logical") == False
+        assert to_python_type("true", "logical") == True
+        assert to_python_type("false", "logical") == False
 
         # string
         assert to_python_type("abc", "text") == "abc"
@@ -240,10 +238,6 @@ class TestUtils(TestCase):
         assert to_python_type("abc123", "text") == "abc123"
 
         # instant
-        assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00")
-        assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00")
-        assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00")
-        assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00")
         assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00")
         assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00")
 

@@ -85,6 +85,12 @@ def to_unix_timestamp(value: pd.Timestamp | date | time | datetime):
 def to_interval(value: Tuple[pd.Timestamp | date | time | datetime, pd.Timestamp | date | time | datetime]):
     return (str(to_unix_timestamp(value.start_time)), str(to_unix_timestamp(value.end_time)))
 
+def normalize_bool(value: str) -> bool:
+    value = re.sub('true', 'True', value, count=1, flags=re.IGNORECASE)
+    value = re.sub('false', 'False', value, count=1, flags=re.IGNORECASE)
+
+    return value
+
 # Convert from python types to quadratic types
 def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | time | datetime | pd.Period | timedelta | None) -> Tuple[str, str]:
     try:    
@@ -93,8 +99,7 @@ def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | ti
         
         # TODO(ddimaria): this is brittle, refactor
         if type(value) == str:
-            value = re.sub('true', 'True', value, count=1, flags=re.IGNORECASE)
-            value = re.sub('false', 'False', value, count=1, flags=re.IGNORECASE)
+            value = normalize_bool(value)
             
         value = ast.literal_eval(value)
     except:
@@ -128,7 +133,7 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
         elif value_type == "text":
             return str(value)
         elif value_type == "logical":
-            return ast.literal_eval(value)
+            return ast.literal_eval(normalize_bool(value))
         elif value_type == "instant":
             return datetime.utcfromtimestamp(int(value))
         else:
