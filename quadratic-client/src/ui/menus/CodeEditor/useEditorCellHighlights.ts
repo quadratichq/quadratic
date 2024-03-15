@@ -1,4 +1,5 @@
-import { parsePython } from '@/helpers/parseEditorPythonCell';
+// TODO(ddimaria): uncomment when we turn cell highlightin back on for python
+// import { parsePython } from '@/helpers/parseEditorPythonCell';
 import { CodeCellLanguage } from '@/quadratic-core/types';
 import monaco, { editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
@@ -85,9 +86,10 @@ export const useEditorCellHighlights = (
       const modelValue = editor.getValue();
       let parsed;
 
-      if (language === 'Python') {
-        parsed = parsePython(modelValue) as ParseFormulaReturnType;
-      }
+      // TODO(ddimaria): uncomment when we turn cell highlightin back on for python
+      // if (language === 'Python') {
+      //   parsed = parsePython(modelValue) as ParseFormulaReturnType;
+      // }
 
       if (language === 'Formula') {
         parsed = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
