@@ -2,13 +2,15 @@ import importlib
 import inspect
 import sys
 import unittest
+from datetime import datetime
 from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import numpy as np
+import pandas as pd
+from process_output_test import *
 from quadratic_py.utils import attempt_fix_await, to_quadratic_type
 
-import pandas as pd
-import numpy as np
-from datetime import datetime
 
 #  Mock definitions
 class Cell:
@@ -46,7 +48,7 @@ sys.modules["autopep8"] = MagicMock()
 sys.modules["autopep8.fix_code"] = MagicMock()
 
 # import after mocks to in order to use them
-from quadratic_py import run_python, code_trace
+from quadratic_py import code_trace, run_python
 from quadratic_py.quadratic_api.quadratic import getCells
 
 run_python.fetch_module = mock_fetch_module
@@ -213,6 +215,7 @@ class TestUtils(TestCase):
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # duration
+
 
 if __name__ == "__main__":
     unittest.main()
