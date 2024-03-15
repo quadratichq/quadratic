@@ -18,11 +18,6 @@ class Cell:
         self.value = value
         self.type_name = type_name
 
-class RelCellResult:
-    def __init__(self, value, cells_accessed):
-        self.value = value
-        self.cells_accessed = cells_accessed
-
 async def mock_GetCellsDB(x1: int, y1: int, x2: int, y2: int, sheet: str=None, line: int=False):
     out = []
 
@@ -31,14 +26,6 @@ async def mock_GetCellsDB(x1: int, y1: int, x2: int, y2: int, sheet: str=None, l
             out.append(Cell(x, y, f"hello {x}", "string"))
 
     return out
-
-def mock_GetPos() -> tuple[int, int]:
-    return (0, 0)
-
-async def mock_GetRelCell(x: int, y: int, line: int=False):
-    result = [Cell(x, y, "hello", "string")]
-    cells_accessed = (0, 0)
-    return RelCellResult(result, cells_accessed)
 
 class mock_micropip:
     async def install(name):
@@ -52,8 +39,6 @@ async def mock_fetch_module(source: str):
 sys.modules["pyodide"] = MagicMock()
 sys.modules["pyodide.code"] = MagicMock()
 sys.modules["getCellsDB"] = mock_GetCellsDB
-sys.modules["getPos"] = mock_GetPos
-sys.modules["getRelCell"] = mock_GetRelCell
 sys.modules["micropip"] = AsyncMock()
 sys.modules["plotly"] = MagicMock()
 sys.modules["plotly.io"] = MagicMock()
@@ -62,7 +47,7 @@ sys.modules["autopep8.fix_code"] = MagicMock()
 
 # import after mocks to in order to use them
 from quadratic_py import run_python, code_trace
-from quadratic_py.quadratic_api.quadratic import getCells, pos, rel_cell
+from quadratic_py.quadratic_api.quadratic import getCells
 
 run_python.fetch_module = mock_fetch_module
 
@@ -89,6 +74,7 @@ class TestTesting(IsolatedAsyncioTestCase):
         self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
         self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
         self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = await rel_cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = await rc(0, 0)")
         self.assertEqual(
             attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
         )
