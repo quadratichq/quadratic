@@ -22,15 +22,6 @@ impl GridController {
         }
     }
 
-    #[wasm_bindgen(js_name = "calculationGetPos")]
-    pub fn js_calculation_get_pos(&self, transaction_id: String) -> Result<JsValue, JsValue> {
-        let pos = self
-            .calculation_get_pos(&transaction_id)
-            .map_err(|e| e.to_string())?;
-
-        Ok(serde_wasm_bindgen::to_value(&pos).map_err(|e| e.to_string())?)
-    }
-
     /// Returns the code cell (which is a combination of CellValue::Code and CodeRun).
     /// If the cell is part of a code run, it returns the code run that caused the output.
     ///

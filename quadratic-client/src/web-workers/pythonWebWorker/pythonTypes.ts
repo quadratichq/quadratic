@@ -34,7 +34,7 @@ export interface PythonMessage {
   results?: any;
   error?: string;
   range?: { sheet: string; x0: number; y0: number; x1: number; y1: number; lineNumber: number };
-  pos?: { x: number; y: number; lineNumber: number };
+  pos?: { x: number; y: number };
   cells?: { x: number; y: number; value: string; type_name: string }[];
 }
 
