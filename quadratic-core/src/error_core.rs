@@ -22,9 +22,6 @@ pub enum CoreError {
     #[error("Transaction not found: {0}")]
     TransactionNotFound(String),
 
-    #[error("Sheet position not found for transaction: {0}")]
-    SheetPosNotFound(String),
-
     #[error("Unhandled language: {0}")]
     UnhandledLanguage(String),
 
