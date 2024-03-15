@@ -4,6 +4,7 @@
 
 import { debugShowMultiplayer } from '@/debugFlags';
 import { User } from '@auth0/auth0-spa-js';
+import sharedConstants from '../../../../../updateAlertVersion.json';
 import { ClientMultiplayerInit, MultiplayerState } from '../multiplayerClientMessages';
 import { CoreMultiplayerTransaction } from '../multiplayerCoreMessages';
 import {
@@ -17,6 +18,7 @@ import {
   SendGetTransactions,
   SendTransaction,
   UserUpdate,
+  Version,
 } from '../multiplayerTypes';
 import { multiplayerClient } from './multiplayerClient';
 import { multiplayerCore } from './multiplayerCore';
@@ -61,6 +63,8 @@ export class MultiplayerServer {
 
   // messages pending a reconnect
   private waitingForConnection: { (value: unknown): void }[] = [];
+
+  private updateAlertVersion: Version = sharedConstants;
 
   // queue of items waiting to be sent to the server on the next tick
   userUpdate: UserUpdate = {};
@@ -261,7 +265,13 @@ export class MultiplayerServer {
   };
 
   private receiveUsersInRoom(room: ReceiveRoom) {
-    multiplayerClient.sendUsersInRoom(room);
+    let refresh: 'required' | 'recommended' | undefined;
+    if (room.min_version.requiredVersion > this.updateAlertVersion.requiredVersion) {
+      refresh = 'required';
+    } else if (room.min_version.recommendedVersion > this.updateAlertVersion.recommendedVersion) {
+      refresh = 'recommended';
+    }
+    multiplayerClient.sendUsersInRoom(room, refresh);
   }
 
   private send(message: MultiplayerServerMessage) {

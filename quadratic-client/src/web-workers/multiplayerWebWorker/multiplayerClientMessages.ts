@@ -78,6 +78,7 @@ export interface ClientMultiplayerFollow {
 export interface MultiplayerClientUsersInRoom {
   type: 'multiplayerClientUsersInRoom';
   room: ReceiveRoom;
+  refresh: 'recommended' | 'required' | undefined;
 }
 
 export type MultiplayerClientMessage =

@@ -1,9 +1,16 @@
 {
   "extends": "./tsconfig.generic.json",
   "compilerOptions": {
-    "lib": ["dom", "dom.Iterable", "webworker"]
+    "lib": ["dom", "dom.Iterable", "webworker"],
+    "types": ["vite/client"]
   },
   "include": ["src", "public/pyright.worker.js"],
-  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"],
+  "exclude": [
+    "node_modules/*",
+    "src/grid/controller/runners/*",
+    "quadratic-core/*",
+    "quadratic-api/*",
+    "quadratic-grid-offsets/*"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
