@@ -1,15 +1,14 @@
-from contextlib import redirect_stdout, redirect_stderr
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from typing import Tuple
 
-from .quadratic_api.quadratic import getCell, getCells
-from .utils import attempt_fix_await, to_quadratic_type
 import micropip
 import pandas as pd
 import pyodide
+from quadratic_py import code_trace, plotly_patch, process_output
 
-from quadratic_py import code_trace, plotly_patch
-
+from .quadratic_api.quadratic import getCell, getCells
+from .utils import attempt_fix_await, to_quadratic_type
 
 cells_accessed = []
 
@@ -88,54 +87,6 @@ async def run_python(code: str):
         )  # fixes a timing bug where autopep8 is not yet installed when attempting to import
         import autopep8
 
-        # return array_output if output is an array
-        array_output = None
-        output_type = type(output_value).__name__
-        output_size = None
-
-        # TODO(ddimaria): figure out if we need to covert back to a list for array_output
-        # We should have a single output
-        if isinstance(output_value, list):
-            if len(output_value) > 0:
-                array_output = output_value
-                output_size = (1, len(output_value))
-            else:
-                output_value = ''
-
-        if isinstance(output_value, pd.Series):
-            output_size = (1, len(output_value))
-
-        # Convert DF to array_output
-        if isinstance(output_value, pd.DataFrame):
-            # flip the dataframe shape
-            shape = output_value.shape
-            output_size = (shape[1], shape[0])
-            
-            # If output_value columns is not the default (RangeIndex)
-            if type(output_value.columns) != pd.core.indexes.range.RangeIndex:
-                # Return Column names and values
-                array_output = [
-                    output_value.columns.tolist()
-                ] + output_value.values.tolist()
-
-            else:
-                # convert nan to None, return PD values list
-                array_output = output_value.where(
-                    output_value.notnull(), None
-                ).values.tolist()
-
-        try:
-            import plotly
-            if isinstance(output_value, plotly.graph_objs._figure.Figure):
-                output_value = output_value.to_html()
-                output_type = "Chart"
-        except:
-            pass
-
-        # Convert Pandas.Series to array_output
-        if isinstance(output_value, pd.Series):
-            array_output = output_value.to_numpy().tolist()
-
         # Attempt to format code
         formatted_code = code
         try:
@@ -145,6 +96,15 @@ async def run_python(code: str):
         except Exception:
             pass
 
+        # Process the output
+        output = process_output.process_output_value(output_value)
+        array_output = output["array_output"]
+        output_value = output["output_value"]
+        output_type = output["output_type"]
+        output_size = output["output_size"]
+        typed_array_output = output["typed_array_output"]
+
+        # Plotly HTML
         if plotly_html is not None and plotly_html.result is not None:
             if output_value is not None or array_output is not None:
                 err = RuntimeError(
@@ -159,36 +119,6 @@ async def run_python(code: str):
                 output_value = plotly_html.result
                 output_type = "Chart"
 
-        typed_array_output = None
-
-        if array_output is not None:
-            typed_array_output = []
-            is_2d_array = isinstance(array_output[0], list)
-
-            # insure that all rows are the same length
-            if not is_2d_array:
-                typed_array_output = list(map(to_quadratic_type, array_output))
-            else:
-                length_1d = len(array_output)
-                length_2d = max(len(row) for row in array_output)
-                
-                # TODO(ddimaria): is this efficient?
-                typed_array_output = [[0 for i in range(length_2d)] for j in range(length_1d)]
-
-                for row in range(0, length_1d):
-                    col_length_2d = len(array_output[row])
-                    for col in range(0, length_2d):
-                        if col > col_length_2d - 1:
-                            typed_array_output[row][col] = ("", "blank")
-                        else:
-                            typed_array_output[row][col] = to_quadratic_type(array_output[row][col])
-
-
-        # removes output_value if there's an array or None
-        if array_output is not None or output_value is None:
-            output_value = None
-        else:
-            output_value = to_quadratic_type(output_value)
 
         return {
             "output": output_value,
