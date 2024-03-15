@@ -222,9 +222,7 @@ class TestUtils(TestCase):
         assert to_python_type("1", "number") == 1
         assert to_python_type("1.1", "number") == 1.1
         assert to_python_type("-1", "number") == -1
-        assert to_python_type("1", "number") == 1
-        assert to_python_type("1.1", "number") == 1.1
-        assert to_python_type("-1", "number") == -1
+        assert to_python_type("-1.1", "number") == -1.1
 
         # logical
         assert to_python_type("True", "logical") == True
