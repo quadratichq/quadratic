@@ -2,7 +2,6 @@
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate } from '@/gridGL/types/size';
-import { Pos } from '@/quadratic-core/types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
@@ -11,6 +10,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { Pos } from '@/quadratic-core-types';
 import { googleAnalyticsAvailable } from '@/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -167,8 +167,6 @@ export const CodeEditor = () => {
 
   // handle when escape is pressed when escape does not have focus
   useEffect(() => {
-    console.log('editorInteractionState.editorEscapePressed', editorInteractionState.editorEscapePressed);
-    console.log('unsaved', unsaved);
     if (editorInteractionState.editorEscapePressed) {
       if (unsaved) {
         setShowSaveChangesAlert(true);

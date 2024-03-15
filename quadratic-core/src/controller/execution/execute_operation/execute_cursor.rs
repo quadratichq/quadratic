@@ -57,6 +57,8 @@ impl GridController {
                 if let Ok(json) = serde_json::to_string(&cursor) {
                     crate::wasm_bindings::js::jsSetCursor(json);
                 }
+            } else if cfg!(test) {
+                transaction.cursor = Some(serde_json::to_string(&cursor).unwrap());
             }
         }
     }
@@ -80,6 +82,7 @@ mod test {
                 max: Pos { x: 3, y: 4 },
             },
         };
+
         gc.execute_set_cursor(&mut transaction, op);
         assert_eq!(
             transaction.cursor,

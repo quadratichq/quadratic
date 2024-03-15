@@ -270,8 +270,8 @@ impl GridController {
                     ),
                 }),
                 return_type: None,
-                line_number: js_code_result.line_number(),
-                output_type: js_code_result.output_type(),
+                line_number: js_code_result.line_number,
+                output_type: js_code_result.output_type,
                 std_out: None,
                 std_err: None,
                 spill_error: false,
@@ -279,8 +279,8 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             };
         };
-        let result = if js_code_result.success() {
-            let result = if let Some(array_output) = js_code_result.array_output() {
+        let result = if js_code_result.success {
+            let result = if let Some(array_output) = js_code_result.array_output {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.splice(0..0, ops);
 
@@ -289,7 +289,7 @@ impl GridController {
                 } else {
                     Value::Single("".into())
                 }
-            } else if let Some(output_value) = js_code_result.output_value() {
+            } else if let Some(output_value) = js_code_result.output_value {
                 let (cell_value, ops) =
                     CellValue::from_js(&output_value[0], &output_value[1], start.into(), sheet)
                         .unwrap_or_else(|e| {
@@ -304,10 +304,11 @@ impl GridController {
             CodeRunResult::Ok(result)
         } else {
             let error_msg = js_code_result
-                .error_msg()
+                .error_msg
+                .clone()
                 .unwrap_or_else(|| "Unknown Python Error".into());
             let msg = RunErrorMsg::PythonError(error_msg.into());
-            let span = js_code_result.line_number().map(|line_number| Span {
+            let span = js_code_result.line_number.map(|line_number| Span {
                 start: line_number,
                 end: line_number,
             });
@@ -321,13 +322,13 @@ impl GridController {
         };
 
         let code_run = CodeRun {
-            formatted_code_string: js_code_result.formatted_code().clone(),
+            formatted_code_string: js_code_result.formatted_code.clone(),
             result,
             return_type,
-            line_number: js_code_result.line_number(),
-            output_type: js_code_result.output_type(),
-            std_out: js_code_result.input_python_std_out(),
-            std_err: js_code_result.error_msg(),
+            line_number: js_code_result.line_number,
+            output_type: js_code_result.output_type,
+            std_out: js_code_result.input_python_std_out,
+            std_err: js_code_result.error_msg,
             spill_error: false,
             last_modified: Utc::now(),
             cells_accessed: transaction.cells_accessed.clone(),

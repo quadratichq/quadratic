@@ -60,11 +60,10 @@ class MultiplayerClient {
     }
   };
 
-  sendUsersInRoom(room: ReceiveRoom, refresh: 'recommended' | 'required' | undefined) {
+  sendUsersInRoom(room: ReceiveRoom) {
     this.send({
       type: 'multiplayerClientUsersInRoom',
       room,
-      refresh,
     });
   }
 

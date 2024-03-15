@@ -786,7 +786,7 @@ mod tests {
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         // mock the python calculation returning the result
-        let result = client.calculation_complete(JsCodeResult::new_from_rust(
+        let result = client.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
             None,
@@ -882,7 +882,7 @@ mod tests {
         assert!(matches!(code_cell, Some(CellValue::Code(_))));
 
         // mock the python calculation returning the result
-        let result = client.calculation_complete(JsCodeResult::new_from_rust(
+        let result = client.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
             None,
@@ -948,7 +948,7 @@ mod tests {
         .ok()
         .unwrap();
 
-        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+        let result = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
             None,
@@ -990,7 +990,7 @@ mod tests {
             .ok()
             .unwrap();
 
-        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+        let result = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
             None,

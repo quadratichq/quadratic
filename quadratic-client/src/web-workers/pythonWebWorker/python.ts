@@ -1,8 +1,7 @@
 import { SheetPos } from '@/gridGL/types/size';
-import { JsCodeResult } from '@/quadratic-core/quadratic_core';
+import { JsCodeResult } from '@/quadratic-core-types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import mixpanel from 'mixpanel-browser';
-import { grid, pointsToRect } from '../../grid/controller/Grid';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -79,19 +78,21 @@ class PythonWebWorker {
             outputType = `${pythonResult.output_size[0]}x${pythonResult.output_size[1]} ${outputType}`;
           }
 
-          const result = new JsCodeResult(
-            transactionId,
-            pythonResult.success,
-            pythonResult.formatted_code,
-            pythonResult.error_msg,
-            pythonResult.std_out,
-            pythonResult.output,
-            JSON.stringify(pythonResult.array_output),
-            pythonResult.lineno,
-            outputType,
-            pythonResult.cancel_compute
-          );
-          grid.calculationComplete(result);
+          debugger;
+          const result: JsCodeResult = {
+            transaction_id: transactionId,
+            success: pythonResult.success,
+            formatted_code: pythonResult.formatted_code,
+            error_msg: pythonResult.error_msg,
+            input_python_std_out: pythonResult.std_out,
+            output_value: pythonResult.output,
+            array_output: pythonResult.array_output,
+            line_number: pythonResult.lineno,
+            output_type: outputType,
+            cancel_compute: pythonResult.cancel_compute,
+          };
+          console.log(result);
+          // quadraticCore.calculationComplete(result);
           this.calculationComplete();
 
           break;
@@ -106,13 +107,15 @@ class PythonWebWorker {
           if (!range) throw new Error('Expected range to be defined in get-cells');
 
           try {
-            const cells = grid.calculationGetCells(
-              transactionId,
-              pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
-              range.sheet !== undefined ? range.sheet.toString() : undefined,
-              event.range?.lineNumber
-            );
-
+            // const cells = quadraticCore.calculationGetCells(
+            //   transactionId,
+            //   pointsToRect(range.x0, range.y0, range.x1 - range.x0, range.y1 - range.y0),
+            //   range.sheet !== undefined ? range.sheet.toString() : undefined,
+            //   event.range?.lineNumber
+            // );
+            console.log(transactionId);
+            debugger;
+            let cells = undefined;
             // cells will be undefined if there was a problem getting the cells. In this case, the python execution is done.
             if (cells) {
               this.worker!.postMessage({ type: 'get-cells', cells });
@@ -214,19 +217,21 @@ class PythonWebWorker {
     }
     const transactionId = this.executionStack[0].transactionId;
     this.restart();
-    const result = new JsCodeResult(
-      transactionId,
-      false,
-      undefined,
-      'Python execution cancelled by user',
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      '',
-      true
-    );
-    grid.calculationComplete(result);
+    const result: JsCodeResult = {
+      transaction_id: transactionId,
+      success: false,
+      formatted_code: null,
+      error_msg: 'Python execution cancelled by user',
+      input_python_std_out: null,
+      output_value: null,
+      array_output: null,
+      line_number: null,
+      output_type: null,
+      cancel_compute: true,
+    };
+    // grid.calculationComplete(result);
+    console.log(result);
+    debugger;
     this.calculationComplete();
   }
 

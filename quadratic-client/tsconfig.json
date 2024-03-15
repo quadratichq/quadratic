@@ -11,6 +11,5 @@
     "quadratic-core/*",
     "quadratic-api/*",
     "quadratic-grid-offsets/*"
-  ],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  ]
 }

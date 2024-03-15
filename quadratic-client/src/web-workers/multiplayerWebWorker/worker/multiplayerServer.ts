@@ -265,13 +265,7 @@ export class MultiplayerServer {
   };
 
   private receiveUsersInRoom(room: ReceiveRoom) {
-    let refresh: 'required' | 'recommended' | undefined;
-    if (room.min_version.requiredVersion > this.updateAlertVersion.requiredVersion) {
-      refresh = 'required';
-    } else if (room.min_version.recommendedVersion > this.updateAlertVersion.recommendedVersion) {
-      refresh = 'recommended';
-    }
-    multiplayerClient.sendUsersInRoom(room, refresh);
+    multiplayerClient.sendUsersInRoom(room);
   }
 
   private send(message: MultiplayerServerMessage) {

@@ -105,7 +105,7 @@ mod tests {
         // transaction for its id
         let transaction_id = gc.async_transactions()[0].id;
 
-        let summary = gc.calculation_complete(JsCodeResult::new_from_rust(
+        let summary = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
             None,
@@ -178,7 +178,7 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
                 None,
@@ -239,7 +239,7 @@ mod tests {
             None,
         ));
         // mock the calculation_complete
-        let _ = gc.calculation_complete(JsCodeResult::new_from_rust(
+        let _ = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
             None,
@@ -284,7 +284,7 @@ mod tests {
             })
         );
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
                 None,
@@ -335,7 +335,7 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
                 None,
@@ -420,7 +420,7 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
                 None,
@@ -462,7 +462,7 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
                 None,
@@ -504,7 +504,7 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
                 None,
@@ -571,7 +571,7 @@ mod tests {
                 type_name: "number".into(),
             }
         );
-        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+        let result = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
             None,
@@ -618,7 +618,7 @@ mod tests {
                 type_name: "number".into(),
             }
         );
-        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
+        let result = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
             None,

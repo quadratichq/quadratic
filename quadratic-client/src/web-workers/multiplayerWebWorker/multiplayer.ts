@@ -7,10 +7,10 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/gridGL/HTMLGrid/m
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { SheetPos } from '@/gridGL/types/size';
-import updateAlertVersion from '@/updateAlertVersion.json';
 import { displayName } from '@/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
+import updateAlertVersion from '../../../../updateAlertVersion.json';
 import { pythonWebWorker } from '../pythonWebWorker/python';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
 import {
@@ -314,6 +314,7 @@ export class Multiplayer {
     } else if (room.min_version.recommendedVersion > updateAlertVersion.recommendedVersion) {
       window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'recommended' }));
     }
+    const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id === this.sessionId) {
         this.index = user.index;

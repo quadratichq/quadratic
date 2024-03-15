@@ -3,15 +3,17 @@ use super::*;
 #[wasm_bindgen]
 impl GridController {
     #[wasm_bindgen(js_name = "calculationComplete")]
-    pub fn js_calculation_complete(&mut self, result: JsCodeResult) {
-        let _ = self.calculation_complete(result);
+    pub fn js_calculation_complete(&mut self, result: String) {
+        if let Ok(result) = serde_json::from_str(&result) {
+            let _ = self.calculation_complete(result);
+        }
     }
 
     #[wasm_bindgen(js_name = "calculationGetCells")]
-    pub fn js_calculation_get_cells(
-        &mut self,
-        get_cells: JsComputeGetCells,
-    ) -> Result<JsValue, JsValue> {
+    pub fn js_calculation_get_cells(&mut self, get_cells: String) -> Result<JsValue, JsValue> {
+        let Ok(get_cells) = serde_json::from_str(&get_cells) else {
+            return Err(JsValue::UNDEFINED);
+        };
         match self.calculation_get_cells(get_cells) {
             Ok(get_cells) => Ok(serde_wasm_bindgen::to_value(&get_cells)?),
             Err(e) => Err(serde_wasm_bindgen::to_value(&e)?),

@@ -3,7 +3,7 @@
 
 export type CodeCellLanguage = "Python" | "Formula";
 export interface JsHtmlOutput { sheet_id: string, x: bigint, y: bigint, html: string, w: string | null, h: string | null, }
-export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, }
+export interface JsCodeCell { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, }
 export interface JsRenderCodeCell { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, }
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success";
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "True" | "False";
@@ -44,3 +44,5 @@ export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertic
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface JsRenderBorder { x: bigint, y: bigint, w?: number, h?: number, style: BorderStyle, }
 export interface JsRenderBorders { horizontal: Array<JsRenderBorder>, vertical: Array<JsRenderBorder>, }
+export interface JsCodeResult { transaction_id: string, success: boolean, formatted_code: string | null, error_msg: string | null, input_python_std_out: string | null, output_value: Array<string> | null, array_output: Array<Array<Array<string>>> | null, line_number: number | null, output_type: string | null, cancel_compute: boolean | null, }
+export interface JsComputeGetCells { transaction_id: string, x: bigint, y: bigint, w: bigint, h: bigint, sheet_name: string | null, line_number: number | null, }

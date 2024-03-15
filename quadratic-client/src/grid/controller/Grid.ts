@@ -1,8 +1,6 @@
 import { Rect } from '@/quadratic-core-types';
 import {
   GridController,
-  JsCodeResult,
-  JsComputeGetCells,
   MinMax,
   Pos,
   Rect as RectInternal,
@@ -359,30 +357,30 @@ export class Grid {
 
   //#region Compute
 
-  calculationComplete(result: JsCodeResult) {
-    // const summaryResult = this.gridController.calculationComplete(result);
-    // if (summaryResult.Ok) {
-    //   this.transactionResponse(summaryResult.Ok);
-    // } else {
-    //   throw new Error(summaryResult.Err);
-    // }
-  }
+  // calculationComplete(result: JsCodeResult) {
+  //   const summaryResult = this.gridController.calculationComplete(result);
+  //   if (summaryResult.Ok) {
+  //     this.transactionResponse(summaryResult.Ok);
+  //   } else {
+  //     throw new Error(summaryResult.Err);
+  //   }
+  // }
 
-  // returns undefined if there was an error fetching cells (eg, invalid sheet name)
-  calculationGetCells(
-    transactionId: string,
-    rect: RectInternal,
-    sheetName: string | undefined,
-    lineNumber: number | undefined
-  ): { x: number; y: number; value: string }[] | undefined {
-    const getCells = new JsComputeGetCells(transactionId, rect, sheetName, lineNumber);
-    const result = this.gridController.calculationGetCells(getCells);
-    if (result.Err) {
-      this.transactionResponse(result.Err);
-    } else if (result.response) {
-      return result.response;
-    }
-  }
+  // // returns undefined if there was an error fetching cells (eg, invalid sheet name)
+  // calculationGetCells(
+  //   transactionId: string,
+  //   rect: RectInternal,
+  //   sheetName: string | undefined,
+  //   lineNumber: number | undefined
+  // ): { x: number; y: number; value: string }[] | undefined {
+  //   const getCells = new JsComputeGetCells(transactionId, rect, sheetName, lineNumber);
+  //   const result = this.gridController.calculationGetCells(getCells);
+  //   if (result.Err) {
+  //     this.transactionResponse(result.Err);
+  //   } else if (result.response) {
+  //     return result.response;
+  //   }
+  // }
 
   // rerunAllCodeCells() {
   //   const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());

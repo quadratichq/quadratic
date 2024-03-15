@@ -5,6 +5,7 @@ use crate::{
         execution::TransactionType, transaction_types::JsComputeGetCells, GridController,
     },
     error_core::CoreError,
+    Rect,
 };
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +31,7 @@ impl GridController {
         &mut self,
         get_cells: JsComputeGetCells,
     ) -> Result<GetCellsResponse, CoreError> {
-        let Ok(transaction_id) = Uuid::parse_str(&get_cells.transaction_id()) else {
+        let Ok(transaction_id) = Uuid::parse_str(&get_cells.transaction_id) else {
             return Err(CoreError::TransactionNotFound(
                 "Transaction Id is invalid".into(),
             ));
@@ -50,12 +51,12 @@ impl GridController {
         };
 
         // if sheet_name is None, use the sheet_id from the pos
-        let sheet = if let Some(sheet_name) = get_cells.sheet_name() {
+        let sheet = if let Some(sheet_name) = get_cells.sheet_name {
             if let Some(sheet) = self.try_sheet_from_name(sheet_name.clone()) {
                 sheet
             } else {
                 // unable to find sheet by name, generate error
-                let msg = if let Some(line_number) = get_cells.line_number() {
+                let msg = if let Some(line_number) = get_cells.line_number {
                     format!("Sheet '{}' not found at line {}", sheet_name, line_number)
                 } else {
                     format!("Sheet '{}' not found", sheet_name)
@@ -63,7 +64,7 @@ impl GridController {
                 match self.code_cell_sheet_error(
                     &mut transaction,
                     msg.clone(),
-                    get_cells.line_number(),
+                    get_cells.line_number,
                 ) {
                     Ok(_) => {
                         self.start_transaction(&mut transaction);
@@ -93,7 +94,7 @@ impl GridController {
             ));
         }
 
-        let rect = get_cells.rect();
+        let rect = Rect::from_numbers(get_cells.x, get_cells.y, get_cells.w, get_cells.h);
         let response = sheet.get_cells_response(rect);
         transaction
             .cells_accessed

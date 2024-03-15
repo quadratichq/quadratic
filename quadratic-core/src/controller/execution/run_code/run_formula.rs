@@ -230,7 +230,7 @@ mod test {
     fn test_js_code_result_to_code_cell_value_single() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let result = JsCodeResult::new_from_rust(
+        let result = JsCodeResult::new(
             Uuid::new_v4().into(),
             true,
             None,
@@ -283,7 +283,7 @@ mod test {
             ],
         ];
         let mut transaction = PendingTransaction::default();
-        let result = JsCodeResult::new_from_rust(
+        let result = JsCodeResult::new(
             transaction.id.to_string(),
             true,
             None,

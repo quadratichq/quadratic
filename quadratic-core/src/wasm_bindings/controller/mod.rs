@@ -1,5 +1,4 @@
 use super::*;
-use crate::controller::transaction_types::{JsCodeResult, JsComputeGetCells};
 use crate::grid::js_types::*;
 use std::str::FromStr;
 

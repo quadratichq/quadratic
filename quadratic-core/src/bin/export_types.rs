@@ -2,7 +2,10 @@ use std::fs::create_dir_all;
 
 use quadratic_core::{
     color::Rgba,
-    controller::user_actions::clipboard::PasteSpecial,
+    controller::{
+        transaction_types::{JsCodeResult, JsComputeGetCells},
+        user_actions::clipboard::PasteSpecial,
+    },
     grid::{
         js_types::{
             JsCodeCell, JsHtmlOutput, JsRenderBorder, JsRenderBorders, JsRenderCell,
@@ -75,6 +78,8 @@ fn main() {
         BorderStyle,
         JsRenderBorder,
         JsRenderBorders,
+        JsCodeResult,
+        JsComputeGetCells,
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {
