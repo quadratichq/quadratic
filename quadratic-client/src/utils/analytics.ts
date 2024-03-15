@@ -7,6 +7,10 @@ import mixpanel from 'mixpanel-browser';
 
 type User = Auth0User | undefined;
 
+export function googleAnalyticsAvailable(): boolean {
+  return import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none';
+}
+
 // This runs in the root loader, so analytics calls can run inside loaders.
 export function initializeAnalytics(user: User) {
   loadGoogleAnalytics(user);
@@ -16,9 +20,7 @@ export function initializeAnalytics(user: User) {
 }
 
 function loadGoogleAnalytics(user: User) {
-  if (!import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none') {
-    return;
-  }
+  if (!googleAnalyticsAvailable()) return;
   const email = user?.email || '';
 
   // set up Google Analytics

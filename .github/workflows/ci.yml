@@ -105,6 +105,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.3' 
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
@@ -116,6 +119,10 @@ jobs:
       - name: Build quadratic-core
         run: |
           npm run build:wasm:javascript
+
+      - name: Build python
+        run: |
+          npm run build:python
 
       - name: Run npm test:ts in quadratic-client
         run: |
@@ -129,7 +136,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11.3"
           cache: "pip"
