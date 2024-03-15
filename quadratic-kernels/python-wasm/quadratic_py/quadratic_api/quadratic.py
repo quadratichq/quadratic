@@ -19,7 +19,7 @@ async def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bo
     Args:
         p_x: The X coordinate on the grid.
         p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference. Defaults to the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the current sheet.
 
     Returns:
         The value of the cell referenced.
@@ -42,7 +42,7 @@ async def cell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool 
     Args:
         p_x: The X coordinate on the grid.
         p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference. Defaults to the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the current sheet.
 
     Returns:
         The value of the cell referenced.
@@ -60,7 +60,7 @@ async def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | N
     Args:
         p_x: The X coordinate on the grid.
         p_y: The Y coordinate on the grid.
-        sheet: The name of the sheet to reference. Defaults to the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the current sheet.
 
     Returns:
         The value of the cell referenced.
@@ -79,7 +79,7 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
     Args:
         p0: A tuple of (x, y) coordinates on the grid.
         p1: A tuple of (x, y) coordinates on the grid
-        sheet: The name of the sheet to reference. Defaults to the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the current sheet.
         first_row_header: If True the first row will be used as the header.
 
     Returns:
@@ -131,7 +131,7 @@ async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first
     Args:
         p0: A tuple of (x, y) coordinates on the grid.
         p1: A tuple of (x, y) coordinates on the grid
-        sheet: The name of the sheet to reference. Defaults to the first sheet.
+        sheet: The name of the sheet to reference. Defaults to the current sheet.
         first_row_header: If True the first row will be used as the header.
 
     Returns:

@@ -14,11 +14,9 @@ git clone git@github.com:quadratichq/typeshed.git
 # remove async and await from files to trick pyright into thinking they're sync functions
 sed -i '' "s/async//g" quadratic_py/quadratic_api/quadratic.pyi
 
-mkdir builtins
-
 # copy quadratic.pyi (pyright generated stubs) to typings as __builtins__.pyi to make them globally available
+mkdir builtins
 mv quadratic_py/quadratic_api/quadratic.pyi builtins/__builtins__.pyi
-
 rm -rf quadratic_py/quadratic_api
 
 popd
