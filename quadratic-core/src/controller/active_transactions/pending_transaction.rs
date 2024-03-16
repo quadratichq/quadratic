@@ -124,6 +124,10 @@ impl PendingTransaction {
                         crate::wasm_bindings::js::jsSetCursor(cursor.clone());
                     }
                 }
+
+                if self.generate_thumbnail {
+                    crate::wasm_bindings::js::jsGenerateThumbnail();
+                }
             }
         }
     }

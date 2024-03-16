@@ -1,99 +1,90 @@
-import { Rect } from '@/quadratic-core-types';
-import {
-  GridController,
-  Pos,
-  Rect as RectInternal,
-  SheetOffsets,
-  TransientResize,
-} from '@/quadratic-core/quadratic_core';
-import { Point, Rectangle } from 'pixi.js';
-import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
+import { TransientResize } from '@/quadratic-core/quadratic_core';
+import { debugDisableProxy } from '../../debugFlags';
 import { GridPerformanceProxy } from './GridPerformanceProxy';
-import { sheets } from './Sheets';
 
 // const rectangleToRect = (rectangle: Rectangle): RectInternal => {
 //   return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
 // };
 
-export const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
-  return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
-};
+// export const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
+//   return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
+// };
 
-export const posToRect = (x: number, y: number): RectInternal => {
-  return new RectInternal(new Pos(x, y), new Pos(x, y));
-};
+// export const posToRect = (x: number, y: number): RectInternal => {
+//   return new RectInternal(new Pos(x, y), new Pos(x, y));
+// };
 
-export const rectToRectangle = (rect: Rect): Rectangle => {
-  return new Rectangle(
-    Number(rect.min.x),
-    Number(rect.min.y),
-    Number(rect.max.x - rect.min.x),
-    Number(rect.max.y - rect.min.y)
-  );
-};
+// export const rectToRectangle = (rect: Rect): Rectangle => {
+//   return new Rectangle(
+//     Number(rect.min.x),
+//     Number(rect.min.y),
+//     Number(rect.max.x - rect.min.x),
+//     Number(rect.max.y - rect.min.y)
+//   );
+// };
 
-export const rectToPoint = (rect: Rect): Point => {
-  if (rect.min.x !== rect.max.x || rect.min.y !== rect.max.x) {
-    throw new Error('Expected rectToPoint to receive a rectangle with width/height = 1');
-  }
-  return new Point(Number(rect.min.x), Number(rect.min.y));
-};
+// export const rectToPoint = (rect: Rect): Point => {
+//   if (rect.min.x !== rect.max.x || rect.min.y !== rect.max.x) {
+//     throw new Error('Expected rectToPoint to receive a rectangle with width/height = 1');
+//   }
+//   return new Point(Number(rect.min.x), Number(rect.min.y));
+// };
 
 // TS wrapper around Grid.rs
 export class Grid {
-  private gridController!: GridController;
-  thumbnailDirty = false;
+  // private gridController!: GridController;
+  // thumbnailDirty = false;
 
-  transactionResponse(summary: undefined) {
-    // if (summary.sheet_list_modified) {
-    //   sheets.repopulate();
-    // }
-    // if (summary.fill_sheets_modified.length) {
-    //   // pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
-    // }
-    // if (summary.offsets_modified.length) {
-    //   sheets.updateOffsets(summary.offsets_modified);
-    //   pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
-    //   htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
-    //   pixiApp.cursor.dirty = true;
-    //   pixiApp.multiplayerCursor.dirty = true;
-    // }
-    // if (summary.code_cells_modified.length) {
-    //   pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
-    //   window.dispatchEvent(new CustomEvent('code-cells-update'));
-    // }
-    // if (summary.border_sheets_modified.length) {
-    //   pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
-    // }
-    // if (summary.generate_thumbnail) {
-    //   this.thumbnailDirty = true;
-    // }
-    // if (summary.html) {
-    //   window.dispatchEvent(new CustomEvent('html-update', { detail: summary.html }));
-    // }
-    // const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
-    // if (cursor) {
-    //   sheets.current = cursor.sheetId;
-    //   sheets.sheet.cursor.load(cursor);
-    // }
-    // if (summary.save) {
-    //   window.dispatchEvent(new CustomEvent('transaction-complete'));
-    // }
-    // // multiplayer transactions
-    // if (summary.operations) {
-    //   // multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
-    // }
-    // if (summary.request_transactions) {
-    //   multiplayer.sendGetTransactions(summary.request_transactions);
-    // }
-    // // todo: this should not be necessary as Update.ts should take care of it; right now
-    // //       it renders every time it receives a heartbeat. not a big deal but worth fixing.
-    // pixiApp.setViewportDirty();
-  }
+  // transactionResponse(summary: undefined) {
+  // if (summary.sheet_list_modified) {
+  //   sheets.repopulate();
+  // }
+  // if (summary.fill_sheets_modified.length) {
+  //   // pixiApp.cellsSheets.updateFills(summary.fill_sheets_modified);
+  // }
+  // if (summary.offsets_modified.length) {
+  //   sheets.updateOffsets(summary.offsets_modified);
+  //   pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
+  //   htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
+  //   pixiApp.cursor.dirty = true;
+  //   pixiApp.multiplayerCursor.dirty = true;
+  // }
+  // if (summary.code_cells_modified.length) {
+  //   pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+  //   window.dispatchEvent(new CustomEvent('code-cells-update'));
+  // }
+  // if (summary.border_sheets_modified.length) {
+  //   pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
+  // }
+  // if (summary.generate_thumbnail) {
+  //   this.thumbnailDirty = true;
+  // }
+  // if (summary.html) {
+  //   window.dispatchEvent(new CustomEvent('html-update', { detail: summary.html }));
+  // }
+  // const cursor = summary.cursor ? (JSON.parse(summary.cursor) as SheetCursorSave) : undefined;
+  // if (cursor) {
+  //   sheets.current = cursor.sheetId;
+  //   sheets.sheet.cursor.load(cursor);
+  // }
+  // if (summary.save) {
+  //   window.dispatchEvent(new CustomEvent('transaction-complete'));
+  // }
+  // // multiplayer transactions
+  // if (summary.operations) {
+  //   // multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
+  // }
+  // if (summary.request_transactions) {
+  //   multiplayer.sendGetTransactions(summary.request_transactions);
+  // }
+  // // todo: this should not be necessary as Update.ts should take care of it; right now
+  // //       it renders every time it receives a heartbeat. not a big deal but worth fixing.
+  // pixiApp.setViewportDirty();
+  // }
 
-  test() {
-    this.gridController = GridController.test();
-  }
+  // test() {
+  // this.gridController = GridController.test();
+  // }
 
   // export(): string {
   //   return this.gridController.exportToFile();
@@ -321,17 +312,13 @@ export class Grid {
   //#region column/row sizes
 
   commitTransientResize(sheetId: string, transientResize: TransientResize) {
-    const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
-    this.transactionResponse(summary);
+    // const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
+    // this.transactionResponse(summary);
   }
 
   commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
-    const summary = this.gridController.commitSingleResize(sheetId, column, row, size, sheets.getCursorPosition());
-    this.transactionResponse(summary);
-  }
-
-  getOffsets(sheetId: string): SheetOffsets {
-    return this.gridController.getOffsets(sheetId);
+    // const summary = this.gridController.commitSingleResize(sheetId, column, row, size, sheets.getCursorPosition());
+    // this.transactionResponse(summary);
   }
 
   //#endregion
@@ -424,9 +411,9 @@ export class Grid {
   // }
 
   applyOfflineUnsavedTransaction(transactionId: string, transaction: string) {
-    if (debugShowMultiplayer) console.log('[Multiplayer] Applying an offline unsaved transaction.');
-    const summaryResponse = this.gridController.applyOfflineUnsavedTransaction(transactionId, transaction);
-    this.transactionResponse(summaryResponse);
+    // if (debugShowMultiplayer) console.log('[Multiplayer] Applying an offline unsaved transaction.');
+    // const summaryResponse = this.gridController.applyOfflineUnsavedTransaction(transactionId, transaction);
+    // this.transactionResponse(summaryResponse);
   }
 
   //#endregion

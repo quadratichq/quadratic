@@ -51,6 +51,8 @@ export interface EventTypes {
   htmlUpdate: {
     html: JsHtmlOutput;
   };
+
+  generateThumbnail: {};
 }
 
 export const events = new EventEmitter<EventTypes>();

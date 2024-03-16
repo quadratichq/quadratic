@@ -36,6 +36,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
+    sendGenerateThumbnail: () => void;
   };
 
 class CoreClient {
@@ -51,6 +52,7 @@ class CoreClient {
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
+    self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -421,6 +423,10 @@ class CoreClient {
 
   sendUpdateHtml = (html: JsHtmlOutput) => {
     this.send({ type: 'coreClientUpdateHtml', html });
+  };
+
+  sendGenerateThumbnail = () => {
+    this.send({ type: 'coreClientGenerateThumbnail' });
   };
 }
 

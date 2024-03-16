@@ -66,4 +66,5 @@ extern "C" {
     pub fn jsSetCursor(cursor: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
+    pub fn jsGenerateThumbnail();
 }

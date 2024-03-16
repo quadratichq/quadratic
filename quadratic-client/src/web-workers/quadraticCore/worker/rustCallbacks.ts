@@ -41,6 +41,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
+    sendGenerateThumbnail: () => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -129,4 +130,8 @@ export const jsSetCursor = (cursor: string) => {
 export const jsHtmlOutput = (htmlStringified: string) => {
   const html: JsHtmlOutput[] = JSON.parse(htmlStringified);
   self.sendSheetHtml(html);
+};
+
+export const jsGenerateThumbnail = () => {
+  self.sendGenerateThumbnail();
 };

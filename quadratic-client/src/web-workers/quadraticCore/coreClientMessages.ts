@@ -538,6 +538,10 @@ export interface CoreClientSheetOffsets {
   size: number;
 }
 
+export interface CoreClientGenerateThumbnail {
+  type: 'coreClientGenerateThumbnail';
+}
+
 //#endregion
 
 //#region Undo/Redo
@@ -751,4 +755,5 @@ export type CoreClientMessage =
   | CoreClientGetColumnsBounds
   | CoreClientGetRowsBounds
   | CoreClientFindNextColumn
-  | CoreClientFindNextRow;
+  | CoreClientFindNextRow
+  | CoreClientGenerateThumbnail;

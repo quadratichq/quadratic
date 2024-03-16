@@ -93,6 +93,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientUpdateHtml') {
       events.emit('htmlUpdate', e.data.html);
       return;
+    } else if (e.data.type === 'coreClientGenerateThumbnail') {
+      events.emit('generateThumbnail');
+      return;
     }
 
     if (e.data.id !== undefined) {
