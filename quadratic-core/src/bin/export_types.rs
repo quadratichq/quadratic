@@ -14,7 +14,10 @@ use quadratic_core::{
         sheet::search::SearchOptions,
         BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
     },
-    sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement},
+    sheet_offsets::{
+        resize_transient::TransientResize,
+        sheet_offsets_wasm::{ColumnRow, Placement},
+    },
     wasm_bindings::controller::{bounds::MinMax, sheet_info::SheetInfo},
     Rect, *,
 };
@@ -80,7 +83,8 @@ fn main() {
         JsRenderBorders,
         JsCodeResult,
         JsComputeGetCells,
-        MinMax
+        MinMax,
+        TransientResize,
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {

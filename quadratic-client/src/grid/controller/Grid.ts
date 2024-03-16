@@ -1,4 +1,3 @@
-import { TransientResize } from '@/quadratic-core/quadratic_core';
 import { debugDisableProxy } from '../../debugFlags';
 import { GridPerformanceProxy } from './GridPerformanceProxy';
 
@@ -311,15 +310,15 @@ export class Grid {
 
   //#region column/row sizes
 
-  commitTransientResize(sheetId: string, transientResize: TransientResize) {
-    // const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
-    // this.transactionResponse(summary);
-  }
+  // commitTransientResize(sheetId: string, transientResize: TransientResize) {
+  // const summary = this.gridController.commitOffsetsResize(sheetId, transientResize, sheets.getCursorPosition());
+  // this.transactionResponse(summary);
+  // }
 
-  commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
-    // const summary = this.gridController.commitSingleResize(sheetId, column, row, size, sheets.getCursorPosition());
-    // this.transactionResponse(summary);
-  }
+  // commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+  // const summary = this.gridController.commitSingleResize(sheetId, column, row, size, sheets.getCursorPosition());
+  // this.transactionResponse(summary);
+  // }
 
   //#endregion
 

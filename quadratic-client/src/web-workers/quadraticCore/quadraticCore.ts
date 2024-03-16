@@ -821,6 +821,26 @@ class QuadraticCore {
     });
   }
 
+  commitTransientResize(sheetId: string, transientResize: string) {
+    this.send({
+      type: 'clientCoreCommitTransientResize',
+      sheetId,
+      transientResize,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  commitSingleResize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+    this.send({
+      type: 'clientCoreCommitSingleResize',
+      sheetId,
+      column,
+      row,
+      size,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
   //#endregion
 }
 

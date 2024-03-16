@@ -672,6 +672,22 @@ export interface CoreClientFindNextRow {
   row: number;
 }
 
+export interface ClientCoreCommitTransientResize {
+  type: 'clientCoreCommitTransientResize';
+  sheetId: string;
+  transientResize: string /*TransientResize*/;
+  cursor: string;
+}
+
+export interface ClientCoreCommitSingleResize {
+  type: 'clientCoreCommitSingleResize';
+  sheetId: string;
+  column: number | undefined;
+  row: number | undefined;
+  size: number;
+  cursor: string;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -724,7 +740,9 @@ export type ClientCoreMessage =
   | ClientCoreGetColumnsBounds
   | ClientCoreGetRowsBounds
   | ClientCoreFindNextColumn
-  | ClientCoreFindNextRow;
+  | ClientCoreFindNextRow
+  | ClientCoreCommitTransientResize
+  | ClientCoreCommitSingleResize;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

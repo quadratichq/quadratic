@@ -1,4 +1,4 @@
-use super::{resize_transient::TransientResize, SheetOffsets};
+use super::SheetOffsets;
 use crate::ScreenRect;
 use wasm_bindgen::prelude::wasm_bindgen;
 
@@ -124,8 +124,9 @@ impl SheetOffsets {
     ///
     /// Returns a [`TransientResize` || undefined]
     #[wasm_bindgen(js_name = "getResizeToApply")]
-    pub fn js_get_resize_to_apply(&mut self) -> Option<TransientResize> {
-        self.pop_local_transient_resize()
+    pub fn js_get_resize_to_apply(&mut self) -> Option<String> {
+        let transient_resize = self.pop_local_transient_resize()?;
+        serde_json::to_string(&transient_resize).ok()
     }
 
     /// Returns the width of all the columns in a range.

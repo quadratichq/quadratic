@@ -364,6 +364,14 @@ class CoreClient {
         });
         break;
 
+      case 'clientCoreCommitTransientResize':
+        core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
+        break;
+
+      case 'clientCoreCommitSingleResize':
+        core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

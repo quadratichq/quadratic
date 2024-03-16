@@ -457,6 +457,21 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.findNextRow(data.sheetId, data.rowStart, data.column, data.reverse, data.withContent);
   }
+
+  commitTransientResize(sheetId: string, transientResize: string, cursor: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
+  }
+  commitSingleResize(
+    sheetId: string,
+    column: number | undefined,
+    row: number | undefined,
+    size: number,
+    cursor: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.commitSingleResize(sheetId, column, row, size, cursor);
+  }
 }
 
 export const core = new Core();

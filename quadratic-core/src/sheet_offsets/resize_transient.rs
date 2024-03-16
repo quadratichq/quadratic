@@ -1,6 +1,5 @@
-use wasm_bindgen::prelude::wasm_bindgen;
-
 use super::SheetOffsets;
+use serde::{Deserialize, Serialize};
 
 impl SheetOffsets {
     pub fn resize_column_transiently(&mut self, column: i64, size: Option<f64>) {
@@ -70,8 +69,8 @@ impl SheetOffsets {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct TransientResize {
     pub row: Option<i64>,
     pub column: Option<i64>,
