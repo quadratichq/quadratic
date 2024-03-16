@@ -1,5 +1,5 @@
 from contextlib import redirect_stdout, redirect_stderr
-from io import StringIO
+from io import BytesIO, StringIO
 from typing import Tuple
 
 from .quadratic_api.quadratic import getCell, getCells
@@ -21,6 +21,7 @@ def error_result(
     return {
         "output_value": None,
         "array_output": None,
+        "bytes_output": None,
         "cells_accessed": cells_accessed,
         "std_out": sout.getvalue(),
         "success": False,
@@ -45,7 +46,7 @@ async def getCellsInner(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=Non
             cells_accessed.append([x, y, sheet])
 
     return await getCells(p0, p1, sheet, first_row_header)
-    
+
 
 globals = {
     "getCells": getCellsInner,
@@ -57,7 +58,7 @@ globals = {
 }
 
 async def run_python(code: str):
-    sout = StringIO()   
+    sout = StringIO()
     serr = StringIO()
     output_value = None
 
@@ -110,7 +111,7 @@ async def run_python(code: str):
             # flip the dataframe shape
             shape = output_value.shape
             output_size = (shape[1], shape[0])
-            
+
             # If output_value columns is not the default (RangeIndex)
             if type(output_value.columns) != pd.core.indexes.range.RangeIndex:
                 # Return Column names and values
@@ -145,6 +146,11 @@ async def run_python(code: str):
         except Exception:
             pass
 
+        bytes_output = None
+        if isinstance(output_value, bytes):
+            bytes_output = output_value
+            output_value = ''
+
         if plotly_html is not None and plotly_html.result is not None:
             if output_value is not None or array_output is not None:
                 err = RuntimeError(
@@ -156,7 +162,11 @@ async def run_python(code: str):
                     err, code, cells_accessed, sout, code_trace.get_return_line(code)
                 )
             else:
-                output_value = plotly_html.result
+                if isinstance(plotly_html.result, BytesIO):
+                    bytes_output = plotly_html.result.getvalue()
+                else:
+                    output_value = plotly_html.result
+
                 output_type = "Chart"
 
         typed_array_output = None
@@ -171,7 +181,7 @@ async def run_python(code: str):
             else:
                 length_1d = len(array_output)
                 length_2d = max(len(row) for row in array_output)
-                
+
                 # TODO(ddimaria): is this efficient?
                 typed_array_output = [[0 for i in range(length_2d)] for j in range(length_1d)]
 
@@ -193,6 +203,7 @@ async def run_python(code: str):
         return {
             "output": output_value,
             "array_output": typed_array_output,
+            "bytes_output": bytes_output,
             "output_type": output_type,
             "output_size": output_size,
             "cells_accessed": cells_accessed,

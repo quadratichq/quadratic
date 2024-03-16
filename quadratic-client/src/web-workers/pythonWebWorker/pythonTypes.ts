@@ -11,6 +11,7 @@ export interface PythonReturnType {
 
   output_value: string | null;
   output_type: string | null;
+  bytes_output: Uint8Array | null;
   // array_output: ArrayOutput;
 }
 

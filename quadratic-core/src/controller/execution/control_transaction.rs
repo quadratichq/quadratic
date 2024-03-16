@@ -287,6 +287,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ));
         assert!(result.is_ok());
     }

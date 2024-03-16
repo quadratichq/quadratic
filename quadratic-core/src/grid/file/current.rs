@@ -165,6 +165,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                         CellValue::Number(BigDecimal::from_str(number)?)
                     }
                     current::CellValue::Html(html) => CellValue::Html(html.to_owned()),
+                    current::CellValue::Image(image) => CellValue::Image(image.clone()),
                     current::CellValue::Code(code_cell) => CellValue::Code(CodeCellValue {
                         code: code_cell.code.to_owned(),
                         language: match code_cell.language {
@@ -484,6 +485,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                         current::CellValue::Number(number.to_string())
                                     }
                                     CellValue::Html(html) => current::CellValue::Html(html.clone()),
+                                    CellValue::Image(image) => current::CellValue::Image(image.clone()),
                                     CellValue::Code(cell_code) => {
                                         current::CellValue::Code(current::CodeCell {
                                             code: cell_code.code.to_owned(),

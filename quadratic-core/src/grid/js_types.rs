@@ -13,6 +13,7 @@ use crate::Pos;
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum JsRenderCellSpecial {
     Chart,
+    Image,
     SpillError,
     RunError,
     True,
@@ -230,6 +231,15 @@ pub struct JsHtmlOutput {
     pub html: String,
     pub w: Option<String>,
     pub h: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsImageOutput {
+    pub sheet_id: String,
+    pub x: i64,
+    pub y: i64,
+    pub image: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]

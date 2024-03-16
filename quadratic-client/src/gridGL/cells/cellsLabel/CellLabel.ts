@@ -23,6 +23,7 @@ const OPEN_SANS_FIX = { x: 1.8, y: -1 };
 const SPILL_ERROR_TEXT = ' #SPILL';
 const RUN_ERROR_TEXT = ' #ERROR';
 const CHART_TEXT = ' CHART';
+const IMAGE_TEXT = ' IMAGE';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -71,6 +72,8 @@ export class CellLabel extends Container {
         return RUN_ERROR_TEXT;
       case 'Chart':
         return CHART_TEXT;
+      case 'Image':
+        return IMAGE_TEXT;
       default:
         return cell?.value;
     }
@@ -85,9 +88,10 @@ export class CellLabel extends Container {
     this.letterSpacing = 0;
     const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
     const isChart = cell?.special === 'Chart';
+    const isImage = cell?.special === 'Image';
     if (isError) {
       this.tint = colors.cellColorError;
-    } else if (isChart) {
+    } else if (isChart || isImage) {
       this.tint = convertColorStringToTint(colors.languagePython);
     } else if (cell?.textColor) {
       this.tint = convertColorStringToTint(cell.textColor);
@@ -104,7 +108,7 @@ export class CellLabel extends Container {
     this.position.set(screenRectangle.x, screenRectangle.y);
 
     this.bold = !!cell?.bold;
-    this.italic = !!cell?.italic || isError || isChart;
+    this.italic = !!cell?.italic || isError || isChart || isImage;
     this.updateFontName();
     this.alignment = cell.align;
   }
