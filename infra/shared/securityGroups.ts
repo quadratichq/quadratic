@@ -56,7 +56,7 @@ export const multiplayerEc2SecurityGroup = new aws.ec2.SecurityGroup(
 // Create a Security Group for the API EC2 instance
 export const apiEc2SecurityGroup = new aws.ec2.SecurityGroup("api-sg", {
   ingress: [
-    // { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
+    { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
     {
       protocol: "tcp",
       fromPort: 80,
