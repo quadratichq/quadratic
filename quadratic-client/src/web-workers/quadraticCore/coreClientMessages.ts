@@ -50,6 +50,22 @@ export interface CoreClientExport {
   id: number;
 }
 
+export interface ClientCoreExportCsvSelection {
+  type: 'clientCoreExportCsvSelection';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  id: number;
+}
+
+export interface CoreClientExportCsvSelection {
+  type: 'coreClientExportCsvSelection';
+  csv: string;
+  id: number;
+}
+
 //#endregion
 
 //#region Query
@@ -632,7 +648,8 @@ export type ClientCoreMessage =
   | ClientCorePasteFromClipboard
   | ClientCoreSetRegionBorders
   | ClientCoreSetCellRenderResize
-  | ClientCoreAutocomplete;
+  | ClientCoreAutocomplete
+  | ClientCoreExportCsvSelection;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -658,4 +675,5 @@ export type CoreClientMessage =
   | CoreClientCopyToClipboard
   | CoreClientCutToClipboard
   | CoreClientHtmlOutput
-  | CoreClientUpdateHtml;
+  | CoreClientUpdateHtml
+  | CoreClientExportCsvSelection;

@@ -6,7 +6,6 @@ import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
-import { grid } from './grid/controller/Grid';
 import { downloadFile, downloadQuadraticFile } from './helpers/downloadFileInBrowser';
 import { Action } from './routes/files.$uuid';
 import { FileContextType } from './ui/components/FileProvider';
@@ -175,8 +174,8 @@ export const rerunSheetAction = {
 
 export const downloadSelectionAsCsvAction = {
   label: 'Download selection as CSV',
-  run({ fileName }: { fileName: string }) {
-    downloadFile(fileName, grid.exportCsvSelection(), 'text/plain', 'csv');
+  async run({ fileName }: { fileName: string }) {
+    downloadFile(fileName, await quadraticCore.exportCsvSelection(), 'text/plain', 'csv');
   },
 };
 

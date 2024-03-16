@@ -9,13 +9,12 @@ import {
 } from '@/quadratic-core/quadratic_core';
 import { Point, Rectangle } from 'pixi.js';
 import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
-import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { GridPerformanceProxy } from './GridPerformanceProxy';
 import { sheets } from './Sheets';
 
-const rectangleToRect = (rectangle: Rectangle): RectInternal => {
-  return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
-};
+// const rectangleToRect = (rectangle: Rectangle): RectInternal => {
+//   return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
+// };
 
 export const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
   return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
@@ -305,18 +304,18 @@ export class Grid {
 
   //#region Exports
 
-  exportCsvSelection(): string {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+  // exportCsvSelection(): string {
+  //   if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
 
-    debugTimeReset();
-    const csv = this.gridController.exportCsvSelection(
-      sheets.sheet.id,
-      rectangleToRect(sheets.sheet.cursor.getRectangle())
-    );
-    debugTimeCheck(`processing and exporting csv file`);
+  //   debugTimeReset();
+  //   const csv = this.gridController.exportCsvSelection(
+  //     sheets.sheet.id,
+  //     rectangleToRect(sheets.sheet.cursor.getRectangle())
+  //   );
+  //   debugTimeCheck(`processing and exporting csv file`);
 
-    return csv;
-  }
+  //   return csv;
+  // }
 
   //#endregion
 

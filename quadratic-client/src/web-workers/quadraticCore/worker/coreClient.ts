@@ -325,6 +325,11 @@ class CoreClient {
         );
         break;
 
+      case 'clientCoreExportCsvSelection':
+        const csv = core.exportCsvSelection(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

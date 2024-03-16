@@ -708,6 +708,25 @@ class QuadraticCore {
     });
   }
 
+  exportCsvSelection(): Promise<string> {
+    const cursorRect = sheets.sheet.cursor.getRectangle();
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: { csv: string }) => {
+        resolve(message.csv);
+      };
+      return this.send({
+        type: 'clientCoreExportCsvSelection',
+        sheetId: sheets.sheet.id,
+        x: cursorRect.x,
+        y: cursorRect.y,
+        width: cursorRect.width,
+        height: cursorRect.height,
+        id,
+      });
+    });
+  }
+
   //#endregion
 }
 

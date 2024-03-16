@@ -424,6 +424,11 @@ class Core {
       cursor
     );
   }
+
+  exportCsvSelection(sheetId: string, x: number, y: number, width: number, height: number): string {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.exportCsvSelection(sheetId, pointsToRect(x, y, width, height));
+  }
 }
 
 export const core = new Core();
