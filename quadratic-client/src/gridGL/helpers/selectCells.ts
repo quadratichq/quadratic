@@ -1,5 +1,4 @@
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
-import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 
 export async function selectAllCells() {
@@ -22,9 +21,9 @@ export async function selectAllCells() {
   }
 }
 
-export function selectColumns(start: number, end: number): void {
+export async function selectColumns(start: number, end: number) {
   const sheet = sheets.sheet;
-  const bounds = grid.getColumnsBounds(sheet.id, start, end, true);
+  const bounds = await quadraticCore.getColumnsBounds(sheet.id, start, end, true);
   if (bounds) {
     sheet.cursor.changePosition({
       cursorPosition: { x: start, y: bounds.min },
@@ -43,7 +42,7 @@ export function selectColumns(start: number, end: number): void {
 
 export async function selectRows(start: number, end: number): Promise<void> {
   const sheet = sheets.sheet;
-  const bounds = grid.getRowsBounds(sheet.id, start, end, true);
+  const bounds = await quadraticCore.getRowsBounds(sheet.id, start, end, true);
   if (bounds) {
     sheet.cursor.changePosition({
       cursorPosition: { x: bounds.min, y: start },

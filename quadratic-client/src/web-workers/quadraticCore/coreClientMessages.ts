@@ -7,6 +7,7 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  MinMax,
   SearchOptions,
   SheetInfo,
   SheetPos,
@@ -603,6 +604,72 @@ export interface ClientCorePasteFromClipboard {
 
 //#endregion
 
+//#region Bounds
+
+export interface ClientCoreGetColumnsBounds {
+  type: 'clientCoreGetColumnsBounds';
+  sheetId: string;
+  start: number;
+  end: number;
+  ignoreFormatting: boolean;
+  id: number;
+}
+
+export interface CoreClientGetColumnsBounds {
+  type: 'coreClientGetColumnsBounds';
+  bounds?: MinMax;
+  id: number;
+}
+
+export interface ClientCoreGetRowsBounds {
+  type: 'clientCoreGetRowsBounds';
+  sheetId: string;
+  start: number;
+  end: number;
+  ignoreFormatting: boolean;
+  id: number;
+}
+
+export interface CoreClientGetRowsBounds {
+  type: 'coreClientGetRowsBounds';
+  bounds?: MinMax;
+  id: number;
+}
+
+export interface ClientCoreFindNextColumn {
+  type: 'clientCoreFindNextColumn';
+  id: number;
+  sheetId: string;
+  columnStart: number;
+  row: number;
+  reverse: boolean;
+  withContent: boolean;
+}
+
+export interface CoreClientFindNextColumn {
+  type: 'coreClientFindNextColumn';
+  id: number;
+  column: number;
+}
+
+export interface ClientCoreFindNextRow {
+  type: 'clientCoreFindNextRow';
+  id: number;
+  sheetId: string;
+  rowStart: number;
+  column: number;
+  reverse: boolean;
+  withContent: boolean;
+}
+
+export interface CoreClientFindNextRow {
+  type: 'coreClientFindNextRow';
+  id: number;
+  row: number;
+}
+
+//#endregion
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -649,7 +716,11 @@ export type ClientCoreMessage =
   | ClientCoreSetRegionBorders
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
-  | ClientCoreExportCsvSelection;
+  | ClientCoreExportCsvSelection
+  | ClientCoreGetColumnsBounds
+  | ClientCoreGetRowsBounds
+  | ClientCoreFindNextColumn
+  | ClientCoreFindNextRow;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -676,4 +747,8 @@ export type CoreClientMessage =
   | CoreClientCutToClipboard
   | CoreClientHtmlOutput
   | CoreClientUpdateHtml
-  | CoreClientExportCsvSelection;
+  | CoreClientExportCsvSelection
+  | CoreClientGetColumnsBounds
+  | CoreClientGetRowsBounds
+  | CoreClientFindNextColumn
+  | CoreClientFindNextRow;

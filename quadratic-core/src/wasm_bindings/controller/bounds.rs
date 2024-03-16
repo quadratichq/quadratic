@@ -1,7 +1,7 @@
 use super::*;
 
 #[derive(Serialize, Deserialize, Debug)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct MinMax {
     pub min: i32,
     pub max: i32,
@@ -25,24 +25,6 @@ impl GridController {
     }
 
     // returns a column's bounds.
-    #[wasm_bindgen(js_name = "getColumnBounds")]
-    pub fn get_column_bounds(
-        &self,
-        sheet_id: String,
-        column: i32,
-        ignore_formatting: bool,
-    ) -> Option<MinMax> {
-        let sheet = self.try_sheet_from_string_id(sheet_id)?;
-        sheet
-            .column_bounds(column as i64, ignore_formatting)
-            .as_ref()
-            .map(|bounds| MinMax {
-                min: bounds.0 as i32,
-                max: bounds.1 as i32,
-            })
-    }
-
-    // returns a column's bounds.
     #[wasm_bindgen(js_name = "getColumnsBounds")]
     pub fn get_columns_bounds(
         &self,
@@ -50,33 +32,22 @@ impl GridController {
         column_start: i32,
         column_end: i32,
         ignore_formatting: bool,
-    ) -> Option<MinMax> {
+    ) -> Option<String> {
         let sheet = self.try_sheet_from_string_id(sheet_id)?;
-        sheet
-            .columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
-            .as_ref()
-            .map(|bounds| MinMax {
+        if let Some(bounds) =
+            sheet.columns_bounds(column_start as i64, column_end as i64, ignore_formatting)
+        {
+            let min_max = MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
-            })
-    }
-
-    // returns a row's bounds.
-    #[wasm_bindgen(js_name = "getRowBounds")]
-    pub fn get_row_bounds(
-        &self,
-        sheet_id: String,
-        row: i32,
-        ignore_formatting: bool,
-    ) -> Option<MinMax> {
-        let sheet = self.try_sheet_from_string_id(sheet_id)?;
-        sheet
-            .row_bounds(row as i64, ignore_formatting)
-            .as_ref()
-            .map(|bounds| MinMax {
-                min: bounds.0 as i32,
-                max: bounds.1 as i32,
-            })
+            };
+            let Ok(min_max) = serde_json::to_string(&min_max) else {
+                return None;
+            };
+            Some(min_max)
+        } else {
+            None
+        }
     }
 
     // returns a column's bounds.
@@ -87,15 +58,21 @@ impl GridController {
         row_start: i32,
         row_end: i32,
         ignore_formatting: bool,
-    ) -> Option<MinMax> {
+    ) -> Option<String> {
         let sheet = self.try_sheet_from_string_id(sheet_id)?;
-        sheet
-            .rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
-            .as_ref()
-            .map(|bounds| MinMax {
+        if let Some(bounds) = sheet.rows_bounds(row_start as i64, row_end as i64, ignore_formatting)
+        {
+            let min_max = MinMax {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
-            })
+            };
+            let Ok(min_max) = serde_json::to_string(&min_max) else {
+                return None;
+            };
+            Some(min_max)
+        } else {
+            None
+        }
     }
 
     /// finds nearest column with or without content

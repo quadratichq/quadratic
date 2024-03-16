@@ -14,12 +14,18 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  MinMax,
   SearchOptions,
   SheetPos,
 } from '@/quadratic-core-types';
 import initCore, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import { ClientCoreLoad, ClientCoreSummarizeSelection } from '../coreClientMessages';
+import {
+  ClientCoreFindNextColumn,
+  ClientCoreFindNextRow,
+  ClientCoreLoad,
+  ClientCoreSummarizeSelection,
+} from '../coreClientMessages';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
 
@@ -428,6 +434,28 @@ class Core {
   exportCsvSelection(sheetId: string, x: number, y: number, width: number, height: number): string {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.exportCsvSelection(sheetId, pointsToRect(x, y, width, height));
+  }
+
+  getColumnsBounds(sheetId: string, start: number, end: number, ignoreFormatting: boolean): MinMax | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const result = this.gridController.getColumnsBounds(sheetId, start, end, ignoreFormatting);
+    if (result) return JSON.parse(result);
+  }
+
+  getRowsBounds(sheetId: string, start: number, end: number, ignoreFormatting: boolean): MinMax | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const result = this.gridController.getRowsBounds(sheetId, start, end, ignoreFormatting);
+    if (result) return JSON.parse(result);
+  }
+
+  findNextColumn(data: ClientCoreFindNextColumn): number {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.findNextColumn(data.sheetId, data.columnStart, data.row, data.reverse, data.withContent);
+  }
+
+  findNextRow(data: ClientCoreFindNextRow): number {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    return this.gridController.findNextRow(data.sheetId, data.rowStart, data.column, data.reverse, data.withContent);
   }
 }
 

@@ -330,6 +330,38 @@ class CoreClient {
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         break;
 
+      case 'clientCoreGetColumnsBounds':
+        this.send({
+          type: 'coreClientGetColumnsBounds',
+          id: e.data.id,
+          bounds: core.getColumnsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
+        });
+        break;
+
+      case 'clientCoreGetRowsBounds':
+        this.send({
+          type: 'coreClientGetRowsBounds',
+          id: e.data.id,
+          bounds: core.getRowsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
+        });
+        break;
+
+      case 'clientCoreFindNextColumn':
+        this.send({
+          type: 'coreClientFindNextColumn',
+          id: e.data.id,
+          column: core.findNextColumn(e.data),
+        });
+        break;
+
+      case 'clientCoreFindNextRow':
+        this.send({
+          type: 'coreClientFindNextRow',
+          id: e.data.id,
+          row: core.findNextRow(e.data),
+        });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

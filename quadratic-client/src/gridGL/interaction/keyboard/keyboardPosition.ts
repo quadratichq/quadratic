@@ -1,5 +1,4 @@
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
-import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
@@ -43,7 +42,7 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
           // if next cell is empty, find the next cell with content
           if (!(await quadraticCore.cellHasContent(sheetId, x + 1, yCheck))) {
-            x = grid.findNextColumn({
+            x = await quadraticCore.findNextColumn({
               sheetId,
               columnStart: x + 1,
               row: yCheck,
@@ -54,18 +53,24 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
           // if next cell is not empty, find the next empty cell
           else {
             x =
-              grid.findNextColumn({
+              (await quadraticCore.findNextColumn({
                 sheetId,
                 columnStart: x + 1,
                 row: yCheck,
                 reverse: false,
                 withContent: false,
-              }) - 1;
+              })) - 1;
           }
         }
         // otherwise find the next cell with content
         else {
-          x = grid.findNextColumn({ sheetId, columnStart: x + 1, row: yCheck, reverse: false, withContent: true });
+          x = await quadraticCore.findNextColumn({
+            sheetId,
+            columnStart: x + 1,
+            row: yCheck,
+            reverse: false,
+            withContent: true,
+          });
           if (x === keyboardX) x++;
         }
         if (event.shiftKey) {
@@ -92,17 +97,35 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         if (await quadraticCore.cellHasContent(sheetId, x, yCheck)) {
           // if next cell is empty, find the next cell with content
           if (!(await quadraticCore.cellHasContent(sheetId, x - 1, yCheck))) {
-            x = grid.findNextColumn({ sheetId, columnStart: x - 1, row: yCheck, reverse: true, withContent: true });
+            x = await quadraticCore.findNextColumn({
+              sheetId,
+              columnStart: x - 1,
+              row: yCheck,
+              reverse: true,
+              withContent: true,
+            });
           }
           // if next cell is not empty, find the next empty cell
           else {
             x =
-              grid.findNextColumn({ sheetId, columnStart: x - 1, row: yCheck, reverse: true, withContent: false }) + 1;
+              (await quadraticCore.findNextColumn({
+                sheetId,
+                columnStart: x - 1,
+                row: yCheck,
+                reverse: true,
+                withContent: false,
+              })) + 1;
           }
         }
         // otherwise find the next cell with content
         else {
-          x = grid.findNextColumn({ sheetId, columnStart: x - 1, row: yCheck, reverse: true, withContent: true });
+          x = await quadraticCore.findNextColumn({
+            sheetId,
+            columnStart: x - 1,
+            row: yCheck,
+            reverse: true,
+            withContent: true,
+          });
         }
         if (event.shiftKey) {
           const originY = cursor.originPosition.y;
@@ -130,16 +153,35 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         if (await quadraticCore.cellHasContent(sheetId, xCheck, y)) {
           // if next cell is empty, find the next cell with content
           if (!(await quadraticCore.cellHasContent(sheetId, xCheck, y + 1))) {
-            y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y + 1, reverse: false, withContent: true });
+            y = await quadraticCore.findNextRow({
+              sheetId,
+              column: xCheck,
+              rowStart: y + 1,
+              reverse: false,
+              withContent: true,
+            });
           }
           // if next cell is not empty, find the next empty cell
           else {
-            y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y + 1, reverse: false, withContent: false }) - 1;
+            y =
+              (await quadraticCore.findNextRow({
+                sheetId,
+                column: xCheck,
+                rowStart: y + 1,
+                reverse: false,
+                withContent: false,
+              })) - 1;
           }
         }
         // otherwise find the next cell with content
         else {
-          y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y + 1, reverse: false, withContent: true });
+          y = await quadraticCore.findNextRow({
+            sheetId,
+            column: xCheck,
+            rowStart: y + 1,
+            reverse: false,
+            withContent: true,
+          });
           if (y === keyboardY) y++;
         }
         if (event.shiftKey) {
@@ -168,16 +210,35 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         if (await quadraticCore.cellHasContent(sheetId, xCheck, y)) {
           // if next cell is empty, find the next cell with content
           if (!(await quadraticCore.cellHasContent(sheetId, xCheck, y - 1))) {
-            y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y - 1, reverse: true, withContent: true });
+            y = await quadraticCore.findNextRow({
+              sheetId,
+              column: xCheck,
+              rowStart: y - 1,
+              reverse: true,
+              withContent: true,
+            });
           }
           // if next cell is not empty, find the next empty cell
           else {
-            y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y - 1, reverse: true, withContent: false }) + 1;
+            y =
+              (await quadraticCore.findNextRow({
+                sheetId,
+                column: xCheck,
+                rowStart: y - 1,
+                reverse: true,
+                withContent: false,
+              })) + 1;
           }
         }
         // otherwise find the next cell with content
         else {
-          y = grid.findNextRow({ sheetId, column: xCheck, rowStart: y - 1, reverse: true, withContent: true });
+          y = await quadraticCore.findNextRow({
+            sheetId,
+            column: xCheck,
+            rowStart: y - 1,
+            reverse: true,
+            withContent: true,
+          });
         }
         if (event.shiftKey) {
           const originX = cursor.multiCursor ? cursor.multiCursor.originPosition.x : cursor.cursorPosition.x;

@@ -15,7 +15,7 @@ use quadratic_core::{
         BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
     },
     sheet_offsets::sheet_offsets_wasm::{ColumnRow, Placement},
-    wasm_bindings::controller::sheet_info::SheetInfo,
+    wasm_bindings::controller::{bounds::MinMax, sheet_info::SheetInfo},
     Rect, *,
 };
 use ts_rs::TS;
@@ -80,6 +80,7 @@ fn main() {
         JsRenderBorders,
         JsCodeResult,
         JsComputeGetCells,
+        MinMax
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {

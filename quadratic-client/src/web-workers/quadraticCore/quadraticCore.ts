@@ -728,6 +728,104 @@ class QuadraticCore {
   }
 
   //#endregion
+
+  //#region Bounds
+
+  getColumnsBounds(
+    sheetId: string,
+    start: number,
+    end: number,
+    ignoreFormatting = false
+  ): Promise<{ min: number; max: number } | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { min: number; max: number } | undefined) => {
+        resolve(message);
+      };
+      this.send({
+        type: 'clientCoreGetColumnsBounds',
+        sheetId,
+        start,
+        end,
+        id,
+        ignoreFormatting,
+      });
+    });
+  }
+
+  getRowsBounds(
+    sheetId: string,
+    start: number,
+    end: number,
+    ignoreFormatting = false
+  ): Promise<{ min: number; max: number } | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { min: number; max: number } | undefined) => {
+        resolve(message);
+      };
+      this.send({
+        type: 'clientCoreGetRowsBounds',
+        sheetId,
+        start,
+        end,
+        id,
+        ignoreFormatting,
+      });
+    });
+  }
+
+  findNextColumn(options: {
+    sheetId: string;
+    columnStart: number;
+    row: number;
+    reverse: boolean;
+    withContent: boolean;
+  }): Promise<number> {
+    const { sheetId, columnStart, row, reverse, withContent } = options;
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { next: number }) => {
+        resolve(message.next);
+      };
+      this.send({
+        type: 'clientCoreFindNextColumn',
+        id,
+        sheetId,
+        columnStart,
+        row,
+        reverse,
+        withContent,
+      });
+    });
+  }
+
+  findNextRow(options: {
+    sheetId: string;
+    column: number;
+    rowStart: number;
+    reverse: boolean;
+    withContent: boolean;
+  }): Promise<number> {
+    const { sheetId, column, rowStart, reverse, withContent } = options;
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { next: number }) => {
+        resolve(message.next);
+      };
+      this.send({
+        type: 'clientCoreFindNextRow',
+        id,
+        sheetId,
+        column,
+        rowStart,
+        reverse,
+        withContent,
+      });
+    });
+  }
+
+  //#endregion
 }
 
 export const quadraticCore = new QuadraticCore();

@@ -1,7 +1,6 @@
 import { Rect } from '@/quadratic-core-types';
 import {
   GridController,
-  MinMax,
   Pos,
   Rect as RectInternal,
   SheetOffsets,
@@ -194,58 +193,58 @@ export class Grid {
 
   //#region Bounds
 
-  getColumnBounds(sheetId: string, column: number, ignoreFormatting: boolean): MinMax | undefined {
-    return this.gridController.getColumnBounds(sheetId, column, ignoreFormatting);
-  }
+  // getColumnBounds(sheetId: string, column: number, ignoreFormatting: boolean): MinMax | undefined {
+  //   return this.gridController.getColumnBounds(sheetId, column, ignoreFormatting);
+  // }
 
-  getColumnsBounds(
-    sheetId: string,
-    columnStart: number,
-    columnEnd: number,
-    ignoreFormatting: boolean
-  ): MinMax | undefined {
-    return this.gridController.getColumnsBounds(sheetId, columnStart, columnEnd, ignoreFormatting);
-  }
+  // getColumnsBounds(
+  //   sheetId: string,
+  //   columnStart: number,
+  //   columnEnd: number,
+  //   ignoreFormatting: boolean
+  // ): MinMax | undefined {
+  //   return this.gridController.getColumnsBounds(sheetId, columnStart, columnEnd, ignoreFormatting);
+  // }
 
-  getRowBounds(sheetId: string, row: number, ignoreFormatting: boolean): MinMax | undefined {
-    return this.gridController.getRowBounds(sheetId, row, ignoreFormatting);
-  }
+  // getRowBounds(sheetId: string, row: number, ignoreFormatting: boolean): MinMax | undefined {
+  //   return this.gridController.getRowBounds(sheetId, row, ignoreFormatting);
+  // }
 
-  getRowsBounds(sheetId: string, row_start: number, row_end: number, ignoreFormatting: boolean): MinMax | undefined {
-    return this.gridController.getRowsBounds(sheetId, row_start, row_end, ignoreFormatting);
-  }
+  // getRowsBounds(sheetId: string, row_start: number, row_end: number, ignoreFormatting: boolean): MinMax | undefined {
+  //   return this.gridController.getRowsBounds(sheetId, row_start, row_end, ignoreFormatting);
+  // }
 
-  findNextColumn(options: {
-    sheetId: string;
-    columnStart: number;
-    row: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): number {
-    return this.gridController.findNextColumn(
-      options.sheetId,
-      options.columnStart,
-      options.row,
-      options.reverse,
-      options.withContent
-    );
-  }
+  // findNextColumn(options: {
+  //   sheetId: string;
+  //   columnStart: number;
+  //   row: number;
+  //   reverse: boolean;
+  //   withContent: boolean;
+  // }): number {
+  //   return this.gridController.findNextColumn(
+  //     options.sheetId,
+  //     options.columnStart,
+  //     options.row,
+  //     options.reverse,
+  //     options.withContent
+  //   );
+  // }
 
-  findNextRow(options: {
-    sheetId: string;
-    rowStart: number;
-    column: number;
-    reverse: boolean;
-    withContent: boolean;
-  }): number {
-    return this.gridController.findNextRow(
-      options.sheetId,
-      options.rowStart,
-      options.column,
-      options.reverse,
-      options.withContent
-    );
-  }
+  // findNextRow(options: {
+  //   sheetId: string;
+  //   rowStart: number;
+  //   column: number;
+  //   reverse: boolean;
+  //   withContent: boolean;
+  // }): number {
+  //   return this.gridController.findNextRow(
+  //     options.sheetId,
+  //     options.rowStart,
+  //     options.column,
+  //     options.reverse,
+  //     options.withContent
+  //   );
+  // }
 
   //#endregion
 
