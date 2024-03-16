@@ -17,6 +17,7 @@ import {
   JsCodeCell,
   JsRenderCell,
   JsRenderCodeCell,
+  MinMax,
   PasteSpecial,
   SearchOptions,
   SheetPos,
@@ -37,9 +38,11 @@ import {
   ClientCoreUpgradeGridFile,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
+  CoreClientGetColumnsBounds,
   CoreClientGetEditCell,
   CoreClientGetRenderCell,
   CoreClientGetRenderCodeCells,
+  CoreClientGetRowsBounds,
   CoreClientHasRenderCells,
   CoreClientImportCsv,
   CoreClientMessage,
@@ -731,16 +734,11 @@ class QuadraticCore {
 
   //#region Bounds
 
-  getColumnsBounds(
-    sheetId: string,
-    start: number,
-    end: number,
-    ignoreFormatting = false
-  ): Promise<{ min: number; max: number } | undefined> {
+  getColumnsBounds(sheetId: string, start: number, end: number, ignoreFormatting = false): Promise<MinMax | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { min: number; max: number } | undefined) => {
-        resolve(message);
+      this.waitingForResponse[id] = (message: CoreClientGetColumnsBounds) => {
+        resolve(message.bounds);
       };
       this.send({
         type: 'clientCoreGetColumnsBounds',
@@ -753,16 +751,11 @@ class QuadraticCore {
     });
   }
 
-  getRowsBounds(
-    sheetId: string,
-    start: number,
-    end: number,
-    ignoreFormatting = false
-  ): Promise<{ min: number; max: number } | undefined> {
+  getRowsBounds(sheetId: string, start: number, end: number, ignoreFormatting = false): Promise<MinMax | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { min: number; max: number } | undefined) => {
-        resolve(message);
+      this.waitingForResponse[id] = (message: CoreClientGetRowsBounds) => {
+        resolve(message.bounds);
       };
       this.send({
         type: 'clientCoreGetRowsBounds',
