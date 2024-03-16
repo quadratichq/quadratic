@@ -341,17 +341,17 @@ export class Grid {
   //#region AutoComplete
   //-----------------
 
-  autocomplete(sheetId: string, rectangle: Rectangle, range: Rectangle) {
-    if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
+  // autocomplete(sheetId: string, rectangle: Rectangle, range: Rectangle) {
+  //   if (!this.gridController) throw new Error('Expected grid to be defined in Grid');
 
-    const summary = this.gridController.autocomplete(
-      sheetId,
-      rectangleToRect(rectangle),
-      rectangleToRect(range),
-      sheets.getCursorPosition()
-    );
-    this.transactionResponse(summary);
-  }
+  //   const summary = this.gridController.autocomplete(
+  //     sheetId,
+  //     rectangleToRect(rectangle),
+  //     rectangleToRect(range),
+  //     sheets.getCursorPosition()
+  //   );
+  //   this.transactionResponse(summary);
+  // }
 
   //#endregion
 

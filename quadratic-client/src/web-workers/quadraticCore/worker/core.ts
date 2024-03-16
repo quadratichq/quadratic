@@ -403,6 +403,27 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.setCellRenderSize(sheetId, pointsToRect(x, y, width, height), cursor);
   }
+
+  autocomplete(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    fullX: number,
+    fullY: number,
+    fullWidth: number,
+    fullHeight: number,
+    cursor: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.autocomplete(
+      sheetId,
+      pointsToRect(x, y, width, height),
+      pointsToRect(fullX, fullY, fullWidth, fullHeight),
+      cursor
+    );
+  }
 }
 
 export const core = new Core();

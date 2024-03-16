@@ -310,6 +310,21 @@ class CoreClient {
         core.setCellRenderResize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         break;
 
+      case 'clientCoreAutocomplete':
+        core.autocomplete(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.fullX,
+          e.data.fullY,
+          e.data.fullWidth,
+          e.data.fullHeight,
+          e.data.cursor
+        );
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

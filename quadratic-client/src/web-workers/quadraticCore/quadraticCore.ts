@@ -678,7 +678,7 @@ class QuadraticCore {
 
   //#endregion
 
-  //#region HTML
+  //#region Misc.
 
   setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number) {
     this.send({
@@ -688,6 +688,22 @@ class QuadraticCore {
       y,
       width,
       height,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  autocomplete(sheetId: string, selection: Rectangle, fullBounds: Rectangle) {
+    this.send({
+      type: 'clientCoreAutocomplete',
+      sheetId,
+      x: selection.x,
+      y: selection.y,
+      width: selection.width,
+      height: selection.height,
+      fullX: fullBounds.x,
+      fullY: fullBounds.y,
+      fullWidth: fullBounds.width,
+      fullHeight: fullBounds.height,
       cursor: sheets.getCursorPosition(),
     });
   }

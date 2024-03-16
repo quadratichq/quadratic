@@ -430,6 +430,20 @@ export interface ClientCoreSetCellRenderResize {
   cursor: string;
 }
 
+export interface ClientCoreAutocomplete {
+  type: 'clientCoreAutocomplete';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fullX: number;
+  fullY: number;
+  fullWidth: number;
+  fullHeight: number;
+  cursor: string;
+}
+
 //#endregion
 
 //#region Sheets
@@ -617,7 +631,8 @@ export type ClientCoreMessage =
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
   | ClientCoreSetRegionBorders
-  | ClientCoreSetCellRenderResize;
+  | ClientCoreSetCellRenderResize
+  | ClientCoreAutocomplete;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

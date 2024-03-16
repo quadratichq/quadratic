@@ -1,7 +1,7 @@
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Bounds } from '../../../grid/sheet/Bounds';
 import { intersects } from '../../helpers/intersects';
@@ -224,7 +224,7 @@ export class PointerAutoComplete {
         if (this.stateVertical === 'shrink') {
           fullBounds.height = this.endCell.y - this.selection.y;
         }
-        grid.autocomplete(sheet.id, this.selection, fullBounds);
+        quadraticCore.autocomplete(sheet.id, this.selection, fullBounds);
       }
     }
 
