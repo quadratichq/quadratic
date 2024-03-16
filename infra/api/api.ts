@@ -35,6 +35,16 @@ docker run -d \
 	-v /var/lib/postgresql/data:/var/lib/postgresql/data \
   -p 5432:5432 \
 	postgres:15
+
+# wait til postgres is up
+sleep 5
+
+# Run prisma migrate
+sudo docker run \
+            --name ${imageRepositoryName}-migrate \
+            --env-file .env \
+            ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag} \
+            npm run prisma:migrate --workspace=quadratic-api
 `;
 
 const instance = new aws.ec2.Instance("api-instance", {

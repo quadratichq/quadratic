@@ -75,10 +75,9 @@ sudo yum install aws-cli -y
 echo 'Logging into ECR'
 aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS --password-stdin ${ecrRegistryUrl}
 
-${dependencySetupBashCommand}
-
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
+${dependencySetupBashCommand}
 sudo docker run -d \
             --name ${imageRepositoryName} \
             --restart always \
