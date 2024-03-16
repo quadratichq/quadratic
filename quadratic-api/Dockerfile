@@ -11,4 +11,4 @@ WORKDIR /app
 COPY --from=builder /app .
 RUN apt-get update && apt install -y openssl
 # RUN npm run build --workspace=quadratic-api
-CMD ["npm", "start"]
+CMD ["npm", "start", "--workspace=quadratic-api"]
