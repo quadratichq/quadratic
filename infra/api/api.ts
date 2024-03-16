@@ -45,6 +45,7 @@ const instance = new aws.ec2.Instance("api-instance", {
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [apiEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
+  keyName: "dba-quadratic",
   userDataReplaceOnChange: true,
   userData: pulumi.all([]).apply(([]) =>
     runDockerImageBashScript(
