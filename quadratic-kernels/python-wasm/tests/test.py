@@ -4,7 +4,7 @@ import sys
 import unittest
 from unittest import IsolatedAsyncioTestCase, TestCase
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
-from quadratic_py.utils import attempt_fix_await, to_quadratic_type
+from quadratic_py.utils import attempt_fix_await, to_quadratic_type, to_python_type
 
 import pandas as pd
 import numpy as np
@@ -213,6 +213,31 @@ class TestUtils(TestCase):
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # duration
+class TestUtils(TestCase):
+    def test_to_python_type(self):
+        # blank
+        assert to_python_type("", "blank") == 0
+        
+        # number
+        assert to_python_type("1", "number") == 1
+        assert to_python_type("1.1", "number") == 1.1
+        assert to_python_type("-1", "number") == -1
+        assert to_python_type("-1.1", "number") == -1.1
+
+        # logical
+        assert to_python_type("True", "logical") == True
+        assert to_python_type("False", "logical") == False
+        assert to_python_type("true", "logical") == True
+        assert to_python_type("false", "logical") == False
+
+        # string
+        assert to_python_type("abc", "text") == "abc"
+        assert to_python_type("123abc", "text") == "123abc"
+        assert to_python_type("abc123", "text") == "abc123"
+
+        # instant
+        assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00")
+        assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00")
 
 if __name__ == "__main__":
     unittest.main()
