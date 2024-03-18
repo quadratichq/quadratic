@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import numpy as np
 import pandas as pd
+from process_output_test import *
 from quadratic_py.utils import (Blank, attempt_fix_await, to_python_type,
                                 to_quadratic_type)
 
@@ -268,6 +269,7 @@ class TestUtils(TestCase):
         assert Blank() <= 1
         assert Blank() >= 0
         assert Blank() >= -1
+
 
 
 if __name__ == "__main__":
