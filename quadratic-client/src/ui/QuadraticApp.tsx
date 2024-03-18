@@ -77,9 +77,7 @@ export default function QuadraticApp() {
 
   useEffect(() => {
     if (uuid && !pixiApp.initialized) {
-      console.log(1);
       pixiApp.init().then(() => {
-        console.log(2);
         if (!loggedInUser) {
           const anonymous = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
           multiplayer.init(uuid, anonymous, true);
