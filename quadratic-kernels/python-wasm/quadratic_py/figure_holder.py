@@ -1,3 +1,5 @@
+from typing import Any
+
 from quadratic_py import code_trace
 
 class FigureDisplayError(Exception):
@@ -12,11 +14,10 @@ class FigureDisplayError(Exception):
 
 class FigureHolder:
     def __init__(self):
-        self._result = None
-        self._result_set_from_line = None
-        print("Made new holder")
+        self._result: Any | None = None
+        self._result_set_from_line: int | None = None
 
-    def set_result(self, figure) -> None:
+    def set_result(self, figure: Any) -> None:
         user_call_frames = code_trace.get_user_frames()
         current_result_set_from_line = (
             user_call_frames[0].lineno if user_call_frames is not None else "unknown"

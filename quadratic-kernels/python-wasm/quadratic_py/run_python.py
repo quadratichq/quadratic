@@ -135,6 +135,16 @@ async def run_python(code: str):
         except:
             pass
 
+        bytes_output = None
+        try:
+            import matplotlib.figure
+            if isinstance(output_value, matplotlib.figure.Figure):
+                bytes_output = matplotlib_patch.figure_to_png(output_value).getvalue()
+                output_value = ""
+                output_type = "Chart"
+        except:
+            pass
+
         # Convert Pandas.Series to array_output
         if isinstance(output_value, pd.Series):
             array_output = output_value.to_numpy().tolist()
@@ -148,7 +158,6 @@ async def run_python(code: str):
         except Exception:
             pass
 
-        bytes_output = None
         if isinstance(output_value, bytes):
             bytes_output = output_value
             output_value = ''
