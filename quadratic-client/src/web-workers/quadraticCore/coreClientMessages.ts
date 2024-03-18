@@ -20,6 +20,13 @@ export interface ClientCoreLoad {
   url: string;
   version: string;
   sequenceNumber: number;
+  id: number;
+}
+
+export interface CoreClientLoad {
+  type: 'coreClientLoad';
+  id: number;
+  coreVersion: string;
 }
 
 export interface ClientCoreUpgradeGridFile {
@@ -774,4 +781,5 @@ export type CoreClientMessage =
   | CoreClientGetRowsBounds
   | CoreClientFindNextColumn
   | CoreClientFindNextRow
-  | CoreClientGenerateThumbnail;
+  | CoreClientGenerateThumbnail
+  | CoreClientLoad;

@@ -45,6 +45,7 @@ import {
   CoreClientGetRowsBounds,
   CoreClientHasRenderCells,
   CoreClientImportCsv,
+  CoreClientLoad,
   CoreClientMessage,
   CoreClientSearch,
   CoreClientSummarizeSelection,
@@ -126,19 +127,26 @@ class QuadraticCore {
   }
 
   // Loads a Grid file and initializes renderWebWorker upon response
-  async load(url: string, version: string, sequenceNumber: number) {
+  async load(url: string, version: string, sequenceNumber: number): Promise<string> {
     // this is the channel between the core worker and the render worker
     const port = new MessageChannel();
     renderWebWorker.init(port.port2);
 
-    // load the file and send the render message port to
-    const message: ClientCoreLoad = {
-      type: 'clientCoreLoad',
-      url,
-      version,
-      sequenceNumber,
-    };
-    this.send(message, port.port1);
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientLoad) => {
+        resolve(message.coreVersion);
+      };
+      // load the file and send the render message port to
+      const message: ClientCoreLoad = {
+        type: 'clientCoreLoad',
+        url,
+        version,
+        sequenceNumber,
+        id,
+      };
+      this.send(message, port.port1);
+    });
   }
 
   async upgradeGridFile(grid: string, sequenceNumber: number): Promise<{ grid: string; version: string }> {

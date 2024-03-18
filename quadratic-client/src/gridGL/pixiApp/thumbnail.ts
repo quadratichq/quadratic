@@ -21,7 +21,7 @@ class Thumbnail {
     events.on('generateThumbnail', this.generateThumbnail);
   }
 
-  private generateThumbnail = () => {
+  generateThumbnail = () => {
     this.thumbnailDirty = true;
   };
 

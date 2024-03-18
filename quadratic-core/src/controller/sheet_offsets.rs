@@ -19,12 +19,14 @@ impl GridController {
                 sheet_id,
                 column,
                 new_size: transient_resize.new_size,
+                client_resized: true,
             });
         } else if let Some(row) = transient_resize.row {
             ops.push(Operation::ResizeRow {
                 sheet_id,
                 row,
                 new_size: transient_resize.new_size,
+                client_resized: true,
             });
         }
         self.start_user_transaction(ops, cursor);
@@ -50,7 +52,23 @@ impl GridController {
                 }
                 _ => return,
             };
-            self.commit_offsets_resize(sheet_id, transient_resize, cursor);
+            let mut ops = vec![];
+            if let Some(column) = transient_resize.column {
+                ops.push(Operation::ResizeColumn {
+                    sheet_id,
+                    column,
+                    new_size: transient_resize.new_size,
+                    client_resized: false,
+                });
+            } else if let Some(row) = transient_resize.row {
+                ops.push(Operation::ResizeRow {
+                    sheet_id,
+                    row,
+                    new_size: transient_resize.new_size,
+                    client_resized: false,
+                });
+            }
+            self.start_user_transaction(ops, cursor);
         }
     }
 }

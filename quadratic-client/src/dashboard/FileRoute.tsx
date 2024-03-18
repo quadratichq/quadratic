@@ -2,11 +2,14 @@ import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { CONTACT_URL } from '@/constants/urls';
 import { debugShowMultiplayer } from '@/debugFlags';
 import { loadAssets } from '@/gridGL/loadAssets';
+import { thumbnail } from '@/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/helpers/isEmbed';
 import initGridOffsets from '@/quadratic-grid-offsets/quadratic_grid_offsets';
+import { VersionComparisonResult, compareVersions } from '@/schemas/compareVersions';
 import { Button } from '@/shadcn/ui/button';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import {
   Link,
@@ -49,26 +52,24 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   await Promise.all([initGridOffsets(), loadAssets()]);
 
   // initialize Core web worker
-  await quadraticCore.load(
+  const version = await quadraticCore.load(
     data.file.lastCheckpointDataUrl,
     data.file.lastCheckpointVersion,
     data.file.lastCheckpointSequenceNumber
   );
 
-  // todo: these need to be handled as well...
-
-  // grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
-
-  // // If the file is newer than the app, do a (hard) reload.
-  // const gridVersion = grid.getVersion();
-  // if (compareVersions(version, gridVersion) === VersionComparisonResult.GreaterThan) {
-  //   Sentry.captureEvent({
-  //     message: `User opened a file at version ${version} but the app is at version ${gridVersion}. The app will automatically reload.`,
-  //     level: 'log',
-  //   });
-  //   // @ts-expect-error hard reload via `true` only works in some browsers
-  //   window.location.reload(true);
-  // }
+  // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
+  if (compareVersions(data.file.lastCheckpointVersion, version) === VersionComparisonResult.LessThan) {
+    Sentry.captureEvent({
+      message: `User opened a file at version ${version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
+      level: 'log',
+    });
+    // @ts-expect-error hard reload via `true` only works in some browsers
+    window.location.reload(true);
+  }
+  if (!data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT')) {
+    thumbnail.generateThumbnail();
+  }
 
   return data;
 };

@@ -12,6 +12,7 @@ impl GridController {
             sheet_id,
             column,
             new_size,
+            client_resized,
         } = op
         {
             let Some(sheet) = self.try_sheet_mut(sheet_id) else {
@@ -24,6 +25,7 @@ impl GridController {
                     sheet_id,
                     column,
                     new_size,
+                    client_resized: true,
                 });
 
             let old_size = sheet.offsets.set_column_width(column, new_size);
@@ -34,6 +36,7 @@ impl GridController {
                     sheet_id,
                     column,
                     new_size: old_size,
+                    client_resized: false,
                 },
             );
 
@@ -45,7 +48,7 @@ impl GridController {
                 });
             }
 
-            if cfg!(target_family = "wasm") {
+            if cfg!(target_family = "wasm") && !client_resized {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     crate::wasm_bindings::js::jsOffsetsModified(
                         sheet.id.to_string(),
@@ -63,6 +66,7 @@ impl GridController {
             sheet_id,
             row,
             new_size,
+            client_resized,
         } = op
         {
             let Some(sheet) = self.try_sheet_mut(sheet_id) else {
@@ -73,6 +77,7 @@ impl GridController {
                 sheet_id,
                 row,
                 new_size,
+                client_resized: true,
             });
             let old_size = sheet.offsets.set_row_height(row, new_size);
 
@@ -82,6 +87,7 @@ impl GridController {
                     sheet_id,
                     row,
                     new_size: old_size,
+                    client_resized: false,
                 },
             );
 
@@ -93,7 +99,7 @@ impl GridController {
                 });
             }
 
-            if cfg!(target_family = "wasm") {
+            if cfg!(target_family = "wasm") && !client_resized {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     crate::wasm_bindings::js::jsOffsetsModified(
                         sheet.id.to_string(),
