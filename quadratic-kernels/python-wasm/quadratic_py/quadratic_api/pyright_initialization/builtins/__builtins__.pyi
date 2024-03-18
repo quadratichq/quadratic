@@ -94,3 +94,15 @@ results = ...
     """
     ...
 
+ def pos() -> tuple[int, int] | None:
+    """
+    A relative reference to the current cell in the grid.
+
+    Returns:
+        The tuple (x, y) coordinates of the current cell.
+
+    Typical usage example:    
+        (x, y) = pos()
+    """
+    ...
+

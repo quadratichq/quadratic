@@ -104,7 +104,7 @@ self.onmessage = async (e: MessageEvent<PythonMessage>) => {
       let output, results, inspection_results;
 
       try {
-        output = await pyodide.globals.get('run_python')(event.python);
+        output = await pyodide.globals.get('run_python')(event.python, event.pos);
         results = Object.fromEntries(output.toJs());
         inspection_results = await inspectPython(event.python || '', pyodide);
 
