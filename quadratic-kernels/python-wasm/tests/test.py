@@ -2,13 +2,15 @@ import importlib
 import inspect
 import sys
 import unittest
-from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
-from quadratic_py.utils import attempt_fix_await, to_quadratic_type, to_python_type
-
-import pandas as pd
-import numpy as np
 from datetime import datetime
+from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import numpy as np
+import pandas as pd
+from quadratic_py.utils import (Blank, attempt_fix_await, to_python_type,
+                                to_quadratic_type)
+
 
 #  Mock definitions
 class Cell:
@@ -46,7 +48,7 @@ sys.modules["autopep8"] = MagicMock()
 sys.modules["autopep8.fix_code"] = MagicMock()
 
 # import after mocks to in order to use them
-from quadratic_py import run_python, code_trace
+from quadratic_py import code_trace, run_python
 from quadratic_py.quadratic_api.quadratic import getCells
 
 run_python.fetch_module = mock_fetch_module
@@ -236,8 +238,35 @@ class TestUtils(TestCase):
         assert to_python_type("abc123", "text") == "abc123"
 
         # instant
-        assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00")
-        assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00")
+        assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00+00:00")
+        assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00+00:00")
+
+    def test_blank(self):
+        assert Blank() + 1 == 1
+        assert Blank() + 1.1 == 1.1
+        assert Blank() + -1 == -1
+        assert Blank() - 1 == -1
+        assert Blank() * 2 == 0
+        assert Blank() / 2 == 0
+        assert Blank() % 2 == 0
+        assert Blank() ** 2 == 0
+        assert bool(Blank()) == False
+        assert str(Blank()) == ""
+        assert Blank() == Blank()
+        assert Blank() == 0
+        assert Blank() == None
+        assert Blank() == ""
+        assert Blank() == False
+        assert Blank() == 0.0
+        assert Blank() < 1
+        assert Blank() < 1.1
+        assert Blank() > -1
+        assert Blank() > -1.1
+        assert Blank() <= 0
+        assert Blank() <= 1
+        assert Blank() >= 0
+        assert Blank() >= -1
+
 
 if __name__ == "__main__":
     unittest.main()
