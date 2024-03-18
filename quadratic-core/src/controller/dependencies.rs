@@ -37,7 +37,7 @@ mod test {
 
     use crate::{
         controller::GridController,
-        grid::{CodeRun, CodeRunResult},
+        grid::{CodeCellLanguage, CodeRun, CodeRunResult},
         CellValue, Pos, SheetPos, SheetRect, Value,
     };
 
@@ -107,5 +107,46 @@ mod test {
             Some(&sheet_pos_02)
         );
         assert_eq!(gc.get_dependent_code_cells(&sheet_pos_02.into()), None);
+    }
+
+    #[test]
+    fn dependencies_near_input() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "1".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "A0 + 5".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc.get_dependent_code_cells(&SheetRect {
+                min: Pos { x: 0, y: 0 },
+                max: Pos { x: 0, y: 0 },
+                sheet_id
+            }),
+            Some(
+                vec![SheetPos {
+                    x: 1,
+                    y: 0,
+                    sheet_id
+                }]
+                .into_iter()
+                .collect()
+            )
+        );
     }
 }
