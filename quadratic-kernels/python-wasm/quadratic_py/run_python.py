@@ -46,7 +46,6 @@ async def getCellsInner(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=Non
 
     return await getCells(p0, p1, sheet, first_row_header)
     
-
 globals = {
     "getCells": getCellsInner,
     "getCell": getCellInner,
@@ -56,10 +55,13 @@ globals = {
     "cells": getCellsInner,
 }
 
-async def run_python(code: str):
+async def run_python(code: str, pos: Tuple[int, int]):
     sout = StringIO()   
     serr = StringIO()
     output_value = None
+    globals['pos'] = lambda: (pos.x, pos.y)
+    globals['rel_cell'] = lambda x, y: getCellInner(x + pos.x, y + pos.y)
+    globals['rc'] = globals['rel_cell']
 
     try:
         plotly_html = await plotly_patch.intercept_plotly_html(code)
