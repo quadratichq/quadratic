@@ -1,13 +1,15 @@
-from datetime import date, time, datetime, timedelta
-from decimal import Decimal, DecimalException
+import ast
 import operator
 import re
 import traceback
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal, DecimalException
 from typing import Tuple
 
-import pandas as pd
 import numpy as np
-import ast
+import pandas as pd
+import pytz
+
 
 class Blank:
     def __str__(self):
@@ -26,7 +28,12 @@ class Blank:
         return False
     
     def generic_overload(self, other, op):
-        return op(0, other)
+        if isinstance(other, type(None)):
+            return op(None, other)
+        elif isinstance(other, str):
+            return op("", other)
+        else:
+            return op(0, other)
 
     def __add__(self, other):
         return self.generic_overload(other, operator.add)
@@ -139,7 +146,7 @@ def to_python_type(value: str, value_type: str) -> int | float | str | bool:
         elif value_type == "logical":
             return ast.literal_eval(normalize_bool(value))
         elif value_type == "instant":
-            return datetime.utcfromtimestamp(int(value))
+            return datetime.fromtimestamp(int(value), tz=pytz.utc)
         else:
             return value
     except:
