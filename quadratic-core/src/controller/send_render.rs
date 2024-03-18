@@ -1,6 +1,9 @@
 use std::collections::HashSet;
 
-use crate::{Pos, Rect, SheetRect};
+use crate::{
+    grid::{js_types::JsRenderFill, SheetId},
+    Pos, Rect, SheetRect,
+};
 
 use super::{
     transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -63,32 +66,11 @@ impl GridController {
     }
 
     /// Sends all fills to the client
-    pub fn send_all_fills(&self) {
-        if !cfg!(target_family = "wasm") {
-            return;
-        }
-        for sheet_id in self.sheet_ids() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                let fills = sheet.get_all_render_fills();
-                if let Ok(fills) = serde_json::to_string(&fills) {
-                    crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
-                }
-            }
-        }
-    }
-
-    pub fn send_all_html(&self) {
-        if !cfg!(target_family = "wasm") {
-            return;
-        }
-        let mut html = Vec::new();
-        for sheet_id in self.sheet_ids() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                html.extend(sheet.get_html_output());
-            }
-        }
-        if let Ok(html) = serde_json::to_string(&html) {
-            crate::wasm_bindings::js::jsHtmlOutput(html);
+    pub fn sheet_fills(&self, sheet_id: SheetId) -> Vec<JsRenderFill> {
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            sheet.get_all_render_fills()
+        } else {
+            Vec::new()
         }
     }
 }

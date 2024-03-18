@@ -57,6 +57,7 @@ class RenderText {
         const sheetId = sheetInfo.sheet_id;
         this.cellsLabels.set(sheetId, new CellsLabels(sheetInfo, this.bitmapFonts));
       }
+      this.sheetId = this.status.core[0].sheet_id;
 
       // we don't need to keep around SheetInfo
       this.status.core = false;

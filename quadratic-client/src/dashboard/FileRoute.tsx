@@ -52,25 +52,35 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   await Promise.all([initGridOffsets(), loadAssets()]);
 
   // initialize Core web worker
-  const version = await quadraticCore.load(
+  const result = await quadraticCore.load(
     data.file.lastCheckpointDataUrl,
     data.file.lastCheckpointVersion,
     data.file.lastCheckpointSequenceNumber
   );
-
-  // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
-  if (compareVersions(data.file.lastCheckpointVersion, version) === VersionComparisonResult.LessThan) {
+  if (result.error) {
     Sentry.captureEvent({
-      message: `User opened a file at version ${version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
-      level: 'log',
+      message: `Failed to deserialize file ${uuid} from server.`,
+      extra: {
+        error: result.error,
+      },
     });
-    // @ts-expect-error hard reload via `true` only works in some browsers
-    window.location.reload(true);
+    throw new Response('Failed to deserialize file from server.', { statusText: result.error });
+  } else if (result.version) {
+    // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
+    if (compareVersions(data.file.lastCheckpointVersion, result.version) === VersionComparisonResult.LessThan) {
+      Sentry.captureEvent({
+        message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
+        level: 'log',
+      });
+      // @ts-expect-error hard reload via `true` only works in some browsers
+      window.location.reload(true);
+    }
+    if (!data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT')) {
+      thumbnail.generateThumbnail();
+    }
+  } else {
+    throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
-  if (!data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT')) {
-    thumbnail.generateThumbnail();
-  }
-
   return data;
 };
 

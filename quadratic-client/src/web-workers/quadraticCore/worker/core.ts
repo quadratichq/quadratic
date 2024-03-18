@@ -38,17 +38,17 @@ class Core {
   }
 
   // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.
-  async loadFile(message: ClientCoreLoad, renderPort: MessagePort) {
+  async loadFile(message: ClientCoreLoad, renderPort: MessagePort): Promise<{ version: string } | { error: string }> {
     coreRender.init(renderPort);
     const results = await Promise.all([this.loadGridFile(message.url), initCore()]);
     try {
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
-      // todo: this should be messaged back...
       console.error('Error loading grid file:', e);
-      throw e;
+      return { error: 'Unable to load file' };
     }
     if (debugWebWorkers) console.log('[core] GridController loaded');
+    return { version: this.gridController.getVersion() };
   }
 
   getSheetName(sheetId: string) {

@@ -65,7 +65,11 @@ class CoreClient {
 
     switch (e.data.type) {
       case 'clientCoreLoad':
-        core.loadFile(e.data as ClientCoreLoad, e.ports[0]);
+        this.send({
+          type: 'coreClientLoad',
+          id: e.data.id,
+          ...(await core.loadFile(e.data as ClientCoreLoad, e.ports[0])),
+        });
         break;
 
       case 'clientCoreGetCodeCell':

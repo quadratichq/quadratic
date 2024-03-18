@@ -40,7 +40,12 @@ export class Update {
     }
   }
 
-  private updateViewport(): void {
+  sendRenderViewport() {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    renderWebWorker.updateViewport(sheets.sheet.id, bounds);
+  }
+
+  updateViewport(): void {
     const { viewport } = pixiApp;
     let dirty = false;
     if (this.lastViewportScale !== viewport.scale.x) {
@@ -57,8 +62,7 @@ export class Update {
     }
     if (dirty) {
       pixiApp.viewportChanged();
-      const bounds = viewport.getVisibleBounds();
-      renderWebWorker.updateViewport(sheets.sheet.id, bounds);
+      this.sendRenderViewport();
     }
   }
 

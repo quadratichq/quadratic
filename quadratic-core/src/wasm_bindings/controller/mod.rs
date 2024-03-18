@@ -1,5 +1,6 @@
 use super::*;
 use crate::grid::js_types::*;
+use crate::wasm_bindings::controller::sheet_info::SheetInfo;
 use std::str::FromStr;
 
 pub mod auto_complete;
@@ -30,9 +31,34 @@ impl GridController {
         initialize: bool,
     ) -> Result<GridController, JsValue> {
         if let Ok(file) = file::import(file).map_err(|e| e.to_string()) {
-            let grid = GridController::from_grid(file, last_sequence_num as u64, initialize);
-            grid.send_all_fills();
-            grid.send_all_html();
+            let grid = GridController::from_grid(file, last_sequence_num as u64);
+            if initialize {
+                let mut html = vec![];
+                let sheets_info = grid
+                    .sheet_ids()
+                    .iter()
+                    .filter_map(|sheet_id| {
+                        grid.try_sheet(*sheet_id).map(|sheet| {
+                            html.extend(sheet.get_html_output());
+                            SheetInfo::from(sheet)
+                        })
+                    })
+                    .collect::<Vec<SheetInfo>>();
+                if let Ok(sheets_info) = serde_json::to_string(&sheets_info) {
+                    crate::wasm_bindings::js::jsSheetInfo(sheets_info);
+                }
+                if !html.is_empty() {
+                    if let Ok(html) = serde_json::to_string(&html) {
+                        crate::wasm_bindings::js::jsHtmlOutput(html);
+                    }
+                }
+                grid.sheet_ids().iter().for_each(|sheet_id| {
+                    let fills = grid.sheet_fills(*sheet_id);
+                    if let Ok(fills) = serde_json::to_string(&fills) {
+                        crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
+                    }
+                });
+            }
             Ok(grid)
         } else {
             Err(JsValue::from_str("Failed to import grid"))

@@ -44,7 +44,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 
     benchmark_grids(c, &inputs, "copy_paste_10_x_10", |b, grid| {
-        let mut gc = GridController::from_grid(grid.clone(), 0, false);
+        let mut gc = GridController::from_grid(grid.clone(), 0);
         b.iter(|| {
             let sheet_id = gc.sheet_ids()[0];
             let sheet_rect = SheetRect {
@@ -69,7 +69,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 
     benchmark_grids(c, &inputs, "copy_paste_100_x_100", |b, grid| {
-        let mut gc = GridController::from_grid(grid.clone(), 0, false);
+        let mut gc = GridController::from_grid(grid.clone(), 0);
         b.iter(|| {
             let sheet_id = gc.sheet_ids()[0];
             let sheet_rect = SheetRect {
@@ -112,7 +112,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let gc = GridController::from_grid(grid.clone(), 0, false);
+                let gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 let sheet_rect = SheetRect {
                     min: Pos {
@@ -136,7 +136,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let mut gc = GridController::from_grid(grid.clone(), 0, false);
+                let mut gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 let sheet_rect = SheetRect {
                     min: Pos {
@@ -161,7 +161,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let mut gc = GridController::from_grid(grid.clone(), 0, false);
+                let mut gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 let sheet_rect = SheetRect {
                     min: Pos {
@@ -187,7 +187,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                GridController::from_grid(grid.clone(), 0, false)
+                GridController::from_grid(grid.clone(), 0)
             },
             |mut gc| {
                 // Test
@@ -199,7 +199,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     benchmark_grids(c, &inputs, "autocomplete_10_to_100", |b, _grid| {
         let grid = Grid::new();
-        let mut gc = GridController::from_grid(grid, 0, false);
+        let mut gc = GridController::from_grid(grid, 0);
         let sheet_id = gc.sheet_ids()[0];
 
         let small_selection = Rect {
@@ -233,7 +233,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let gc = GridController::from_grid(grid.clone(), 0, false);
+                let gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 let sheet_rect = SheetRect {
                     min: Pos {
@@ -257,7 +257,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let gc = GridController::from_grid(grid.clone(), 0, false);
+                let gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 (gc, sheet_id)
             },
@@ -273,7 +273,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let mut gc = GridController::from_grid(grid.clone(), 0, false);
+                let mut gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 gc.delete_sheet(sheet_id, None);
                 gc
@@ -303,7 +303,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         b.iter_batched(
             || {
                 // Setup
-                let gc = GridController::from_grid(grid.clone(), 0, false);
+                let gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
                 let pos = Pos { x: 0, y: 0 };
                 (gc, sheet_id, pos)

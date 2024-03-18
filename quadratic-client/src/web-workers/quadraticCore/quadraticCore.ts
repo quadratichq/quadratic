@@ -127,7 +127,7 @@ class QuadraticCore {
   }
 
   // Loads a Grid file and initializes renderWebWorker upon response
-  async load(url: string, version: string, sequenceNumber: number): Promise<string> {
+  async load(url: string, version: string, sequenceNumber: number): Promise<{ version?: string; error?: string }> {
     // this is the channel between the core worker and the render worker
     const port = new MessageChannel();
     renderWebWorker.init(port.port2);
@@ -135,7 +135,13 @@ class QuadraticCore {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientLoad) => {
-        resolve(message.coreVersion);
+        if (message.error) {
+          resolve({ error: message.error });
+        } else if (message.version) {
+          resolve({ version: message.version });
+        } else {
+          throw new Error('Expected CoreClientLoad to include either version or error');
+        }
       };
       // load the file and send the render message port to
       const message: ClientCoreLoad = {

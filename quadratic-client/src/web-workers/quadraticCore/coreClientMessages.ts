@@ -26,7 +26,8 @@ export interface ClientCoreLoad {
 export interface CoreClientLoad {
   type: 'coreClientLoad';
   id: number;
-  coreVersion: string;
+  version?: string;
+  error?: string;
 }
 
 export interface ClientCoreUpgradeGridFile {

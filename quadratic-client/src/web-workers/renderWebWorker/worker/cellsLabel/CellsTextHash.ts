@@ -232,7 +232,7 @@ export class CellsTextHash {
     }
   }
 
-  updateBuffers(skipClear?: boolean): void {
+  updateBuffers(): void {
     if (debugShowHashUpdates) console.log(`[CellsTextHash] updateBuffers for ${this.hashX}, ${this.hashY}`);
 
     // creates labelMeshes webGL buffers based on size

@@ -34,6 +34,7 @@ class Sheets {
     });
     this.sort();
     this._current = this.sheets[0].id;
+    pixiApp.cellsSheets.create();
   };
 
   private addSheet = (sheetInfo: SheetInfo, user: boolean) => {

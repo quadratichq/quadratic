@@ -141,6 +141,7 @@ mod test {
             sheet_id: SheetId::new(),
             row: 0,
             new_size: 0.0,
+            client_resized: true,
         });
         unsaved_transactions.insert_or_replace(&pending_2, false);
         assert_eq!(unsaved_transactions.len(), 1);

@@ -35,11 +35,6 @@ export class CellsSheet extends Container {
     this.visible = false;
   }
 
-  async preload(): Promise<void> {
-    this.cellsBorders.create();
-    this.cellsArray.create();
-  }
-
   // used to render all cellsTextHashes to warm up the GPU
   showAll() {
     this.visible = true;

@@ -16,25 +16,21 @@ export class CellsSheets extends Container<CellsSheet> {
 
   constructor() {
     super();
-    events.on('sheetInfo', this.create);
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
     events.on('sheetFills', this.updateFills);
   }
 
-  create = async () => {
+  async create() {
     this.removeChildren();
-    if (!sheets.size) return;
-
     for (const sheet of sheets.sheets) {
       const child = this.addChild(new CellsSheet(sheet.id));
-      await child.preload();
       if (sheet.id === sheets.sheet.id) {
         this.current = child;
       }
     }
     renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds());
-  };
+  }
 
   isReady(): boolean {
     return !!this.current;

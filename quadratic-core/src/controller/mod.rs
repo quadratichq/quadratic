@@ -1,5 +1,5 @@
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
-use crate::{grid::Grid, wasm_bindings::controller::sheet_info::SheetInfo};
+use crate::grid::Grid;
 use wasm_bindgen::prelude::*;
 pub mod active_transactions;
 pub mod dependencies;
@@ -28,29 +28,12 @@ pub struct GridController {
 }
 
 impl GridController {
-    pub fn from_grid(grid: Grid, last_sequence_num: u64, initialize: bool) -> Self {
-        let grid = GridController {
+    pub fn from_grid(grid: Grid, last_sequence_num: u64) -> Self {
+        GridController {
             grid,
             transactions: ActiveTransactions::new(last_sequence_num),
             ..Default::default()
-        };
-
-        // collect sheet info to send to the client
-        if initialize && cfg!(target_family = "wasm") {
-            if let Ok(sheet_info) = serde_json::to_string(
-                &grid
-                    .sheet_ids()
-                    .iter()
-                    .filter_map(|sheet_id| {
-                        let sheet = grid.try_sheet(*sheet_id)?;
-                        Some(SheetInfo::from(sheet))
-                    })
-                    .collect::<Vec<_>>(),
-            ) {
-                crate::wasm_bindings::js::jsSheetInfo(sheet_info);
-            }
         }
-        grid
     }
 
     pub fn upgrade_grid(grid: Grid, last_sequence_num: u64) -> Self {
@@ -71,7 +54,7 @@ impl GridController {
 
     // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
-        Self::from_grid(Grid::new(), 0, false)
+        Self::from_grid(Grid::new(), 0)
     }
 
     // get the last active transaction for testing purposes
