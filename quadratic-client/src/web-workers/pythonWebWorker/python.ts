@@ -34,6 +34,12 @@ class PythonWebWorker {
     this.next(true);
   }
 
+  private getTransactionId() {
+    if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
+
+    return this.executionStack[0].transactionId;
+  }
+
   init() {
     this.worker = new Worker(new URL('./python.worker.ts', import.meta.url), {
       /* @vite-ignore */ type: !IS_TEST ? 'classic' : 'module',
@@ -44,10 +50,7 @@ class PythonWebWorker {
 
       switch (event.type) {
         case 'results': {
-          if (this.executionStack.length === 0)
-            throw new Error('Expected executionStack to have at least one element in python.ts');
-
-          const transactionId = this.executionStack[0].transactionId;
+          const transactionId = this.getTransactionId();
           const pythonResult = event.results;
           const nothingReturned = pythonResult.output_type === 'NoneType' && isEmpty(pythonResult.output);
 
@@ -99,9 +102,7 @@ class PythonWebWorker {
         }
 
         case 'get-cells': {
-          if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
-
-          const transactionId = this.executionStack[0].transactionId;
+          const transactionId = this.getTransactionId();
           const range = event.range;
 
           if (!range) throw new Error('Expected range to be defined in get-cells');
@@ -189,7 +190,7 @@ class PythonWebWorker {
           this.running = true;
           window.dispatchEvent(new CustomEvent('python-computation-started'));
         }
-        this.worker.postMessage({ type: 'execute', python: first.code });
+        this.worker.postMessage({ type: 'execute', python: first.code, pos: first.sheetPos });
       }
     } else if (complete) {
       window.dispatchEvent(new CustomEvent('python-computation-finished'));
@@ -211,11 +212,10 @@ class PythonWebWorker {
 
   restartFromUser() {
     mixpanel.track('[PythonWebWorker].restartFromUser');
-    if (this.executionStack.length === 0) {
-      throw new Error('Expected executionStack to have at least one element in restartFromUser');
-    }
-    const transactionId = this.executionStack[0].transactionId;
+    const transactionId = this.getTransactionId();
+
     this.restart();
+
     const result = new JsCodeResult(
       transactionId,
       false,
@@ -228,6 +228,7 @@ class PythonWebWorker {
       '',
       true
     );
+
     grid.calculationComplete(result);
     this.calculationComplete();
   }

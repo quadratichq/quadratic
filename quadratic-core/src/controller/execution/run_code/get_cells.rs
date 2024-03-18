@@ -30,7 +30,7 @@ impl GridController {
     pub fn calculation_get_cells(
         &mut self,
         get_cells: JsComputeGetCells,
-    ) -> Result<GetCellsResponse, TransactionSummary> {
+    ) -> std::result::Result<GetCellsResponse, TransactionSummary> {
         let Ok(transaction_id) = Uuid::parse_str(&get_cells.transaction_id()) else {
             return Err(TransactionSummary::error(CoreError::TransactionNotFound(
                 "Transaction Id is invalid".into(),

@@ -62,7 +62,7 @@ class value_object:
 class TestTesting(IsolatedAsyncioTestCase):
     async def test_run_python(self):
 
-        result = await run_python.run_python("1 + 1")
+        result = await run_python.run_python("1 + 1", {"x": 0, "y": 0})
 
         # NOTE: this approach bypasses the entire env of Pyodide.
         # We should make the run_python e2e tests run via playwright
@@ -75,6 +75,8 @@ class TestTesting(IsolatedAsyncioTestCase):
         self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
         self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
         self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = await rel_cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = await rc(0, 0)")
         self.assertEqual(
             attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
         )
