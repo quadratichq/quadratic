@@ -118,9 +118,8 @@ async def run_python(code: str, pos: Tuple[int, int]):
                     err, code, cells_accessed, sout, code_trace.get_return_line(code)
                 )
             else:
-                output_value = plotly_html.result
+                output_value = (plotly_html.result, 'text')
                 output_type = "Chart"
-
 
         return {
             "output": output_value,
