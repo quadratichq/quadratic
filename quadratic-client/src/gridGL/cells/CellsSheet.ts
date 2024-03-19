@@ -1,4 +1,3 @@
-import { JsRenderFill } from '@/quadratic-core-types';
 import { Container, Rectangle } from 'pixi.js';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
@@ -10,13 +9,9 @@ import { CellsLabels } from './cellsLabel/CellsLabels';
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
   private cellsArray: CellsArray;
-  private cellsBorders: CellsBorders;
 
-  // friend of CellsSheetPreloader
-  cellsLabels: CellsLabels;
-
-  // friend of CellsArray
   cellsMarkers: CellsMarkers;
+  cellsLabels: CellsLabels;
 
   sheetId: string;
 
@@ -30,7 +25,7 @@ export class CellsSheet extends Container {
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsArray = this.addChild(new CellsArray(this));
-    this.cellsBorders = this.addChild(new CellsBorders(this));
+    this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.visible = false;
   }
@@ -58,21 +53,9 @@ export class CellsSheet extends Container {
     this.cellsMarkers.visible = off ?? true;
   }
 
-  createBorders() {
-    this.cellsBorders.create();
-  }
-
   // todo...
   showLabel(x: number, y: number, show: boolean) {
     // this.cellsLabels.showLabel(x, y, show);
-  }
-
-  updateFills(sheetFills: JsRenderFill[]) {
-    this.cellsFills.create(sheetFills);
-  }
-
-  updateCellsArray() {
-    this.cellsArray.create();
   }
 
   unload(hashX: number, hashY: number) {

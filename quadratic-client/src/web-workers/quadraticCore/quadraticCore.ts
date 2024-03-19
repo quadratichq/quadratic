@@ -16,7 +16,6 @@ import {
   CodeCellLanguage,
   JsCodeCell,
   JsRenderCell,
-  JsRenderCodeCell,
   MinMax,
   PasteSpecial,
   SearchOptions,
@@ -30,7 +29,6 @@ import {
   ClientCoreGetCodeCell,
   ClientCoreGetEditCell,
   ClientCoreGetRenderCell,
-  ClientCoreGetRenderCodeCells,
   ClientCoreHasRenderCells,
   ClientCoreLoad,
   ClientCoreMessage,
@@ -41,7 +39,6 @@ import {
   CoreClientGetColumnsBounds,
   CoreClientGetEditCell,
   CoreClientGetRenderCell,
-  CoreClientGetRenderCodeCells,
   CoreClientGetRowsBounds,
   CoreClientHasRenderCells,
   CoreClientImportCsv,
@@ -96,6 +93,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientGenerateThumbnail') {
       events.emit('generateThumbnail');
+      return;
+    } else if (e.data.type === 'coreClientRenderCodeCells') {
+      events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
       return;
     }
 
@@ -211,21 +211,6 @@ class QuadraticCore {
       };
       this.waitingForResponse[id] = (message: CoreClientGetRenderCell) => {
         resolve(message.cell);
-      };
-      this.send(message);
-    });
-  }
-
-  getRenderCodeCells(sheetId: string): Promise<JsRenderCodeCell[]> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientGetRenderCodeCells) => {
-        resolve(message.codeCells);
-      };
-      const message: ClientCoreGetRenderCodeCells = {
-        type: 'clientCoreGetRenderCodeCells',
-        sheetId,
-        id,
       };
       this.send(message);
     });

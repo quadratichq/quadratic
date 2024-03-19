@@ -218,16 +218,10 @@ export interface CoreClientGetRenderCell {
   id: number;
 }
 
-export interface ClientCoreGetRenderCodeCells {
-  type: 'clientCoreGetRenderCodeCells';
+export interface CoreClientRenderCodeCells {
+  type: 'coreClientRenderCodeCells';
   sheetId: string;
-  id: number;
-}
-
-export interface CoreClientGetRenderCodeCells {
-  type: 'coreClientGetRenderCodeCells';
   codeCells: JsRenderCodeCell[];
-  id: number;
 }
 
 export interface CoreClientHtmlOutput {
@@ -701,7 +695,6 @@ export interface ClientCoreCommitSingleResize {
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
-  | ClientCoreGetRenderCodeCells
   | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
@@ -754,7 +747,7 @@ export type ClientCoreMessage =
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
-  | CoreClientGetRenderCodeCells
+  | CoreClientRenderCodeCells
   | CoreClientGetEditCell
   | CoreClientCellHasContent
   | CoreClientGetCellFormatSummary

@@ -12,8 +12,6 @@ import {
   CodeCellLanguage,
   JsCodeCell,
   JsRenderCell,
-  JsRenderCodeCell,
-  JsRenderFill,
   MinMax,
   SearchOptions,
   SheetPos,
@@ -108,16 +106,6 @@ class Core {
   getCodeCell(sheetId: string, x: number, y: number): JsCodeCell | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     return this.gridController.getCodeCell(sheetId, new Pos(x, y));
-  }
-
-  getAllRenderFills(sheetId: string): JsRenderFill[] {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return JSON.parse(this.gridController.getAllRenderFills(sheetId));
-  }
-
-  getRenderCodeCells(sheetId: string): JsRenderCodeCell[] {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return JSON.parse(this.gridController.getAllRenderCodeCells(sheetId));
   }
 
   cellHasContent(sheetId: string, x: number, y: number): boolean {

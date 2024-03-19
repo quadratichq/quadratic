@@ -1,5 +1,5 @@
 import { events } from '@/events/events';
-import { JsRenderFill, SheetId, SheetInfo } from '@/quadratic-core-types';
+import { SheetInfo } from '@/quadratic-core-types';
 import {
   RenderClientCellsTextHashClear,
   RenderClientFinalizeCellsTextHash,
@@ -18,7 +18,6 @@ export class CellsSheets extends Container<CellsSheet> {
     super();
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
-    events.on('sheetFills', this.updateFills);
   }
 
   async create() {
@@ -104,18 +103,10 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current?.toggleOutlines(off);
   }
 
-  createBorders(): void {
-    this.current?.createBorders();
-  }
-
-  updateFills = (sheetId: string, fills: JsRenderFill[]) => {
-    const cellsSheet = this.getById(sheetId);
-    if (!cellsSheet) throw new Error('Expected sheet to be defined in CellsSheets.updateFills');
-    cellsSheet.updateFills(fills);
-    if (cellsSheet.sheetId === sheets.sheet.id) {
-      pixiApp.setViewportDirty();
-    }
-  };
+  // todo...
+  // createBorders(): void {
+  //   this.current?.createBorders();
+  // }
 
   // adjust headings for all but the cellsTextHash that changes
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
@@ -135,37 +126,40 @@ export class CellsSheets extends Container<CellsSheet> {
     return this.current.cellsLabels.getCellsContentMaxWidth(column);
   }
 
-  updateCodeCells(codeCells: SheetId[]): void {
-    this.children.forEach((cellsSheet) => {
-      if (codeCells.find((id) => id.id === cellsSheet.sheetId)) {
-        cellsSheet.updateCellsArray();
-        if (sheets.sheet.id === cellsSheet.sheetId) {
-          window.dispatchEvent(new CustomEvent('python-computation-complete'));
-        }
-      }
-    });
-  }
+  // todo...
+  // updateCodeCells(codeCells: SheetId[]): void {
+  //   this.children.forEach((cellsSheet) => {
+  //     if (codeCells.find((id) => id.id === cellsSheet.sheetId)) {
+  //       // todo...
+  //       // cellsSheet.updateCellsArray();
+  //       if (sheets.sheet.id === cellsSheet.sheetId) {
+  //         window.dispatchEvent(new CustomEvent('python-computation-complete'));
+  //       }
+  //     }
+  //   });
+  // }
 
   updateCellsArray(): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');
     this.current.updateCellsArray();
   }
 
-  updateBorders(borderSheets: SheetId[]): void {
-    this.children.forEach((cellsSheet) => {
-      if (borderSheets.find((id) => id.id === cellsSheet.sheetId)) {
-        cellsSheet.createBorders();
-      }
-    });
-  }
+  // todo...
+  // updateBorders(borderSheets: SheetId[]): void {
+  //   this.children.forEach((cellsSheet) => {
+  //     if (borderSheets.find((id) => id.id === cellsSheet.sheetId)) {
+  //       cellsSheet.createBorders();
+  //     }
+  //   });
+  // }
 
-  updateBordersString(borderSheets: String[]): void {
-    this.children.forEach((cellsSheet) => {
-      if (borderSheets.find((id) => id === cellsSheet.sheetId)) {
-        cellsSheet.createBorders();
-      }
-    });
-  }
+  // updateBordersString(borderSheets: String[]): void {
+  //   this.children.forEach((cellsSheet) => {
+  //     if (borderSheets.find((id) => id === cellsSheet.sheetId)) {
+  //       cellsSheet.createBorders();
+  //     }
+  //   });
+  // }
 
   showLabel(x: number, y: number, sheetId: string, show: boolean) {
     const cellsSheet = this.getById(sheetId);

@@ -1,4 +1,4 @@
-import { JsHtmlOutput, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import { JsHtmlOutput, JsRenderCodeCell, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import EventEmitter from 'eventemitter3';
 
 export interface EventTypes {
@@ -53,6 +53,11 @@ export interface EventTypes {
   };
 
   generateThumbnail: {};
+
+  renderCodeCells: {
+    sheetId: string;
+    codeCells: JsRenderCodeCell[];
+  };
 }
 
 export const events = new EventEmitter<EventTypes>();

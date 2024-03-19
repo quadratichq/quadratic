@@ -1,7 +1,7 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { Sheet } from '@/grid/sheet/Sheet';
 import { JsRenderCodeCell } from '@/quadratic-core-types';
-import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
@@ -29,16 +29,20 @@ export class CellsArray extends Container {
     this.graphics = this.addChild(new Graphics());
     this.cellsSheet = cellsSheet;
     this.lines = [];
+    events.on('renderCodeCells', (message) => {
+      if (message.sheetId === this.cellsSheet.sheetId) {
+        this.create(message.codeCells);
+      }
+    });
   }
 
   get sheetId(): string {
     return this.cellsSheet.sheetId;
   }
 
-  async create() {
+  private create(codeCells: JsRenderCodeCell[]) {
     this.lines = [];
     const cursor = sheets.sheet.cursor;
-    const codeCells = await quadraticCore.getRenderCodeCells(this.sheetId);
     this.particles.removeChildren();
     this.graphics.clear();
     this.cellsSheet.cellsMarkers.clear();
@@ -53,6 +57,10 @@ export class CellsArray extends Container {
     pixiApp.setViewportDirty();
   }
 
+  updateCellsArray() {
+    this.create(this.cellsSheet.codeCells);
+  }
+
   cheapCull(bounds: Rectangle): void {
     this.lines.forEach((line) => (line.sprite.visible = intersects.rectangleRectangle(bounds, line.rectangle)));
   }
@@ -65,7 +73,6 @@ export class CellsArray extends Container {
 
   private draw(codeCell: JsRenderCodeCell, cursorRectangle: Rectangle): void {
     const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
-    let end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
 
     const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w, codeCell.h);
     if (codeCell.spill_error) {
@@ -89,6 +96,7 @@ export class CellsArray extends Container {
     }
 
     this.cellsSheet.cellsMarkers.add(start, codeCell, true);
+    const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     if (codeCell.spill_error) {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;
       if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {

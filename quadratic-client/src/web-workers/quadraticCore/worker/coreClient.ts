@@ -88,14 +88,6 @@ class CoreClient {
         });
         break;
 
-      case 'clientCoreGetRenderCodeCells':
-        this.send({
-          type: 'coreClientGetRenderCodeCells',
-          id: e.data.id,
-          codeCells: core.getRenderCodeCells(e.data.sheetId),
-        });
-        break;
-
       case 'clientCoreCellHasContent':
         this.send({
           type: 'coreClientCellHasContent',
