@@ -195,7 +195,7 @@ impl GridController {
             } else {
                 new_sheet.name = crate::util::unused_name(&name, &self.sheet_names());
             }
-            self.grid.add_sheet(Some(new_sheet.clone()));
+            self.grid.add_sheet(Some(new_sheet));
 
             transaction.summary.sheet_list_modified = true;
             transaction.summary.html.insert(new_sheet_id);
