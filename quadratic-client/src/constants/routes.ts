@@ -19,6 +19,7 @@ export const ROUTES = {
   TEAM: (uuid: string) => `/teams/${uuid}`,
   EDIT_TEAM: (uuid: string) => `/teams/${uuid}/edit`,
   EXAMPLES: '/examples',
+  EXAMPLE: (slug: string) => `/examples/${slug}`,
   ACCOUNT: '/account',
   FILE: (uuid: string) => `/file/${uuid}`,
 };

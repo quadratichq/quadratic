@@ -18,7 +18,14 @@ import { debugShowUILogs } from '../debugFlags';
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListFile[]> => {
   const files = await apiClient.files.list();
   const permissions = ['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE'] as FilePermission[];
-  const filesWithPermissions = files.map((file) => ({ ...file, permissions }));
+  const filesWithPermissions = files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
+    name,
+    href: ROUTES.FILE(uuid),
+    thumbnail,
+    createdDate,
+    updatedDate,
+    metadata: { uuid, publicLinkAccess, permissions },
+  }));
   return filesWithPermissions;
 };
 

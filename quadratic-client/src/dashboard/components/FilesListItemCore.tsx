@@ -16,9 +16,9 @@ export function FilesListItemCore({
   name: string;
   description: string;
   filterValue: string;
-  hasNetworkError: boolean;
-  isShared: boolean;
   viewPreferences: ViewPreferences;
+  hasNetworkError?: boolean;
+  isShared?: boolean;
   actions?: ReactNode;
 }) {
   const __html = filterValue ? highlightMatchingString(name, filterValue) : name;

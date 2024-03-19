@@ -21,9 +21,22 @@ import { ROUTES } from '../../constants/routes';
 import { DialogRenameItem } from './DialogRenameItem';
 import { FilesListFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
-import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
+import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
 
-export function FilesListItems({ children, viewPreferences }: any) {
+type FileDisplay = {
+  href: FilesListFile['href'];
+  thumbnail: FilesListFile['thumbnail'];
+  name: FilesListFile['name'];
+  description: string;
+};
+
+export function FilesListItems({
+  children,
+  viewPreferences,
+}: {
+  children: React.ReactNode;
+  viewPreferences: ViewPreferences;
+}) {
   return (
     <ul
       className={cn(
@@ -35,15 +48,17 @@ export function FilesListItems({ children, viewPreferences }: any) {
   );
 }
 
-export function FileListItem({
+export function FilesListItemEditable({
   file,
+  fileMetadata,
   filterValue,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
 }: {
-  file: FilesListFile;
+  file: FileDisplay;
+  fileMetadata: NonNullable<FilesListFile['metadata']>;
   filterValue: string;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
@@ -55,7 +70,7 @@ export function FileListItem({
   const fetcherDownload = useFetcher();
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
-  const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
+  const fetcherMove = useFetcher({ key: 'move-file:' + fileMetadata.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
   const teamRouteLoaderData = useTeamRouteLoaderData();
@@ -73,7 +88,8 @@ export function FileListItem({
     isPersonalFilesRoute ||
     (isTeamRoute && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
 
-  const { uuid, name, createdDate, updatedDate, publicLinkAccess, thumbnail, permissions } = file;
+  const { name, thumbnail, description } = file;
+  const { uuid, publicLinkAccess, permissions } = fileMetadata;
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
     action: ROUTES.FILES_FILE(uuid),
@@ -140,97 +156,6 @@ export function FileListItem({
   const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;
   const isDisabled = uuid.includes('duplicate');
 
-  const sharedProps = {
-    key: uuid,
-    filterValue,
-    name: displayName,
-    description:
-      viewPreferences.sort === Sort.Created ? `Created ${timeAgo(createdDate)}` : `Modified ${timeAgo(updatedDate)}`,
-    hasNetworkError: Boolean(failedToDelete || failedToRename),
-    isShared: publicLinkAccess !== 'NOT_SHARED',
-    viewPreferences,
-    actions: (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
-            <DotsVerticalIcon className="h-4 w-4" />
-          </Btn>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          {permissions.includes('FILE_VIEW') && <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>}
-          {permissions.includes('FILE_EDIT') && (
-            <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileWithCurrentOwnerAction.label}</DropdownMenuItem>
-          )}
-          {permissions.includes('FILE_EDIT') && (
-            <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
-          )}
-          <DropdownMenuItem onClick={handleDownload}>{downloadFileAction.label}</DropdownMenuItem>
-          {canMoveFiles && (
-            <>
-              <DropdownMenuSeparator />
-              {!isPersonalFilesRoute && (
-                <DropdownMenuItem
-                  onClick={() => {
-                    const data: FileAction['request.move'] = {
-                      action: 'move',
-                      ownerUserId: userId,
-                    };
-                    submit(data, {
-                      method: 'POST',
-                      action: `/files/${uuid}`,
-                      encType: 'application/json',
-                      navigate: false,
-                      fetcherKey: `move-file:${uuid}`,
-                    });
-                  }}
-                >
-                  Move to my files
-                </DropdownMenuItem>
-              )}
-              {teams
-                .filter(
-                  ({ team, userMakingRequest: { teamPermissions } }) =>
-                    team.activated &&
-                    teamPermissions.includes('TEAM_EDIT') &&
-                    (isTeamRoute ? teamRouteLoaderData.team.uuid !== team.uuid : true)
-                )
-                .map(({ team }) => (
-                  <DropdownMenuItem
-                    className="block truncate"
-                    key={team.uuid}
-                    onClick={() => {
-                      const data: FileAction['request.move'] = {
-                        action: 'move',
-                        ownerTeamId: team.id,
-                      };
-                      submit(data, {
-                        method: 'POST',
-                        action: `/files/${uuid}`,
-                        encType: 'application/json',
-                        navigate: false,
-                        fetcherKey: `move-file:${uuid}`,
-                      });
-                    }}
-                  >
-                    Move to {team.name}
-                  </DropdownMenuItem>
-                ))
-                .slice(0, 2)}
-            </>
-          )}
-
-          {permissions.includes('FILE_DELETE') && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
-            </>
-          )}
-          {}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
-  };
-
   const dragProps = canMoveFiles
     ? {
         draggable: true,
@@ -251,7 +176,7 @@ export function FileListItem({
     : {};
 
   return (
-    <li className="relative">
+    <ListItem>
       <div
         ref={fileDragRef}
         // FYI: There's some trickery to get this displaying right across all browser
@@ -266,68 +191,103 @@ export function FileListItem({
         key={uuid}
         to={ROUTES.FILE(uuid)}
         reloadDocument
-        className={cn(`relative z-10 text-inherit no-underline`, isDisabled && `pointer-events-none opacity-50`)}
+        className={cn(isDisabled && `pointer-events-none opacity-50`)}
         {...dragProps}
       >
-        {viewPreferences.layout === Layout.Grid ? (
-          <div className="border border-border p-2 hover:bg-accent">
-            <div className="flex aspect-video items-center justify-center bg-background">
-              {thumbnail ? (
-                <img
-                  loading={lazyLoad ? 'lazy' : 'eager'}
-                  src={thumbnail}
-                  alt="File thumbnail screenshot"
-                  className="object-cover"
-                  draggable="false"
-                />
-              ) : (
-                <div className="flex items-center justify-center">
-                  <img
-                    src={'/favicon.ico'}
-                    alt="File thumbnail placeholder"
-                    className={`opacity-10 brightness-0 grayscale`}
-                    width="24"
-                    height="24"
-                    draggable="false"
-                  />
-                </div>
-              )}
-            </div>
-            <Separator className="border-accent" />
-            <div className="pt-2">
-              <FilesListItemCore {...sharedProps} />
-            </div>
-          </div>
-        ) : (
-          <div className={`flex flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
-            <div className={`hidden border border-border shadow-sm md:block`}>
-              {thumbnail ? (
-                <img
-                  loading={lazyLoad ? 'lazy' : 'eager'}
-                  src={thumbnail}
-                  alt="File thumbnail screenshot"
-                  className={`aspect-video object-fill`}
-                  width="80"
-                  draggable="false"
-                />
-              ) : (
-                <div className="flex aspect-video w-20 items-center justify-center bg-background">
-                  <img
-                    src={'/favicon.ico'}
-                    alt="File thumbnail placeholder"
-                    className={`h-4 w-4 opacity-10 brightness-0 grayscale`}
-                    width="16"
-                    height="16"
-                    draggable="false"
-                  />
-                </div>
-              )}
-            </div>
-            <div className="flex-grow">
-              <FilesListItemCore {...sharedProps} />
-            </div>
-          </div>
-        )}
+        <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
+          <FilesListItemCore
+            key={uuid}
+            filterValue={filterValue}
+            name={displayName}
+            description={description}
+            hasNetworkError={Boolean(failedToDelete || failedToRename)}
+            isShared={publicLinkAccess !== 'NOT_SHARED'}
+            viewPreferences={viewPreferences}
+            actions={
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Btn variant="ghost" size="icon" className="flex-shrink-0 hover:bg-background">
+                    <DotsVerticalIcon className="h-4 w-4" />
+                  </Btn>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {permissions.includes('FILE_VIEW') && (
+                    <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
+                  )}
+                  {permissions.includes('FILE_EDIT') && (
+                    <DropdownMenuItem onClick={handleDuplicate}>
+                      {duplicateFileWithCurrentOwnerAction.label}
+                    </DropdownMenuItem>
+                  )}
+                  {permissions.includes('FILE_EDIT') && (
+                    <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleDownload}>{downloadFileAction.label}</DropdownMenuItem>
+                  {canMoveFiles && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {!isPersonalFilesRoute && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const data: FileAction['request.move'] = {
+                              action: 'move',
+                              ownerUserId: userId,
+                            };
+                            submit(data, {
+                              method: 'POST',
+                              action: `/files/${uuid}`,
+                              encType: 'application/json',
+                              navigate: false,
+                              fetcherKey: `move-file:${uuid}`,
+                            });
+                          }}
+                        >
+                          Move to my files
+                        </DropdownMenuItem>
+                      )}
+                      {teams
+                        .filter(
+                          ({ team, userMakingRequest: { teamPermissions } }) =>
+                            team.activated &&
+                            teamPermissions.includes('TEAM_EDIT') &&
+                            (isTeamRoute ? teamRouteLoaderData.team.uuid !== team.uuid : true)
+                        )
+                        .map(({ team }) => (
+                          <DropdownMenuItem
+                            className="block truncate"
+                            key={team.uuid}
+                            onClick={() => {
+                              const data: FileAction['request.move'] = {
+                                action: 'move',
+                                ownerTeamId: team.id,
+                              };
+                              submit(data, {
+                                method: 'POST',
+                                action: `/files/${uuid}`,
+                                encType: 'application/json',
+                                navigate: false,
+                                fetcherKey: `move-file:${uuid}`,
+                              });
+                            }}
+                          >
+                            Move to {team.name}
+                          </DropdownMenuItem>
+                        ))
+                        .slice(0, 2)}
+                    </>
+                  )}
+
+                  {permissions.includes('FILE_DELETE') && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleDelete}>{deleteFile.label}</DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            }
+          />
+        </ListItemView>
       </Link>
       {open && (
         <DialogRenameItem
@@ -339,7 +299,109 @@ export function FileListItem({
           }}
         />
       )}
-    </li>
+    </ListItem>
+  );
+}
+
+export function FilesListItemReadOnly({
+  file,
+  filterValue,
+  lazyLoad,
+  viewPreferences,
+}: {
+  file: FileDisplay;
+  filterValue: string;
+  lazyLoad: boolean;
+  viewPreferences: ViewPreferences;
+}) {
+  const { href, thumbnail, name, description } = file;
+  return (
+    <ListItem>
+      <Link to={href}>
+        <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
+          <FilesListItemCore
+            name={name}
+            description={description}
+            filterValue={filterValue}
+            viewPreferences={viewPreferences}
+          />
+        </ListItemView>
+      </Link>
+    </ListItem>
+  );
+}
+
+function ListItem({ children }: { children: React.ReactNode }) {
+  return <li className="relative">{children}</li>;
+}
+
+function ListItemView({
+  viewPreferences,
+  thumbnail,
+  lazyLoad,
+  children,
+}: {
+  viewPreferences: ViewPreferences;
+  thumbnail: FilesListFile['thumbnail'];
+  lazyLoad: boolean;
+  children: React.ReactNode;
+}) {
+  const { layout } = viewPreferences;
+
+  return layout === Layout.Grid ? (
+    <div className="border border-border p-2 hover:bg-accent">
+      <div className="flex aspect-video items-center justify-center bg-background">
+        {thumbnail ? (
+          <img
+            loading={lazyLoad ? 'lazy' : 'eager'}
+            src={thumbnail}
+            alt="File thumbnail screenshot"
+            className="object-cover"
+            draggable="false"
+          />
+        ) : (
+          <div className="flex items-center justify-center">
+            <img
+              src={'/favicon.ico'}
+              alt="File thumbnail placeholder"
+              className={`opacity-10 brightness-0 grayscale`}
+              width="24"
+              height="24"
+              draggable="false"
+            />
+          </div>
+        )}
+      </div>
+      <Separator className="border-accent" />
+      <div className="pt-2">{children}</div>
+    </div>
+  ) : (
+    <div className={`flex flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
+      <div className={`hidden border border-border shadow-sm md:block`}>
+        {thumbnail ? (
+          <img
+            loading={lazyLoad ? 'lazy' : 'eager'}
+            src={thumbnail}
+            alt="File thumbnail screenshot"
+            className={`aspect-video object-fill`}
+            width="80"
+            draggable="false"
+          />
+        ) : (
+          <div className="flex aspect-video w-20 items-center justify-center bg-background">
+            <img
+              src={'/favicon.ico'}
+              alt="File thumbnail placeholder"
+              className={`h-4 w-4 opacity-10 brightness-0 grayscale`}
+              width="16"
+              height="16"
+              draggable="false"
+            />
+          </div>
+        )}
+      </div>
+      <div className="flex-grow">{children}</div>
+    </div>
   );
 }
 

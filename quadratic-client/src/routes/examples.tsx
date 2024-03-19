@@ -1,25 +1,37 @@
+import { sanityClient } from '@/api/sanityClient';
 import { ROUTES } from '@/constants/routes';
-import { Link } from 'react-router-dom';
-import { EXAMPLE_FILES, ExampleFileNames, TYPE } from '../constants/appConstants';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
+import { FilesList, FilesListFile } from '@/dashboard/components/FilesList';
+import { useLoaderData } from 'react-router-dom';
+import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
+
+export const loader = async () => {
+  const examples = await sanityClient.getExamples();
+  const files: FilesListFile[] = examples.map(({ name, slug, thumbnail, url, _updatedAt, _createdAt }, i) => ({
+    href: ROUTES.EXAMPLE(slug),
+    name,
+    createdDate: _createdAt,
+    updatedDate: _updatedAt,
+    // 16/9 aspect ratio
+    thumbnail: thumbnail + '?w=800&h=450&fit=crop&auto=format',
+  }));
+  return { examples, files };
+};
 
 export const Component = () => {
+  const { files } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   return (
     <>
-      <DashboardHeader title="Examples" />
+      <DashboardHeader
+        title="Examples"
+        titleNode={
+          <DashboardHeaderTitle>
+            Examples{' '}
+            <span className="text-base font-normal text-muted-foreground">(maintained by the Quadratic team)</span>
+          </DashboardHeaderTitle>
+        }
+      />
 
-      <div className={`md:grid md:grid-cols-2 md:gap-4 xl:grid-cols-3`}>
-        {Object.entries(EXAMPLE_FILES).map(([id, { name, description }]) => (
-          <Link
-            key={id}
-            to={ROUTES.CREATE_FILE_EXAMPLE(id as ExampleFileNames)}
-            className="flex flex-col border-t border-border py-4 md:border md:px-4 md:py-4 lg:hover:bg-accent"
-          >
-            <h2 className="text-md truncate">{name}</h2>
-            <p className={`${TYPE.caption} text-muted-foreground`}>{description}</p>
-          </Link>
-        ))}
-      </div>
+      <FilesList files={files} />
     </>
   );
 };

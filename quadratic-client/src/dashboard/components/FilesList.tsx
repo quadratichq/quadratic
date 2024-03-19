@@ -1,4 +1,5 @@
 import { ShareFileDialog } from '@/components/ShareDialog';
+import { timeAgo } from '@/utils/timeAgo';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useState } from 'react';
@@ -7,21 +8,26 @@ import { useFetchers, useLocation } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { Action as FilesAction } from '../../routes/files.$uuid';
-import { FileListItem, FilesListItems } from './FilesListItem';
+import { FilesListItemEditable, FilesListItemReadOnly, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
 import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export type FilesListFile = {
-  permissions: FilePermission[];
-  uuid: string;
   name: string;
+  thumbnail: string | null;
+  href: string;
   createdDate: string;
   updatedDate: string;
-  publicLinkAccess: PublicLinkAccess;
-  thumbnail: string | null;
+
+  // Additional metadata for editable files
+  metadata?: {
+    uuid: string;
+    publicLinkAccess: PublicLinkAccess;
+    permissions: FilePermission[];
+  };
 };
 
-export function FilesList({ files, emptyState }: { files: FilesListFile[]; emptyState: ReactNode }) {
+export function FilesList({ files, emptyState }: { files: FilesListFile[]; emptyState?: ReactNode }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
@@ -41,6 +47,7 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
   let filesToRender = files;
 
   // If there are files being duplicated, prepend them to the list
+
   const filesBeingDuplicated = fetchers
     .filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'duplicate')
     .map((fetcher, i) => {
@@ -48,12 +55,15 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
       // (filter makes sure there's no trailing slash to deal with)
       const fileUuid = fetcher.formAction?.split('/').filter(Boolean).pop();
       // We should never have a file that's duplicating that's not in the list
-      const file = files.find((file) => file.uuid === fileUuid) as FilesListFile;
+      const file = files.find((file) => file.metadata?.uuid === fileUuid) as FilesListFile;
       return {
         ...file,
-        uuid: `${fileUuid}--duplicate-${i}`,
         name: file.name + ` (Copy)`,
         updatedDate: new Date().toISOString(),
+        metadata: {
+          ...(file.metadata as NonNullable<FilesListFile['metadata']>),
+          uuid: `${fileUuid}--duplicate-${i}`,
+        },
       };
     });
   if (filesBeingDuplicated.length > 0) {
@@ -81,7 +91,7 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
   });
 
   const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'delete');
-  const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
+  const activeShareMenuFileName = files.find((file) => file.metadata?.uuid === activeShareMenuFileId)?.name || '';
 
   return (
     <>
@@ -93,17 +103,45 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
       />
 
       <FilesListItems viewPreferences={viewPreferences}>
-        {filesToRender.map((file, i) => (
-          <FileListItem
-            lazyLoad={i > 12}
-            key={file.uuid}
-            file={file}
-            filterValue={filterValue}
-            activeShareMenuFileId={activeShareMenuFileId}
-            setActiveShareMenuFileId={setActiveShareMenuFileId}
-            viewPreferences={viewPreferences}
-          />
-        ))}
+        {filesToRender.map((file, i) => {
+          const { href, name, thumbnail } = file;
+          const lazyLoad = i > 12;
+          const description =
+            viewPreferences.sort === Sort.Created
+              ? `Created ${timeAgo(file.createdDate)}`
+              : `Modified ${timeAgo(file.updatedDate)}`;
+
+          return file.metadata ? (
+            <FilesListItemEditable
+              key={file.metadata.uuid}
+              file={{
+                name,
+                href,
+                thumbnail,
+                description,
+              }}
+              fileMetadata={file.metadata}
+              lazyLoad={lazyLoad}
+              filterValue={filterValue}
+              activeShareMenuFileId={activeShareMenuFileId}
+              setActiveShareMenuFileId={setActiveShareMenuFileId}
+              viewPreferences={viewPreferences}
+            />
+          ) : (
+            <FilesListItemReadOnly
+              key={href}
+              file={{
+                name,
+                href,
+                thumbnail,
+                description,
+              }}
+              filterValue={filterValue}
+              lazyLoad={lazyLoad}
+              viewPreferences={viewPreferences}
+            />
+          );
+        })}
       </FilesListItems>
 
       {filterValue && filesToRender.length === 0 && (

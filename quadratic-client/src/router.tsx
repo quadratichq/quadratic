@@ -107,6 +107,7 @@ export const router = createBrowserRouter(
             </Route>
             <Route path={ROUTES.FILES_SHARED_WITH_ME} lazy={() => import('./routes/files.shared-with-me')} />
             <Route path={ROUTES.EXAMPLES} lazy={() => import('./routes/examples')} />
+            <Route path={ROUTES.EXAMPLES + '/:slug'} lazy={() => import('./routes/examples.$slug')} />
             <Route path={ROUTES.ACCOUNT} lazy={() => import('./routes/account')} />
 
             <Route path={ROUTES.TEAMS}>
