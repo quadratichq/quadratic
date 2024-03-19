@@ -7,6 +7,7 @@ import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { Button } from '@/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
+import { googleAnalyticsAvailable } from '@/utils/analytics';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { CaretDownIcon, ExclamationTriangleIcon, FileIcon, InfoCircledIcon } from '@radix-ui/react-icons';
@@ -179,11 +180,13 @@ export const Component = () => {
       // TODO: pull the session_id from our API and get the amount from the subscription to pass to the conversion
 
       // Google Ads Conversion Tracking
-      // @ts-expect-error
-      gtag('event', 'conversion', {
-        send_to: 'AW-11007319783/44KeCMLgpJYZEOe92YAp',
-        transaction_id,
-      });
+      if (googleAnalyticsAvailable()) {
+        // @ts-expect-error
+        gtag('event', 'conversion', {
+          send_to: 'AW-11007319783/44KeCMLgpJYZEOe92YAp',
+          transaction_id,
+        });
+      }
       setSearchParams((prev) => {
         prev.delete('subscription');
         prev.delete('session_id');

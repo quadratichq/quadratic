@@ -27,11 +27,10 @@ impl GridController {
                         sheet_id: sheet_pos.sheet_id,
                         min,
                         max: Pos {
-                            x: min.x + values.w as i64,
-                            y: min.y + values.h as i64,
+                            x: min.x - 1 + values.w as i64,
+                            y: min.y - 1 + values.h as i64,
                         },
                     };
-
                     if transaction.is_user() || transaction.is_undo_redo() {
                         transaction
                             .forward_operations
@@ -191,5 +190,45 @@ mod test {
         let summary = gc.undo(None);
         assert_eq!(summary.cell_sheets_modified.len(), 1);
         assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);
+    }
+
+    #[test]
+    fn dependencies_properly_trigger_on_set_cell_values() {
+        let mut gc = GridController::test();
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id: gc.sheet_ids()[0],
+            },
+            "1".to_string(),
+            None,
+        );
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 0,
+                sheet_id: gc.sheet_ids()[0],
+            },
+            CodeCellLanguage::Formula,
+            "A0 + 5".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: -1,
+                y: 0,
+                sheet_id: gc.sheet_ids()[0],
+            },
+            "2".to_string(),
+            None,
+        );
+        assert_eq!(gc.active_transactions().unsaved_transactions.len(), 3);
+        let last_transaction = gc
+            .active_transactions()
+            .unsaved_transactions
+            .last()
+            .unwrap();
+        assert_eq!(last_transaction.forward.operations.len(), 1);
     }
 }
