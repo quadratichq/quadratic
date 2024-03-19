@@ -100,7 +100,11 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetBorders') {
       events.emit('sheetBorders', e.data.sheetId, e.data.borders);
       return;
+    } else if (e.data.type === 'coreClientSheetCodeCellRender') {
+      events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
+      return;
     }
+
     if (e.data.id !== undefined) {
       // handle responses from requests to quadratic-core
       if (this.waitingForResponse[e.data.id]) {

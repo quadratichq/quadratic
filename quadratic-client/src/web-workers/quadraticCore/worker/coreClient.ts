@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { JsHtmlOutput, JsRenderBorders, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import { JsHtmlOutput, JsRenderBorders, JsRenderCodeCell, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
@@ -39,6 +39,7 @@ declare var self: WorkerGlobalScope &
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
+    sendSheetCodeCellRender: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
   };
 
 class CoreClient {
@@ -56,6 +57,7 @@ class CoreClient {
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
     self.sendSheetBorders = coreClient.sendSheetBorders;
+    self.sendSheetCodeCellRender = coreClient.sendSheetCodeCellRender;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -445,6 +447,10 @@ class CoreClient {
 
   sendSheetBorders = (sheetId: string, borders: JsRenderBorders) => {
     this.send({ type: 'coreClientSheetBorders', sheetId, borders });
+  };
+
+  sendSheetCodeCellRender = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
+    this.send({ type: 'coreClientSheetCodeCellRender', sheetId, codeCells });
   };
 }
 

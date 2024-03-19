@@ -552,6 +552,12 @@ export interface CoreClientSheetBorders {
   borders: JsRenderBorders;
 }
 
+export interface CoreClientSheetCodeCellRender {
+  type: 'coreClientSheetCodeCellRender';
+  sheetId: string;
+  codeCells: JsRenderCodeCell[];
+}
+
 //#endregion
 
 //#region Undo/Redo
@@ -785,4 +791,5 @@ export type CoreClientMessage =
   | CoreClientFindNextRow
   | CoreClientGenerateThumbnail
   | CoreClientLoad
-  | CoreClientSheetBorders;
+  | CoreClientSheetBorders
+  | CoreClientSheetCodeCellRender;

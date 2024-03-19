@@ -31,9 +31,14 @@ export class CellsArray extends Container {
     this.cellsSheet = cellsSheet;
     this.lines = [];
     this.codeCells = [];
-    events.on('renderCodeCells', (message) => {
+    events.on('renderCodeCells', (sheetId, codeCells) => {
+      if (sheetId === this.cellsSheet.sheetId) {
+        this.codeCells = codeCells;
+        this.create();
+      }
+    });
+    events.on('sheetOffsets', (message) => {
       if (message.sheetId === this.cellsSheet.sheetId) {
-        this.codeCells = message.codeCells;
         this.create();
       }
     });

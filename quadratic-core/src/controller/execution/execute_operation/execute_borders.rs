@@ -36,7 +36,7 @@ impl GridController {
 
                 if cfg!(target_family = "wasm") {
                     if let Ok(borders) = serde_json::to_string(&sheet.render_borders()) {
-                        crate::wasm_bindings::js::jsUpdateSheetBorders(
+                        crate::wasm_bindings::js::jsSheetBorders(
                             sheet_rect.sheet_id.to_string(),
                             borders,
                         );

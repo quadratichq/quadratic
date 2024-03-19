@@ -1,6 +1,6 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import { JsHtmlOutput, JsRenderBorders, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import { JsHtmlOutput, JsRenderBorders, JsRenderCodeCell, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -43,6 +43,7 @@ declare var self: WorkerGlobalScope &
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
+    sendSheetCodeCellRender: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
@@ -137,7 +138,12 @@ export const jsGenerateThumbnail = () => {
   self.sendGenerateThumbnail();
 };
 
-export const jsUpdateSheetBorders = (sheetId: string, bordersStringified: string) => {
+export const jsSheetBorders = (sheetId: string, bordersStringified: string) => {
   const borders = JSON.parse(bordersStringified) as JsRenderBorders;
   self.sendSheetBorders(sheetId, borders);
+};
+
+export const jsSheetCodeCellRender = (sheetId: string, codeCellsStringified: string) => {
+  const codeCells = JSON.parse(codeCellsStringified) as JsRenderCodeCell[];
+  self.sendSheetCodeCellRender(sheetId, codeCells);
 };

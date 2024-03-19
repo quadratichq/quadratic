@@ -67,5 +67,6 @@ extern "C" {
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
     pub fn jsGenerateThumbnail();
-    pub fn jsUpdateSheetBorders(sheet_id: String, borders: String);
+    pub fn jsSheetBorders(sheet_id: String, borders: String);
+    pub fn jsSheetCodeCellRender(sheet_id: String, code_cells: String);
 }
