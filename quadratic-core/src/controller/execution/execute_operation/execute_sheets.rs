@@ -185,7 +185,9 @@ impl GridController {
             new_sheet.id = new_sheet_id;
             let right = self.grid.next_sheet(sheet_id);
             let right_order = right.map(|right| right.order.clone());
-            new_sheet.order = key_between(&Some(sheet.order.clone()), &right_order).unwrap();
+            if let Ok(order) = key_between(&Some(sheet.order.clone()), &right_order) {
+                new_sheet.order = order;
+            };
             let name = format!("{} Copy", sheet.name);
             let sheet_names = self.sheet_names();
             if !sheet_names.contains(&name.as_str()) {
@@ -197,12 +199,6 @@ impl GridController {
 
             transaction.summary.sheet_list_modified = true;
             transaction.summary.html.insert(new_sheet_id);
-            transaction
-                .forward_operations
-                .push(Operation::DuplicateSheet {
-                    sheet_id,
-                    new_sheet_id,
-                });
             transaction
                 .forward_operations
                 .push(Operation::DuplicateSheet {
@@ -221,7 +217,7 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::controller::GridController;
+    use crate::{controller::GridController, grid::CodeCellLanguage, SheetPos};
 
     #[test]
     fn test_add_sheet() {
@@ -323,11 +319,25 @@ mod tests {
     fn duplicate_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            SheetPos {
+                sheet_id,
+                x: 0,
+                y: 0,
+            },
+            CodeCellLanguage::Formula,
+            "10 + 10".to_string(),
+            None,
+        );
+
         let summary = gc.duplicate_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         assert!(summary.save);
         assert!(summary.sheet_list_modified);
+        assert!(!summary.operations.unwrap().is_empty());
+
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
         assert!(summary.save);
@@ -340,12 +350,14 @@ mod tests {
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");
 
-        gc.undo(None);
+        let summary = gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
+        assert!(!summary.operations.unwrap().is_empty());
 
-        gc.redo(None);
+        let summary = gc.redo(None);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
+        assert!(!summary.operations.unwrap().is_empty());
     }
 }

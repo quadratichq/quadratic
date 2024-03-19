@@ -31,6 +31,10 @@ pub enum Operation {
     },
 
     // Sheet metadata operations
+
+    // TODO: we should use the SheetSchema format + version in grid/file/current.rs
+    // instead of the actual Sheet. That way we can change the Sheet struct
+    // without breaking offline.
     AddSheet {
         sheet: Sheet,
     },
