@@ -13,7 +13,7 @@ my_cell = cell(2, 4, 'Sheet 2')
 df = cells((x1, y1), (x2, y2), 'Sheet 2', first_row_header=True)`,
   },
   {
-    label: 'Write data to the sheet',
+    label: 'Return data to the sheet',
     keywords: 'return value',
     code: `out = []
 for x in range(10):

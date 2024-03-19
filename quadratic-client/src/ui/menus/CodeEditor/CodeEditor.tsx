@@ -166,8 +166,6 @@ export const CodeEditor = () => {
 
   // handle when escape is pressed when escape does not have focus
   useEffect(() => {
-    console.log('editorInteractionState.editorEscapePressed', editorInteractionState.editorEscapePressed);
-    console.log('unsaved', unsaved);
     if (editorInteractionState.editorEscapePressed) {
       if (unsaved) {
         setShowSaveChangesAlert(true);
@@ -323,12 +321,15 @@ export const CodeEditor = () => {
           closeEditor={closeEditor}
           evaluationResult={evaluationResult}
         />
-        {evaluationResult?.line_number &&
-          !out?.stdErr &&
-          !unsaved &&
-          (editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
-            <ReturnTypeInspector evaluationResult={evaluationResult} />
+        <ReturnTypeInspector
+          evaluationResult={evaluationResult}
+          show={Boolean(
+            evaluationResult?.line_number &&
+              !out?.stdErr &&
+              !unsaved &&
+              (editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula')
           )}
+        />
 
         <ResizeControl setState={setConsoleHeight} position="TOP" />
         {/* Console Wrapper */}
