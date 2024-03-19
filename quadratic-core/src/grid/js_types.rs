@@ -106,27 +106,6 @@ impl JsRenderBorders {
     }
 }
 
-// #[wasm_bindgen]
-// impl JsRenderBorders {
-//     #[wasm_bindgen]
-//     pub fn horizontal_next(&mut self) -> Option<JsRenderBorder> {
-//         let ret = self.horizontal.get(self.index_horizontal as usize).cloned();
-//         self.index_horizontal += 1;
-//         ret
-//     }
-//     #[wasm_bindgen]
-//     pub fn vertical_next(&mut self) -> Option<JsRenderBorder> {
-//         let ret = self.vertical.get(self.index_vertical as usize).cloned();
-//         self.index_vertical += 1;
-//         ret
-//     }
-//     #[wasm_bindgen]
-//     pub fn reset(&mut self) {
-//         self.index_horizontal = 0;
-//         self.index_vertical = 0;
-//     }
-// }
-
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderBorder {

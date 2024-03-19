@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsRenderFill } from '@/quadratic-core-types';
 import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
@@ -12,10 +13,22 @@ interface SpriteBounds extends Sprite {
 
 export class CellsFills extends ParticleContainer {
   private cellsSheet: CellsSheet;
+  private fills: JsRenderFill[] = [];
 
   constructor(cellsSheet: CellsSheet) {
     super(undefined, { vertices: true, tint: true }, undefined, true);
     this.cellsSheet = cellsSheet;
+    events.on('sheetFills', (sheetId, fills) => {
+      if (sheetId === this.cellsSheet.sheetId) {
+        this.fills = fills;
+        this.draw();
+      }
+    });
+    events.on('sheetOffsets', (message) => {
+      if (message.sheetId === this.cellsSheet.sheetId) {
+        this.draw();
+      }
+    });
   }
 
   get sheet(): Sheet {
@@ -24,9 +37,9 @@ export class CellsFills extends ParticleContainer {
     return sheet;
   }
 
-  async create(renderFills: JsRenderFill[]) {
+  draw() {
     this.removeChildren();
-    renderFills.forEach((fill) => {
+    this.fills.forEach((fill) => {
       const sprite = this.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = convertColorStringToTint(fill.color);
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);

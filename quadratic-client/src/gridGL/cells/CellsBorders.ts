@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { JsRenderBorders } from '@/quadratic-core-types';
 import { Container, Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
@@ -8,11 +9,23 @@ import { BorderCull, drawCellBorder } from './drawBorders';
 export class CellsBorders extends Container {
   private cellsSheet: CellsSheet;
   private sprites: BorderCull[];
+  private borders?: JsRenderBorders;
 
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
     this.sprites = [];
+    events.on('sheetBorders', (sheetId, borders) => {
+      if (sheetId === this.cellsSheet.sheetId) {
+        this.borders = borders;
+        this.draw();
+      }
+    });
+    events.on('sheetOffsets', (message) => {
+      if (message.sheetId === this.cellsSheet.sheetId) {
+        this.draw();
+      }
+    });
   }
 
   private get sheet(): Sheet {
@@ -21,12 +34,9 @@ export class CellsBorders extends Container {
     return sheet;
   }
 
-  clear(): void {
-    this.removeChildren();
-  }
-
-  drawHorizontal(borders: JsRenderBorders) {
-    for (const border of borders.horizontal) {
+  drawHorizontal() {
+    if (!this.borders) return;
+    for (const border of this.borders.horizontal) {
       if (border.w === undefined) throw new Error('Expected border.w to be defined in CellsBorders.drawHorizontal');
       const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.offsets.getCellOffsets(Number(border.x) + border.w, Number(border.y));
@@ -41,8 +51,9 @@ export class CellsBorders extends Container {
     }
   }
 
-  drawVertical(borders: JsRenderBorders) {
-    for (const border of borders.vertical) {
+  drawVertical() {
+    if (!this.borders) return;
+    for (const border of this.borders.vertical) {
       if (border.h === undefined) throw new Error('Expected border.h to be defined in CellsBorders.drawVertical');
       const start = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y));
       const end = this.sheet.offsets.getCellOffsets(Number(border.x), Number(border.y) + border.h!);
@@ -57,12 +68,11 @@ export class CellsBorders extends Container {
     }
   }
 
-  create(): void {
-    this.clear();
-    // const borders = grid.getRenderBorders(this.sheet.id);
-    // this.drawHorizontal(borders);
-    // this.drawVertical(borders);
-    // borders.free();
+  draw(): void {
+    this.removeChildren();
+    if (!this.borders) return;
+    this.drawHorizontal();
+    this.drawVertical();
   }
 
   private getSprite = (tiling?: boolean): Sprite | TilingSprite => {

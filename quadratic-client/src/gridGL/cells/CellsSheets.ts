@@ -144,22 +144,10 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.updateCellsArray();
   }
 
-  // todo...
-  // updateBorders(borderSheets: SheetId[]): void {
-  //   this.children.forEach((cellsSheet) => {
-  //     if (borderSheets.find((id) => id.id === cellsSheet.sheetId)) {
-  //       cellsSheet.createBorders();
-  //     }
-  //   });
-  // }
-
-  // updateBordersString(borderSheets: String[]): void {
-  //   this.children.forEach((cellsSheet) => {
-  //     if (borderSheets.find((id) => id === cellsSheet.sheetId)) {
-  //       cellsSheet.createBorders();
-  //     }
-  //   });
-  // }
+  adjustOffsetsBorders(sheetId: string): void {
+    const cellsSheet = this.getById(sheetId);
+    cellsSheet?.adjustOffsets();
+  }
 
   showLabel(x: number, y: number, sheetId: string, show: boolean) {
     const cellsSheet = this.getById(sheetId);

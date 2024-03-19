@@ -9,6 +9,7 @@ import { CellsLabels } from './cellsLabel/CellsLabels';
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
   private cellsArray: CellsArray;
+  private cellsBorders: CellsBorders;
 
   cellsMarkers: CellsMarkers;
   cellsLabels: CellsLabels;
@@ -25,7 +26,7 @@ export class CellsSheet extends Container {
 
     this.cellsLabels = this.addChild(new CellsLabels(this));
     this.cellsArray = this.addChild(new CellsArray(this));
-    this.addChild(new CellsBorders(this));
+    this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
     this.visible = false;
   }
@@ -60,5 +61,14 @@ export class CellsSheet extends Container {
 
   unload(hashX: number, hashY: number) {
     this.cellsLabels.unload(hashX, hashY);
+  }
+
+  adjustOffsets() {
+    this.cellsBorders.draw();
+    this.cellsFills.draw();
+  }
+
+  updateCellsArray() {
+    this.cellsArray.updateCellsArray();
   }
 }

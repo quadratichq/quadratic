@@ -17,8 +17,9 @@ const SPILL_FILL_ALPHA = 0.025;
 
 export class CellsArray extends Container {
   private cellsSheet: CellsSheet;
-  private particles: ParticleContainer;
+  private codeCells: JsRenderCodeCell[];
 
+  private particles: ParticleContainer;
   // only used for the spill error indicators (lines are drawn using sprites in particles for performance)
   private graphics: Graphics;
   private lines: BorderCull[];
@@ -29,9 +30,11 @@ export class CellsArray extends Container {
     this.graphics = this.addChild(new Graphics());
     this.cellsSheet = cellsSheet;
     this.lines = [];
+    this.codeCells = [];
     events.on('renderCodeCells', (message) => {
       if (message.sheetId === this.cellsSheet.sheetId) {
-        this.create(message.codeCells);
+        this.codeCells = message.codeCells;
+        this.create();
       }
     });
   }
@@ -40,12 +43,18 @@ export class CellsArray extends Container {
     return this.cellsSheet.sheetId;
   }
 
-  private create(codeCells: JsRenderCodeCell[]) {
+  private create() {
     this.lines = [];
-    const cursor = sheets.sheet.cursor;
     this.particles.removeChildren();
     this.graphics.clear();
     this.cellsSheet.cellsMarkers.clear();
+    const codeCells = this.codeCells;
+    if (codeCells.length === 0) {
+      pixiApp.setViewportDirty();
+      return;
+    }
+
+    const cursor = sheets.sheet.cursor;
     const cursorRectangle = cursor.getRectangle();
 
     // need to adjust the cursor rectangle for intersection testing
@@ -58,7 +67,7 @@ export class CellsArray extends Container {
   }
 
   updateCellsArray() {
-    this.create(this.cellsSheet.codeCells);
+    this.create();
   }
 
   cheapCull(bounds: Rectangle): void {

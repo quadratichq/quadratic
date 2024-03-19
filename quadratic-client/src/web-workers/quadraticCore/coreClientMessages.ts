@@ -4,6 +4,7 @@ import {
   CodeCellLanguage,
   JsCodeCell,
   JsHtmlOutput,
+  JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
@@ -538,10 +539,17 @@ export interface CoreClientSheetOffsets {
   column?: number;
   row?: number;
   size: number;
+  borders: JsRenderBorders;
 }
 
 export interface CoreClientGenerateThumbnail {
   type: 'coreClientGenerateThumbnail';
+}
+
+export interface CoreClientSheetBorders {
+  type: 'coreClientSheetBorders';
+  sheetId: string;
+  borders: JsRenderBorders;
 }
 
 //#endregion
@@ -776,4 +784,5 @@ export type CoreClientMessage =
   | CoreClientFindNextColumn
   | CoreClientFindNextRow
   | CoreClientGenerateThumbnail
-  | CoreClientLoad;
+  | CoreClientLoad
+  | CoreClientSheetBorders;

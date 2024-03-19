@@ -14,12 +14,6 @@ impl GridController {
                     .sheets_with_dirty_bounds
                     .insert(sheet_rect.sheet_id);
 
-                // todo: need to send the border change to TS
-                // transaction
-                // .summary
-                // .border_sheets_modified
-                // .insert(sheet_rect.sheet_id);
-
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
                 let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) else {
@@ -39,6 +33,15 @@ impl GridController {
                         borders: old_borders,
                     },
                 );
+
+                if cfg!(target_family = "wasm") {
+                    if let Ok(borders) = serde_json::to_string(&sheet.render_borders()) {
+                        crate::wasm_bindings::js::jsUpdateSheetBorders(
+                            sheet_rect.sheet_id.to_string(),
+                            borders,
+                        );
+                    }
+                }
             }
             _ => unreachable!("Expected Operation::SetBorders"),
         }

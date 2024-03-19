@@ -57,6 +57,15 @@ impl GridController {
                     if let Ok(fills) = serde_json::to_string(&fills) {
                         crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
                     }
+                    if let Some(sheet) = grid.try_sheet(*sheet_id) {
+                        let borders = sheet.render_borders();
+                        if let Ok(borders) = serde_json::to_string(&borders) {
+                            crate::wasm_bindings::js::jsUpdateSheetBorders(
+                                sheet_id.to_string(),
+                                borders,
+                            );
+                        }
+                    }
                 });
             }
             Ok(grid)

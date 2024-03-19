@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { JsHtmlOutput, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import { JsHtmlOutput, JsRenderBorders, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
@@ -32,11 +32,13 @@ declare var self: WorkerGlobalScope &
       sheetId: string,
       column: bigint | undefined,
       row: bigint | undefined,
-      size: number
+      size: number,
+      borders: JsRenderBorders
     ) => void;
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
+    sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
   };
 
 class CoreClient {
@@ -53,6 +55,7 @@ class CoreClient {
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
+    self.sendSheetBorders = coreClient.sendSheetBorders;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -411,13 +414,20 @@ class CoreClient {
     this.send({ type: 'coreClientSetCursor', cursor });
   };
 
-  sendSheetOffsets = (sheetId: string, column: bigint | undefined, row: bigint | undefined, size: number) => {
+  sendSheetOffsets = (
+    sheetId: string,
+    column: bigint | undefined,
+    row: bigint | undefined,
+    size: number,
+    borders: JsRenderBorders
+  ) => {
     this.send({
       type: 'coreClientSheetOffsets',
       sheetId,
       column: column === undefined ? undefined : Number(column),
       row: row === undefined ? undefined : Number(row),
       size,
+      borders,
     });
   };
 
@@ -431,6 +441,10 @@ class CoreClient {
 
   sendGenerateThumbnail = () => {
     this.send({ type: 'coreClientGenerateThumbnail' });
+  };
+
+  sendSheetBorders = (sheetId: string, borders: JsRenderBorders) => {
+    this.send({ type: 'coreClientSheetBorders', sheetId, borders });
   };
 }
 

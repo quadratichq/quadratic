@@ -373,7 +373,7 @@ export class PixiApp {
 
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     this.cellsSheets.adjustHeadings(options);
-    this.cellsSheets.updateBordersString([options.sheetId]);
+    this.cellsSheets.adjustOffsetsBorders(options.sheetId);
     htmlCellsHandler.updateOffsets([sheets.sheet.id]);
     if (sheets.sheet.id === options.sheetId) {
       pixiApp.gridLines.dirty = true;

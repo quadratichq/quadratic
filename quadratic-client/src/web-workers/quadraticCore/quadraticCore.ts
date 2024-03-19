@@ -83,7 +83,7 @@ class QuadraticCore {
       events.emit('setCursor', e.data.cursor);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
-      events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size);
+      events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.borders);
       return;
     } else if (e.data.type === 'coreClientHtmlOutput') {
       events.emit('htmlOutput', e.data.html);
@@ -97,8 +97,10 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientRenderCodeCells') {
       events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
       return;
+    } else if (e.data.type === 'coreClientSheetBorders') {
+      events.emit('sheetBorders', e.data.sheetId, e.data.borders);
+      return;
     }
-
     if (e.data.id !== undefined) {
       // handle responses from requests to quadratic-core
       if (this.waitingForResponse[e.data.id]) {

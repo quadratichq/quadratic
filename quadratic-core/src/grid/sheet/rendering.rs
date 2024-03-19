@@ -5,7 +5,7 @@ use crate::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
         js_types::{
-            JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+            JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
             JsRenderCodeCellState, JsRenderFill,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
@@ -376,14 +376,12 @@ impl Sheet {
             .collect()
     }
 
-    /// Returns data for rendering horizontal borders.
-    pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
-        get_render_horizontal_borders(self)
-    }
-
-    /// Returns data for rendering vertical borders.
-    pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
-        get_render_vertical_borders(self)
+    /// Returns borders to render in a sheet.
+    pub fn render_borders(&self) -> JsRenderBorders {
+        JsRenderBorders {
+            horizontal: get_render_horizontal_borders(self),
+            vertical: get_render_vertical_borders(self),
+        }
     }
 }
 

@@ -216,10 +216,8 @@ mod test {
         color::Rgba,
         controller::GridController,
         grid::{
-            generate_borders,
-            js_types::{CellFormatSummary, JsRenderBorders},
-            set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
-            Sheet,
+            generate_borders, js_types::CellFormatSummary, set_rect_borders, BorderSelection,
+            BorderStyle, CellBorderLine, CodeCellLanguage, Sheet,
         },
         CellValue, Pos, Rect, SheetPos, SheetRect,
     };
@@ -599,8 +597,7 @@ mod test {
         set_rect_borders(sheet, &rect, borders);
 
         // weird: can't test them by comparing arrays since the order is seemingly random
-        let render = gc.get_render_borders(sheet_id.to_string());
-        let borders: JsRenderBorders = serde_json::from_str(&render.unwrap()).unwrap();
+        let borders = sheet.render_borders();
         assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 0
@@ -648,8 +645,8 @@ mod test {
             None,
         );
 
-        let render = gc.get_render_borders(sheet_id.to_string());
-        let borders: JsRenderBorders = serde_json::from_str(&render.unwrap()).unwrap();
+        let sheet = gc.sheet_mut(sheet_id);
+        let borders = sheet.render_borders();
         assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 10

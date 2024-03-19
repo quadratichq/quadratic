@@ -1,6 +1,6 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import { JsHtmlOutput, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import { JsHtmlOutput, JsRenderBorders, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -22,6 +22,7 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
+    sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
@@ -134,4 +135,9 @@ export const jsHtmlOutput = (htmlStringified: string) => {
 
 export const jsGenerateThumbnail = () => {
   self.sendGenerateThumbnail();
+};
+
+export const jsUpdateSheetBorders = (sheetId: string, bordersStringified: string) => {
+  const borders = JSON.parse(bordersStringified) as JsRenderBorders;
+  self.sendSheetBorders(sheetId, borders);
 };
