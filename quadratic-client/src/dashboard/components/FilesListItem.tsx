@@ -191,7 +191,7 @@ export function FilesListItemEditable({
         key={uuid}
         to={ROUTES.FILE(uuid)}
         reloadDocument
-        className={cn(isDisabled && `pointer-events-none opacity-50`)}
+        className={cn('relative z-10', isDisabled && `pointer-events-none opacity-50`)}
         {...dragProps}
       >
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
