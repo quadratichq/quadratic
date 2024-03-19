@@ -67,11 +67,12 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     throw new Response('Failed to deserialize file from server.', { statusText: result.error });
   } else if (result.version) {
     // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
-    if (compareVersions(data.file.lastCheckpointVersion, result.version) === VersionComparisonResult.LessThan) {
+    if (compareVersions(result.version, data.file.lastCheckpointVersion) === VersionComparisonResult.LessThan) {
       Sentry.captureEvent({
         message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
         level: 'log',
       });
+      debugger;
       // @ts-expect-error hard reload via `true` only works in some browsers
       window.location.reload(true);
     }
