@@ -40,18 +40,30 @@ impl ActiveTransactions {
         }
     }
 
-    /// Removes and returns the mutable awaiting_async transaction based on its transaction_id
-    pub fn remove_awaiting_async(&mut self, transaction_id: Uuid) -> Result<PendingTransaction> {
-        match self
-            .async_transactions
+    /// Returns a transaction index based on the transaction_id
+    pub fn get_async_transaction_index(&self, transaction_id: Uuid) -> Result<usize> {
+        self.async_transactions
             .iter()
             .position(|p| p.id == transaction_id && p.waiting_for_async.is_some())
-        {
-            None => Err(CoreError::TransactionNotFound(
-                "async transaction not found in find_awaiting_async".into(),
-            )),
-            Some(index) => Ok(self.async_transactions.remove(index)),
-        }
+            .ok_or_else(|| {
+                CoreError::TransactionNotFound(
+                    "async transaction not found in get_async_transaction".into(),
+                )
+            })
+    }
+
+    /// Returns a transaction based on the transaction_id
+    pub fn get_async_transaction(&self, transaction_id: Uuid) -> Result<PendingTransaction> {
+        let index = self.get_async_transaction_index(transaction_id)?;
+
+        Ok(self.async_transactions[index].to_owned())
+    }
+
+    /// Removes and returns the mutable awaiting_async transaction based on its transaction_id
+    pub fn remove_awaiting_async(&mut self, transaction_id: Uuid) -> Result<PendingTransaction> {
+        let index = self.get_async_transaction_index(transaction_id)?;
+
+        Ok(self.async_transactions.remove(index))
     }
 
     pub fn add_async_transaction(&mut self, pending: &PendingTransaction) {
