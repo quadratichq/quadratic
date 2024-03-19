@@ -166,8 +166,6 @@ export const CodeEditor = () => {
 
   // handle when escape is pressed when escape does not have focus
   useEffect(() => {
-    console.log('editorInteractionState.editorEscapePressed', editorInteractionState.editorEscapePressed);
-    console.log('unsaved', unsaved);
     if (editorInteractionState.editorEscapePressed) {
       if (unsaved) {
         setShowSaveChangesAlert(true);
