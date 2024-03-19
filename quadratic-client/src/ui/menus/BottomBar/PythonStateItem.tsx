@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
-import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
+import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
 import { Check, ErrorOutline, Refresh, Stop } from '@mui/icons-material';
 import { CircularProgress, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';

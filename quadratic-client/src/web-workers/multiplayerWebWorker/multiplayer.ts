@@ -11,7 +11,7 @@ import { displayName } from '@/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
 import updateAlertVersion from '../../../../updateAlertVersion.json';
-import { pythonWebWorker } from '../pythonWebWorker/python';
+import { pythonWebWorker } from '../pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
 import {
   ClientMultiplayerMessage,

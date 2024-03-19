@@ -1,14 +1,8 @@
-import { InspectPythonReturnType, PythonMessage } from '../pythonTypes';
+import './python';
+import { pythonClient } from './pythonClient';
 
-declare var self: any;
+pythonClient.start();
 
-let pyodide: any | undefined;
-
-try {
-  self.importScripts('/pyodide/pyodide.js');
-} catch (e) {
-  // do nothing, we're in a test
-}
 let getCellsMessages: (cells: { x: number; y: number; value: string; type_name: string }[]) => void | undefined;
 
 const TRY_AGAIN_TIMEOUT = 500;

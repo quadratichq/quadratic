@@ -1,7 +1,7 @@
 import '@vitest/web-worker';
 import 'fake-indexeddb/auto';
 import { beforeAll, describe, expect, test } from 'vitest';
-import { pythonWebWorker } from '../pythonWebWorker/python';
+import { pythonWebWorker } from '../pythonWebWorker/pythonWebWorker';
 
 // export {};
 

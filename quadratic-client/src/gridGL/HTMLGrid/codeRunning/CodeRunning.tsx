@@ -1,7 +1,7 @@
 import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
-import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
+import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
 import { CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import './CodeRunning.css';

@@ -1,14 +1,14 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
-import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
+import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
 import { Close, FiberManualRecord, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { Coordinate } from '../../../gridGL/types/size';
-import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
+import { Coordinate } from '../../../gridGL/types/size';
+import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';

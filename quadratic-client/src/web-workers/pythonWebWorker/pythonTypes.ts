@@ -1,7 +1,4 @@
 export interface PythonReturnType {
-  // this should be tracked by calls to rust to get the data
-  // cells_accessed: [number, number][];
-
   code: string;
   formatted_code: string;
 
@@ -11,7 +8,6 @@ export interface PythonReturnType {
 
   output_value: string | null;
   output_type: string | null;
-  // array_output: ArrayOutput;
 }
 
 export interface CellRef {

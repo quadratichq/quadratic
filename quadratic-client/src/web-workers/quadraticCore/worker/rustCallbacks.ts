@@ -46,9 +46,8 @@ declare var self: WorkerGlobalScope &
     sendSheetCodeCellRender: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
   };
 
-export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string): void => {
-  console.log('TODO: runPython');
-  // return self.runPython(transactionId, x, y, sheetId, code);
+export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  self.runPython(transactionId, x, y, sheetId, code);
 };
 
 export const addUnsentTransaction = (transactionId: string, operations: string) => {
