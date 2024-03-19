@@ -1,3 +1,4 @@
+import { sheets } from '@/grid/controller/Sheets';
 import { CellSheetsModified } from '@/quadratic-core/types';
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { debugShowCellsHashBoxes, debugShowCellsSheetCulling, debugShowHashUpdates } from '../../debugFlags';
@@ -69,12 +70,15 @@ export class CellsSheet extends Container {
     };
   }
 
-  async preload(): Promise<void> {
+  async preload() {
     this.cellsFills.create();
     this.cellsBorders.create();
     this.cellsArray.create();
     const cellsSheetPreloader = new CellsSheetPreloader(this);
     await cellsSheetPreloader.preload();
+    if (sheets.sheet.id === this.sheet.id) {
+      this.show(pixiApp.viewport.getVisibleBounds());
+    }
   }
 
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
