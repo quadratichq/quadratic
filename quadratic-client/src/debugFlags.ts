@@ -7,6 +7,8 @@ export const debug = url.has('debug') || import.meta.env.VITE_DEBUG === '1' ? tr
 // Debug footer marks
 // ------------------
 
+export const debugShow = debug && false;
+
 // shows FPS meter & renderer light
 export const debugShowFPS = (debug && true) || url.has('fps');
 
@@ -67,8 +69,6 @@ export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && false;
 
-export const debugDisableProxy = debug && false;
-
 // --------
 // UI
 // --------
@@ -79,6 +79,6 @@ export const debugShowUILogs = debug && false;
 // WebWorkers
 //-----------
 
-export const debugWebWorkers = debug && true;
+export const debugWebWorkers = debug && false;
 
 export const debugWebWorkersMessages = debug && false;

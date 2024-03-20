@@ -10,6 +10,7 @@ import { JsHtmlOutput, JsRenderBorders, JsRenderCodeCell, JsRenderFill, SheetInf
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
+import { corePython } from './corePython';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -371,6 +372,10 @@ class CoreClient {
 
       case 'clientCoreCommitSingleResize':
         core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
+        break;
+
+      case 'clientCoreInitPython':
+        corePython.init(e.ports[0]);
         break;
 
       default:

@@ -2,7 +2,7 @@
  * Communication between the multiplayer web worker and the quadratic-multiplayer server
  */
 
-import { debugShowMultiplayer } from '@/debugFlags';
+import { debugShow, debugShowMultiplayer } from '@/debugFlags';
 import { User } from '@auth0/auth0-spa-js';
 import sharedConstants from '../../../../../updateAlertVersion.json';
 import { ClientMultiplayerInit, MultiplayerState } from '../multiplayerClientMessages';
@@ -130,7 +130,7 @@ export class MultiplayerServer {
       this.reconnect();
     });
     this.websocket.addEventListener('open', () => {
-      console.log('[Multiplayer] websocket connected.');
+      if (debugShow) console.log('[Multiplayer] websocket connected.');
       this.brokenConnection = false;
       this.state = 'connected';
       this.enterFileRoom();

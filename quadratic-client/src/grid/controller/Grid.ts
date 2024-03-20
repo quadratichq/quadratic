@@ -1,6 +1,3 @@
-import { debugDisableProxy } from '../../debugFlags';
-import { GridPerformanceProxy } from './GridPerformanceProxy';
-
 // const rectangleToRect = (rectangle: Rectangle): RectInternal => {
 //   return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
 // };
@@ -425,12 +422,12 @@ export class Grid {
   //#endregion
 }
 
-let gridCreate: Grid;
+// let gridCreate: Grid;
 
-if (debugDisableProxy) {
-  gridCreate = new Grid();
-} else {
-  gridCreate = GridPerformanceProxy(new Grid());
-}
+// if (debugDisableProxy) {
+//   gridCreate = new Grid();
+// } else {
+//   gridCreate = GridPerformanceProxy(new Grid());
+// }
 
-export const grid = gridCreate;
+// export const grid = gridCreate;
