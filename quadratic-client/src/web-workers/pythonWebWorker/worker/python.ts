@@ -36,17 +36,7 @@ class Python {
     this.pyodide.registerJsModule('getCellsDB', this.getCells);
 
     // patch requests https://github.com/koenvo/pyodide-http
-    // await micropip.install(['pyodide-http']);
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
-
-    // const micropip = this.pyodide.pyimport('micropip');
-    // load our python code
-    // try {
-    //   await micropip.install('/quadratic_py-0.1.0-py3-none-any.whl');
-    // } catch (e) {
-    //   // failed, we're in a test
-    //   await micropip.install('file:public/quadratic_py-0.1.0-py3-none-any.whl');
-    // }
 
     try {
       // make run_python easier to call later
@@ -62,7 +52,7 @@ class Python {
     const pythonVersion = this.pyodide.runPython('import platform; platform.python_version()');
     const pyodideVersion = this.pyodide.version;
 
-    if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide: ${pyodideVersion}`);
+    if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
     pythonClient.sendPythonLoaded(pythonVersion);
   };
 }
