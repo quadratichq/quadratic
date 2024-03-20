@@ -2,17 +2,17 @@ import { uploadStringAsFileS3 } from '../aws/s3';
 import dbClient from '../dbClient';
 
 export async function createFile({
+  contents,
   name,
   userId,
-  teamId,
-  contents,
   version,
+  teamId,
 }: {
+  contents: string;
   name: string;
   userId: number;
-  teamId?: number;
-  contents: string;
   version: string;
+  teamId?: number;
 }) {
   // Create file in db
   const dbFile = await dbClient.file.create({
