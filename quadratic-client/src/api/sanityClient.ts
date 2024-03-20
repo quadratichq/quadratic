@@ -1,3 +1,6 @@
+// FYI: this was basically copy-pasted from what the marketing website uses
+// https://github.com/quadratichq/quadratic-website/blob/main/lib/sanity-fetch.ts
+
 export type SanityExample = {
   name: string;
   description: string;
