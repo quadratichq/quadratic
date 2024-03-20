@@ -1,17 +1,20 @@
 import sgMail from '@sendgrid/mail';
 import * as Sentry from '@sentry/node';
+import { NODE_ENV, SENDGRID_API_KEY } from '../env-vars';
 
 let dontSendEmails = true;
-if (process.env.SENDGRID_API_KEY) {
+if (SENDGRID_API_KEY) {
   dontSendEmails = false;
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  sgMail.setApiKey(SENDGRID_API_KEY);
 }
 
-export const sendEmail = async (
-  to: string,
-  template: { from: { email: string; name: string }; subject: string; html: string }
-) => {
-  const { from, subject, html } = template;
+const from = {
+  email: 'notify@email.quadratichq.com',
+  name: 'Quadratic',
+};
+
+export const sendEmail = async (to: string, template: { subject: string; html: string }) => {
+  const { subject, html } = template;
   const msg = {
     to,
     from,
@@ -20,7 +23,7 @@ export const sendEmail = async (
   };
 
   // Don't log anything if we're testing
-  if (process.env.NODE_ENV === 'test') {
+  if (NODE_ENV === 'test') {
     return;
   }
 
