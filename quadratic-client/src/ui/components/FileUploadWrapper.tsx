@@ -51,7 +51,11 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      if (file.type === 'text/csv' || file.type === 'text/tab-separated-values') {
+      const isCsv = file.type === 'text/csv' || file.type === 'text/tab-separated-values';
+      // NOTE(ddimaria): this mime type was registered in March 2024, so isn't supported yet
+      const isParquet = file.type === 'application/vnd.apache.parquet' || new RegExp(/.parquet$/i).test(file.name);
+
+      if (isCsv || isParquet) {
         const clientBoundingRect = divRef?.current?.getBoundingClientRect();
         const world = pixiApp.viewport.toWorld(
           e.pageX - (clientBoundingRect?.left || 0),
@@ -59,7 +63,9 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
         );
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const insertAtCellLocation = { x: column, y: row } as Coordinate;
-        grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+
+        if (isCsv) grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+        if (isParquet) grid.importParquet(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');
       }
