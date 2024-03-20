@@ -6,8 +6,8 @@ import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/D
 
 export const loader = async () => {
   const examples = await sanityClient.getExamples();
-  const files: FilesListFile[] = examples.map(({ name, slug, thumbnail, url, _updatedAt, _createdAt }, i) => ({
-    href: ROUTES.EXAMPLE(slug),
+  const files: FilesListFile[] = examples.map(({ name, thumbnail, url, _updatedAt, _createdAt }, i) => ({
+    href: ROUTES.CREATE_FILE_EXAMPLE(url),
     name,
     createdDate: _createdAt,
     updatedDate: _updatedAt,
