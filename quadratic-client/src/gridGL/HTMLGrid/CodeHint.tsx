@@ -68,7 +68,7 @@ export const CodeHintInternal = () => {
         top: offsets.y + CURSOR_THICKNESS * 2,
       }}
     >
-      Hit '=' to code
+      Hit '/' to code
     </div>
   );
 };

@@ -17,5 +17,5 @@ const localStorageEffect =
 export const cellTypeMenuOpenedCountAtom = atom({
   key: 'cellTypeMenuOpenedCount',
   default: 0,
-  effects: [localStorageEffect('cellTypeMenuOpenedCount')],
+  effects: [localStorageEffect('cellTypeMenuOpenedCount-2024-03-20')],
 });
