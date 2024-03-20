@@ -21,7 +21,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
   const {
     body: { publicFileUrlInProduction },
   } = parseRequest(req, schema);
-  const fileUuid = extractUuidFromUrl(publicFileUrlInProduction);
+  // We validate that we get a UUID in the zod schema, so if we reach here
+  // we know we can do this simple operation.
+  const fileUuid = publicFileUrlInProduction.split('/').pop() as string;
 
   try {
     const apiUrl = `https://api.quadratichq.com/v0/files/${fileUuid}`;
@@ -41,8 +43,4 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     console.error(e);
     throw new ApiError(500, 'Failed to fetch example file. Ensure the file exists and is publicly accessible.');
   }
-}
-
-function extractUuidFromUrl(url: string) {
-  return url.split('/').pop();
 }
