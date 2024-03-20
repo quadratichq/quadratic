@@ -1,11 +1,13 @@
 import { atom } from 'recoil';
 
 export interface PythonState {
-  pythonState: 'initial' | 'loading' | 'idle' | 'error' | 'running';
+  pythonState: 'loading' | 'idle' | 'error' | 'running';
+  version: string;
 }
 
 export const pythonStateDefault: PythonState = {
-  pythonState: 'initial',
+  pythonState: 'loading',
+  version: '3.11.3',
 };
 
 export const pythonStateAtom = atom({

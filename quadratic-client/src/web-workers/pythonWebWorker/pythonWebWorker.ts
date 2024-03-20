@@ -1,10 +1,11 @@
+import { events } from '@/events/events';
 import { SheetPos } from '@/gridGL/types/size';
 import { JsCodeResult } from '@/quadratic-core-types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import mixpanel from 'mixpanel-browser';
-import { PythonMessage, PythonReturnType } from './pythonTypes';
-
-const IS_TEST = process.env.NODE_ENV === 'test';
+import { quadraticCore } from '../quadraticCore/quadraticCore';
+import { ClientPythonMessage, PythonClientMessage } from './pythonClientMessages';
+import { PythonReturnType } from './pythonTypes';
 
 interface PythonCode {
   transactionId: string;
@@ -12,10 +13,11 @@ interface PythonCode {
   code: string;
 }
 
+/*
 function isEmpty(value: string | null | undefined) {
   return value == null || (typeof value === 'string' && value.trim().length === 0);
 }
-
+*/
 class PythonWebWorker {
   private worker?: Worker;
   private loaded = false;
@@ -34,14 +36,40 @@ class PythonWebWorker {
 
   private getTransactionId() {
     if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
-
     return this.executionStack[0].transactionId;
   }
 
+  private send(message: ClientPythonMessage, port?: MessagePort) {
+    if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
+    if (port) {
+      this.worker.postMessage(message, [port]);
+    } else {
+      this.worker.postMessage(message);
+    }
+  }
+
+  private handleMessage = (message: MessageEvent<PythonClientMessage>) => {
+    switch (message.data.type) {
+      case 'pythonClientLoaded':
+        events.emit('pythonLoaded', message.data.version);
+        this.loaded = true;
+        // this.next(false);
+        break;
+
+      default:
+        throw new Error(`Unhandled message type ${message.type}`);
+    }
+  };
+
   init() {
-    this.worker = new Worker(new URL('./worker/python.worker.ts', import.meta.url), {
-      /* @vite-ignore */ type: !IS_TEST ? 'classic' : 'module',
-    });
+    this.worker = new Worker(new URL('./worker/python.worker.ts', import.meta.url), { type: 'module' });
+    this.worker.onmessage = this.handleMessage;
+
+    const pythonCoreChannel = new MessageChannel();
+    this.send({ type: 'clientPythonCoreChannel' }, pythonCoreChannel.port1);
+    quadraticCore.sendPythonInit(pythonCoreChannel.port2);
+
+    /*
 
     this.worker.onmessage = async (e: MessageEvent<PythonMessage>) => {
       const event = e.data;
@@ -81,7 +109,6 @@ class PythonWebWorker {
             outputType = `${pythonResult.output_size[0]}x${pythonResult.output_size[1]} ${outputType}`;
           }
 
-          debugger;
           const result: JsCodeResult = {
             transaction_id: transactionId,
             success: pythonResult.success,
@@ -130,29 +157,9 @@ class PythonWebWorker {
 
           break;
         }
-
-        case 'python-loaded': {
-          window.dispatchEvent(new CustomEvent('python-loaded'));
-          this.loaded = true;
-          this.next(false);
-          break;
-        }
-
-        case 'python-error': {
-          window.dispatchEvent(new CustomEvent('python-error'));
-          break;
-        }
-
-        case 'not-loaded': {
-          window.dispatchEvent(new CustomEvent('python-loading'));
-          break;
-        }
-
-        default: {
-          throw new Error(`Unhandled pythonWebWorker.type ${event.type}`);
-        }
-      }
     };
+
+    */
   }
 
   getRunningCells(sheetId: string): SheetPos[] {

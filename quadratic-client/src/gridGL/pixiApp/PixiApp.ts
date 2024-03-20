@@ -2,7 +2,7 @@ import { isEmbed } from '@/helpers/isEmbed';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Drag, Viewport } from 'pixi-viewport';
-import { Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
+import { Container, Graphics, Point, Rectangle, Renderer, utils } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
@@ -31,6 +31,8 @@ import './pixiApp.css';
 
 // todo: move viewport stuff to a viewport.ts file
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
+
+utils.skipHello();
 
 export class PixiApp {
   private parent?: HTMLDivElement;

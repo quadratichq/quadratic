@@ -9,7 +9,6 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
-// import '../../pythonWebWorker/python';
 import { coreClient } from './coreClient';
 
 coreClient.start();

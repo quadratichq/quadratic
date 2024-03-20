@@ -18,6 +18,14 @@ class PythonClient {
     switch (e.data.type) {
     }
   };
+
+  sendPythonLoadError(message?: string) {
+    this.send({ type: 'pythonClientLoadError', error: message });
+  }
+
+  sendPythonLoaded(version: string) {
+    this.send({ type: 'pythonClientLoaded', version });
+  }
 }
 
 export const pythonClient = new PythonClient();

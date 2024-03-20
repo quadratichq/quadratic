@@ -24,8 +24,8 @@ export class CellsFills extends ParticleContainer {
         this.draw();
       }
     });
-    events.on('sheetOffsets', (message) => {
-      if (message.sheetId === this.cellsSheet.sheetId) {
+    events.on('sheetOffsets', (sheetId) => {
+      if (sheetId === this.cellsSheet.sheetId) {
         this.draw();
       }
     });

@@ -7,7 +7,7 @@ export const useUndo = () => {
   const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   useEffect(() => {
-    events.on('undoRedo', ({ undo, redo }) => {
+    events.on('undoRedo', (undo, redo) => {
       setEditorInteractionState((editorInteractionState) => {
         return {
           ...editorInteractionState,

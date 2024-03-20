@@ -15,7 +15,6 @@ import { useRecoilValue } from 'recoil';
 import BottomBarItem from './BottomBarItem';
 
 const uiLabelByPythonState: Record<PythonState['pythonState'], string> = {
-  initial: 'Initial', // FYI: this will never really appear in the UI
   error: 'error loading',
   idle: 'idle',
   loading: 'loading…',

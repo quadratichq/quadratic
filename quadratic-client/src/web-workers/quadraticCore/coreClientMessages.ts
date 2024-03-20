@@ -49,6 +49,10 @@ export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
 }
 
+export interface ClientCoreInitPython {
+  type: 'clientCoreInitPython';
+}
+
 export interface ClientCoreExport {
   type: 'clientCoreExport';
   id: number;
@@ -757,7 +761,8 @@ export type ClientCoreMessage =
   | ClientCoreFindNextColumn
   | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
-  | ClientCoreCommitSingleResize;
+  | ClientCoreCommitSingleResize
+  | ClientCoreInitPython;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

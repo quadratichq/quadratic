@@ -83,7 +83,7 @@ class QuadraticCore {
       events.emit('setCursor', e.data.cursor);
       return;
     } else if (e.data.type === 'coreClientSheetOffsets') {
-      events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.borders);
+      events.emit('sheetOffsets', e.data.sheetId, e.data.column, e.data.row, e.data.size);
       return;
     } else if (e.data.type === 'coreClientHtmlOutput') {
       events.emit('htmlOutput', e.data.html);
@@ -844,6 +844,14 @@ class QuadraticCore {
       size,
       cursor: sheets.getCursorPosition(),
     });
+  }
+
+  //#endregion
+
+  //#region Calculation
+
+  sendPythonInit(port: MessagePort) {
+    this.send({ type: 'clientCoreInitPython' }, port);
   }
 
   //#endregion

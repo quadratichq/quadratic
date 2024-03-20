@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { useUndo } from '@/events/useUndo';
 import { useRootRouteLoaderData } from '@/router';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
@@ -23,14 +24,10 @@ export default function QuadraticApp() {
 
   // recoil tracks python state
   useEffect(() => {
-    const loading = () =>
+    const loaded = (version: string) =>
       setLoadedState((prevState) => ({
         ...prevState,
-        pythonState: 'loading',
-      }));
-    const loaded = () =>
-      setLoadedState((prevState) => ({
-        ...prevState,
+        version,
         pythonState: 'idle',
       }));
     const error = () =>
@@ -38,6 +35,9 @@ export default function QuadraticApp() {
         ...prevState,
         pythonState: 'error',
       }));
+    events.on('pythonLoaded', loaded);
+    events.on('pythonError', error);
+
     const computationStarted = () =>
       setLoadedState((prevState) => ({
         ...prevState,
@@ -48,15 +48,12 @@ export default function QuadraticApp() {
         ...prevState,
         pythonState: 'idle',
       }));
-    window.addEventListener('python-loading', loading);
-    window.addEventListener('python-loaded', loaded);
-    window.addEventListener('python-error', error);
     window.addEventListener('python-computation-started', computationStarted);
     window.addEventListener('python-computation-finished', computationFinished);
     return () => {
-      window.removeEventListener('python-loading', loading);
-      window.removeEventListener('python-loaded', loaded);
-      window.removeEventListener('python-error', error);
+      events.off('pythonLoaded', loaded);
+      events.off('pythonError', error);
+
       window.removeEventListener('python-computation-started', computationStarted);
       window.removeEventListener('python-computation-finished', computationFinished);
     };
