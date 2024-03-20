@@ -1,0 +1,10 @@
+{
+  "pythonVersion": "3.11",
+  "pythonPlatform": "Linux",
+  "typeCheckingMode": "basic",
+  "typeshedPath": "/typings/",
+  "reportMissingModuleSource": false,
+  "reportWildcardImportFromLibrary": false,
+  "verboseOutput": true,
+  "analysis": { "useLibraryCodeForTypes": false }
+}

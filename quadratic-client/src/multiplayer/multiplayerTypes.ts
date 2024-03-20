@@ -26,6 +26,7 @@ export interface MultiplayerUserServer {
   y?: number;
   viewport: string;
   code_running: string;
+  follow?: string;
 }
 
 // extended by the client
@@ -37,9 +38,15 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   parsedSelection?: { cursor: Coordinate; rectangle: Rectangle };
 }
 
+export interface Version {
+  recommendedVersion: number;
+  requiredVersion: number;
+}
+
 export interface ReceiveRoom {
   type: 'UsersInRoom';
   users: MultiplayerUser[];
+  min_version: Version;
 }
 
 export interface MessageUserUpdate {
@@ -55,6 +62,7 @@ export interface MessageUserUpdate {
     visible?: boolean;
     viewport?: string;
     code_running?: string;
+    follow?: string;
   };
 }
 

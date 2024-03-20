@@ -183,7 +183,9 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                         CellValue::Error(Box::new((*error).clone().into()))
                     }
                 };
-                col.values.set(y.parse::<i64>().unwrap(), Some(cell_value));
+                if let Ok(y) = y.parse::<i64>() {
+                    col.values.insert(y, cell_value);
+                }
             }
 
             Ok((*x, col))
@@ -274,6 +276,9 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
                 spill_error: code_run.spill_error,
                 cells_accessed,
                 result,
+                return_type: code_run.return_type.to_owned(),
+                line_number: code_run.line_number.to_owned(),
+                output_type: code_run.output_type.to_owned(),
             },
         );
     });
@@ -467,7 +472,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     render_size: export_column_data_render_size(&column.render_size),
                     values: column
                         .values
-                        .values()
+                        .iter()
                         .map(|(y, value)| {
                             (
                                 y.to_string(),
@@ -478,7 +483,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                     CellValue::Number(number) => {
                                         current::CellValue::Number(number.to_string())
                                     }
-                                    CellValue::Html(html) => current::CellValue::Html(html),
+                                    CellValue::Html(html) => current::CellValue::Html(html.clone()),
                                     CellValue::Code(cell_code) => {
                                         current::CellValue::Code(current::CodeCell {
                                             code: cell_code.code.to_owned(),
@@ -493,7 +498,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                         })
                                     }
                                     CellValue::Logical(logical) => {
-                                        current::CellValue::Logical(logical)
+                                        current::CellValue::Logical(*logical)
                                     }
                                     CellValue::Instant(instant) => {
                                         current::CellValue::Instant(instant.to_string())
@@ -502,7 +507,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                         current::CellValue::Duration(duration.to_string())
                                     }
                                     CellValue::Error(error) => current::CellValue::Error(
-                                        current::RunError::from_grid_run_error(&error),
+                                        current::RunError::from_grid_run_error(error),
                                     ),
                                     CellValue::Blank => current::CellValue::Blank,
                                 },
@@ -614,6 +619,9 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                                     .map(|sheet_rect| current::SheetRect::from(*sheet_rect))
                                     .collect(),
                                 result,
+                                return_type: code_run.return_type.clone(),
+                                line_number: code_run.line_number,
+                                output_type: code_run.output_type.clone(),
                             },
                         )
                     })

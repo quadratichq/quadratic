@@ -29,12 +29,15 @@ impl GridController {
                             last_modified: Utc::now(),
                             cells_accessed: transaction.cells_accessed.clone(),
                             result: CodeRunResult::Ok(value),
+                            return_type: None,
+                            line_number: None,
+                            output_type: None,
                         };
                         self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
                     }
                     Err(error) => {
                         let msg = error.msg.to_string();
-                        let line_number = error.span.map(|span| span.start as i64);
+                        let line_number = error.span.map(|span| span.start);
 
                         // todo: propagate the result
                         let _ = self.code_cell_sheet_error(
@@ -63,6 +66,7 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
+        cell_values::CellValues,
         controller::{
             active_transactions::pending_transaction::PendingTransaction,
             operations::operation::Operation, transaction_types::JsCodeResult, GridController,
@@ -91,8 +95,8 @@ mod test {
         gc.start_user_transaction(
             vec![
                 Operation::SetCellValues {
-                    sheet_rect: sheet_pos.into(),
-                    values: Array::from(Value::Single(code_cell.clone())),
+                    sheet_pos,
+                    values: CellValues::from(code_cell.clone()),
                 },
                 Operation::ComputeCode { sheet_pos },
             ],
@@ -232,7 +236,8 @@ mod test {
             None,
             None,
             None,
-            Some("$12".into()),
+            Some(vec!["$12".into(), "number".into()]),
+            None,
             None,
             None,
             None,
@@ -254,6 +259,9 @@ mod test {
                 formatted_code_string: None,
                 last_modified: result.last_modified,
                 result: CodeRunResult::Ok(Value::Single(CellValue::Number(12.into()))),
+                return_type: Some("number".into()),
+                line_number: None,
+                output_type: None,
                 cells_accessed: HashSet::new(),
                 spill_error: false,
             },
@@ -264,9 +272,15 @@ mod test {
     fn test_js_code_result_to_code_cell_value_array() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let array_output: Vec<Vec<String>> = vec![
-            vec!["$1.1".into(), "20%".into()],
-            vec!["3".into(), "Hello".into()],
+        let array_output: Vec<Vec<Vec<String>>> = vec![
+            vec![
+                vec!["$1.1".into(), "number".into()],
+                vec!["20%".into(), "number".into()],
+            ],
+            vec![
+                vec!["3".into(), "number".into()],
+                vec!["Hello".into(), "text".into()],
+            ],
         ];
         let mut transaction = PendingTransaction::default();
         let result = JsCodeResult::new_from_rust(
@@ -277,6 +291,7 @@ mod test {
             None,
             None,
             Some(array_output),
+            None,
             None,
             None,
         );
@@ -308,6 +323,9 @@ mod test {
                 std_err: None,
                 formatted_code_string: None,
                 result: CodeRunResult::Ok(Value::Array(array)),
+                return_type: Some("array".into()),
+                line_number: None,
+                output_type: None,
                 cells_accessed: HashSet::new(),
                 spill_error: false,
                 last_modified: result.last_modified,

@@ -9,6 +9,7 @@ import { focusGrid } from '../helpers/focusGrid';
 import { isEmbed } from '../helpers/isEmbed';
 import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
+import { UpdateAlertVersion } from './UpdateAlertVersion';
 import { useFileContext } from './components/FileProvider';
 import { FileUploadWrapper } from './components/FileUploadWrapper';
 import { Following } from './components/Following';
@@ -29,7 +30,10 @@ export default function QuadraticUI() {
   const navigation = useNavigation();
   const { uuid } = useParams() as { uuid: string };
   const { name } = useFileContext();
-  const { follow } = useMultiplayerUsers();
+  const { users } = useMultiplayerUsers();
+  const follow = editorInteractionState.follow
+    ? users.find((user) => user.session_id === editorInteractionState.follow)
+    : undefined;
 
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
@@ -50,7 +54,7 @@ export default function QuadraticUI() {
     >
       {editorInteractionState.showCellTypeMenu && <CellTypeMenu />}
       {!presentationMode && <TopBar />}
-      {editorInteractionState.showCommandPalette && <CommandPalette confirmSheetDelete={() => 0} />}
+      {editorInteractionState.showCommandPalette && <CommandPalette />}
       {editorInteractionState.showGoToMenu && <GoTo />}
 
       <div
@@ -99,6 +103,7 @@ export default function QuadraticUI() {
       )}
       {presentationMode && <PresentationModeHint />}
       {!isEmbed && <PermissionOverlay />}
+      <UpdateAlertVersion />
     </div>
   );
 }

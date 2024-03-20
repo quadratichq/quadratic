@@ -192,12 +192,21 @@ impl GridController {
                 .unsaved_transactions
                 .find_index(transaction.id)
             {
-                self.rollback_unsaved_transactions(transaction);
-                self.transactions.unsaved_transactions.remove(index);
-                self.mark_transaction_sent(transaction.id);
-                self.start_transaction(transaction);
-                self.apply_out_of_order_transactions(transaction, sequence_num);
-                self.reapply_unsaved_transactions(transaction);
+                // if it's our first unsaved_transaction, then there's nothing more to do except delete it and mark it as sent
+                if index == 0 {
+                    self.transactions.unsaved_transactions.remove(index);
+                    self.mark_transaction_sent(transaction.id);
+                    self.apply_out_of_order_transactions(transaction, sequence_num);
+                }
+                // otherwise we need to rollback all transaction and properly apply it
+                else {
+                    self.rollback_unsaved_transactions(transaction);
+                    self.transactions.unsaved_transactions.remove(index);
+                    self.mark_transaction_sent(transaction.id);
+                    self.start_transaction(transaction);
+                    self.apply_out_of_order_transactions(transaction, sequence_num);
+                    self.reapply_unsaved_transactions(transaction);
+                }
             } else {
                 // If the transaction is not one of ours, then we just apply the transaction after rolling back any unsaved transactions
                 self.rollback_unsaved_transactions(transaction);
@@ -794,7 +803,8 @@ mod tests {
             None,
             None,
             None,
-            Some("async output".to_string()),
+            Some(vec!["async output".into(), "text".into()]),
+            None,
             None,
             None,
             None,
@@ -891,7 +901,8 @@ mod tests {
             None,
             None,
             None,
-            Some("async output".to_string()),
+            Some(vec!["async output".into(), "text".into()]),
+            None,
             None,
             None,
             None,
@@ -955,7 +966,8 @@ mod tests {
             None,
             None,
             None,
-            Some("2".to_string()),
+            Some(vec!["2".into(), "number".into()]),
+            None,
             None,
             None,
             None,
@@ -994,7 +1006,8 @@ mod tests {
             None,
             None,
             None,
-            Some("3".to_string()),
+            Some(vec!["3".into(), "number".into()]),
+            None,
             None,
             None,
             None,
@@ -1197,5 +1210,43 @@ mod tests {
         assert_eq!(find_index(sheet, 0, 0), 0);
         assert_eq!(find_index(sheet, 1, 0), 1);
         assert_eq!(find_index(sheet, 2, 0), 2);
+    }
+
+    #[test]
+    fn receive_our_transactions_out_of_order() {
+        let mut gc = GridController::test();
+        let (transaction_id_0, operations_0) = create_multiple_calculations_0(&mut gc);
+        let (transaction_id_1, operations_1) = create_multiple_calculations_1(&mut gc);
+        let (transaction_id_2, operations_2) = create_multiple_calculations_2(&mut gc);
+
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_2).unwrap(),
+            3,
+            serde_json::from_str(&operations_2).unwrap(),
+        );
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_0).unwrap(),
+            1,
+            serde_json::from_str(&operations_0).unwrap(),
+        );
+        gc.received_transaction(
+            Uuid::from_str(&transaction_id_1).unwrap(),
+            2,
+            serde_json::from_str(&operations_1).unwrap(),
+        );
+
+        let sheet = gc.grid.first_sheet();
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 2 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
     }
 }

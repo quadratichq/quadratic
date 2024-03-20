@@ -1,0 +1,18 @@
+.codeEditorReturnHighlight {
+  /* font-weight: medium; */
+}
+
+.margin-view-overlays:hover .codeEditorReturnLineDecoration:after {
+  opacity: 0;
+}
+
+.codeEditorReturnLineDecoration::after {
+  content: '\2B90';
+  transition: 0.3s ease all;
+  position: absolute;
+  left: 7px;
+  transform: scaleX(-1);
+  font-size: 10px;
+
+  @apply text-foreground opacity-50;
+}

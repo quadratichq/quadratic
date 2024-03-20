@@ -12,8 +12,8 @@ import {
   WATCH,
 } from "./constants.js";
 import { Control } from "./control.js";
-import { help, helpCLI, helpKeyboard } from "./help.js";
-import { createScreen } from "./terminal.js";
+import { helpCLI, helpKeyboard } from "./help.js";
+import { logo } from "./logo.js";
 
 export class UI {
   private cli: CLI;
@@ -31,6 +31,8 @@ export class UI {
     this.cli = cli;
     this.control = control;
 
+    console.log(logo);
+
     this.interval = setInterval(() => {
       this.spin = (this.spin + 1) % ANIMATE_STATUS.length;
       if (this.showing) {
@@ -38,8 +40,6 @@ export class UI {
         this.prompt();
       }
     }, ANIMATION_INTERVAL);
-
-    createScreen();
   }
 
   quit() {
@@ -106,7 +106,7 @@ export class UI {
     }
   }
 
-  statusItem(component: string, alwaysWatch?: boolean) {
+  statusItem(component: string) {
     const error = this.control.status[component] === "error";
     const { name, color, dark, shortcut } = COMPONENTS[component];
     const index = name.toLowerCase().indexOf(shortcut.toLowerCase());
@@ -123,7 +123,7 @@ export class UI {
       this.write(" " + KILLED);
     } else if (!this.control.status[component]) {
       this.write(" " + ANIMATE_STATUS[this.spin], "gray");
-    } else if (this.cli.options[component] || alwaysWatch) {
+    } else if (this.cli.options[component]) {
       this.write(" " + WATCH, "gray");
     } else {
       this.write(" " + DONE, "green");
@@ -167,20 +167,17 @@ export class UI {
   prompt() {
     this.clear();
     this.write("\n");
-    this.write("Quadratic Dev", "underline");
-    this.write(SPACE);
-    this.statusItem("client", true);
+    this.statusItem("client");
     this.statusItem("api");
     this.statusItem("core");
     this.statusItem("multiplayer");
     this.statusItem("files");
     this.statusItem("types");
+    this.statusItem("python");
     if (this.help === "cli") {
       this.write(helpCLI);
     } else if (this.help) {
       this.write(helpKeyboard);
-    } else {
-      this.write(help);
     }
     this.promptExternal();
     this.showing = true;
@@ -235,8 +232,9 @@ export class UI {
             `[${chalk[color](displayName)}] ${chalk[color](data)}`
           );
         } else {
+          let dataColor = this.cli.options.dark ? "white" : "red";
           process.stdout.write(
-            `[${chalk[color](displayName)}] ${chalk.red(data)}`
+            `[${chalk[color](displayName)}] ${chalk[dataColor](data)}`
           );
         }
         this.prompt();

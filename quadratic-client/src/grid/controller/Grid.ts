@@ -15,6 +15,7 @@ import init, {
   JsComputeGetCells,
   JsRenderBorders,
   MinMax,
+  PasteSpecial,
   Pos,
   Rect as RectInternal,
   SheetOffsets,
@@ -33,6 +34,8 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   Rect,
+  SearchOptions,
+  SheetPos,
   TransactionSummary,
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
@@ -597,13 +600,15 @@ export class Grid {
     y: number;
     plainText: string | undefined;
     html: string | undefined;
+    special: PasteSpecial;
   }) {
-    const { sheetId, x, y, plainText, html } = options;
+    const { sheetId, x, y, plainText, html, special } = options;
     const summary = this.gridController.pasteFromClipboard(
       sheetId,
       new Pos(x, y),
       plainText,
       html,
+      special,
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
@@ -624,6 +629,7 @@ export class Grid {
     } catch (error) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
       // type in the UI.
+      console.error(error);
       reportError(error as unknown as string);
       Sentry.captureException(error);
     }
@@ -702,18 +708,30 @@ export class Grid {
     sheetName: string | undefined,
     lineNumber: number | undefined
   ): { x: number; y: number; value: string }[] | undefined {
-    const getCells = new JsComputeGetCells(
-      transactionId,
-      rect,
-      sheetName,
-      lineNumber === undefined ? undefined : BigInt(lineNumber)
-    );
+    const getCells = new JsComputeGetCells(transactionId, rect, sheetName, lineNumber);
     const result = this.gridController.calculationGetCells(getCells);
     if (result.Err) {
       this.transactionResponse(result.Err);
     } else if (result.response) {
       return result.response;
     }
+  }
+
+  rerunAllCodeCells() {
+    const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
+  rerunSheetCodeCells() {
+    const sheetId = sheets.sheet.id;
+    const summary = this.gridController.rerunSheetCodeCells(sheetId, sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
+  rerunCodeCell() {
+    const pos = sheets.sheet.cursor.getPos();
+    const summary = this.gridController.rerunCodeCell(sheets.sheet.id, pos, sheets.getCursorPosition());
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -767,9 +785,14 @@ export class Grid {
   }
 
   //#endregion
-}
 
-//#end
+  //#region Search
+  search(text: string, options: SearchOptions): SheetPos[] {
+    return this.gridController.search(text, options);
+  }
+
+  //#endregion
+}
 
 let gridCreate: Grid;
 

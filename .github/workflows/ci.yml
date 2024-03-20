@@ -24,7 +24,6 @@ jobs:
         with:
           components: clippy, llvm-tools-preview
           cache: false
-          channel: "nightly"
 
       - name: Install grcov
         run: if ! which grcov; then cargo install grcov; fi
@@ -42,11 +41,14 @@ jobs:
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
         run: |
           cd quadratic-core
           cargo test
 
       - name: Generate coverage for quadratic-core
+        env:
+          RUSTC_BOOTSTRAP: 1
         run: |
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
@@ -69,11 +71,14 @@ jobs:
         env:
           LLVM_PROFILE_FILE: grcov-%p-%m.profraw
           RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
         run: |
           cd quadratic-multiplayer
           npm run docker:test
 
       - name: Generate coverage quadratic-multiplayer
+        env:
+          RUSTC_BOOTSTRAP: 1
         run: |
           grcov $(find . -name "grcov-*.profraw" -print) \
             --branch \
@@ -100,6 +105,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.3' 
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
@@ -111,6 +119,10 @@ jobs:
       - name: Build quadratic-core
         run: |
           npm run build:wasm:javascript
+
+      - name: Build python
+        run: |
+          npm run build:python
 
       - name: Run npm test:ts in quadratic-client
         run: |
@@ -124,16 +136,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.11.3"
           cache: "pip"
 
       - name: Test python
         run: |
-          pip install -r requirements.txt
-          cd quadratic-client
-          npm run test:python
+          cd quadratic-kernels/python-wasm
+          npm run test
 
   test_api:
     runs-on: ubuntu-latest-8-cores

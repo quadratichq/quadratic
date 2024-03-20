@@ -15,6 +15,8 @@ pub enum JsRenderCellSpecial {
     Chart,
     SpillError,
     RunError,
+    True,
+    False,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -188,6 +190,13 @@ impl BitOrAssign for FormattingSummary {
 
 #[derive(Serialize, PartialEq, Debug)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsReturnInfo {
+    pub line_number: Option<u32>,
+    pub output_type: Option<String>,
+}
+
+#[derive(Serialize, PartialEq, Debug)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCodeCell {
     pub x: i64,
     pub y: i64,
@@ -197,6 +206,7 @@ pub struct JsCodeCell {
     pub std_err: Option<String>,
     pub evaluation_result: Option<String>,
     pub spill_error: Option<Vec<Pos>>,
+    pub return_info: Option<JsReturnInfo>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

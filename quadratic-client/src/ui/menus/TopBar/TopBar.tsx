@@ -1,6 +1,9 @@
+import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { SwitchApp } from '@/shadcn/ui/switch';
+import { Search } from '@/ui/components/Search';
+import { CommandPaletteIcon } from '@/ui/icons';
 import { Box, Tooltip, useMediaQuery, useTheme } from '@mui/material';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { electronMaximizeCurrentWindow } from '../../../helpers/electronMaximizeCurrentWindow';
@@ -12,6 +15,7 @@ import { NumberFormatMenu } from './SubMenus/NumberFormatMenu';
 import { QuadraticMenu } from './SubMenus/QuadraticMenu';
 import { useGridSettings } from './SubMenus/useGridSettings';
 import { TopBarFileMenu } from './TopBarFileMenu';
+import { TopBarMenuItem } from './TopBarMenuItem';
 import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
 import { TopBarZoomMenu } from './TopBarZoomMenu';
@@ -19,7 +23,7 @@ import { TopBarZoomMenu } from './TopBarZoomMenu';
 export const TopBar = () => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { permissions } = editorInteractionState;
   const { showCellTypeOutlines, setShowCellTypeOutlines } = useGridSettings();
   return (
@@ -39,6 +43,7 @@ export const TopBar = () => {
         borderWidth: '0 0 1px 0',
         borderStyle: 'solid',
         height: theme.spacing(6),
+        position: 'relative',
         ...(isElectron()
           ? {
               paddingLeft: '4.5rem',
@@ -72,7 +77,7 @@ export const TopBar = () => {
       <TopBarFileMenu />
 
       <div
-        className="flex items-center justify-end gap-4 lg:basis-1/3"
+        className="flex items-center justify-end gap-3 lg:basis-1/3"
         style={{
           // @ts-expect-error
           WebkitAppRegion: 'no-drag',
@@ -81,14 +86,29 @@ export const TopBar = () => {
         {isDesktop && !isEmbed && (
           <>
             <TopBarUsers />
-            <Tooltip title={`${showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`}>
+            <Tooltip title={`${showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`} arrow>
               <SwitchApp checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
             </Tooltip>
             <TopBarShareButton />
           </>
         )}
-        <TopBarZoomMenu />
+        <div className="flex self-stretch">
+          <TopBarMenuItem
+            title={`Command palette (${KeyboardSymbols.Command + 'P'})`}
+            noDropdown
+            buttonProps={{
+              style: { alignSelf: 'stretch' },
+              onClick: () => {
+                setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }));
+              },
+            }}
+          >
+            <CommandPaletteIcon style={{ fontSize: '22px' }} />
+          </TopBarMenuItem>
+          <TopBarZoomMenu />
+        </div>
       </div>
+      <Search />
     </Box>
   );
 };

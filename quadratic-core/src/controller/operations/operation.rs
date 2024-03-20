@@ -2,15 +2,16 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    cell_values::CellValues,
     grid::{formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
-    Array, SheetPos, SheetRect,
+    SheetPos, SheetRect,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Operation {
     SetCellValues {
-        sheet_rect: SheetRect,
-        values: Array,
+        sheet_pos: SheetPos,
+        values: CellValues,
     },
     SetCodeRun {
         sheet_pos: SheetPos,
@@ -30,8 +31,16 @@ pub enum Operation {
     },
 
     // Sheet metadata operations
+
+    // TODO: we should use the SheetSchema format + version in grid/file/current.rs
+    // instead of the actual Sheet. That way we can change the Sheet struct
+    // without breaking offline.
     AddSheet {
         sheet: Sheet,
+    },
+    DuplicateSheet {
+        sheet_id: SheetId,
+        new_sheet_id: SheetId,
     },
     DeleteSheet {
         sheet_id: SheetId,
@@ -128,6 +137,16 @@ impl fmt::Display for Operation {
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
             Operation::SetCursor { sheet_rect } => {
                 write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)
+            }
+            Operation::DuplicateSheet {
+                sheet_id,
+                new_sheet_id,
+            } => {
+                write!(
+                    fmt,
+                    "DuplicateSheet {{ sheet_id: {} new_sheet_id: {} }}",
+                    sheet_id, new_sheet_id
+                )
             }
         }
     }

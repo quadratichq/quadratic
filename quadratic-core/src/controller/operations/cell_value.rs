@@ -3,12 +3,18 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use crate::{
+    cell_values::CellValues,
     controller::GridController,
     grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind},
-    Array, CellValue, RunLengthEncoding, SheetPos, SheetRect,
+    CellValue, RunLengthEncoding, SheetPos, SheetRect,
 };
 
 use super::operation::Operation;
+
+// when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
+// there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
+// see original issue here: https://github.com/akubera/bigdecimal-rs/issues/108
+const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
 
 impl GridController {
     /// Convert string to a cell_value and generate necessary operations
@@ -33,6 +39,12 @@ impl GridController {
                     1,
                 )),
             });
+            if value.contains(',') {
+                ops.push(Operation::SetCellFormats {
+                    sheet_rect,
+                    attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
+                });
+            }
             // only change decimal places if decimals have not been set
             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
                 if sheet
@@ -46,8 +58,20 @@ impl GridController {
                 }
             }
             CellValue::Number(number)
-        } else if let Ok(bd) = BigDecimal::from_str(value) {
-            CellValue::Number(bd)
+        } else if let Some(bool) = CellValue::unpack_boolean(value) {
+            bool
+        } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(value)) {
+            if (bd.fractional_digit_count().unsigned_abs() as usize) > MAX_BIG_DECIMAL_SIZE {
+                CellValue::Text(value.into())
+            } else {
+                if value.contains(',') {
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericCommas(RunLengthEncoding::repeat(Some(true), 1)),
+                    });
+                }
+                CellValue::Number(bd)
+            }
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
             let numeric_format = NumericFormat {
                 kind: NumericFormatKind::Percentage,
@@ -82,10 +106,9 @@ impl GridController {
         let (operations, cell_value) = self.string_to_cell_value(sheet_pos, value);
         ops.extend(operations);
 
-        let sheet_rect = sheet_pos.into();
         ops.push(Operation::SetCellValues {
-            sheet_rect,
-            values: Array::from(cell_value),
+            sheet_pos,
+            values: CellValues::from(cell_value),
         });
         ops
     }
@@ -93,8 +116,11 @@ impl GridController {
     /// Generates and returns the set of operations to delete the values and code in a sheet_rect
     /// Does not commit the operations or create a transaction.
     pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
-        let values = Array::new_empty(sheet_rect.size());
-        vec![Operation::SetCellValues { sheet_rect, values }]
+        let values = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
+        vec![Operation::SetCellValues {
+            sheet_pos: sheet_rect.into(),
+            values,
+        }]
     }
 
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect
@@ -110,7 +136,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::SheetId, SheetPos};
+    use std::str::FromStr;
+
+    use bigdecimal::BigDecimal;
+
+    use crate::{controller::GridController, grid::SheetId, CellValue, SheetPos};
 
     #[test]
     fn test() {
@@ -126,6 +156,88 @@ mod test {
             "hello".to_string(),
             None,
         );
-        assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_rect\":{\"min\":{\"x\":1,\"y\":2},\"max\":{\"x\":1,\"y\":2},\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"size\":{\"w\":1,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"hello\"}]}}}]".to_string()));
+        assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_pos\":{\"x\":1,\"y\":2,\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"columns\":[{\"0\":{\"type\":\"text\",\"value\":\"hello\"}}],\"w\":1,\"h\":1}}}]".to_string()));
+    }
+
+    #[test]
+    fn boolean_to_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::test(),
+        };
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "true");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, true.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "false");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, false.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "TRUE");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, true.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "FALSE");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, false.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "tRue");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, true.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "FaLse");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, false.into());
+    }
+
+    #[test]
+    fn number_to_cell_value() {
+        let mut gc = GridController::test();
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id: SheetId::test(),
+        };
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "123");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(value, 123.into());
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "123.45");
+        assert_eq!(ops.len(), 0);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("123.45").unwrap())
+        );
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "123,456.78");
+        assert_eq!(ops.len(), 1);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("123456.78").unwrap())
+        );
+
+        let (ops, value) = gc.string_to_cell_value(sheet_pos, "123,456,789.01");
+        assert_eq!(ops.len(), 1);
+        assert_eq!(
+            value,
+            CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
+        );
+    }
+
+    #[test]
+    fn problematic_number() {
+        let mut gc = GridController::test();
+        let value = "980E92207901934";
+        let (_, cell_value) = gc.string_to_cell_value(
+            SheetPos {
+                sheet_id: gc.sheet_ids()[0],
+                x: 0,
+                y: 0,
+            },
+            value,
+        );
+        dbg!(cell_value.to_string());
     }
 }

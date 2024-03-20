@@ -6,15 +6,15 @@ import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
-import { CreateActionRequest } from './dashboard/FilesCreateRoute';
 import { grid } from './grid/controller/Grid';
 import { downloadFile, downloadQuadraticFile } from './helpers/downloadFileInBrowser';
+import { Action } from './routes/files.$uuid';
 import { FileContextType } from './ui/components/FileProvider';
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 export type GenericAction = {
   label: string;
-  isAvailable?: (permissions: FilePermission[], isAuthenticated?: boolean) => boolean;
+  isAvailable?: (permissions: FilePermission[], isAuthenticated: boolean) => boolean;
   run?: (args: any) => void;
 
   // Future shortcuts
@@ -49,11 +49,12 @@ export type GenericAction = {
 
 // TODO: create generic hasPermission(permission, permissionToCheck) function
 
-export const hasPermissionToEditFile = (permissions: FilePermission[]) => permissions.includes(FILE_EDIT);
+export const hasPermissionToEditFile = (permissions: FilePermission[], isAuthenticated?: boolean) =>
+  permissions.includes(FILE_EDIT);
 const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => isAuthenticated;
 
 export const createNewFileAction = {
-  label: 'New',
+  label: 'Create',
   isAvailable: isLoggedIn,
   run({ navigate }: { navigate: NavigateFunction }) {
     navigate(ROUTES.CREATE_FILE);
@@ -65,22 +66,26 @@ export const renameFileAction = {
   isAvailable: hasPermissionToEditFile,
 };
 
-export const duplicateFileAction = {
+export const duplicateFileWithUserAsOwnerAction = {
+  label: 'Duplicate in my files',
+  isAvailable: isLoggedIn,
+  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
+    const data = { action: 'duplicate', redirect: true, withCurrentOwner: false } as Action['request.duplicate'];
+    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
+  },
+};
+
+export const duplicateFileWithCurrentOwnerAction = {
   label: 'Duplicate',
   isAvailable: isLoggedIn,
-  run({ name, submit }: { name: string; submit: SubmitFunction }) {
-    const data: CreateActionRequest = {
-      name: name + ' (Copy)',
-      contents: grid.export(),
-      version: grid.getVersion(),
-    };
-
-    submit(data, { method: 'POST', action: ROUTES.CREATE_FILE, encType: 'application/json' });
+  async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
+    const data = { action: 'duplicate', redirect: true, withCurrentOwner: true } as Action['request.duplicate'];
+    submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
   },
 };
 
 export const downloadFileAction = {
-  label: 'Download local copy',
+  label: 'Download',
   isAvailable: isLoggedIn,
   run({ name }: { name: FileContextType['name'] }) {
     downloadQuadraticFile(name, grid.export());
@@ -90,7 +95,7 @@ export const downloadFileAction = {
 export const deleteFile = {
   label: 'Delete',
   isAvailable: (permissions: FilePermission[]) => permissions.includes(FILE_DELETE),
-  // TODO enhancement: handle this async operation in the UI similar to /files/create
+  // TODO: (enhancement) handle this async operation in the UI similar to /files/create
   async run({ uuid, addGlobalSnackbar }: { uuid: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
     if (window.confirm('Please confirm you want to delete this file.')) {
       try {
@@ -128,6 +133,16 @@ export const pasteAction = {
   isAvailable: hasPermissionToEditFile,
 };
 
+export const pasteActionValues = {
+  label: 'Paste values only',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const pasteActionFormats = {
+  label: 'Paste formats only',
+  isAvailable: hasPermissionToEditFile,
+};
+
 export const undoAction = {
   label: 'Undo',
   isAvailable: hasPermissionToEditFile,
@@ -142,9 +157,31 @@ export const copyAction = {
   label: 'Copy',
 };
 
+export const rerunCellAction = {
+  label: 'Run this code cell',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const rerunAction = {
+  label: 'Run all code cells in the file',
+  isAvailable: hasPermissionToEditFile,
+};
+
+export const rerunSheetAction = {
+  label: 'Run all code cells in the current sheet',
+  isAvailable: hasPermissionToEditFile,
+};
+
 export const downloadSelectionAsCsvAction = {
   label: 'Download selection as CSV',
   run({ fileName }: { fileName: string }) {
     downloadFile(fileName, grid.exportCsvSelection(), 'text/plain', 'csv');
   },
+};
+
+export const findInSheet = {
+  label: 'Find in current sheet',
+};
+export const findInSheets = {
+  label: 'Find in all sheets',
 };

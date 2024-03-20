@@ -1,10 +1,10 @@
 //! Websocket Message Responses
 //!
-//! A central place for storing websocket messages responses.
+//! A central place for websocket messages responses.
 
 use crate::error::MpError;
-use crate::state::user::UserStateUpdate;
-use crate::state::{room::Room, user::User};
+use crate::state::settings::MinVersion;
+use crate::state::user::{User, UserStateUpdate};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -15,6 +15,7 @@ use uuid::Uuid;
 pub(crate) enum MessageResponse {
     UsersInRoom {
         users: Vec<User>,
+        min_version: MinVersion,
     },
     UserUpdate {
         session_id: Uuid,
@@ -42,18 +43,11 @@ pub(crate) enum MessageResponse {
     },
 }
 
-impl From<Room> for MessageResponse {
-    fn from(room: Room) -> Self {
-        MessageResponse::UsersInRoom {
-            users: room.users.into_iter().map(|user| (user.1)).collect(),
-        }
-    }
-}
-
-impl From<DashMap<Uuid, User>> for MessageResponse {
-    fn from(users: DashMap<Uuid, User>) -> Self {
+impl From<(DashMap<Uuid, User>, &MinVersion)> for MessageResponse {
+    fn from((users, min_version): (DashMap<Uuid, User>, &MinVersion)) -> Self {
         MessageResponse::UsersInRoom {
             users: users.into_iter().map(|user| (user.1)).collect(),
+            min_version: min_version.to_owned(),
         }
     }
 }

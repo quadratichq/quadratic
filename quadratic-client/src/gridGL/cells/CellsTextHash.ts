@@ -1,12 +1,19 @@
+import { debugShowHashUpdates } from '@/debugFlags';
 import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { Bounds } from '../../grid/sheet/Bounds';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { JsRenderCell } from '../../quadratic-core/types';
-import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
 import { CellLabel } from './cellsLabel/CellLabel';
 import { LabelMeshes } from './cellsLabel/LabelMeshes';
+
+interface TrackClip {
+  column: number;
+  row: number;
+  hashX: number;
+  hashY: number;
+}
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container<LabelMeshes> {
@@ -24,7 +31,14 @@ export class CellsTextHash extends Container<LabelMeshes> {
   // column/row bounds (does not include overflow cells)
   AABB: Rectangle;
 
+  // shows bounds of the hash with content
   viewBounds: Bounds;
+
+  // rectangle of the hash on the screen regardless of content (does not include overflow cells)
+  rawViewRectangle: Rectangle;
+
+  // rectangle of the hash including overflowed cells
+  viewRectangle: Rectangle;
 
   // rebuild CellsTextHash
   dirty = false;
@@ -35,15 +49,23 @@ export class CellsTextHash extends Container<LabelMeshes> {
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
+  // keep track of what neighbors we've clipped
+  clipLeft: TrackClip[] = [];
+  clipRight: TrackClip[] = [];
+
   constructor(cellsSheet: CellsSheet, x: number, y: number) {
     super();
     this.cellsSheet = cellsSheet;
     this.cellLabels = new Map();
     this.labelMeshes = this.addChild(new LabelMeshes());
     this.viewBounds = new Bounds();
+    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
+    const start = cellsSheet.sheet.getCellOffsets(this.AABB.left, this.AABB.top);
+    const end = cellsSheet.sheet.getCellOffsets(this.AABB.right, this.AABB.bottom);
+    this.rawViewRectangle = new Rectangle(start.left, start.top, end.right - start.left, end.bottom - start.top);
+    this.viewRectangle = this.rawViewRectangle.clone();
     this.hashX = x;
     this.hashY = y;
-    this.AABB = new Rectangle(x * sheetHashWidth, y * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
   }
 
   get sheet(): Sheet {
@@ -64,15 +86,11 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   show(): void {
-    if (!this.visible) {
-      this.visible = true;
-    }
+    this.visible = true;
   }
 
   hide(): void {
-    if (this.visible) {
-      this.visible = false;
-    }
+    this.visible = false;
   }
 
   // overrides container's render function
@@ -90,6 +108,7 @@ export class CellsTextHash extends Container<LabelMeshes> {
   }
 
   createLabels(): void {
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] createLabels for ${this.hashX}, ${this.hashY}`);
     this.cellLabels = new Map();
     const cells = this.sheet.getRenderCells(this.AABB);
     cells.forEach((cell) => this.createLabel(cell));
@@ -103,10 +122,6 @@ export class CellsTextHash extends Container<LabelMeshes> {
       this.updateBuffers(false);
       this.dirty = false;
       this.dirtyBuffers = false;
-
-      // we need to test visibility in case the bounds changed
-      this.visible = this.viewBounds.intersectsRectangle(pixiApp.viewport.getVisibleBounds());
-
       return true;
     } else if (this.dirtyBuffers) {
       this.updateBuffers(true);
@@ -118,9 +133,9 @@ export class CellsTextHash extends Container<LabelMeshes> {
 
   private updateText() {
     this.labelMeshes.clear();
-
-    // place glyphs and sets size of labelMeshes
-    this.cellLabels.forEach((child) => child.updateText(this.labelMeshes));
+    this.cellLabels.forEach((child) => {
+      child.updateText(this.labelMeshes);
+    });
   }
 
   overflowClip(): void {
@@ -130,30 +145,97 @@ export class CellsTextHash extends Container<LabelMeshes> {
     // empty when there are no cells
     if (!bounds) return;
 
-    this.cellLabels.forEach((cellLabel) => this.checkClip(bounds, cellLabel));
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] overflowClip for ${this.hashX}, ${this.hashY}`);
+    const clipLeft: TrackClip[] = [];
+    const clipRight: TrackClip[] = [];
+
+    this.cellLabels.forEach((cellLabel) => this.checkClip(bounds, cellLabel, clipLeft, clipRight));
+
+    // we need to update any hashes that we may no longer be clipping
+    this.clipLeft.forEach((clip) => {
+      if (
+        !clipLeft.find(
+          (c) => c.column === clip.column && c.row === clip.row && c.hashX === clip.hashX && c.hashY === clip.hashY
+        )
+      ) {
+        const hash = this.cellsSheet.getCellsHash(clip.hashX, clip.hashY, false);
+        if (hash) {
+          hash.dirty = true;
+        }
+      }
+    });
+    this.clipRight.forEach((clip) => {
+      if (
+        !clipRight.find(
+          (c) => c.column === clip.column && c.row === clip.row && c.hashX === clip.hashX && c.hashY === clip.hashY
+        )
+      ) {
+        const hash = this.cellsSheet.getCellsHash(clip.hashX, clip.hashY, false);
+        if (hash) {
+          hash.dirty = true;
+        }
+      }
+    });
+    this.clipLeft = clipLeft;
+    this.clipRight = clipRight;
   }
 
-  private checkClip(bounds: Rectangle, label: CellLabel): void {
+  private checkClip(bounds: Rectangle, label: CellLabel, clipLeft: TrackClip[], clipRight: TrackClip[]): void {
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] checkClip for ${this.hashX}, ${this.hashY}`);
     let column = label.location.x - 1;
     const row = label.location.y;
     let currentHash: CellsTextHash | undefined = this;
+
     while (column >= bounds.left) {
       if (column < currentHash.AABB.x) {
         // find hash to the left of current hash (skip over empty hashes)
         currentHash = this.findPreviousHash(column, row, bounds);
+        if (!currentHash) break;
+      }
+      const neighborLabel = currentHash.getLabel(column, row);
+      if (neighborLabel) {
+        const clipRightResult = neighborLabel.checkRightClip(label.AABB.left);
+        if (clipRightResult) {
+          if (currentHash !== this) {
+            clipLeft.push({ column, row, hashX: currentHash.hashX, hashY: currentHash.hashY });
+            if (clipRightResult !== 'same') {
+              currentHash.dirty = true;
+            }
+          }
+        }
+        label.checkLeftClip(neighborLabel.AABB.right);
+        break;
+      }
+      column--;
+    }
+
+    currentHash = this;
+    column = label.location.x + 1;
+    while (column <= bounds.right) {
+      if (column > currentHash.AABB.right) {
+        // find hash to the right of current hash (skip over empty hashes)
+        currentHash = this.cellsSheet.findNextHash(column, row, bounds);
         if (!currentHash) return;
       }
       const neighborLabel = currentHash.getLabel(column, row);
       if (neighborLabel) {
-        neighborLabel.checkRightClip(label.AABB.left);
-        label.checkLeftClip(neighborLabel.AABB.right);
+        const leftClipResult = neighborLabel.checkLeftClip(label.AABB.right);
+        if (leftClipResult && currentHash !== this) {
+          clipRight.push({ column, row, hashX: currentHash.hashX, hashY: currentHash.hashY });
+          if (leftClipResult !== 'same') {
+            currentHash.dirty = true;
+          }
+        }
+        label.checkRightClip(neighborLabel.AABB.left);
         return;
       }
-      column--;
+      column++;
     }
   }
 
   updateBuffers(reuseBuffers: boolean): void {
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] updateBuffers for ${this.hashX}, ${this.hashY}`);
+
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare(reuseBuffers);
 
@@ -163,6 +245,23 @@ export class CellsTextHash extends Container<LabelMeshes> {
       const bounds = cellLabel.updateLabelMesh(this.labelMeshes);
       this.viewBounds.mergeInto(bounds);
     });
+
+    // adjust viewRectangle by viewBounds overflow
+    this.viewRectangle = this.rawViewRectangle.clone();
+    if (this.viewBounds.minX < this.viewRectangle.left) {
+      this.viewRectangle.width += this.viewRectangle.left - this.viewBounds.minX;
+      this.viewRectangle.x = this.viewBounds.minX;
+    }
+    if (this.viewBounds.maxX > this.viewRectangle.right) {
+      this.viewRectangle.width += this.viewBounds.maxX - this.viewRectangle.right;
+    }
+    if (this.viewBounds.minY < this.viewRectangle.top) {
+      this.viewRectangle.height += this.viewRectangle.top - this.viewBounds.minY;
+      this.viewRectangle.y = this.viewBounds.minY;
+    }
+    if (this.viewBounds.maxY > this.viewRectangle.bottom) {
+      this.viewRectangle.height += this.viewBounds.maxY - this.viewRectangle.bottom;
+    }
 
     // finalizes webGL buffers
     this.labelMeshes.finalize();
@@ -208,6 +307,11 @@ export class CellsTextHash extends Container<LabelMeshes> {
         }
       });
     }
+    if (changed && debugShowHashUpdates)
+      console.log(
+        `[CellsTextHash] adjustHeadings for ${this.hashX}, ${this.hashY} because of changes in column: ${column}, row: ${row}`
+      );
+
     return changed;
   }
 

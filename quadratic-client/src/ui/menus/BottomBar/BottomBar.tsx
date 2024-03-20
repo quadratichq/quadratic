@@ -1,5 +1,6 @@
 import { useRootRouteLoaderData } from '@/router';
-import { ChatBubbleOutline, Commit } from '@mui/icons-material';
+import { FeedbackIcon } from '@/ui/icons';
+import { Commit } from '@mui/icons-material';
 import { Stack, useMediaQuery, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -21,10 +22,10 @@ export const BottomBar = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const [cursorPositionString, setCursorPositionString] = useState('');
   const [multiCursorPositionString, setMultiCursorPositionString] = useState('');
-  const cursor = sheets.sheet.cursor;
 
   useEffect(() => {
     const updateCursor = () => {
+      const cursor = sheets.sheet.cursor;
       setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
       if (cursor.multiCursor) {
         setMultiCursorPositionString(
@@ -36,8 +37,12 @@ export const BottomBar = () => {
     };
     updateCursor();
     window.addEventListener('cursor-position', updateCursor);
-    return () => window.removeEventListener('cursor-position', updateCursor);
-  }, [cursor.cursorPosition.x, cursor.cursorPosition.y, cursor.multiCursor]);
+    window.addEventListener('change-sheet', updateCursor);
+    return () => {
+      window.removeEventListener('cursor-position', updateCursor);
+      window.removeEventListener('change-sheet', updateCursor);
+    };
+  }, []);
 
   const handleShowGoToMenu = () => {
     setEditorInteractionState({
@@ -71,7 +76,9 @@ export const BottomBar = () => {
     >
       <Stack direction="row">
         {showOnDesktop && <BottomBarItem onClick={handleShowGoToMenu}>Cursor: {cursorPositionString}</BottomBarItem>}
-        {showOnDesktop && cursor.multiCursor && <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>}
+        {showOnDesktop && sheets.sheet.cursor.multiCursor && (
+          <BottomBarItem>Selection: {multiCursorPositionString}</BottomBarItem>
+        )}
 
         {/* {showOnDesktop && selectedCell?.last_modified && (
           <BottomBarItem>
@@ -112,7 +119,7 @@ export const BottomBar = () => {
         {showOnDesktop && <PythonStateItem />}
         {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem
-            icon={<ChatBubbleOutline fontSize="inherit" />}
+            icon={<FeedbackIcon fontSize="inherit" />}
             onClick={() => {
               setEditorInteractionState((prevState) => ({ ...prevState, showFeedbackMenu: true }));
             }}

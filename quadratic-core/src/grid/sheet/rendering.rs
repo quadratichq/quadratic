@@ -18,10 +18,12 @@ use super::Sheet;
 impl Sheet {
     /// checks columns for any column that has data that might render
     pub fn has_render_cells(&self, rect: Rect) -> bool {
-        self.columns
-            .range(rect.x_range())
-            .any(|(_, column)| column.values.has_blocks_in_range(rect.y_range()))
-            || self.iter_code_output_in_rect(rect).count() > 0
+        self.columns.range(rect.x_range()).any(|(_, column)| {
+            column
+                .values
+                .iter()
+                .any(|(y, _)| rect.y_range().contains(y))
+        }) || self.iter_code_output_in_rect(rect).count() > 0
     }
 
     /// creates a render for a single cell
@@ -88,25 +90,34 @@ impl Sheet {
             }
             Some(column) => {
                 let mut align: Option<CellAlign> = column.align.get(y);
+                let mut special = None;
                 let wrap = column.wrap.get(y);
                 let bold = column.bold.get(y);
                 let italic = column.italic.get(y);
                 let text_color = column.text_color.get(y);
-                let value = if matches!(value, CellValue::Number(_)) {
-                    // get numeric_format and numeric_decimal to turn number into a string
-                    let numeric_format = column.numeric_format.get(y);
-                    let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
-                        numeric_format.kind == NumericFormatKind::Percentage
-                    });
-                    let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
-                    let numeric_commas = column.numeric_commas.get(y);
+                let value = match &value {
+                    CellValue::Number(_) => {
+                        // get numeric_format and numeric_decimal to turn number into a string
+                        let numeric_format = column.numeric_format.get(y);
+                        let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
+                            numeric_format.kind == NumericFormatKind::Percentage
+                        });
+                        let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
+                        let numeric_commas = column.numeric_commas.get(y);
 
-                    // if align is not set, set it to right only for numbers
-                    align = align.or(Some(CellAlign::Right));
+                        // if align is not set, set it to right only for numbers
+                        align = align.or(Some(CellAlign::Right));
 
-                    value.to_display(numeric_format, numeric_decimals, numeric_commas)
-                } else {
-                    value.to_display(None, None, None)
+                        value.to_display(numeric_format, numeric_decimals, numeric_commas)
+                    }
+                    CellValue::Logical(bool) => {
+                        special = match bool {
+                            true => Some(JsRenderCellSpecial::True),
+                            false => Some(JsRenderCellSpecial::False),
+                        };
+                        "".to_string()
+                    }
+                    _ => value.to_display(None, None, None),
                 };
                 JsRenderCell {
                     x,
@@ -118,7 +129,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
-                    special: None,
+                    special,
                 }
             }
         }
@@ -208,15 +219,18 @@ impl Sheet {
 
         // Fetch ordinary value cells.
         columns_iter.clone().for_each(|(x, column)| {
-            column
-                .values
-                .values_in_range(rect.y_range())
-                .for_each(|(y, value)| {
-                    // ignore code cells when rendering since they will be taken care in the next part
-                    if !matches!(value, CellValue::Code(_)) {
-                        render_cells.push(self.get_render_cell(x, y, Some(column), value, None));
-                    }
-                });
+            column.values.range(rect.y_range()).for_each(|(y, value)| {
+                // ignore code cells when rendering since they will be taken care in the next part
+                if !matches!(value, CellValue::Code(_)) {
+                    render_cells.push(self.get_render_cell(
+                        x,
+                        *y,
+                        Some(column),
+                        value.clone(),
+                        None,
+                    ));
+                }
+            });
         });
 
         // Fetch values from code cells
@@ -394,6 +408,9 @@ mod tests {
                 spill_error: false,
                 cells_accessed: HashSet::new(),
                 result: CodeRunResult::Ok(Value::Single(CellValue::Text("hello".to_string()))),
+                return_type: Some("text".into()),
+                line_number: None,
+                output_type: None,
                 last_modified: Utc::now(),
             }),
         );
@@ -503,14 +520,14 @@ mod tests {
             JsRenderCell {
                 x: 2,
                 y: 5,
-                value: "true".to_string(),
+                value: "".to_string(),
                 language: None,
                 align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: None,
+                special: Some(JsRenderCellSpecial::True),
             },
         );
         assert_eq!(
@@ -566,7 +583,8 @@ mod tests {
             None,
             None,
             None,
-            Some("<html></html>".into()),
+            Some(vec!["<html></html>".into(), "text".into()]),
+            None,
             None,
             None,
             None,
@@ -633,7 +651,10 @@ mod tests {
             result: CodeRunResult::Ok(Value::Array(
                 vec![vec!["1", "2", "3"], vec!["4", "5", "6"]].into(),
             )),
+            return_type: Some("number".into()),
             spill_error: false,
+            line_number: None,
+            output_type: None,
         };
 
         // render rect is larger than code rect
@@ -703,5 +724,31 @@ mod tests {
                 special: None,
             }]
         );
+    }
+
+    #[test]
+    fn render_cells_boolean() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value((0, 0, sheet_id).into(), "true".to_string(), None);
+        gc.set_cell_value((1, 1, sheet_id).into(), "false".to_string(), None);
+        gc.set_cell_value((2, 2, sheet_id).into(), "TRUE".to_string(), None);
+        gc.set_cell_value((3, 3, sheet_id).into(), "FALSE".to_string(), None);
+        gc.set_cell_value((4, 4, sheet_id).into(), "tRUE".to_string(), None);
+        gc.set_cell_value((5, 5, sheet_id).into(), "fALSE".to_string(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        let rendering = sheet.get_render_cells(Rect {
+            min: (0, 0).into(),
+            max: (5, 5).into(),
+        });
+        for (i, rendering) in rendering.iter().enumerate().take(5 + 1) {
+            assert_eq!(rendering.value, "".to_string());
+            if i % 2 == 0 {
+                assert_eq!(rendering.special, Some(JsRenderCellSpecial::True));
+            } else {
+                assert_eq!(rendering.special, Some(JsRenderCellSpecial::False));
+            }
+        }
     }
 }

@@ -20,7 +20,7 @@ export async function getTeam({ uuid, userId }: { uuid: string; userId: number }
   }
 
   // Check if the user making the request has access to the team
-  const userMakingRequest = await dbClient.userTeamRole.findUnique({
+  const userTeamRole = await dbClient.userTeamRole.findUnique({
     where: {
       userId_teamId: {
         userId,
@@ -28,14 +28,14 @@ export async function getTeam({ uuid, userId }: { uuid: string; userId: number }
       },
     },
   });
-  if (userMakingRequest === null) {
-    throw new ApiError(404, 'Team not found');
+  if (userTeamRole === null) {
+    throw new ApiError(403, 'You don’t have access to this team');
   }
 
-  // TODO: (teams) if the team is deleted
+  // TODO: future - if the team is deleted/archived
 
   // Create info about the user making the request
-  const user = { id: userId, permissions: getTeamPermissions(userMakingRequest.role), role: userMakingRequest.role };
+  const userMakingRequest = { id: userId, permissions: getTeamPermissions(userTeamRole.role), role: userTeamRole.role };
 
-  return { team, user };
+  return { team, userMakingRequest };
 }

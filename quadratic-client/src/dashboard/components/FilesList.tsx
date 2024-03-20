@@ -1,25 +1,27 @@
 import { ShareFileDialog } from '@/components/ShareDialog';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
 import useLocalStorage from '../../hooks/useLocalStorage';
-import { Loader as FilesLoader } from '../../routes/files';
 import { Action as FilesAction } from '../../routes/files.$uuid';
 import { FileListItem, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
 import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
-export function FilesList({
-  isEditable,
-  files,
-  emptyState,
-}: {
-  isEditable?: boolean;
-  files: FilesLoader;
-  emptyState: ReactNode;
-}) {
+export type FilesListFile = {
+  permissions: FilePermission[];
+  uuid: string;
+  name: string;
+  createdDate: string;
+  updatedDate: string;
+  publicLinkAccess: PublicLinkAccess;
+  thumbnail: string | null;
+};
+
+export function FilesList({ files, emptyState }: { files: FilesListFile[]; emptyState: ReactNode }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
@@ -38,10 +40,22 @@ export function FilesList({
   // We will optimistcally render the list of files
   let filesToRender = files;
 
-  // If there are files being duplicated, render them first
+  // If there are files being duplicated, prepend them to the list
   const filesBeingDuplicated = fetchers
     .filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'duplicate')
-    .map((fetcher) => (fetcher.json as FilesAction['request.duplicate'])?.file);
+    .map((fetcher, i) => {
+      // Grab the file UUID from the `formAction` whose pattern is: "/files/:uuid"
+      // (filter makes sure there's no trailing slash to deal with)
+      const fileUuid = fetcher.formAction?.split('/').filter(Boolean).pop();
+      // We should never have a file that's duplicating that's not in the list
+      const file = files.find((file) => file.uuid === fileUuid) as FilesListFile;
+      return {
+        ...file,
+        uuid: `${fileUuid}--duplicate-${i}`,
+        name: file.name + ` (Copy)`,
+        updatedDate: new Date().toISOString(),
+      };
+    });
   if (filesBeingDuplicated.length > 0) {
     filesToRender = [...filesBeingDuplicated, ...filesToRender];
   }
@@ -85,7 +99,6 @@ export function FilesList({
             key={file.uuid}
             file={file}
             filterValue={filterValue}
-            isEditable={isEditable}
             activeShareMenuFileId={activeShareMenuFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
             viewPreferences={viewPreferences}

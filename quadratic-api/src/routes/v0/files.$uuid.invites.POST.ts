@@ -36,6 +36,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     userMakingRequest: { filePermissions },
   } = await getFile({ uuid, userId: userMakingRequestId });
 
+  // ***************************************************************************
+  // A note before we begin:
+  // A lot of the logic here is shared with the team invite. If you modify
+  // something here, it’s very possible you’ll need to modify it there too.
+  // ***************************************************************************
+
   // Can you even invite others?
   if (!filePermissions.includes(FILE_EDIT)) {
     throw new ApiError(403, 'You do not have permission to invite others to this file.');
@@ -58,6 +64,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
   // Get the auth0 info (email/name) for the user making the request
   const resultsById = await getUsersFromAuth0([{ id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id }]);
   const { email: userMakingRequestEmail, name: userMakingRequestName } = resultsById[userMakingRequestId];
+
+  // Are you trying to invite yourself as the owner? No dice.
+  if (userMakingRequestId === ownerUserId && userMakingRequestEmail === email) {
+    throw new ApiError(400, 'As the file owner you cannot invite yourself to the file.');
+  }
+
+  // Stuff for sending email
   const emailTemplateArgs = {
     senderName: userMakingRequestName,
     senderEmail: userMakingRequestEmail,
@@ -66,12 +79,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     fileUuid: uuid,
     origin: String(req.headers.origin),
   };
-
-  // Are you trying to invite yourself as the file owner? No dice.
-  if (userMakingRequestId === ownerUserId && userMakingRequestEmail === email) {
-    throw new ApiError(400, 'As the file owner you cannot invite yourself to the file.');
-  }
-
   const createInviteAndSendEmail = async () => {
     const dbInvite = await dbClient.fileInvite.create({
       data: {
@@ -92,7 +99,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
   // being invited. So we create an invite and send an email.
   if (auth0Users.length === 0) {
     const dbInvite = await createInviteAndSendEmail();
-    return res.status(201).json({ email, role, id: dbInvite.id });
+    return res.status(201).json({ email: dbInvite.email, role: dbInvite.role, id: dbInvite.id });
   }
 
   // 2.
@@ -126,7 +133,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     // So we create an invite (it'll turn into a user when they login for the 1st time)
     if (!dbUser) {
       const dbInvite = await createInviteAndSendEmail();
-      return res.status(201).json({ email, role, id: dbInvite.id });
+      return res.status(201).json({ email: dbInvite.email, role: dbInvite.role, id: dbInvite.id });
     }
 
     // Are they already a file user? That's a conflict.

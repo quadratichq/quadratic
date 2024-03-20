@@ -6,18 +6,17 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 import { FilePermissionSchema } from 'quadratic-shared/typesAndSchemas';
 import React, { useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { Link, useSubmit } from 'react-router-dom';
+import { Link, useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { duplicateFileAction } from '../../actions';
+import { duplicateFileWithUserAsOwnerAction } from '../../actions';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../constants/routes';
-import { useFileContext } from './FileProvider';
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 export function PermissionOverlay() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const { permissions } = useRecoilValue(editorInteractionStateAtom);
-  const { name } = useFileContext();
+  const { uuid } = useParams() as { uuid: string };
   const theme = useTheme();
   const submit = useSubmit();
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -29,7 +28,7 @@ export function PermissionOverlay() {
   // If you're not logged in, we've got a message for you
   if (!isAuthenticated) {
     return (
-      <Wrapper>
+      <FixedBottomAlert>
         <Type>
           <strong>Welcome to Quadratic.</strong> You must log in to edit this file.
         </Type>
@@ -41,21 +40,26 @@ export function PermissionOverlay() {
             <Link to={ROUTES.SIGNUP_WITH_REDIRECT()}>Sign up</Link>
           </Button>
         </Stack>
-      </Wrapper>
+      </FixedBottomAlert>
     );
   }
 
   // If you can't edit the file, we've got a message for you
   if (!permissions.includes(FILE_EDIT)) {
     return (
-      <Wrapper>
+      <FixedBottomAlert>
         <Type>
           <strong>Read-only.</strong> To edit this file, make a duplicate in your files.
         </Type>
-        <Button variant="outline" size="sm" onClick={() => duplicateFileAction.run({ name, submit })}>
-          {duplicateFileAction.label}
+        <Button
+          className="flex-shrink-0"
+          variant="outline"
+          size="sm"
+          onClick={() => duplicateFileWithUserAsOwnerAction.run({ uuid, submit })}
+        >
+          {duplicateFileWithUserAsOwnerAction.label}
         </Button>
-      </Wrapper>
+      </FixedBottomAlert>
     );
   }
 
@@ -64,23 +68,23 @@ export function PermissionOverlay() {
   // logged in. They won't see this. They'll see the "Log in" message above.
   if (permissions.includes(FILE_EDIT) && isMobile && isOpen) {
     return (
-      <Wrapper>
+      <FixedBottomAlert>
         <Type>
           <strong>Read-only on mobile.</strong> Open on desktop to edit cells and run code.
         </Type>
         <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
           <Cross2Icon />
         </Button>
-      </Wrapper>
+      </FixedBottomAlert>
     );
   }
 
   return null;
 }
 
-function Wrapper({ children }: { children: React.ReactNode }) {
+export function FixedBottomAlert({ children }: { children: React.ReactNode }) {
   return (
-    <div className="fixed bottom-16 left-1/2 z-10  flex w-[95%] max-w-xl -translate-x-1/2 flex-row items-center justify-between gap-8 rounded border border-border bg-background px-4 py-3 shadow-lg">
+    <div className="fixed bottom-16 left-1/2 z-10  flex w-[95%] max-w-xl -translate-x-1/2 flex-row items-center justify-between gap-4 rounded border border-border bg-background px-4 py-3 shadow-lg">
       {children}
     </div>
   );

@@ -58,7 +58,13 @@ fn criterion_benchmark(c: &mut Criterion) {
                 sheet_id,
             };
             let contents = gc.copy_to_clipboard(sheet_rect);
-            gc.paste_from_clipboard(sheet_pos, Some(contents.0), Some(contents.1), None);
+            gc.paste_from_clipboard(
+                sheet_pos,
+                Some(contents.0),
+                Some(contents.1),
+                quadratic_core::controller::user_actions::clipboard::PasteSpecial::None,
+                None,
+            );
         });
     });
 
@@ -77,7 +83,13 @@ fn criterion_benchmark(c: &mut Criterion) {
                 sheet_id,
             };
             let contents = gc.copy_to_clipboard(sheet_rect);
-            gc.paste_from_clipboard(sheet_pos, Some(contents.0), Some(contents.1), None);
+            gc.paste_from_clipboard(
+                sheet_pos,
+                Some(contents.0),
+                Some(contents.1),
+                quadratic_core::controller::user_actions::clipboard::PasteSpecial::None,
+                None,
+            );
         });
     });
 

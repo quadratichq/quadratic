@@ -4,18 +4,17 @@ import { EditorInteractionState } from '../../../atoms/editorInteractionStateAto
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { Circle } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
-// todo: fix types
-
 interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
   editorMode: EditorInteractionState['mode'];
   editorContent: string | undefined;
-  evaluationResult?: any;
+  evaluationResult?: EvaluationResult;
   spillError?: Coordinate[];
 }
 

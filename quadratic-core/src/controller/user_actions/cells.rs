@@ -1,6 +1,6 @@
 use crate::controller::{transaction_summary::TransactionSummary, GridController};
 
-use crate::{grid::CodeCellLanguage, SheetPos, SheetRect};
+use crate::{SheetPos, SheetRect};
 
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
@@ -43,20 +43,6 @@ impl GridController {
             x = sheet_pos.x;
             y += 1;
         }
-        self.start_user_transaction(ops, cursor)
-    }
-
-    /// Starts a transaction to set a code_cell using user's code_string input
-    ///
-    /// Returns a [`TransactionSummary`].
-    pub fn set_code_cell(
-        &mut self,
-        sheet_pos: SheetPos,
-        language: CodeCellLanguage,
-        code_string: String,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
-        let ops = self.set_code_cell_operations(sheet_pos, language, code_string);
         self.start_user_transaction(ops, cursor)
     }
 

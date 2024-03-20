@@ -98,7 +98,6 @@ impl GridController {
     /// Externally called when an async calculation completes
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
         let transaction_id = Uuid::parse_str(&result.transaction_id())?;
-
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
         if result.cancel_compute.unwrap_or(false) {
@@ -134,14 +133,12 @@ impl From<Pos> for CellHash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{grid::GridBounds, Array, CellValue, Pos, Rect, SheetPos, SheetRect};
+    use crate::{cell_values::CellValues, grid::GridBounds, CellValue, Pos, Rect, SheetPos};
 
     fn add_cell_value(sheet_pos: SheetPos, value: CellValue) -> Operation {
-        let sheet_rect = SheetRect::single_sheet_pos(sheet_pos);
-
         Operation::SetCellValues {
-            sheet_rect,
-            values: Array::from(value),
+            sheet_pos,
+            values: CellValues::from(value),
         }
     }
 
@@ -285,7 +282,8 @@ mod tests {
             None,
             None,
             None,
-            Some("1".into()),
+            Some(vec!["1".into(), "number".into()]),
+            None,
             None,
             None,
             None,

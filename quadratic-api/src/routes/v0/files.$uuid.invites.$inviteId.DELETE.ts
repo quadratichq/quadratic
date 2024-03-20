@@ -31,10 +31,12 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/inv
     user: { id: userId },
   } = req as RequestWithUser;
   const inviteToDeleteId = Number(inviteId);
-  const { userMakingRequest } = await getFile({ uuid, userId });
+  const {
+    userMakingRequest: { filePermissions },
+  } = await getFile({ uuid, userId });
 
   // User making the request can edit
-  if (!userMakingRequest.filePermissions.includes(FILE_EDIT)) {
+  if (!filePermissions.includes(FILE_EDIT)) {
     throw new ApiError(403, 'You do not have permission to delete this invite.');
   }
 

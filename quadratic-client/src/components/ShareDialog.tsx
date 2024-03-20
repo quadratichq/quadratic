@@ -1,3 +1,4 @@
+import { apiClient } from '@/api/apiClient';
 import { ROUTES } from '@/constants/routes';
 import { CONTACT_URL } from '@/constants/urls';
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
@@ -7,9 +8,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/shadcn/ui/input';
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/shadcn/ui/select';
 import { Skeleton } from '@/shadcn/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shadcn/ui/tooltip';
+import { cn } from '@/shadcn/utils';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
-import { EnvelopeClosedIcon, Link1Icon, LinkBreak1Icon } from '@radix-ui/react-icons';
+import {
+  EnvelopeClosedIcon,
+  ExclamationTriangleIcon,
+  Link1Icon,
+  LinkBreak1Icon,
+  PersonIcon,
+} from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import {
   ApiTypes,
@@ -37,7 +46,17 @@ function getRoleLabel(role: UserTeamRole | UserFileRole) {
   );
 }
 
-export function ShareDialog({ onClose, title, description, children }: any) {
+export function ShareDialog({
+  onClose,
+  title,
+  description,
+  children,
+}: {
+  onClose: () => void;
+  title: string;
+  description: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent>
@@ -45,7 +64,7 @@ export function ShareDialog({ onClose, title, description, children }: any) {
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className={`flex flex-col gap-4`}>{children}</div>
+        <div className={`flex flex-col gap-3`}>{children}</div>
       </DialogContent>
     </Dialog>
   );
@@ -64,13 +83,9 @@ export function ShareTeamDialog({
     invites,
     team: { name, uuid },
   } = data;
-  const action = `/teams/${uuid}`;
+  const action = ROUTES.TEAM(uuid);
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
 
-  // Sort the users how we want
-  sortLoggedInUserFirst(users, userMakingRequest.id);
-
-  // TODO:(enhancement) error state when these fail
   const pendingInvites = useFetchers()
     .filter(
       (fetcher) =>
@@ -92,19 +107,45 @@ export function ShareTeamDialog({
     ...pendingInvites.map((invite) => invite.email),
   ];
 
+  const noOfUsers = users.length;
+
   return (
-    <ShareDialog title={`Share ${name}`} description="Invite people to collaborate in this team" onClose={onClose}>
+    <ShareDialog
+      title={`${name} members`}
+      description={
+        <>
+          {noOfUsers} paid member{noOfUsers !== 1 ? 's' : ''} ·{' '}
+          <Button
+            variant="link"
+            onClick={() => {
+              apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
+                window.location.href = data.url;
+              });
+            }}
+            className="h-auto p-0 font-normal leading-4"
+          >
+            Edit billing
+          </Button>
+        </>
+      }
+      onClose={onClose}
+    >
       {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
         <InviteForm
           action={action}
           intent="create-team-invite"
           disallowedEmails={exisitingTeamEmails}
-          roles={[UserTeamRoleSchema.enum.EDITOR, UserTeamRoleSchema.enum.VIEWER]}
+          roles={[
+            ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER ? [UserTeamRoleSchema.enum.OWNER] : []),
+            UserTeamRoleSchema.enum.EDITOR,
+            UserTeamRoleSchema.enum.VIEWER,
+          ]}
+          roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
         />
       )}
 
-      {users.map((user, i) => {
-        const isLoggedInUser = i === 0;
+      {users.map((user) => {
+        const isLoggedInUser = userMakingRequest.id === user.id;
         const canDelete = isLoggedInUser
           ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
           : canDeleteUserInTeam({
@@ -185,7 +226,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     userMakingRequest: { filePermissions, id: loggedInUserId },
     owner,
   } = data;
-  const action = `/files/${uuid}/sharing`;
+  const action = ROUTES.FILES_SHARE(uuid);
   const canEditFile = filePermissions.includes('FILE_EDIT');
 
   sortLoggedInUserFirst(users, loggedInUserId);
@@ -222,7 +263,18 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         />
       )}
 
-      {/* TODO: (teams) If it's part of a team, that goes here. Otherwise, you show the user owner */}
+      {owner.type === 'team' && (
+        <ListItem className="py-1 text-muted-foreground">
+          <div className="flex h-6 w-6 items-center justify-center">
+            <PersonIcon className="-mr-[2px]" />
+            <PersonIcon className="-ml-[2px]" />
+          </div>
+          <Type variant="body2">Everyone at {owner.name}</Type>
+          <Type variant="body2" className="pr-4">
+            Can access
+          </Type>
+        </ListItem>
+      )}
 
       <ListItemPublicLink uuid={uuid} publicLinkAccess={publicLinkAccess} disabled={!canEditFile} />
 
@@ -243,6 +295,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         return (
           <ManageUser
             key={user.id}
+            publicLinkAccess={publicLinkAccess}
             isLoggedInUser={isLoggedInUser}
             user={user}
             roles={canEditFile ? ['EDITOR', 'VIEWER'] : ['VIEWER']}
@@ -298,7 +351,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
   );
 }
 
-export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
+export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
   const fetcher = useFetcher();
 
   let loadState = !fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED';
@@ -344,17 +397,6 @@ export function ShareFileDialog({ uuid, name, onClose, fetcherUrl }: any) {
   );
 }
 
-// function ListItemTeamMember({ teamName }: { teamName: string }) {
-//   return (
-//     <ListItem>
-//       <div className={`flex h-6 w-6 items-center justify-center`}>
-//         <PersonIcon className={`h-5 w-5`} />
-//       </div>
-//       <Type variant="body2">Everyone in {teamName} can access this file</Type>
-//     </ListItem>
-//   );
-// }
-
 /**
  * Form that accepts an email and a role and invites the person to a team or file
  *
@@ -365,11 +407,13 @@ export function InviteForm({
   action,
   intent,
   roles,
+  roleDefaultValue,
 }: {
   disallowedEmails: string[];
   intent: TeamAction['request.create-team-invite']['intent'] | FileShareAction['request.create-file-invite']['intent'];
   action: string;
   roles: (UserTeamRole | UserFileRole)[];
+  roleDefaultValue?: UserTeamRole | UserFileRole;
 }) {
   const [error, setError] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -389,7 +433,7 @@ export function InviteForm({
     // Get the data from the form
     const formData = new FormData(e.currentTarget);
     const emailFromUser = String(formData.get('email_search')).trim();
-    const roleIndex = Number(formData.get('roleIndex'));
+    const role = String(formData.get('role'));
 
     // Validate email
     let email;
@@ -406,10 +450,7 @@ export function InviteForm({
 
     // Submit the data
     // TODO: (enhancement) enhance types so it knows which its submitting to
-    submit(
-      { intent, email: email, role: roles[roleIndex] },
-      { method: 'POST', action, encType: 'application/json', navigate: false }
-    );
+    submit({ intent, email: email, role }, { method: 'POST', action, encType: 'application/json', navigate: false });
 
     // Reset the email input & focus it
     if (inputRef.current) {
@@ -424,6 +465,13 @@ export function InviteForm({
       inputRef.current?.focus();
     }
   }, [deleteTriggered]);
+
+  // Ensure the input gets focus when the dialog opens
+  useEffect(() => {
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+  }, []);
 
   return (
     <form className={`flex flex-row items-start gap-2`} onSubmit={onSubmit}>
@@ -450,13 +498,13 @@ export function InviteForm({
       </div>
 
       <div className="flex-shrink-0">
-        <Select defaultValue={'0'} name="roleIndex">
+        <Select defaultValue={roleDefaultValue ? roleDefaultValue : roles[0]} name="role">
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             {roles.map((role, i) => (
-              <SelectItem key={role} value={String(i)}>
+              <SelectItem key={role} value={role}>
                 {getRoleLabel(role)}
               </SelectItem>
             ))}
@@ -478,6 +526,7 @@ export function InviteForm({
 
 function ManageUser({
   isLoggedInUser,
+  publicLinkAccess,
   user,
   roles,
   onDelete,
@@ -485,6 +534,7 @@ function ManageUser({
 }: {
   onDelete?: (submit: FetcherSubmitFunction, userId: string) => void;
   onUpdate?: (submit: FetcherSubmitFunction, userId: string, role: UserTeamRole | UserFileRole) => void;
+  publicLinkAccess?: PublicLinkAccess;
   isLoggedInUser: boolean;
   user: {
     id: number;
@@ -500,7 +550,7 @@ function ManageUser({
 
   const isReadOnly = !((roles.length > 2 && Boolean(onUpdate)) || Boolean(onDelete));
   const userId = String(user.id);
-  let value = user.role;
+  let activeRole = user.role;
   let error = undefined;
 
   // If user is being deleted, hide them
@@ -513,12 +563,12 @@ function ManageUser({
 
   // If the user's role is being updated, show the optimistic value
   if (fetcherUpdate.state !== 'idle' && isJsonObject(fetcherUpdate.json)) {
-    value = fetcherUpdate.json.role as (typeof roles)[0];
+    activeRole = fetcherUpdate.json.role as (typeof roles)[0];
   } else if (fetcherUpdate.data && !fetcherUpdate.data.ok) {
     error = 'Failed to update. Try again.';
   }
 
-  const label = getRoleLabel(value);
+  const label = getRoleLabel(activeRole);
 
   return (
     <ListItemUser
@@ -531,31 +581,45 @@ function ManageUser({
         isReadOnly ? (
           <Type className="pr-4">{label}</Type>
         ) : (
-          <Select
-            value={value}
-            onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
-              if (value === 'DELETE' && onDelete) {
-                onDelete(fetcherDelete.submit, userId);
-              } else if (onUpdate) {
-                const role = value as (typeof roles)[0];
-                onUpdate(fetcherUpdate.submit, userId, role);
-              }
-            }}
-          >
-            <SelectTrigger className={`w-auto`}>
-              <SelectValue>{label}</SelectValue>
-            </SelectTrigger>
+          <div className="flex items-center gap-4">
+            {publicLinkAccess === 'EDIT' && activeRole === 'VIEWER' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <ExclamationTriangleIcon className="text-warning" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-40 text-center">
+                    This person can still edit because the file is set so <em>anyone with the link can edit</em>.
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            <Select
+              value={activeRole}
+              onValueChange={(value: 'DELETE' | (typeof roles)[0]) => {
+                if (value === 'DELETE' && onDelete) {
+                  onDelete(fetcherDelete.submit, userId);
+                } else if (onUpdate) {
+                  const role = value as (typeof roles)[0];
+                  onUpdate(fetcherUpdate.submit, userId, role);
+                }
+              }}
+            >
+              <SelectTrigger className={`w-auto`}>
+                <SelectValue>{label}</SelectValue>
+              </SelectTrigger>
 
-            <SelectContent>
-              {roles.map((role, i) => (
-                <SelectItem key={i} value={role}>
-                  {getRoleLabel(role)}
-                </SelectItem>
-              ))}
-              <SelectSeparator />
-              <SelectItem value="DELETE">{isLoggedInUser ? 'Leave' : 'Remove'}</SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectContent>
+                {roles.map((role, i) => (
+                  <SelectItem key={i} value={role}>
+                    {getRoleLabel(role)}
+                  </SelectItem>
+                ))}
+                <SelectSeparator />
+                <SelectItem value="DELETE">{isLoggedInUser ? 'Leave' : 'Remove'}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         )
       }
     />
@@ -722,7 +786,7 @@ function ListItemPublicLink({
   };
 
   const optionsByValue: Record<PublicLinkAccess, string> = {
-    NOT_SHARED: 'Cannot view',
+    NOT_SHARED: 'No access',
     READONLY: 'Can view',
     EDIT: 'Can edit',
   };
@@ -736,7 +800,7 @@ function ListItemPublicLink({
       </div>
 
       <div className={`flex flex-col`}>
-        <Type variant="body2">Anyone with the link</Type>
+        <Type variant="body2">Anyone with the public link</Type>
         {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
           <Type variant="caption" className="text-destructive">
             Failed to update
@@ -792,12 +856,12 @@ function ListItemPublicLink({
   );
 }
 
-function ListItem({ children }: { children: React.ReactNode }) {
+function ListItem({ className, children }: { className?: string; children: React.ReactNode }) {
   if (Children.count(children) !== 3) {
     console.warn('<ListItem> expects exactly 3 children');
   }
 
-  return <div className={'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto'}>{children}</div>;
+  return <div className={cn(className, 'flex flex-row items-center gap-3 [&>:nth-child(3)]:ml-auto')}>{children}</div>;
 }
 
 // TODO: write tests for these
@@ -807,7 +871,6 @@ function canDeleteLoggedInUserInTeam({ role, numberOfOwners }: { role: UserTeamR
       return false;
     }
   }
-
   return true;
 }
 function canDeleteUserInTeam({
@@ -819,9 +882,9 @@ function canDeleteUserInTeam({
   loggedInUserRole: UserTeamRole;
   userRole: UserTeamRole;
 }) {
-  // TODO: can a user who is an editor remove a member who has a higher role than themselves?
   const { OWNER, EDITOR } = UserTeamRoleSchema.enum;
   if (permissions.includes('TEAM_EDIT')) {
+    // If you're an editor, you can't remove an owner
     if (loggedInUserRole === EDITOR && userRole === OWNER) {
       return false;
     }
@@ -890,7 +953,7 @@ function getAvailableRolesForUserInTeam({
   return [VIEWER];
 }
 
-function sortLoggedInUserFirst(collection: { id: number }[], loggedInUserId: number) {
+export function sortLoggedInUserFirst(collection: { id: number }[], loggedInUserId: number) {
   collection.sort((a, b) => {
     // Move the logged in user to the front
     if (a.id === loggedInUserId && b.id !== loggedInUserId) return -1;

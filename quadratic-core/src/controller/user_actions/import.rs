@@ -85,4 +85,41 @@ Concord,NH,United States,42605
         let result = grid_controller.import_csv(sheet_id, "".as_bytes(), "smallpop.csv", pos, None);
         assert!(result.is_err());
     }
+
+    #[test]
+    fn import_large_csv() {
+        let mut gc = GridController::test();
+        let mut csv = String::new();
+        for _ in 0..10000 {
+            for x in 0..10 {
+                csv.push_str(&format!("{},", x));
+            }
+            csv.push_str("done,\n");
+        }
+        let result = gc.import_csv(
+            gc.grid.sheets()[0].id,
+            csv.as_bytes(),
+            "large.csv",
+            Pos { x: 0, y: 0 },
+            None,
+        );
+        print!("{}", &result.unwrap().operations.unwrap().len());
+        // assert!(result.is_ok())
+    }
+
+    #[test]
+    fn import_problematic_line() {
+        let mut gc = GridController::test();
+        let csv = "980E92207901934";
+        let ops = gc
+            .import_csv_operations(
+                gc.grid.sheets()[0].id,
+                csv.as_bytes(),
+                "bad line",
+                Pos { x: 0, y: 0 },
+            )
+            .unwrap();
+        let op = &ops[0];
+        serde_json::to_string(op).unwrap();
+    }
 }

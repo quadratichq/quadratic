@@ -161,7 +161,7 @@ impl Rect {
     }
 
     /// Returns whether a position is contained within the rectangle.
-    pub fn contains(self, pos: Pos) -> bool {
+    pub fn contains(&self, pos: Pos) -> bool {
         self.x_range().contains(&pos.x) && self.y_range().contains(&pos.y)
     }
 
@@ -411,6 +411,22 @@ impl From<SheetPos> for SheetRect {
             min: sheet_pos.into(),
             max: sheet_pos.into(),
             sheet_id: sheet_pos.sheet_id,
+        }
+    }
+}
+
+impl From<SheetRect> for Pos {
+    fn from(sheet_rect: SheetRect) -> Self {
+        sheet_rect.min
+    }
+}
+
+impl From<SheetRect> for SheetPos {
+    fn from(sheet_rect: SheetRect) -> Self {
+        SheetPos {
+            x: sheet_rect.min.x,
+            y: sheet_rect.min.y,
+            sheet_id: sheet_rect.sheet_id,
         }
     }
 }
@@ -712,6 +728,29 @@ mod test {
         let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
         assert_eq!(
             rect.top_left(),
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id
+            }
+        );
+    }
+
+    #[test]
+    fn from_sheet_rect_to_pos() {
+        let sheet_id = SheetId::new();
+        let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
+        let pos: Pos = rect.into();
+        assert_eq!(pos, Pos { x: 1, y: 2 });
+    }
+
+    #[test]
+    fn from_sheet_rect_to_sheet_pos() {
+        let sheet_id = SheetId::new();
+        let rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
+        let sheet_pos: SheetPos = rect.into();
+        assert_eq!(
+            sheet_pos,
             SheetPos {
                 x: 1,
                 y: 2,

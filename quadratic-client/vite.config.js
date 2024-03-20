@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
@@ -8,7 +9,11 @@ export default defineConfig(() => {
   return {
     build: {
       outDir: '../build',
+      sourcemap: true, // Source map generation must be turned on
     },
+    // optimizeDeps: {
+    //   exclude: ['vscode']
+    // },
     assetsInclude: ['**/*.py'],
     server: {
       port: 3000,
@@ -17,6 +22,7 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+      dedupe: ['monaco-editor', 'vscode'],
     },
     plugins: [
       react(),
@@ -26,6 +32,11 @@ export default defineConfig(() => {
         eslint: {
           lintCommand: 'eslint --ext .ts,.tsx src',
         },
+      }),
+      sentryVitePlugin({
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: 'quadratic',
+        project: 'quadratic',
       }),
     ],
     worker: {
