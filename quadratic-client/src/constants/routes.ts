@@ -7,6 +7,7 @@ export const ROUTES = {
   LOGIN_RESULT: '/login-result',
   FILES: '/files',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
+  FILE: (uuid: string) => `/file/${uuid}`,
   // TODO: rename to FILE and the current FILE to FILE_IN_APP (or something?)
   FILES_FILE: (uuid: string) => `/files/${uuid}`,
   FILES_SHARE: (uuid: string) => `/files/${uuid}/sharing`,
@@ -19,7 +20,6 @@ export const ROUTES = {
   EXAMPLES: '/examples',
   EXAMPLE: (slug: string) => `/examples/${slug}`,
   ACCOUNT: '/account',
-  FILE: (uuid: string) => `/file/${uuid}`,
 };
 
 export const ROUTE_LOADER_IDS = {

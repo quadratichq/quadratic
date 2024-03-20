@@ -1,9 +1,20 @@
 import { Button } from '@/shadcn/ui/button';
 import { Input } from '@/shadcn/ui/input';
 import { Cross2Icon } from '@radix-ui/react-icons';
-import { FileListViewControlsDropdown } from './FilesListViewControlsDropdown';
+import React from 'react';
+import { FileListViewControlsDropdown, ViewPreferences } from './FilesListViewControlsDropdown';
 
-export function FilesListViewControls({ filterValue, setFilterValue, viewPreferences, setViewPreferences }: any) {
+export function FilesListViewControls({
+  filterValue,
+  setFilterValue,
+  viewPreferences,
+  setViewPreferences,
+}: {
+  filterValue: string;
+  setFilterValue: React.Dispatch<React.SetStateAction<string>>;
+  viewPreferences: ViewPreferences;
+  setViewPreferences: React.Dispatch<React.SetStateAction<ViewPreferences>>;
+}) {
   return (
     <div className={`flex flex-row items-center justify-between gap-2 pb-4 `}>
       <div className={`max-w relative flex-grow md:max-w-sm`}>

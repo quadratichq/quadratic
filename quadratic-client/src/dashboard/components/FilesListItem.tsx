@@ -19,16 +19,9 @@ import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, re
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../constants/routes';
 import { DialogRenameItem } from './DialogRenameItem';
-import { FilesListFile } from './FilesList';
+import { FilesListExampleFile, FilesListUserFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
-import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
-
-type FileDisplay = {
-  href: FilesListFile['href'];
-  thumbnail: FilesListFile['thumbnail'];
-  name: FilesListFile['name'];
-  description: string;
-};
+import { Layout, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItems({
   children,
@@ -48,17 +41,15 @@ export function FilesListItems({
   );
 }
 
-export function FilesListItemEditable({
+export function FilesListItemUserFile({
   file,
-  fileMetadata,
   filterValue,
   activeShareMenuFileId,
   setActiveShareMenuFileId,
   lazyLoad,
   viewPreferences,
 }: {
-  file: FileDisplay;
-  fileMetadata: NonNullable<FilesListFile['metadata']>;
+  file: FilesListUserFile;
   filterValue: string;
   activeShareMenuFileId: string;
   setActiveShareMenuFileId: Function;
@@ -70,7 +61,7 @@ export function FilesListItemEditable({
   const fetcherDownload = useFetcher();
   const fetcherDuplicate = useFetcher();
   const fetcherRename = useFetcher();
-  const fetcherMove = useFetcher({ key: 'move-file:' + fileMetadata.uuid });
+  const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
   const teamRouteLoaderData = useTeamRouteLoaderData();
@@ -88,8 +79,12 @@ export function FilesListItemEditable({
     isPersonalFilesRoute ||
     (isTeamRoute && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
 
-  const { name, thumbnail, description } = file;
-  const { uuid, publicLinkAccess, permissions } = fileMetadata;
+  const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+
+  const description =
+    viewPreferences.sort === Sort.Created
+      ? `Created ${timeAgo(file.createdDate)}`
+      : `Modified ${timeAgo(file.updatedDate)}`;
   const fetcherSubmitOpts: SubmitOptions = {
     method: 'POST',
     action: ROUTES.FILES_FILE(uuid),
@@ -191,7 +186,7 @@ export function FilesListItemEditable({
         key={uuid}
         to={ROUTES.FILE(uuid)}
         reloadDocument
-        className={cn('relative z-10', isDisabled && `pointer-events-none opacity-50`)}
+        className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
         {...dragProps}
       >
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
@@ -303,13 +298,13 @@ export function FilesListItemEditable({
   );
 }
 
-export function FilesListItemReadOnly({
+export function FilesListItemExampleFile({
   file,
   filterValue,
   lazyLoad,
   viewPreferences,
 }: {
-  file: FileDisplay;
+  file: FilesListExampleFile;
   filterValue: string;
   lazyLoad: boolean;
   viewPreferences: ViewPreferences;
@@ -317,7 +312,7 @@ export function FilesListItemReadOnly({
   const { href, thumbnail, name, description } = file;
   return (
     <ListItem>
-      <Link to={href}>
+      <Link to={href} className="flex w-full">
         <ListItemView viewPreferences={viewPreferences} thumbnail={thumbnail} lazyLoad={lazyLoad}>
           <FilesListItemCore
             name={name}
@@ -332,7 +327,7 @@ export function FilesListItemReadOnly({
 }
 
 function ListItem({ children }: { children: React.ReactNode }) {
-  return <li className="relative">{children}</li>;
+  return <li className="relative flex">{children}</li>;
 }
 
 function ListItemView({
@@ -342,7 +337,7 @@ function ListItemView({
   children,
 }: {
   viewPreferences: ViewPreferences;
-  thumbnail: FilesListFile['thumbnail'];
+  thumbnail: FilesListUserFile['thumbnail'];
   lazyLoad: boolean;
   children: React.ReactNode;
 }) {
@@ -376,7 +371,7 @@ function ListItemView({
       <div className="pt-2">{children}</div>
     </div>
   ) : (
-    <div className={`flex flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
+    <div className={`flex w-full flex-row items-center gap-4 py-2 hover:bg-accent lg:px-2`}>
       <div className={`hidden border border-border shadow-sm md:block`}>
         {thumbnail ? (
           <img

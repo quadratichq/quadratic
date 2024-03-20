@@ -1,20 +1,18 @@
 import { sanityClient } from '@/api/sanityClient';
 import { ROUTES } from '@/constants/routes';
-import { FilesList, FilesListFile } from '@/dashboard/components/FilesList';
+import { ExampleFilesList, FilesListExampleFile } from '@/dashboard/components/FilesList';
 import { useLoaderData } from 'react-router-dom';
 import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 
 export const loader = async () => {
   const examples = await sanityClient.getExamples();
-  const files: FilesListFile[] = examples.map(({ name, thumbnail, url, _updatedAt, _createdAt }, i) => ({
+  const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
+    description,
     href: ROUTES.CREATE_FILE_EXAMPLE(url),
     name,
-    createdDate: _createdAt,
-    updatedDate: _updatedAt,
-    // 16/9 aspect ratio
-    thumbnail: thumbnail + '?w=800&h=450&fit=crop&auto=format',
+    thumbnail: thumbnail + '?w=800&h=450&fit=crop&auto=format', // 16/9 aspect ratio
   }));
-  return { examples, files };
+  return { files };
 };
 
 export const Component = () => {
@@ -25,13 +23,13 @@ export const Component = () => {
         title="Examples"
         titleNode={
           <DashboardHeaderTitle>
-            Examples{' '}
+            Example files{' '}
             <span className="text-base font-normal text-muted-foreground">(maintained by the Quadratic team)</span>
           </DashboardHeaderTitle>
         }
       />
 
-      <FilesList files={files} />
+      <ExampleFilesList files={files} />
     </>
   );
 };

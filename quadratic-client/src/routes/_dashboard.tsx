@@ -13,7 +13,6 @@ import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { Avatar, AvatarFallback } from '@/shadcn/ui/avatar';
 import { Button } from '@/shadcn/ui/button';
-import { Separator } from '@/shadcn/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { LiveChatWidget } from '@livechat/widget-react';
@@ -194,10 +193,6 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             <Share2Icon className={classNameIcons} />
             Shared with me
           </SidebarNavLink>
-          <SidebarNavLink to={ROUTES.EXAMPLES}>
-            <MixIcon className={classNameIcons} />
-            Examples
-          </SidebarNavLink>
         </div>
 
         <Type
@@ -277,13 +272,28 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             </SidebarNavLink>
           )}
         </div>
+        <Type
+          as="h3"
+          className={`${TYPE.overline} mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
+        >
+          Resources
+        </Type>
+        <div className="grid gap-0.5">
+          <SidebarNavLink to={ROUTES.EXAMPLES}>
+            <MixIcon className={classNameIcons} />
+            Examples
+          </SidebarNavLink>
+          <SidebarNavLink
+            to={DOCUMENTATION_URL}
+            target="_blank"
+            className={`group text-muted-foreground hover:text-foreground`}
+          >
+            <ExternalLinkIcon className={cn(classNameIcons, `text-inherit opacity-50 group-hover:opacity-100`)} />
+            Docs
+          </SidebarNavLink>
+        </div>
       </div>
       <div>
-        <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>
-          <ExternalLinkIcon className={cn(classNameIcons, `text-inherit opacity-50`)} />
-          Docs
-        </SidebarNavLink>
-        <Separator className="my-2" />
         <SidebarNavLink to={ROUTES.ACCOUNT}>
           <Avatar className="h-6 w-6 bg-muted text-muted-foreground">
             <AvatarImage src={user?.picture} />

@@ -1,5 +1,4 @@
 import { ShareFileDialog } from '@/components/ShareDialog';
-import { timeAgo } from '@/utils/timeAgo';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useState } from 'react';
@@ -8,26 +7,21 @@ import { useFetchers, useLocation } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { Action as FilesAction } from '../../routes/files.$uuid';
-import { FilesListItemEditable, FilesListItemReadOnly, FilesListItems } from './FilesListItem';
+import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
 import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
-export type FilesListFile = {
-  name: string;
-  thumbnail: string | null;
-  href: string;
+export type FilesListUserFile = {
   createdDate: string;
+  name: string;
+  publicLinkAccess: PublicLinkAccess;
+  permissions: FilePermission[];
+  thumbnail: string | null;
   updatedDate: string;
-
-  // Additional metadata for editable files
-  metadata?: {
-    uuid: string;
-    publicLinkAccess: PublicLinkAccess;
-    permissions: FilePermission[];
-  };
+  uuid: string;
 };
 
-export function FilesList({ files, emptyState }: { files: FilesListFile[]; emptyState?: ReactNode }) {
+export function FilesList({ files, emptyState }: { files: FilesListUserFile[]; emptyState?: ReactNode }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
@@ -55,15 +49,12 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
       // (filter makes sure there's no trailing slash to deal with)
       const fileUuid = fetcher.formAction?.split('/').filter(Boolean).pop();
       // We should never have a file that's duplicating that's not in the list
-      const file = files.find((file) => file.metadata?.uuid === fileUuid) as FilesListFile;
+      const file = files.find((file) => file.uuid === fileUuid) as FilesListUserFile;
       return {
         ...file,
         name: file.name + ` (Copy)`,
         updatedDate: new Date().toISOString(),
-        metadata: {
-          ...(file.metadata as NonNullable<FilesListFile['metadata']>),
-          uuid: `${fileUuid}--duplicate-${i}`,
-        },
+        uuid: `${fileUuid}--duplicate-${i}`,
       };
     });
   if (filesBeingDuplicated.length > 0) {
@@ -91,7 +82,71 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
   });
 
   const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'delete');
-  const activeShareMenuFileName = files.find((file) => file.metadata?.uuid === activeShareMenuFileId)?.name || '';
+  const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
+
+  return (
+    <>
+      <FilesListViewControls
+        filterValue={filterValue}
+        setFilterValue={setFilterValue}
+        viewPreferences={viewPreferences}
+        setViewPreferences={setViewPreferences}
+      />
+
+      <FilesListItems viewPreferences={viewPreferences}>
+        {filesToRender.map((file, i) => (
+          <FilesListItemUserFile
+            key={file.uuid}
+            file={file}
+            lazyLoad={i > 12}
+            filterValue={filterValue}
+            activeShareMenuFileId={activeShareMenuFileId}
+            setActiveShareMenuFileId={setActiveShareMenuFileId}
+            viewPreferences={viewPreferences}
+          />
+        ))}
+      </FilesListItems>
+
+      {filterValue && filesToRender.length === 0 && <EmptyFilterState />}
+
+      {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && emptyState}
+
+      {activeShareMenuFileId && (
+        <ShareFileDialog
+          onClose={() => {
+            setActiveShareMenuFileId('');
+          }}
+          uuid={activeShareMenuFileId}
+          name={activeShareMenuFileName}
+        />
+      )}
+    </>
+  );
+}
+
+export type FilesListExampleFile = {
+  description: string;
+  href: string;
+  name: string;
+  thumbnail: string;
+};
+
+export function ExampleFilesList({ files, emptyState }: { files: FilesListExampleFile[]; emptyState?: ReactNode }) {
+  const { pathname } = useLocation();
+  const [filterValue, setFilterValue] = useState<string>('');
+  const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
+    // Persist the layout preference across views (by URL)
+    `FilesList-${pathname}`,
+    // Initial state
+    {
+      layout: isMobile ? Layout.List : Layout.Grid,
+    }
+  );
+  console.log(viewPreferences);
+
+  const filesToRender = filterValue
+    ? files.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()))
+    : files;
 
   return (
     <>
@@ -104,31 +159,11 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
 
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => {
-          const { href, name, thumbnail } = file;
+          const { href, name, thumbnail, description } = file;
           const lazyLoad = i > 12;
-          const description =
-            viewPreferences.sort === Sort.Created
-              ? `Created ${timeAgo(file.createdDate)}`
-              : `Modified ${timeAgo(file.updatedDate)}`;
 
-          return file.metadata ? (
-            <FilesListItemEditable
-              key={file.metadata.uuid}
-              file={{
-                name,
-                href,
-                thumbnail,
-                description,
-              }}
-              fileMetadata={file.metadata}
-              lazyLoad={lazyLoad}
-              filterValue={filterValue}
-              activeShareMenuFileId={activeShareMenuFileId}
-              setActiveShareMenuFileId={setActiveShareMenuFileId}
-              viewPreferences={viewPreferences}
-            />
-          ) : (
-            <FilesListItemReadOnly
+          return (
+            <FilesListItemExampleFile
               key={href}
               file={{
                 name,
@@ -144,25 +179,13 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
         })}
       </FilesListItems>
 
-      {filterValue && filesToRender.length === 0 && (
-        <Empty
-          title="No matches"
-          description={<>No files found with that specified name.</>}
-          Icon={MagnifyingGlassIcon}
-        />
-      )}
-
-      {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && emptyState}
-
-      {activeShareMenuFileId && (
-        <ShareFileDialog
-          onClose={() => {
-            setActiveShareMenuFileId('');
-          }}
-          uuid={activeShareMenuFileId}
-          name={activeShareMenuFileName}
-        />
-      )}
+      {filterValue && filesToRender.length === 0 && <EmptyFilterState />}
     </>
+  );
+}
+
+function EmptyFilterState() {
+  return (
+    <Empty title="No matches" description={<>No files found with that specified name.</>} Icon={MagnifyingGlassIcon} />
   );
 }

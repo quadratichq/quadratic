@@ -13,9 +13,9 @@ import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from
 import { Dispatch, SetStateAction } from 'react';
 
 export type ViewPreferences = {
-  sort: Sort;
-  order: Order;
   layout: Layout;
+  order?: Order;
+  sort?: Sort;
 };
 export enum Sort {
   Updated = '1',
@@ -53,9 +53,9 @@ export function FileListViewControlsDropdown({
     [Order.Descending]: viewPreferences.sort === Sort.Alphabetical ? 'Z-A' : 'Newest first',
   };
 
-  const sortButtonLabel = sortLabelsByValue[viewPreferences.sort];
+  const sortButtonLabel = viewPreferences.sort ? sortLabelsByValue[viewPreferences.sort] : '';
 
-  const sortOptionsMenu = (
+  const sortOptionsMenu = viewPreferences.sort ? (
     <DropdownMenuRadioGroup
       value={viewPreferences.sort}
       onValueChange={(val) => {
@@ -73,9 +73,9 @@ export function FileListViewControlsDropdown({
         </DropdownMenuRadioItem>
       ))}
     </DropdownMenuRadioGroup>
-  );
+  ) : null;
 
-  const orderOptionsMenu = (
+  const orderOptionsMenu = viewPreferences.order ? (
     <DropdownMenuRadioGroup
       value={viewPreferences.order}
       onValueChange={(val) => {
@@ -89,7 +89,7 @@ export function FileListViewControlsDropdown({
         </DropdownMenuRadioItem>
       ))}
     </DropdownMenuRadioGroup>
-  );
+  ) : null;
 
   const layoutOptionsMenu = (
     <DropdownMenuRadioGroup
@@ -106,24 +106,35 @@ export function FileListViewControlsDropdown({
       ))}
     </DropdownMenuRadioGroup>
   );
+  console.log(viewPreferences);
 
   return (
     <>
       <div className="hidden sm:flex sm:flex-row sm:items-center sm:gap-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
-              {sortButtonLabel} <ChevronDownIcon className="ml-1" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-52">
-            <DropdownMenuLabel>Sort</DropdownMenuLabel>
-            {sortOptionsMenu}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Order</DropdownMenuLabel>
-            {orderOptionsMenu}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {(viewPreferences.sort || viewPreferences.order) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground">
+                {sortButtonLabel} <ChevronDownIcon className="ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-52">
+              {viewPreferences.sort && (
+                <>
+                  <DropdownMenuLabel>Sort</DropdownMenuLabel>
+                  {sortOptionsMenu}
+                </>
+              )}
+              {viewPreferences.sort && viewPreferences.order && <DropdownMenuSeparator />}
+              {viewPreferences.order && (
+                <>
+                  <DropdownMenuLabel>Order</DropdownMenuLabel>
+                  {orderOptionsMenu}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
 
         <div>
           <Button
@@ -146,6 +157,7 @@ export function FileListViewControlsDropdown({
           </Button>
         </div>
       </div>
+
       <div className="sm:hidden">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -154,12 +166,20 @@ export function FileListViewControlsDropdown({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">
-            <DropdownMenuLabel>Sort</DropdownMenuLabel>
-            {sortOptionsMenu}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Order</DropdownMenuLabel>
-            {orderOptionsMenu}
-            <DropdownMenuSeparator />
+            {viewPreferences.sort && (
+              <>
+                <DropdownMenuLabel>Sort</DropdownMenuLabel>
+                {sortOptionsMenu}
+                <DropdownMenuSeparator />
+              </>
+            )}
+            {viewPreferences.sort && (
+              <>
+                <DropdownMenuLabel>Order</DropdownMenuLabel>
+                {orderOptionsMenu}
+                <DropdownMenuSeparator />
+              </>
+            )}
             <DropdownMenuLabel>Layout</DropdownMenuLabel>
             {layoutOptionsMenu}
           </DropdownMenuContent>

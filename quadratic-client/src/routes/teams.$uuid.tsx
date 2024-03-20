@@ -266,12 +266,9 @@ export const Component = () => {
             createdDate: file.createdDate,
             updatedDate: file.updatedDate,
             thumbnail: file.thumbnail,
-            href: ROUTES.FILE(file.uuid),
-            metadata: {
-              uuid: file.uuid,
-              publicLinkAccess: file.publicLinkAccess,
-              permissions: userMakingRequest.filePermissions,
-            },
+            uuid: file.uuid,
+            publicLinkAccess: file.publicLinkAccess,
+            permissions: userMakingRequest.filePermissions,
           }))}
           emptyState={
             <Empty

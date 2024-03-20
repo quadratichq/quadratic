@@ -1,6 +1,5 @@
 import { apiClient } from '@/api/apiClient';
-import { ROUTES } from '@/constants/routes';
-import { FilesList, FilesListFile } from '@/dashboard/components/FilesList';
+import { FilesList, FilesListUserFile } from '@/dashboard/components/FilesList';
 import { ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
 import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
 import { Empty } from '../components/Empty';
@@ -8,16 +7,17 @@ import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { debugShowUILogs } from '../debugFlags';
 
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListFile[]> => {
+export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListUserFile[]> => {
   const files = await apiClient.files.list({ shared: 'with-me' });
   // TODO: add these permissions one day
   const filesWithPermissions = files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
     name,
-    href: ROUTES.FILE(uuid),
     thumbnail,
     createdDate,
     updatedDate,
-    metadata: { uuid, publicLinkAccess, permissions: [] },
+    uuid,
+    publicLinkAccess,
+    permissions: [],
   }));
   return filesWithPermissions;
 };

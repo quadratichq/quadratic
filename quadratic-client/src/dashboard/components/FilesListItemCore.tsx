@@ -26,12 +26,7 @@ export function FilesListItemCore({
 
   return (
     <div className={`flex flex-row items-center gap-2`}>
-      <div
-        className={cn(
-          `relative mr-auto flex min-w-0 flex-grow-[2]`,
-          isGrid ? 'flex-col' : 'flex-col md:flex-row md:gap-2'
-        )}
-      >
+      <div className={cn(`relative mr-auto flex min-w-0 flex-grow-[2]`, isGrid ? 'flex-col' : 'flex-col gap-0.5')}>
         <h2
           className={cn(isGrid ? 'truncate text-sm' : 'text-md flex-1 leading-tight')}
           dangerouslySetInnerHTML={{ __html }}
