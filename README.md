@@ -15,7 +15,7 @@ Get from data to insight more effectively as a team.
 
 The `main` branch is always live for individuals and teams to use.
 
-**Try it out! ⟶ <https://app.quadratichq.com>**
+**Try Quadratic ⟶ <https://app.quadratichq.com>**
 
 ## Documentation
 
