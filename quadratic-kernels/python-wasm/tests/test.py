@@ -2,13 +2,16 @@ import importlib
 import inspect
 import sys
 import unittest
-from unittest import IsolatedAsyncioTestCase, TestCase
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
-from quadratic_py.utils import attempt_fix_await, to_quadratic_type
-
-import pandas as pd
-import numpy as np
 from datetime import datetime
+from unittest import IsolatedAsyncioTestCase, TestCase
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import numpy as np
+import pandas as pd
+from process_output_test import *
+from quadratic_py.utils import (Blank, attempt_fix_await, to_python_type,
+                                to_quadratic_type)
+
 
 #  Mock definitions
 class Cell:
@@ -46,7 +49,7 @@ sys.modules["autopep8"] = MagicMock()
 sys.modules["autopep8.fix_code"] = MagicMock()
 
 # import after mocks to in order to use them
-from quadratic_py import run_python, code_trace
+from quadratic_py import code_trace, run_python
 from quadratic_py.quadratic_api.quadratic import getCells
 
 run_python.fetch_module = mock_fetch_module
@@ -60,7 +63,7 @@ class value_object:
 class TestTesting(IsolatedAsyncioTestCase):
     async def test_run_python(self):
 
-        result = await run_python.run_python("1 + 1")
+        result = await run_python.run_python("1 + 1", {"x": 0, "y": 0})
 
         # NOTE: this approach bypasses the entire env of Pyodide.
         # We should make the run_python e2e tests run via playwright
@@ -73,6 +76,8 @@ class TestTesting(IsolatedAsyncioTestCase):
         self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
         self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
         self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = await rel_cell(0, 0)")
+        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = await rc(0, 0)")
         self.assertEqual(
             attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
         )
@@ -213,6 +218,59 @@ class TestUtils(TestCase):
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # duration
+class TestUtils(TestCase):
+    def test_to_python_type(self):
+        # blank
+        assert to_python_type("", "blank") == 0
+        
+        # number
+        assert to_python_type("1", "number") == 1
+        assert to_python_type("1.1", "number") == 1.1
+        assert to_python_type("-1", "number") == -1
+        assert to_python_type("-1.1", "number") == -1.1
+
+        # logical
+        assert to_python_type("True", "logical") == True
+        assert to_python_type("False", "logical") == False
+        assert to_python_type("true", "logical") == True
+        assert to_python_type("false", "logical") == False
+
+        # string
+        assert to_python_type("abc", "text") == "abc"
+        assert to_python_type("123abc", "text") == "123abc"
+        assert to_python_type("abc123", "text") == "abc123"
+
+        # instant
+        assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00+00:00")
+        assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00+00:00")
+
+    def test_blank(self):
+        assert Blank() + 1 == 1
+        assert Blank() + 1.1 == 1.1
+        assert Blank() + -1 == -1
+        assert Blank() - 1 == -1
+        assert Blank() * 2 == 0
+        assert Blank() / 2 == 0
+        assert Blank() % 2 == 0
+        assert Blank() ** 2 == 0
+        assert bool(Blank()) == False
+        assert str(Blank()) == ""
+        assert Blank() == Blank()
+        assert Blank() == 0
+        assert Blank() == None
+        assert Blank() == ""
+        assert Blank() == False
+        assert Blank() == 0.0
+        assert Blank() < 1
+        assert Blank() < 1.1
+        assert Blank() > -1
+        assert Blank() > -1.1
+        assert Blank() <= 0
+        assert Blank() <= 1
+        assert Blank() >= 0
+        assert Blank() >= -1
+
+
 
 if __name__ == "__main__":
     unittest.main()

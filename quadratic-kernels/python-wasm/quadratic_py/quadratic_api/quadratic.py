@@ -22,8 +22,7 @@ async def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bo
     Returns:
         The value of the cell referenced.
 
-    Typical usage example:
-    
+    Typical usage example:    
         c = getCell(0, 0)
     """
 
@@ -141,4 +140,57 @@ async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first
     """
 
     return getCells(p0, p1, sheet, first_row_header)
+
+# This function is not used from here (it's a lambda function in run_python.py)
+# This is documented for pyright usage only
+def pos() -> tuple[int, int]:
+    """
+    A relative reference to the current cell in the grid.
+
+    Returns:
+        The tuple (x, y) coordinates of the current cell.
+
+    Typical usage example:    
+        (x, y) = pos()
+    """
+
+    return None
+
+# This function is not used from here (it's a lambda function in run_python.py)
+# This is documented for pyright usage only
+async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
+    """
+    Relative reference to a single cell in the grid.
+
+    Args:
+        x: The relative grid X coordinate from the current cell.
+        y: The relative grid Y coordinate from the current cell.
+        
+    Returns:
+        The value of the relative cell referenced.
+
+    Typical usage example:    
+        c = rel_cell(-1, 0) # references the cell to the left of this cell
+    """
+
+    return None
+
+# This function is not used from here (it's a lambda function in run_python.py)
+# This is documented for pyright usage only
+async def rc(x: int, y: int) -> int | float | str | bool | None:
+    """
+    Relative reference to a single cell in the grid.
+
+    Args:
+        x: The relative grid X coordinate from the current cell.
+        y: The relative grid Y coordinate from the current cell.
+        
+    Returns:
+        The value of the relative cell referenced.
+
+    Typical usage example:    
+        c = rel_cell(-1, 0) # references the cell to the left of this cell
+    """
+
+    return None
 
