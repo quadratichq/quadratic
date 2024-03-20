@@ -142,7 +142,6 @@ export function ExampleFilesList({ files, emptyState }: { files: FilesListExampl
       layout: isMobile ? Layout.List : Layout.Grid,
     }
   );
-  console.log(viewPreferences);
 
   const filesToRender = filterValue
     ? files.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()))

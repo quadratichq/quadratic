@@ -106,7 +106,6 @@ export function FileListViewControlsDropdown({
       ))}
     </DropdownMenuRadioGroup>
   );
-  console.log(viewPreferences);
 
   return (
     <>
