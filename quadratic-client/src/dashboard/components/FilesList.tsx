@@ -52,9 +52,9 @@ export function FilesList({ files, emptyState }: { files: FilesListUserFile[]; e
       const file = files.find((file) => file.uuid === fileUuid) as FilesListUserFile;
       return {
         ...file,
+        uuid: `${fileUuid}--duplicate-${i}`,
         name: file.name + ` (Copy)`,
         updatedDate: new Date().toISOString(),
-        uuid: `${fileUuid}--duplicate-${i}`,
       };
     });
   if (filesBeingDuplicated.length > 0) {
