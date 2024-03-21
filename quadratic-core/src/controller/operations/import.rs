@@ -1,8 +1,9 @@
 use std::str::FromStr;
 
 use anyhow::{anyhow, bail, Result};
-use arrow_array::cast::AsArray;
-use arrow_array::Array;
+use arrow_array::{cast::AsArray, Array, ArrayRef};
+use arrow_buffer::ArrowNativeType;
+use arrow_data::ArrayData;
 use arrow_schema::{DataType, TimeUnit};
 use bigdecimal::BigDecimal;
 use bytes::Bytes;
@@ -73,22 +74,7 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
 
-        let set_cell_values_column = |num_rows: usize,
-                                      row_index: usize,
-                                      col_index: usize,
-                                      values: Vec<CellValue>|
-         -> Operation {
-            Operation::SetCellValues {
-                sheet_pos: (
-                    insert_at.x + col_index as i64,
-                    insert_at.y + (row_index * num_rows) as i64 + 1,
-                    sheet_id,
-                )
-                    .into(),
-                values: CellValues::from_flat_array(1, values.len() as u32, values),
-            }
-        };
-
+        // this is not expensive
         let bytes = Bytes::from(file);
         let builder = ParquetRecordBatchReaderBuilder::try_new(bytes).unwrap();
 
@@ -126,157 +112,206 @@ impl GridController {
                 //     println!("{:?}", array_data.data_type());
                 // }
 
-                match array_data.data_type() {
-                    DataType::Int16 => {
-                        for buffer in array_data.buffers() {
-                            let data = buffer.typed_data::<i16>();
-                            let values: Vec<CellValue> =
-                                data.iter().map(|v| CellValue::Number(v.into())).collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
+                let cell_values = match array_data.data_type() {
+                    DataType::Int8 => parquet_int_to_cell_values::<i8>(&array_data),
+                    DataType::Int16 => parquet_int_to_cell_values::<i16>(&array_data),
+                    DataType::Int32 => parquet_int_to_cell_values::<i32>(&array_data),
+                    DataType::Int64 => parquet_int_to_cell_values::<i64>(&array_data),
+                    DataType::UInt8 => parquet_int_to_cell_values::<u8>(&array_data),
+                    DataType::UInt16 => parquet_int_to_cell_values::<u16>(&array_data),
+                    DataType::UInt32 => parquet_int_to_cell_values::<u32>(&array_data),
+                    DataType::UInt64 => parquet_int_to_cell_values::<u64>(&array_data),
+                    DataType::Float16 => parquet_float_to_cell_values::<half::f16>(&array_data),
+                    DataType::Float32 => parquet_float_to_cell_values::<f32>(&array_data),
+                    DataType::Float64 => parquet_float_to_cell_values::<f64>(&array_data),
+                    DataType::Boolean => parquet_bool_to_cell_values(&col, &array_data),
+                    DataType::Binary => parquet_binary_to_cell_values(&col, &array_data),
+                    DataType::Utf8 => parquet_utf8_to_cell_values(&col, &array_data),
+                    DataType::Date32 => parquet_date_to_cell_values::<i32>(&array_data),
+                    DataType::Date64 => parquet_date_to_cell_values::<i64>(&array_data),
+                    DataType::Time32(TimeUnit::Millisecond) => {
+                        parquet_time_to_cell_values::<i32>(&array_data)
                     }
-                    DataType::Int32 => {
-                        for buffer in array_data.buffers() {
-                            let data = buffer.typed_data::<i32>();
-                            let values: Vec<CellValue> =
-                                data.iter().map(|v| CellValue::Number(v.into())).collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
+                    DataType::Time64(TimeUnit::Millisecond) => {
+                        parquet_time_to_cell_values::<i64>(&array_data)
                     }
-                    DataType::Int64 => {
-                        for buffer in array_data.buffers() {
-                            let data = buffer.typed_data::<i64>();
-                            let values: Vec<CellValue> =
-                                data.iter().map(|v| CellValue::Number(v.into())).collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
-                    }
-                    DataType::Float32 => {
-                        for buffer in array_data.buffers() {
-                            let data = buffer.typed_data::<f32>();
-                            let values: Vec<CellValue> = data
-                                .iter()
-                                .map(|v| {
-                                    CellValue::Number(BigDecimal::from_str(&v.to_string()).unwrap())
-                                })
-                                .collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
-                    }
-                    DataType::Float64 => {
-                        for buffer in array_data.buffers() {
-                            let data = buffer.typed_data::<f64>();
-                            let values: Vec<CellValue> = data
-                                .iter()
-                                .map(|v| {
-                                    CellValue::Number(BigDecimal::from_str(&v.to_string()).unwrap())
-                                })
-                                .collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
-                    }
-                    DataType::Boolean => {
-                        for _buffer in array_data.buffers() {
-                            let values: Vec<CellValue> = (0..col.len())
-                                .map(|index| CellValue::Logical(col.as_boolean().value(index)))
-                                .collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
-
-                        for buffer in array_data.buffers() {
-                            let data = buffer.to_vec();
-                            let values: Vec<CellValue> =
-                                data.iter().map(|v| CellValue::Logical(*v == 1)).collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
-                    }
-                    DataType::Binary => {
-                        for _buffer in array_data.buffers() {
-                            let values: Vec<CellValue> = (0..col.len())
-                                .map(|index| {
-                                    CellValue::Text(
-                                        std::str::from_utf8(&col.as_binary::<i32>().value(index))
-                                            .unwrap()
-                                            .into(),
-                                    )
-                                })
-                                .collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
-                    }
-                    DataType::Utf8 => {
-                        for _buffer in array_data.buffers() {
-                            let values: Vec<CellValue> = (0..col.len())
-                                .map(|index| {
-                                    CellValue::Text(col.as_string::<i32>().value(index).into())
-                                        .into()
-                                })
-                                .collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
-                    }
-                    DataType::Date32 => {
-                        for buffer in array_data.buffers() {
-                            let data = buffer.typed_data::<i32>();
-                            let values: Vec<CellValue> = data
-                                .iter()
-                                .map(|v| {
-                                    let timestamp = Utc
-                                        .timestamp_millis(*v as i64)
-                                        .format("%Y-%m-%d")
-                                        .to_string();
-                                    CellValue::Text(timestamp)
-                                })
-                                .collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
-                    }
-                    DataType::Timestamp(TimeUnit::Nanosecond, None) => {
-                        for buffer in array_data.buffers() {
-                            let data = buffer.typed_data::<i64>();
-                            let values: Vec<CellValue> = data
-                                .iter()
-                                .map(|v| {
-                                    let timestamp = Utc
-                                        .timestamp_nanos(*v)
-                                        .format("%Y-%m-%d %H:%M:%S")
-                                        .to_string();
-                                    CellValue::Text(timestamp)
-                                })
-                                .collect();
-                            ops.push(set_cell_values_column(
-                                num_rows, row_index, col_index, values,
-                            ));
-                        }
+                    DataType::Timestamp(TimeUnit::Nanosecond, _) => {
+                        parquet_timestamp_to_cell_values(&array_data)
                     }
                     // unsupported data type
-                    _ => {
-                        // noop
-                    }
-                }
+                    _ => vec![],
+                };
+
+                let operations = Operation::SetCellValues {
+                    sheet_pos: (
+                        insert_at.x + col_index as i64,
+                        insert_at.y + (row_index * num_rows) as i64 + 1,
+                        sheet_id,
+                    )
+                        .into(),
+                    values: CellValues::from_flat_array(1, cell_values.len() as u32, cell_values),
+                };
+                ops.push(operations);
             }
         }
 
         Ok(ops)
     }
+}
+
+fn parquet_int_to_cell_values<T>(array_data: &ArrayData) -> Vec<CellValue>
+where
+    T: ArrowNativeType,
+    T: Into<BigDecimal>,
+{
+    let mut values = vec![];
+
+    for buffer in array_data.buffers() {
+        let data = buffer.typed_data::<T>();
+        values.extend(
+            data.iter()
+                .map(|v| CellValue::Number((*v).into()))
+                .collect::<Vec<CellValue>>(),
+        );
+    }
+
+    values
+}
+
+fn parquet_float_to_cell_values<T>(array_data: &ArrayData) -> Vec<CellValue>
+where
+    T: ArrowNativeType,
+    T: ToString,
+{
+    let mut values = vec![];
+
+    for buffer in array_data.buffers() {
+        let data = buffer.typed_data::<T>();
+        values.extend(
+            data.iter()
+                .map(|v| CellValue::Number(BigDecimal::from_str(&v.to_string()).unwrap()))
+                .collect::<Vec<CellValue>>(),
+        );
+    }
+
+    values
+}
+
+fn parquet_bool_to_cell_values(col: &ArrayRef, array_data: &ArrayData) -> Vec<CellValue> {
+    let mut values = vec![];
+
+    for _buffer in array_data.buffers() {
+        values.extend(
+            (0..col.len())
+                .map(|index| CellValue::Logical(col.as_boolean().value(index)))
+                .collect::<Vec<CellValue>>(),
+        );
+    }
+
+    values
+}
+
+fn parquet_binary_to_cell_values(col: &ArrayRef, array_data: &ArrayData) -> Vec<CellValue> {
+    let mut values = vec![];
+
+    for _buffer in array_data.buffers() {
+        values.extend(
+            (0..col.len())
+                .map(|index| {
+                    CellValue::Text(
+                        std::str::from_utf8(&col.as_binary::<i32>().value(index))
+                            .unwrap()
+                            .into(),
+                    )
+                })
+                .collect::<Vec<CellValue>>(),
+        );
+    }
+
+    values
+}
+
+fn parquet_utf8_to_cell_values(col: &ArrayRef, array_data: &ArrayData) -> Vec<CellValue> {
+    let mut values = vec![];
+
+    for _buffer in array_data.buffers() {
+        values.extend(
+            (0..col.len())
+                .map(|index| CellValue::Text(col.as_string::<i32>().value(index).into()).into())
+                .collect::<Vec<CellValue>>(),
+        );
+    }
+
+    values
+}
+
+fn parquet_date_to_cell_values<T>(array_data: &ArrayData) -> Vec<CellValue>
+where
+    T: ArrowNativeType,
+    T: Into<i64>,
+{
+    let mut values = vec![];
+
+    for buffer in array_data.buffers() {
+        let data = buffer.typed_data::<T>();
+        values.extend(
+            data.iter()
+                .map(|v| {
+                    let timestamp = Utc
+                        .timestamp_millis((*v).into())
+                        .format("%Y-%m-%d")
+                        .to_string();
+                    CellValue::Text(timestamp)
+                })
+                .collect::<Vec<CellValue>>(),
+        );
+    }
+
+    values
+}
+
+fn parquet_time_to_cell_values<T>(array_data: &ArrayData) -> Vec<CellValue>
+where
+    T: ArrowNativeType,
+    T: Into<i64>,
+{
+    let mut values = vec![];
+
+    for buffer in array_data.buffers() {
+        let data = buffer.typed_data::<T>();
+        values.extend(
+            data.iter()
+                .map(|v| {
+                    let timestamp = Utc
+                        .timestamp_millis((*v).into())
+                        .format("%H:%M:%S")
+                        .to_string();
+                    CellValue::Text(timestamp)
+                })
+                .collect::<Vec<CellValue>>(),
+        );
+    }
+
+    values
+}
+
+fn parquet_timestamp_to_cell_values(array_data: &ArrayData) -> Vec<CellValue> {
+    let mut values = vec![];
+
+    for buffer in array_data.buffers() {
+        let data = buffer.typed_data::<i64>();
+        values.extend(
+            data.iter()
+                .map(|v| {
+                    let timestamp = Utc
+                        .timestamp_nanos(*v)
+                        .format("%Y-%m-%d %H:%M:%S")
+                        .to_string();
+                    CellValue::Text(timestamp)
+                })
+                .collect::<Vec<CellValue>>(),
+        );
+    }
+
+    values
 }
