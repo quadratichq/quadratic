@@ -22,11 +22,11 @@ pub fn assert_cell_value(
     let sheet = grid_controller.sheet(sheet_id);
     let cell_value = sheet
         .display_value(Pos { x, y })
-        .unwrap_or(CellValue::Blank);
+        .map_or_else(|| CellValue::Blank, |v| CellValue::Text(v.to_string()));
     let expected = if value.is_empty() {
         CellValue::Blank
     } else {
-        CellValue::to_cell_value(value)
+        CellValue::Text(value.into())
     };
 
     assert_eq!(

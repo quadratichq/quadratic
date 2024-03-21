@@ -17,10 +17,28 @@ impl GridController {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
         Ok(self.start_user_transaction(ops, cursor))
     }
+
+    /// Imports a Parquet file into the grid.
+    ///
+    /// Returns a [`TransactionSummary`].
+    pub fn import_parquet(
+        &mut self,
+        sheet_id: SheetId,
+        file: Vec<u8>,
+        file_name: &str,
+        insert_at: Pos,
+        cursor: Option<String>,
+    ) -> Result<TransactionSummary> {
+        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
+        Ok(self.start_user_transaction(ops, cursor))
+    }
 }
 
 #[cfg(test)]
 mod tests {
+
+    use std::fs::File;
+    use std::io::Read;
 
     use crate::{
         test_util::{assert_cell_value_row, print_table},
@@ -41,6 +59,11 @@ Springfield,OH,United States,64325
 Springfield,OR,United States,56032
 Concord,NH,United States,42605
 "#;
+
+    const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
+    const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
+    // const LARGE_PARQUET_FILE: &str =
+    // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
 
     #[test]
     fn imports_a_simple_csv() {
@@ -122,4 +145,125 @@ Concord,NH,United States,42605
         let op = &ops[0];
         serde_json::to_string(op).unwrap();
     }
+
+    #[test]
+    fn imports_a_simple_parquet() {
+        let mut grid_controller = GridController::test();
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+        let mut file = File::open(PARQUET_FILE).unwrap();
+        let metadata = std::fs::metadata(PARQUET_FILE).expect("unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        file.read(&mut buffer).expect("buffer overflow");
+
+        let _ =
+            grid_controller.import_parquet(sheet_id, buffer, "alltypes_plain.parquet", pos, None);
+
+        print_table(
+            &grid_controller,
+            sheet_id,
+            Rect::new_span(pos, Pos { x: 10, y: 10 }),
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            0,
+            vec![
+                "id",
+                "bool_col",
+                "tinyint_col",
+                "smallint_col",
+                "int_col",
+                "bigint_col",
+                "float_col",
+                "double_col",
+                "date_string_col",
+                "string_col",
+                "timestamp_col",
+            ],
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            1,
+            vec![
+                "4",
+                "TRUE",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0",
+                "03/01/09",
+                "0",
+                "2009-03-01 00:00:00",
+            ],
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            8,
+            vec![
+                "1",
+                "FALSE",
+                "1",
+                "1",
+                "1",
+                "10",
+                "1.1",
+                "10.1",
+                "01/01/09",
+                "1",
+                "2009-01-01 00:01:00",
+            ],
+        );
+    }
+
+    #[test]
+    fn imports_a_medium_parquet() {
+        let mut grid_controller = GridController::test();
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+        let mut file = File::open(MEDIUM_PARQUET_FILE).unwrap();
+        let metadata = std::fs::metadata(MEDIUM_PARQUET_FILE).expect("unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        file.read(&mut buffer).expect("buffer overflow");
+
+        let _ = grid_controller.import_parquet(sheet_id, buffer, "lineitem.parquet", pos, None);
+
+        print_table(
+            &grid_controller,
+            sheet_id,
+            Rect::new_span(Pos { x: 8, y: 0 }, Pos { x: 15, y: 10 }),
+        );
+    }
+
+    // #[test]
+    // fn imports_a_large_parquet() {
+    //     let mut grid_controller = GridController::test();
+    //     let sheet_id = grid_controller.grid.sheets()[0].id;
+    //     let pos = Pos { x: 0, y: 0 };
+    //     let mut file = File::open(LARGE_PARQUET_FILE).unwrap();
+    //     let metadata = std::fs::metadata(LARGE_PARQUET_FILE).expect("unable to read metadata");
+    //     let mut buffer = vec![0; metadata.len() as usize];
+    //     file.read(&mut buffer).expect("buffer overflow");
+
+    //     let _ = grid_controller.import_parquet(sheet_id, buffer, "flights_1m.parquet", pos, None);
+
+    //     print_table(
+    //         &grid_controller,
+    //         sheet_id,
+    //         Rect::new_span(pos, Pos { x: 6, y: 10 }),
+    //     );
+    // }
 }
