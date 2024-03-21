@@ -82,7 +82,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetCodeCell',
           id: e.data.id,
-          cell: core.getCodeCell(e.data.sheetId, e.data.x, e.data.y),
+          cell: await core.getCodeCell(e.data.sheetId, e.data.x, e.data.y),
         });
         break;
 
@@ -90,7 +90,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetRenderCell',
           id: e.data.id,
-          cell: core.getRenderCell(e.data.sheetId, e.data.x, e.data.y),
+          cell: await core.getRenderCell(e.data.sheetId, e.data.x, e.data.y),
         });
         break;
 
@@ -98,19 +98,19 @@ class CoreClient {
         this.send({
           type: 'coreClientCellHasContent',
           id: e.data.id,
-          hasContent: core.cellHasContent(e.data.sheetId, e.data.x, e.data.y),
+          hasContent: await core.cellHasContent(e.data.sheetId, e.data.x, e.data.y),
         });
         break;
 
       case 'clientCoreSetCellValue':
-        core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
+        await core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
         break;
 
       case 'clientCoreGetEditCell':
         this.send({
           type: 'coreClientGetEditCell',
           id: e.data.id,
-          cell: core.getEditCell(e.data.sheetId, e.data.x, e.data.y),
+          cell: await core.getEditCell(e.data.sheetId, e.data.x, e.data.y),
         });
         break;
 
@@ -118,7 +118,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetCellFormatSummary',
           id: e.data.id,
-          formatSummary: core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y),
+          formatSummary: await core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y),
         });
         break;
 
@@ -130,16 +130,24 @@ class CoreClient {
         this.send({
           type: 'coreClientSummarizeSelection',
           id: e.data.id,
-          summary: core.summarizeSelection(e.data),
+          summary: await core.summarizeSelection(e.data),
         });
         break;
 
       case 'clientCoreSetCellBold':
-        core.setCellBold(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.bold, e.data.cursor);
+        await core.setCellBold(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.bold,
+          e.data.cursor
+        );
         break;
 
       case 'clientCoreSetCellItalic':
-        core.setCellItalic(
+        await core.setCellItalic(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -151,7 +159,7 @@ class CoreClient {
         break;
 
       case 'clientCoreSetCellTextColor':
-        core.setCellTextColor(
+        await core.setCellTextColor(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -163,7 +171,7 @@ class CoreClient {
         break;
 
       case 'clientCoreSetCellFillColor':
-        core.setCellFillColor(
+        await core.setCellFillColor(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -175,7 +183,7 @@ class CoreClient {
         break;
 
       case 'clientCoreToggleCommas':
-        core.toggleCommas(
+        await core.toggleCommas(
           e.data.sheetId,
           e.data.sourceX,
           e.data.sourceY,
@@ -188,12 +196,27 @@ class CoreClient {
         break;
 
       case 'clientCoreSetCurrency':
-        core.setCurrency(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.symbol, e.data.cursor);
+        await core.setCurrency(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.symbol,
+          e.data.cursor
+        );
         break;
 
       case 'clientCoreImportCsv':
         try {
-          const error = core.importCsv(e.data.sheetId, e.data.x, e.data.y, e.data.file, e.data.fileName, e.data.cursor);
+          const error = await core.importCsv(
+            e.data.sheetId,
+            e.data.x,
+            e.data.y,
+            e.data.file,
+            e.data.fileName,
+            e.data.cursor
+          );
           this.send({ type: 'coreClientImportCsv', id: e.data.id, error });
         } catch (error) {
           this.send({ type: 'coreClientImportCsv', id: e.data.id, error: error as string });
@@ -201,48 +224,55 @@ class CoreClient {
         break;
 
       case 'clientCoreGetGridBounds':
-        const bounds = core.getGridBounds(e.data);
+        const bounds = await core.getGridBounds(e.data);
         this.send({ type: 'coreClientGetGridBounds', id: e.data.id, bounds });
         break;
 
       case 'clientCoreDeleteCellValues':
-        core.deleteCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.deleteCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         break;
 
       case 'clientCoreSetCodeCellValue':
-        core.setCodeCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.language, e.data.codeString, e.data.cursor);
+        await core.setCodeCellValue(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.language,
+          e.data.codeString,
+          e.data.cursor
+        );
         break;
 
       case 'clientCoreAddSheet':
-        core.addSheet(e.data.cursor);
+        await core.addSheet(e.data.cursor);
         break;
 
       case 'clientCoreDeleteSheet':
-        core.deleteSheet(e.data.sheetId, e.data.cursor);
+        await core.deleteSheet(e.data.sheetId, e.data.cursor);
         break;
 
       case 'clientCoreMoveSheet':
-        core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor);
+        await core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor);
         break;
 
       case 'clientCoreSetSheetName':
-        core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor);
+        await core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor);
         break;
 
       case 'clientCoreSetSheetColor':
-        core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor);
+        await core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor);
         break;
 
       case 'clientCoreDuplicateSheet':
-        core.duplicateSheet(e.data.sheetId, e.data.cursor);
+        await core.duplicateSheet(e.data.sheetId, e.data.cursor);
         break;
 
       case 'clientCoreUndo':
-        core.undo(e.data.cursor);
+        await core.undo(e.data.cursor);
         break;
 
       case 'clientCoreRedo':
-        core.redo(e.data.cursor);
+        await core.redo(e.data.cursor);
         break;
 
       case 'clientCoreUpgradeGridFile':
@@ -251,30 +281,44 @@ class CoreClient {
         break;
 
       case 'clientCoreExport':
-        this.send({ type: 'coreClientExport', id: e.data.id, grid: core.export() });
+        this.send({ type: 'coreClientExport', id: e.data.id, grid: await core.export() });
         break;
 
       case 'clientCoreSearch':
-        const results = core.search(e.data.search, e.data.searchOptions);
+        const results = await core.search(e.data.search, e.data.searchOptions);
         this.send({ type: 'coreClientSearch', id: e.data.id, results });
         break;
 
       case 'clientCoreHasRenderCells':
-        const hasRenderCells = core.hasRenderCells(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        const hasRenderCells = await core.hasRenderCells(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height
+        );
         this.send({ type: 'coreClientHasRenderCells', id: e.data.id, hasRenderCells });
         break;
 
       case 'clientCoreSetCellAlign':
-        core.setCellAlign(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.align, e.data.cursor);
+        await core.setCellAlign(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.align,
+          e.data.cursor
+        );
         break;
 
       case 'clientCoreCopyToClipboard':
-        const result = core.copyToClipboard(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        const result = await core.copyToClipboard(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
         this.send({ type: 'coreClientCopyToClipboard', id: e.data.id, ...result });
         break;
 
       case 'clientCoreCutToClipboard':
-        const cutResult = core.cutToClipboard(
+        const cutResult = await core.cutToClipboard(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -286,7 +330,7 @@ class CoreClient {
         break;
 
       case 'clientCorePasteFromClipboard':
-        core.pasteFromClipboard(
+        await core.pasteFromClipboard(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -298,7 +342,7 @@ class CoreClient {
         break;
 
       case 'clientCoreSetRegionBorders':
-        core.setRegionBorders(
+        await core.setRegionBorders(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -311,11 +355,11 @@ class CoreClient {
         break;
 
       case 'clientCoreSetCellRenderResize':
-        core.setCellRenderResize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.setCellRenderResize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         break;
 
       case 'clientCoreAutocomplete':
-        core.autocomplete(
+        await core.autocomplete(
           e.data.sheetId,
           e.data.x,
           e.data.y,
@@ -330,7 +374,7 @@ class CoreClient {
         break;
 
       case 'clientCoreExportCsvSelection':
-        const csv = core.exportCsvSelection(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        const csv = await core.exportCsvSelection(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         break;
 
@@ -338,7 +382,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetColumnsBounds',
           id: e.data.id,
-          bounds: core.getColumnsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
+          bounds: await core.getColumnsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
         });
         break;
 
@@ -346,7 +390,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetRowsBounds',
           id: e.data.id,
-          bounds: core.getRowsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
+          bounds: await core.getRowsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
         });
         break;
 
@@ -354,7 +398,7 @@ class CoreClient {
         this.send({
           type: 'coreClientFindNextColumn',
           id: e.data.id,
-          column: core.findNextColumn(e.data),
+          column: await core.findNextColumn(e.data),
         });
         break;
 
@@ -362,16 +406,16 @@ class CoreClient {
         this.send({
           type: 'coreClientFindNextRow',
           id: e.data.id,
-          row: core.findNextRow(e.data),
+          row: await core.findNextRow(e.data),
         });
         break;
 
       case 'clientCoreCommitTransientResize':
-        core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
+        await core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
         break;
 
       case 'clientCoreCommitSingleResize':
-        core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
+        await core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
         break;
 
       case 'clientCoreInitPython':

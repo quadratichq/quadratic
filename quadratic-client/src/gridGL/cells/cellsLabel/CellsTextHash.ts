@@ -11,7 +11,7 @@
 
 import { sheets } from '@/grid/controller/Sheets';
 import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
-import { Container, Graphics, Rectangle, Renderer, Text } from 'pixi.js';
+import { BitmapText, Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
 import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
@@ -98,10 +98,8 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();
-    const text = c.addChild(new Text(`${this.hashX},${this.hashY}`, { fill: 'white', fontSize: 12 }));
-    g.beginFill(0x888888);
-    g.drawRect(screen.x, screen.y, text.width, text.height);
-    g.endFill();
+    const text = c.addChild(new BitmapText(`${this.hashX},${this.hashY}`, { fontName: 'OpenSans', fontSize: 12 }));
+    text.tint = 0xff0000;
     text.position.set(screen.x, screen.y);
   }
 

@@ -99,7 +99,6 @@ export class CellsTextHash {
   }
 
   async createLabels() {
-    if (debugShowHashUpdates) console.log(`[CellsTextHash] createLabels for ${this.hashX}, ${this.hashY}`);
     this.labels = new Map();
     const cells =
       this.dirty !== true
@@ -124,6 +123,7 @@ export class CellsTextHash {
 
   async update(): Promise<boolean> {
     if (this.dirty) {
+      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
       await this.createLabels();
       this.overflowClip();
       this.updateBuffers(); // false
@@ -131,6 +131,7 @@ export class CellsTextHash {
       this.dirtyBuffers = false;
       return true;
     } else if (this.dirtyBuffers) {
+      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating only buffers ${this.hashX}, ${this.hashY}`);
       this.updateBuffers(); // true
       this.dirtyBuffers = false;
       return true;
@@ -144,7 +145,6 @@ export class CellsTextHash {
   }
 
   overflowClip(): void {
-    if (debugShowHashUpdates) console.log(`[CellsTextHash] overflowClip for ${this.hashX}, ${this.hashY}`);
     const bounds = this.cellsLabels.bounds;
     if (!bounds) return;
     const clipLeft: TrackClip[] = [];
@@ -233,8 +233,6 @@ export class CellsTextHash {
   }
 
   updateBuffers(): void {
-    if (debugShowHashUpdates) console.log(`[CellsTextHash] updateBuffers for ${this.hashX}, ${this.hashY}`);
-
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
 

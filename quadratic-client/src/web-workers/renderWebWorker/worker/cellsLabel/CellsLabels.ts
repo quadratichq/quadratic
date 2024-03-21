@@ -82,7 +82,6 @@ export class CellsLabels {
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
     const key = `${hashX},${hashY}`;
     const cellsHash = new CellsTextHash(this, hashX, hashY);
-    if (debugShowHashUpdates) console.log(`[CellsTextHash] Creating hash for (${hashX}, ${hashY})`);
     this.cellsTextHash.set(key, cellsHash);
     const row = this.cellsRows.get(hashY);
     if (row) {
