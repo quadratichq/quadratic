@@ -72,11 +72,14 @@ export function FilesListItemUserFile({
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  // If we're looking at the user's personal files OR a team where they have edit access, they can move stuff
+  // Determine if the user can move files
+  // If we're looking at the user's personal files, make sure they have edit access to another team
+  // If we're looking at a team, make sure they have edit access to the curent team
   const isPersonalFilesRoute = location.pathname === ROUTES.FILES;
   const isTeamRoute = teamRouteLoaderData !== undefined;
   const canMoveFiles =
-    isPersonalFilesRoute ||
+    (isPersonalFilesRoute &&
+      teams.filter(({ userMakingRequest: { teamPermissions } }) => teamPermissions.includes('TEAM_EDIT')).length > 0) ||
     (isTeamRoute && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
 
   const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
