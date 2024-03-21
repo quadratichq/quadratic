@@ -2,7 +2,7 @@
 
 Thank you for considering contributing to Quadratic, the infinite data science spreadsheet :sparkles:
 
-**Before contributing**, please respond to the issue you'd like to work on; someone on the team will get in touch to help. Alternatively, feel free to reach out to the team via careers@gmail.com to get in touch and discuss contributing. 
+**Before contributing**, please respond to the issue you'd like to work on; someone on the team will get in touch to help. Alternatively, feel free to [reach out](https://www.quadratichq.com/contact) to the team to get in touch and discuss contributing. 
 
 Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approachable and respectable.
 
