@@ -321,15 +321,12 @@ export const CodeEditor = () => {
           closeEditor={closeEditor}
           evaluationResult={evaluationResult}
         />
-        <ReturnTypeInspector
-          evaluationResult={evaluationResult}
-          show={Boolean(
-            evaluationResult?.line_number &&
-              !out?.stdErr &&
-              !unsaved &&
-              (editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula')
-          )}
-        />
+        {editorInteractionState.mode === 'Python' && (
+          <ReturnTypeInspector
+            evaluationResult={evaluationResult}
+            show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+          />
+        )}
 
         <ResizeControl setState={setConsoleHeight} position="TOP" />
         {/* Console Wrapper */}

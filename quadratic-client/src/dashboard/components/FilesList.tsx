@@ -7,21 +7,21 @@ import { useFetchers, useLocation } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
 import useLocalStorage from '../../hooks/useLocalStorage';
 import { Action as FilesAction } from '../../routes/files.$uuid';
-import { FileListItem, FilesListItems } from './FilesListItem';
+import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
 import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
-export type FilesListFile = {
-  permissions: FilePermission[];
-  uuid: string;
-  name: string;
+export type FilesListUserFile = {
   createdDate: string;
-  updatedDate: string;
+  name: string;
   publicLinkAccess: PublicLinkAccess;
+  permissions: FilePermission[];
   thumbnail: string | null;
+  updatedDate: string;
+  uuid: string;
 };
 
-export function FilesList({ files, emptyState }: { files: FilesListFile[]; emptyState: ReactNode }) {
+export function FilesList({ files, emptyState }: { files: FilesListUserFile[]; emptyState?: ReactNode }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
@@ -41,6 +41,7 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
   let filesToRender = files;
 
   // If there are files being duplicated, prepend them to the list
+
   const filesBeingDuplicated = fetchers
     .filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'duplicate')
     .map((fetcher, i) => {
@@ -48,7 +49,7 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
       // (filter makes sure there's no trailing slash to deal with)
       const fileUuid = fetcher.formAction?.split('/').filter(Boolean).pop();
       // We should never have a file that's duplicating that's not in the list
-      const file = files.find((file) => file.uuid === fileUuid) as FilesListFile;
+      const file = files.find((file) => file.uuid === fileUuid) as FilesListUserFile;
       return {
         ...file,
         uuid: `${fileUuid}--duplicate-${i}`,
@@ -94,10 +95,10 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
 
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => (
-          <FileListItem
-            lazyLoad={i > 12}
+          <FilesListItemUserFile
             key={file.uuid}
             file={file}
+            lazyLoad={i > 12}
             filterValue={filterValue}
             activeShareMenuFileId={activeShareMenuFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
@@ -106,13 +107,7 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
         ))}
       </FilesListItems>
 
-      {filterValue && filesToRender.length === 0 && (
-        <Empty
-          title="No matches"
-          description={<>No files found with that specified name.</>}
-          Icon={MagnifyingGlassIcon}
-        />
-      )}
+      {filterValue && filesToRender.length === 0 && <EmptyFilterState />}
 
       {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && emptyState}
 
@@ -126,5 +121,70 @@ export function FilesList({ files, emptyState }: { files: FilesListFile[]; empty
         />
       )}
     </>
+  );
+}
+
+export type FilesListExampleFile = {
+  description: string;
+  href: string;
+  name: string;
+  thumbnail: string;
+};
+
+export function ExampleFilesList({ files, emptyState }: { files: FilesListExampleFile[]; emptyState?: ReactNode }) {
+  const { pathname } = useLocation();
+  const [filterValue, setFilterValue] = useState<string>('');
+  const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
+    // Persist the layout preference across views (by URL)
+    `FilesList-${pathname}`,
+    // Initial state
+    {
+      layout: isMobile ? Layout.List : Layout.Grid,
+    }
+  );
+
+  const filesToRender = filterValue
+    ? files.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()))
+    : files;
+
+  return (
+    <>
+      <FilesListViewControls
+        filterValue={filterValue}
+        setFilterValue={setFilterValue}
+        viewPreferences={viewPreferences}
+        setViewPreferences={setViewPreferences}
+      />
+
+      <FilesListItems viewPreferences={viewPreferences}>
+        {filesToRender.map((file, i) => {
+          const { href, name, thumbnail, description } = file;
+          const lazyLoad = i > 12;
+
+          return (
+            <FilesListItemExampleFile
+              key={href}
+              file={{
+                name,
+                href,
+                thumbnail,
+                description,
+              }}
+              filterValue={filterValue}
+              lazyLoad={lazyLoad}
+              viewPreferences={viewPreferences}
+            />
+          );
+        })}
+      </FilesListItems>
+
+      {filterValue && filesToRender.length === 0 && <EmptyFilterState />}
+    </>
+  );
+}
+
+function EmptyFilterState() {
+  return (
+    <Empty title="No matches" description={<>No files found with that specified name.</>} Icon={MagnifyingGlassIcon} />
   );
 }

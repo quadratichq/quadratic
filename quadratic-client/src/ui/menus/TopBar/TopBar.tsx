@@ -86,10 +86,10 @@ export const TopBar = () => {
         {isDesktop && !isEmbed && (
           <>
             <TopBarUsers />
+            <TopBarShareButton />
             <Tooltip title={`${showCellTypeOutlines ? 'Hide' : 'Show'} code cell outlines`} arrow>
               <SwitchApp checked={showCellTypeOutlines} onCheckedChange={setShowCellTypeOutlines} />
             </Tooltip>
-            <TopBarShareButton />
           </>
         )}
         <div className="flex self-stretch">

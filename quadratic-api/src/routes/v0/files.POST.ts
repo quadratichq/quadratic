@@ -1,14 +1,13 @@
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { uploadStringAsFileS3 } from '../../aws/s3';
-import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { createFile } from '../../utils/createFile';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -40,38 +39,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
     }
   }
 
-  // Create file in db
-  const dbFile = await dbClient.file.create({
-    data: {
-      creatorUserId: userId,
-      name,
-      // Team file or personal file?
-      ...(teamId ? { ownerTeamId: teamId } : { ownerUserId: userId }),
-    },
-    select: {
-      id: true,
-      uuid: true,
-      name: true,
-      ownerTeam: true,
-    },
-  });
-
-  // Upload file contents to S3 and create a checkpoint
-  const { uuid, id: fileId } = dbFile;
-  const response = await uploadStringAsFileS3(`${uuid}-0.grid`, contents);
-
-  await dbClient.fileCheckpoint.create({
-    data: {
-      fileId,
-      sequenceNumber: 0,
-      s3Bucket: response.bucket,
-      s3Key: response.key,
-      version: version,
-    },
-  });
+  const dbFile = await createFile({ name, userId, teamId, contents, version });
 
   return res.status(201).json({
-    file: { uuid, name: dbFile.name },
+    file: { uuid: dbFile.uuid, name: dbFile.name },
     team: dbFile.ownerTeam ? { uuid: dbFile.ownerTeam.uuid } : undefined,
   });
 }
