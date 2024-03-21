@@ -60,12 +60,10 @@ Springfield,OR,United States,56032
 Concord,NH,United States,42605
 "#;
 
-    const PARQUET_FILE: &str =
-        "/Users/daviddimaria/work/quadratic/quadratic/quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
-    const MEDIUM_PARQUET_FILE: &str =
-        "/Users/daviddimaria/work/quadratic/quadratic/quadratic-rust-shared/data/parquet/lineitem.parquet";
+    const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
+    const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
     // const LARGE_PARQUET_FILE: &str =
-    // "/Users/daviddimaria/work/quadratic/quadratic/quadratic-rust-shared/data/parquet/flights_1m.parquet";
+    // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
 
     #[test]
     fn imports_a_simple_csv() {
@@ -150,6 +148,9 @@ Concord,NH,United States,42605
 
     #[test]
     fn imports_a_simple_parquet() {
+        // let srcdir = std::path::PathBuf::from(PARQUET_FILE);
+        println!("{:?}", std::env::current_dir());
+
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
