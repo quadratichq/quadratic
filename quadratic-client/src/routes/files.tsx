@@ -52,7 +52,9 @@ export const Component = () => {
                     description: 'With an instructional walk-through',
                     link: (
                       <Link
-                        to={ROUTES.CREATE_FILE_EXAMPLE('default.grid')}
+                        to={ROUTES.CREATE_FILE_EXAMPLE(
+                          'https://app.quadratichq.com/file/abb7cb2f-2cc7-46bb-9c83-a86f0c8d4834'
+                        )}
                         reloadDocument
                         onClick={() => {
                           mixpanel.track('[FilesEmptyState].clickOpenStarterFile');
