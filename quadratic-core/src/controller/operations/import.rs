@@ -69,48 +69,34 @@ impl GridController {
         &mut self,
         sheet_id: SheetId,
         file: Vec<u8>,
-        file_name: &str,
+        _file_name: &str,
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
 
         // this is not expensive
         let bytes = Bytes::from(file);
-        let builder = ParquetRecordBatchReaderBuilder::try_new(bytes).unwrap();
+        let builder = ParquetRecordBatchReaderBuilder::try_new(bytes)?;
 
         // headers
         let metadata = builder.metadata();
         let fields = metadata.file_metadata().schema().get_fields();
-        // println!("{:?}", fields);
         let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
         ops.push(Operation::SetCellValues {
             sheet_pos: (insert_at.x, insert_at.y, sheet_id).into(),
             values: CellValues::from_flat_array(headers.len() as u32, 1, headers),
         });
 
-        let reader = builder.build().map_err(|e| {
-            dbgjs!(format!("Error reading parquet file {}: {}", file_name, e));
-            anyhow!("Error reading parquet file {}", file_name)
-        })?;
+        let reader = builder.build()?;
 
         for (row_index, batch) in reader.enumerate() {
-            let batch = batch.map_err(|e| {
-                dbgjs!(format!("Error reading parquet file {}: {}", file_name, e));
-                anyhow!("Error reading parquet file {}", file_name)
-            })?;
-
-            // dbgjs!(format!("row_index: {}", row_index));
-
+            let batch = batch?;
             let num_rows = batch.num_rows();
             let num_cols = batch.num_columns();
 
             for col_index in 0..num_cols {
                 let col = batch.column(col_index);
                 let array_data = col.to_data();
-
-                // if row_index == 0 {
-                //     println!("{:?}", array_data.data_type());
-                // }
 
                 let cell_values = match array_data.data_type() {
                     DataType::Int8 => parquet_int_to_cell_values::<i8>(&array_data),
@@ -189,7 +175,9 @@ where
         let data = buffer.typed_data::<T>();
         values.extend(
             data.iter()
-                .map(|v| CellValue::Number(BigDecimal::from_str(&v.to_string()).unwrap()))
+                .map(|v| {
+                    CellValue::Number(BigDecimal::from_str(&v.to_string()).unwrap_or(0.into()))
+                })
                 .collect::<Vec<CellValue>>(),
         );
     }
@@ -220,7 +208,7 @@ fn parquet_binary_to_cell_values(col: &ArrayRef, array_data: &ArrayData) -> Vec<
                 .map(|index| {
                     CellValue::Text(
                         std::str::from_utf8(&col.as_binary::<i32>().value(index))
-                            .unwrap()
+                            .unwrap_or("")
                             .into(),
                     )
                 })
