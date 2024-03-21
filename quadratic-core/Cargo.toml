@@ -21,10 +21,19 @@ name = "export_types"
 path = "src/bin/export_types.rs"
 
 [features]
-default = ["console_error_panic_hook", "js"]
+default = ["console_error_panic_hook", "js", "file-io"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
-js = ["js-sys", "serde-wasm-bindgen", "ts-rs", "wasm-bindgen", "wasm-bindgen-futures"]
+js = [
+    "js-sys",
+    "serde-wasm-bindgen",
+    "ts-rs",
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+]
 show-operations = []
+file-io = []
+multiplayer = []
+files = []
 
 [dependencies]
 anyhow = "1.0"
@@ -41,6 +50,7 @@ serde_repr = "0.1"
 smallvec = { version = "1.11.0", features = ["serde", "union"] }
 strum = "0.24.1"
 strum_macros = "0.24.3"
+tabled = { version = "0.14.0", features = ["color"] }
 pollster = "0.2.5"
 uuid = { version = "1.4.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde", "wasmbind"] }
@@ -64,11 +74,11 @@ lexicon_fractional_index = "0.0.3"
 htmlescape = "0.3.1"
 bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
-indexmap = "2.0.2"
+indexmap = { version = "2.0.2", features = ["serde"] }
+thiserror = "1.0.52"
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
-tabled = { version ="0.14.0", features = ["color"] }
 tokio-test = "0.4.3"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
@@ -79,14 +89,8 @@ proptest-derive = "0.3.0"
 name = "grid_benchmark"
 harness = false
 
-[profile.release]
-# Tell `rustc` to optimize for small code size.
-opt-level = "s"
-
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-Os', '-g']  # TODO: -g seems to fix the name mangling problem
-
-
+wasm-opt = ['-Os', '-g'] # TODO: -g seems to fix the name mangling problem
 
 [package.metadata.wasm-pack.profile.dev]
 wasm-opt = false

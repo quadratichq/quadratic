@@ -2,62 +2,7 @@ use std::str::FromStr;
 
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{
-    controller::GridController,
-    grid::{CodeCellLanguage, SheetId},
-    Pos, Rect,
-};
-
-#[derive(PartialEq, Debug)]
-#[wasm_bindgen]
-pub struct CodeCell {
-    code_string: String,
-    language: CodeCellLanguage,
-    std_out: Option<String>,
-    std_err: Option<String>,
-    evaluation_result: Option<String>,
-}
-
-#[cfg(test)]
-impl CodeCell {
-    pub fn new(
-        code_string: String,
-        language: CodeCellLanguage,
-        evaluation_result: Option<String>,
-    ) -> Self {
-        Self {
-            code_string,
-            language,
-            evaluation_result,
-            std_out: None,
-            std_err: None,
-        }
-    }
-}
-
-#[wasm_bindgen]
-impl CodeCell {
-    #[wasm_bindgen(js_name = "getCodeString")]
-    pub fn code_string(&self) -> String {
-        self.code_string.clone()
-    }
-    #[wasm_bindgen(js_name = "getLanguage")]
-    pub fn language(&self) -> CodeCellLanguage {
-        self.language
-    }
-    #[wasm_bindgen(js_name = "getStdOut")]
-    pub fn std_out(&self) -> Option<String> {
-        self.std_out.clone()
-    }
-    #[wasm_bindgen(js_name = "getStdErr")]
-    pub fn std_err(&self) -> Option<String> {
-        self.std_err.clone()
-    }
-    #[wasm_bindgen(js_name = "getEvaluationResult")]
-    pub fn evaluation_result(&self) -> Option<String> {
-        self.evaluation_result.clone()
-    }
-}
+use crate::{controller::GridController, grid::SheetId, Pos, Rect};
 
 #[wasm_bindgen]
 impl GridController {
@@ -72,10 +17,15 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_cell_value(sheet_id, *pos, value, cursor),
-        )?)
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            Ok(serde_wasm_bindgen::to_value(&self.set_cell_value(
+                pos.to_sheet_pos(sheet_id),
+                value,
+                cursor,
+            ))?)
+        } else {
+            Err(JsValue::from_str("Invalid sheet id"))
+        }
     }
 
     /// changes the decimal places
@@ -88,10 +38,16 @@ impl GridController {
         delta: isize,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
-            sheet_id, source, rect, delta, cursor,
-        ))?)
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            Ok(serde_wasm_bindgen::to_value(&self.change_decimal_places(
+                source.to_sheet_pos(sheet_id),
+                rect.to_sheet_rect(sheet_id),
+                delta,
+                cursor,
+            ))?)
+        } else {
+            Err(JsValue::from_str("Invalid sheet id"))
+        }
     }
 
     /// gets an editable string for a cell
@@ -99,9 +55,10 @@ impl GridController {
     /// returns a string
     #[wasm_bindgen(js_name = "getEditCell")]
     pub fn js_get_cell_edit(&self, sheet_id: String, pos: Pos) -> String {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let sheet = self.grid().sheet_from_id(sheet_id);
-        if let Some(value) = sheet.get_cell_value_only(pos) {
+        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+            return String::from("");
+        };
+        if let Some(value) = sheet.cell_value(pos) {
             value.to_edit()
         } else {
             String::from("")
@@ -115,67 +72,12 @@ impl GridController {
     pub fn js_delete_cell_values(
         &mut self,
         sheet_id: String,
-        region: &Rect,
+        rect: &Rect,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(
-            &self.delete_cells_rect(sheet_id, *region, cursor),
+            &self.delete_cells_rect(rect.to_sheet_rect(sheet_id), cursor),
         )?)
-    }
-
-    /// Gets the code_string of a code cell
-    #[wasm_bindgen(js_name = "getCodeCell")]
-    pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Option<CodeCell> {
-        let sheet = self.grid().sheet_from_string(sheet_id);
-        if let Some(code_cell) = sheet.get_code_cell(*pos) {
-            let (std_err, std_out, evaluation_result) =
-                if let Some(code_cell) = code_cell.output.as_ref() {
-                    let result = serde_json::to_string(code_cell);
-                    let evaluation_result = if let Ok(result) = result {
-                        Some(result)
-                    } else {
-                        None
-                    };
-                    (
-                        code_cell.std_err.clone(),
-                        code_cell.std_out.clone(),
-                        evaluation_result,
-                    )
-                } else {
-                    (None, None, None)
-                };
-            Some(CodeCell {
-                code_string: code_cell.code_string.clone(),
-                language: code_cell.language,
-                std_err,
-                std_out,
-                evaluation_result,
-            })
-        } else {
-            None
-        }
-    }
-
-    /// Sets the code on a cell
-    ///
-    /// Returns [`TransactionSummary`]
-    #[wasm_bindgen(js_name = "setCellCode")]
-    pub fn js_set_cell_code(
-        &mut self,
-        sheet_id: String,
-        pos: Pos,
-        language: CodeCellLanguage,
-        code_string: String,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(&self.set_cell_code(
-            sheet_id,
-            pos,
-            language,
-            code_string,
-            cursor,
-        ))?)
     }
 }

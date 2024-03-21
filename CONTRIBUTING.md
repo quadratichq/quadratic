@@ -26,13 +26,13 @@ Check out our open roles ⟶ [careers.quadratichq.com](https://careers.quadratic
 
 In order to run the front-end and/or the server locally, you must have all the environment variables configured in `.env.local` (and `quadratic-api/.env.local` if you’re running a local server). You can grab the values from [our team Notion page](https://www.notion.so/Env-Variables-78b1a1da19d0421993abe8c449e51496?pvs=4) or by asking a team member.
 
-1. Start everything in one thread `npm start`
+1. Start everything in one terminal: `npm start`
 
 ### Run front-end locally
 
 1. `cd quadratic-client`
 2. `npm i` to install dependencies
-3. Configure `.env.local` values
+3. Configure `.env.local` values: `touch .env.local`
 4. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
 
 #### Note:

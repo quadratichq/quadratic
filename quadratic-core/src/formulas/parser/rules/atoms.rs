@@ -33,7 +33,7 @@ impl SyntaxRule for NumericLiteral {
         match p.next() {
             Some(Token::NumericLiteral) => {
                 let Ok(n) = p.token_str().parse::<f64>() else {
-                    return Err(ErrorMsg::BadNumber.with_span(p.span()));
+                    return Err(RunErrorMsg::BadNumber.with_span(p.span()));
                 };
                 Ok(AstNode {
                     span: p.span(),
@@ -71,7 +71,7 @@ impl SyntaxRule for SheetRefPrefix {
             Some(Token::UnquotedSheetReference) => {
                 p.next();
                 let name_without_bang = p.token_str().strip_suffix('!').ok_or_else(|| {
-                    ErrorMsg::InternalError("expected '!' in unquoted sheet reference".into())
+                    RunErrorMsg::InternalError("expected '!' in unquoted sheet reference".into())
                 })?;
                 Ok(name_without_bang.trim().to_string())
             }
@@ -101,7 +101,7 @@ impl SyntaxRule for CellReference {
 
         p.next();
         let Some(mut cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
-            return Err(ErrorMsg::BadCellReference.with_span(p.span()));
+            return Err(RunErrorMsg::BadCellReference.with_span(p.span()));
         };
         cell_ref.sheet = sheet_name;
         Ok(Spanned {

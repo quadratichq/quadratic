@@ -1,3 +1,4 @@
+import { grid } from '@/grid/controller/Grid';
 import { Box } from '@mui/material';
 import { ControlledMenu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
@@ -53,6 +54,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
               const color = convertReactColorToString(change);
               if (contextMenu) {
                 sheets.sheet.color = color;
+                grid.setSheetColor(sheets.sheet.id, color);
                 focusGrid();
               }
               handleClose();
@@ -60,6 +62,7 @@ export const SheetBarTabContextMenu = (props: Props): JSX.Element => {
             onClear={() => {
               if (contextMenu) {
                 sheets.sheet.color = undefined;
+                grid.setSheetColor(sheets.sheet.id, undefined);
                 focusGrid();
               }
               handleClose();

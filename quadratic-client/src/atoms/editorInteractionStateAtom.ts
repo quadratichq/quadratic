@@ -1,7 +1,7 @@
+import { Coordinate } from '@/gridGL/types/size';
+import { CodeCellLanguage, SearchOptions } from '@/quadratic-core/types';
+import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
-import { ApiTypes } from '../api/types';
-import { Coordinate } from '../gridGL/types/size';
-import { CellType } from '../schemas';
 
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
@@ -10,15 +10,18 @@ export interface EditorInteractionState {
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
   showShareFileMenu: boolean;
-  permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
+  showSearch: boolean | SearchOptions;
+  permissions: FilePermission[];
+  uuid: string;
   selectedCell: Coordinate;
   selectedCellSheet: string;
-  mode: CellType;
+  mode?: CodeCellLanguage;
+  follow?: string;
   editorEscapePressed?: boolean;
   waitingForEditorClose?: {
     selectedCell: Coordinate;
     selectedCellSheet: string;
-    mode: CellType;
+    mode?: CodeCellLanguage;
     showCellTypeMenu: boolean;
   };
 }
@@ -30,10 +33,12 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   showGoToMenu: false,
   showFeedbackMenu: false,
   showShareFileMenu: false,
-  permission: 'VIEWER', // FYI: when we call <RecoilRoot> we initialize this with the value from the server
+  showSearch: false,
+  permissions: ['FILE_VIEW'], // FYI: when we call <RecoilRoot> we initialize this with the value from the server
+  uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
   selectedCellSheet: '',
-  mode: 'TEXT',
+  mode: undefined,
 };
 
 export const editorInteractionStateAtom = atom({

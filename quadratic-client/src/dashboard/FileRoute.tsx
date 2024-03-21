@@ -1,85 +1,110 @@
-import { ApiError } from '@/api/fetchFromApi';
+import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { CONTACT_URL } from '@/constants/urls';
+import { debugShowMultiplayer } from '@/debugFlags';
 import { isEmbed } from '@/helpers/isEmbed';
+import { firstRustFileVersion } from '@/schemas/validateAndUpgradeLegacyGridFile';
+import { versionGTE } from '@/schemas/versioning';
 import { Button } from '@/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import { ReactElement } from 'react';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import {
   Link,
   LoaderFunctionArgs,
   isRouteErrorResponse,
+  redirect,
   useLoaderData,
   useRouteError,
   useRouteLoaderData,
 } from 'react-router-dom';
 import { MutableSnapshot, RecoilRoot } from 'recoil';
 import { apiClient } from '../api/apiClient';
-import { ApiTypes } from '../api/types';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { Empty } from '../components/Empty';
-import { ROUTE_LOADER_IDS } from '../constants/routes';
+import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
 import { grid } from '../grid/controller/Grid';
 import init, { hello } from '../quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
 import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticApp from '../ui/QuadraticApp';
 
-export type FileData = {
-  name: string;
-  sharing: ApiTypes['/v0/files/:uuid/sharing.GET.response'];
-  permission: ApiTypes['/v0/files/:uuid.GET.response']['permission'];
-};
+export type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData> => {
+export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
 
-  // Fetch the file & its sharing data
-  const [data, sharing] = await Promise.all([apiClient.getFile(uuid), apiClient.getFileSharing(uuid)]);
+  // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
+  let data;
+  try {
+    data = await apiClient.files.get(uuid);
+  } catch (error: any) {
+    const isLoggedIn = await authClient.isAuthenticated();
+    if (error.status === 403 && !isLoggedIn) {
+      return redirect(ROUTES.SIGNUP_WITH_REDIRECT());
+    }
+    throw new Response('Failed to load file from server.', { status: error.status });
+  }
+  if (debugShowMultiplayer)
+    console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
 
-  // Validate and upgrade file to the latest version in TS (up to 1.4)
-  const file = await validateAndUpgradeGridFile(data.file.contents);
-  if (!file) {
-    Sentry.captureEvent({
-      message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: 'error',
-    });
-    throw new Response('File validation failed.');
+  // Get file contents from S3
+  const res = await fetch(data.file.lastCheckpointDataUrl);
+
+  let checkpointContents = await res.text();
+  let version = data.file.lastCheckpointVersion;
+
+  // only need to upgrade the file if file version is < 1.4
+  if (!versionGTE(data.file.lastCheckpointVersion, firstRustFileVersion)) {
+    // Validate and upgrade file to the latest version in TS (up to 1.4)
+    const file = await validateAndUpgradeGridFile(checkpointContents);
+    if (!file) {
+      Sentry.captureEvent({
+        message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
+        level: 'error',
+      });
+      throw new Response('File validation failed.', { status: 200 });
+    }
+    checkpointContents = file.contents;
+    version = file.version;
   }
 
   // load WASM
   await init();
   hello();
-  grid.init();
-  grid.openFromContents(file.contents);
-  grid.thumbnailDirty = !data.file.thumbnail;
+  if (!grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber)) {
+    Sentry.captureEvent({
+      message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
+      level: 'error',
+    });
+    throw new Response('File validation failed.', { status: 200 });
+  }
+  grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
 
   // If the file is newer than the app, do a (hard) reload.
-  const fileVersion = file.version;
   const gridVersion = grid.getVersion();
-  if (compareVersions(fileVersion, gridVersion) === VersionComparisonResult.GreaterThan) {
+  if (compareVersions(version, gridVersion) === VersionComparisonResult.GreaterThan) {
     Sentry.captureEvent({
-      message: `User opened a file at version ${fileVersion} but the app is at version ${gridVersion}. The app will automatically reload.`,
+      message: `User opened a file at version ${version} but the app is at version ${gridVersion}. The app will automatically reload.`,
       level: 'log',
     });
     // @ts-expect-error hard reload via `true` only works in some browsers
     window.location.reload(true);
   }
 
-  return {
-    name: data.file.name,
-    permission: isEmbed ? 'ANONYMOUS' : data.permission,
-    sharing,
-  };
+  return data;
 };
 
 export const Component = () => {
   // Initialize recoil with the file's permission we get from the server
-  const { permission } = useLoaderData() as FileData;
+  const {
+    userMakingRequest: { filePermissions },
+    file: { uuid },
+  } = useLoaderData() as FileData;
   const initializeState = ({ set }: MutableSnapshot) => {
     set(editorInteractionStateAtom, (prevState) => ({
       ...prevState,
-      permission,
+      uuid,
+      permissions: filePermissions,
     }));
   };
 
@@ -88,6 +113,8 @@ export const Component = () => {
   if (isEmbed) {
     document.querySelector('#root')?.addEventListener('wheel', (e) => e.preventDefault());
   }
+
+  useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
     <RecoilRoot initializeState={initializeState}>
@@ -112,37 +139,30 @@ export const ErrorBoundary = () => {
     </div>
   );
 
-  // Handle specific errors
+  if (isRouteErrorResponse(error)) {
+    let title = '';
+    let description: string = '';
 
-  let title = '';
-  let description: string | ReactElement = '';
-
-  if (error instanceof ApiError) {
     if (error.status === 404) {
       title = 'File not found';
-      description = 'This file may have been deleted, moved, or made unavailable. Try reaching out to the file owner.';
-    } else if (error.status >= 400 && error.status < 500) {
-      title = 'Failed to retrieve file';
-      description = (
-        <>
-          This file could not be loaded from the server. Additional details:
-          <pre className="mt-4">{error.details}</pre>
-        </>
-      );
+      description = 'This file may have been moved or made unavailable. Try reaching out to the file owner.';
+    } else if (error.status === 400) {
+      title = 'Bad file request';
+      description = 'Check the URL and try again.';
+    } else if (error.status === 403) {
+      title = 'Permission denied';
+      description = 'You do not have permission to view this file. Try reaching out to the file owner.';
+    } else if (error.status === 410) {
+      title = 'File deleted';
+      description = 'This file no longer exists. Try reaching out to the file owner.';
+    } else if (error.status === 200) {
+      title = 'File validation failed';
+      description =
+        'The file was retrieved from the server but failed to load into the app. Try again or contact us for help.';
+    } else {
+      title = 'Failed to load file';
+      description = 'There was an error retrieving and loading this file.';
     }
-  }
-
-  if (isRouteErrorResponse(error)) {
-    title = 'Failed to load file';
-    description = (
-      <>
-        The file was retrieved from the server but could not be loaded. Additional details:
-        <pre className="mt-4">{error.data}</pre>
-      </>
-    );
-  }
-
-  if (title && description) {
     return <Empty title={title} description={description} Icon={ExclamationTriangleIcon} actions={actions} />;
   }
 

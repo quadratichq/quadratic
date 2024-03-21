@@ -17,12 +17,17 @@ export class ApiError extends Error {
   }
 }
 
-export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
+export async function fetchFromApi<T>(
+  path: string,
+  init: RequestInit,
+  schema: z.Schema<T>
+): Promise<z.infer<typeof schema>> {
   // We'll automatically inject additional headers to the request, starting with auth
   const isAuthenticated = await authClient.isAuthenticated();
+  const token = isAuthenticated ? await authClient.getTokenOrRedirect() : '';
   const headers = new Headers(init.headers);
   if (isAuthenticated) {
-    headers.set('Authorization', `Bearer ${await authClient.getToken()}`);
+    headers.set('Authorization', `Bearer ${token}`);
   }
   // And if we're submitting `FormData`, let the browser set the content-type automatically
   // This allows files to upload properly. Otherwise, we assume it's JSON.

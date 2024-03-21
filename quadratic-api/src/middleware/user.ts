@@ -1,43 +1,104 @@
-import { NextFunction, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
+import { getUsersFromAuth0 } from '../auth0/profile';
 import dbClient from '../dbClient';
-import { Request } from '../types/Request';
+import { addUserToTeam } from '../internal/addUserToTeam';
+import { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
 
-const getOrCreateUser = async (auth0_id: string) => {
-  // get user from db
-  let user = await dbClient.user.findUnique({
+const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.user.create>>) => {
+  const { id: userId, auth0Id } = user;
+
+  // Lookup their email in auth0
+  const usersById = await getUsersFromAuth0([{ id: userId, auth0Id }]);
+  const { email } = usersById[userId];
+
+  // See if they've been invited to any teams and make them team members
+  const teamInvites = await dbClient.teamInvite.findMany({
     where: {
-      auth0_id,
+      email,
     },
   });
-
-  // if not user, create user
-  if (user === null) {
-    user = await dbClient.user.create({
-      data: {
-        auth0_id,
+  if (teamInvites.length) {
+    for (const { teamId, role } of teamInvites) {
+      await addUserToTeam({ userId, teamId, role });
+    }
+    await dbClient.teamInvite.deleteMany({
+      where: {
+        email,
       },
     });
   }
 
-  return user;
+  // Do the same as teams, but with files
+  const fileInvites = await dbClient.fileInvite.findMany({
+    where: {
+      email,
+    },
+  });
+  if (fileInvites.length) {
+    await dbClient.userFileRole.createMany({
+      data: fileInvites.map(({ fileId, role }) => ({
+        fileId,
+        userId,
+        role,
+      })),
+    });
+    await dbClient.fileInvite.deleteMany({
+      where: {
+        email,
+      },
+    });
+  }
+
+  // Done.
+};
+
+const getOrCreateUser = async (auth0Id: string) => {
+  // First try to get the user
+  const user = await dbClient.user.findUnique({
+    where: {
+      auth0Id,
+    },
+  });
+  if (user) {
+    return user;
+  }
+
+  // If they don't exist yet, create them
+  const newUser = await dbClient.user.create({
+    data: {
+      auth0Id,
+    },
+  });
+  // Do extra work since it's their first time logging in
+  await runFirstTimeUserLogic(newUser);
+
+  // Return the user
+  return newUser;
 };
 
 export const userMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.auth?.sub === undefined) {
-    return res.status(401).json({ error: { message: 'Invalid authorization token' } });
+  const { auth } = req as RequestWithAuth;
+
+  const user = await getOrCreateUser(auth.sub);
+  if (!user) {
+    return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
   }
 
-  req.user = await getOrCreateUser(req.auth.sub);
-
+  (req as RequestWithUser).user = user;
   next();
 };
 
 export const userOptionalMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  if (req.auth?.sub === undefined) {
-    return next();
-  }
+  const { auth } = req as RequestWithOptionalAuth;
 
-  req.user = await getOrCreateUser(req.auth.sub);
+  if (auth && auth.sub) {
+    const user = await getOrCreateUser(auth.sub);
+    if (!user) {
+      return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
+    }
+    // @ts-expect-error
+    req.user = user;
+  }
 
   next();
 };

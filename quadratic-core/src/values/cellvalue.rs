@@ -1,18 +1,29 @@
 use std::{fmt, str::FromStr};
 
+use anyhow::{bail, Result};
 use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
+use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 use super::{Duration, Instant, IsBlank};
 use crate::{
-    controller::{formatting::CellFmtArray, operation::Operation},
-    grid::{CellRef, NumericDecimals, NumericFormat, NumericFormatKind, Sheet},
-    CodeResult, Error, RunLengthEncoding,
+    controller::operations::operation::Operation,
+    grid::{
+        formatting::CellFmtArray, CodeCellLanguage, NumericDecimals, NumericFormat,
+        NumericFormatKind, Sheet,
+    },
+    CodeResult, Pos, RunError, RunLengthEncoding, SheetRect,
 };
 
 // todo: fill this out
 const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct CodeCellValue {
+    pub language: CodeCellLanguage,
+    pub code: String,
+}
 
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -37,8 +48,10 @@ pub enum CellValue {
     Duration(Duration),
     /// Error value.
     #[cfg_attr(test, proptest(skip))]
-    Error(Box<Error>),
+    Error(Box<RunError>),
     Html(String),
+    #[cfg_attr(test, proptest(skip))]
+    Code(CodeCellValue),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -52,6 +65,7 @@ impl fmt::Display for CellValue {
             CellValue::Duration(d) => write!(f, "{d}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
+            CellValue::Code(code) => write!(f, "{:?}", code),
         }
     }
 }
@@ -75,6 +89,7 @@ impl CellValue {
             CellValue::Duration(_) => "time duration",
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
+            CellValue::Code(_) => "python",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -89,6 +104,7 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
+            CellValue::Code(_) => todo!("repr of python"),
         }
     }
 
@@ -196,6 +212,9 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+
+            // this should not render
+            CellValue::Code(_) => String::new(),
         }
     }
 
@@ -210,6 +229,9 @@ impl CellValue {
             CellValue::Instant(_) => todo!("repr of Instant"),
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
+
+            // this should not be editable
+            CellValue::Code(_) => String::new(),
         }
     }
 
@@ -225,8 +247,20 @@ impl CellValue {
         None
     }
 
+    pub fn unpack_boolean(s: &str) -> Option<CellValue> {
+        match s.to_ascii_lowercase().as_str() {
+            "true" => Some(CellValue::Logical(true)),
+            "false" => Some(CellValue::Logical(false)),
+            _ => None,
+        }
+    }
+
     pub fn strip_percentage(value: &str) -> &str {
         value.strip_suffix(PERCENTAGE_SYMBOL).unwrap_or(value)
+    }
+
+    pub fn strip_commas(value: &str) -> String {
+        value.to_string().replace(',', "")
     }
 
     pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
@@ -236,7 +270,8 @@ impl CellValue {
 
         for char in CURRENCY_SYMBOLS.chars() {
             if let Some(stripped) = s.strip_prefix(char) {
-                if let Ok(bd) = BigDecimal::from_str(stripped) {
+                let without_commas = CellValue::strip_commas(stripped);
+                if let Ok(bd) = BigDecimal::from_str(&without_commas) {
                     return Some((char.to_string(), bd));
                 }
             }
@@ -254,7 +289,7 @@ impl CellValue {
         self.is_blank() || *self == CellValue::Text(String::new())
     }
     /// Returns the contained error, if this is an error value.
-    pub fn error(&self) -> Option<&Error> {
+    pub fn error(&self) -> Option<&RunError> {
         match self {
             CellValue::Error(e) => Some(e),
             _ => None,
@@ -273,7 +308,7 @@ impl CellValue {
         }
     }
 
-    /// Compares two values but propogates errors and returns `None` in the case
+    /// Compares two values but propagates errors and returns `None` in the case
     /// of disparate types.
     pub fn partial_cmp(&self, other: &Self) -> CodeResult<Option<std::cmp::Ordering>> {
         Ok(Some(match (self, other) {
@@ -296,11 +331,12 @@ impl CellValue {
             | (CellValue::Instant(_), _)
             | (CellValue::Duration(_), _)
             | (CellValue::Html(_), _)
+            | (CellValue::Code(_), _)
             | (CellValue::Blank, _) => return Ok(None),
         }))
     }
 
-    /// Compares two values using a total ordering that propogates errors and
+    /// Compares two values using a total ordering that propagates errors and
     /// converts blanks to zeros.
     #[allow(clippy::should_implement_trait)]
     pub fn cmp(&self, other: &Self) -> CodeResult<std::cmp::Ordering> {
@@ -317,6 +353,7 @@ impl CellValue {
                 CellValue::Duration(_) => 5,
                 CellValue::Blank => 6,
                 CellValue::Html(_) => 7,
+                CellValue::Code(_) => 8,
             }
         }
 
@@ -369,10 +406,13 @@ impl CellValue {
     /// This would normally be an implementation of FromStr, but we are holding
     /// off as we want formatting to happen with conversions in most places
     pub fn to_cell_value(value: &str) -> CellValue {
+        // check for number
         let parsed = CellValue::strip_percentage(CellValue::strip_currency(value)).trim();
-        let number = BigDecimal::from_str(parsed);
-        let is_true = parsed.eq_ignore_ascii_case("true");
-        let is_false = parsed.eq_ignore_ascii_case("false");
+        let without_commas = CellValue::strip_commas(parsed);
+        let number = BigDecimal::from_str(&without_commas);
+
+        let is_true = value.eq_ignore_ascii_case("true");
+        let is_false = value.eq_ignore_ascii_case("false");
         let is_bool = is_true || is_false;
 
         match (number, is_bool) {
@@ -382,69 +422,96 @@ impl CellValue {
         }
     }
 
-    /// Converts a string to a CellValue, updates number formatting, and returns reverse Ops
-    pub fn from_string(
-        s: &String,
-        cell_ref: CellRef,
+    /// Convert stringified values and types from JS to CellValue
+    ///
+    /// `value` is the stringified value
+    /// `js_type` is the stringified CelLValue type
+    pub fn from_js(
+        value: &String,
+        js_type: &str,
+        pos: Pos,
         sheet: &mut Sheet,
-    ) -> (CellValue, Vec<Operation>) {
+    ) -> Result<(CellValue, Vec<Operation>)> {
         let mut ops = vec![];
-        let value: CellValue;
-        // check for currency
-        if let Some((currency, number)) = CellValue::unpack_currency(s) {
-            value = CellValue::Number(number);
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Currency,
-                symbol: Some(currency),
-            };
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+        let sheet_rect = SheetRect::single_pos(pos, sheet.id);
 
-                ops.push(Operation::SetCellFormats {
-                    region: cell_ref.into(),
-                    attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                        Some(numeric_format),
-                        1,
-                    )),
-                });
+        let cell_value = match js_type {
+            "text" => {
+                let is_html = value.to_lowercase().starts_with("<html>")
+                    || value.to_lowercase().starts_with("<div>");
 
-                // only change decimals if it hasn't already been set
-                if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
-                    sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
-                    ops.push(Operation::SetCellFormats {
-                        region: cell_ref.into(),
-                        attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(Some(2), 1)),
-                    });
+                match is_html {
+                    true => CellValue::Html(value.to_string()),
+                    false => CellValue::Text(value.to_string()),
                 }
             }
-        } else if let Ok(bd) = BigDecimal::from_str(s) {
-            value = CellValue::Number(bd);
-        } else if let Some(percent) = CellValue::unpack_percentage(s) {
-            value = CellValue::Number(percent);
-            let numeric_format = NumericFormat {
-                kind: NumericFormatKind::Percentage,
-                symbol: None,
-            };
-            if let Some(pos) = sheet.cell_ref_to_pos(cell_ref) {
-                sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
-            }
-            ops.push(Operation::SetCellFormats {
-                region: cell_ref.into(),
-                attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
-                    Some(numeric_format),
-                    1,
-                )),
-            });
+            "number" => {
+                if let Some((currency, number)) = CellValue::unpack_currency(value) {
+                    let numeric_format = NumericFormat {
+                        kind: NumericFormatKind::Currency,
+                        symbol: Some(currency),
+                    };
+                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
 
-        // todo: probably use a crate here to detect html
-        } else if s.to_lowercase().starts_with("<html>") || s.to_lowercase().starts_with("<div>") {
-            value = CellValue::Html(s.to_string());
-        }
-        // todo: include other types here
-        else {
-            value = CellValue::Text(s.to_string());
-        }
-        (value, ops)
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                            Some(numeric_format),
+                            1,
+                        )),
+                    });
+
+                    // only change decimals if it hasn't already been set
+                    if sheet.get_formatting_value::<NumericDecimals>(pos).is_none() {
+                        sheet.set_formatting_value::<NumericDecimals>(pos, Some(2));
+                        ops.push(Operation::SetCellFormats {
+                            sheet_rect,
+                            attr: CellFmtArray::NumericDecimals(RunLengthEncoding::repeat(
+                                Some(2),
+                                1,
+                            )),
+                        });
+                    }
+
+                    CellValue::Number(number)
+                } else if let Ok(number) = BigDecimal::from_str(value) {
+                    CellValue::Number(number)
+                } else if let Some(number) = CellValue::unpack_percentage(value) {
+                    let numeric_format = NumericFormat {
+                        kind: NumericFormatKind::Percentage,
+                        symbol: None,
+                    };
+                    sheet.set_formatting_value::<NumericFormat>(pos, Some(numeric_format.clone()));
+                    ops.push(Operation::SetCellFormats {
+                        sheet_rect,
+                        attr: CellFmtArray::NumericFormat(RunLengthEncoding::repeat(
+                            Some(numeric_format),
+                            1,
+                        )),
+                    });
+
+                    CellValue::Number(number)
+                } else {
+                    bail!("Could not parse number: {}", value);
+                }
+            }
+            "logical" => {
+                let is_true = value.eq_ignore_ascii_case("true");
+                CellValue::Logical(is_true)
+            }
+            "instant" => {
+                let parsed: i64 = value.parse()?;
+                let timestamp = match Utc.timestamp_opt(parsed, 0) {
+                    chrono::LocalResult::Single(timestamp) => timestamp,
+                    _ => bail!("Could not parse timestamp: {}", value),
+                };
+                CellValue::Text(timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
+            }
+            "duration" => CellValue::Text("not implemented".into()),
+            _ => CellValue::Text(value.into()),
+        };
+
+        Ok((cell_value, ops))
     }
 
     pub fn is_html(&self) -> bool {

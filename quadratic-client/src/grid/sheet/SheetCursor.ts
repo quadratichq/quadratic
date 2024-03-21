@@ -1,3 +1,4 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
@@ -60,7 +61,8 @@ export class SheetCursor {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
     this.multiCursor = value.multiCursor;
-    pixiApp.updateCursorPosition();
+    multiplayer.sendSelection(this.getMultiplayerSelection());
+    pixiApp.cursor.dirty = true;
   }
 
   changePosition(options: {
@@ -77,6 +79,21 @@ export class SheetCursor {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
     pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
+    multiplayer.sendSelection(this.getMultiplayerSelection());
+  }
+
+  // gets a stringified selection string for multiplayer
+  getMultiplayerSelection(): string {
+    const cursor = this.cursorPosition;
+    const rectangle = this.multiCursor
+      ? new Rectangle(
+          this.multiCursor.originPosition.x,
+          this.multiCursor.originPosition.y,
+          this.multiCursor.terminalPosition.x - this.multiCursor.originPosition.x,
+          this.multiCursor.terminalPosition.y - this.multiCursor.originPosition.y
+        )
+      : undefined;
+    return JSON.stringify({ cursor, rectangle });
   }
 
   changeBoxCells(boxCells: boolean) {
@@ -93,6 +110,7 @@ export class SheetCursor {
     return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
   }
 
+  // Returns the Rust pos of the cursor
   getPos(): Pos {
     return new Pos(this.cursorPosition.x, this.cursorPosition.y);
   }

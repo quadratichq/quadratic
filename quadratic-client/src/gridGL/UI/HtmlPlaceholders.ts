@@ -1,8 +1,8 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { colors } from '@/theme/colors';
 import { Graphics } from 'pixi.js';
-import { HtmlCell } from '../htmlCells/HtmlCell';
-import { htmlCellsHandler } from '../htmlCells/htmlCellsHandler';
+import { HtmlCell } from '../HTMLGrid/htmlCells/HtmlCell';
+import { htmlCellsHandler } from '../HTMLGrid/htmlCells/htmlCellsHandler';
 
 const BORDER_WIDTH = 1;
 
