@@ -13,7 +13,7 @@ use crate::{
     },
     error_core::Result,
 };
-use chrono::{Duration, Utc};
+use chrono::{Duration, TimeDelta, Utc};
 use uuid::Uuid;
 
 // seconds to wait before requesting wait_for_transactions
@@ -115,8 +115,10 @@ impl GridController {
             if match self.transactions.last_get_transactions_time {
                 None => true,
                 Some(last_request_transaction_time) => {
+                    let seconds = Duration::try_seconds(SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS)
+                        .unwrap_or(TimeDelta::zero());
                     last_request_transaction_time
-                        .checked_add_signed(Duration::seconds(SECONDS_TO_WAIT_FOR_GET_TRANSACTIONS))
+                        .checked_add_signed(seconds)
                         .unwrap_or(now)
                         < now
                 }
