@@ -148,9 +148,6 @@ Concord,NH,United States,42605
 
     #[test]
     fn imports_a_simple_parquet() {
-        // let srcdir = std::path::PathBuf::from(PARQUET_FILE);
-        println!("{:?}", std::env::current_dir());
-
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let pos = Pos { x: 0, y: 0 };
@@ -166,6 +163,69 @@ Concord,NH,United States,42605
             &grid_controller,
             sheet_id,
             Rect::new_span(pos, Pos { x: 10, y: 10 }),
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            0,
+            vec![
+                "id",
+                "bool_col",
+                "tinyint_col",
+                "smallint_col",
+                "int_col",
+                "bigint_col",
+                "float_col",
+                "double_col",
+                "date_string_col",
+                "string_col",
+                "timestamp_col",
+            ],
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            1,
+            vec![
+                "4",
+                "TRUE",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0",
+                "0",
+                "03/01/09",
+                "0",
+                "2009-03-01 00:00:00",
+            ],
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            8,
+            vec![
+                "1",
+                "FALSE",
+                "1",
+                "1",
+                "1",
+                "10",
+                "1.1",
+                "10.1",
+                "01/01/09",
+                "1",
+                "2009-01-01 00:01:00",
+            ],
         );
     }
 
