@@ -261,7 +261,15 @@ export const Component = () => {
         />
 
         <FilesList
-          files={files.map((data) => ({ ...data.file, permissions: data.userMakingRequest.filePermissions }))}
+          files={files.map(({ file, userMakingRequest }) => ({
+            name: file.name,
+            createdDate: file.createdDate,
+            updatedDate: file.updatedDate,
+            thumbnail: file.thumbnail,
+            uuid: file.uuid,
+            publicLinkAccess: file.publicLinkAccess,
+            permissions: userMakingRequest.filePermissions,
+          }))}
           emptyState={
             <Empty
               title="No team files yet"

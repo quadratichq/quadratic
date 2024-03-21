@@ -12,13 +12,21 @@ import { apiClient } from '../api/apiClient';
 import { Empty } from '../components/Empty';
 import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { FilesList, FilesListFile } from '../dashboard/components/FilesList';
+import { FilesList, FilesListUserFile } from '../dashboard/components/FilesList';
 import { debugShowUILogs } from '../debugFlags';
 
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListFile[]> => {
+export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListUserFile[]> => {
   const files = await apiClient.files.list();
   const permissions = ['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE'] as FilePermission[];
-  const filesWithPermissions = files.map((file) => ({ ...file, permissions }));
+  const filesWithPermissions = files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
+    name,
+    thumbnail,
+    createdDate,
+    updatedDate,
+    uuid,
+    publicLinkAccess,
+    permissions,
+  }));
   return filesWithPermissions;
 };
 

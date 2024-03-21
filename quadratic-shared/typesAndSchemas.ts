@@ -225,6 +225,31 @@ export const ApiSchemas = {
 
   /**
    *
+   * Examples
+   * Given the publicly-accessible URL of a (example) file in production,
+   * duplicate it to the user's account.
+   *
+   */
+  '/v0/examples.POST.request': z.object({
+    publicFileUrlInProduction: z
+      .string()
+      .url()
+      .refine((url) => url.startsWith('https://app.quadratichq.com/file/'), {
+        message: 'Must be a URL for a file in production',
+      })
+      .refine(
+        (url) => {
+          const uuid = url.split('/').pop();
+          const result = z.string().uuid().safeParse(uuid);
+          return result.success;
+        },
+        { message: 'Must be a file UUID. Should match pattern: https://app.quadratichq.com/files/:fileUuid' }
+      ),
+  }),
+  '/v0/examples.POST.response': FileSchema.pick({ name: true, uuid: true }),
+
+  /**
+   *
    * Teams
    *
    */
