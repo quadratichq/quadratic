@@ -21,12 +21,7 @@ export const Component = () => {
     <>
       <DashboardHeader
         title="Examples"
-        titleNode={
-          <DashboardHeaderTitle>
-            Example files{' '}
-            <span className="text-base font-normal text-muted-foreground">(maintained by the Quadratic team)</span>
-          </DashboardHeaderTitle>
-        }
+        titleNode={<DashboardHeaderTitle>Example files by the Quadratic team</DashboardHeaderTitle>}
       />
 
       <ExampleFilesList files={files} />

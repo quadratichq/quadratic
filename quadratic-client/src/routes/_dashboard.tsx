@@ -25,6 +25,7 @@ import {
   MagicWandIcon,
   MixIcon,
   PlusIcon,
+  ReaderIcon,
   ReloadIcon,
   Share2Icon,
 } from '@radix-ui/react-icons';
@@ -283,13 +284,12 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             <MixIcon className={classNameIcons} />
             Examples
           </SidebarNavLink>
-          <SidebarNavLink
-            to={DOCUMENTATION_URL}
-            target="_blank"
-            className={`group text-muted-foreground hover:text-foreground`}
-          >
-            <ExternalLinkIcon className={cn(classNameIcons, `text-inherit opacity-50 group-hover:opacity-100`)} />
+          <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className="group">
+            <ReaderIcon className={classNameIcons} />
             Docs
+            <ExternalLinkIcon
+              className={cn(classNameIcons, `ml-auto text-muted-foreground opacity-50 group-hover:opacity-100`)}
+            />
           </SidebarNavLink>
         </div>
       </div>
