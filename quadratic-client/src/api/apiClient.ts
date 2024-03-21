@@ -269,6 +269,17 @@ export const apiClient = {
     },
   },
 
+  examples: {
+    async duplicate(publicFileUrlInProduction: string) {
+      const body: ApiTypes['/v0/examples.POST.request'] = { publicFileUrlInProduction };
+      return fetchFromApi(
+        `/v0/examples`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/examples.POST.response']
+      );
+    },
+  },
+
   users: {
     async acknowledge() {
       return fetchFromApi(`/v0/users/acknowledge`, { method: 'GET' }, ApiSchemas['/v0/users.acknowledge.GET.response']);
