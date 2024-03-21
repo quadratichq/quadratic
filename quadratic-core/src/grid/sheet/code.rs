@@ -139,9 +139,7 @@ impl Sheet {
             })
         };
 
-        let Some(code_cell) = code_cell else {
-            return None;
-        };
+        let code_cell = code_cell?;
 
         match code_cell {
             CellValue::Code(code_cell) => {

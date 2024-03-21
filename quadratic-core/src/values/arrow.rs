@@ -44,7 +44,6 @@ impl From<&ArrayRef> for CellValues {
             _ => vec![],
         };
 
-        print!("values: {:?}", values.len());
         CellValues::from_flat_array(1, values.len() as u32, values)
     }
 }
