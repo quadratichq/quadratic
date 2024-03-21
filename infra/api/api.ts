@@ -13,6 +13,7 @@ const apiECRName = config.require("api-ecr-repo-name");
 const apiPulumiEscEnvironmentName = config.require(
   "api-pulumi-esc-environment-name"
 );
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Configuration from Pulumi ESC
 const instanceSize = config.require("api-instance-size");
@@ -41,9 +42,9 @@ sleep 5
 
 # Run prisma migrate
 sudo docker run \
-            --name ${imageRepositoryName}-migrate \
+            --name ${apiECRName}-migrate \
             --env-file .env \
-            ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag} \
+            ${ecrRegistryUrl}/${apiECRName}:${dockerImageTag} \
             npm run prisma:migrate --workspace=quadratic-api
 `;
 
