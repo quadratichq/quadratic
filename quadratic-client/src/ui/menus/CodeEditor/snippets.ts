@@ -94,7 +94,7 @@ filtered_df = df.head(5)
 filtered_df`,
   },
   {
-    label: 'Relative references',
+    label: 'Make a relative reference',
     keywords: 'relative reference position cell',
     code: `# c is the cell one cell to the left of the current cell, use either rel_cell or rc
 c = rel_cell(-1, 0)
