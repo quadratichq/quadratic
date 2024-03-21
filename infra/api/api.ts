@@ -44,6 +44,7 @@ sleep 5
 sudo docker run \
             --name ${apiECRName}-migrate \
             --env-file .env \
+            --add-host=host.docker.internal:host-gateway \
             ${ecrRegistryUrl}/${apiECRName}:${dockerImageTag} \
             npm run prisma:migrate --workspace=quadratic-api
 `;

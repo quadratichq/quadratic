@@ -9,6 +9,6 @@ RUN npm install
 FROM node:18 AS runtime
 WORKDIR /app
 COPY --from=builder /app .
-RUN apt-get update && apt install -y openssl
+RUN apt-get update && apt install -y openssl iputils-ping
 # RUN npm run build --workspace=quadratic-api
 CMD ["npm", "start", "--workspace=quadratic-api"]

@@ -83,6 +83,7 @@ sudo docker run -d \
             --restart always \
             -p 80:80 \
             --env-file .env \
+            --add-host=host.docker.internal:host-gateway \
             ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
 
 # TODO: In preview environments we should disable datadog
