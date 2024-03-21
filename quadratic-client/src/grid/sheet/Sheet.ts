@@ -154,9 +154,12 @@ export class Sheet {
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
   }
 
+  // todo: change this to a JsValue instead of a Rust struct
   getColumnRow(x: number, y: number): Coordinate {
-    const columnRow = JSON.parse(this.offsets.getColumnRowFromScreen(x, y));
-    return { x: columnRow.column, y: columnRow.row };
+    const columnRow = this.offsets.getColumnRowFromScreen(x, y);
+    const result = { x: columnRow.column, y: columnRow.row };
+    columnRow.free();
+    return result;
   }
 
   // @returns screen rectangle for a column/row rectangle
