@@ -26,9 +26,9 @@ impl From<&ArrayRef> for CellValues {
             DataType::Float16 => arryow_float_to_cell_values::<half::f16>(array_data),
             DataType::Float32 => arryow_float_to_cell_values::<f32>(array_data),
             DataType::Float64 => arryow_float_to_cell_values::<f64>(array_data),
-            DataType::Boolean => arryow_bool_to_cell_values(array, array_data),
-            DataType::Binary => arryow_binary_to_cell_values(array, array_data),
-            DataType::Utf8 => arryow_utf8_to_cell_values(array, array_data),
+            DataType::Boolean => arryow_bool_to_cell_values(array),
+            DataType::Binary => arryow_binary_to_cell_values(array),
+            DataType::Utf8 => arryow_utf8_to_cell_values(array),
             DataType::Date32 => arryow_date_to_cell_values::<i32>(array_data),
             DataType::Date64 => arryow_date_to_cell_values::<i64>(array_data),
             DataType::Time32(TimeUnit::Millisecond) => {
@@ -89,7 +89,7 @@ where
     values
 }
 
-fn arryow_bool_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
+fn arryow_bool_to_cell_values(col: &ArrayRef) -> Vec<CellValue> {
     let mut values = vec![];
 
     values.extend(
@@ -101,7 +101,7 @@ fn arryow_bool_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<Cell
     values
 }
 
-fn arryow_binary_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
+fn arryow_binary_to_cell_values(col: &ArrayRef) -> Vec<CellValue> {
     let mut values = vec![];
 
     values.extend(
@@ -119,7 +119,7 @@ fn arryow_binary_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<Ce
     values
 }
 
-fn arryow_utf8_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
+fn arryow_utf8_to_cell_values(col: &ArrayRef) -> Vec<CellValue> {
     let mut values = vec![];
 
     values.extend(
