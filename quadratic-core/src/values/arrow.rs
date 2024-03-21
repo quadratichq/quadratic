@@ -15,26 +15,30 @@ impl From<&ArrayRef> for CellValues {
         let array_data = array.to_data();
 
         let values = match data_type {
-            DataType::Int8 => arryw_int_to_cell_values::<i8>(array_data),
-            DataType::Int16 => arryw_int_to_cell_values::<i16>(array_data),
-            DataType::Int32 => arryw_int_to_cell_values::<i32>(array_data),
-            DataType::Int64 => arryw_int_to_cell_values::<i64>(array_data),
-            DataType::UInt8 => arryw_int_to_cell_values::<u8>(array_data),
-            DataType::UInt16 => arryw_int_to_cell_values::<u16>(array_data),
-            DataType::UInt32 => arryw_int_to_cell_values::<u32>(array_data),
-            DataType::UInt64 => arryw_int_to_cell_values::<u64>(array_data),
-            DataType::Float16 => arryw_float_to_cell_values::<half::f16>(array_data),
-            DataType::Float32 => arryw_float_to_cell_values::<f32>(array_data),
-            DataType::Float64 => arryw_float_to_cell_values::<f64>(array_data),
-            DataType::Boolean => arryw_bool_to_cell_values(array, array_data),
-            DataType::Binary => arryw_binary_to_cell_values(array, array_data),
-            DataType::Utf8 => arryw_utf8_to_cell_values(array, array_data),
-            DataType::Date32 => arryw_date_to_cell_values::<i32>(array_data),
-            DataType::Date64 => arryw_date_to_cell_values::<i64>(array_data),
-            DataType::Time32(TimeUnit::Millisecond) => arryw_time_to_cell_values::<i32>(array_data),
-            DataType::Time64(TimeUnit::Millisecond) => arryw_time_to_cell_values::<i64>(array_data),
+            DataType::Int8 => arryow_int_to_cell_values::<i8>(array_data),
+            DataType::Int16 => arryow_int_to_cell_values::<i16>(array_data),
+            DataType::Int32 => arryow_int_to_cell_values::<i32>(array_data),
+            DataType::Int64 => arryow_int_to_cell_values::<i64>(array_data),
+            DataType::UInt8 => arryow_int_to_cell_values::<u8>(array_data),
+            DataType::UInt16 => arryow_int_to_cell_values::<u16>(array_data),
+            DataType::UInt32 => arryow_int_to_cell_values::<u32>(array_data),
+            DataType::UInt64 => arryow_int_to_cell_values::<u64>(array_data),
+            DataType::Float16 => arryow_float_to_cell_values::<half::f16>(array_data),
+            DataType::Float32 => arryow_float_to_cell_values::<f32>(array_data),
+            DataType::Float64 => arryow_float_to_cell_values::<f64>(array_data),
+            DataType::Boolean => arryow_bool_to_cell_values(array, array_data),
+            DataType::Binary => arryow_binary_to_cell_values(array, array_data),
+            DataType::Utf8 => arryow_utf8_to_cell_values(array, array_data),
+            DataType::Date32 => arryow_date_to_cell_values::<i32>(array_data),
+            DataType::Date64 => arryow_date_to_cell_values::<i64>(array_data),
+            DataType::Time32(TimeUnit::Millisecond) => {
+                arryow_time_to_cell_values::<i32>(array_data)
+            }
+            DataType::Time64(TimeUnit::Millisecond) => {
+                arryow_time_to_cell_values::<i64>(array_data)
+            }
             DataType::Timestamp(TimeUnit::Nanosecond, _) => {
-                arryw_timestamp_to_cell_values(array_data)
+                arryow_timestamp_to_cell_values(array_data)
             }
             // unsupported data type
             _ => vec![],
@@ -45,7 +49,7 @@ impl From<&ArrayRef> for CellValues {
     }
 }
 
-fn arryw_int_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
+fn arryow_int_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
 where
     T: ArrowNativeType,
     T: Into<BigDecimal>,
@@ -64,7 +68,7 @@ where
     values
 }
 
-fn arryw_float_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
+fn arryow_float_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
 where
     T: ArrowNativeType,
     T: ToString,
@@ -85,7 +89,7 @@ where
     values
 }
 
-fn arryw_bool_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
+fn arryow_bool_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
     let mut values = vec![];
 
     for _buffer in array_data.buffers() {
@@ -99,7 +103,7 @@ fn arryw_bool_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellV
     values
 }
 
-fn arryw_binary_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
+fn arryow_binary_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
     let mut values = vec![];
 
     for _buffer in array_data.buffers() {
@@ -119,7 +123,7 @@ fn arryw_binary_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<Cel
     values
 }
 
-fn arryw_utf8_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
+fn arryow_utf8_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
     let mut values = vec![];
 
     for _buffer in array_data.buffers() {
@@ -133,7 +137,7 @@ fn arryw_utf8_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellV
     values
 }
 
-fn arryw_date_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
+fn arryow_date_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
 where
     T: ArrowNativeType,
     T: Into<i64>,
@@ -158,7 +162,7 @@ where
     values
 }
 
-fn arryw_time_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
+fn arryow_time_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
 where
     T: ArrowNativeType,
     T: Into<i64>,
@@ -183,7 +187,7 @@ where
     values
 }
 
-fn arryw_timestamp_to_cell_values(array_data: ArrayData) -> Vec<CellValue> {
+fn arryow_timestamp_to_cell_values(array_data: ArrayData) -> Vec<CellValue> {
     let mut values = vec![];
 
     for buffer in array_data.buffers() {
