@@ -54,6 +54,12 @@ export default defineConfig(() => {
       globals: true,
       environment: 'happy-dom',
     },
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        internal: path.resolve(__dirname, '_internal/email.html'),
+      },
+    },
   };
 });
 /*
