@@ -76,7 +76,7 @@ bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
-parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array", "snap"] }
+parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"] }
 bytes = "1.5.0"
 arrow-array = "51.0.0"
 arrow-schema = "51.0.0"

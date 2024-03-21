@@ -1363,6 +1363,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "flate2"
+version = "1.0.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46303f565772937ffe1d394a4fac6f411c6013172fadde9dcdb1e147a086940e"
+dependencies = [
+ "crc32fast",
+ "miniz_oxide",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2414,6 +2424,7 @@ dependencies = [
  "base64 0.22.0",
  "bytes",
  "chrono",
+ "flate2",
  "half 2.4.0",
  "hashbrown 0.14.3",
  "num",
