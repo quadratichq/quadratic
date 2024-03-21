@@ -92,13 +92,11 @@ where
 fn arryow_bool_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
     let mut values = vec![];
 
-    for _buffer in array_data.buffers() {
-        values.extend(
-            (0..col.len())
-                .map(|index| CellValue::Logical(col.as_boolean().value(index)))
-                .collect::<Vec<CellValue>>(),
-        );
-    }
+    values.extend(
+        (0..col.len())
+            .map(|index| CellValue::Logical(col.as_boolean().value(index)))
+            .collect::<Vec<CellValue>>(),
+    );
 
     values
 }
@@ -106,19 +104,17 @@ fn arryow_bool_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<Cell
 fn arryow_binary_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
     let mut values = vec![];
 
-    for _buffer in array_data.buffers() {
-        values.extend(
-            (0..col.len())
-                .map(|index| {
-                    CellValue::Text(
-                        std::str::from_utf8(col.as_binary::<i32>().value(index))
-                            .unwrap_or("")
-                            .into(),
-                    )
-                })
-                .collect::<Vec<CellValue>>(),
-        );
-    }
+    values.extend(
+        (0..col.len())
+            .map(|index| {
+                CellValue::Text(
+                    std::str::from_utf8(col.as_binary::<i32>().value(index))
+                        .unwrap_or("")
+                        .into(),
+                )
+            })
+            .collect::<Vec<CellValue>>(),
+    );
 
     values
 }
@@ -126,13 +122,11 @@ fn arryow_binary_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<Ce
 fn arryow_utf8_to_cell_values(col: &ArrayRef, array_data: ArrayData) -> Vec<CellValue> {
     let mut values = vec![];
 
-    for _buffer in array_data.buffers() {
-        values.extend(
-            (0..col.len())
-                .map(|index| CellValue::Text(col.as_string::<i32>().value(index).into()))
-                .collect::<Vec<CellValue>>(),
-        );
-    }
+    values.extend(
+        (0..col.len())
+            .map(|index| CellValue::Text(col.as_string::<i32>().value(index).into()))
+            .collect::<Vec<CellValue>>(),
+    );
 
     values
 }
