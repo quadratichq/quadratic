@@ -5,7 +5,7 @@ import { DataIcon } from '@/ui/icons';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
-import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
+import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
 import { TopBarMenuItem } from '../TopBarMenuItem';
 
@@ -29,7 +29,14 @@ export const DataMenu = () => {
         >
           <MenuLineItem primary="Import CSV" />
         </MenuItem>
-
+        <MenuItem
+          onClick={() => {
+            addGlobalSnackbar(PARQUET_IMPORT_MESSAGE);
+          }}
+        >
+          <MenuLineItem primary="Import Parquet" />
+        </MenuItem>
+        <MenuDivider />
         <MenuItem
           onClick={() => {
             downloadSelectionAsCsvAction.run({ fileName });
