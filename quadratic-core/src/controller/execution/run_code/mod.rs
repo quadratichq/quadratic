@@ -125,6 +125,7 @@ impl GridController {
         // *** todo: we need to return the code cell to JS here as well (could be we send all the code cells in the sheet for simplicity)
         // transaction.summary.code_cells_modified.insert(sheet_id);
 
+        self.send_updated_bounds_rect(&sheet_rect, false);
         self.send_render_cells(&sheet_rect);
     }
 
