@@ -371,6 +371,29 @@ class Core {
     });
   }
 
+  importParquet(
+    sheetId: string,
+    x: number,
+    y: number,
+    file: ArrayBuffer,
+    fileName: string,
+    cursor?: string
+  ): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        const results = this.gridController.importParquet(
+          sheetId,
+          new Uint8Array(file),
+          fileName,
+          new Pos(x, y),
+          cursor
+        );
+        resolve(results);
+      });
+    });
+  }
+
   deleteCellValues(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {

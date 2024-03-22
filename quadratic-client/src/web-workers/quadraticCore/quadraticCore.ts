@@ -42,6 +42,7 @@ import {
   CoreClientGetRowsBounds,
   CoreClientHasRenderCells,
   CoreClientImportCsv,
+  CoreClientImportParquet,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientSearch,
@@ -329,6 +330,27 @@ class QuadraticCore {
       this.send(
         {
           type: 'clientCoreImportCsv',
+          sheetId,
+          x: location.x,
+          y: location.y,
+          id,
+          file: arrayBuffer,
+          fileName: file.name,
+        },
+        arrayBuffer
+      );
+    });
+  }
+
+  // Imports a Parquet and returns a string with an error if not successful
+  async importParquet(sheetId: string, file: File, location: Coordinate): Promise<string | undefined> {
+    const arrayBuffer = await file.arrayBuffer();
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientImportParquet) => resolve(message.error);
+      this.send(
+        {
+          type: 'clientCoreImportParquet',
           sheetId,
           x: location.x,
           y: location.y,

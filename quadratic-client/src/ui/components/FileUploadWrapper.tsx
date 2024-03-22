@@ -63,7 +63,10 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
           const error = await quadraticCore.importCsv(sheets.sheet.id, file, insertAtCellLocation);
           if (error) addGlobalSnackbar(error);
         }
-        // if (isParquet) quadraticCore.importParquet(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+        if (isParquet) {
+          const error = await quadraticCore.importParquet(sheets.sheet.id, file, insertAtCellLocation);
+          if (error) addGlobalSnackbar(error);
+        }
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');
       }

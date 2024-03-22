@@ -232,6 +232,22 @@ class CoreClient {
         }
         break;
 
+      case 'clientCoreImportParquet':
+        try {
+          const error = await core.importParquet(
+            e.data.sheetId,
+            e.data.x,
+            e.data.y,
+            e.data.file,
+            e.data.fileName,
+            e.data.cursor
+          );
+          this.send({ type: 'coreClientImportParquet', id: e.data.id, error });
+        } catch (error) {
+          this.send({ type: 'coreClientImportParquet', id: e.data.id, error: error as string });
+        }
+        break;
+
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         break;

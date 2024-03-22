@@ -386,6 +386,23 @@ export interface CoreClientImportCsv {
   error: string | undefined;
 }
 
+export interface ClientCoreImportParquet {
+  type: 'clientCoreImportParquet';
+  sheetId: string;
+  x: number;
+  y: number;
+  id: number;
+  file: ArrayBuffer;
+  fileName: string;
+  cursor?: string;
+}
+
+export interface CoreClientImportParquet {
+  type: 'coreClientImportParquet';
+  id: number;
+  error: string | undefined;
+}
+
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
   sheetId: string;
@@ -726,6 +743,7 @@ export type ClientCoreMessage =
   | ClientCoreGetRenderCell
   | ClientCoreToggleCommas
   | ClientCoreImportCsv
+  | ClientCoreImportParquet
   | ClientCoreDeleteCellValues
   | ClientCoreSetCodeCellValue
   | ClientCoreAddSheet
@@ -765,6 +783,7 @@ export type CoreClientMessage =
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell
   | CoreClientImportCsv
+  | CoreClientImportParquet
   | CoreClientAddSheet
   | CoreClientSheetInfo
   | CoreClientSheetFills
