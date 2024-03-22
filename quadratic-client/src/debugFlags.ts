@@ -51,7 +51,7 @@ export const debugShowCellsSheetCulling = debug && false;
 export const debugShowCellsHashBoxes = (debug && false) || url.has('boxes');
 
 // shows CellsHash information
-export const debugShowCellHashesInfo = debug && false;
+export const debugShowCellHashesInfo = debug && true;
 
 // reports on rendering
 export const debugShowHashUpdates = debug && false;

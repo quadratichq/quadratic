@@ -6,6 +6,7 @@
  * directly accessed by its siblings.
  */
 
+import { debugShowCellHashesInfo } from '@/debugFlags';
 import { SheetBounds, SheetInfo } from '@/quadratic-core-types';
 import init from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { Rectangle } from 'pixi.js';
@@ -21,6 +22,7 @@ interface RenderTextStatus {
 }
 
 class RenderText {
+  private firstRender = false;
   private complete = false;
   private status: RenderTextStatus = {
     rust: false,
@@ -74,22 +76,31 @@ class RenderText {
     } else {
       sheetIds = Array.from(this.cellsLabels.keys());
     }
-    let complete = true;
+    let firstRender = true;
+    let render = false;
     for (const sheetId of sheetIds) {
       const cellsLabel = this.cellsLabels.get(sheetId);
       const result = await cellsLabel?.update();
+      render = true;
       if (result) {
         // for first render, we render all the visible text before showing pixiApp
         if (result === 'visible') {
-          complete = false;
+          firstRender = false;
         }
         break;
       }
     }
 
-    if (this.sheetId && complete && !this.complete) {
-      this.complete = true;
+    if (this.sheetId && firstRender && !this.firstRender) {
+      this.firstRender = true;
       renderClient.firstRenderComplete();
+    }
+
+    if (!this.complete && !render) {
+      this.complete = true;
+      if (debugShowCellHashesInfo) console.log('[RenderText] Render complete');
+    } else if (this.complete && render) {
+      this.complete = false;
     }
 
     // defer to the event loop before rendering the next hash

@@ -51,7 +51,7 @@ declare var self: WorkerGlobalScope &
     sendSheetHtml: (html: JsHtmlOutput[]) => void;
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
-    sendSheetCodeCellRender: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+    sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
   };
@@ -153,9 +153,9 @@ export const jsSheetBorders = (sheetId: string, bordersStringified: string) => {
   self.sendSheetBorders(sheetId, borders);
 };
 
-export const jsSheetCodeCellRender = (sheetId: string, codeCellsStringified: string) => {
+export const jsSheetCodeCell = (sheetId: string, codeCellsStringified: string) => {
   const codeCells = JSON.parse(codeCellsStringified) as JsRenderCodeCell[];
-  self.sendSheetCodeCellRender(sheetId, codeCells);
+  self.sendSheetCodeCell(sheetId, codeCells);
 };
 
 export const jsSheetBoundsUpdate = (bounds: string) => {
