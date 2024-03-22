@@ -111,9 +111,14 @@ impl PendingTransaction {
         if self.complete && self.is_user_undo_redo() {
             if cfg!(target_family = "wasm") {
                 let transaction_id = self.id.to_string();
-                let operations = serde_json::to_string(&self.forward_operations)
-                    .expect("Failed to serialize forward operations");
-                crate::wasm_bindings::js::jsSendTransaction(transaction_id, operations);
+                match serde_json::to_string(&self.forward_operations) {
+                    Ok(ops) => {
+                        crate::wasm_bindings::js::jsSendTransaction(transaction_id, ops);
+                    }
+                    Err(e) => {
+                        dbgjs!(format!("Failed to serialize forward operations: {}", e));
+                    }
+                };
 
                 if self.is_undo_redo() {
                     if let Some(cursor) = &self.cursor_undo_redo {

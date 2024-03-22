@@ -321,7 +321,7 @@ class QuadraticCore {
   }
 
   // Imports a CSV and returns a string with an error if not successful
-  async importCsv(sheetId: string, file: File, fileName: string, x: number, y: number): Promise<string | undefined> {
+  async importCsv(sheetId: string, file: File, location: Coordinate): Promise<string | undefined> {
     const arrayBuffer = await file.arrayBuffer();
     return new Promise((resolve) => {
       const id = this.id++;
@@ -330,11 +330,11 @@ class QuadraticCore {
         {
           type: 'clientCoreImportCsv',
           sheetId,
-          x,
-          y,
+          x: location.x,
+          y: location.y,
           id,
           file: arrayBuffer,
-          fileName,
+          fileName: file.name,
         },
         arrayBuffer
       );

@@ -1,11 +1,12 @@
 use anyhow::{anyhow, bail, Result};
 
-use crate::{cell_values::CellValues, controller::GridController, grid::SheetId, Pos, SheetPos};
+use crate::{
+    cell_values::CellValues, controller::GridController, grid::SheetId, CellValue, Pos, SheetPos,
+};
 use bytes::Bytes;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
-use crate::{cell_values::CellValues, controller::GridController, grid::SheetId, CellValue, Pos};
 
 const IMPORT_LINES_PER_OPERATION: u32 = 100000;
 

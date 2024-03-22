@@ -18,8 +18,6 @@ impl GridController {
     }
 
     /// Imports a Parquet file into the grid.
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn import_parquet(
         &mut self,
         sheet_id: SheetId,
@@ -27,9 +25,10 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
-        Ok(self.start_user_transaction(ops, cursor))
+        self.start_user_transaction(ops, cursor);
+        Ok(())
     }
 }
 
