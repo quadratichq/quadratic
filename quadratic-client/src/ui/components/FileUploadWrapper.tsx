@@ -77,7 +77,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     <div
       ref={divRef}
       onDragEnter={handleDrag}
-      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', position: 'relative' }}
     >
       {props.children}
       {dragActive && (

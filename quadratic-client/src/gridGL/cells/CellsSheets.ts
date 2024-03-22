@@ -88,7 +88,6 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find cellsSheet in cellsTextHashClear');
     }
     cellsSheet.cellsLabels.clearCellsTextHash(message);
-    pixiApp.setViewportDirty();
   }
 
   labelMeshEntry(message: RenderClientLabelMeshEntry) {

@@ -47,7 +47,7 @@ declare var self: WorkerGlobalScope &
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
-    sendSheetCodeCellClient: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+    sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
   };
 
@@ -66,7 +66,7 @@ class CoreClient {
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
     self.sendSheetBorders = coreClient.sendSheetBorders;
-    self.sendSheetCodeCellClient = coreClient.sendSheetCodeCellClient;
+    self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
@@ -456,8 +456,7 @@ class CoreClient {
     width: number,
     height: number
   ) => {
-    // self.postMessage({ type: 'coreClientProgress', current, total });
-    console.log(filename, current, total, x, y, width, height);
+    this.send({ type: 'coreClientImportProgress', filename, current, total, x, y, width, height });
   };
 
   sendAddSheet = (sheetInfo: SheetInfo, user: boolean) => {
@@ -518,7 +517,7 @@ class CoreClient {
     this.send({ type: 'coreClientSheetBorders', sheetId, borders });
   };
 
-  sendSheetCodeCellClient = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
+  sendSheetCodeCell = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     this.send({ type: 'coreClientSheetCodeCellRender', sheetId, codeCells });
   };
 

@@ -6,6 +6,7 @@ import {
   SheetBounds,
   SheetInfo,
 } from '@/quadratic-core-types';
+import { CoreClientImportProgress } from '@/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
@@ -30,6 +31,8 @@ interface EventTypes {
 
   pythonLoaded: (version: string) => void;
   pythonError: (error?: string) => void;
+
+  importProgress: (message: CoreClientImportProgress) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

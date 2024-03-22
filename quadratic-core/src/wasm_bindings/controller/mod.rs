@@ -65,7 +65,7 @@ impl GridController {
                         let code = sheet.get_all_render_code_cells();
                         if !code.is_empty() {
                             if let Ok(code) = serde_json::to_string(&code) {
-                                crate::wasm_bindings::js::jsSheetCodeCellRender(
+                                crate::wasm_bindings::js::jsSheetCodeCell(
                                     sheet_id.to_string(),
                                     code,
                                 );
