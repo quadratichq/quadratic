@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use arrow_array::{cast::AsArray, Array, ArrayRef};
 use arrow_buffer::ArrowNativeType;
 use arrow_data::ArrayData;

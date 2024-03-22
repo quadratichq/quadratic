@@ -181,6 +181,48 @@ Concord,NH,United States,42605
             sheet_id,
             Rect::new_span(pos, Pos { x: 10, y: 10 }),
         );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            0,
+            vec![
+                "Empty",
+                "String",
+                "DateTimeIso",
+                "DurationIso",
+                "Float",
+                "DateTime",
+                "Int",
+                "Error",
+                "Bool",
+                "Bold",
+                "Red",
+            ],
+        );
+
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            1,
+            vec![
+                "",
+                "Hello",
+                "2016-10-20 0:00:00",
+                "2400:00:00",
+                "1.11",
+                "1/1/2024 1:00 PM",
+                "1",
+                "",
+                "TRUE",
+                "Hello Bold",
+                "Hello Red",
+            ],
+        );
     }
 
     #[test]

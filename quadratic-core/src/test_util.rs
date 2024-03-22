@@ -23,7 +23,7 @@ pub fn assert_cell_value(
     let cell_value = sheet
         .display_value(Pos { x, y })
         .map_or_else(|| CellValue::Blank, |v| CellValue::Text(v.to_string()));
-    let expected = if value.is_empty() {
+    let expected = if cell_value == CellValue::Text("".into()) {
         CellValue::Blank
     } else {
         CellValue::Text(value.into())
