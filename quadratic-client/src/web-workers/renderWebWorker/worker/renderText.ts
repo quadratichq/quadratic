@@ -81,12 +81,12 @@ class RenderText {
     for (const sheetId of sheetIds) {
       const cellsLabel = this.cellsLabels.get(sheetId);
       const result = await cellsLabel?.update();
-      render = true;
       if (result) {
         // for first render, we render all the visible text before showing pixiApp
         if (result === 'visible') {
           firstRender = false;
         }
+        render = true;
         break;
       }
     }
