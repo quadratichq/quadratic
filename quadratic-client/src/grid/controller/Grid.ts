@@ -286,34 +286,34 @@ export class Grid {
   //   this.transactionResponse(summary);
   // }
 
-  async importParquet(
-    sheetId: string,
-    file: File,
-    insertAtCellLocation: Coordinate,
-    reportError: (error: string) => void
-  ) {
-    debugTimeReset();
-    const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
-    const file_bytes = await readFileAsArrayBuffer(file);
+  // async importParquet(
+  //   sheetId: string,
+  //   file: File,
+  //   insertAtCellLocation: Coordinate,
+  //   reportError: (error: string) => void
+  // ) {
+  //   debugTimeReset();
+  //   const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
+  //   const file_bytes = await readFileAsArrayBuffer(file);
 
-    try {
-      const summary = this.gridController.importParquet(
-        sheetId,
-        file_bytes,
-        file.name,
-        pos,
-        sheets.getCursorPosition()
-      );
-      this.transactionResponse(summary);
-    } catch (error) {
-      // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
-      // type in the UI.
-      console.error(error);
-      reportError(error as unknown as string);
-      Sentry.captureException(error);
-    }
-    debugTimeCheck(`uploading and processing csv file ${file.name}`);
-  }
+  //   try {
+  //     const summary = this.gridController.importParquet(
+  //       sheetId,
+  //       file_bytes,
+  //       file.name,
+  //       pos,
+  //       sheets.getCursorPosition()
+  //     );
+  //     this.transactionResponse(summary);
+  //   } catch (error) {
+  //     // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+  //     // type in the UI.
+  //     console.error(error);
+  //     reportError(error as unknown as string);
+  //     Sentry.captureException(error);
+  //   }
+  //   debugTimeCheck(`uploading and processing csv file ${file.name}`);
+  // }
 
   //#endregion
 
