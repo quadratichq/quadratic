@@ -51,6 +51,8 @@ impl Sheet {
             old_format_bounds != self.format_bounds.to_bounds_rect()
         } else {
             let old_data_bounds = self.format_bounds.to_bounds_rect();
+            self.format_bounds.add(rect.min);
+            self.format_bounds.add(rect.max);
             self.data_bounds.add(rect.min);
             self.data_bounds.add(rect.max);
             old_data_bounds != self.data_bounds.to_bounds_rect()
