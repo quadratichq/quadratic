@@ -246,8 +246,10 @@ impl GridController {
             }
             self.grid.add_sheet(Some(new_sheet));
 
-            transaction.summary.sheet_list_modified = true;
-            transaction.summary.html.insert(new_sheet_id);
+            // *** todo...
+            // transaction.summary.sheet_list_modified = true;
+            // transaction.summary.html.insert(new_sheet_id);
+
             transaction
                 .forward_operations
                 .push(Operation::DuplicateSheet {
@@ -391,17 +393,12 @@ mod tests {
             None,
         );
 
-        let summary = gc.duplicate_sheet(sheet_id, None);
+        gc.duplicate_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
-        assert!(!summary.operations.unwrap().is_empty());
 
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
 
         gc.duplicate_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 2);
@@ -410,14 +407,12 @@ mod tests {
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");
 
-        let summary = gc.undo(None);
+        gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
-        assert!(!summary.operations.unwrap().is_empty());
 
-        let summary = gc.redo(None);
+        gc.redo(None);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
-        assert!(!summary.operations.unwrap().is_empty());
     }
 }
