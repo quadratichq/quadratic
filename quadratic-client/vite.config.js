@@ -33,7 +33,7 @@ export default defineConfig(() => {
       }),
     ],
     worker: {
-      format: 'iife',
+      format: 'es',
       plugins: () => [
         checker({
           typescript: true,
@@ -42,6 +42,11 @@ export default defineConfig(() => {
           },
         }),
       ],
+      rollupOptions: {
+        // this is needed because pyodide uses fetch for older builds
+        // see https://github.com/pyodide/pyodide/issues/4244
+        external: ['node-fetch'],
+      },
     },
     test: {
       globals: true,

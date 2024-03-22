@@ -75,7 +75,7 @@ impl GridController {
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_y,
-                        height * 2,
+                        height,
                         insert_at.x,
                         insert_at.y,
                         width,

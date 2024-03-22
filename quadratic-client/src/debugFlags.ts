@@ -54,7 +54,7 @@ export const debugShowCellsHashBoxes = (debug && false) || url.has('boxes');
 export const debugShowCellHashesInfo = debug && false;
 
 // reports on rendering
-export const debugShowHashUpdates = debug && true;
+export const debugShowHashUpdates = debug && false;
 
 // reports on loading/unloading hashes
 export const debugShowLoadingHashes = debug && false;

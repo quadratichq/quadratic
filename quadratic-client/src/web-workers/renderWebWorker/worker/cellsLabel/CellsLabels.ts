@@ -310,17 +310,6 @@ export class CellsLabels {
       if (hashesToDelete.length && nextNotVisibleHash.distance >= hashesToDelete[hashesToDelete.length - 1].distance)
         return;
 
-      // debugging to find bug in hash unloading
-      // let loadedVisibleCount = 0;
-      // let loadedNotVisibleCount = 0;
-      // this.cellsTextHash.forEach((hash) => {
-      //   if (hash.loaded) {
-      //     if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) loadedVisibleCount++;
-      //     else loadedNotVisibleCount++;
-      //   }
-      // });
-      // console.log({ loadedVisibleCount, loadedNotVisibleCount, hashesToDelete: hashesToDelete.length });
-
       if (debugShowLoadingHashes) {
         console.log(
           `[CellsTextHash] rendering offscreen: ${nextNotVisibleHash.hash.hashX}, ${nextNotVisibleHash.hash.hashY}`

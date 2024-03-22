@@ -4,8 +4,6 @@ use anyhow::Result;
 
 impl GridController {
     /// Imports a CSV file into the grid.
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,

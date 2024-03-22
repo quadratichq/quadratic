@@ -53,7 +53,6 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
         );
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const error = await quadraticCore.importCsv(sheets.sheet.id, file, file.name, column, row);
-        console.error(error);
         if (error) addGlobalSnackbar(error);
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');
