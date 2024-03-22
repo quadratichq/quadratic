@@ -22,6 +22,11 @@ impl GridController {
         vec![Operation::SetSheetColor { sheet_id, color }]
     }
 
+    /// Returns all sheet names
+    pub fn sheet_names(&self) -> Vec<&str> {
+        self.grid.sheets().iter().map(|s| s.name.as_str()).collect()
+    }
+
     fn get_next_sheet_name(&self) -> String {
         let sheet_names = &self
             .grid
@@ -70,18 +75,11 @@ impl GridController {
     }
 
     pub fn duplicate_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
-        let Some(source) = self.try_sheet(sheet_id) else {
-            // sheet no longer exists
-            return vec![];
-        };
-        let mut new_sheet = source.clone();
-        new_sheet.id = SheetId::new();
-        new_sheet.name = format!("{} Copy", new_sheet.name);
-        let right = self.grid.next_sheet(sheet_id);
-        let right_order = right.map(|right| right.order.clone());
-        new_sheet.order = key_between(&Some(source.order.clone()), &right_order).unwrap();
-
-        vec![Operation::AddSheet { sheet: new_sheet }]
+        let new_sheet_id = SheetId::new();
+        vec![Operation::DuplicateSheet {
+            sheet_id,
+            new_sheet_id,
+        }]
     }
 }
 
@@ -152,5 +150,13 @@ mod test {
         gc.add_sheet(None);
         // Sheet 2 modified | Sheet 2 | Sheet 3
         assert_eq!(gc.sheet_index(2).name, "Sheet 3");
+    }
+
+    #[test]
+    fn sheet_names() {
+        let mut gc = GridController::test();
+        gc.add_sheet(None);
+        gc.add_sheet(None);
+        assert_eq!(gc.sheet_names(), vec!["Sheet 1", "Sheet 2", "Sheet 3"]);
     }
 }

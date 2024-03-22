@@ -1,3 +1,4 @@
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
@@ -7,6 +8,7 @@ export default defineConfig(() => {
   return {
     build: {
       outDir: '../build',
+      sourcemap: true, // Source map generation must be turned on
     },
     publicDir: './public',
     assetsInclude: ['**/*.py'],
@@ -31,6 +33,11 @@ export default defineConfig(() => {
           lintCommand: 'eslint --ext .ts,.tsx src',
         },
       }),
+      sentryVitePlugin({
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: 'quadratic',
+        project: 'quadratic',
+      }),
     ],
     worker: {
       format: 'es',
@@ -51,6 +58,12 @@ export default defineConfig(() => {
     test: {
       globals: true,
       environment: 'happy-dom',
+    },
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        internal: path.resolve(__dirname, '_internal/email.html'),
+      },
     },
   };
 });

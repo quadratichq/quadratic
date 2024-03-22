@@ -1,25 +1,30 @@
+import { sanityClient } from '@/api/sanityClient';
 import { ROUTES } from '@/constants/routes';
-import { Link } from 'react-router-dom';
-import { EXAMPLE_FILES, ExampleFileNames, TYPE } from '../constants/appConstants';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
+import { ExampleFilesList, FilesListExampleFile } from '@/dashboard/components/FilesList';
+import { useLoaderData } from 'react-router-dom';
+import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
+
+export const loader = async () => {
+  const examples = await sanityClient.getExamples();
+  const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
+    description,
+    href: ROUTES.CREATE_FILE_EXAMPLE(url),
+    name,
+    thumbnail: thumbnail + '?w=800&h=450&fit=crop&auto=format', // 16/9 aspect ratio
+  }));
+  return { files };
+};
 
 export const Component = () => {
+  const { files } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   return (
     <>
-      <DashboardHeader title="Examples" />
+      <DashboardHeader
+        title="Examples"
+        titleNode={<DashboardHeaderTitle>Example files by the Quadratic team</DashboardHeaderTitle>}
+      />
 
-      <div className={`md:grid md:grid-cols-2 md:gap-4 xl:grid-cols-3`}>
-        {Object.entries(EXAMPLE_FILES).map(([id, { name, description }]) => (
-          <Link
-            key={id}
-            to={ROUTES.CREATE_FILE_EXAMPLE(id as ExampleFileNames)}
-            className="flex flex-col border-t border-border py-4 md:border md:px-4 md:py-4 lg:hover:bg-accent"
-          >
-            <h2 className="text-md truncate">{name}</h2>
-            <p className={`${TYPE.caption} text-muted-foreground`}>{description}</p>
-          </Link>
-        ))}
-      </div>
+      <ExampleFilesList files={files} />
     </>
   );
 };

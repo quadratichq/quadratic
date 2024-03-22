@@ -29,7 +29,7 @@ export const templates = {
       ${Paragraph(/*html*/ `
         ${senderName ? senderName : senderEmail} invited you to ${verb} the spreadsheet: ${Link(fileName, {
         to: fileUrl,
-      })}.
+      })}
       `)}
       ${Button('Open in Quadratic', { to: fileUrl })} 
     `);
@@ -58,7 +58,7 @@ export const templates = {
       ${Paragraph(/*html*/ `
         ${senderName ? senderName : senderEmail} added you as ${noun} to the team: ${Link(teamName, {
         to: teamUrl,
-      })}.
+      })}
       `)}
       ${Button('Open in Quadratic', { to: teamUrl })} 
     `);

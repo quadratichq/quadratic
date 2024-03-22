@@ -40,6 +40,7 @@ export function CodeEditorPlaceholder({
         left: '64px',
         right: '14%',
         top: 0,
+        pointerEvents: 'none',
         // Kinda hacky, but we're copying the style of the code editor
         ...codeEditorBaseStyles,
         ...codeEditorCommentStyles,
@@ -47,7 +48,7 @@ export function CodeEditorPlaceholder({
     >
       Start typing to dismiss,{' '}
       <button
-        className="cursor-pointer italic underline"
+        className="pointer-events-auto italic underline"
         onClick={() => {
           setShowSnippetsPopover(true);
         }}
@@ -57,8 +58,7 @@ export function CodeEditorPlaceholder({
       , or{' '}
       <button
         className={`pointer-events-auto italic underline`}
-        onClick={(e) => {
-          e.preventDefault();
+        onClick={() => {
           setShowPlaceholder(false);
         }}
       >

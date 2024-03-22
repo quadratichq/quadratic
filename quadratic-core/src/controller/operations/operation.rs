@@ -31,8 +31,16 @@ pub enum Operation {
     },
 
     // Sheet metadata operations
+
+    // TODO: we should use the SheetSchema format + version in grid/file/current.rs
+    // instead of the actual Sheet. That way we can change the Sheet struct
+    // without breaking offline.
     AddSheet {
         sheet: Sheet,
+    },
+    DuplicateSheet {
+        sheet_id: SheetId,
+        new_sheet_id: SheetId,
     },
     DeleteSheet {
         sheet_id: SheetId,
@@ -142,6 +150,16 @@ impl fmt::Display for Operation {
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
             Operation::SetCursor { sheet_rect } => {
                 write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)
+            }
+            Operation::DuplicateSheet {
+                sheet_id,
+                new_sheet_id,
+            } => {
+                write!(
+                    fmt,
+                    "DuplicateSheet {{ sheet_id: {} new_sheet_id: {} }}",
+                    sheet_id, new_sheet_id
+                )
             }
         }
     }

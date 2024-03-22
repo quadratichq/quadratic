@@ -94,6 +94,28 @@ filtered_df = df.head(5)
 filtered_df`,
   },
   {
+    label: 'Relative cell reference',
+    keywords: 'relative reference position cell',
+    code: `# reference one cell to the left of the current cell
+c = rel_cell(-1, 0)
+c = rc(-1, 0)
+
+# above for one cell to the left is equivalent to the following 
+(x, y) = pos()
+c = cell(x - 1, y)
+
+# one cell left
+c = rc(-1, 0)
+# one cell up 
+c = rc(0, -1)
+# one cell right 
+c = rc(1, 0)
+# one cell down
+c = rc(0, 1)
+# five cells left, five cells down
+c = rc(-5, 5)`,
+  },
+  {
     label: 'Create a line chart',
     keywords: 'plotly',
     code: `# import plotly

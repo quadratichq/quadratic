@@ -27,9 +27,7 @@ impl GridController {
             return None;
         }
 
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
-            return None;
-        };
+        let sheet = self.try_sheet_from_string_id(sheet_id)?;
 
         // sum and count
         let mut count = 0;

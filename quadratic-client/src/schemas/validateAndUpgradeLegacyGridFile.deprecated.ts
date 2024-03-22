@@ -1,6 +1,4 @@
 import { randomUUID } from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
 import { describe, expect, test } from 'vitest';
 import { GridFileSchema } from '.';
 import { GridFileV1_0 } from './GridFileV1_0';
@@ -12,11 +10,6 @@ import { validateAndUpgradeLegacyGridFile } from './validateAndUpgradeLegacyGrid
 
 const v = (input: any) => validateAndUpgradeLegacyGridFile(input, false);
 const LATEST_VERSION = GridFileSchema.shape.version.value;
-const EXAMPLES_DIR = path.join(__dirname, '../../public/examples/');
-const exampleGridFiles: string[] = fs
-  .readdirSync(EXAMPLES_DIR)
-  .filter((name) => name.includes('.grid'))
-  .map((name) => fs.readFileSync(path.join(EXAMPLES_DIR, name)).toString());
 
 /**
  * Sample file: 1.0
@@ -201,12 +194,6 @@ describe('valid input passes validation and upgrades file to the most recent', (
 
     const { cell_dependency, ...v1_0FileSansCellDependency } = v1_0File;
     expect(v(JSON.stringify(v1_0FileSansCellDependency))).not.toBe(null);
-  });
-
-  test('validates and upgrades example files (as necessary)', () => {
-    exampleGridFiles.forEach((gridFile) => {
-      expect(v(gridFile)).not.toBe(null);
-    });
   });
 
   test('validates and upgrades a file from v1.0 the the most recent', () => {
