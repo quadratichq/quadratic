@@ -1,6 +1,9 @@
 use std::fmt;
 
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+
+use crate::CellValue;
 
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -10,9 +13,28 @@ pub struct Instant {
     pub seconds: f64,
 }
 
+impl Instant {
+    pub fn new(seconds: f64) -> Self {
+        Self { seconds }
+    }
+}
+
+impl From<NaiveDateTime> for Instant {
+    fn from(datetime: NaiveDateTime) -> Self {
+        Self {
+            seconds: datetime.and_utc().timestamp() as f64,
+        }
+    }
+}
+
 impl fmt::Display for Instant {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{s} seconds", s = self.seconds)
+        write!(
+            f,
+            "{}",
+            CellValue::unpack_unix_timestamp(self.seconds as i64).unwrap_or_default()
+        )
+        // write!(f, "{s} seconds", s = self.seconds)
     }
 }
 

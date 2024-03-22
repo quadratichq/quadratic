@@ -78,9 +78,7 @@ where
         let data = buffer.typed_data::<T>();
         values.extend(
             data.iter()
-                .map(|v| {
-                    CellValue::Number(BigDecimal::from_str(&v.to_string()).unwrap_or(0.into()))
-                })
+                .map(|v| CellValue::unpack_str_float(&v.to_string(), CellValue::Blank))
                 .collect::<Vec<CellValue>>(),
         );
     }
