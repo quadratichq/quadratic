@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { SheetInfo } from '@/quadratic-core-types';
+import { SheetBounds, SheetInfo } from '@/quadratic-core-types';
 import { CoreRenderMessage, RenderCoreMessage, RenderCoreRequestRenderCells } from '../coreRenderMessages';
 import { core } from './core';
 
@@ -14,6 +14,7 @@ declare var self: WorkerGlobalScope &
   typeof globalThis & {
     sendCompleteRenderCells: (sheetId: string, hashX: number, hashY: number, cells: string) => void;
     sendSheetInfoRender: (sheetInfo: SheetInfo[]) => void;
+    sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSheetOffsetsRender: (
@@ -22,6 +23,7 @@ declare var self: WorkerGlobalScope &
       row: bigint | undefined,
       size: number
     ) => void;
+    sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
   };
 
 class CoreRender {
@@ -67,6 +69,10 @@ class CoreRender {
     this.send({ type: 'coreRenderSheetInfo', sheetInfo });
   };
 
+  sendSheetInfoUpdate = (sheetInfo: SheetInfo) => {
+    this.send({ type: 'coreRenderSheetInfoUpdate', sheetInfo });
+  };
+
   sendAddSheet = (sheetInfo: SheetInfo) => {
     this.send({ type: 'coreRenderAddSheet', sheetInfo });
   };
@@ -84,6 +90,10 @@ class CoreRender {
       size,
     });
   };
+
+  sendSheetBoundsUpdate = (sheetBounds: SheetBounds) => {
+    this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds });
+  }
 }
 
 export const coreRender = new CoreRender();
@@ -93,3 +103,5 @@ self.sendSheetInfoRender = coreRender.sendSheetInfoRender;
 self.sendAddSheetRender = coreRender.sendAddSheet;
 self.sendDeleteSheetRender = coreRender.sendDeleteSheet;
 self.sendSheetOffsetsRender = coreRender.sendSheetOffsets;
+self.sendSheetInfoUpdateRender = coreRender.sendSheetInfoUpdate;
+self.sendSheetBoundsUpdateRender = coreRender.sendSheetBoundsUpdate;

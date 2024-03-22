@@ -57,11 +57,9 @@ impl GridController {
                         );
                     }
                     // prepare summary
-                    transaction
-                        .sheets_with_dirty_bounds
-                        .insert(sheet_pos.sheet_id);
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
+                    self.send_updated_bounds(sheet_rect.sheet_id);
                     self.send_render_cells(&sheet_rect);
                 }
             }

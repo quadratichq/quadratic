@@ -6,7 +6,7 @@
  * directly accessed by its siblings.
  */
 
-import { SheetInfo } from '@/quadratic-core-types';
+import { SheetBounds, SheetInfo } from '@/quadratic-core-types';
 import init from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
@@ -91,6 +91,7 @@ class RenderText {
       this.complete = true;
       renderClient.firstRenderComplete();
     }
+
     // defer to the event loop before rendering the next hash
     setTimeout(this.update);
   };
@@ -115,6 +116,18 @@ class RenderText {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsets');
     cellsLabels.setOffsets(column, row, delta);
+  }
+
+  sheetInfoUpdate(sheetInfo: SheetInfo) {
+    const cellsLabels = this.cellsLabels.get(sheetInfo.sheet_id);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetInfoUpdate');
+    cellsLabels.updateSheetInfo(sheetInfo);
+  }
+
+  sheetBoundsUpdate(sheetBounds: SheetBounds) {
+    const cellsLabels = this.cellsLabels.get(sheetBounds.sheet_id);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetBoundsUpdate');
+    cellsLabels.updateSheetBounds(sheetBounds);
   }
 }
 

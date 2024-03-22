@@ -32,7 +32,6 @@ impl GridController {
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
     pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
-        self.recalculate_sheet_bounds(transaction);
         if transaction.complete {
             match transaction.transaction_type {
                 TransactionType::User => {

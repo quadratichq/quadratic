@@ -48,3 +48,4 @@ export interface JsCodeResult { transaction_id: string, success: boolean, format
 export interface JsComputeGetCells { transaction_id: string, x: bigint, y: bigint, w: bigint, h: bigint, sheet_name: string | null, line_number: number | null, }
 export interface MinMax { min: number, max: number, }
 export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
+export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }

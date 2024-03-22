@@ -20,18 +20,6 @@ pub enum TransactionType {
 }
 
 impl GridController {
-    /// recalculate bounds for changed sheets
-    pub fn recalculate_sheet_bounds(&mut self, transaction: &mut PendingTransaction) {
-        transaction
-            .sheets_with_dirty_bounds
-            .drain()
-            .for_each(|sheet_id| {
-                if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-                    sheet.recalculate_bounds();
-                }
-            });
-    }
-
     /// Sets the last_sequence_num for multiplayer. This should only be called when receiving the sequence_num.
     pub fn set_last_sequence_num(&mut self, last_sequence_num: u64) {
         self.transactions.last_sequence_num = last_sequence_num;

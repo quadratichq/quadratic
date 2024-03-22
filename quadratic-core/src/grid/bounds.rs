@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Pos, Rect};
 
+#[derive(PartialEq)]
 pub struct BoundsRect {
     pub x: i64,
     pub y: i64,

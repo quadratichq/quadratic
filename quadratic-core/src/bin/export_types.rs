@@ -18,7 +18,10 @@ use quadratic_core::{
         resize_transient::TransientResize,
         sheet_offsets_wasm::{ColumnRow, Placement},
     },
-    wasm_bindings::controller::{bounds::MinMax, sheet_info::SheetInfo},
+    wasm_bindings::controller::{
+        bounds::MinMax,
+        sheet_info::{SheetBounds, SheetInfo},
+    },
     Rect, *,
 };
 use ts_rs::TS;
@@ -85,6 +88,7 @@ fn main() {
         JsComputeGetCells,
         MinMax,
         TransientResize,
+        SheetBounds,
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {

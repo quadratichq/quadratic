@@ -7,7 +7,7 @@ import { intersects } from './intersects';
 export async function zoomToFit() {
   const viewport = pixiApp.viewport;
   const sheet = sheets.sheet;
-  const gridBounds = await sheet.getGridBounds(false);
+  const gridBounds = sheet.getBounds(false);
   if (gridBounds) {
     const screenRectangle = sheet.getScreenRectangle(gridBounds.x, gridBounds.y, gridBounds.width, gridBounds.height);
 

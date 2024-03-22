@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
+    wasm_bindings::controller::sheet_info::SheetBounds,
     Pos, Rect, SheetRect,
 };
 
@@ -72,5 +73,26 @@ impl GridController {
         } else {
             Vec::new()
         }
+    }
+
+    /// Recalculates sheet bounds, and if changed then sends to TS.
+    pub fn send_updated_bounds(&mut self, sheet_id: SheetId) {
+        let recalculated = if let Some(sheet) = self.try_sheet_mut(sheet_id) {
+            sheet.recalculate_bounds()
+        } else {
+            false
+        };
+
+        if !cfg!(target_family = "wasm") {
+            return;
+        }
+
+        if recalculated {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
+                    crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
+                }
+            }
+        };
     }
 }

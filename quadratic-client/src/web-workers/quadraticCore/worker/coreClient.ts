@@ -6,7 +6,14 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { JsHtmlOutput, JsRenderBorders, JsRenderCodeCell, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import {
+  JsHtmlOutput,
+  JsRenderBorders,
+  JsRenderCodeCell,
+  JsRenderFill,
+  SheetBounds,
+  SheetInfo,
+} from '@/quadratic-core-types';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
@@ -40,7 +47,8 @@ declare var self: WorkerGlobalScope &
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
-    sendSheetCodeCellRender: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+    sendSheetCodeCellClient: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+    sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
   };
 
 class CoreClient {
@@ -58,7 +66,8 @@ class CoreClient {
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
     self.sendSheetBorders = coreClient.sendSheetBorders;
-    self.sendSheetCodeCellRender = coreClient.sendSheetCodeCellRender;
+    self.sendSheetCodeCellClient = coreClient.sendSheetCodeCellClient;
+    self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -221,11 +230,6 @@ class CoreClient {
         } catch (error) {
           this.send({ type: 'coreClientImportCsv', id: e.data.id, error: error as string });
         }
-        break;
-
-      case 'clientCoreGetGridBounds':
-        const bounds = await core.getGridBounds(e.data);
-        this.send({ type: 'coreClientGetGridBounds', id: e.data.id, bounds });
         break;
 
       case 'clientCoreDeleteCellValues':
@@ -498,8 +502,12 @@ class CoreClient {
     this.send({ type: 'coreClientSheetBorders', sheetId, borders });
   };
 
-  sendSheetCodeCellRender = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
+  sendSheetCodeCellClient = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
     this.send({ type: 'coreClientSheetCodeCellRender', sheetId, codeCells });
+  };
+
+  sendSheetBoundsUpdate = (bounds: SheetBounds) => {
+    this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds });
   };
 }
 

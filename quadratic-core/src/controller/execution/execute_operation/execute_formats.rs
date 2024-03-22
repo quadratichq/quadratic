@@ -14,10 +14,6 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetCellFormats { sheet_rect, attr } = op {
-            transaction
-                .sheets_with_dirty_bounds
-                .insert(sheet_rect.sheet_id);
-
             let old_attr = match attr.clone() {
                 CellFmtArray::Align(align) => CellFmtArray::Align(
                     self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align),
@@ -54,7 +50,10 @@ impl GridController {
             match &attr {
                 CellFmtArray::RenderSize(_) => (), // todo: send html cells
                 CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
-                _ => self.send_render_cells(&sheet_rect),
+                _ => {
+                    self.send_updated_bounds(sheet_rect.sheet_id);
+                    self.send_render_cells(&sheet_rect)
+                }
             };
 
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);

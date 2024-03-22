@@ -53,6 +53,14 @@ class RenderCore {
         renderText.sheetOffsets(e.data.sheetId, e.data.column, e.data.row, e.data.size);
         break;
 
+      case 'coreRenderSheetInfoUpdate':
+        renderText.sheetInfoUpdate(e.data.sheetInfo);
+        break;
+
+      case 'coreRenderSheetBoundsUpdate':
+        renderText.sheetBoundsUpdate(e.data.sheetBounds);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }

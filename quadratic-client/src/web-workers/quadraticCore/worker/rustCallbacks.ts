@@ -1,6 +1,13 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
-import { JsHtmlOutput, JsRenderBorders, JsRenderCodeCell, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import {
+  JsHtmlOutput,
+  JsRenderBorders,
+  JsRenderCodeCell,
+  JsRenderFill,
+  SheetBounds,
+  SheetInfo,
+} from '@/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -24,6 +31,7 @@ declare var self: WorkerGlobalScope &
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
+    sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
@@ -44,6 +52,8 @@ declare var self: WorkerGlobalScope &
     sendUpdateHtml: (html: JsHtmlOutput) => void;
     sendGenerateThumbnail: () => void;
     sendSheetCodeCellRender: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+    sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
+    sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
@@ -103,6 +113,7 @@ export const jsSheetFills = (sheet_id: string, fills: string) => {
 export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
   const sheetInfo = JSON.parse(sheetInfoStringified);
   self.sheetInfoUpdate(sheetInfo);
+  self.sendSheetInfoUpdateRender(sheetInfo);
 };
 
 export const jsOffsetsModified = (
@@ -145,4 +156,10 @@ export const jsSheetBorders = (sheetId: string, bordersStringified: string) => {
 export const jsSheetCodeCellRender = (sheetId: string, codeCellsStringified: string) => {
   const codeCells = JSON.parse(codeCellsStringified) as JsRenderCodeCell[];
   self.sendSheetCodeCellRender(sheetId, codeCells);
+};
+
+export const jsSheetBoundsUpdate = (bounds: string) => {
+  const sheetBounds = JSON.parse(bounds) as SheetBounds;
+  self.sendSheetBoundsUpdateClient(sheetBounds);
+  self.sendSheetBoundsUpdateRender(sheetBounds);
 };

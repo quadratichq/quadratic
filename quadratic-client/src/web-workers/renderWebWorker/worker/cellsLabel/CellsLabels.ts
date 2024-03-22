@@ -6,11 +6,11 @@
  * geometries sent to the GPU.
  */
 
-import { debugShowHashUpdates, debugShowLoadingHashes } from '@/debugFlags';
+import { debugShowLoadingHashes } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { intersects } from '@/gridGL/helpers/intersects';
-import { JsRenderCell, SheetInfo } from '@/quadratic-core-types';
+import { JsRenderCell, SheetBounds, SheetInfo } from '@/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -33,12 +33,6 @@ export class CellsLabels {
   // bounds without formatting
   bounds?: Rectangle;
 
-  // row index into cellsTextHashContainer (used for clipping)
-  private cellsRows: Map<number, CellsTextHash[]>;
-
-  // set of rows that need updating
-  private dirtyRows: Set<number>;
-
   // keep track of headings that need adjusting during next update tick
   private dirtyColumnHeadings: Map<number, number>;
   private dirtyRowHeadings: Map<number, number>;
@@ -56,13 +50,33 @@ export class CellsLabels {
     this.sheetOffsets = SheetOffsetsWasm.load(sheetInfo.offsets);
     this.bitmapFonts = bitmapFonts;
     this.cellsTextHash = new Map();
-
-    this.cellsRows = new Map();
-    this.dirtyRows = new Set();
     this.dirtyColumnHeadings = new Map();
     this.dirtyRowHeadings = new Map();
 
     this.createHashes();
+  }
+
+  updateSheetInfo(sheetInfo: SheetInfo) {
+    this.sheetOffsets = SheetOffsetsWasm.load(sheetInfo.offsets);
+    const bounds = sheetInfo.bounds_without_formatting;
+    if (bounds.type === 'nonEmpty' && bounds.min) {
+      const min = bounds.min;
+      const max = bounds.max;
+      if (min && max) {
+        this.bounds = new Rectangle(Number(min.x), Number(min.y), Number(max.x - min.x), Number(max.y - min.y));
+      }
+    }
+  }
+
+  updateSheetBounds(sheetBounds: SheetBounds) {
+    const bounds = sheetBounds.bounds_without_formatting;
+    if (bounds.type === 'nonEmpty' && bounds.min) {
+      const min = bounds.min;
+      const max = bounds.max;
+      if (min && max) {
+        this.bounds = new Rectangle(Number(min.x), Number(min.y), Number(max.x - min.x), Number(max.y - min.y));
+      }
+    }
   }
 
   getCellOffsets(x: number, y: number) {
@@ -83,12 +97,6 @@ export class CellsLabels {
     const key = `${hashX},${hashY}`;
     const cellsHash = new CellsTextHash(this, hashX, hashY);
     this.cellsTextHash.set(key, cellsHash);
-    const row = this.cellsRows.get(hashY);
-    if (row) {
-      row.push(cellsHash);
-    } else {
-      this.cellsRows.set(hashY, [cellsHash]);
-    }
     return cellsHash;
   }
 
@@ -123,28 +131,6 @@ export class CellsLabels {
     return hash;
   }
 
-  getColumnHashes(column: number): CellsTextHash[] {
-    const hashX = Math.floor(column / sheetHashWidth);
-    const hashes: CellsTextHash[] = [];
-    this.cellsTextHash.forEach((cellsHash) => {
-      if (cellsHash.hashX === hashX) {
-        hashes.push(cellsHash);
-      }
-    });
-    return hashes;
-  }
-
-  getRowHashes(row: number): CellsTextHash[] {
-    const hashY = Math.floor(row / sheetHashHeight);
-    const hashes: CellsTextHash[] = [];
-    this.cellsTextHash.forEach((cellsHash) => {
-      if (cellsHash.hashY === hashY) {
-        hashes.push(cellsHash);
-      }
-    });
-    return hashes;
-  }
-
   // used for clipping to find neighboring hash - clipping always works from right to left
   // todo: use the new overflowLeft to make this more efficient
   findPreviousHash(column: number, row: number): CellsTextHash | undefined {
@@ -167,18 +153,6 @@ export class CellsLabels {
       hash = this.getCellsHash(column, row);
     }
     return hash;
-  }
-
-  // this assumes that dirtyRows has a size (checked in calling functions)
-  private updateNextDirtyRow(): void {
-    const nextRow = this.dirtyRows.values().next().value;
-    if (debugShowHashUpdates) console.log(`[CellsTextHash] updateNextDirtyRow for ${nextRow}`);
-    this.dirtyRows.delete(nextRow);
-    const hashes = this.cellsRows.get(nextRow);
-    if (!hashes) throw new Error('Expected hashes to be defined in preload');
-    hashes.forEach((hash) => hash.createLabels());
-    hashes.forEach((hash) => hash.overflowClip());
-    hashes.forEach((hash) => hash.updateBuffers()); // false
   }
 
   private updateHeadings(): boolean {
@@ -341,13 +315,7 @@ export class CellsLabels {
       if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
       return next.visible ? 'visible' : true;
     }
-
-    if (this.dirtyRows.size) {
-      this.updateNextDirtyRow();
-      return true;
-    } else {
-      return false;
-    }
+    return false;
   }
 
   // adjust headings without recalculating the glyph geometries
@@ -387,12 +355,6 @@ export class CellsLabels {
     if (!cellsHash) {
       cellsHash = new CellsTextHash(this, hashX, hashY);
       this.cellsTextHash.set(key, cellsHash);
-    }
-    const row = this.cellsRows.get(hashY);
-    if (row) {
-      row.push(cellsHash);
-    } else {
-      this.cellsRows.set(hashY, [cellsHash]);
     }
     cellsHash.dirty = renderCells;
   }

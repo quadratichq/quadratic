@@ -1,4 +1,11 @@
-import { JsHtmlOutput, JsRenderBorders, JsRenderCodeCell, JsRenderFill, SheetInfo } from '@/quadratic-core-types';
+import {
+  JsHtmlOutput,
+  JsRenderBorders,
+  JsRenderCodeCell,
+  JsRenderFill,
+  SheetBounds,
+  SheetInfo,
+} from '@/quadratic-core-types';
 import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
@@ -9,6 +16,7 @@ interface EventTypes {
   sheetInfo: (sheetInfo: SheetInfo[]) => void;
   sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
   changeSheet: () => void;
+  sheetBounds: (sheetBounds: SheetBounds) => void;
 
   setCursor: (cursor: string) => void;
   generateThumbnail: () => void;

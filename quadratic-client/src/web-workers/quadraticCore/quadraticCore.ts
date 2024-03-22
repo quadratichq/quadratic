@@ -103,6 +103,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetCodeCellRender') {
       events.emit('renderCodeCells', e.data.sheetId, e.data.codeCells);
       return;
+    } else if (e.data.type === 'coreClientSheetBoundsUpdate') {
+      events.emit('sheetBounds', e.data.sheetBounds);
+      return;
     }
 
     if (e.data.id !== undefined) {
@@ -516,25 +519,6 @@ class QuadraticCore {
       width: rectangle.width,
       height: rectangle.height,
       cursor,
-    });
-  }
-
-  getGridBounds(sheetId: string, ignoreFormatting: boolean) {
-    return new Promise<Rectangle | undefined>((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: { bounds?: Rectangle }) => {
-        if (message.bounds) {
-          resolve(new Rectangle(message.bounds.x, message.bounds.y, message.bounds.width, message.bounds.height));
-        } else {
-          resolve(undefined);
-        }
-      };
-      this.send({
-        type: 'clientCoreGetGridBounds',
-        sheetId,
-        ignoreFormatting,
-        id,
-      });
     });
   }
 

@@ -1,4 +1,5 @@
-import { CellAlign, CellFormatSummary, SheetInfo } from '@/quadratic-core-types';
+import { events } from '@/events/events';
+import { CellAlign, CellFormatSummary, GridBounds, SheetBounds, SheetInfo } from '@/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -15,6 +16,8 @@ export class Sheet {
   color?: string;
 
   offsets: SheetOffsets;
+  bounds: GridBounds;
+  boundsWithoutFormatting: GridBounds;
 
   constructor(info: SheetInfo) {
     this.id = info.sheet_id;
@@ -23,7 +26,17 @@ export class Sheet {
     this.color = info.color ?? undefined;
     this.offsets = SheetOffsetsWasm.load(info.offsets);
     this.cursor = new SheetCursor(this);
+    this.bounds = info.bounds;
+    this.boundsWithoutFormatting = info.bounds_without_formatting;
+    events.on('sheetBounds', this.updateBounds);
   }
+
+  private updateBounds = (sheetsBounds: SheetBounds) => {
+    if (this.id === sheetsBounds.sheet_id) {
+      this.bounds = sheetsBounds.bounds;
+      this.boundsWithoutFormatting = sheetsBounds.bounds_without_formatting;
+    }
+  };
 
   //#region set sheet actions
   // -----------------------------------
@@ -49,34 +62,24 @@ export class Sheet {
   //#endregion
 
   //#region get grid information
-
-  // getRenderCells(rectangle: Rectangle): JsRenderCell[] {
-  //   return grid.getRenderCells(this.id, rectangle);
-  // }
-
-  // getRenderCell(x: number, y: number): JsRenderCell | undefined {
-  //   return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
-  // }
-
-  // getFormattingSummary(rectangle: Rectangle): FormattingSummary {
-  //   return grid.getFormattingSummary(this.id, rectangle);
-  // }
-
-  // getCellFormatSummary(x: number, y: number): CellFormatSummary {
-  //   return grid.getCellFormatSummary(this.id, x, y);
-  // }
-
-  async getGridBounds(onlyData: boolean): Promise<Rectangle | undefined> {
-    return await quadraticCore.getGridBounds(this.id, onlyData);
+  getMinMax(onlyData: boolean): Coordinate[] | undefined {
+    const bounds = onlyData ? this.boundsWithoutFormatting : this.bounds;
+    if (bounds.type === 'empty') return;
+    return [
+      { x: Number(bounds.min.x), y: Number(bounds.min.y) },
+      { x: Number(bounds.max.x), y: Number(bounds.max.y) },
+    ];
   }
 
-  async getMinMax(onlyData: boolean): Promise<Coordinate[] | undefined> {
-    const bounds = await this.getGridBounds(onlyData);
-    if (!bounds) return;
-    return [
-      { x: bounds.left, y: bounds.top },
-      { x: bounds.right, y: bounds.bottom },
-    ];
+  getBounds(onlyData: boolean): Rectangle | undefined {
+    const bounds = onlyData ? this.boundsWithoutFormatting : this.bounds;
+    if (bounds.type === 'empty') return;
+    return new Rectangle(
+      Number(bounds.min.x),
+      Number(bounds.min.y),
+      Number(bounds.max.x) - Number(bounds.min.x),
+      Number(bounds.max.y) - Number(bounds.min.y)
+    );
   }
 
   //#region set grid information

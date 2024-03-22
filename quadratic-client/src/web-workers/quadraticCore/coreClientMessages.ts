@@ -10,6 +10,7 @@ import {
   JsRenderFill,
   MinMax,
   SearchOptions,
+  SheetBounds,
   SheetInfo,
   SheetPos,
 } from '@/quadratic-core-types';
@@ -161,19 +162,6 @@ export interface CoreClientSummarizeSelection {
         average: number | undefined;
       }
     | undefined;
-}
-
-export interface ClientCoreGetGridBounds {
-  type: 'clientCoreGetGridBounds';
-  sheetId: string;
-  id: number;
-  ignoreFormatting: boolean;
-}
-
-export interface CoreClientGetGridBounds {
-  type: 'coreClientGetGridBounds';
-  bounds?: { x: number; y: number; width: number; height: number };
-  id: number;
 }
 
 export interface ClientCoreSearch {
@@ -477,6 +465,11 @@ export interface CoreClientSheetInfo {
   sheetInfo: SheetInfo[];
 }
 
+export interface CoreClientSheetBoundsUpdate {
+  type: 'coreClientSheetBoundsUpdate';
+  sheetBounds: SheetBounds;
+}
+
 export interface ClientCoreAddSheet {
   type: 'clientCoreAddSheet';
   cursor?: string;
@@ -733,7 +726,6 @@ export type ClientCoreMessage =
   | ClientCoreGetRenderCell
   | ClientCoreToggleCommas
   | ClientCoreImportCsv
-  | ClientCoreGetGridBounds
   | ClientCoreDeleteCellValues
   | ClientCoreSetCodeCellValue
   | ClientCoreAddSheet
@@ -773,7 +765,6 @@ export type CoreClientMessage =
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell
   | CoreClientImportCsv
-  | CoreClientGetGridBounds
   | CoreClientAddSheet
   | CoreClientSheetInfo
   | CoreClientSheetFills
@@ -797,4 +788,5 @@ export type CoreClientMessage =
   | CoreClientGenerateThumbnail
   | CoreClientLoad
   | CoreClientSheetBorders
-  | CoreClientSheetCodeCellRender;
+  | CoreClientSheetCodeCellRender
+  | CoreClientSheetBoundsUpdate;

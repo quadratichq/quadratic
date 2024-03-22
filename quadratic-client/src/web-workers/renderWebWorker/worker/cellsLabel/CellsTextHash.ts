@@ -183,7 +183,6 @@ export class CellsTextHash {
   private checkClip(label: CellLabel, leftClip: TrackClip[], rightClip: TrackClip[]) {
     const bounds = this.cellsLabels.bounds;
     if (!bounds) return;
-
     let column = label.location.x - 1;
     const row = label.location.y;
     let currentHash: CellsTextHash | undefined = this;

@@ -12,7 +12,7 @@ use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
-    grid::{CodeCellLanguage, SheetId},
+    grid::CodeCellLanguage,
     SheetPos, SheetRect,
 };
 
@@ -33,9 +33,6 @@ pub struct PendingTransaction {
 
     // list of operations to share with other players
     pub forward_operations: Vec<Operation>,
-
-    // tracks sheets that will need updated bounds calculations
-    pub sheets_with_dirty_bounds: HashSet<SheetId>,
 
     // tracks whether there are any async calls (which changes how the transaction is finalized)
     pub has_async: bool,
@@ -68,7 +65,6 @@ impl Default for PendingTransaction {
             operations: VecDeque::new(),
             reverse_operations: Vec::new(),
             forward_operations: Vec::new(),
-            sheets_with_dirty_bounds: HashSet::new(),
             has_async: false,
             cells_accessed: HashSet::new(),
             current_sheet_pos: None,
@@ -148,7 +144,7 @@ impl PendingTransaction {
 
 #[cfg(test)]
 mod tests {
-    use crate::controller::operations::operation::Operation;
+    use crate::{controller::operations::operation::Operation, grid::SheetId};
 
     use super::*;
 

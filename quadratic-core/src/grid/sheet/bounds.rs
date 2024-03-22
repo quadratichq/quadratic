@@ -9,7 +9,10 @@ impl Sheet {
     /// Recalculates all bounds of the sheet.
     ///
     /// This should be called whenever data in the sheet is modified.
-    pub fn recalculate_bounds(&mut self) {
+    /// Returns whether any of the sheet's bounds has changed
+    pub fn recalculate_bounds(&mut self) -> bool {
+        let old_data_bounds = self.data_bounds.to_bounds_rect();
+        let old_format_bounds = self.format_bounds.to_bounds_rect();
         self.data_bounds.clear();
         self.format_bounds.clear();
 
@@ -34,6 +37,8 @@ impl Sheet {
             self.format_bounds.add(output_rect.min);
             self.format_bounds.add(output_rect.max);
         });
+        old_data_bounds != self.data_bounds.to_bounds_rect()
+            || old_format_bounds != self.format_bounds.to_bounds_rect()
     }
 
     /// Returns whether the sheet is completely empty.
@@ -281,10 +286,11 @@ mod test {
     #[test]
     fn test_is_empty() {
         let mut sheet = Sheet::test();
+        assert!(!sheet.recalculate_bounds());
         assert!(sheet.is_empty());
 
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
-        sheet.recalculate_bounds();
+        assert!(sheet.recalculate_bounds());
         assert!(!sheet.is_empty());
 
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
@@ -301,7 +307,7 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
         let _ =
             sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
-        sheet.recalculate_bounds();
+        assert!(sheet.recalculate_bounds());
 
         assert_eq!(
             sheet.bounds(true),
@@ -330,7 +336,7 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
         let _ = sheet
             .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
-        sheet.recalculate_bounds();
+        assert!(sheet.recalculate_bounds());
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
         assert_eq!(sheet.column_bounds(100, false), Some((-50, 200)));

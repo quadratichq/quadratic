@@ -110,8 +110,6 @@ impl GridController {
             self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
             self.check_all_spills(transaction, sheet_pos.sheet_id);
         }
-
-        transaction.sheets_with_dirty_bounds.insert(sheet_id);
         transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
         if cfg!(target_family = "wasm") {
@@ -124,7 +122,7 @@ impl GridController {
             }
         }
 
-        // todo: we need to return the code cell to JS here as well (could be we send all the code cells in the sheet for simplicity)
+        // *** todo: we need to return the code cell to JS here as well (could be we send all the code cells in the sheet for simplicity)
         // transaction.summary.code_cells_modified.insert(sheet_id);
 
         self.send_render_cells(&sheet_rect);
