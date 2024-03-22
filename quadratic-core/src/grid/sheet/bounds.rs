@@ -294,7 +294,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{CellAlign, CodeCellLanguage, GridBounds, Sheet},
-        CellValue, IsBlank, Pos, Rect, SheetPos,
+        CellValue, IsBlank, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -631,5 +631,44 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(2, true), Some((1, 1)));
         assert_eq!(sheet.row_bounds(2, false), Some((1, 1)));
+    }
+
+    #[test]
+    fn send_updated_bounds_rect() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.data_bounds,
+            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
+        );
+        gc.set_cell_bold(
+            SheetRect::from_numbers(3, 5, 1, 1, sheet_id),
+            Some(true),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.data_bounds,
+            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
+        );
+        assert_eq!(
+            sheet.format_bounds,
+            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 3, 4))
+        );
+
+        // let sheet = gc.sheet_mut(sheet_id);
+        // assert!(sheet.recalculate_add_bounds(Rect::from_numbers(1, 2, 1, 2), true));
+        // assert!(sheet.recalculate_add_bounds(Rect::from_numbers(1, 2, 1, 2), false));
     }
 }
