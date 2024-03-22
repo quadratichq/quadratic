@@ -8,7 +8,7 @@ use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
 
-const IMPORT_LINES_PER_OPERATION: u32 = 100000;
+const IMPORT_LINES_PER_OPERATION: u32 = 100;
 
 impl GridController {
     /// Imports a CSV file into the grid.

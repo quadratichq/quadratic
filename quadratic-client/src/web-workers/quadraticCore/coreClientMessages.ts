@@ -701,6 +701,17 @@ export interface ClientCoreCommitSingleResize {
   cursor: string;
 }
 
+export interface CoreClientImportProgress {
+  type: 'coreClientImportProgress';
+  filename: string;
+  current: number;
+  total: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -789,4 +800,5 @@ export type CoreClientMessage =
   | CoreClientLoad
   | CoreClientSheetBorders
   | CoreClientSheetCodeCellRender
-  | CoreClientSheetBoundsUpdate;
+  | CoreClientSheetBoundsUpdate
+  | CoreClientImportProgress;

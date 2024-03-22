@@ -440,8 +440,7 @@ class CoreClient {
     width: number,
     height: number
   ) => {
-    // self.postMessage({ type: 'coreClientProgress', current, total });
-    console.log(filename, current, total, x, y, width, height);
+    this.send({ type: 'coreClientImportProgress', filename, current, total, x, y, width, height });
   };
 
   sendAddSheet = (sheetInfo: SheetInfo, user: boolean) => {

@@ -106,6 +106,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetBoundsUpdate') {
       events.emit('sheetBounds', e.data.sheetBounds);
       return;
+    } else if (e.data.type === 'coreClientImportProgress') {
+      events.emit('importProgress', e.data);
+      return;
     }
 
     if (e.data.id !== undefined) {
