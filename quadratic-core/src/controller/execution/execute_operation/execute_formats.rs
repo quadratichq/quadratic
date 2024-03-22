@@ -51,7 +51,7 @@ impl GridController {
                 CellFmtArray::RenderSize(_) => (), // todo: send html cells
                 CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
                 _ => {
-                    self.send_updated_bounds(sheet_rect.sheet_id);
+                    self.send_updated_bounds_rect(&sheet_rect, true);
                     self.send_render_cells(&sheet_rect)
                 }
             };

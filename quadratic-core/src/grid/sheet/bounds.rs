@@ -1,6 +1,6 @@
 use crate::{
     grid::{bounds::BoundsRect, Column, GridBounds},
-    CellValue, Pos,
+    CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -8,7 +8,6 @@ use super::Sheet;
 impl Sheet {
     /// Recalculates all bounds of the sheet.
     ///
-    /// This should be called whenever data in the sheet is modified.
     /// Returns whether any of the sheet's bounds has changed
     pub fn recalculate_bounds(&mut self) -> bool {
         let old_data_bounds = self.data_bounds.to_bounds_rect();
@@ -39,6 +38,23 @@ impl Sheet {
         });
         old_data_bounds != self.data_bounds.to_bounds_rect()
             || old_format_bounds != self.format_bounds.to_bounds_rect()
+    }
+
+    /// Adds a SheetRct to the bounds of the sheet.
+    ///
+    /// Returns whether any of the sheet's bounds has changed
+    pub fn recalculate_add_bounds(&mut self, rect: Rect, format: bool) -> bool {
+        if format {
+            let old_format_bounds = self.format_bounds.to_bounds_rect();
+            self.format_bounds.add(rect.min);
+            self.format_bounds.add(rect.max);
+            old_format_bounds != self.format_bounds.to_bounds_rect()
+        } else {
+            let old_data_bounds = self.format_bounds.to_bounds_rect();
+            self.data_bounds.add(rect.min);
+            self.data_bounds.add(rect.max);
+            old_data_bounds != self.data_bounds.to_bounds_rect()
+        }
     }
 
     /// Returns whether the sheet is completely empty.

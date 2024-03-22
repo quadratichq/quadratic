@@ -14,11 +14,13 @@ impl GridController {
         values: RunLengthEncoding<Option<A::Value>>,
     ) -> RunLengthEncoding<Option<A::Value>> {
         // todo: add better error handling for sheet removal
-        if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
+        let result = if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
             sheet.set_cell_formats_for_type::<A>(sheet_rect, values)
         } else {
             RunLengthEncoding::new()
-        }
+        };
+        self.send_updated_bounds_rect(sheet_rect, true);
+        result
     }
 
     /// set currency type for a region

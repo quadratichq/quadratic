@@ -59,7 +59,7 @@ impl GridController {
                     // prepare summary
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
-                    self.send_updated_bounds(sheet_rect.sheet_id);
+                    self.send_updated_bounds_rect(&sheet_rect, false);
                     self.send_render_cells(&sheet_rect);
                 }
             }
