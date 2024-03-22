@@ -8,7 +8,6 @@
 
 import { debugShowLoadingHashes } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
-import { debugTimeCheck, debugTimeReset } from '@/gridGL/helpers/debugPerformance';
 import { intersects } from '@/gridGL/helpers/intersects';
 import { JsRenderCell, SheetBounds, SheetInfo } from '@/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
@@ -101,7 +100,6 @@ export class CellsLabels {
   }
 
   createHashes(): boolean {
-    debugTimeReset();
     const bounds = this.bounds;
     if (!bounds) return false;
     const xStart = Math.floor(bounds.x / sheetHashWidth);
@@ -113,7 +111,6 @@ export class CellsLabels {
         this.createHash(x, y);
       }
     }
-    debugTimeCheck('createHashes');
     return true;
   }
 
