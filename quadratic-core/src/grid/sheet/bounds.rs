@@ -8,9 +8,7 @@ use super::Sheet;
 impl Sheet {
     /// calculates all bounds
     pub fn calculate_bounds(&mut self) {
-        dbgjs!("calculating bounds...");
         for (&x, column) in &self.columns {
-            dbgjs!(column.values.len());
             if let Some(data_range) = column.range(true) {
                 let y = data_range.start;
                 self.data_bounds.add(Pos { x, y });

@@ -43,7 +43,6 @@ impl GridController {
         special: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        dbgjs!(&special);
         let special = if &special == "None" {
             PasteSpecial::None
         } else if &special == "Values" {
