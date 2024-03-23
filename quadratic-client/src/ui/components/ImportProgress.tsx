@@ -43,7 +43,7 @@ export const ImportProgress = () => {
     const transactionProgress = (message: CoreClientTransactionProgress) => {
       maxOperations = Math.max(maxOperations, message.remainingOperations);
       if (message.transactionId === transactionId) {
-        const newProgress = Math.floor((total - 1 + (1 - message.remainingOperations / maxOperations) / total) * 100);
+        const newProgress = Math.floor(((total + (1 - message.remainingOperations / maxOperations)) / total) * 100);
         setPercentage((progress) => {
           if (!progress) return progress;
           if (newProgress < progress) return progress;
