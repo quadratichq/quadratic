@@ -1,3 +1,4 @@
+use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
 use crate::grid::{BorderSelection, BorderStyle};
 use crate::SheetRect;
@@ -11,7 +12,13 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.set_borders_operations(sheet_rect, selections, style);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetBorders,
+            Some(sheet_rect.sheet_id),
+            Some(sheet_rect.into()),
+        );
     }
 }
 

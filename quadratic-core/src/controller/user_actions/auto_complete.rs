@@ -1,3 +1,4 @@
+use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
 use crate::{grid::SheetId, Rect};
 use anyhow::Result;
@@ -18,7 +19,13 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.autocomplete_operations(sheet_id, selection, range)?;
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::Autocomplete,
+            Some(sheet_id),
+            Some(range),
+        );
         Ok(())
     }
 }

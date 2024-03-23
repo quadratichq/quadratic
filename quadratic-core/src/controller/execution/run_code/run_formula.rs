@@ -68,8 +68,12 @@ mod test {
     use crate::{
         cell_values::CellValues,
         controller::{
-            active_transactions::pending_transaction::PendingTransaction,
-            operations::operation::Operation, transaction_types::JsCodeResult, GridController,
+            active_transactions::{
+                pending_transaction::PendingTransaction, transaction_name::TransactionName,
+            },
+            operations::operation::Operation,
+            transaction_types::JsCodeResult,
+            GridController,
         },
         grid::{CodeCellLanguage, CodeRun, CodeRunResult},
         Array, ArraySize, CellValue, CodeCellValue, Pos, SheetPos, Value,
@@ -100,6 +104,9 @@ mod test {
                 },
                 Operation::ComputeCode { sheet_pos },
             ],
+            None,
+            TransactionName::Unknown,
+            None,
             None,
         );
 

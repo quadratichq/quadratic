@@ -13,6 +13,7 @@ import {
   JsRenderFill,
   SheetBounds,
   SheetInfo,
+  TransactionName,
 } from '@/quadratic-core-types';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
@@ -49,6 +50,16 @@ declare var self: WorkerGlobalScope &
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
+    sendTransactionStart: (
+      transactionId: string,
+      transactionType: TransactionName,
+      sheetId?: string,
+      x?: number,
+      y?: number,
+      w?: number,
+      h?: number
+    ) => void;
+    sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
   };
 
 class CoreClient {
@@ -68,6 +79,8 @@ class CoreClient {
     self.sendSheetBorders = coreClient.sendSheetBorders;
     self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
+    self.sendTransactionStart = coreClient.sendTransactionStart;
+    self.sendTransactionProgress = coreClient.sendTransactionProgress;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -523,6 +536,31 @@ class CoreClient {
 
   sendSheetBoundsUpdate = (bounds: SheetBounds) => {
     this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds });
+  };
+
+  sendTransactionStart = (
+    transactionId: string,
+    transactionType: TransactionName,
+    sheetId?: string,
+    x?: number,
+    y?: number,
+    w?: number,
+    h?: number
+  ) => {
+    this.send({
+      type: 'coreClientTransactionStart',
+      transactionId,
+      transactionType,
+      sheetId,
+      x,
+      y,
+      w,
+      h,
+    });
+  };
+
+  sendTransactionProgress = (transactionId: string, remainingOperations: number) => {
+    this.send({ type: 'coreClientTransactionProgress', transactionId, remainingOperations });
   };
 }
 

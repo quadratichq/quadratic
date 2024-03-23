@@ -1,3 +1,4 @@
+use super::active_transactions::transaction_name::TransactionName;
 use super::{operations::operation::Operation, GridController};
 use crate::grid::SheetId;
 use crate::sheet_offsets::resize_transient::TransientResize;
@@ -14,7 +15,9 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let mut ops = vec![];
+        let mut transaction_name = TransactionName::Unknown;
         if let Some(column) = transient_resize.column {
+            transaction_name = TransactionName::ResizeColumn;
             ops.push(Operation::ResizeColumn {
                 sheet_id,
                 column,
@@ -22,6 +25,7 @@ impl GridController {
                 client_resized: true,
             });
         } else if let Some(row) = transient_resize.row {
+            transaction_name = TransactionName::ResizeColumn;
             ops.push(Operation::ResizeRow {
                 sheet_id,
                 row,
@@ -29,7 +33,7 @@ impl GridController {
                 client_resized: true,
             });
         }
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(ops, cursor, transaction_name, Some(sheet_id), None);
     }
 
     pub fn commit_single_resize(
@@ -53,7 +57,9 @@ impl GridController {
                 _ => return,
             };
             let mut ops = vec![];
+            let mut transaction_name = TransactionName::Unknown;
             if let Some(column) = transient_resize.column {
+                transaction_name = TransactionName::ResizeColumn;
                 ops.push(Operation::ResizeColumn {
                     sheet_id,
                     column,
@@ -61,6 +67,7 @@ impl GridController {
                     client_resized: false,
                 });
             } else if let Some(row) = transient_resize.row {
+                transaction_name = TransactionName::ResizeRow;
                 ops.push(Operation::ResizeRow {
                     sheet_id,
                     row,
@@ -68,7 +75,7 @@ impl GridController {
                     client_resized: false,
                 });
             }
-            self.start_user_transaction(ops, cursor);
+            self.start_user_transaction(ops, cursor, transaction_name, Some(sheet_id), None);
         }
     }
 }

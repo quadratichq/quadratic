@@ -1,9 +1,18 @@
-use crate::{controller::GridController, grid::SheetId};
+use crate::{
+    controller::{active_transactions::transaction_name::TransactionName, GridController},
+    grid::SheetId,
+};
 
 impl GridController {
     pub fn set_sheet_name(&mut self, sheet_id: SheetId, name: String, cursor: Option<String>) {
         let ops = self.set_sheet_name_operations(sheet_id, name);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetSheetMetadata,
+            Some(sheet_id),
+            None,
+        );
     }
 
     pub fn set_sheet_color(
@@ -13,16 +22,22 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.set_sheet_color_operations(sheet_id, color);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetSheetMetadata,
+            Some(sheet_id),
+            None,
+        );
     }
 
     pub fn add_sheet(&mut self, cursor: Option<String>) {
         let ops = self.add_sheet_operations();
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(ops, cursor, TransactionName::SheetAdd, None, None);
     }
     pub fn delete_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {
         let ops = self.delete_sheet_operations(sheet_id);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(ops, cursor, TransactionName::SheetDelete, None, None);
     }
     pub fn move_sheet(
         &mut self,
@@ -31,11 +46,23 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.move_sheet_operations(sheet_id, to_before);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetSheetMetadata,
+            Some(sheet_id),
+            None,
+        );
     }
     pub fn duplicate_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {
         let ops = self.duplicate_sheet_operations(sheet_id);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::DuplicateSheet,
+            Some(sheet_id),
+            None,
+        );
     }
 }
 

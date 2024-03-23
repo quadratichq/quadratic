@@ -1,4 +1,5 @@
 use crate::cell_values::CellValues;
+use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::{operations::clipboard::Clipboard, GridController};
 use crate::Rect;
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
@@ -182,7 +183,13 @@ impl GridController {
         cursor: Option<String>,
     ) -> (String, String) {
         let (ops, plain_text, html) = self.cut_to_clipboard_operations(sheet_rect);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::CutClipboard,
+            Some(sheet_rect.sheet_id),
+            Some(sheet_rect.into()),
+        );
         (plain_text, html)
     }
 
@@ -197,14 +204,26 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(sheet_pos, html, special) {
-                return self.start_user_transaction(ops, cursor);
+                return self.start_user_transaction(
+                    ops,
+                    cursor,
+                    TransactionName::PasteClipboard,
+                    Some(sheet_pos.sheet_id),
+                    Some(Rect::single_pos(sheet_pos.into())),
+                );
             }
         }
         // if not quadratic html, then use the plain text
         // first try html
         if let Some(plain_text) = plain_text {
             let ops = self.paste_plain_text_operations(sheet_pos, plain_text, special);
-            self.start_user_transaction(ops, cursor);
+            self.start_user_transaction(
+                ops,
+                cursor,
+                TransactionName::PasteClipboard,
+                Some(sheet_pos.sheet_id),
+                Some(Rect::single_pos(sheet_pos.into())),
+            );
         }
     }
 }

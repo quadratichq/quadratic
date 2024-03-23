@@ -1,7 +1,7 @@
 use crate::{
-    controller::GridController,
+    controller::{active_transactions::transaction_name::TransactionName, GridController},
     grid::{CodeCellLanguage, SheetId},
-    SheetPos,
+    Rect, SheetPos,
 };
 
 impl GridController {
@@ -14,24 +14,36 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.set_code_cell_operations(sheet_pos, language, code_string);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetCode,
+            Some(sheet_pos.sheet_id),
+            Some(Rect::single_pos(sheet_pos.into())),
+        );
     }
 
     /// Reruns code cells in grid.
     pub fn rerun_all_code_cells(&mut self, cursor: Option<String>) {
         let ops = self.rerun_all_code_cells_operations();
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(ops, cursor, TransactionName::RunCode, None, None);
     }
 
     /// Reruns code cells in a sheet.
     pub fn rerun_sheet_code_cells(&mut self, sheet_id: SheetId, cursor: Option<String>) {
         let ops = self.rerun_sheet_code_cells_operations(sheet_id);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(ops, cursor, TransactionName::RunCode, Some(sheet_id), None);
     }
 
     /// Reruns one code cell
     pub fn rerun_code_cell(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
         let ops = self.rerun_code_cell_operations(sheet_pos);
-        self.start_user_transaction(ops, cursor);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::RunCode,
+            Some(sheet_pos.sheet_id),
+            Some(Rect::single_pos(sheet_pos.into())),
+        );
     }
 }

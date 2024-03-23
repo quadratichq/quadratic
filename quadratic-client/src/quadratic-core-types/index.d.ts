@@ -49,3 +49,4 @@ export interface JsComputeGetCells { transaction_id: string, x: bigint, y: bigin
 export interface MinMax { min: number, max: number, }
 export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
 export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
+export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet";

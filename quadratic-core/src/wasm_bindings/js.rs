@@ -32,16 +32,6 @@ extern "C" {
 
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
 
-    pub fn jsImportProgress(
-        file_name: &str,
-        current: u32,
-        total: u32,
-        x: i64,
-        y: i64,
-        w: u32,
-        h: u32,
-    );
-
     // cells: Vec<JsRenderCell>
     pub fn jsRenderCellSheets(
         sheet_id: String,
@@ -70,4 +60,24 @@ extern "C" {
     pub fn jsSheetBorders(sheet_id: String, borders: String);
     pub fn jsSheetCodeCell(sheet_id: String, code_cells: String);
     pub fn jsSheetBoundsUpdate(bounds: String);
+
+    pub fn jsImportProgress(
+        file_name: &str,
+        current: u32,
+        total: u32,
+        x: i64,
+        y: i64,
+        w: u32,
+        h: u32,
+    );
+    pub fn jsTransactionStart(
+        transaction_id: String,
+        name: String,
+        sheet_id: Option<String>,
+        x: Option<i64>,
+        y: Option<i64>,
+        w: Option<u32>,
+        h: Option<u32>,
+    );
+    pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
 }

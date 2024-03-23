@@ -110,6 +110,12 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientImportProgress') {
       events.emit('importProgress', e.data);
       return;
+    } else if (e.data.type === 'coreClientTransactionStart') {
+      events.emit('transactionStart', e.data);
+      return;
+    } else if (e.data.type === 'coreClientTransactionProgress') {
+      events.emit('transactionProgress', e.data);
+      return;
     }
 
     if (e.data.id !== undefined) {

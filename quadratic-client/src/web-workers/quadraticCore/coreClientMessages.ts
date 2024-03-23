@@ -13,6 +13,7 @@ import {
   SheetBounds,
   SheetInfo,
   SheetPos,
+  TransactionName,
 } from '@/quadratic-core-types';
 
 //#region Initialize
@@ -718,6 +719,10 @@ export interface ClientCoreCommitSingleResize {
   cursor: string;
 }
 
+//#endregion
+
+//#region transactions
+
 export interface CoreClientImportProgress {
   type: 'coreClientImportProgress';
   filename: string;
@@ -727,6 +732,23 @@ export interface CoreClientImportProgress {
   y: number;
   width: number;
   height: number;
+}
+
+export interface CoreClientTransactionStart {
+  type: 'coreClientTransactionStart';
+  transactionId: string;
+  transactionType: TransactionName;
+  sheetId?: string;
+  x?: number;
+  y?: number;
+  w?: number;
+  h?: number;
+}
+
+export interface CoreClientTransactionProgress {
+  type: 'coreClientTransactionProgress';
+  transactionId: string;
+  remainingOperations: number;
 }
 
 //#endregion
@@ -820,4 +842,6 @@ export type CoreClientMessage =
   | CoreClientSheetBorders
   | CoreClientSheetCodeCellRender
   | CoreClientSheetBoundsUpdate
-  | CoreClientImportProgress;
+  | CoreClientImportProgress
+  | CoreClientTransactionStart
+  | CoreClientTransactionProgress;

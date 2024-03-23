@@ -1,36 +1,66 @@
 import { events } from '@/events/events';
 import { Progress } from '@/shadcn/ui/progress';
-import { CoreClientImportProgress } from '@/web-workers/quadraticCore/coreClientMessages';
+import {
+  CoreClientImportProgress,
+  CoreClientTransactionProgress,
+  CoreClientTransactionStart,
+} from '@/web-workers/quadraticCore/coreClientMessages';
 import { useEffect, useState } from 'react';
 
-// hack to ensure there is time for rendering the text before the progress bar goes away
-const TIMEOUT_FOR_RENDERING = 1000;
+// The last message.total + 1 is used to track the execute operation progress.
 
 export const ImportProgress = () => {
   const [filename, setFilename] = useState<string | undefined>(undefined);
   const [percentage, setPercentage] = useState<number | undefined>(undefined);
+  const [total, setTotal] = useState<number | undefined>(undefined);
   const [show, setShow] = useState(false);
 
+  // Used to track the import operation-creation progress.
   useEffect(() => {
     const handleProgress = (message: CoreClientImportProgress) => {
       setFilename(message.filename);
-      const progress = Math.round((message.current / message.total) * 100);
+      const progress = Math.round((message.current / (message.total + 1)) * 100);
+      setTotal(message.total);
       setPercentage(progress);
-      if (progress === 100) {
-        // wait a frame so the bar appears full
-        setTimeout(() => setShow(false), TIMEOUT_FOR_RENDERING);
-      } else {
-        setShow(true);
-      }
+      setShow(true);
     };
-
     events.on('importProgress', handleProgress);
     return () => {
       events.off('importProgress', handleProgress);
     };
   }, []);
 
-  useEffect(() => {}, []);
+  // Used to track the execute operation for the import
+  useEffect(() => {
+    if (!total) return;
+    let transactionId: string | undefined;
+    let maxOperations = 0;
+    const transactionStart = (message: CoreClientTransactionStart) => {
+      if (message.transactionType === 'Import') {
+        transactionId = message.transactionId;
+      }
+    };
+    const transactionProgress = (message: CoreClientTransactionProgress) => {
+      maxOperations = Math.max(maxOperations, message.remainingOperations);
+      if (message.transactionId === transactionId) {
+        const newProgress = Math.floor((total - 1 + (1 - message.remainingOperations / maxOperations) / total) * 100);
+        setPercentage((progress) => {
+          if (!progress) return progress;
+          if (newProgress < progress) return progress;
+          return newProgress;
+        });
+        if (newProgress === 100) {
+          setShow(false);
+        }
+      }
+    };
+    events.on('transactionStart', transactionStart);
+    events.on('transactionProgress', transactionProgress);
+    return () => {
+      events.off('transactionStart', transactionStart);
+      events.off('transactionProgress', transactionProgress);
+    };
+  }, [total]);
 
   if (!show) return;
 

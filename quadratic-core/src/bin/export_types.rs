@@ -3,6 +3,7 @@ use std::fs::create_dir_all;
 use quadratic_core::{
     color::Rgba,
     controller::{
+        active_transactions::transaction_name::TransactionName,
         transaction_types::{JsCodeResult, JsComputeGetCells},
         user_actions::clipboard::PasteSpecial,
     },
@@ -89,6 +90,7 @@ fn main() {
         MinMax,
         TransientResize,
         SheetBounds,
+        TransactionName,
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {

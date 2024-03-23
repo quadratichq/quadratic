@@ -7,6 +7,7 @@ import {
   JsRenderFill,
   SheetBounds,
   SheetInfo,
+  TransactionName,
 } from '@/quadratic-core-types';
 
 declare var self: WorkerGlobalScope &
@@ -54,6 +55,15 @@ declare var self: WorkerGlobalScope &
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
+    sendTransactionStart: (
+      transactionId: string,
+      transactionType: TransactionName,
+      sheetId?: string,
+      x?: number,
+      y?: number,
+      w?: number,
+      h?: number
+    ) => void;
   };
 
 export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
@@ -162,4 +172,21 @@ export const jsSheetBoundsUpdate = (bounds: string) => {
   const sheetBounds = JSON.parse(bounds) as SheetBounds;
   self.sendSheetBoundsUpdateClient(sheetBounds);
   self.sendSheetBoundsUpdateRender(sheetBounds);
+};
+
+export const jsTransactionStart = (
+  transaction_id: string,
+  transaction_name: string,
+  sheet_id: string | undefined,
+  x?: bigint,
+  y?: bigint,
+  w?: number,
+  h?: number
+) => {
+  const transactionType = JSON.parse(transaction_name);
+  self.sendTransactionStart(transaction_id, transactionType, sheet_id, Number(x), Number(y), w, h);
+};
+
+export const jsTransactionProgress = (transaction_id: String, remaining_operations: number) => {
+  console.log('jsTransactionProgress', transaction_id, remaining_operations);
 };
