@@ -17,6 +17,7 @@ pub struct SheetInfo {
 impl From<&Sheet> for SheetInfo {
     fn from(sheet: &Sheet) -> Self {
         let offsets = serde_json::to_string(&sheet.offsets).unwrap_or("".to_string());
+        dbgjs!(&sheet.bounds(false));
         Self {
             sheet_id: sheet.id.to_string(),
             name: sheet.name.clone(),

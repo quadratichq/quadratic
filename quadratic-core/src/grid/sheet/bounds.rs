@@ -6,16 +6,11 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
-    /// Recalculates all bounds of the sheet.
-    ///
-    /// Returns whether any of the sheet's bounds has changed
-    pub fn recalculate_bounds(&mut self) -> bool {
-        let old_data_bounds = self.data_bounds.to_bounds_rect();
-        let old_format_bounds = self.format_bounds.to_bounds_rect();
-        self.data_bounds.clear();
-        self.format_bounds.clear();
-
+    /// calculates all bounds
+    pub fn calculate_bounds(&mut self) {
+        dbgjs!("calculating bounds...");
         for (&x, column) in &self.columns {
+            dbgjs!(column.values.len());
             if let Some(data_range) = column.range(true) {
                 let y = data_range.start;
                 self.data_bounds.add(Pos { x, y });
@@ -29,12 +24,23 @@ impl Sheet {
                 self.format_bounds.add(Pos { x, y });
             }
         }
+    }
+
+    /// Recalculates all bounds of the sheet.
+    ///
+    /// Returns whether any of the sheet's bounds has changed
+    pub fn recalculate_bounds(&mut self) -> bool {
+        let old_data_bounds = self.data_bounds.to_bounds_rect();
+        let old_format_bounds = self.format_bounds.to_bounds_rect();
+        self.data_bounds.clear();
+        self.format_bounds.clear();
+
+        self.calculate_bounds();
+
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
             self.data_bounds.add(output_rect.min);
             self.data_bounds.add(output_rect.max);
-            self.format_bounds.add(output_rect.min);
-            self.format_bounds.add(output_rect.max);
         });
         old_data_bounds != self.data_bounds.to_bounds_rect()
             || old_format_bounds != self.format_bounds.to_bounds_rect()
@@ -51,8 +57,6 @@ impl Sheet {
             old_format_bounds != self.format_bounds.to_bounds_rect()
         } else {
             let old_data_bounds = self.format_bounds.to_bounds_rect();
-            self.format_bounds.add(rect.min);
-            self.format_bounds.add(rect.max);
             self.data_bounds.add(rect.min);
             self.data_bounds.add(rect.max);
             old_data_bounds != self.data_bounds.to_bounds_rect()
@@ -74,6 +78,7 @@ impl Sheet {
             false => GridBounds::merge(self.data_bounds, self.format_bounds),
         }
     }
+
     /// Returns the lower and upper bounds of a column, or `None` if the column
     /// is empty.
     ///
@@ -668,9 +673,5 @@ mod test {
             sheet.format_bounds,
             GridBounds::NonEmpty(Rect::from_numbers(1, 2, 3, 4))
         );
-
-        // let sheet = gc.sheet_mut(sheet_id);
-        // assert!(sheet.recalculate_add_bounds(Rect::from_numbers(1, 2, 1, 2), true));
-        // assert!(sheet.recalculate_add_bounds(Rect::from_numbers(1, 2, 1, 2), false));
     }
 }

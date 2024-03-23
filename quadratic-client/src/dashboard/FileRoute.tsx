@@ -1,6 +1,6 @@
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { CONTACT_URL } from '@/constants/urls';
-import { debugShowMultiplayer } from '@/debugFlags';
+import { debugShowFileIO, debugShowMultiplayer } from '@/debugFlags';
 import { loadAssets } from '@/gridGL/loadAssets';
 import { thumbnail } from '@/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/helpers/isEmbed';
@@ -43,7 +43,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     }
     throw new Response('Failed to load file from server.', { status: error.status });
   }
-  if (debugShowMultiplayer)
+  if (debugShowMultiplayer || debugShowFileIO)
     console.log(
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
@@ -72,7 +72,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
         message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
         level: 'log',
       });
-      debugger;
       // @ts-expect-error hard reload via `true` only works in some browsers
       window.location.reload(true);
     }

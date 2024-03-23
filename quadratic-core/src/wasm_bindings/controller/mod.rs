@@ -32,7 +32,10 @@ impl GridController {
     ) -> Result<GridController, JsValue> {
         if let Ok(file) = file::import(file).map_err(|e| e.to_string()) {
             let grid = GridController::from_grid(file, last_sequence_num as u64);
+
+            // populate data for client and text renderer
             if initialize {
+                // first recalculate all bounds in sheets
                 let mut html = vec![];
                 let sheets_info = grid
                     .sheet_ids()

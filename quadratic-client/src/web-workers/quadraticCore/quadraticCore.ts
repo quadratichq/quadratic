@@ -4,7 +4,7 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { debugWebWorkersMessages } from '@/debugFlags';
+import { debugShowFileIO, debugWebWorkersMessages } from '@/debugFlags';
 import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate } from '@/gridGL/types/size';
@@ -149,8 +149,10 @@ class QuadraticCore {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientLoad) => {
         if (message.error) {
+          if (debugShowFileIO) console.log(`[quadraticCore] error loading file "${message.error}".`);
           resolve({ error: message.error });
         } else if (message.version) {
+          if (debugShowFileIO) console.log(`[quadraticCore] file loaded.`);
           resolve({ version: message.version });
         } else {
           throw new Error('Expected CoreClientLoad to include either version or error');
@@ -164,6 +166,7 @@ class QuadraticCore {
         sequenceNumber,
         id,
       };
+      if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);
     });
   }

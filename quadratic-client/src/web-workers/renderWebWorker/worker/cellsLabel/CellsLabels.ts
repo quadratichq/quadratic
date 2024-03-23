@@ -11,7 +11,7 @@ import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { intersects } from '@/gridGL/helpers/intersects';
 import { JsRenderCell, SheetBounds, SheetInfo } from '@/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
-import { Point, Rectangle } from 'pixi.js';
+import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
 import { CellsTextHash } from './CellsTextHash';
@@ -201,13 +201,9 @@ export class CellsLabels {
   }
 
   // distance from viewport center to hash center
-  private hashDistanceSquared(hash: CellsTextHash, viewportCenter: Point): number {
-    const viewRectangle = hash.viewRectangle;
-    const center = {
-      x: viewRectangle.left + viewRectangle.width / 2,
-      y: viewRectangle.top + viewRectangle.height / 2,
-    };
-    return Math.pow(viewportCenter.x - center.x, 2) + Math.pow(viewportCenter.y - center.y, 2);
+  private hashDistanceSquared(hash: CellsTextHash, viewport: Rectangle): number {
+    const hashRectangle = hash.viewRectangle;
+    return Math.pow(viewport.x - hashRectangle.x, 2) + Math.pow(viewport.y - hashRectangle.y, 2);
   }
 
   // Finds the next dirty hash to render. Also handles unloading of hashes.
@@ -223,7 +219,6 @@ export class CellsLabels {
 
     const bounds = renderText.viewport;
     if (!bounds) return;
-    const viewportCenter = new Point(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
 
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
@@ -232,10 +227,10 @@ export class CellsLabels {
         }
       } else {
         if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
-          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, viewportCenter) });
+          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
         if (findHashToDelete && hash.loaded) {
-          hashesToDelete.push({ hash, distance: this.hashDistanceSquared(hash, viewportCenter) });
+          hashesToDelete.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
         }
       }
     });
@@ -246,11 +241,17 @@ export class CellsLabels {
 
     hashesToDelete.sort((a, b) => b.distance - a.distance);
 
-    // if hashes are visible, sort them by y and return the first one
+    // if hashes are visible, sort (smallest to largest) them by y and return the last one
     if (visibleDirtyHashes.length) {
-      visibleDirtyHashes.sort((a, b) => a.hashY - b.hashY);
+      visibleDirtyHashes.sort((a, b) => b.hashY - a.hashY);
       while (memory > MAX_RENDERING_MEMORY && hashesToDelete.length) {
-        hashesToDelete.pop()!.hash.unload();
+        const deleted = hashesToDelete.pop();
+        if (deleted) {
+          deleted.hash.unload();
+        } else {
+          // should not happen
+          break;
+        }
         memory = this.totalMemory();
       }
 
@@ -260,7 +261,6 @@ export class CellsLabels {
         );
       return { hash: visibleDirtyHashes[0], visible: true };
     }
-
     // otherwise sort notVisible by distance from viewport center (by smallest to largest so we can use pop)
     notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
     const nextNotVisibleHash = notVisibleDirtyHashes[0];

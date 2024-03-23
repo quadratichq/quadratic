@@ -40,7 +40,10 @@ pub struct Sheet {
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
 
+    // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
+
+    // bounds for the gird with only formatting
     pub(super) format_bounds: GridBounds,
 }
 impl Sheet {
