@@ -19,8 +19,8 @@ export const ImportProgress = () => {
   useEffect(() => {
     const handleProgress = (message: CoreClientImportProgress) => {
       setFilename(message.filename);
-      const progress = Math.round((message.current / (message.total + 1)) * 100);
-      setTotal(message.total);
+      const progress = (message.current / (message.total * 2)) * 100;
+      setTotal(message.total * 2);
       setPercentage(progress);
       setShow(true);
     };
@@ -43,15 +43,16 @@ export const ImportProgress = () => {
     const transactionProgress = (message: CoreClientTransactionProgress) => {
       maxOperations = Math.max(maxOperations, message.remainingOperations);
       if (message.transactionId === transactionId) {
-        const newProgress = Math.floor(((total + (1 - message.remainingOperations / maxOperations)) / total) * 100);
-        setPercentage((progress) => {
-          if (!progress) return progress;
-          if (newProgress < progress) return progress;
-          return newProgress;
+        setPercentage((percentage) => {
+          if (!percentage) return percentage;
+          const operationPercentage = (1 - message.remainingOperations / maxOperations) * 50;
+          const final = 50 + operationPercentage;
+          if (final >= 100) {
+            // allow the bar to complete before removing it
+            setTimeout(() => setShow(false), 250);
+          }
+          return final;
         });
-        if (newProgress === 100) {
-          setShow(false);
-        }
       }
     };
     events.on('transactionStart', transactionStart);
