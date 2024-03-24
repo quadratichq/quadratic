@@ -1,39 +1,38 @@
-Quadratic Source Available License
+Quadratic Source Available License 
 ==================================
 
 THIS SUMMARY PROVIDES AN OVERVIEW OF THE KEY TERMS OF THIS LICENSE, BUT YOU
 ACKNOWLEDGE AND AGREE THE ACTUAL AGREEMENT IS SET FORTH IN THE TERMS IN SECTIONS
 BELOW.
 
-Summary
+Summary 
 -------
 
-You are free to do the following:
-- Read and reference the source code.
-- Install and use the Software and Derivatives for Your Personal Use.
-- Make Derivatives of the Software under your authorized Personal Use.
-- Submit Derivatives as contributions to Licensor.
+You are free to do the following: - Read and reference the source code. -
+Install and use the Software and Derivatives for Your Personal Use. - Make
+Derivatives of the Software under your authorized Personal Use. - Submit
+Derivatives as contributions to Licensor.
 
-You may not:
-- Distribute the Software or any Derivatives.
-- Deploy and use the Software inside of your business without a commercial license.
-- Resell or provide the software to any third parties.
-- Share the software or derivatives with any third parties.
+You may not: - Distribute the Software or any Derivatives. - Deploy and use the
+Software inside of your business without a commercial license. - Resell or
+provide the software to any third parties. - Share the software or derivatives
+with any third parties.
 
 No warranties are given and Licensor shall have no liability to you related to
 your use of the Software.
 
-Acceptance
-----------
+1. Acceptance 
+-------------
 
 This Software License Agreement (this “License”) is entered into on the
 Effective Date (defined below) by and between Quadratic Growth, Inc.
 (“Licensor”), and You (defined below).  
+
 By downloading or otherwise accessing or using the Software, You acknowledge and
 agree to be bound by the terms of this License.  The parties agree as follows. 
 
-DEFINITIONS
------------
+2. DEFINITIONS 
+--------------
 
 “Derivatives” means material created by You that is derived from or based upon
 the Software and in which the Software is added to or modified in a manner that
@@ -55,163 +54,169 @@ related to one or more of the uses above, or other similar uses.
 “You” means the individual or entity entering into this License. “Your” has a
 corresponding meaning.
 
-SCOPE
------
+3.  SCOPE 
+---------
 
-License grant. Subject to the terms and conditions of this License, the Licensor
-hereby grants You a limited, worldwide, royalty-free, non-sublicensable,
-non-transferrable, and non-exclusive license during the Term to (a) create
-Derivatives of the Software, in whole or in part, for Your Personal Use; (b) use
-one installed instance of the Software and any Derivatives solely for Your
-Personal Use; and (c) reproduce one copy of the Software and any Derivatives
-solely for Your backup purposes.
+3.1  License grant. Subject to the terms and conditions of this License, the
+Licensor hereby grants You a limited, worldwide, royalty-free,
+non-sublicensable, non-transferrable, and non-exclusive license during the Term
+to (a) create Derivatives of the Software, in whole or in part, for Your
+Personal Use; (b) use one installed instance of the Software and any Derivatives
+solely for Your Personal Use; and (c) reproduce one copy of the Software and any
+Derivatives solely for Your backup purposes.
 
-Restrictions.  For the avoidance of doubt, the license granted herein does not
-include any right or permission to: (a) distribute the Software or Derivatives;
-(c) share the Software or Derivatives with any third party; (c) offer the
-Software or Derivatives to the public or as part of a service bureau; (d) allow
-any third party to access or use the Software or Derivatives; (e) operate the
-Software or Derivatives in any collaborative, team, or multi-user environment;
-(f) host the Software or Derivatives on behalf of any third-party; and (g)
-disclose or publish all or any portion of the Software or Derivatives.
+3.2  Restrictions.  For the avoidance of doubt, the license granted herein does
+not include any right or permission to: (a) distribute the Software or
+Derivatives; (c) share the Software or Derivatives with any third party; (c)
+offer the Software or Derivatives to the public or as part of a service bureau;
+(d) allow any third party to access or use the Software or Derivatives; (e)
+operate the Software or Derivatives in any collaborative, team, or multi-user
+environment; (f) host the Software or Derivatives on behalf of any third-party;
+and (g) disclose or publish all or any portion of the Software or Derivatives.
 
-No endorsement. Nothing in this License constitutes or may be construed as
+3.3  No endorsement. Nothing in this License constitutes or may be construed as
 permission to assert or imply that You are, or that Your use of the Software is,
 connected with, or sponsored, endorsed, or granted official status by, the
 Licensor.
 
-No right to updates.  The license granted herein does not include any right to
-receive any improvements, updates, fixes, or new versions and Licensors reserves
-the right to offer such to You in its sole discretion.
+3.4  No right to updates.  The license granted herein does not include any right
+to receive any improvements, updates, fixes, or new versions and Licensors
+reserves the right to offer such to You in its sole discretion.
 
-Submitting Contributions to Licensor.  You may contribute Your Derivatives to
-Licensor’s GitHub repository, and you agree that if you make such contributions,
-they will be governed by  the terms of Licensor’s then-current contributor
-license agreement.  
+3.5 Submitting Contributions to Licensor.  You may contribute Your Derivatives
+to Licensor’s GitHub repository, and you agree that if you make such
+contributions, they will be governed by  the terms of Licensor’s then-current
+contributor license agreement.  
 
-INTELLECTUAL PROPERTY
----------------------
+4.  INTELLECTUAL PROPERTY 
+-------------------------
 
-Limited License. The Software is licensed, not sold. Licensor and its suppliers
-exclusively own and retain all rights, title, and interest in and to the
-Software, including all intellectual property rights therein. Notwithstanding
-anything to the contrary in this License, no license or right is granted in this
-License except as specifically and expressly stated herein. 
+4.1  Limited License. The Software is licensed, not sold. Licensor and its
+suppliers exclusively own and retain all rights, title, and interest in and to
+the Software, including all intellectual property rights therein.
+Notwithstanding anything to the contrary in this License, no license or right is
+granted in this License except as specifically and expressly stated herein. 
 
-Open Source Software. Certain items of independent, third-party code may be
+4.2  Open Source Software. Certain items of independent, third-party code may be
 included in the Software that are subject to open source licenses (“Open Source
 Software”). Nothing in this License limits You’s rights under, or grants You
 rights that supersede, the terms and conditions of any applicable end user
 license for such Open Source Software. 
 
-Feedback. If You provide any feedback, comments, or ideas to Licensor regarding
-the Software or improvements thereto (“Feedback”), You hereby grant Licensor a
-royalty-free, worldwide, transferable, sub-licensable, irrevocable, perpetual
-license to use or incorporate the Feedback into the Software.
+4.3  Feedback. If You provide any feedback, comments, or ideas to Licensor
+regarding the Software or improvements thereto (“Feedback”), You hereby grant
+Licensor a royalty-free, worldwide, transferable, sub-licensable, irrevocable,
+perpetual license to use or incorporate the Feedback into the Software.
 
-DISCLAIMER OF WARRANTIES AND LIMITATION OF LIABILITY
-----------------------------------------------------
+5.  DISCLAIMER OF WARRANTIES AND LIMITATION OF LIABILITY
+--------------------------------------------------------
 
-Disclaimer. To the extent allowed under applicable law, the Licensor provides
-the software as-is and as-available, and makes no representations or warranties
-of any kind concerning the software whether express, implied, statutory, or
-other. This includes, without limitation, warranties of title, merchantability,
-fitness for a particular purpose, non-infringement, absence of latent or other
-defects, accuracy, or the presence or absence of errors, whether or not known or
-discoverable. 
+5.1  Disclaimer. To the extent allowed under applicable law, the Licensor
+provides the software as-is and as-available, and makes no representations or
+warranties of any kind concerning the software whether express, implied,
+statutory, or other. This includes, without limitation, warranties of title,
+merchantability, fitness for a particular purpose, non-infringement, absence of
+latent or other defects, accuracy, or the presence or absence of errors, whether
+or not known or discoverable. 
 
-Limitation of Liability. To the greatest extent allowed by law, in no event will
-the Licensor be liable to You under any legal theory (including, without
+5.2  Limitation of LiabilitY. To the greatest extent allowed by law, in no event
+will the Licensor be liable to You under any legal theory (including, without
 limitation, negligence) or otherwise for any direct, special, indirect,
 incidental, consequential, punitive, exemplary, or other losses, costs,
 expenses, or damages arising out of this License or use of the Software, even if
 the Licensor has been advised of the possibility of such losses, costs,
 expenses, or damages. 
 
-Effect. The disclaimer of warranties and limitation of liability provided above
-shall be interpreted in a manner that, to the extent possible, most closely
-approximates an absolute disclaimer and waiver of all liability. 
+5.3  Effect. The disclaimer of warranties and limitation of liability provided
+above shall be interpreted in a manner that, to the extent possible, most
+closely approximates an absolute disclaimer and waiver of all liability. 
 
-TERM AND TERMINATION
---------------------
+6.  TERM AND TERMINATION 
+------------------------
 
-Term. This License shall commence on the Effective Date and continue for two
-years or until otherwise terminated as provided in this section (the “Term”).
-Termination for Cause.  If You fail to comply with this License, then Your
+6.1  Term. This License shall commence on the Effective Date and continue for
+two years or until otherwise terminated as provided in this section (the
+“Term”).
+
+6.2  Termination for Cause.  If You fail to comply with this License, then Your
 rights under this License terminate automatically.  
 
-Reinstatement.  Where Your right to use the Software has terminated under
+6.3  Reinstatement.  Where Your right to use the Software has terminated under
 Section 6.2, the license reinstates: (a) automatically as of the date the
 violation is cured, provided it is cured within thirty (30) days of Your
 discovery of the violation: or (b) upon express reinstatement by the Licensor.
-Termination by Licensor.  Licensor may terminate this License at any time for
-any reason by providing you written notice. Termination by You.  You may
-terminate this License by ceasing to use the Software and Derivatives and
-removing and permanently deleting any copies of the Software and Derivatives
-entirely from Your system.  
 
-Clarifications. For the avoidance of doubt, (a) the Licensor may also offer the
-Software under separate terms or conditions or stop distributing the Software at
-any time; however, doing so will not terminate this License, and (b) this
-Section 6 does not affect any right the Licensor may have to seek remedies for
-Your violations of this License. Sections 2, 3.5, 4, 5, 6.7, and 7 survive
-termination of this License.
+6.4  Termination by Licensor.  Licensor may terminate this License at any time
+for any reason by providing you written notice. 
 
-MISCELLANEOUS
--------------
+6.5  Termination by You.  You may terminate this License by ceasing to use the
+Software and Derivatives and removing and permanently deleting any copies of the
+Software and Derivatives entirely from Your system.  
 
-Assignment. You may not assign or transfer, by operation of law or otherwise,
-this License or any of its rights under this License to any third party without
-Licensor’s prior written consent, such consent shall not be unreasonably
-withheld or delayed.  The terms of this License will be binding upon the parties
-and their respective successors and permitted assigns. 
+6.6  Clarifications. For the avoidance of doubt, (a) the Licensor may also offer
+the Software under separate terms or conditions or stop distributing the
+Software at any time; however, doing so will not terminate this License, and (b)
+this Section 6 does not affect any right the Licensor may have to seek remedies
+for Your violations of this License. 
 
-Notices. To be effective, notices, consents, and approvals under this License
-must be delivered in writing by electronic mail, courier, or certified or
-registered mail, (postage prepaid and return receipt requested) to the other
+6.7 Sections 2, 3.5, 4, 5, 6.7, and 7 survive termination of this License.
+
+7.  MISCELLANEOUS 
+-----------------
+
+7.1  Assignment. You may not assign or transfer, by operation of law or
+otherwise, this License or any of its rights under this License to any third
+party without Licensor’s prior written consent, such consent shall not be
+unreasonably withheld or delayed.  The terms of this License will be binding
+upon the parties and their respective successors and permitted assigns. 
+
+7.2  Notices. To be effective, notices, consents, and approvals under this
+License must be delivered in writing by electronic mail, courier, or certified
+or registered mail, (postage prepaid and return receipt requested) to the other
 party at the address for each party and will be effective upon receipt, except
 that electronic mail may be used to distribute routine communications and to
 obtain approvals and consents but may not be used for any other notices. Each
 party may change its email address and/or address for receipt of notice by
 giving notice of such change to the other party. 
 
-Governing Law. This License will be governed by and interpreted in accordance
-with the laws of the State of Colorado without reference to its choice of law
-rules. If for any reason a dispute is of a nature that cannot be resolved
-through the arbitration provision provided herein, the parties hereby submit to
-the exclusive jurisdiction of, and waive any venue objections against, state or
-federal courts sitting in Denver, Colorado in any litigation arising out of this
-License or the Services. The United Nations Convention on Contracts for the
-International Sale of Goods does not apply to this License. 
+7.3  Governing Law. This License will be governed by and interpreted in
+accordance with the laws of the State of Colorado without reference to its
+choice of law rules. If for any reason a dispute is of a nature that cannot be
+resolved through the arbitration provision provided herein, the parties hereby
+submit to the exclusive jurisdiction of, and waive any venue objections against,
+state or federal courts sitting in Denver, Colorado in any litigation arising
+out of this License or the Services. The United Nations Convention on Contracts
+for the International Sale of Goods does not apply to this License. 
 
-Remedies. Except as otherwise expressly provided in this License, the parties’
-rights and remedies under this License are cumulative. Each party acknowledges
-and agrees that any actual or threatened breach of Sections 3.1, or 3.2 will
-constitute immediate, irreparable harm to the non-breaching party for which
-monetary damages would be an inadequate remedy, that injunctive relief is an
-appropriate remedy for such breach, and that if granted, the breaching party
+7.4 Remedies. Except as otherwise expressly provided in this License, the
+parties’ rights and remedies under this License are cumulative. Each party
+acknowledges and agrees that any actual or threatened breach of Sections 3.1, or
+3.2 will constitute immediate, irreparable harm to the non-breaching party for
+which monetary damages would be an inadequate remedy, that injunctive relief is
+an appropriate remedy for such breach, and that if granted, the breaching party
 agrees to waive any bond that would otherwise be required. If any legal action
 is brought by a party to enforce this License, the prevailing party will be
 entitled to receive its attorneys’ fees, court costs, and other legal expenses,
 in addition to any other relief it may receive from the non-prevailing party.
 
-Compliance with Laws. Each party shall comply with those laws, rules, and
+7.5  Compliance with Laws. Each party shall comply with those laws, rules, and
 regulations in jurisdictions within the United States that are specifically
 applicable to the applicable party. 
 
-Waivers. To be effective, any waivers must be in writing and signed by the party
-to be charged. Any waiver or failure to enforce any provision of this License on
-one occasion will not be deemed a waiver of any other provision or of such
-provision on any other occasion.
+7.6  Waivers. To be effective, any waivers must be in writing and signed by the
+party to be charged. Any waiver or failure to enforce any provision of this
+License on one occasion will not be deemed a waiver of any other provision or of
+such provision on any other occasion.
 
-Severability. If any provision of this License is, for any reason, held to be
-unenforceable, the other provisions of this License will be unimpaired, and the
-invalid or unenforceable provision will be deemed modified so that it is valid
-and enforceable to the maximum extent permitted by law (unless such modification
-is not permitted by law, in which case such provision will be disregarded).
+7.7  Severability. If any provision of this License is, for any reason, held to
+be unenforceable, the other provisions of this License will be unimpaired, and
+the invalid or unenforceable provision will be deemed modified so that it is
+valid and enforceable to the maximum extent permitted by law (unless such
+modification is not permitted by law, in which case such provision will be
+disregarded).
 
-Entire License. This License constitutes the final and entire agreement between
-the parties regarding the subject hereof and supersedes all other agreements,
-whether written or oral, between the parties concerning such subject matter. No
-amendment to this License will be effective unless in writing and signed by the
-party to be charged.
+7.8  Entire License. This License constitutes the final and entire agreement
+between the parties regarding the subject hereof and supersedes all other
+agreements, whether written or oral, between the parties concerning such subject
+matter. No amendment to this License will be effective unless in writing and
+signed by the party to be charged.
