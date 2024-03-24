@@ -1,10 +1,12 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import { ClientPythonMessage, PythonClientMessage } from '../pythonClientMessages';
+import { pythonCore } from './pythonCore';
 
 declare var self: WorkerGlobalScope & typeof globalThis & {};
 
 class PythonClient {
   start() {
+    self.onmessage = this.handleMessage;
     if (debugWebWorkers) console.log('[pythonClient] initialized.');
   }
 
@@ -16,6 +18,11 @@ class PythonClient {
     if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
+      case 'clientPythonCoreChannel':
+        pythonCore.init(e.ports[0]);
+        break;
+      default:
+        console.warn('[coreClient] Unhandled message type', e.data);
     }
   };
 

@@ -1,13 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { debugWebWorkers } from '@/debugFlags';
 import { PyodideInterface, loadPyodide } from 'pyodide';
+import { CorePythonRun } from '../pythonCoreMessages';
+import { InspectPython, PythonError, PythonSuccess } from '../pythonTypes';
 import { pythonClient } from './pythonClient';
 import { pythonCore } from './pythonCore';
 
 const TRY_AGAIN_TIMEOUT = 500;
-
-// declare var self: WorkerGlobalScope &
-//   typeof globalThis & {
-//   };
 
 class Python {
   private pyodide: PyodideInterface | undefined;
@@ -55,6 +54,72 @@ class Python {
     if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
     pythonClient.sendPythonLoaded(pythonVersion);
   };
+
+  private async inspectPython(pythonCode: string): Promise<InspectPython | undefined> {
+    if (!this.pyodide) {
+      console.warn('Python not loaded');
+    } else {
+      const output = await this.pyodide.globals.get('inspect_python')(pythonCode);
+
+      if (output === undefined) {
+        return undefined;
+      }
+
+      return Object.fromEntries(output.toJs()) as InspectPython;
+    }
+  }
+
+  async runPython(message: CorePythonRun) {
+    if (!this.pyodide) {
+      console.warn('Python not loaded');
+      return;
+    }
+
+    // make sure loading is done
+    if (!this.pyodide) {
+      console.warn('do something with the python message...probably a queue or something');
+    } else {
+      // auto load packages
+      await this.pyodide.loadPackagesFromImports(message.code);
+
+      let result: any; // result of Python execution
+      let pythonRun: any;
+      let output: PythonSuccess | PythonError | undefined;
+      let inspectionResults: InspectPython | undefined;
+      try {
+        result = await this.pyodide.globals.get('run_python')(message.code, [message.x, message.y]);
+        output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
+        inspectionResults = await this.inspectPython(message.code || '');
+
+        pythonRun = {
+          ...output,
+          ...inspectionResults,
+        };
+      } catch (e) {
+        // gracefully recover from deserialization errors
+        console.warn(e);
+        if (output) {
+          pythonRun = output;
+        } else {
+          pythonRun = {} as PythonError;
+        }
+        pythonRun = {
+          ...pythonRun,
+          array_output: [],
+          typed_array_output: [],
+          success: false,
+          std_err: String(e),
+          input_python_stack_trace: String(e),
+        };
+      }
+      if (pythonRun) {
+        pythonCore.sendPythonResults(message.transactionId, pythonRun);
+      }
+
+      // destroy the output as it can cause memory leaks
+      if (result) result.destroy();
+    }
+  }
 }
 
 export const python = new Python();

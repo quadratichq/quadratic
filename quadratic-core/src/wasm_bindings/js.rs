@@ -21,15 +21,15 @@ extern "C" {
     pub fn jsTime(name: String);
     pub fn jsTimeEnd(name: String);
 
-    pub fn runPython(
+    pub fn jsRunPython(
         transactionId: String,
         x: i32,
         y: i32,
         sheet_id: String,
         code: String,
     ) -> JsValue;
-    pub fn addUnsentTransaction(transaction_id: String, transaction: String);
 
+    pub fn addUnsentTransaction(transaction_id: String, transaction: String);
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
 
     // cells: Vec<JsRenderCell>

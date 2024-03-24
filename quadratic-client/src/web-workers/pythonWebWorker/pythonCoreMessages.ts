@@ -1,8 +1,9 @@
-import { PythonReturnType } from './pythonTypes';
+import { JsCodeResult } from '@/quadratic-core-types';
+import { PythonRun } from './pythonTypes';
 
 export interface CorePythonRun {
   type: 'corePythonRun';
-  transactionId: number;
+  transactionId: string;
   sheetId: string;
   x: number;
   y: number;
@@ -11,14 +12,15 @@ export interface CorePythonRun {
 
 export interface PythonCoreCalculationComplete {
   type: 'pythonCoreCalculationComplete';
+  result: JsCodeResult;
 }
 
 export interface PythonCoreResults {
   type: 'pythonCoreResults';
-  transactionId: number;
-  results: PythonReturnType;
+  transactionId: string;
+  results: PythonRun;
 }
 
 export type CorePythonMessage = CorePythonRun;
 
-export type PythonCoreMessage = PythonCoreCalculationComplete;
+export type PythonCoreMessage = PythonCoreCalculationComplete | PythonCoreResults;

@@ -12,7 +12,6 @@ import {
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    runPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     addTransaction: (transactionId: string, operations: string) => void;
     sendTransaction: (transactionId: string, operations: string) => void;
     sendImportProgress: (
@@ -65,11 +64,8 @@ declare var self: WorkerGlobalScope &
       h?: number
     ) => void;
     sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
+    jsRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
   };
-
-export const runPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
-  self.runPython(transactionId, x, y, sheetId, code);
-};
 
 export const addUnsentTransaction = (transactionId: string, operations: string) => {
   // todo...
@@ -190,4 +186,8 @@ export const jsTransactionStart = (
 
 export const jsTransactionProgress = (transactionId: String, remainingOperations: number) => {
   self.sendTransactionProgress(transactionId, remainingOperations);
+};
+
+export const jsRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  self.jsRunPython(transactionId, x, y, sheetId, code);
 };

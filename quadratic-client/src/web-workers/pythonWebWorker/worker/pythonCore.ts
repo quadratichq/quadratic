@@ -1,5 +1,7 @@
-import { debugWebWorkersMessages } from '@/debugFlags';
+import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import { CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
+import { PythonRun } from '../pythonTypes';
+import { python } from './python';
 
 class PythonCore {
   private coreMessagePort?: MessagePort;
@@ -9,6 +11,8 @@ class PythonCore {
   init(messagePort: MessagePort) {
     this.coreMessagePort = messagePort;
     this.coreMessagePort.onmessage = this.handleMessage;
+
+    if (debugWebWorkers) console.log('[pythonCore] initialized');
   }
 
   private send(message: PythonCoreMessage) {
@@ -20,6 +24,12 @@ class PythonCore {
     if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
+      case 'corePythonRun':
+        python.runPython(e.data);
+        break;
+
+      default:
+        console.warn('[coreClient] Unhandled message type', e.data);
     }
 
     // if (e.data.id) {
@@ -30,6 +40,14 @@ class PythonCore {
     //   }
     // }
   };
+
+  sendPythonResults(transactionId: string, results: PythonRun) {
+    this.send({
+      type: 'pythonCoreResults',
+      transactionId,
+      results,
+    });
+  }
 
   sendGetCells(
     x0: number,

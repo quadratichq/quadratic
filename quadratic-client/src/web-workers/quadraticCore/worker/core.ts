@@ -11,6 +11,7 @@ import {
   CellFormatSummary,
   CodeCellLanguage,
   JsCodeCell,
+  JsCodeResult,
   JsRenderCell,
   MinMax,
   SearchOptions,
@@ -18,6 +19,7 @@ import {
 } from '@/quadratic-core-types';
 import initCore, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import { PythonRun } from '@/web-workers/pythonWebWorker/pythonTypes';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
@@ -742,6 +744,23 @@ class Core {
         resolve(undefined);
       });
     });
+  }
+
+  calculationComplete(transactionId: string, results: PythonRun) {
+    const codeResult: JsCodeResult = {
+      transaction_id: transactionId,
+      success: results.success,
+      formatted_code: results.formatted_code,
+      error_msg: results.std_err,
+      input_python_std_out: results.std_out,
+      output_value: results.output ? (results.output as any as string[]) : null,
+      array_output: (results.array_output as any as string[][][]) ?? null,
+      line_number: results.lineno ?? null,
+      output_type: results.output_type ?? null,
+      cancel_compute: false,
+    };
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
 }
 

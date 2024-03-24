@@ -5,7 +5,7 @@ import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
 import { ClientPythonMessage, PythonClientMessage } from './pythonClientMessages';
-import { PythonReturnType } from './pythonTypes';
+import { PythonRun } from './pythonTypes';
 
 interface PythonCode {
   transactionId: string;
@@ -246,7 +246,7 @@ class PythonWebWorker {
     this.worker.postMessage({ type: 'get-cells', cells: JSON.parse(cells) });
   }
 
-  changeOutput(_: Record<string, PythonReturnType>): void {}
+  changeOutput(_: Record<string, PythonRun>): void {}
 }
 
 export const pythonWebWorker = new PythonWebWorker();

@@ -1,13 +1,13 @@
-import { PythonReturnType } from '../pythonWebWorker/pythonTypes';
+import { PythonRun } from '../pythonWebWorker/pythonTypes';
 
 class PythonWebWorker {
-  private output?: Record<string, PythonReturnType>;
+  private output?: Record<string, PythonRun>;
 
-  changeOutput(output: Record<string, PythonReturnType>) {
+  changeOutput(output: Record<string, PythonRun>) {
     this.output = output;
   }
 
-  async run(python_code: string): Promise<PythonReturnType> {
+  async run(python_code: string): Promise<PythonRun> {
     if (!this.output) {
       throw new Error('Call webWorkers.pythonWebWorker.changeOutput to set mocked output');
     }
