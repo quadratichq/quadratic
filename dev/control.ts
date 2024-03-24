@@ -454,10 +454,7 @@ export class Control {
     );
     this.ui.printOutput("python", (data) =>
       this.handleResponse("python", data, {
-        success: [
-          "Built quadratic_py",
-          "clean exit - waiting for changes before restart",
-        ],
+        success: "Python complete",
         error: "Python error!",
         start: "quadratic-kernels/python-wasm/",
       })

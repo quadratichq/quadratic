@@ -377,10 +377,7 @@ export class Control {
         this.signals.python = new AbortController();
         this.python = spawn("npm", ["run", this.cli.options.python ? "watch:python" : "build:python"], { signal: this.signals.python.signal });
         this.ui.printOutput("python", (data) => this.handleResponse("python", data, {
-            success: [
-                "Built quadratic_py",
-                "clean exit - waiting for changes before restart",
-            ],
+            success: "Python complete",
             error: "Python error!",
             start: "quadratic-kernels/python-wasm/",
         }));
