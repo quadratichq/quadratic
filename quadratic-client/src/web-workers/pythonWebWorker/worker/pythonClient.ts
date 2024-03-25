@@ -1,5 +1,6 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { ClientPythonMessage, PythonClientMessage } from '../pythonClientMessages';
+import { ClientPythonMessage, PythonClientMessage, PythonStateType } from '../pythonClientMessages';
+import { CorePythonRun } from '../pythonCoreMessages';
 import { pythonCore } from './pythonCore';
 
 declare var self: WorkerGlobalScope & typeof globalThis & {};
@@ -30,8 +31,18 @@ class PythonClient {
     this.send({ type: 'pythonClientLoadError', error: message });
   }
 
-  sendPythonLoaded(version: string) {
-    this.send({ type: 'pythonClientLoaded', version });
+  sendPythonState(
+    state: PythonStateType,
+    options?: { version?: string; error?: string; current?: CorePythonRun; awaitingExecution?: CorePythonRun[] }
+  ) {
+    this.send({
+      type: 'pythonClientState',
+      state,
+      version: options?.version,
+      error: options?.error,
+      current: options?.current,
+      awaitingExecution: options?.awaitingExecution,
+    });
   }
 }
 

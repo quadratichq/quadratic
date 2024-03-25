@@ -751,6 +751,12 @@ export interface CoreClientTransactionProgress {
   remainingOperations: number;
 }
 
+export interface CoreClientUpdateCodeCell {
+  type: 'coreClientUpdateCodeCell';
+  sheetId: string;
+  codeCell: JsCodeCell;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -844,4 +850,5 @@ export type CoreClientMessage =
   | CoreClientSheetBoundsUpdate
   | CoreClientImportProgress
   | CoreClientTransactionStart
-  | CoreClientTransactionProgress;
+  | CoreClientTransactionProgress
+  | CoreClientUpdateCodeCell;

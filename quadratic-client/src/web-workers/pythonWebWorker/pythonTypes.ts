@@ -48,6 +48,7 @@ export interface PythonError {
 
   output: undefined;
   output_type: undefined;
+  output_size: undefined;
   array_output: undefined;
 
   success: false;

@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { debugWebWorkers } from '@/debugFlags';
 import { PyodideInterface, loadPyodide } from 'pyodide';
+import { PythonStateType } from '../pythonClientMessages';
 import { CorePythonRun } from '../pythonCoreMessages';
 import { InspectPython, PythonError, PythonSuccess } from '../pythonTypes';
 import { pythonClient } from './pythonClient';
@@ -10,8 +10,12 @@ const TRY_AGAIN_TIMEOUT = 500;
 
 class Python {
   private pyodide: PyodideInterface | undefined;
+  private awaitingExecution: CorePythonRun[];
+  private state!: PythonStateType;
 
   constructor() {
+    this.awaitingExecution = [];
+    this.state = 'loading';
     this.init();
   }
 
@@ -44,6 +48,7 @@ class Python {
     } catch (e: any) {
       pythonClient.sendPythonLoadError(e?.message);
       console.warn(`[Python WebWorker] failed to load`, e);
+      this.state = 'error';
       setTimeout(this.init, TRY_AGAIN_TIMEOUT);
       return;
     }
@@ -52,7 +57,22 @@ class Python {
     const pyodideVersion = this.pyodide.version;
 
     if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
-    pythonClient.sendPythonLoaded(pythonVersion);
+    pythonClient.sendPythonState('ready', { version: pythonVersion });
+    this.state = 'ready';
+    this.next();
+  };
+
+  private next = async () => {
+    if (this.state === 'ready' && this.awaitingExecution.length > 0) {
+      this.state = 'running';
+      const run = this.awaitingExecution.shift();
+      if (run) {
+        pythonClient.sendPythonState('running', { current: run, awaitingExecution: this.awaitingExecution });
+        await this.runPython(run);
+        pythonClient.sendPythonState('ready', { current: undefined });
+        this.state = 'ready';
+      }
+    }
   };
 
   private async inspectPython(pythonCode: string): Promise<InspectPython | undefined> {
@@ -70,55 +90,58 @@ class Python {
   }
 
   async runPython(message: CorePythonRun) {
-    if (!this.pyodide) {
-      console.warn('Python not loaded');
+    if (!this.pyodide || this.state !== 'ready') {
+      this.awaitingExecution.push(message);
       return;
     }
 
-    // make sure loading is done
-    if (!this.pyodide) {
-      console.warn('do something with the python message...probably a queue or something');
-    } else {
-      // auto load packages
-      await this.pyodide.loadPackagesFromImports(message.code);
+    // auto load packages
+    await this.pyodide.loadPackagesFromImports(message.code);
 
-      let result: any; // result of Python execution
-      let pythonRun: any;
-      let output: PythonSuccess | PythonError | undefined;
-      let inspectionResults: InspectPython | undefined;
-      try {
-        result = await this.pyodide.globals.get('run_python')(message.code, [message.x, message.y]);
-        output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
-        inspectionResults = await this.inspectPython(message.code || '');
-
-        pythonRun = {
-          ...output,
-          ...inspectionResults,
-        };
-      } catch (e) {
-        // gracefully recover from deserialization errors
-        console.warn(e);
-        if (output) {
-          pythonRun = output;
-        } else {
-          pythonRun = {} as PythonError;
-        }
-        pythonRun = {
-          ...pythonRun,
-          array_output: [],
-          typed_array_output: [],
-          success: false,
-          std_err: String(e),
-          input_python_stack_trace: String(e),
-        };
-      }
-      if (pythonRun) {
-        pythonCore.sendPythonResults(message.transactionId, pythonRun);
+    let result: any; // result of Python execution
+    let pythonRun: any;
+    let output: PythonSuccess | PythonError | undefined;
+    let inspectionResults: InspectPython | undefined;
+    try {
+      result = await this.pyodide.globals.get('run_python')(message.code, [message.x, message.y]);
+      output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
+      inspectionResults = await this.inspectPython(message.code || '');
+      let outputType = output?.output_type || '';
+      if (output.output_size) {
+        outputType = `${output.output_size[0]}x${output.output_size[1]} ${outputType}`;
       }
 
-      // destroy the output as it can cause memory leaks
-      if (result) result.destroy();
+      pythonRun = {
+        ...output,
+        ...inspectionResults,
+        outputType,
+      };
+    } catch (e) {
+      // gracefully recover from deserialization errors
+      console.warn(e);
+      if (output) {
+        pythonRun = output;
+      } else {
+        pythonRun = {} as PythonError;
+      }
+      pythonRun = {
+        ...pythonRun,
+        array_output: [],
+        typed_array_output: [],
+        success: false,
+        std_err: String(e),
+        input_python_stack_trace: String(e),
+      };
     }
+    if (pythonRun) {
+      pythonCore.sendPythonResults(message.transactionId, pythonRun);
+    }
+
+    // destroy the output as it can cause memory leaks
+    if (result) result.destroy();
+
+    this.state = 'ready';
+    setTimeout(this.next, 0);
   }
 }
 

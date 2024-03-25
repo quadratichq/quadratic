@@ -1,4 +1,5 @@
 import {
+  JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
   JsRenderCodeCell,
@@ -6,6 +7,7 @@ import {
   SheetBounds,
   SheetInfo,
 } from '@/quadratic-core-types';
+import { PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
 import {
   CoreClientImportProgress,
   CoreClientTransactionProgress,
@@ -33,8 +35,8 @@ interface EventTypes {
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
 
-  pythonLoaded: (version: string) => void;
-  pythonError: (error?: string) => void;
+  pythonState: (state: PythonStateType, version?: string) => void;
+  updateCodeCell: (sheetId: string, codeCell: JsCodeCell) => void;
 
   importProgress: (message: CoreClientImportProgress) => void;
   transactionStart: (message: CoreClientTransactionStart) => void;

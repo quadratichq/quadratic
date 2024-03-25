@@ -1,4 +1,4 @@
-import { Coordinate, SheetPos } from '@/gridGL/types/size';
+import { Coordinate, SheetPosTS } from '@/gridGL/types/size';
 import { Rectangle } from 'pixi.js';
 
 export interface CellEdit {
@@ -34,7 +34,7 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   color: number;
   index: number;
   colorString: string;
-  parsedCodeRunning: SheetPos[];
+  parsedCodeRunning: SheetPosTS[];
   parsedSelection?: { cursor: Coordinate; rectangle: Rectangle };
 }
 

@@ -16,7 +16,7 @@ import BottomBarItem from './BottomBarItem';
 
 const uiLabelByPythonState: Record<PythonState['pythonState'], string> = {
   error: 'error loading',
-  idle: 'idle',
+  ready: 'idle',
   loading: 'loading…',
   running: 'executing…',
 };
@@ -56,7 +56,7 @@ const PythonStateItem = () => {
       >
         {pythonLabel}
       </BottomBarItem>
-    ) : pythonState === 'idle' ? (
+    ) : pythonState === 'ready' ? (
       <BottomBarItem
         onClick={() => {}}
         icon={<Check fontSize="inherit" />}

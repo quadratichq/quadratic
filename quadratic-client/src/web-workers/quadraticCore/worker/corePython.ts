@@ -4,7 +4,7 @@ import { core } from './core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    jsRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
   };
 
 class CorePython {
@@ -13,6 +13,7 @@ class CorePython {
   init(pythonPort: MessagePort) {
     this.corePythonPort = pythonPort;
     this.corePythonPort.onmessage = this.handleMessage;
+    self.sendRunPython = corePython.sendRunPython;
     if (debugWebWorkers) console.log('[corePython] initialized');
   }
 
@@ -48,5 +49,3 @@ class CorePython {
 }
 
 export const corePython = new CorePython();
-
-self.jsRunPython = corePython.sendRunPython;

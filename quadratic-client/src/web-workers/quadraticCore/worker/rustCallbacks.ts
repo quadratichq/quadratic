@@ -1,6 +1,7 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
 import {
+  JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
   JsRenderCodeCell,
@@ -64,7 +65,8 @@ declare var self: WorkerGlobalScope &
       h?: number
     ) => void;
     sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
-    jsRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendUpdateCodeCell: (sheetId: string, codeCell: JsCodeCell) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, operations: string) => {
@@ -189,5 +191,10 @@ export const jsTransactionProgress = (transactionId: String, remainingOperations
 };
 
 export const jsRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
-  self.jsRunPython(transactionId, x, y, sheetId, code);
+  self.sendRunPython(transactionId, x, y, sheetId, code);
+};
+
+export const jsUpdateCodeCell = (sheetId: string, codeCellStringified: string) => {
+  const codeCell = JSON.parse(codeCellStringified) as JsCodeCell;
+  self.sendUpdateCodeCell(sheetId, codeCell);
 };

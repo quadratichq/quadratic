@@ -2,6 +2,7 @@ import { events } from '@/events/events';
 import { useUndo } from '@/events/useUndo';
 import { useRootRouteLoaderData } from '@/router';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -24,38 +25,15 @@ export default function QuadraticApp() {
 
   // recoil tracks python state
   useEffect(() => {
-    const loaded = (version: string) =>
+    const state = (state: PythonStateType, version?: string) =>
       setLoadedState((prevState) => ({
         ...prevState,
-        version,
-        pythonState: 'idle',
+        version: version ?? prevState.version,
+        pythonState: state,
       }));
-    const error = () =>
-      setLoadedState((prevState) => ({
-        ...prevState,
-        pythonState: 'error',
-      }));
-    events.on('pythonLoaded', loaded);
-    events.on('pythonError', error);
-
-    const computationStarted = () =>
-      setLoadedState((prevState) => ({
-        ...prevState,
-        pythonState: 'running',
-      }));
-    const computationFinished = () =>
-      setLoadedState((prevState) => ({
-        ...prevState,
-        pythonState: 'idle',
-      }));
-    window.addEventListener('python-computation-started', computationStarted);
-    window.addEventListener('python-computation-finished', computationFinished);
+    events.on('pythonState', state);
     return () => {
-      events.off('pythonLoaded', loaded);
-      events.off('pythonError', error);
-
-      window.removeEventListener('python-computation-started', computationStarted);
-      window.removeEventListener('python-computation-finished', computationFinished);
+      events.off('pythonState', state);
     };
   }, [setLoadedState]);
 

@@ -14,8 +14,6 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { Formula, Python } from '../../icons';
 import { SnippetsPopover } from './SnippetsPopover';
 
-// todo: fix types
-
 interface Props {
   cellLocation: Coordinate | undefined;
   unsaved: boolean;

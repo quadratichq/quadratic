@@ -1,7 +1,8 @@
+import { PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
 import { atom } from 'recoil';
 
 export interface PythonState {
-  pythonState: 'loading' | 'idle' | 'error' | 'running';
+  pythonState: PythonStateType;
   version: string;
 }
 

@@ -7,6 +7,7 @@
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import {
+  JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
   JsRenderCodeCell,
@@ -60,6 +61,7 @@ declare var self: WorkerGlobalScope &
       h?: number
     ) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
+    sendUpdateCodeCell: (sheetId: string, codeCell: JsCodeCell) => void;
   };
 
 class CoreClient {
@@ -81,6 +83,7 @@ class CoreClient {
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
     self.sendTransactionStart = coreClient.sendTransactionStart;
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
+    self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -561,6 +564,10 @@ class CoreClient {
 
   sendTransactionProgress = (transactionId: string, remainingOperations: number) => {
     this.send({ type: 'coreClientTransactionProgress', transactionId, remainingOperations });
+  };
+
+  sendUpdateCodeCell = (sheetId: string, codeCell: JsCodeCell) => {
+    this.send({ type: 'coreClientUpdateCodeCell', sheetId, codeCell });
   };
 }
 

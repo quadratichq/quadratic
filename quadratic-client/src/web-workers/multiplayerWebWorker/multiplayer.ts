@@ -6,7 +6,7 @@ import { sheets } from '@/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
-import { SheetPos } from '@/gridGL/types/size';
+import { SheetPosTS } from '@/gridGL/types/size';
 import { displayName } from '@/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
@@ -201,7 +201,7 @@ export class Multiplayer {
     this.send({ type: 'clientMultiplayerViewport', viewport });
   }
 
-  sendCodeRunning(sheetPos: SheetPos[]) {
+  sendCodeRunning(sheetPos: SheetPosTS[]) {
     this.send({ type: 'clientMultiplayerCodeRunning', sheetPos: JSON.stringify(sheetPos) });
   }
 

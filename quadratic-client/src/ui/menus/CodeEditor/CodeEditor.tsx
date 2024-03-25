@@ -10,7 +10,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
-import { Pos } from '@/quadratic-core-types';
+import { events } from '@/events/events';
+import { JsCodeCell, Pos } from '@/quadratic-core-types';
 import { googleAnalyticsAvailable } from '@/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -91,27 +92,28 @@ export const CodeEditor = () => {
   }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
 
   const updateCodeCell = useCallback(
-    async (updateEditorContent: boolean) => {
+    async (pushCodeCell?: JsCodeCell) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
       if (!editorInteractionState.selectedCellSheet) return;
-      const codeCell = await quadraticCore.getCodeCell(
-        editorInteractionState.selectedCellSheet,
-        editorInteractionState.selectedCell.x,
-        editorInteractionState.selectedCell.y
-      );
+      const codeCell =
+        pushCodeCell ??
+        (await quadraticCore.getCodeCell(
+          editorInteractionState.selectedCellSheet,
+          editorInteractionState.selectedCell.x,
+          editorInteractionState.selectedCell.y
+        ));
 
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
 
-        if (updateEditorContent) setEditorContent(codeCell.code_string);
-
+        if (!pushCodeCell) setEditorContent(codeCell.code_string);
         const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
-        if (updateEditorContent) setEditorContent('');
+        if (!pushCodeCell) setEditorContent('');
         setEvaluationResult(undefined);
         setOut(undefined);
       }
@@ -123,15 +125,24 @@ export const CodeEditor = () => {
     ]
   );
 
+  // ensure codeCell is created w/content and updated when it receives a change request from Rust
   useEffect(() => {
-    updateCodeCell(true);
+    updateCodeCell();
 
-    const update = () => updateCodeCell(false);
-    window.addEventListener('code-cells-update', update);
-    return () => {
-      window.removeEventListener('code-cells-update', update);
+    const update = (sheetId: string, codeCell: JsCodeCell) => {
+      if (
+        sheetId === cellLocation.sheetId ||
+        Number(codeCell.x) === cellLocation.x ||
+        Number(codeCell.y) === cellLocation.y
+      ) {
+        updateCodeCell(codeCell);
+      }
     };
-  }, [updateCodeCell]);
+    events.on('updateCodeCell', update);
+    return () => {
+      events.off('updateCodeCell', update);
+    };
+  }, [cellLocation.sheetId, cellLocation.x, cellLocation.y, updateCodeCell]);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEffect(() => {

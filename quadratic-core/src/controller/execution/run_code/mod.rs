@@ -119,11 +119,13 @@ impl GridController {
                         crate::wasm_bindings::js::jsUpdateHtml(html);
                     }
                 }
+                if let Some(code_cell) = sheet.edit_code_value(sheet_pos.into()) {
+                    if let Ok(code_cell) = serde_json::to_string(&code_cell) {
+                        crate::wasm_bindings::js::jsUpdateCodeCell(sheet_id.to_string(), code_cell);
+                    }
+                }
             }
         }
-
-        // *** todo: we need to return the code cell to JS here as well (could be we send all the code cells in the sheet for simplicity)
-        // transaction.summary.code_cells_modified.insert(sheet_id);
 
         self.send_updated_bounds_rect(&sheet_rect, false);
         self.send_render_cells(&sheet_rect);
