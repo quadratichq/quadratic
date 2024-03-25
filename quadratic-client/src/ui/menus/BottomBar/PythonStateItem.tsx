@@ -10,7 +10,7 @@ import {
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
 import { Check, ErrorOutline, Refresh, Stop } from '@mui/icons-material';
 import { CircularProgress, useTheme } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import BottomBarItem from './BottomBarItem';
 
@@ -26,19 +26,6 @@ const PythonStateItem = () => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const pythonLabel = 'Python 3.11.3';
-
-  // If the user tries to edit something on the grid while Python is running,
-  // we'll pop this up to let them know the sheet is busy
-  useEffect(() => {
-    const handle = () => setOpen(true);
-    window.addEventListener('transaction-busy', handle);
-    return () => window.removeEventListener('transaction-busy', handle);
-  }, []);
-  useEffect(() => {
-    const handle = () => setOpen(false);
-    window.addEventListener('transaction-complete', handle);
-    return () => window.addEventListener('transaction-complete', handle);
-  });
 
   // FYI: we provide an empty onClick because the shadcn DropdownMenu will handle
   // the open/close of the menu itself, so this is a compatibility thing. Eventually
