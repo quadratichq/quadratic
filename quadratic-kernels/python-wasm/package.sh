@@ -40,3 +40,5 @@ find . -name "*.whl" -exec cp '{}' "${SCRIPT_DIR}/../../quadratic-client/public/
 popd
 
 popd-quiet
+
+echo "Python complete."
