@@ -167,6 +167,7 @@ where
                         LocalResult::Single(timestamp) => timestamp.format("%H:%M:%S").to_string(),
                         _ => "".into(),
                     };
+                    // TODO(ddimaria): convert to Instant when they're implement
                     CellValue::Text(timestamp)
                 })
                 .collect::<Vec<CellValue>>(),
@@ -188,6 +189,7 @@ fn arryow_timestamp_to_cell_values(array_data: ArrayData) -> Vec<CellValue> {
                         .timestamp_nanos(*v)
                         .format("%Y-%m-%d %H:%M:%S")
                         .to_string();
+                    // TODO(ddimaria): convert to Instant when they're implement
                     CellValue::Text(timestamp)
                 })
                 .collect::<Vec<CellValue>>(),

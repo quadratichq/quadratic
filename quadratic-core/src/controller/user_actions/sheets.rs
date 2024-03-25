@@ -25,7 +25,14 @@ impl GridController {
     }
 
     pub fn add_sheet(&mut self, cursor: Option<String>) -> TransactionSummary {
-        let ops = self.add_sheet_operations();
+        self.add_sheet_with_name(cursor, None)
+    }
+    pub fn add_sheet_with_name(
+        &mut self,
+        cursor: Option<String>,
+        name: Option<String>,
+    ) -> TransactionSummary {
+        let ops = self.add_sheet_operations(name);
         self.start_user_transaction(ops, cursor)
     }
     pub fn delete_sheet(

@@ -62,12 +62,11 @@ impl GridController {
     /// Imports an Excel file into the grid.
     pub fn import_excel_operations(
         &mut self,
-        sheet_id: SheetId,
         file: Vec<u8>,
         file_name: &str,
-        insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
+        let insert_at = Pos::default();
         let mut cell_values = vec![];
         let error =
             |message: String| anyhow!("Error parsing Excel file {}: {}", file_name, message);
@@ -77,48 +76,66 @@ impl GridController {
             ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
         let sheets = workbook.sheet_names().to_owned();
 
-        for sheet in sheets {
-            let range = workbook
-                .worksheet_range(&sheet)
-                .map_err(|e: XlsxError| error(e.to_string()))?;
-            let size: (usize, usize) = range.get_size();
+        for sheet_name in sheets {
+            // add the sheet
+            let add_sheet_operations = self.add_sheet_operations(Some(sheet_name.to_owned()));
+            // TODO(ddimaria): remove this clone
+            if let Operation::AddSheet { sheet } = add_sheet_operations[0].clone() {
+                let sheet_id = sheet.id;
+                ops.extend(add_sheet_operations);
 
-            for row in range.rows() {
-                for (_col_index, col) in row.into_iter().enumerate() {
-                    let cell_value = match col {
-                        ExcelData::Empty => CellValue::Blank,
-                        ExcelData::String(value) => CellValue::Text(value.to_string()),
-                        ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
-                        ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
-                        ExcelData::Float(ref value) => {
-                            CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
-                        }
-                        ExcelData::DateTime(ref value) => match value.is_datetime() {
-                            true => value
-                                .as_datetime()
-                                .map_or_else(|| CellValue::Blank, |v| CellValue::Instant(v.into())),
-                            false => CellValue::Text(value.to_string()),
-                        },
-                        ExcelData::Int(ref value) => {
-                            CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
-                        }
-                        ExcelData::Error(_) => CellValue::Blank,
-                        ExcelData::Bool(value) => CellValue::Logical(*value),
-                    };
+                let range = workbook
+                    .worksheet_range(&sheet_name)
+                    .map_err(|e: XlsxError| error(e.to_string()))?;
+                let size: (usize, usize) = range.get_size();
 
-                    cell_values.push(cell_value);
+                for row in range.rows() {
+                    for (_col_index, col) in row.into_iter().enumerate() {
+                        let cell_value = match col {
+                            ExcelData::Empty => CellValue::Blank,
+                            ExcelData::String(value) => CellValue::Text(value.to_string()),
+                            ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
+                            ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
+                            ExcelData::Float(ref value) => {
+                                CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
+                            }
+                            // TODO(ddimaria): implement when implementing Instant
+                            // ExcelData::DateTime(ref value) => match value.is_datetime() {
+                            //     true => value.as_datetime().map_or_else(
+                            //         || CellValue::Blank,
+                            //         |v| CellValue::Instant(v.into()),
+                            //     ),
+                            //     false => CellValue::Text(value.to_string()),
+                            // },
+                            // TODO(ddimaria): remove when implementing Instant
+                            ExcelData::DateTime(ref value) => match value.is_datetime() {
+                                true => value.as_datetime().map_or_else(
+                                    || CellValue::Blank,
+                                    |v| CellValue::Text(v.to_string()),
+                                ),
+                                false => CellValue::Text(value.to_string()),
+                            },
+                            ExcelData::Int(ref value) => {
+                                CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
+                            }
+                            ExcelData::Error(_) => CellValue::Blank,
+                            ExcelData::Bool(value) => CellValue::Logical(*value),
+                        };
+
+                        cell_values.push(cell_value);
+                    }
                 }
+
+                let values = CellValues::from_flat_array(size.1 as u32, size.0 as u32, cell_values);
+                let operations = Operation::SetCellValues {
+                    sheet_pos: (insert_at.x, insert_at.y, sheet_id).into(),
+                    values,
+                };
+                ops.push(operations);
+
+                // empty cell values for each sheet
+                cell_values = vec![];
             }
-
-            let values = CellValues::from_flat_array(size.1 as u32, size.0 as u32, cell_values);
-            let operations = Operation::SetCellValues {
-                sheet_pos: (insert_at.x, insert_at.y, sheet_id).into(),
-                values,
-            };
-            ops.push(operations);
-
-            // empty cell values for each sheet
-            cell_values = vec![];
         }
 
         Ok(ops)

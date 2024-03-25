@@ -295,6 +295,7 @@ impl CellValue {
             chrono::LocalResult::Single(timestamp) => timestamp,
             _ => bail!("Could not parse timestamp: {}", value),
         };
+        // TODO(ddimaria): convert to Instant when they're implement
         Ok(CellValue::Text(
             timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
         ))
