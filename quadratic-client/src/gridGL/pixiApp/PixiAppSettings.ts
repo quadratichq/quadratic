@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
@@ -39,13 +40,13 @@ class PixiAppSettings {
       this.settings = defaultGridSettings;
     }
     this.lastSettings = this.settings;
-    window.addEventListener('grid-settings', this.getSettings.bind(this));
+    events.on('gridSettings', this.getSettings);
     this._input = { show: false };
     this._panMode = PanMode.Disabled;
   }
 
   destroy() {
-    window.removeEventListener('grid-settings', this.getSettings.bind(this));
+    window.removeEventListener('gridSettings', this.getSettings);
   }
 
   private getSettings = (): void => {
@@ -151,7 +152,7 @@ class PixiAppSettings {
     this.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
-    window.dispatchEvent(new CustomEvent('change-input', { detail: { showInput: input } }));
+    events.emit('changeInput', input);
   }
 
   changePanMode(mode: PanMode): void {

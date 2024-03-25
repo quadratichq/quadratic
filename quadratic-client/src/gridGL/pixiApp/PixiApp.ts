@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { isEmbed } from '@/helpers/isEmbed';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
@@ -370,7 +371,7 @@ export class PixiApp {
     if (options.ensureVisible) ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()
-    window.dispatchEvent(new CustomEvent('cursor-position'));
+    events.emit('cursorPosition');
   }
 
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {

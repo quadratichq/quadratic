@@ -1,3 +1,5 @@
+import { EditingCell } from '@/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { SheetPosTS } from '@/gridGL/types/size';
 import {
   JsCodeCell,
   JsHtmlOutput,
@@ -7,7 +9,9 @@ import {
   SheetBounds,
   SheetInfo,
 } from '@/quadratic-core-types';
-import { PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
+import { MultiplayerState } from '@/web-workers/multiplayerWebWorker/multiplayerClientMessages';
+import { CellEdit, MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { CodeRun, PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
 import {
   CoreClientImportProgress,
   CoreClientTransactionProgress,
@@ -16,6 +20,11 @@ import {
 import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
+  needRefresh: (state: 'required' | 'recommended') => void;
+
+  search: (found?: SheetPosTS[], current?: number) => void;
+  hoverCell: (cell?: JsRenderCodeCell | EditingCell) => void;
+
   undoRedo: (undo: boolean, redo: boolean) => void;
 
   addSheet: (sheetInfo: SheetInfo, user: boolean) => void;
@@ -26,7 +35,11 @@ interface EventTypes {
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
   setCursor: (cursor: string) => void;
+  cursorPosition: () => void;
   generateThumbnail: () => void;
+  changeInput: (input: boolean) => void;
+  headingSize: (width: number, height: number) => void;
+  gridSettings: () => void;
 
   sheetOffsets: (sheetId: string, column: number | undefined, row: number | undefined, size: number) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
@@ -35,12 +48,20 @@ interface EventTypes {
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
 
-  pythonState: (state: PythonStateType, version?: string) => void;
+  pythonState: (state: PythonStateType, version?: string, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
   updateCodeCell: (sheetId: string, codeCell: JsCodeCell) => void;
 
   importProgress: (message: CoreClientImportProgress) => void;
   transactionStart: (message: CoreClientTransactionStart) => void;
   transactionProgress: (message: CoreClientTransactionProgress) => void;
+
+  multiplayerUpdate: (users: MultiplayerUser[]) => void;
+  multiplayerChangeSheet: () => void;
+  multiplayerCursor: () => void;
+  multiplayerState: (state: MultiplayerState) => void;
+  multiplayerCellEdit: (cellEdit: CellEdit, player: MultiplayerUser) => void;
+  multiplayerFollow: () => void;
+  multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

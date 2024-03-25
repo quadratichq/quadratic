@@ -1,13 +1,14 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
-import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
-import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
+import { SheetPosTS } from '@/gridGL/types/size';
+import { MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { CodeRun, PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
 import { Close, FiberManualRecord, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { Coordinate } from '../../../gridGL/types/size';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
@@ -15,7 +16,7 @@ import { Formula, Python } from '../../icons';
 import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
-  cellLocation: Coordinate | undefined;
+  cellLocation: SheetPosTS | undefined;
   unsaved: boolean;
 
   saveAndRunCell: () => void;
@@ -30,29 +31,73 @@ export const CodeEditorHeader = (props: Props) => {
 
   const language = editorInteractionState.mode;
 
-  const [isRunningComputation, setIsRunningComputation] = useState(false);
-
+  // show when this cell is already in the execution queue
+  const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
   useEffect(() => {
-    const updateRunning = () => {
+    // update running computation for player
+    const playerState = (
+      _state: PythonStateType,
+      _version?: string,
+      current?: CodeRun,
+      awaitingExecution?: CodeRun[]
+    ) => {
       if (!cellLocation) return;
-      const cells = [
-        ...pythonWebWorker.getCodeRunning(),
-        ...multiplayer.getUsers().flatMap((user) => user.parsedCodeRunning),
-      ];
       if (
-        cells.find((cell) => cell.x === cellLocation.x && cell.y === cellLocation.y && cell.sheetId === sheets.sheet.id)
+        current &&
+        current.sheetPos.x === cellLocation.x &&
+        current.sheetPos.y === cellLocation.y &&
+        current.sheetPos.sheetId === sheets.sheet.id
       ) {
-        setIsRunningComputation(true);
+        setIsRunningComputation('player');
+      } else if (
+        awaitingExecution?.length &&
+        awaitingExecution.find(
+          (cell) =>
+            cell.sheetPos.x === cellLocation.x &&
+            cell.sheetPos.y === cellLocation.y &&
+            cell.sheetPos.sheetId === sheets.sheet.id
+        )
+      ) {
+        setIsRunningComputation('player');
       } else {
-        setIsRunningComputation(false);
+        setIsRunningComputation((current) => {
+          if (current === 'player') {
+            return false;
+          }
+          return current;
+        });
       }
     };
-    updateRunning();
-    window.addEventListener('python-change', updateRunning);
-    window.addEventListener('multiplayer-update', updateRunning);
+
+    // update running computation for multiplayer
+    const multiplayerUpdate = (users: MultiplayerUser[]) => {
+      if (!cellLocation) return;
+      if (
+        users.find(
+          (user) =>
+            user.parsedCodeRunning &&
+            user.parsedCodeRunning.find(
+              (sheetPos) =>
+                sheetPos.sheetId === cellLocation.sheetId && sheetPos.x === cellLocation.x && sheetPos.y === cellLocation.y
+            )
+        )
+      ) {
+        setIsRunningComputation('multiplayer');
+      } else {
+        setIsRunningComputation((current) => {
+          if (current === 'multiplayer') {
+            return false;
+          }
+          return current;
+        });
+      }
+    };
+
+    events.on('pythonState', playerState);
+    events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
-      window.removeEventListener('python-change', updateRunning);
-      window.removeEventListener('multiplayer-update', updateRunning);
+      events.off('pythonState', playerState);
+      events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [cellLocation]);
 
@@ -126,7 +171,7 @@ export const CodeEditorHeader = (props: Props) => {
                 size="small"
                 color="primary"
                 onClick={saveAndRunCell}
-                disabled={isRunningComputation}
+                disabled={!!isRunningComputation}
               >
                 <PlayArrow />
               </IconButton>

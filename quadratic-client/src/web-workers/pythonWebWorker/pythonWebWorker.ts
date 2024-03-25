@@ -1,18 +1,10 @@
 import { events } from '@/events/events';
-import { SheetPosTS } from '@/gridGL/types/size';
-import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import mixpanel from 'mixpanel-browser';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
-import { ClientPythonMessage, PythonClientMessage, PythonCodeRun } from './pythonClientMessages';
+import { ClientPythonMessage, PythonClientMessage } from './pythonClientMessages';
 
 class PythonWebWorker {
   private worker?: Worker;
-  private executionStack: PythonCodeRun[] = [];
-
-  // private getTransactionId() {
-  //   if (this.executionStack.length === 0) throw new Error('Expected executionStack to have at least 1 element');
-  //   return this.executionStack[0].transactionId;
-  // }
 
   private send(message: ClientPythonMessage, port?: MessagePort) {
     if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
@@ -26,7 +18,13 @@ class PythonWebWorker {
   private handleMessage = (message: MessageEvent<PythonClientMessage>) => {
     switch (message.data.type) {
       case 'pythonClientState':
-        events.emit('pythonState', message.data.state, message.data.version);
+        events.emit(
+          'pythonState',
+          message.data.state,
+          message.data.version,
+          message.data.current,
+          message.data.awaitingExecution
+        );
         break;
 
       default:
@@ -41,19 +39,6 @@ class PythonWebWorker {
     const pythonCoreChannel = new MessageChannel();
     this.send({ type: 'clientPythonCoreChannel' }, pythonCoreChannel.port1);
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);
-  }
-
-  getRunningCells(sheetId: string): SheetPosTS[] {
-    return this.executionStack.filter((cell) => cell.sheetPos.sheetId === sheetId).map((cell) => cell.sheetPos);
-  }
-
-  getCodeRunning(): SheetPosTS[] {
-    return this.executionStack.map((cell) => cell.sheetPos);
-  }
-
-  private showChange() {
-    window.dispatchEvent(new CustomEvent('python-change'));
-    multiplayer.sendCodeRunning(this.getCodeRunning());
   }
 
   // next(complete: boolean) {

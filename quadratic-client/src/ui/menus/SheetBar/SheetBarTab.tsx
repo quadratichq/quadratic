@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDown } from '@mui/icons-material';
@@ -342,11 +343,11 @@ function TabMultiplayer({ sheetId }: { sheetId: string }) {
     };
     updateUsers();
 
-    window.addEventListener('multiplayer-change-sheet', updateUsers);
-    window.addEventListener('multiplayer-update', updateUsers);
+    events.on('multiplayerChangeSheet', updateUsers);
+    events.on('multiplayerUpdate', updateUsers);
     return () => {
-      window.removeEventListener('multiplayer-change-sheet', updateUsers);
-      window.removeEventListener('multiplayer-update', updateUsers);
+      events.off('multiplayerChangeSheet', updateUsers);
+      events.off('multiplayerUpdate', updateUsers);
     };
   }, [sheetId]);
 

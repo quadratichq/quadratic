@@ -1,62 +1,124 @@
 import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
-import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
-import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
+import { MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { CodeRun, PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
 import { CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import './CodeRunning.css';
 
 interface Code {
+  sheetId: string;
+  sessionId?: string;
   left: string;
   top: string;
   color: string;
+  alpha: number;
 }
 
 const CIRCULAR_PROGRESS_SIZE = 14;
+const WAITING_EXECUTION_ALPHA = 0.5;
 
 export const CodeRunning = () => {
-  const [code, setCode] = useState<Code[]>([]);
+  const [playerCode, setPlayerCode] = useState<Code[]>([]);
 
+  // update player's code runs
   useEffect(() => {
-    const updateCode = () => {
-      if (code?.length === 0) return;
-      const cells = pythonWebWorker.getRunningCells(sheets.sheet.id);
-      const sheet = sheets.sheet;
-      const codeCells = cells.map((cell) => {
-        const rectangle = sheet.getCellOffsets(cell.x, cell.y);
-        return {
+    const updatePythonState = (
+      _state: PythonStateType,
+      _version?: string,
+      current?: CodeRun,
+      awaitingExecution?: CodeRun[]
+    ) => {
+      const code: Code[] = [];
+      if (current) {
+        const rectangle = sheets.sheet.getCellOffsets(current.sheetPos.x, current.sheetPos.y);
+        code.push({
+          sheetId: current.sheetPos.sheetId,
           left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
           top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
           color: 'black',
-        };
-      });
-      multiplayer.getUsers().forEach((user) => {
-        user.parsedCodeRunning.forEach((cell) => {
+          alpha: 1,
+        });
+      }
+      if (awaitingExecution?.length) {
+        awaitingExecution.forEach((cell) => {
+          const rectangle = sheets.sheet.getCellOffsets(cell.sheetPos.x, cell.sheetPos.y);
+          code.push({
+            sheetId: cell.sheetPos.sheetId,
+            left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
+            top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
+            color: 'black',
+            alpha: WAITING_EXECUTION_ALPHA,
+          });
+        });
+      }
+      setPlayerCode(code);
+    };
+    events.on('pythonState', updatePythonState);
+  }, []);
+
+  // update multiplayer's code runs
+  const [multiplayerCode, setMultiplayerCode] = useState<Code[]>([]);
+  useEffect(() => {
+    const updateMultiplayerUsers = (multiplayerUsers: MultiplayerUser[]) => {
+      if (multiplayerUsers?.length === 0) return;
+      const sheet = sheets.sheet;
+      const code: Code[] = [];
+      multiplayerUsers.forEach((user) => {
+        user.parsedCodeRunning.forEach((cell, index) => {
           if (cell.sheetId === sheet.id) {
             const rectangle = sheet.getCellOffsets(cell.x, cell.y);
-            codeCells.push({
+            code.push({
+              sheetId: cell.sheetId,
+              sessionId: user.session_id,
               left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
               top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
               color: user.colorString,
+              alpha: index === 0 ? 1 : WAITING_EXECUTION_ALPHA,
             });
           }
         });
       });
-      setCode(codeCells);
+      setMultiplayerCode(code);
     };
+    events.on('multiplayerUpdate', updateMultiplayerUsers);
 
-    window.addEventListener('python-change', updateCode);
-    events.on('changeSheet', updateCode);
-    updateCode();
-    return () => {
-      window.addEventListener('python-change', updateCode);
-      events.off('changeSheet', updateCode);
+    const updateMultiplayerCodeRunning = (multiplayerUser: MultiplayerUser) => {
+      // remove all code runs from user if they are not running any code
+      if (multiplayerUser.parsedCodeRunning.length === 0) {
+        setMultiplayerCode((prev) => prev.filter((code) => code.sessionId !== multiplayerUser.session_id));
+      } else {
+        const sheet = sheets.sheet;
+        const code: Code[] = [];
+        multiplayerUser.parsedCodeRunning.forEach((cell, index) => {
+          if (cell.sheetId === sheet.id) {
+            const rectangle = sheet.getCellOffsets(cell.x, cell.y);
+            code.push({
+              sheetId: cell.sheetId,
+              left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
+              top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
+              color: multiplayerUser.colorString,
+              alpha: index === 0 ? 1 : WAITING_EXECUTION_ALPHA,
+            });
+          }
+        });
+        setMultiplayerCode((prev) => [
+          ...prev.filter((code) => code.sessionId !== multiplayerUser.session_id),
+          ...code,
+        ]);
+      }
     };
-  }, [code?.length]);
+    events.on('multiplayerCodeRunning', updateMultiplayerCodeRunning);
+
+    return () => {
+      events.on('multiplayerUpdate', updateMultiplayerUsers);
+      events.off('multiplayerCodeRunning', updateMultiplayerCodeRunning);
+    };
+  }, [playerCode?.length]);
 
   return (
     <div className="code-running-container">
-      {code.map((code, index) => (
+      {[...playerCode, ...multiplayerCode].map((code, index) => (
         <CircularProgress
           color={code.color === 'black' ? 'primary' : undefined}
           size={`${CIRCULAR_PROGRESS_SIZE}px`}

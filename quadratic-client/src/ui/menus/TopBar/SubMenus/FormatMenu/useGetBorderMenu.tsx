@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { BorderSelection, CellBorderLine } from '@/quadratic-core-types';
 import {
   BorderAllIcon,
@@ -42,8 +43,10 @@ export function useGetBorderMenu(): JSX.Element {
 
   // clear border type when changing selection
   useEffect(() => {
-    window.addEventListener('cursor-position', clearSelection);
-    return () => window.removeEventListener('cursor-position', clearSelection);
+    events.on('cursorPosition', clearSelection);
+    return () => {
+      events.off('cursorPosition', clearSelection);
+    };
   }, [clearSelection]);
 
   const handleChangeBorders = useCallback(

@@ -40,12 +40,15 @@ export function Search() {
         setResults(found);
         setCurrent(0);
         moveCursor(found[0]);
-        dispatchEvent(new CustomEvent('search', { detail: { found, current: 0 } }));
+        events.emit(
+          'search',
+          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), 0)
+        );
         return;
       }
     }
     setResults([]);
-    dispatchEvent(new CustomEvent('search'));
+    events.emit('search');
   };
 
   const moveCursor = (pos: SheetPos) => {
@@ -62,7 +65,10 @@ export function Search() {
     setCurrent((current) => {
       let next = (current + delta) % results.length;
       if (next < 0) next = results.length - 1;
-      dispatchEvent(new CustomEvent('search', { detail: { found: results, current: next } }));
+      events.emit(
+        'search',
+        results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), next)
+      );
       const result = results[next];
       moveCursor(result);
       return next;
@@ -95,7 +101,7 @@ export function Search() {
   };
 
   const closeSearch = () => {
-    dispatchEvent(new CustomEvent('search'));
+    events.emit('search');
     focusGrid();
   };
 

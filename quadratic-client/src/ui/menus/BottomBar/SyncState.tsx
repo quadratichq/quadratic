@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { Check, ErrorOutline } from '@mui/icons-material';
@@ -11,9 +12,11 @@ export default function SyncState() {
   const [syncState, setSyncState] = useState<MultiplayerState>(multiplayer.state);
 
   useEffect(() => {
-    const updateState = (e: any) => setSyncState(e.detail);
-    window.addEventListener('multiplayer-state', updateState);
-    return () => window.removeEventListener('multiplayer-state', updateState);
+    const updateState = (state: MultiplayerState) => setSyncState(state);
+    events.on('multiplayerState', updateState);
+    return () => {
+      events.off('multiplayerState', updateState);
+    };
   }, []);
 
   let tooltip: string;

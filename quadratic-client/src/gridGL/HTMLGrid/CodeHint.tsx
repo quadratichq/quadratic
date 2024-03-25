@@ -1,5 +1,6 @@
 import { cellTypeMenuOpenedCountAtom } from '@/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useMemo, useState } from 'react';
@@ -20,11 +21,11 @@ export const CodeHint = () => {
       setCellHasValue(newCellHasValue);
     };
     updateCursor();
-    window.addEventListener('cursor-position', updateCursor);
-    window.addEventListener('change-sheet', updateCursor);
+    events.on('cursorPosition', updateCursor);
+    events.on('changeSheet', updateCursor);
     return () => {
-      window.removeEventListener('cursor-position', updateCursor);
-      window.removeEventListener('change-sheet', updateCursor);
+      events.off('cursorPosition', updateCursor);
+      events.off('changeSheet', updateCursor);
     };
   }, []);
 
@@ -49,10 +50,11 @@ export const CodeHintInternal = () => {
       const cursor = sheets.sheet.cursor.cursorPosition;
       setHint(cursor);
     };
-    window.addEventListener('cursor-position', updateCursor);
-    window.addEventListener('change-sheet', updateCursor);
+    events.on('cursorPosition', updateCursor);
+    events.on('changeSheet', updateCursor);
     return () => {
-      window.removeEventListener('cursor-position', updateCursor);
+      events.off('cursorPosition', updateCursor);
+      events.off('changeSheet', updateCursor);
     };
   });
 

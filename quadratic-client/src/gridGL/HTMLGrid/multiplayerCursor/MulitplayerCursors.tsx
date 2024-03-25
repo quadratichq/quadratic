@@ -19,15 +19,15 @@ export const MultiplayerCursors = (props: Props) => {
   const [_, setPlayersTrigger] = useState(0);
   useEffect(() => {
     const updatePlayersTrigger = () => setPlayersTrigger((x) => x + 1);
-    window.addEventListener('multiplayer-change-sheet', updatePlayersTrigger);
-    window.addEventListener('multiplayer-cursor', updatePlayersTrigger);
+    events.on('multiplayerChangeSheet', updatePlayersTrigger);
+    events.on('multiplayerCursor', updatePlayersTrigger);
     events.on('changeSheet', updatePlayersTrigger);
     window.addEventListener('resize', updatePlayersTrigger);
     pixiApp.viewport.on('moved', updatePlayersTrigger);
     pixiApp.viewport.on('zoomed', updatePlayersTrigger);
     return () => {
-      window.removeEventListener('multiplayer-change-sheet', updatePlayersTrigger);
-      window.removeEventListener('multiplayer-cursor', updatePlayersTrigger);
+      events.off('multiplayerChangeSheet', updatePlayersTrigger);
+      events.off('multiplayerCursor', updatePlayersTrigger);
       events.off('changeSheet', updatePlayersTrigger);
       window.removeEventListener('resize', updatePlayersTrigger);
       pixiApp.viewport.off('moved', updatePlayersTrigger);

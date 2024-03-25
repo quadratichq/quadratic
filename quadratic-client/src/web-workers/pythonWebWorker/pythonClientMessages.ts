@@ -1,5 +1,4 @@
 import { SheetPosTS } from '@/gridGL/types/size';
-import { CorePythonRun } from './pythonCoreMessages';
 
 export interface PythonClientLoadError {
   type: 'pythonClientLoadError';
@@ -8,7 +7,7 @@ export interface PythonClientLoadError {
 
 export type PythonStateType = 'loading' | 'ready' | 'error' | 'running';
 
-export interface PythonCodeRun {
+export interface CodeRun {
   transactionId: string;
   sheetPos: SheetPosTS;
   code: string;
@@ -19,10 +18,10 @@ export interface PythonClientState {
   state: 'loading' | 'ready' | 'error' | 'running';
 
   // current cell being executed
-  current?: CorePythonRun;
+  current?: CodeRun;
 
   // cells awaiting execution
-  awaitingExecution?: CorePythonRun[];
+  awaitingExecution?: CodeRun[];
 
   // error loading Python
   error?: string;

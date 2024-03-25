@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
-import { Coordinate } from '@/gridGL/types/size';
+import { Coordinate, SheetPosTS } from '@/gridGL/types/size';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
@@ -49,7 +49,7 @@ export const CodeEditor = () => {
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
-  const cellLocation = useMemo(() => {
+  const cellLocation: SheetPosTS = useMemo(() => {
     return {
       x: editorInteractionState.selectedCell.x,
       y: editorInteractionState.selectedCell.y,

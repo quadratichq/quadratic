@@ -11,7 +11,7 @@ import { displayName } from '@/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
 import { v4 as uuid } from 'uuid';
 import updateAlertVersion from '../../../../updateAlertVersion.json';
-import { pythonWebWorker } from '../pythonWebWorker/pythonWebWorker';
+import { CodeRun, PythonStateType } from '../pythonWebWorker/pythonClientMessages';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
 import {
   ClientMultiplayerMessage,
@@ -31,6 +31,7 @@ export class Multiplayer {
   private fileId?: string;
   private jwt?: string | void;
 
+  private codeRunning?: SheetPosTS[];
   private lastMouseMove: { x: number; y: number } | undefined;
 
   brokenConnection = false;
@@ -61,7 +62,24 @@ export class Multiplayer {
     };
     window.addEventListener('beforeunload', alertUser);
     events.on('changeSheet', this.sendChangeSheet);
+    events.on('pythonState', this.pythonState);
   }
+
+  private pythonState = (
+    _state: PythonStateType,
+    _version?: string,
+    current?: CodeRun,
+    awaitingExecution?: CodeRun[]
+  ) => {
+    const codeRunning: SheetPosTS[] = [];
+    if (current) {
+      codeRunning.push(current.sheetPos);
+    }
+    if (awaitingExecution?.length) {
+      codeRunning.push(...awaitingExecution.map((cell) => cell.sheetPos));
+    }
+    if (this.codeRunning) this.sendCodeRunning(codeRunning);
+  };
 
   private handleMessage = (e: MessageEvent<MultiplayerClientMessage>) => {
     if (debugWebWorkersMessages) console.log(`[Multiplayer] message: ${e.data.type}`);
@@ -72,7 +90,7 @@ export class Multiplayer {
         if (this.state === 'no internet' || this.state === 'waiting to reconnect') {
           this.clearAllUsers();
         }
-        window.dispatchEvent(new CustomEvent('multiplayer-state', { detail: this.state }));
+        events.emit('multiplayerState', this.state);
         break;
 
       case 'multiplayerClientUserUpdate':
@@ -138,7 +156,7 @@ export class Multiplayer {
           code_editor: false,
         },
         viewport: pixiApp.saveMultiplayerViewport(),
-        codeRunning: JSON.stringify(pythonWebWorker.getCodeRunning),
+        codeRunning: JSON.stringify(this.codeRunning),
         follow: pixiAppSettings.editorInteractionState.follow,
       },
       channel.port1
@@ -213,9 +231,9 @@ export class Multiplayer {
     if (debugShowMultiplayer) console.log('[Multiplayer] Clearing all users.');
     this.users.clear();
     pixiApp.multiplayerCursor.dirty = true;
-    window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: this.getUsers() }));
-    window.dispatchEvent(new CustomEvent('multiplayer-change-sheet'));
-    window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+    events.emit('multiplayerUpdate', this.getUsers());
+    events.emit('multiplayerChangeSheet');
+    events.emit('multiplayerCursor');
   }
 
   private receiveUserUpdate(userUpdate: MultiplayerClientUserUpdate) {
@@ -232,7 +250,7 @@ export class Multiplayer {
       player.x = update.x;
       player.y = update.y;
       if (player.sheet_id === sheets.sheet.id) {
-        window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+        events.emit('multiplayerCursor');
       }
     }
 
@@ -243,10 +261,10 @@ export class Multiplayer {
     if (update.sheet_id) {
       if (player.sheet_id !== update.sheet_id) {
         player.sheet_id = update.sheet_id;
-        window.dispatchEvent(new CustomEvent('multiplayer-change-sheet'));
+        events.emit('multiplayerChangeSheet');
         if (player.sheet_id === sheets.sheet.id) {
           pixiApp.multiplayerCursor.dirty = true;
-          window.dispatchEvent(new CustomEvent('multiplayer-cursor'));
+          events.emit('multiplayerCursor');
         }
       }
     }
@@ -271,17 +289,7 @@ export class Multiplayer {
             !player.cell_edit.active
           );
         }
-        window.dispatchEvent(
-          new CustomEvent('multiplayer-cell-edit', {
-            detail: {
-              ...update.cell_edit,
-              playerColor: player.color,
-              sessionId: userUpdate.sessionId,
-              sheetId: player.sheet_id,
-              cell: player.parsedSelection?.cursor,
-            },
-          })
-        );
+        events.emit('multiplayerCellEdit', update.cell_edit, player);
       }
       pixiApp.multiplayerCursor.dirty = true;
     }
@@ -298,21 +306,21 @@ export class Multiplayer {
       player.parsedCodeRunning = JSON.parse(update.code_running);
 
       // trigger changes in CodeRunning.tsx
-      dispatchEvent(new CustomEvent('python-change'));
+      events.emit('multiplayerCodeRunning', player);
     }
 
     if (update.follow !== null) {
       player.follow = update.follow;
-      window.dispatchEvent(new CustomEvent('multiplayer-follow'));
+      events.emit('multiplayerFollow');
     }
   }
 
   // updates the React hook to populate the Avatar list
   private receiveUsersInRoom(room: ReceiveRoom) {
     if (room.min_version.requiredVersion > updateAlertVersion.requiredVersion) {
-      window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'required' }));
+      events.emit('needRefresh', 'required');
     } else if (room.min_version.recommendedVersion > updateAlertVersion.recommendedVersion) {
-      window.dispatchEvent(new CustomEvent('need-refresh', { detail: 'recommended' }));
+      events.emit('needRefresh', 'recommended');
     }
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
@@ -363,7 +371,7 @@ export class Multiplayer {
       if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);
       this.users.delete(sessionId);
     });
-    window.dispatchEvent(new CustomEvent('multiplayer-update', { detail: this.getUsers() }));
+    events.emit('multiplayerUpdate', this.getUsers());
     pixiApp.multiplayerCursor.dirty = true;
   }
 }

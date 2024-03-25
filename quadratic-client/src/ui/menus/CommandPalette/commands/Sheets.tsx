@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { SheetDeleteIcon, SheetDuplicateIcon, SheetGoToIcon, SheetIcon } from '@/ui/icons';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useMemo, useState } from 'react';
@@ -87,8 +88,10 @@ const ListItems = () => {
 
   useEffect(() => {
     const updateTrigger = () => setTrigger((trigger) => trigger + 1);
-    window.addEventListener('change-sheet', updateTrigger);
-    return window.removeEventListener('change-sheet', updateTrigger);
+    events.on('changeSheet', updateTrigger);
+    return () => {
+      events.off('changeSheet', updateTrigger);
+    };
   }, []);
 
   return items;

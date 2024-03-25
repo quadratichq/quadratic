@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { JsRenderCodeCell } from '@/quadratic-core-types';
@@ -21,10 +22,10 @@ export const HoverCell = () => {
   const textRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const addCell = (e: any /* { detail: JsRenderCodeCell | EditingCell | undefined } */) => {
+    const addCell = (cell?: JsRenderCodeCell | EditingCell) => {
       const div = ref.current;
       if (!div) return;
-      if (!e.detail) {
+      if (!cell) {
         if (!div.classList.contains('hover-cell-fade-out')) {
           div.classList.add('hover-cell-fade-out');
           div.classList.remove('hover-cell-fade-in');
@@ -39,11 +40,13 @@ export const HoverCell = () => {
           }
           div.classList.remove('hover-cell-fade-out');
         }
-        setCell(e.detail);
+        setCell(cell);
       }
     };
-    window.addEventListener('hover-cell', addCell);
-    return () => window.removeEventListener('hover-cell', addCell);
+    events.on('hoverCell', addCell);
+    return () => {
+      events.off('hoverCell', addCell);
+    };
   }, []);
 
   useEffect(() => {

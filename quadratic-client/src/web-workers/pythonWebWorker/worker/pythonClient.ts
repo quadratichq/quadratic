@@ -1,6 +1,5 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { ClientPythonMessage, PythonClientMessage, PythonStateType } from '../pythonClientMessages';
-import { CorePythonRun } from '../pythonCoreMessages';
+import { ClientPythonMessage, CodeRun, PythonClientMessage, PythonStateType } from '../pythonClientMessages';
 import { pythonCore } from './pythonCore';
 
 declare var self: WorkerGlobalScope & typeof globalThis & {};
@@ -33,7 +32,7 @@ class PythonClient {
 
   sendPythonState(
     state: PythonStateType,
-    options?: { version?: string; error?: string; current?: CorePythonRun; awaitingExecution?: CorePythonRun[] }
+    options?: { version?: string; error?: string; current?: CodeRun; awaitingExecution?: CodeRun[] }
   ) {
     this.send({
       type: 'pythonClientState',

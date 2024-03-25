@@ -12,20 +12,20 @@ interface Props {
 const CURSOR_WIDTH = 2;
 
 export const MultiplayerCellEdit = (props: Props) => {
-  const { cell, italic, bold, text, cursor, playerColor, sessionId } = props.multiplayerCellInput;
+  const input = props.multiplayerCellInput;
   const sheet = sheets.sheet;
-  const cellOffsets = sheet.getCellOffsets(cell.x, cell.y);
+  const cellOffsets = sheet.getCellOffsets(input.location.x, input.location.y);
 
   const [formatting, setFormatting] = useState<CellFormatSummary | undefined>();
   useEffect(() => {
     (async () => {
-      const format = await quadraticCore.getCellFormatSummary(sheet.id, cell.x, cell.y);
+      const format = await quadraticCore.getCellFormatSummary(sheet.id, input.location.x, input.location.y);
       setFormatting(format);
     })();
-  }, [cell.x, cell.y, sheet.id]);
+  }, [input.location, sheet.id]);
 
-  const displayItalic = italic === null ? formatting?.italic : italic;
-  const displayBold = bold === null ? formatting?.bold : bold;
+  const displayItalic = input.cellEdit.italic === null ? formatting?.italic : input.cellEdit.italic;
+  const displayBold = input.cellEdit.bold === null ? formatting?.bold : input.cellEdit.bold;
   let fontFamily: string = 'OpenSans';
   if (displayItalic && displayBold) {
     fontFamily = 'OpenSans-BoldItalic';
@@ -38,12 +38,12 @@ export const MultiplayerCellEdit = (props: Props) => {
   const textInput = useRef<HTMLDivElement>(null);
 
   // need to add one extra character at end in case the cursor is there
-  const textCharacters = text ? [...text.split(''), ''] : [];
+  const textCharacters = input.cellEdit.text ? [...input.cellEdit.text.split(''), ''] : [];
 
   return (
     <>
       <div
-        className={`multiplayer-cell-edit-${sessionId}`}
+        className={`multiplayer-cell-edit-${input.sessionId}`}
         contentEditable={true}
         suppressContentEditableWarning={true}
         ref={textInput}
@@ -70,7 +70,7 @@ export const MultiplayerCellEdit = (props: Props) => {
       >
         <div style={{ position: 'relative' }}>
           {textCharacters.map((character, index) => {
-            if (index === cursor) {
+            if (index === input.cellEdit.cursor) {
               return (
                 <span key={index} style={{ position: 'relative' }}>
                   <span
@@ -80,7 +80,7 @@ export const MultiplayerCellEdit = (props: Props) => {
                       left: 0,
                       height: '100%',
                       width: `${CURSOR_WIDTH}px`,
-                      backgroundColor: playerColor,
+                      backgroundColor: input.playerColor,
                     }}
                   />
                   <span>{character}</span>

@@ -1,6 +1,6 @@
 import { debugWebWorkers } from '@/debugFlags';
 import { PyodideInterface, loadPyodide } from 'pyodide';
-import { PythonStateType } from '../pythonClientMessages';
+import { CodeRun, PythonStateType } from '../pythonClientMessages';
 import { CorePythonRun } from '../pythonCoreMessages';
 import { InspectPython, PythonError, PythonSuccess } from '../pythonTypes';
 import { pythonClient } from './pythonClient';
@@ -10,7 +10,7 @@ const TRY_AGAIN_TIMEOUT = 500;
 
 class Python {
   private pyodide: PyodideInterface | undefined;
-  private awaitingExecution: CorePythonRun[];
+  private awaitingExecution: CodeRun[];
   private state!: PythonStateType;
 
   constructor() {
@@ -62,13 +62,30 @@ class Python {
     this.next();
   };
 
+  private corePythonRunToCodeRun = (corePythonRun: CorePythonRun): CodeRun => {
+    return {
+      transactionId: corePythonRun.transactionId,
+      sheetPos: { x: corePythonRun.x, y: corePythonRun.y, sheetId: corePythonRun.sheetId },
+      code: corePythonRun.code,
+    };
+  };
+
+  private codeRunToCorePython = (codeRun: CodeRun): CorePythonRun => ({
+    type: 'corePythonRun',
+    transactionId: codeRun.transactionId,
+    x: codeRun.sheetPos.x,
+    y: codeRun.sheetPos.y,
+    sheetId: codeRun.sheetPos.sheetId,
+    code: codeRun.code,
+  });
+
   private next = async () => {
     if (this.state === 'ready' && this.awaitingExecution.length > 0) {
       this.state = 'running';
       const run = this.awaitingExecution.shift();
       if (run) {
         pythonClient.sendPythonState('running', { current: run, awaitingExecution: this.awaitingExecution });
-        await this.runPython(run);
+        await this.runPython(this.codeRunToCorePython(run));
         pythonClient.sendPythonState('ready', { current: undefined });
         this.state = 'ready';
       }
@@ -91,7 +108,7 @@ class Python {
 
   async runPython(message: CorePythonRun) {
     if (!this.pyodide || this.state !== 'ready') {
-      this.awaitingExecution.push(message);
+      this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
     }
 
