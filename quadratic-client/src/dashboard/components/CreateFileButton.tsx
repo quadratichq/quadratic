@@ -33,50 +33,54 @@ export default function CreateFileButton() {
     // If nothing was selected, just exit
     if (!e.target.files) return;
 
-    // Get the file and it's contents
-    const file: File = e.target.files[0];
-    let data;
+    try {
+      // Get the file and it's contents
+      const file: File = e.target.files[0];
+      let data;
 
-    switch (getFileType(file)) {
-      case 'grid':
-        const contents = await file.text().catch((e) => null);
+      switch (getFileType(file)) {
+        case 'grid':
+          const contents = await file.text().catch((e) => null);
 
-        // Ensure it's a valid Quadratic grid file
-        const validFile = await validateAndUpgradeGridFile(contents);
-        if (!validFile) {
-          addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
-          return;
-        }
+          // Ensure it's a valid Quadratic grid file
+          const validFile = await validateAndUpgradeGridFile(contents);
+          if (!validFile) {
+            addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
+            return;
+          }
 
-        data = {
-          name: file.name ? stripExtension(file.name) : 'Untitled',
-          version: validFile.version,
-          contents: validFile.version === '1.3' ? JSON.stringify(validFile) : validFile.contents,
-        };
-        break;
-
-      case 'excel':
-        const importedFile = await importExcel(file, addGlobalSnackbar);
-
-        if (importedFile) {
           data = {
             name: file.name ? stripExtension(file.name) : 'Untitled',
-            version: importedFile.version,
-            contents: importedFile.contents,
+            version: validFile.version,
+            contents: validFile.version === '1.3' ? JSON.stringify(validFile) : validFile.contents,
           };
-        }
-        break;
+          break;
 
-      // TODO(ddimaira): implement these
-      case 'csv':
-      case 'parquet':
-      default:
-        addGlobalSnackbar('Import failed: unsupported file type.', { severity: 'warning' });
-    }
+        case 'excel':
+          const importedFile = await importExcel(file, addGlobalSnackbar);
 
-    // Upload it
-    if (data) {
-      submit(data, { method: 'POST', action: actionUrl, encType: 'application/json' });
+          if (importedFile) {
+            data = {
+              name: file.name ? stripExtension(file.name) : 'Untitled',
+              version: importedFile.version,
+              contents: importedFile.contents,
+            };
+          }
+          break;
+
+        // TODO(ddimaira): implement these
+        case 'csv':
+        case 'parquet':
+        default:
+          addGlobalSnackbar('Import failed: unsupported file type.', { severity: 'warning' });
+      }
+
+      // Upload it
+      if (data) {
+        submit(data, { method: 'POST', action: actionUrl, encType: 'application/json' });
+      }
+    } catch (e) {
+      if (e instanceof Error) addGlobalSnackbar(e.message, { severity: 'warning' });
     }
 
     // Reset the input so we can add the same file

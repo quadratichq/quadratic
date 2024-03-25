@@ -76,7 +76,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
       message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
       level: 'error',
     });
-    // throw new Response('File validation failed.', { status: 200 });
+    throw new Response('File validation failed.', { status: 200 });
   }
   grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
 
