@@ -117,7 +117,7 @@ class QuadraticCore {
       events.emit('transactionProgress', e.data);
       return;
     } else if (e.data.type === 'coreClientUpdateCodeCell') {
-      events.emit('updateCodeCell', e.data.sheetId, e.data.codeCell);
+      events.emit('updateCodeCell', e.data.sheetId, e.data.codeCell, e.data.renderCodeCell);
       return;
     }
 

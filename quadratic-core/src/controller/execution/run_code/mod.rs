@@ -119,9 +119,19 @@ impl GridController {
                         crate::wasm_bindings::js::jsUpdateHtml(html);
                     }
                 }
-                if let Some(code_cell) = sheet.edit_code_value(sheet_pos.into()) {
-                    if let Ok(code_cell) = serde_json::to_string(&code_cell) {
-                        crate::wasm_bindings::js::jsUpdateCodeCell(sheet_id.to_string(), code_cell);
+                if let (Some(code_cell), Some(render_code_cell)) = (
+                    sheet.edit_code_value(sheet_pos.into()),
+                    sheet.get_render_code_cell(sheet_pos.into()),
+                ) {
+                    if let (Ok(code_cell), Ok(render_code_cell)) = (
+                        serde_json::to_string(&code_cell),
+                        serde_json::to_string(&render_code_cell),
+                    ) {
+                        crate::wasm_bindings::js::jsUpdateCodeCell(
+                            sheet_id.to_string(),
+                            code_cell,
+                            render_code_cell,
+                        );
                     }
                 }
             }

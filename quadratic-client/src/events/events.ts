@@ -49,7 +49,7 @@ interface EventTypes {
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
 
   pythonState: (state: PythonStateType, version?: string, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
-  updateCodeCell: (sheetId: string, codeCell: JsCodeCell) => void;
+  updateCodeCell: (sheetId: string, codeCell: JsCodeCell, renderCodeCell: JsRenderCodeCell) => void;
 
   importProgress: (message: CoreClientImportProgress) => void;
   transactionStart: (message: CoreClientTransactionStart) => void;

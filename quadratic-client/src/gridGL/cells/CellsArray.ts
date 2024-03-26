@@ -42,6 +42,17 @@ export class CellsArray extends Container {
         this.create();
       }
     });
+    events.on('updateCodeCell', (sheetId, _, renderCodeCell) => {
+      if (sheetId === this.cellsSheet.sheetId) {
+        const index = this.codeCells.findIndex((cell) => cell.x === renderCodeCell.x && cell.y === renderCodeCell.y);
+        if (index === -1) {
+          this.codeCells.push(renderCodeCell);
+        } else {
+          this.codeCells[index] = renderCodeCell;
+        }
+        this.create();
+      }
+    });
   }
 
   get sheetId(): string {

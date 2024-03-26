@@ -755,6 +755,7 @@ export interface CoreClientUpdateCodeCell {
   type: 'coreClientUpdateCodeCell';
   sheetId: string;
   codeCell: JsCodeCell;
+  renderCodeCell: JsRenderCodeCell;
 }
 
 //#endregion

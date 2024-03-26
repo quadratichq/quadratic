@@ -177,7 +177,7 @@ pub struct JsCodeCell {
     pub return_info: Option<JsReturnInfo>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderCodeCell {
     pub x: i32,

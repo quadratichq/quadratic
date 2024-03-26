@@ -29,9 +29,6 @@ extern "C" {
         code: String,
     ) -> JsValue;
 
-    pub fn addUnsentTransaction(transaction_id: String, transaction: String);
-    pub fn jsSendTransaction(transaction_id: String, transaction: String);
-
     // cells: Vec<JsRenderCell>
     pub fn jsRenderCellSheets(
         sheet_id: String,
@@ -40,13 +37,17 @@ extern "C" {
         cells: String, /*Vec<JsRenderCell>*/
     );
 
-    pub fn jsSheetInfo(sheets: String); // Vec<JsSheetInfo>
-    pub fn jsSheetInfoUpdate(sheet: String); // JsSheetInfo
-    pub fn jsSheetFills(sheet_id: String, fills: String); // JsRenderFill
+    pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */);
+    pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */);
+    pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */);
     pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool);
     pub fn jsDeleteSheet(sheetId: String, user: bool);
     pub fn jsRequestTransactions(sequence_num: u64);
-    pub fn jsUpdateCodeCell(sheet_id: String, code_cell: String /*JsCodeCell*/);
+    pub fn jsUpdateCodeCell(
+        sheet_id: String,
+        code_cell: String,        /*JsCodeCell*/
+        render_code_cell: String, /*JsRenderCodeCell*/
+    );
     pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64);
     pub fn jsSetCursor(cursor: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
@@ -74,5 +75,8 @@ extern "C" {
         w: Option<u32>,
         h: Option<u32>,
     );
+    pub fn addUnsentTransaction(transaction_id: String, transaction: String);
+    pub fn jsSendTransaction(transaction_id: String, transaction: String);
+
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
 }
