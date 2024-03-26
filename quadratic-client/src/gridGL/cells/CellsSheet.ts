@@ -1,3 +1,4 @@
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle } from 'pixi.js';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
@@ -54,9 +55,8 @@ export class CellsSheet extends Container {
     this.cellsMarkers.visible = off ?? true;
   }
 
-  // todo...
   showLabel(x: number, y: number, show: boolean) {
-    // this.cellsLabels.showLabel(x, y, show);
+    renderWebWorker.showLabel(this.sheetId, x, y, show);
   }
 
   unload(hashX: number, hashY: number) {

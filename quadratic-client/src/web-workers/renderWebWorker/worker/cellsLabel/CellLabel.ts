@@ -43,6 +43,8 @@ export class CellLabel {
   private cellsLabels: CellsLabels;
   position = new Point();
 
+  visible = true;
+
   text: string;
 
   // created in updateFontName()
@@ -219,6 +221,8 @@ export class CellLabel {
 
   /** Calculates the text glyphs and positions */
   public updateText(labelMeshes: LabelMeshes): void {
+    if (!this.visible) return;
+
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
     const pos = new Point();
@@ -324,6 +328,8 @@ export class CellLabel {
 
   /** Adds the glyphs to the CellsLabels */
   updateLabelMesh(labelMeshes: LabelMeshes) {
+    if (!this.visible) return;
+
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
     const scale = this.fontSize / data.size;

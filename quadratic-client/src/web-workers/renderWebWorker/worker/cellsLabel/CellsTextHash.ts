@@ -43,7 +43,7 @@ export class CellsTextHash {
   AABB: Rectangle;
 
   // rebuild CellsTextHash
-  dirty: boolean | JsRenderCell[] = true;
+  dirty: boolean | JsRenderCell[] | 'show' = true;
 
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
@@ -116,21 +116,28 @@ export class CellsTextHash {
       // if dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
       // set to false.
+      console.log(this.dirty);
       const dirty = this.dirty;
       this.dirty = false;
-      const cells =
-        dirty === true
-          ? await renderCore.getRenderCells(
-              this.cellsLabels.sheetId,
-              this.AABB.x,
-              this.AABB.y,
-              this.AABB.width,
-              this.AABB.height
-            )
-          : dirty;
+      let cells: JsRenderCell[] | false;
+      if (dirty === true) {
+        cells = await renderCore.getRenderCells(
+          this.cellsLabels.sheetId,
+          this.AABB.x,
+          this.AABB.y,
+          this.AABB.width,
+          this.AABB.height
+        );
+      } else if (dirty === 'show') {
+        cells = false;
+      } else {
+        cells = dirty as JsRenderCell[];
+      }
 
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
-      await this.createLabels(cells);
+      if (cells) {
+        await this.createLabels(cells);
+      }
       this.overflowClip();
       this.updateBuffers(); // false
       this.dirtyBuffers = false;
@@ -318,5 +325,17 @@ export class CellsTextHash {
       return this.labelMeshes.totalMemory();
     }
     return 0;
+  }
+
+  showLabel(x: number, y: number, show: boolean) {
+    const label = this.labels.get(`${x},${y}`);
+    if (label) {
+      label.visible = show;
+      // only cause a simple redraw if dirty is not already set
+      if (this.dirty === false) {
+        this.dirty = 'show';
+      }
+      console.log(this.dirty);
+    }
   }
 }

@@ -140,6 +140,12 @@ class RenderText {
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetBoundsUpdate');
     cellsLabels.updateSheetBounds(sheetBounds);
   }
+
+  showLabel(sheetId: string, x: number, y: number, show: boolean) {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.showLabel');
+    cellsLabels.showLabel(x, y, show);
+  }
 }
 
 export const renderText = new RenderText();

@@ -50,6 +50,10 @@ class RenderClient {
         renderText.sheetOffsets(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
         break;
 
+      case 'clientRenderShowLabel':
+        renderText.showLabel(e.data.sheetId, e.data.x, e.data.y, e.data.show);
+        break;
+
       default:
         console.warn('[renderClient] Unhandled message type', e.data);
     }

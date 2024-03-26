@@ -5,7 +5,6 @@ import { prepareBitmapFontInformation } from './renderBitmapFonts';
 import {
   ClientRenderInit,
   ClientRenderMessage,
-  ClientRenderSheetOffsetsTransient,
   ClientRenderViewport,
   RenderClientMessage,
 } from './renderClientMessages';
@@ -80,14 +79,23 @@ class RenderWebWorker {
   }
 
   updateSheetOffsetsTransient(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
-    const message: ClientRenderSheetOffsetsTransient = {
+    this.send({
       type: 'clientRenderSheetOffsetsTransient',
       sheetId,
       column,
       row,
       delta,
-    };
-    this.send(message);
+    });
+  }
+
+  showLabel(sheetId: string, x: number, y: number, show: boolean) {
+    this.send({
+      type: 'clientRenderShowLabel',
+      sheetId,
+      x,
+      y,
+      show,
+    });
   }
 }
 

@@ -368,4 +368,11 @@ export class CellsLabels {
       this.adjustHeadings(delta, column, row);
     }
   }
+
+  showLabel(x: number, y: number, show: boolean) {
+    const hash = this.getCellsHash(x, y);
+    if (hash) {
+      hash.showLabel(x, y, show);
+    }
+  }
 }

@@ -62,6 +62,14 @@ export interface RenderClientFinalizeCellsTextHash {
   hashY: number;
 }
 
+export interface ClientRenderShowLabel {
+  type: 'clientRenderShowLabel';
+  sheetId: string;
+  x: number;
+  y: number;
+  show: boolean;
+}
+
 export type RenderClientMessage =
   | RenderClientLabelMeshEntry
   | RenderClientCellsTextHashClear
@@ -69,4 +77,8 @@ export type RenderClientMessage =
   | RenderClientUnload
   | RenderClientFinalizeCellsTextHash;
 
-export type ClientRenderMessage = ClientRenderInit | ClientRenderViewport | ClientRenderSheetOffsetsTransient;
+export type ClientRenderMessage =
+  | ClientRenderInit
+  | ClientRenderViewport
+  | ClientRenderSheetOffsetsTransient
+  | ClientRenderShowLabel;
