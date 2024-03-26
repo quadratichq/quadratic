@@ -747,7 +747,17 @@ class Core {
   }
 
   calculationComplete(transactionId: string, results: PythonRun) {
-    const codeResult = {
+    let array_output: string[][][] | null = null;
+    if (results.array_output) {
+      // A 1d list was provided. We convert it to a 2d array by changing each entry into an array.
+      if (!Array.isArray(results.array_output[0][0])) {
+        array_output = (results.array_output as any).map((row: any) => [row]);
+      } else {
+        array_output = results.array_output as any as string[][][];
+      }
+    }
+
+    const codeResult: JsCodeResult = {
       transaction_id: transactionId,
       success: results.success,
       formatted_code: results.formatted_code,
@@ -756,12 +766,15 @@ class Core {
       output_value: results.output ? (results.output as any as string[]) : null,
 
       // this one breaks the JsCodeResult interface
-      array_output: results.array_output ?? null,
+      array_output,
 
       line_number: results.lineno ?? null,
       output_type: results.output_type ?? null,
       cancel_compute: false,
     } as JsCodeResult;
+
+    console.log(codeResult);
+
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }

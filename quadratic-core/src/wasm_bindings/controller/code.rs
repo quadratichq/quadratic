@@ -7,7 +7,7 @@ impl GridController {
         if let Ok(result) = serde_json::from_str(&result) {
             let _ = self.calculation_complete(result);
         } else {
-            dbgjs!("Failed to parse calculation result");
+            dbgjs!("calculationComplete: Failed to parse calculation result");
         }
     }
 
