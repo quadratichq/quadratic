@@ -116,7 +116,6 @@ export class CellsTextHash {
       // if dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
       // set to false.
-      console.log(this.dirty);
       const dirty = this.dirty;
       this.dirty = false;
       let cells: JsRenderCell[] | false;
