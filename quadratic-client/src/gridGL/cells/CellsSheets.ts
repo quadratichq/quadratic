@@ -117,6 +117,7 @@ export class CellsSheets extends Container<CellsSheet> {
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
+      this.updateCellsArray();
     }
   }
 
