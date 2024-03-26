@@ -64,7 +64,7 @@ export function ShareDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <div className={`flex flex-col gap-3`}>{children}</div>
+        <div className={`flex flex-col gap-4`}>{children}</div>
       </DialogContent>
     </Dialog>
   );
@@ -226,8 +226,10 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     userMakingRequest: { filePermissions, id: loggedInUserId },
     owner,
   } = data;
+  const linkRef = useRef<HTMLInputElement>(null);
   const action = ROUTES.FILES_SHARE(uuid);
   const canEditFile = filePermissions.includes('FILE_EDIT');
+  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   sortLoggedInUserFirst(users, loggedInUserId);
 
@@ -252,6 +254,10 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     ...pendingInvites.map((invite) => invite.email),
   ];
 
+  const isTeamFile = owner.type === 'team';
+  const publicLink = window.location.origin + ROUTES.FILE(uuid);
+  const publicLinkIsDisabled = isTeamFile ? false : publicLinkAccess === 'NOT_SHARED';
+
   return (
     <>
       {filePermissions.includes('FILE_EDIT') && (
@@ -263,7 +269,30 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         />
       )}
 
-      {owner.type === 'team' && (
+      <div className="flex gap-2 border-t border-border pt-4">
+        <Input disabled={publicLinkIsDisabled} value={publicLink} ref={linkRef} />
+        <Button
+          variant="outline"
+          disabled={publicLinkIsDisabled}
+          className="flex-shrink-0 font-normal"
+          onClick={() => {
+            mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+            navigator.clipboard
+              .writeText(publicLink)
+              .then(() => {
+                linkRef.current?.select();
+                addGlobalSnackbar('Copied link to clipboard.');
+              })
+              .catch(() => {
+                addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
+              });
+          }}
+        >
+          Copy link
+        </Button>
+      </div>
+
+      {isTeamFile && (
         <ListItem className="py-1 text-muted-foreground">
           <div className="flex h-6 w-6 items-center justify-center">
             <PersonIcon className="-mr-[2px]" />
@@ -765,7 +794,6 @@ function ListItemPublicLink({
 }) {
   const fetcher = useFetcher();
   const fetcherUrl = ROUTES.FILES_SHARE(uuid);
-  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   // If we're updating, optimistically show the next value
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
@@ -809,26 +837,6 @@ function ListItemPublicLink({
       </div>
 
       <div className="flex items-center gap-1">
-        {publicLinkAccess !== 'NOT_SHARED' && (
-          <Button
-            variant="link"
-            onClick={() => {
-              mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
-              const url = window.location.origin + ROUTES.FILE(uuid);
-              navigator.clipboard
-                .writeText(url)
-                .then(() => {
-                  addGlobalSnackbar('Copied link to clipboard.');
-                })
-                .catch(() => {
-                  addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
-                });
-            }}
-          >
-            Copy link
-          </Button>
-        )}
-
         {disabled ? (
           <Type className="pr-4">{activeOptionLabel}</Type>
         ) : (
