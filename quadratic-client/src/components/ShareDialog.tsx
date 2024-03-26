@@ -227,13 +227,14 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     owner,
   } = data;
   const linkRef = useRef<HTMLInputElement>(null);
+  const fetchers = useFetchers();
   const action = ROUTES.FILES_SHARE(uuid);
   const canEditFile = filePermissions.includes('FILE_EDIT');
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   sortLoggedInUserFirst(users, loggedInUserId);
 
-  const pendingInvites = useFetchers()
+  const pendingInvites = fetchers
     .filter(
       (fetcher) =>
         isJsonObject(fetcher.json) && fetcher.json.intent === 'create-file-invite' && fetcher.state !== 'idle'
@@ -254,9 +255,16 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     ...pendingInvites.map((invite) => invite.email),
   ];
 
+  const publicLinkAccessFetcher = fetchers.find(
+    (fetcher) =>
+      isJsonObject(fetcher.json) && fetcher.json.intent === 'update-public-link-access' && fetcher.state !== 'idle'
+  );
+  const optimisticPublicLinkAccess = publicLinkAccessFetcher
+    ? (publicLinkAccessFetcher.json as FileShareAction['request.update-public-link-access']).publicLinkAccess
+    : publicLinkAccess;
   const isTeamFile = owner.type === 'team';
   const publicLink = window.location.origin + ROUTES.FILE(uuid);
-  const publicLinkIsDisabled = isTeamFile ? false : publicLinkAccess === 'NOT_SHARED';
+  const publicLinkIsDisabled = isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED';
 
   return (
     <>
@@ -269,7 +277,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         />
       )}
 
-      <div className="flex gap-2 border-t border-border pt-4">
+      <div className="flex gap-8 border-t border-border pt-4">
         <Input disabled={publicLinkIsDisabled} value={publicLink} ref={linkRef} />
         <Button
           variant="outline"
