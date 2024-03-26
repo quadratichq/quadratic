@@ -4,7 +4,7 @@ use quadratic_core::{
     color::Rgba,
     controller::{
         active_transactions::transaction_name::TransactionName,
-        transaction_types::{JsCodeResult, JsComputeGetCells},
+        execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
         user_actions::clipboard::PasteSpecial,
     },
     grid::{
@@ -86,11 +86,11 @@ fn main() {
         JsRenderBorder,
         JsRenderBorders,
         JsCodeResult,
-        JsComputeGetCells,
         MinMax,
         TransientResize,
         SheetBounds,
         TransactionName,
+        JsGetCellResponse,
     );
 
     if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {

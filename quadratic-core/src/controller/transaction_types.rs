@@ -44,35 +44,3 @@ impl JsCodeResult {
         }
     }
 }
-
-#[derive(Debug, Serialize, Deserialize)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct JsComputeGetCells {
-    pub transaction_id: String,
-    pub x: i64,
-    pub y: i64,
-    pub w: i64,
-    pub h: i64,
-    pub sheet_name: Option<String>,
-    pub line_number: Option<u32>,
-}
-
-impl JsComputeGetCells {
-    #[cfg(test)]
-    pub fn new(
-        transaction_id: String,
-        rect: crate::Rect,
-        sheet_name: Option<String>,
-        line_number: Option<u32>,
-    ) -> Self {
-        JsComputeGetCells {
-            transaction_id,
-            x: rect.min.x,
-            y: rect.min.y,
-            w: rect.max.x - rect.min.x + 1,
-            h: rect.max.y - rect.min.y + 1,
-            sheet_name,
-            line_number,
-        }
-    }
-}

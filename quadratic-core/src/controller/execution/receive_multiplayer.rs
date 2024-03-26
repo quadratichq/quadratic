@@ -297,10 +297,7 @@ impl GridController {
 mod tests {
     use super::*;
     use crate::{
-        controller::{
-            transaction_types::{JsCodeResult, JsComputeGetCells},
-            GridController,
-        },
+        controller::{transaction_types::JsCodeResult, GridController},
         grid::{CodeCellLanguage, Sheet},
         CellValue, CodeCellValue, Pos, Rect, SheetPos,
     };
@@ -919,12 +916,12 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        gc.calculation_get_cells(JsComputeGetCells::new(
+        gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ))
+        )
         .ok()
         .unwrap();
 
@@ -961,12 +958,12 @@ mod tests {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let _ = gc
-            .calculation_get_cells(JsComputeGetCells::new(
+            .calculation_get_cells(
                 transaction_id.to_string(),
                 Rect::from_numbers(0, 1, 1, 1),
                 None,
                 None,
-            ))
+            )
             .ok()
             .unwrap();
 

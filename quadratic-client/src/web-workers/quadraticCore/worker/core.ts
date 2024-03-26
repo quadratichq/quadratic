@@ -12,6 +12,7 @@ import {
   CodeCellLanguage,
   JsCodeCell,
   JsCodeResult,
+  JsGetCellResponse,
   JsRenderCell,
   MinMax,
   SearchOptions,
@@ -26,6 +27,7 @@ import {
   ClientCoreLoad,
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
+import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { pointsToRect } from './rustConversions';
 
@@ -777,6 +779,22 @@ class Core {
 
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.calculationComplete(JSON.stringify(codeResult));
+  }
+
+  getCells(
+    id: number,
+    transactionId: string,
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    sheet?: string,
+    lineNumber?: number
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const cellsStringified = this.gridController.calculationGetCells(transactionId, x0, y0, x1, y1, sheet, lineNumber);
+    const cells = JSON.parse(cellsStringified) as JsGetCellResponse[];
+    corePython.sendGetCells(id, cells);
   }
 }
 

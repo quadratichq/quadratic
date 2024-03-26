@@ -1,9 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
-    controller::{
-        execution::TransactionType, transaction_types::JsComputeGetCells, GridController,
-    },
+    controller::{execution::TransactionType, GridController},
     error_core::CoreError,
     Rect,
 };
@@ -11,17 +9,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct GetCellResponse {
+pub struct JsGetCellResponse {
     pub x: i64,
     pub y: i64,
     pub value: String,
     pub type_name: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct GetCellsResponse {
-    pub response: Vec<GetCellResponse>,
 }
 
 impl GridController {
@@ -29,9 +21,12 @@ impl GridController {
     #[allow(clippy::result_large_err)]
     pub fn calculation_get_cells(
         &mut self,
-        get_cells: JsComputeGetCells,
-    ) -> Result<GetCellsResponse, CoreError> {
-        let Ok(transaction_id) = Uuid::parse_str(&get_cells.transaction_id) else {
+        transaction_id: String,
+        rect: Rect,
+        sheet_name: Option<String>,
+        line_number: Option<u32>,
+    ) -> Result<Vec<JsGetCellResponse>, CoreError> {
+        let Ok(transaction_id) = Uuid::parse_str(&transaction_id) else {
             return Err(CoreError::TransactionNotFound(
                 "Transaction Id is invalid".into(),
             ));
@@ -51,21 +46,17 @@ impl GridController {
         };
 
         // if sheet_name is None, use the sheet_id from the pos
-        let sheet = if let Some(sheet_name) = get_cells.sheet_name {
+        let sheet = if let Some(sheet_name) = sheet_name {
             if let Some(sheet) = self.try_sheet_from_name(sheet_name.clone()) {
                 sheet
             } else {
                 // unable to find sheet by name, generate error
-                let msg = if let Some(line_number) = get_cells.line_number {
+                let msg = if let Some(line_number) = line_number {
                     format!("Sheet '{}' not found at line {}", sheet_name, line_number)
                 } else {
                     format!("Sheet '{}' not found", sheet_name)
                 };
-                match self.code_cell_sheet_error(
-                    &mut transaction,
-                    msg.clone(),
-                    get_cells.line_number,
-                ) {
+                match self.code_cell_sheet_error(&mut transaction, msg.clone(), line_number) {
                     Ok(_) => {
                         self.start_transaction(&mut transaction);
                         self.finalize_transaction(&mut transaction);
@@ -93,8 +84,6 @@ impl GridController {
                 "getCells can only be called for non-user transaction".to_string(),
             ));
         }
-
-        let rect = Rect::from_numbers(get_cells.x, get_cells.y, get_cells.w, get_cells.h);
         let response = sheet.get_cells_response(rect);
         transaction
             .cells_accessed
@@ -113,12 +102,12 @@ mod test {
     fn test_calculation_get_cells_bad_transaction_id() {
         let mut gc = GridController::test();
 
-        let result = gc.calculation_get_cells(JsComputeGetCells::new(
+        let result = gc.calculation_get_cells(
             "bad transaction id".to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         assert!(result.is_err());
     }
 
@@ -126,12 +115,12 @@ mod test {
     fn test_calculation_get_cells_no_transaction() {
         let mut gc = GridController::test();
 
-        let result = gc.calculation_get_cells(JsComputeGetCells::new(
+        let result = gc.calculation_get_cells(
             Uuid::new_v4().to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         assert!(result.is_err());
     }
 
@@ -153,12 +142,8 @@ mod test {
         let transactions = gc.transactions.async_transactions_mut();
         transactions[0].current_sheet_pos = None;
         let transaction_id = transactions[0].id.to_string();
-        let result = gc.calculation_get_cells(JsComputeGetCells::new(
-            transaction_id,
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        ));
+        let result =
+            gc.calculation_get_cells(transaction_id, Rect::from_numbers(0, 0, 1, 1), None, None);
         assert!(result.is_err());
     }
 
@@ -178,12 +163,12 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells(JsComputeGetCells::new(
+        let result = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             Some("bad sheet name".to_string()),
             None,
-        ));
+        );
         assert!(result.is_err());
         let sheet = gc.sheet(sheet_id);
         let error = sheet
@@ -224,12 +209,12 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells(JsComputeGetCells::new(
+        let result = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 1, 1, 1),
             None,
             None,
-        ));
+        );
         assert!(result.is_ok());
 
         let sheet = gc.sheet(sheet_id);
@@ -273,22 +258,20 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells(JsComputeGetCells::new(
+        let result = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         assert_eq!(
             result,
-            Ok(GetCellsResponse {
-                response: vec![GetCellResponse {
-                    x: 0,
-                    y: 0,
-                    value: "test".into(),
-                    type_name: "text".into()
-                }]
-            })
+            Ok(vec![JsGetCellResponse {
+                x: 0,
+                y: 0,
+                value: "test".into(),
+                type_name: "text".into()
+            }])
         );
     }
 }

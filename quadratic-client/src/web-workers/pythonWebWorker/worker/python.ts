@@ -1,4 +1,5 @@
 import { debugWebWorkers } from '@/debugFlags';
+import { JsGetCellResponse } from '@/quadratic-core-types';
 import { PyodideInterface, loadPyodide } from 'pyodide';
 import { CodeRun, PythonStateType } from '../pythonClientMessages';
 import { CorePythonRun } from '../pythonCoreMessages';
@@ -12,6 +13,7 @@ class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];
   private state!: PythonStateType;
+  private transactionId?: string;
 
   constructor() {
     this.awaitingExecution = [];
@@ -26,8 +28,21 @@ class Python {
     y1: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<{ x: number; y: number; value: string; type_name: string }[]> => {
-    return await pythonCore.sendGetCells(x0, y0, x1, y1, sheet, lineNumber);
+  ): Promise<JsGetCellResponse[]> => {
+    if (!this.transactionId) {
+      throw new Error('No transactionId in getCells');
+    }
+    const cells = await pythonCore.sendGetCells(
+      this.transactionId,
+      x0,
+      y0,
+      x1 - x0 + 1,
+      y1 - y0 + 1,
+      sheet,
+      lineNumber
+    );
+    console.log(cells);
+    return cells;
   };
 
   init = async () => {
@@ -111,6 +126,8 @@ class Python {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
     }
+
+    this.transactionId = message.transactionId;
 
     // auto load packages
     await this.pyodide.loadPackagesFromImports(message.code);

@@ -664,11 +664,11 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.data_bounds,
+            sheet.bounds(true),
             GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
         );
         assert_eq!(
-            sheet.format_bounds,
+            sheet.bounds(false),
             GridBounds::NonEmpty(Rect::from_numbers(1, 2, 3, 4))
         );
     }

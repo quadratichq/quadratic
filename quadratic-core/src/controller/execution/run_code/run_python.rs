@@ -32,8 +32,7 @@ mod tests {
     use super::*;
     use crate::{
         controller::{
-            execution::run_code::get_cells::{GetCellResponse, GetCellsResponse},
-            transaction_types::{JsCodeResult, JsComputeGetCells},
+            execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
         },
         grid::js_types::JsRenderCell,
         ArraySize, CellValue, Pos, Rect,
@@ -157,23 +156,21 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells request from python
-        let cells = gc.calculation_get_cells(JsComputeGetCells::new(
+        let cells = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         assert!(cells.is_ok());
         assert_eq!(
             cells,
-            Ok(GetCellsResponse {
-                response: vec![GetCellResponse {
-                    x: 0,
-                    y: 0,
-                    value: "9".into(),
-                    type_name: "number".into(),
-                }]
-            })
+            Ok(vec![JsGetCellResponse {
+                x: 0,
+                y: 0,
+                value: "9".into(),
+                type_name: "number".into(),
+            }])
         );
 
         // mock the python calculation returning the result
@@ -232,12 +229,12 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells to populate dependencies
-        let _ = gc.calculation_get_cells(JsComputeGetCells::new(
+        let _ = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         // mock the calculation_complete
         let _ = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
@@ -266,22 +263,20 @@ mod tests {
 
         let transaction_id = gc.async_transactions()[0].id;
 
-        let cells = gc.calculation_get_cells(JsComputeGetCells::new(
+        let cells = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         assert_eq!(
             cells,
-            Ok(GetCellsResponse {
-                response: vec![GetCellResponse {
-                    x: 0,
-                    y: 0,
-                    value: "10".into(),
-                    type_name: "number".into(),
-                }]
-            })
+            Ok(vec![JsGetCellResponse {
+                x: 0,
+                y: 0,
+                value: "10".into(),
+                type_name: "number".into(),
+            }])
         );
         assert!(gc
             .calculation_complete(JsCodeResult::new(
@@ -553,18 +548,18 @@ mod tests {
         let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc
-            .calculation_get_cells(JsComputeGetCells::new(
+            .calculation_get_cells(
                 transaction_id.to_string(),
                 Rect::from_numbers(0, 0, 1, 1),
                 None,
                 None,
-            ))
+            )
             .ok()
             .unwrap();
-        assert_eq!(result.response.len(), 1);
+        assert_eq!(result.len(), 1);
         assert_eq!(
-            result.response[0],
-            GetCellResponse {
+            result[0],
+            JsGetCellResponse {
                 x: 0,
                 y: 0,
                 value: "1".into(),
@@ -600,18 +595,18 @@ mod tests {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc
-            .calculation_get_cells(JsComputeGetCells::new(
+            .calculation_get_cells(
                 transaction_id.to_string(),
                 Rect::from_numbers(0, 1, 1, 1),
                 None,
                 None,
-            ))
+            )
             .ok()
             .unwrap();
-        assert_eq!(result.response.len(), 1);
+        assert_eq!(result.len(), 1);
         assert_eq!(
-            result.response[0],
-            GetCellResponse {
+            result[0],
+            JsGetCellResponse {
                 x: 0,
                 y: 1,
                 value: "2".into(),

@@ -1,4 +1,5 @@
 import { debugWebWorkers } from '@/debugFlags';
+import { JsGetCellResponse } from '@/quadratic-core-types';
 import { CorePythonMessage, PythonCoreMessage } from '../../pythonWebWorker/pythonCoreMessages';
 import { core } from './core';
 
@@ -21,6 +22,19 @@ class CorePython {
     switch (e.data.type) {
       case 'pythonCoreResults':
         core.calculationComplete(e.data.transactionId, e.data.results);
+        break;
+
+      case 'pythonCoreGetCells':
+        core.getCells(
+          e.data.id,
+          e.data.transactionId,
+          e.data.x,
+          e.data.y,
+          e.data.w,
+          e.data.h,
+          e.data.sheet,
+          e.data.lineNumber
+        );
         break;
 
       default:
@@ -46,6 +60,14 @@ class CorePython {
       code,
     });
   };
+
+  sendGetCells(id: number, cells: JsGetCellResponse[]) {
+    this.send({
+      type: 'corePythonGetCells',
+      id,
+      cells,
+    });
+  }
 }
 
 export const corePython = new CorePython();

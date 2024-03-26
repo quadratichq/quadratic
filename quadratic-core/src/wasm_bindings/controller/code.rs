@@ -12,13 +12,26 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "calculationGetCells")]
-    pub fn js_calculation_get_cells(&mut self, get_cells: String) -> Result<JsValue, JsValue> {
-        let Ok(get_cells) = serde_json::from_str(&get_cells) else {
-            return Err(JsValue::UNDEFINED);
-        };
-        match self.calculation_get_cells(get_cells) {
-            Ok(get_cells) => Ok(serde_wasm_bindgen::to_value(&get_cells)?),
-            Err(e) => Err(serde_wasm_bindgen::to_value(&e)?),
+    pub fn js_calculation_get_cells(
+        &mut self,
+        transaction_id: String,
+        x: i32,
+        y: i32,
+        w: i32,
+        h: i32,
+        sheet_name: Option<String>,
+        line_number: Option<u32>,
+    ) -> Result<String, JsValue> {
+        let rect = Rect::from_numbers(x as i64, y as i64, w as i64, h as i64);
+        match self.calculation_get_cells(transaction_id, rect, sheet_name, line_number) {
+            Ok(get_cells) => match serde_json::to_string(&get_cells) {
+                Ok(json) => Ok(json),
+                Err(_) => {
+                    dbgjs!("calculationGetCells: Failed to serialize calculation result");
+                    Err(JsValue::UNDEFINED)
+                }
+            },
+            Err(_) => Err(JsValue::UNDEFINED),
         }
     }
 

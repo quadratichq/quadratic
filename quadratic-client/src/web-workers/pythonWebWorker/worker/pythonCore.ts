@@ -1,5 +1,6 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
+import { JsGetCellResponse } from '@/quadratic-core-types';
+import { CorePythonGetCells, CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
 import { PythonRun } from '../pythonTypes';
 import { python } from './python';
 
@@ -26,19 +27,21 @@ class PythonCore {
     switch (e.data.type) {
       case 'corePythonRun':
         python.runPython(e.data);
-        break;
-
-      default:
-        console.warn('[coreClient] Unhandled message type', e.data);
+        return;
     }
 
-    // if (e.data.id) {
-    //   const response = this.waitingForResponse[e.data.id];
-    //   if (response) {
-    //     response(e.data);
-    //     delete this.waitingForResponse[e.data.id];
-    //   }
-    // }
+    if (e.data.id !== undefined) {
+      const response = this.waitingForResponse[e.data.id];
+      if (response) {
+        response(e.data);
+        delete this.waitingForResponse[e.data.id];
+        return;
+      } else {
+        console.error(`[pythonCore] no response for id ${e.data.id}`);
+      }
+    }
+
+    console.warn("[pythonCore] didn't handle message", e.data);
   };
 
   sendPythonResults(transactionId: string, results: PythonRun) {
@@ -50,18 +53,18 @@ class PythonCore {
   }
 
   sendGetCells(
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
+    transactionId: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<{ x: number; y: number; value: string; type_name: string }[]> {
+  ): Promise<JsGetCellResponse[]> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (cells: { x: number; y: number; value: string; type_name: string }[]) =>
-        resolve(cells);
-      resolve([]);
+      this.waitingForResponse[id] = (message: CorePythonGetCells) => resolve(message.cells);
+      this.send({ type: 'pythonCoreGetCells', transactionId, id, x, y, w, h, sheet, lineNumber });
     });
   }
 }
