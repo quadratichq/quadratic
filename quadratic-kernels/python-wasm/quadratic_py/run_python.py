@@ -44,18 +44,18 @@ async def getCellsInner(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=Non
             cells_accessed.append([x, y, sheet])
 
     return await getCells(p0, p1, sheet, first_row_header)
-    
-globals = {
-    "getCells": getCellsInner,
-    "getCell": getCellInner,
-    "c": getCellInner,
-    "result": None,
-    "cell": getCellInner,
-    "cells": getCellsInner,
-}
 
 async def run_python(code: str, pos: Tuple[int, int]):
-    sout = StringIO()   
+    globals = {
+        "getCells": getCellsInner,
+        "getCell": getCellInner,
+        "c": getCellInner,
+        "result": None,
+        "cell": getCellInner,
+        "cells": getCellsInner,
+    }
+
+    sout = StringIO()
     serr = StringIO()
     output_value = None
     globals['pos'] = lambda: (pos.x, pos.y)
