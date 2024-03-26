@@ -119,17 +119,11 @@ export default function CreateFileButton() {
   return (
     <div className="flex">
       <Button asChild variant="outline">
-        <label className="cursor-pointer">
-          Import file
-          <input type="file" name="content" accept=".grid" onChange={handleImport} hidden />
-        </label>
-      </Button>
-      <Button asChild>
-        <Link to={actionUrl}>Create file</Link>
+        <label className="cursor-pointer">Import file</label>
       </Button>
       <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>
-          <Button className={'rounded-l-none border-l-0 px-2'}>
+          <Button variant="outline" className={'mr-2 rounded-l-none border-l-0 px-2'}>
             <CaretDownIcon />
           </Button>
         </DropdownMenuTrigger>
@@ -138,6 +132,9 @@ export default function CreateFileButton() {
           <DropDownButton extension="xlsx" />
         </DropdownMenuContent>
       </DropdownMenu>
+      <Button asChild>
+        <Link to={actionUrl}>Create file</Link>
+      </Button>
     </div>
   );
 }
