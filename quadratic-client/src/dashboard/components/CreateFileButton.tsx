@@ -87,8 +87,8 @@ export default function CreateFileButton() {
     e.target.value = '';
   };
 
-  const DropDownButton = (props: { extension: string }): JSX.Element => {
-    let { extension } = props;
+  const DropDownButton = (props: { extension: string; name: string }): JSX.Element => {
+    const { name, extension } = props;
 
     return (
       <DropdownMenuItem
@@ -99,8 +99,8 @@ export default function CreateFileButton() {
           e.preventDefault();
         }}
       >
-        <label className="cursor-pointer">
-          Import <span className="mx-1 font-mono">.{extension}</span> file
+        <label className="flex cursor-pointer justify-between gap-4">
+          {name} <span className="mx-1 font-mono text-xs text-muted-foreground">.{extension}</span>
           <input
             type="file"
             name="content"
@@ -117,17 +117,16 @@ export default function CreateFileButton() {
   };
 
   return (
-    <div className="flex">
+    <div className="flex gap-2">
       <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="mr-2 flex items-center gap-2 pl-2 pr-2">
-            <label className="cursor-pointer">Import file</label>
-            <CaretDownIcon />
+          <Button variant="outline">
+            Import file <CaretDownIcon />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropDownButton extension="grid" />
-          <DropDownButton extension="xlsx" />
+          <DropDownButton name="Quadratic" extension="grid" />
+          <DropDownButton name="Excel" extension="xlsx" />
         </DropdownMenuContent>
       </DropdownMenu>
       <Button asChild>
