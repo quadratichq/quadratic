@@ -90,7 +90,7 @@ impl GridController {
                 let size: (usize, usize) = range.get_size();
 
                 for row in range.rows() {
-                    for (_col_index, col) in row.into_iter().enumerate() {
+                    for col in row.iter() {
                         let cell_value = match col {
                             ExcelData::Empty => CellValue::Blank,
                             ExcelData::String(value) => CellValue::Text(value.to_string()),

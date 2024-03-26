@@ -187,7 +187,6 @@ export class Grid {
   // import/export
   openFromContents(contents: string, lastSequenceNum: number): boolean {
     try {
-      console.log(contents);
       this.gridController = GridController.newFromFile(contents, lastSequenceNum);
       return true;
     } catch (e) {

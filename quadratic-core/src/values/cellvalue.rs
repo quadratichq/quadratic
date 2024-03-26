@@ -302,7 +302,7 @@ impl CellValue {
     }
 
     pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
-        BigDecimal::from_str(value).map_or_else(|_| default, |v| CellValue::Number(v))
+        BigDecimal::from_str(value).map_or_else(|_| default, CellValue::Number)
     }
 
     pub fn is_blank_or_empty_string(&self) -> bool {

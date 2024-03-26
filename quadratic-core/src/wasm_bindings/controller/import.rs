@@ -33,7 +33,7 @@ impl GridController {
     pub fn js_import_excel(file: Vec<u8>, file_name: &str) -> Result<GridController, JsValue> {
         let grid = Grid::new_blank();
         let mut grid_controller = GridController::from_grid(grid, 0);
-        let _output = grid_controller
+        grid_controller
             .import_excel(file, file_name)
             .map_err(|e| e.to_string())?;
 

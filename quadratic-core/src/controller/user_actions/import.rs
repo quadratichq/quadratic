@@ -70,7 +70,7 @@ Concord,NH,United States,42605
 "#;
 
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/temperature.xlsx";
-    const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/all_datatypes.xlsx";
+    const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/basic.xlsx";
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/financial_sample.xlsx";
     const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
     const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
@@ -165,7 +165,7 @@ Concord,NH,United States,42605
         let mut file = File::open(EXCEL_FILE).unwrap();
         let metadata = std::fs::metadata(EXCEL_FILE).expect("unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];
-        file.read(&mut buffer).expect("buffer overflow");
+        file.read_exact(&mut buffer).expect("buffer overflow");
 
         let _ = grid_controller.import_excel(buffer, "temperature.xlsx");
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -176,47 +176,47 @@ Concord,NH,United States,42605
             Rect::new_span(pos, Pos { x: 10, y: 10 }),
         );
 
-        // assert_cell_value_row(
-        //     &grid_controller,
-        //     sheet_id,
-        //     0,
-        //     10,
-        //     0,
-        //     vec![
-        //         "Empty",
-        //         "String",
-        //         "DateTimeIso",
-        //         "DurationIso",
-        //         "Float",
-        //         "DateTime",
-        //         "Int",
-        //         "Error",
-        //         "Bool",
-        //         "Bold",
-        //         "Red",
-        //     ],
-        // );
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            0,
+            vec![
+                "Empty",
+                "String",
+                "DateTimeIso",
+                "DurationIso",
+                "Float",
+                "DateTime",
+                "Int",
+                "Error",
+                "Bool",
+                "Bold",
+                "Red",
+            ],
+        );
 
-        // assert_cell_value_row(
-        //     &grid_controller,
-        //     sheet_id,
-        //     0,
-        //     10,
-        //     1,
-        //     vec![
-        //         "",
-        //         "Hello",
-        //         "2016-10-20 0:00:00",
-        //         "2400:00:00",
-        //         "1.11",
-        //         "1/1/2024 1:00 PM",
-        //         "1",
-        //         "",
-        //         "TRUE",
-        //         "Hello Bold",
-        //         "Hello Red",
-        //     ],
-        // );
+        assert_cell_value_row(
+            &grid_controller,
+            sheet_id,
+            0,
+            10,
+            1,
+            vec![
+                "",
+                "Hello",
+                "2016-10-20 00:00:00",
+                "",
+                "1.1",
+                "2024-01-01 13:00:00",
+                "1",
+                "",
+                "TRUE",
+                "Hello Bold",
+                "Hello Red",
+            ],
+        );
     }
 
     #[test]
@@ -227,7 +227,7 @@ Concord,NH,United States,42605
         let mut file = File::open(PARQUET_FILE).unwrap();
         let metadata = std::fs::metadata(PARQUET_FILE).expect("unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];
-        file.read(&mut buffer).expect("buffer overflow");
+        file.read_exact(&mut buffer).expect("buffer overflow");
 
         let _ =
             grid_controller.import_parquet(sheet_id, buffer, "alltypes_plain.parquet", pos, None);
@@ -310,7 +310,7 @@ Concord,NH,United States,42605
         let mut file = File::open(MEDIUM_PARQUET_FILE).unwrap();
         let metadata = std::fs::metadata(MEDIUM_PARQUET_FILE).expect("unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];
-        file.read(&mut buffer).expect("buffer overflow");
+        file.read_exact(&mut buffer).expect("buffer overflow");
 
         let _ = grid_controller.import_parquet(sheet_id, buffer, "lineitem.parquet", pos, None);
 
