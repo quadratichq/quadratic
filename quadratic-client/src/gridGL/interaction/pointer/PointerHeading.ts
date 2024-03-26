@@ -12,6 +12,9 @@ import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
+export interface ResizeHeadingColumnEvent extends CustomEvent {
+  detail: number;
+}
 export class PointerHeading {
   private active = false;
   private downTimeout: number | undefined;
@@ -183,6 +186,8 @@ export class PointerHeading {
             delta: size - this.resizing.lastSize,
           });
           this.resizing.lastSize = size;
+
+          window.dispatchEvent(new CustomEvent<number>('resize-heading-column', { detail: this.resizing.column }));
         }
       } else if (this.resizing.row !== undefined) {
         let size: number;
@@ -248,6 +253,7 @@ export class PointerHeading {
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
       grid.commitSingleResize(sheetId, column, undefined, size);
+      window.dispatchEvent(new CustomEvent<number>('resize-heading-column', { detail: column }));
     }
   }
 
