@@ -335,7 +335,6 @@ export class CellsTextHash {
       if (this.dirty === false) {
         this.dirty = 'show';
       }
-      console.log(this.dirty);
     }
   }
 }
