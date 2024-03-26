@@ -87,7 +87,7 @@ impl GridController {
                 let range = workbook
                     .worksheet_range(&sheet_name)
                     .map_err(|e: XlsxError| error(e.to_string()))?;
-                let size: (usize, usize) = range.get_size();
+                let size = range.get_size();
 
                 for row in range.rows() {
                     for col in row.iter() {
