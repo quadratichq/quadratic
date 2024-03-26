@@ -30,7 +30,6 @@ impl GridController {
                 });
             }
         }
-
         // send the modified cells to the render web worker
         modified.iter().for_each(|modified| {
             if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {

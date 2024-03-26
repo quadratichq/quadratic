@@ -775,8 +775,6 @@ class Core {
       cancel_compute: false,
     } as JsCodeResult;
 
-    console.log(codeResult);
-
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }

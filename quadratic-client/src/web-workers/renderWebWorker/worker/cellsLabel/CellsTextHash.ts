@@ -98,18 +98,8 @@ export class CellsTextHash {
     return cellLabel;
   }
 
-  async createLabels() {
+  async createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
-    const cells =
-      this.dirty !== true
-        ? (this.dirty as JsRenderCell[])
-        : await renderCore.getRenderCells(
-            this.cellsLabels.sheetId,
-            this.AABB.x,
-            this.AABB.y,
-            this.AABB.width,
-            this.AABB.height
-          );
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
   }
@@ -123,11 +113,26 @@ export class CellsTextHash {
 
   async update(): Promise<boolean> {
     if (this.dirty) {
+      // if dirty is true, then we need to get the cells from the server; but we
+      // need to keep open the case where we receive new cells after dirty is
+      // set to false.
+      const dirty = this.dirty;
+      this.dirty = false;
+      const cells =
+        dirty === true
+          ? await renderCore.getRenderCells(
+              this.cellsLabels.sheetId,
+              this.AABB.x,
+              this.AABB.y,
+              this.AABB.width,
+              this.AABB.height
+            )
+          : dirty;
+
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
-      await this.createLabels();
+      await this.createLabels(cells);
       this.overflowClip();
       this.updateBuffers(); // false
-      this.dirty = false;
       this.dirtyBuffers = false;
       return true;
     } else if (this.dirtyBuffers) {

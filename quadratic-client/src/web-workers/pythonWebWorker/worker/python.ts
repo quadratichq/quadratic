@@ -41,7 +41,6 @@ class Python {
       sheet,
       lineNumber
     );
-    console.log(cells);
     return cells;
   };
 
@@ -99,9 +98,7 @@ class Python {
       this.state = 'running';
       const run = this.awaitingExecution.shift();
       if (run) {
-        pythonClient.sendPythonState('running', { current: run, awaitingExecution: this.awaitingExecution });
         await this.runPython(this.codeRunToCorePython(run));
-        pythonClient.sendPythonState('ready', { current: undefined });
         this.state = 'ready';
       }
     }
@@ -126,6 +123,10 @@ class Python {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
     }
+    pythonClient.sendPythonState('running', {
+      current: this.corePythonRunToCodeRun(message),
+      awaitingExecution: this.awaitingExecution,
+    });
 
     this.transactionId = message.transactionId;
 
@@ -174,6 +175,7 @@ class Python {
     // destroy the output as it can cause memory leaks
     if (result) result.destroy();
 
+    pythonClient.sendPythonState('ready', { current: undefined });
     this.state = 'ready';
     setTimeout(this.next, 0);
   }
