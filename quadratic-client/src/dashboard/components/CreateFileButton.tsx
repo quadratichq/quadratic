@@ -118,12 +118,10 @@ export default function CreateFileButton() {
 
   return (
     <div className="flex">
-      <Button asChild variant="outline">
-        <label className="cursor-pointer">Import file</label>
-      </Button>
       <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className={'mr-2 rounded-l-none border-l-0 px-2'}>
+          <Button variant="outline" className="mr-2 flex items-center gap-2 pl-2 pr-2">
+            <label className="cursor-pointer">Import file</label>
             <CaretDownIcon />
           </Button>
         </DropdownMenuTrigger>
