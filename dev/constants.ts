@@ -9,7 +9,12 @@ export const COMPONENTS = {
     shortcut: "m",
   },
   files: { color: "yellow", dark: "yellow", name: "Files", shortcut: "f" },
-  python: { color: "blueBright", dark: "blueBright", name: "Python", shortcut: "y" },
+  python: {
+    color: "blueBright",
+    dark: "blueBright",
+    name: "Python",
+    shortcut: "y",
+  },
   types: { color: "magenta", dark: "cyan", name: "Types", shortcut: "t" },
   db: {
     color: "gray",
@@ -42,6 +47,12 @@ export const COMPONENTS = {
     dark: "gray",
     name: "Redis",
   },
+  gridOffsets: {
+    name: "Offsets",
+    color: "gray",
+    dark: "gray",
+    shortcut: "o",
+  },
 };
 
 export const SPACE = "     ";
@@ -51,5 +62,6 @@ export const KILLED = "☠";
 export const ANIMATE_STATUS = ["◐", "◓", "◑", "◒"];
 export const WATCH = "👀";
 export const NO_LOGS = "🙈"; // AI picked this awesome character
+export const PERF = "🚀";
 
 export const ANIMATION_INTERVAL = 100;

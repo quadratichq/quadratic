@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { useRootRouteLoaderData } from '@/router';
 import { FeedbackIcon } from '@/ui/icons';
 import { Commit } from '@mui/icons-material';
@@ -36,11 +37,11 @@ export const BottomBar = () => {
       }
     };
     updateCursor();
-    window.addEventListener('cursor-position', updateCursor);
-    window.addEventListener('change-sheet', updateCursor);
+    events.on('cursorPosition', updateCursor);
+    events.on('changeSheet', updateCursor);
     return () => {
-      window.removeEventListener('cursor-position', updateCursor);
-      window.removeEventListener('change-sheet', updateCursor);
+      events.off('cursorPosition', updateCursor);
+      events.off('changeSheet', updateCursor);
     };
   }, []);
 

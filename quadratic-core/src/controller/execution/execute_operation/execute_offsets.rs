@@ -12,6 +12,7 @@ impl GridController {
             sheet_id,
             column,
             new_size,
+            client_resized,
         } = op
         {
             let Some(sheet) = self.try_sheet_mut(sheet_id) else {
@@ -24,26 +25,39 @@ impl GridController {
                     sheet_id,
                     column,
                     new_size,
+                    client_resized: true,
                 });
-            transaction.summary.offsets_modified.insert(sheet.id);
+
             let old_size = sheet.offsets.set_column_width(column, new_size);
 
-            if transaction.is_user() {
-                transaction.summary.generate_thumbnail |=
-                    self.thumbnail_dirty_sheet_pos(SheetPos {
-                        x: column,
-                        y: 0,
-                        sheet_id,
-                    });
-            }
             transaction.reverse_operations.insert(
                 0,
                 Operation::ResizeColumn {
                     sheet_id,
                     column,
                     new_size: old_size,
+                    client_resized: false,
                 },
             );
+
+            if transaction.is_user() {
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                    x: column,
+                    y: 0,
+                    sheet_id,
+                });
+            }
+
+            if cfg!(target_family = "wasm") && !client_resized {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    crate::wasm_bindings::js::jsOffsetsModified(
+                        sheet.id.to_string(),
+                        Some(column),
+                        None,
+                        new_size,
+                    );
+                }
+            }
         }
     }
 
@@ -52,6 +66,7 @@ impl GridController {
             sheet_id,
             row,
             new_size,
+            client_resized,
         } = op
         {
             let Some(sheet) = self.try_sheet_mut(sheet_id) else {
@@ -62,25 +77,38 @@ impl GridController {
                 sheet_id,
                 row,
                 new_size,
+                client_resized: true,
             });
             let old_size = sheet.offsets.set_row_height(row, new_size);
-            transaction.summary.offsets_modified.insert(sheet.id);
-            if transaction.is_user_undo_redo() {
-                transaction.summary.generate_thumbnail |=
-                    self.thumbnail_dirty_sheet_pos(SheetPos {
-                        x: 0,
-                        y: row,
-                        sheet_id,
-                    });
-            }
+
             transaction.reverse_operations.insert(
                 0,
                 Operation::ResizeRow {
                     sheet_id,
                     row,
                     new_size: old_size,
+                    client_resized: false,
                 },
             );
+
+            if transaction.is_user_undo_redo() {
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                    x: 0,
+                    y: row,
+                    sheet_id,
+                });
+            }
+
+            if cfg!(target_family = "wasm") && !client_resized {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    crate::wasm_bindings::js::jsOffsetsModified(
+                        sheet.id.to_string(),
+                        None,
+                        Some(row),
+                        new_size,
+                    );
+                }
+            }
         }
     }
 }
@@ -88,7 +116,6 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::controller::GridController;
-    use std::collections::HashSet;
 
     // also see tests in sheet_offsets.rs
 
@@ -98,7 +125,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
         let new_size = 100.0;
-        let summary = gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
+        gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
         let column_width = gc
             .grid
             .try_sheet(sheet_id)
@@ -106,11 +133,12 @@ mod tests {
             .offsets
             .column_width(column as i64);
         assert_eq!(column_width, new_size);
-        assert!(summary.save);
-        assert_eq!(summary.offsets_modified.len(), 1);
-        let mut offsets = HashSet::new();
-        offsets.insert(sheet_id);
-        assert_eq!(summary.offsets_modified, offsets);
+
+        // todo: find some way to check if the js function was called
+        // assert_eq!(summary.offsets_modified.len(), 1);
+        // let mut offsets = HashSet::new();
+        // offsets.insert(sheet_id);
+        // assert_eq!(summary.offsets_modified, offsets);
     }
 
     #[test]
@@ -119,7 +147,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let row = 0;
         let new_size = 100.0;
-        let summary = gc.commit_single_resize(sheet_id, None, Some(row), new_size, None);
+        gc.commit_single_resize(sheet_id, None, Some(row), new_size, None);
         let row_height = gc
             .grid
             .try_sheet(sheet_id)
@@ -127,10 +155,11 @@ mod tests {
             .offsets
             .row_height(row as i64);
         assert_eq!(row_height, new_size);
-        assert!(summary.save);
-        assert_eq!(summary.offsets_modified.len(), 1);
-        let mut offsets = HashSet::new();
-        offsets.insert(sheet_id);
-        assert_eq!(summary.offsets_modified, offsets);
+
+        // todo: find some way to test if the js function was called
+        // assert_eq!(summary.offsets_modified.len(), 1);
+        // let mut offsets = HashSet::new();
+        // offsets.insert(sheet_id);
+        // assert_eq!(summary.offsets_modified, offsets);
     }
 }

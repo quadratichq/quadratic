@@ -1,4 +1,4 @@
-import { CodeCellLanguage } from '@/quadratic-core/types';
+import { CodeCellLanguage } from '@/quadratic-core-types';
 import monaco from 'monaco-editor';
 import { useEffect } from 'react';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';

@@ -1,6 +1,6 @@
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -23,10 +23,6 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     sheet.cursor.changePosition({
       cursorPosition: { x: column, y: row },
       keyboardMovePosition: { x: column, y: row },
-      multiCursor: {
-        originPosition: { x: column, y: row },
-        terminalPosition: { x: column, y: row },
-      },
     });
   };
 
@@ -36,7 +32,6 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-
       moveCursor(e);
     } else if (e.type === 'dragleave') {
       setDragActive(false);
@@ -64,8 +59,14 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const insertAtCellLocation = { x: column, y: row } as Coordinate;
 
-        if (isCsv) grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
-        if (isParquet) grid.importParquet(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+        if (isCsv) {
+          const error = await quadraticCore.importCsv(sheets.sheet.id, file, insertAtCellLocation);
+          if (error) addGlobalSnackbar(error);
+        }
+        if (isParquet) {
+          const error = await quadraticCore.importParquet(sheets.sheet.id, file, insertAtCellLocation);
+          if (error) addGlobalSnackbar(error);
+        }
       } else {
         addGlobalSnackbar('File type not supported. Please upload a CSV file.');
       }
@@ -76,7 +77,7 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
     <div
       ref={divRef}
       onDragEnter={handleDrag}
-      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', position: 'relative' }}
     >
       {props.children}
       {dragActive && (

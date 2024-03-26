@@ -1,4 +1,4 @@
-import { upgradeFileRust } from '../grid/controller/Grid';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { validateAndUpgradeLegacyGridFile } from './validateAndUpgradeLegacyGridFile';
 
 /**
@@ -16,5 +16,6 @@ export async function validateAndUpgradeGridFile(
   if (file === null) return null;
 
   // There cannot be a sequence_num before v1.5
-  return await upgradeFileRust(file, 0);
+  const results = await quadraticCore.upgradeGridFile(JSON.stringify(file), 0);
+  return { contents: results.grid, version: results.version };
 }

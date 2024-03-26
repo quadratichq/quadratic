@@ -1,10 +1,12 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
-import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { Sheet } from '@/grid/sheet/Sheet';
+import { JsRenderCodeCell } from '@/quadratic-core-types';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
-import { Sheet } from '../../grid/sheet/Sheet';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { intersects } from '../helpers/intersects';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsSheet } from './CellsSheet';
 import { BorderCull, borderLineWidth, drawBorder, drawLine } from './drawBorders';
@@ -15,8 +17,9 @@ const SPILL_FILL_ALPHA = 0.025;
 
 export class CellsArray extends Container {
   private cellsSheet: CellsSheet;
-  private particles: ParticleContainer;
+  private codeCells: JsRenderCodeCell[];
 
+  private particles: ParticleContainer;
   // only used for the spill error indicators (lines are drawn using sprites in particles for performance)
   private graphics: Graphics;
   private lines: BorderCull[];
@@ -27,19 +30,47 @@ export class CellsArray extends Container {
     this.graphics = this.addChild(new Graphics());
     this.cellsSheet = cellsSheet;
     this.lines = [];
+    this.codeCells = [];
+    events.on('renderCodeCells', (sheetId, codeCells) => {
+      if (sheetId === this.cellsSheet.sheetId) {
+        this.codeCells = codeCells;
+        this.create();
+      }
+    });
+    events.on('sheetOffsets', (sheetId) => {
+      if (sheetId === this.cellsSheet.sheetId) {
+        this.create();
+      }
+    });
+    events.on('updateCodeCell', (sheetId, _, renderCodeCell) => {
+      if (sheetId === this.cellsSheet.sheetId) {
+        const index = this.codeCells.findIndex((cell) => cell.x === renderCodeCell.x && cell.y === renderCodeCell.y);
+        if (index === -1) {
+          this.codeCells.push(renderCodeCell);
+        } else {
+          this.codeCells[index] = renderCodeCell;
+        }
+        this.create();
+      }
+    });
   }
 
-  get sheet(): Sheet {
-    return this.cellsSheet.sheet;
+  get sheetId(): string {
+    return this.cellsSheet.sheetId;
   }
 
-  create(): void {
+  private create() {
+    this.lines = [];
     this.particles.removeChildren();
     this.graphics.clear();
-    this.lines = [];
-    const cursor = sheets.sheet.cursor;
-    const codeCells = this.cellsSheet.sheet.getRenderCodeCells();
     this.cellsSheet.cellsMarkers.clear();
+    const codeCells = this.codeCells;
+    if (codeCells.length === 0) {
+      pixiApp.setViewportDirty();
+      return;
+    }
+
+    const cursor = sheets.sheet.cursor;
     const cursorRectangle = cursor.getRectangle();
 
     // need to adjust the cursor rectangle for intersection testing
@@ -48,15 +79,25 @@ export class CellsArray extends Container {
     codeCells?.forEach((codeCell) => {
       this.draw(codeCell, cursorRectangle);
     });
+    pixiApp.setViewportDirty();
+  }
+
+  updateCellsArray() {
+    this.create();
   }
 
   cheapCull(bounds: Rectangle): void {
     this.lines.forEach((line) => (line.sprite.visible = intersects.rectangleRectangle(bounds, line.rectangle)));
   }
 
+  get sheet(): Sheet {
+    const sheet = sheets.getById(this.sheetId);
+    if (!sheet) throw new Error('Expected sheet to be defined in CellsArray.sheet');
+    return sheet;
+  }
+
   private draw(codeCell: JsRenderCodeCell, cursorRectangle: Rectangle): void {
     const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
-    let end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
 
     const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w, codeCell.h);
     if (codeCell.spill_error) {
@@ -80,6 +121,7 @@ export class CellsArray extends Container {
     }
 
     this.cellsSheet.cellsMarkers.add(start, codeCell, true);
+    const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     if (codeCell.spill_error) {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;
       if (cursorPosition.x !== Number(codeCell.x) || cursorPosition.y !== Number(codeCell.y)) {

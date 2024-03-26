@@ -1,6 +1,8 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { CellFormatSummary } from '@/quadratic-core-types';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { ClipboardEvent, useCallback, useRef, useState } from 'react';
+import { ClipboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
@@ -23,8 +25,18 @@ export const CellInput = () => {
   const text = useRef('');
 
   const cellOffsets = sheet.getCellOffsets(cellLocation.x, cellLocation.y);
-  const cell = sheet.getEditCell(cellLocation.x, cellLocation.y);
-  const formatting = sheet.getCellFormatSummary(cellLocation.x, cellLocation.y);
+
+  // get the cell edit value and formatting summary
+  const [cell, setCell] = useState<string | undefined>();
+  const [formatting, setFormatting] = useState<CellFormatSummary | undefined>();
+  useEffect(() => {
+    (async () => {
+      const value = await quadraticCore.getEditCell(sheets.sheet.id, cellLocation.x, cellLocation.y);
+      setCell(value);
+      const format = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cellLocation.x, cellLocation.y);
+      setFormatting(format);
+    })();
+  }, [cellLocation]);
 
   // handle temporary changes to bold and italic (via keyboard)
   const [temporaryBold, setTemporaryBold] = useState<undefined | boolean>();
@@ -105,7 +117,7 @@ export const CellInput = () => {
     const value = textInput.innerText;
 
     if (!cancel && (value.trim() || cell)) {
-      sheet.setCellValue(cellLocation.x, cellLocation.y, value);
+      quadraticCore.setCellValue(sheets.sheet.id, cellLocation.x, cellLocation.y, value, sheets.getCursorPosition());
       setTemporaryBold(undefined);
       setTemporaryItalic(undefined);
       textInput.innerText = '';

@@ -1,3 +1,4 @@
+import { ImportProgress } from '@/ui/components/ImportProgress';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -83,6 +84,7 @@ export default function QuadraticGrid() {
     <div
       ref={containerRef}
       style={{
+        position: 'relative',
         width: '100%',
         height: '100%',
         outline: 'none',
@@ -113,6 +115,7 @@ export default function QuadraticGrid() {
     >
       <HTMLGridContainer parent={container} />
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
+      <ImportProgress />
     </div>
   );
 }

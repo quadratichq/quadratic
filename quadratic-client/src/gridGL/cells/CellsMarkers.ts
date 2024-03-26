@@ -1,4 +1,4 @@
-import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { JsRenderCodeCell } from '@/quadratic-core-types';
 import { Container, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';

@@ -1,7 +1,7 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { sheets } from '@/grid/controller/Sheets';
 import { Sheet } from '@/grid/sheet/Sheet';
-import { JsHtmlOutput } from '@/quadratic-core/types';
+import { JsHtmlOutput } from '@/quadratic-core-types';
 import { colors } from '@/theme/colors';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';

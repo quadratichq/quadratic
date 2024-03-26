@@ -1,4 +1,5 @@
-import { BorderSelection, CellBorderLine } from '@/quadratic-core/quadratic_core';
+import { events } from '@/events/events';
+import { BorderSelection, CellBorderLine } from '@/quadratic-core-types';
 import {
   BorderAllIcon,
   BorderBottomIcon,
@@ -36,13 +37,16 @@ export function useGetBorderMenu(): JSX.Element {
 
   const [multiCursor, setMultiCursor] = useState(!!sheet.cursor.multiCursor);
   const clearSelection = useCallback(() => {
-    setBorderSelection(0);
+    setBorderSelection('clear');
     setMultiCursor(!!sheet.cursor.multiCursor);
-  }, [sheet.cursor.multiCursor]);
+  }, [sheet.cursor]);
+
   // clear border type when changing selection
   useEffect(() => {
-    window.addEventListener('cursor-position', clearSelection);
-    return () => window.removeEventListener('cursor-position', clearSelection);
+    events.on('cursorPosition', clearSelection);
+    return () => {
+      events.off('cursorPosition', clearSelection);
+    };
   }, [clearSelection]);
 
   const handleChangeBorders = useCallback(
@@ -104,61 +108,37 @@ export function useGetBorderMenu(): JSX.Element {
     <div className="borderMenu">
       <div className="borderMenuLines">
         <div className="borderMenuLine">
+          <BorderSelectionButton type={'all'} title="All borders" label={<BorderAllIcon className="h-5 w-5" />} />
           <BorderSelectionButton
-            type={BorderSelection.All}
-            title="All borders"
-            label={<BorderAllIcon className="h-5 w-5" />}
-          />
-          <BorderSelectionButton
-            type={BorderSelection.Inner}
+            type={'inner'}
             title="Inner borders"
             label={<BorderInnerIcon className="h-5 w-5" />}
             disabled={!multiCursor}
           />
+          <BorderSelectionButton type={'outer'} title="Outer borders" label={<BorderOuterIcon className="h-5 w-5" />} />
           <BorderSelectionButton
-            type={BorderSelection.Outer}
-            title="Outer borders"
-            label={<BorderOuterIcon className="h-5 w-5" />}
-          />
-          <BorderSelectionButton
-            type={BorderSelection.Horizontal}
+            type={'horizontal'}
             title="Horizontal borders"
             label={<BorderHorizontalIcon className="h-5 w-5" />}
             disabled={!multiCursor}
           />
           <BorderSelectionButton
-            type={BorderSelection.Vertical}
+            type={'vertical'}
             title="Vertical borders"
             label={<BorderVerticalIcon className="h-5 w-5" />}
             disabled={!multiCursor}
           />
         </div>
         <div className="borderMenuLine">
+          <BorderSelectionButton type={'left'} title="Left border" label={<BorderLeftIcon className="h-5 w-5" />} />
+          <BorderSelectionButton type={'top'} title="Top border" label={<BorderTopIcon className="h-5 w-5" />} />
+          <BorderSelectionButton type={'right'} title="Right border" label={<BorderRightIcon className="h-5 w-5" />} />
           <BorderSelectionButton
-            type={BorderSelection.Left}
-            title="Left border"
-            label={<BorderLeftIcon className="h-5 w-5" />}
-          />
-          <BorderSelectionButton
-            type={BorderSelection.Top}
-            title="Top border"
-            label={<BorderTopIcon className="h-5 w-5" />}
-          />
-          <BorderSelectionButton
-            type={BorderSelection.Right}
-            title="Right border"
-            label={<BorderRightIcon className="h-5 w-5" />}
-          />
-          <BorderSelectionButton
-            type={BorderSelection.Bottom}
+            type={'bottom'}
             title="Bottom border"
             label={<BorderBottomIcon className="h-5 w-5" />}
           />
-          <BorderSelectionButton
-            type={BorderSelection.Clear}
-            title="Clear borders"
-            label={<BorderNoneIcon className="h-5 w-5" />}
-          />
+          <BorderSelectionButton type={'clear'} title="Clear borders" label={<BorderNoneIcon className="h-5 w-5" />} />
         </div>
       </div>
       <div className="borderMenuFormatting">
@@ -177,19 +157,19 @@ export function useGetBorderMenu(): JSX.Element {
           <MenuItem onClick={(e) => handleChangeBorderType(e)}>
             <div className="lineStyleBorder normalBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Line2)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, 'line2')}>
             <div className="lineStyleBorder doubleBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Line3)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, 'line3')}>
             <div className="lineStyleBorder tripleBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Dashed)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, 'dashed')}>
             <div className="lineStyleBorder dashedBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Dotted)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, 'dotted')}>
             <div className="lineStyleBorder dottedBorder"></div>
           </MenuItem>
-          <MenuItem onClick={(e) => handleChangeBorderType(e, CellBorderLine.Double)}>
+          <MenuItem onClick={(e) => handleChangeBorderType(e, 'double')}>
             <div className="lineStyleBorder twoLineBorder"></div>
           </MenuItem>
         </SubMenu>

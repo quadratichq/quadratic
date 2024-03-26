@@ -1,8 +1,9 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '../../../constants/gridConstants';
-import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { selectAllCells, selectColumns, selectRows } from '../../helpers/selectCells';
 import { zoomToFit } from '../../helpers/zoom';
@@ -173,15 +174,19 @@ export class PointerHeading {
         if (size !== this.resizing.width) {
           this.resizing.width = size;
           offsets.resizeColumnTransiently(this.resizing.column, size);
-          gridLines.dirty = true;
-          cursor.dirty = true;
-          headings.dirty = true;
+          const delta = this.resizing.width ? this.resizing.lastSize - this.resizing.width : undefined;
+          if (delta) {
+            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, this.resizing.column, undefined, delta);
+            gridLines.dirty = true;
+            cursor.dirty = true;
+            headings.dirty = true;
 
-          pixiApp.adjustHeadings({
-            sheetId: sheets.sheet.id,
-            column: this.resizing.column,
-            delta: size - this.resizing.lastSize,
-          });
+            pixiApp.adjustHeadings({
+              sheetId: sheets.sheet.id,
+              column: this.resizing.column,
+              delta: size - this.resizing.lastSize,
+            });
+          }
           this.resizing.lastSize = size;
         }
       } else if (this.resizing.row !== undefined) {
@@ -200,6 +205,10 @@ export class PointerHeading {
         if (size !== this.resizing.height) {
           this.resizing.height = size;
           offsets.resizeRowTransiently(this.resizing.row, size);
+          const delta = this.resizing.height ? this.resizing.lastSize - this.resizing.height : undefined;
+          if (delta) {
+            renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, undefined, this.resizing.row, delta);
+          }
           gridLines.dirty = true;
           cursor.dirty = true;
           headings.dirty = true;
@@ -228,7 +237,7 @@ export class PointerHeading {
       if (headingResizing) {
         const transientResize = sheets.sheet.offsets.getResizeToApply();
         if (transientResize) {
-          grid.commitTransientResize(sheets.sheet.id, transientResize);
+          quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
         }
         this.resizing = undefined;
 
@@ -247,7 +256,7 @@ export class PointerHeading {
     const sheetId = sheets.sheet.id;
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
-      grid.commitSingleResize(sheetId, column, undefined, size);
+      quadraticCore.commitSingleResize(sheetId, column, undefined, size);
     }
   }
 

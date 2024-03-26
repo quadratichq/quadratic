@@ -1,3 +1,4 @@
+import { debugWebWorkers } from '@/debugFlags';
 import { createMessageConnection } from 'vscode-jsonrpc';
 import { BrowserMessageReader, BrowserMessageWriter } from 'vscode-jsonrpc/browser';
 import { LogMessageNotification, RegistrationRequest } from 'vscode-languageserver-protocol';
@@ -64,7 +65,11 @@ const pyright = (uri: string, enableLogging: boolean = false): LanguageServerCli
 
   connection.onRequest(RegistrationRequest.type, () => {});
 
-  client.initialize().then(() => log('Initialized', true));
+  client.initialize().then(() => {
+    if (debugWebWorkers) {
+      log('Initialized', true);
+    }
+  });
 
   return client;
 };

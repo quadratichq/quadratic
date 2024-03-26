@@ -107,7 +107,7 @@ jobs:
           node-version: 18
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11.3' 
+          python-version: '3.11.3'
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1
@@ -119,6 +119,10 @@ jobs:
       - name: Build quadratic-core
         run: |
           npm run build:wasm:javascript
+
+      - name: Build quadratic-grid-offsets
+        run: |
+          npm run build:grid-offsets
 
       - name: Build python
         run: |

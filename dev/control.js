@@ -12,6 +12,7 @@ export class Control {
     multiplayer;
     files;
     python;
+    gridOffsets;
     db;
     npm;
     rust;
@@ -23,6 +24,7 @@ export class Control {
         multiplayer: false,
         files: false,
         python: false,
+        gridOffsets: false,
         types: false,
         db: false,
         npm: false,
@@ -75,6 +77,7 @@ export class Control {
             this.kill("multiplayer"),
             this.kill("files"),
             this.kill("python"),
+            this.kill("gridOffsets"),
         ]);
         process.exit(0);
     }
@@ -383,6 +386,24 @@ export class Control {
         this.cli.options.python = !this.cli.options.python;
         this.runPython();
     }
+    async runGridOffsets() {
+        if (this.quitting)
+            return;
+        this.status.gridOffsets = false;
+        await this.kill("gridOffsets");
+        this.ui.print("gridOffsets");
+        this.signals.gridOffsets = new AbortController();
+        this.gridOffsets = spawn("npm", [
+            "run",
+            this.cli.options.gridOffsets ? "dev" : "build",
+            "--workspace=quadratic-grid-offsets",
+        ], { signal: this.signals.gridOffsets.signal });
+        this.ui.printOutput("gridOffsets", (data) => this.handleResponse("gridOffsets", data, {
+            success: "Your wasm pkg is ready to publish",
+            error: "error[",
+            start: "[Running ",
+        }));
+    }
     async runDb() {
         if (this.quitting)
             return;
@@ -477,5 +498,6 @@ export class Control {
         this.runRust();
         this.runDb();
         this.runPython();
+        this.runGridOffsets();
     }
 }

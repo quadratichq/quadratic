@@ -1,5 +1,5 @@
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { Viewport } from 'pixi-viewport';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';

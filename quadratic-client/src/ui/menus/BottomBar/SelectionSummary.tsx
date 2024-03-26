@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
 // import { getColumnA1Notation, getRowA1Notation } from '../../../gridGL/UI/gridHeadings/getA1Notation';
 import { TooltipHint } from '@/ui/components/TooltipHint';
-import { grid } from '../../../grid/controller/Grid';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import BottomBarItem from './BottomBarItem';
 
 export const SelectionSummary = () => {
@@ -16,9 +16,12 @@ export const SelectionSummary = () => {
   const [avg, setAvg] = useState<string | undefined>('');
   const [copied, setCopied] = useState(false);
 
-  const runCalculationOnActiveSelection = () => {
-    let result = grid.summarizeSelection(decimal_places);
-
+  const runCalculationOnActiveSelection = async () => {
+    let result = await quadraticCore.summarizeSelection(
+      decimal_places,
+      sheets.sheet.id,
+      sheets.sheet.cursor.getRectangle()
+    );
     if (result) {
       setCount(result.count.toString());
       setSum(result.sum !== undefined ? result.sum.toString() : undefined);

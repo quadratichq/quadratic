@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fmt;
 use std::ops::Range;
 
@@ -249,18 +248,18 @@ pub fn union_ranges(ranges: impl IntoIterator<Item = Option<Range<i64>>>) -> Opt
 }
 
 pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
-    let already_used_numbers: HashSet<usize> = already_used
+    let last_number: Option<usize> = already_used
         .iter()
         .filter_map(|s| s.strip_prefix(prefix)?.trim().parse().ok())
-        .collect();
+        .sorted()
+        .last();
 
-    // Find the first number that's not already used.
-    if let Some(i) = (1..).find(|i| !already_used_numbers.contains(i)) {
-        format!("{prefix} {i}")
-    } else {
-        let i = already_used.len() + 1;
-        format!("{prefix} {i}")
-    }
+    // Find the last number
+    let i = match last_number {
+        Some(i) => i + 1,
+        None => 1,
+    };
+    format!("{prefix} {i}")
 }
 
 pub fn maybe_reverse_range(
@@ -276,15 +275,10 @@ pub fn maybe_reverse_range(
 
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(test) || cfg!(feature = "multiplayer") {
-        dbg!(val);
+    if cfg!(target_family = "wasm") {
+        crate::wasm_bindings::js::log(&(format!("{:?}", val)));
     } else {
-        // this unsafe marker is necessary b/c of quadratic-multiplayer uses quadratic-core as a dependency
-        // (although the feature="multiplayer" should prevent this from ever being called form quadratic-multiplayer)
-        #[allow(unused_unsafe)]
-        unsafe {
-            crate::wasm_bindings::js::log(&(format!("{:?}", val)));
-        }
+        dbg!(val);
     }
 }
 
@@ -298,7 +292,7 @@ macro_rules! dbgjs {
 #[allow(unused_macros)]
 macro_rules! jsTime {
     ($($arg:tt)*) => {
-        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+        if cfg!(target_family = "wasm") {
             $crate::wasm_bindings::js::jsTime($($arg)*)
         }
     };
@@ -307,8 +301,8 @@ macro_rules! jsTime {
 #[allow(unused_macros)]
 macro_rules! jsTimeEnd {
     ($($arg:tt)*) => {
-        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
-            $crate::wasm_bindings::js::jsTimeEnd($($arg)*)
+        if cfg!(target_family = "wasm") {
+            $crate::wasm_bindings::js::jsTimeEnd($($arg)*);
         }
     };
 }
@@ -489,5 +483,13 @@ mod tests {
         assert_eq!(round(1.23456789, 2), 1.23);
         assert_eq!(round(1.23456789, 3), 1.235);
         assert_eq!(round(1.23456789, 4), 1.2346);
+    }
+
+    #[test]
+    fn test_unused_name() {
+        let used = ["Sheet 1", "Sheet 2"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 3");
+        let used = ["Sheet 2", "Sheet 3"];
+        assert_eq!(unused_name("Sheet", &used), "Sheet 4");
     }
 }

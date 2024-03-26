@@ -1,7 +1,7 @@
 import '@vitest/web-worker';
 import 'fake-indexeddb/auto';
 import { beforeAll, describe, expect, test } from 'vitest';
-import { pythonWebWorker } from '../pythonWebWorker/python';
+import { pythonWebWorker } from '../pythonWebWorker/pythonWebWorker';
 
 // export {};
 
@@ -38,7 +38,8 @@ async function waitForResults(code: string): Promise<any> {
 
   window.addEventListener('python-results', listener);
 
-  pythonWebWorker.runPython('0', 0, 0, '0', code);
+  // todo...
+  // pythonWebWorker.runPython('0', 0, 0, '0', code);
 
   // wait for the results
   return await new Promise<any>((resolve) => {

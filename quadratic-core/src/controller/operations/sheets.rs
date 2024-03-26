@@ -134,13 +134,22 @@ mod test {
     }
 
     #[test]
-    fn test_get_sheet_next_name() {
+    fn get_sheet_next_name() {
+        // Sheet 1
         let mut gc = GridController::test();
-        assert_eq!(gc.get_next_sheet_name(), "Sheet 2");
         gc.add_sheet(None);
-        assert_eq!(gc.get_next_sheet_name(), "Sheet 3");
+        // Sheet 1 | Sheet 2
+        assert_eq!(gc.sheet_index(1).name, "Sheet 2");
         gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet 2 modified".to_string();
-        assert_eq!(gc.get_next_sheet_name(), "Sheet 2");
+        // Sheet 1 | Sheet 2 modified
+        gc.add_sheet(None);
+        // Sheet 1 | Sheet 2 modified | Sheet 2
+        assert_eq!(gc.sheet_index(2).name, "Sheet 2");
+        gc.delete_sheet(gc.sheet_ids()[0], None);
+        // Sheet 2 modified | Sheet 2
+        gc.add_sheet(None);
+        // Sheet 2 modified | Sheet 2 | Sheet 3
+        assert_eq!(gc.sheet_index(2).name, "Sheet 3");
     }
 
     #[test]

@@ -1,7 +1,7 @@
+import { events } from '@/events/events';
 import { Rectangle, Renderer } from 'pixi.js';
 import { apiClient } from '../../api/apiClient';
 import { debugShowFileIO } from '../../debugFlags';
-import { grid } from '../../grid/controller/Grid';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
 
@@ -14,14 +14,30 @@ const TIME_FOR_IDLE = 1000;
 
 class Thumbnail {
   private lastUpdate = 0;
+  private thumbnailDirty = false;
   private renderer?: Renderer;
+
+  constructor() {
+    events.on('generateThumbnail', this.generateThumbnail);
+  }
+
+  generateThumbnail = () => {
+    this.thumbnailDirty = true;
+  };
+
+  destroy() {
+    events.off('generateThumbnail', this.generateThumbnail);
+    if (this.renderer) {
+      this.renderer.destroy(false);
+    }
+  }
 
   rendererBusy() {
     this.lastUpdate = performance.now();
   }
 
   async check() {
-    if (grid.thumbnailDirty) {
+    if (this.thumbnailDirty) {
       const now = performance.now();
       if (this.lastUpdate + TIME_FOR_IDLE > now) {
         const url = window.location.pathname.split('/');
@@ -38,7 +54,7 @@ class Thumbnail {
               });
             }
           });
-          grid.thumbnailDirty = false;
+          this.thumbnailDirty = false;
         }
         this.lastUpdate = performance.now();
       }

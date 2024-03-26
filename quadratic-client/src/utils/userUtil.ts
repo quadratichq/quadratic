@@ -1,4 +1,4 @@
-import { MultiplayerUser } from '@/multiplayer/multiplayerTypes';
+import { MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { User } from '@auth0/auth0-spa-js';
 
 export const displayName = (user: User | MultiplayerUser | undefined, you: boolean): string => {

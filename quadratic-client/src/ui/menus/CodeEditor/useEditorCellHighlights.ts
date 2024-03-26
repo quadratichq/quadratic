@@ -1,5 +1,5 @@
 import { parsePython } from '@/helpers/parseEditorPythonCell';
-import { CodeCellLanguage } from '@/quadratic-core/types';
+import { CodeCellLanguage } from '@/quadratic-core-types';
 import monaco, { editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';

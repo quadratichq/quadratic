@@ -1,37 +1,47 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
-import { Coordinate } from '@/gridGL/types/size';
+import { SheetPosTS } from '@/gridGL/types/size';
+import { CellEdit, MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { useEffect, useState } from 'react';
 import { MultiplayerCellEdit } from './MultiplayerCellEdit';
 
 export interface MultiplayerCell {
-  sessionId: string;
   sheetId: string;
-  cell: Coordinate;
-  text?: string;
-  bold: boolean;
-  italic: boolean;
-  cursor: number;
+  sessionId: string;
   playerColor: string;
+  cellEdit: CellEdit;
+  location: SheetPosTS;
 }
 
 export const MultiplayerCellEdits = () => {
   const [multiplayerCellInput, setMultiplayerCellInput] = useState<MultiplayerCell[]>([]);
   useEffect(() => {
-    const updateMultiplayerCellEdit = (e: any) => {
-      const multiplayerCell = e.detail as MultiplayerCell;
+    const updateMultiplayerCellEdit = (cellEdit: CellEdit, player: MultiplayerUser) => {
       setMultiplayerCellInput((prev) => {
-        const found = prev.findIndex((prev) => prev.sessionId === multiplayerCell.sessionId);
-        if (multiplayerCell && found === -1) {
-          return [...prev, multiplayerCell];
+        // this shouldn't happen
+        if (player.x === undefined || player.y === undefined) return prev;
+
+        const updatedCellEdit: MultiplayerCell = {
+          sessionId: player.session_id,
+          sheetId: player.sheet_id,
+          cellEdit,
+          location: { x: player.x, y: player.y, sheetId: player.sheet_id },
+          playerColor: player.colorString,
+        };
+        const found = prev.findIndex((prev) => prev.sessionId === player.session_id);
+        if (cellEdit && found === -1) {
+          return [...prev, updatedCellEdit];
         }
         return prev.map((cell, index) => {
-          if (index === found) return multiplayerCell;
+          if (index === found) return updatedCellEdit;
           return cell;
         });
       });
     };
-    window.addEventListener('multiplayer-cell-edit', updateMultiplayerCellEdit);
-    return () => window.removeEventListener('multiplayer-cell-edit', updateMultiplayerCellEdit);
+    events.on('multiplayerCellEdit', updateMultiplayerCellEdit);
+    return () => {
+      events.off('multiplayerCellEdit', updateMultiplayerCellEdit);
+    };
   }, []);
 
   // force rerender when sheet changes
@@ -39,8 +49,10 @@ export const MultiplayerCellEdits = () => {
   const [_, setTrigger] = useState(0);
   useEffect(() => {
     const updateTrigger = () => setTrigger((prev) => prev + 1);
-    window.addEventListener('sheet-change', updateTrigger);
-    return () => window.removeEventListener('sheet-change', updateTrigger);
+    events.on('changeSheet', updateTrigger);
+    return () => {
+      events.off('changeSheet', updateTrigger);
+    };
   });
 
   return (

@@ -1,0 +1,9 @@
+{
+  "extends": "../../../../tsconfig.generic.json",
+  "compilerOptions": {
+    "rootDir": "../../../",
+    "module": "ESNext",
+    "lib": ["ESNext", "webworker"]
+  },
+  "include": ["."]
+}

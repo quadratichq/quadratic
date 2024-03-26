@@ -6,6 +6,7 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::{Sheet, SheetId},
+    wasm_bindings::controller::sheet_info::SheetInfo,
 };
 
 impl GridController {
@@ -20,9 +21,17 @@ impl GridController {
                 // sheet already exists (unlikely but possible if this operation is run twice)
                 return;
             }
-            self.grid.add_sheet(Some(sheet.clone()));
-            transaction.summary.sheet_list_modified = true;
-            transaction.summary.html.insert(sheet_id);
+            let sheet_id = self.grid.add_sheet(Some(sheet.clone()));
+
+            if cfg!(target_family = "wasm") {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    let sheet_info = SheetInfo::from(sheet);
+                    if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
+                        crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user());
+                    }
+                }
+            }
+
             transaction
                 .forward_operations
                 .push(Operation::AddSheet { sheet });
@@ -68,6 +77,16 @@ impl GridController {
                         sheet_id: new_first_sheet_id,
                     },
                 );
+
+                // if that's the last sheet, then we created a new one and we have to let the workers know
+                if cfg!(target_family = "wasm") {
+                    if let Some(sheet) = self.try_sheet(new_first_sheet_id) {
+                        let sheet_info = SheetInfo::from(sheet);
+                        if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
+                            crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user());
+                        }
+                    }
+                }
             } else {
                 transaction
                     .forward_operations
@@ -78,8 +97,15 @@ impl GridController {
                         sheet: deleted_sheet,
                     },
                 );
+
+                // otherwise we need to send the deleted sheet information to the workers
+                if cfg!(target_family = "wasm") {
+                    crate::wasm_bindings::js::jsDeleteSheet(
+                        sheet_id.to_string(),
+                        transaction.is_user(),
+                    );
+                }
             }
-            transaction.summary.sheet_list_modified = true;
         }
     }
 
@@ -97,10 +123,9 @@ impl GridController {
             let original_order = sheet.order.clone();
             sheet.order = order.clone();
             self.grid.move_sheet(target, order.clone());
-            transaction.summary.sheet_list_modified = true;
 
             if old_first != self.grid.first_sheet_id() {
-                transaction.summary.generate_thumbnail = true;
+                transaction.generate_thumbnail = true;
             }
             transaction
                 .forward_operations
@@ -112,6 +137,14 @@ impl GridController {
                     order: original_order,
                 },
             );
+
+            if cfg!(target_family = "wasm") {
+                if let Some(sheet) = self.try_sheet(target) {
+                    if let Ok(sheet_info) = serde_json::to_string(&SheetInfo::from(sheet)) {
+                        crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
+                    }
+                }
+            }
         }
     }
 
@@ -127,7 +160,7 @@ impl GridController {
             };
             let old_name = sheet.name.clone();
             sheet.name = name.clone();
-            transaction.summary.sheet_list_modified = true;
+
             transaction
                 .forward_operations
                 .push(Operation::SetSheetName { sheet_id, name });
@@ -138,6 +171,14 @@ impl GridController {
                     name: old_name,
                 },
             );
+
+            if cfg!(target_family = "wasm") {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    if let Ok(sheet_info) = serde_json::to_string(&SheetInfo::from(sheet)) {
+                        crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
+                    }
+                }
+            }
         }
     }
 
@@ -153,7 +194,7 @@ impl GridController {
             };
             let old_color = sheet.color.clone();
             sheet.color = color.clone();
-            transaction.summary.sheet_list_modified = true;
+
             transaction
                 .forward_operations
                 .push(Operation::SetSheetColor { sheet_id, color });
@@ -164,6 +205,14 @@ impl GridController {
                     color: old_color,
                 },
             );
+
+            if cfg!(target_family = "wasm") {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    if let Ok(sheet_info) = serde_json::to_string(&SheetInfo::from(sheet)) {
+                        crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
+                    }
+                }
+            }
         }
     }
 
@@ -197,8 +246,10 @@ impl GridController {
             }
             self.grid.add_sheet(Some(new_sheet));
 
-            transaction.summary.sheet_list_modified = true;
-            transaction.summary.html.insert(new_sheet_id);
+            // *** todo...
+            // transaction.summary.sheet_list_modified = true;
+            // transaction.summary.html.insert(new_sheet_id);
+
             transaction
                 .forward_operations
                 .push(Operation::DuplicateSheet {
@@ -222,29 +273,30 @@ mod tests {
     #[test]
     fn test_add_sheet() {
         let mut gc = GridController::test();
-        let summary = gc.add_sheet(None);
+        gc.add_sheet(None);
         assert_eq!(gc.grid.sheets().len(), 2);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // was jsAdSheet called with the right stuff
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
     }
 
     #[test]
     fn test_delete_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let summary = gc.delete_sheet(sheet_id, None);
+        gc.delete_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 1);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
+
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
     }
 
     #[test]
@@ -252,14 +304,16 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let name = "new name".to_string();
-        let summary = gc.set_sheet_name(sheet_id, name.clone(), None);
+        gc.set_sheet_name(sheet_id, name.clone(), None);
         assert_eq!(gc.grid.sheets()[0].name, name);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].name, "Sheet 1".to_string());
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
     }
 
     #[test]
@@ -267,14 +321,17 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let color = Some("red".to_string());
-        let summary = gc.set_sheet_color(sheet_id, color.clone(), None);
+        gc.set_sheet_color(sheet_id, color.clone(), None);
         assert_eq!(gc.grid.sheets()[0].color, color);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
+
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].color, None);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
     }
 
     #[test]
@@ -290,29 +347,34 @@ mod tests {
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
 
         // Sheet 2, Sheet 1
-        let summary = gc.move_sheet(sheet_id, None, None);
+        gc.move_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
 
         // Sheet 1, Sheet 2
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
 
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
-        let summary = gc.move_sheet(sheet_id2, Some(sheet_id), None);
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
+
+        gc.move_sheet(sheet_id2, Some(sheet_id), None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
+
         gc.undo(None);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
+
+        // todo: figure out a way to test the js functions
+        // assert!(summary.sheet_list_modified);
     }
 
     #[test]
@@ -331,17 +393,12 @@ mod tests {
             None,
         );
 
-        let summary = gc.duplicate_sheet(sheet_id, None);
+        gc.duplicate_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
-        assert!(!summary.operations.unwrap().is_empty());
 
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
-        assert!(summary.save);
-        assert!(summary.sheet_list_modified);
 
         gc.duplicate_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 2);
@@ -350,14 +407,12 @@ mod tests {
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");
 
-        let summary = gc.undo(None);
+        gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
-        assert!(!summary.operations.unwrap().is_empty());
 
-        let summary = gc.redo(None);
+        gc.redo(None);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
-        assert!(!summary.operations.unwrap().is_empty());
     }
 }

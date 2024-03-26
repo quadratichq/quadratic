@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '../../../api/apiClient';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { authClient } from '../../../auth';
-// import { CodeCellRunOutput } from '../../../quadratic-core/types';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import ConditionalWrapper from '../../components/ConditionalWrapper';

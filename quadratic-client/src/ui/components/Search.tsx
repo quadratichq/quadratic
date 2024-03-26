@@ -1,9 +1,9 @@
 import { findInSheet, findInSheets } from '@/actions';
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
-import { grid } from '@/grid/controller/Grid';
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { focusGrid } from '@/helpers/focusGrid';
-import { SearchOptions, SheetPos } from '@/quadratic-core/types';
+import { SearchOptions, SheetPos } from '@/quadratic-core-types';
 import { Button } from '@/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -13,6 +13,7 @@ import {
 } from '@/shadcn/ui/dropdown-menu';
 import { Input } from '@/shadcn/ui/input';
 import { Popover, PopoverAnchor, PopoverContent } from '@/shadcn/ui/popover';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon } from '@radix-ui/react-icons';
 import { useEffect, useRef, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -32,19 +33,22 @@ export function Search() {
 
   const placeholder = !searchOptions.sheet_id ? findInSheets.label : findInSheet.label;
 
-  const onChange = (search: string, updatedSearchOptions = searchOptions) => {
+  const onChange = async (search: string, updatedSearchOptions = searchOptions) => {
     if (search.length > 0) {
-      const found = grid.search(search, updatedSearchOptions);
+      const found = await quadraticCore.search(search, updatedSearchOptions);
       if (found.length) {
         setResults(found);
         setCurrent(0);
         moveCursor(found[0]);
-        dispatchEvent(new CustomEvent('search', { detail: { found, current: 0 } }));
+        events.emit(
+          'search',
+          found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), 0)
+        );
         return;
       }
     }
     setResults([]);
-    dispatchEvent(new CustomEvent('search'));
+    events.emit('search');
   };
 
   const moveCursor = (pos: SheetPos) => {
@@ -61,7 +65,10 @@ export function Search() {
     setCurrent((current) => {
       let next = (current + delta) % results.length;
       if (next < 0) next = results.length - 1;
-      dispatchEvent(new CustomEvent('search', { detail: { found: results, current: next } }));
+      events.emit(
+        'search',
+        results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), next)
+      );
       const result = results[next];
       moveCursor(result);
       return next;
@@ -94,12 +101,15 @@ export function Search() {
   };
 
   const closeSearch = () => {
-    dispatchEvent(new CustomEvent('search'));
+    events.emit('search');
     focusGrid();
   };
 
   useEffect(() => {
-    const changeSheet = () =>
+    const changeSheet = () => {
+      if (!editorInteractionState.showSearch) {
+        return;
+      }
       setSearchOptions((prev) => {
         if (prev.sheet_id) {
           return { ...prev, sheet_id: sheets.sheet.id };
@@ -107,11 +117,12 @@ export function Search() {
           return prev;
         }
       });
-    window.addEventListener('change-sheet', changeSheet);
-    return () => {
-      window.removeEventListener('change-sheet', changeSheet);
     };
-  }, []);
+    events.on('changeSheet', changeSheet);
+    return () => {
+      events.off('changeSheet', changeSheet);
+    };
+  }, [editorInteractionState.showSearch]);
 
   useEffect(() => {
     if (!editorInteractionState.showSearch) {

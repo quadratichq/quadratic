@@ -244,9 +244,6 @@ pub(crate) async fn process(state: &Arc<State>, active_channels: &str) -> Result
 
 #[cfg(test)]
 mod tests {
-    // use std::str::FromStr;
-    // use crate::test_util::new_arc_state;
-
     use super::*;
     use quadratic_core::{CellValue, Pos, SheetPos};
 
@@ -264,7 +261,7 @@ mod tests {
         // add a cell value to the file
         let mut gc = GridController::from_grid(file.clone(), 0);
         let sheet_id = gc.sheet_ids().first().unwrap().to_owned();
-        let summary = gc.set_cell_value(
+        gc.set_cell_value(
             SheetPos {
                 x: 1,
                 y: 2,
@@ -273,6 +270,7 @@ mod tests {
             "hello".to_string(),
             None,
         );
+        let transaction = gc.last_transaction().unwrap().clone();
         let sheet = gc.grid().try_sheet(sheet_id).unwrap();
 
         assert_eq!(
@@ -281,10 +279,7 @@ mod tests {
         );
 
         // apply a transaction to the file
-        apply_transaction(
-            &mut gc,
-            serde_json::from_str(&summary.operations.unwrap()).unwrap(),
-        );
+        apply_transaction(&mut gc, transaction.operations);
         let sheet = gc.grid().try_sheet(sheet_id).unwrap();
 
         assert_eq!(

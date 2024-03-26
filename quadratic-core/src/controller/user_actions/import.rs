@@ -1,11 +1,11 @@
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::GridController;
+use crate::Rect;
 use crate::{grid::SheetId, Pos};
 use anyhow::Result;
 
 impl GridController {
     /// Imports a CSV file into the grid.
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
@@ -13,14 +13,19 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
-        Ok(self.start_user_transaction(ops, cursor))
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::Import,
+            Some(sheet_id),
+            Some(Rect::single_pos(insert_at)),
+        );
+        Ok(())
     }
 
     /// Imports a Parquet file into the grid.
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn import_parquet(
         &mut self,
         sheet_id: SheetId,
@@ -28,9 +33,16 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
-        Ok(self.start_user_transaction(ops, cursor))
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::Import,
+            Some(sheet_id),
+            Some(Rect::single_pos(insert_at)),
+        );
+        Ok(())
     }
 }
 
@@ -126,8 +138,7 @@ Concord,NH,United States,42605
             Pos { x: 0, y: 0 },
             None,
         );
-        print!("{}", &result.unwrap().operations.unwrap().len());
-        // assert!(result.is_ok())
+        assert!(result.is_ok())
     }
 
     #[test]

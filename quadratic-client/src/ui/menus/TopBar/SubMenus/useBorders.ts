@@ -1,5 +1,5 @@
-import { BorderSelection, BorderStyle, CellBorderLine, Rgba } from '@/quadratic-core/quadratic_core';
-import { grid } from '../../../../grid/controller/Grid';
+import { BorderSelection, BorderStyle, CellBorderLine } from '@/quadratic-core-types';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { convertColorStringToTint, convertTintToArray } from '../../../../helpers/convertColor';
 import { colors } from '../../../../theme/colors';
@@ -21,18 +21,23 @@ export const useBorders = (): IResults => {
     const rectangle = sheets.sheet.cursor.getRectangle();
     const colorTint = options.color === undefined ? colors.defaultBorderColor : convertColorStringToTint(options.color);
     const colorArray = convertTintToArray(colorTint);
-    const selection = options.selection === undefined ? BorderSelection.All : options.selection;
-    const style = new BorderStyle(
-      new Rgba(Math.floor(colorArray[0] * 255), Math.floor(colorArray[1] * 255), Math.floor(colorArray[2] * 255), 0xff),
-      options.type ?? 0
-    );
-    grid.setRegionBorders(sheet.id, rectangle, selection, style);
+    const selection = options.selection === undefined ? 'all' : options.selection;
+    const style: BorderStyle = {
+      color: {
+        red: Math.floor(colorArray[0] * 255),
+        green: Math.floor(colorArray[1] * 255),
+        blue: Math.floor(colorArray[2] * 255),
+        alpha: 0xff,
+      },
+      line: options.type ?? 'line1',
+    };
+    quadraticCore.setRegionBorders(sheet.id, rectangle, selection, style);
   };
 
   const clearBorders = (): void => {
     const sheet = sheets.sheet;
     const rectangle = sheets.sheet.cursor.getRectangle();
-    grid.setRegionBorders(sheet.id, rectangle, BorderSelection.All, undefined);
+    quadraticCore.setRegionBorders(sheet.id, rectangle, 'clear');
   };
 
   return {

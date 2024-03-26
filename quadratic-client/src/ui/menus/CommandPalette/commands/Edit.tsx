@@ -5,9 +5,9 @@ import {
   fullClipboardSupport,
   pasteFromClipboard,
 } from '@/grid/actions/clipboard/clipboard';
-import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import { useFileContext } from '@/ui/components/FileProvider';
 import { ClipboardIcon, CopyIcon, RedoIcon, ScissorsIcon, UndoIcon } from '@/ui/icons';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useRecoilState } from 'recoil';
 import {
   copyAction,
@@ -21,7 +21,6 @@ import {
 } from '../../../../actions';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
-import { grid } from '../../../../grid/controller/Grid';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { isMac } from '../../../../utils/isMac';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -36,7 +35,7 @@ const data: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={grid.undo}
+            action={quadraticCore.undo}
             icon={<UndoIcon />}
             shortcut={KeyboardSymbols.Command + 'Z'}
           />
@@ -50,7 +49,7 @@ const data: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={grid.redo}
+            action={quadraticCore.redo}
             icon={<RedoIcon />}
             shortcutModifiers={isMac ? [KeyboardSymbols.Command, KeyboardSymbols.Shift] : [KeyboardSymbols.Command]}
             shortcut={isMac ? 'Z' : 'Y'}
@@ -111,7 +110,7 @@ const data: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => pasteFromClipboard(PasteSpecial.Values)}
+            action={() => pasteFromClipboard('Values')}
             shortcut="V"
             shortcutModifiers={[KeyboardSymbols.Command, KeyboardSymbols.Shift]}
           />
@@ -122,7 +121,7 @@ const data: CommandGroup = {
       label: pasteActionFormats.label,
       isAvailable: pasteActionFormats.isAvailable,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={() => pasteFromClipboard(PasteSpecial.Formats)} />;
+        return <CommandPaletteListItem {...props} action={() => pasteFromClipboard('Formats')} />;
       },
     },
     {

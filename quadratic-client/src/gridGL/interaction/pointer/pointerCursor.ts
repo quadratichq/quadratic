@@ -1,9 +1,10 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { EditingCell } from '@/gridGL/HTMLGrid/hoverCell/HoverCell';
-import { multiplayer } from '@/multiplayer/multiplayer';
-import { JsRenderCodeCell } from '@/quadratic-core/types';
+import { JsRenderCodeCell } from '@/quadratic-core-types';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { Point } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
+import { events } from '@/events/events';
 
 export class PointerCursor {
   private lastCodeInfo?: JsRenderCodeCell | EditingCell;
@@ -15,24 +16,16 @@ export class PointerCursor {
     const codeCell = pixiApp.cellsSheets.current.cellsMarkers.intersectsCodeInfo(world);
     if (editingCell) {
       const detail = { x: cell.x, y: cell.y, user: editingCell.user, codeEditor: editingCell.codeEditor };
-      window.dispatchEvent(
-        new CustomEvent('hover-cell', {
-          detail,
-        })
-      );
+      events.emit('hoverCell', detail);
       this.lastCodeInfo = detail;
     } else if (codeCell) {
       if (this.lastCodeInfo?.x !== codeCell.x || this.lastCodeInfo?.y !== codeCell.y) {
-        window.dispatchEvent(
-          new CustomEvent('hover-cell', {
-            detail: codeCell,
-          })
-        );
+        events.emit('hoverCell', codeCell);
         this.lastCodeInfo = codeCell;
       }
     } else {
       if (this.lastCodeInfo) {
-        window.dispatchEvent(new CustomEvent('hover-cell'));
+        events.emit('hoverCell');
         this.lastCodeInfo = undefined;
       }
     }

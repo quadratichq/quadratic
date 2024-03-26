@@ -1,10 +1,10 @@
+import { provideCompletionItems, provideHover } from '@/quadratic-core/quadratic_core';
 import Editor, { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 import { useCodeEditor } from './CodeEditorContext';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';

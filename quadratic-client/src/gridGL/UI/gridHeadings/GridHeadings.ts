@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { BitmapText, Container, Graphics, Point, Rectangle } from 'pixi.js';
 import { CELL_HEIGHT, CELL_WIDTH } from '../../../constants/gridConstants';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -359,7 +360,7 @@ export class GridHeadings extends Container {
       this.rowRect = undefined;
       this.columnRect = undefined;
       this.headingSize = { width: 0, height: 0 };
-      window.dispatchEvent(new CustomEvent('heading-size', { detail: this.headingSize }));
+      events.emit('headingSize', this.headingSize.width, this.headingSize.height);
       pixiApp.setViewportDirty();
       return;
     }
@@ -375,7 +376,7 @@ export class GridHeadings extends Container {
     this.drawCorner();
 
     this.headingSize = { width: this.rowWidth * pixiApp.viewport.scale.x, height: CELL_HEIGHT };
-    window.dispatchEvent(new CustomEvent('heading-size', { detail: this.headingSize }));
+    events.emit('headingSize', this.headingSize.width, this.headingSize.height);
   }
 
   // whether the point is in the heading

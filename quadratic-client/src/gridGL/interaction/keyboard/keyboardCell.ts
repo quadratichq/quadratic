@@ -1,4 +1,5 @@
 import { SheetCursor } from '@/grid/sheet/SheetCursor';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
@@ -32,11 +33,11 @@ function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: Sh
   return false;
 }
 
-export function keyboardCell(options: {
+export async function keyboardCell(options: {
   event: React.KeyboardEvent<HTMLElement>;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
-}): boolean {
+}): Promise<boolean> {
   const { event, editorInteractionState, setEditorInteractionState } = options;
 
   const sheet = sheets.sheet;
@@ -64,11 +65,11 @@ export function keyboardCell(options: {
   if (event.key === 'Enter') {
     const column = cursorPosition.x;
     const row = cursorPosition.y;
-    const code = sheet.getCodeCell(column, row);
+    const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
     if (code) {
       doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
     } else {
-      const cell = sheet.getEditCell(column, row);
+      const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
       doubleClickCell({ column, row, cell });
     }
     event.preventDefault();
@@ -97,7 +98,7 @@ export function keyboardCell(options: {
   if (event.key === '/' || event.key === '=') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
-    const cell = sheet.getRenderCell(x, y);
+    const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
     if (cell?.language) {
       if (editorInteractionState.showCodeEditor) {
         // Open code editor, or move change editor if already open.
@@ -147,7 +148,7 @@ export function keyboardCell(options: {
 
   if (isAllowedFirstChar(event.key)) {
     const cursorPosition = cursor.cursorPosition;
-    const code = sheet.getCodeCell(cursorPosition.x, cursorPosition.y);
+    const code = await quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
 
     // open code cell unless this is the actual code cell. In this case we can overwrite it
     if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {

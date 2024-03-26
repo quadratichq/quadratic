@@ -1,6 +1,7 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
-import { multiplayer } from '@/multiplayer/multiplayer';
-import { MultiplayerUser } from '@/multiplayer/multiplayerTypes';
+import { events } from '@/events/events';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -14,8 +15,10 @@ export const useMultiplayerUsers = (): { users: MultiplayerUser[]; followers: st
     const updateFollowers = () => {
       setFollowers(users.filter((user) => user.follow === multiplayer.sessionId).map((user) => user.session_id));
     };
-    window.addEventListener('multiplayer-follow', updateFollowers);
-    return () => window.removeEventListener('multiplayer-follow', updateFollowers);
+    events.on('multiplayerFollow', updateFollowers);
+    return () => {
+      events.off('multiplayerFollow', updateFollowers);
+    };
   });
 
   useEffect(() => {
@@ -23,13 +26,11 @@ export const useMultiplayerUsers = (): { users: MultiplayerUser[]; followers: st
     setUsers(users.sort((a, b) => a.index - b.index));
     setFollowers(users.filter((user) => user.follow === multiplayer.sessionId).map((user) => user.session_id));
 
-    const handleUpdate = (e: any) => {
-      const users = e.detail as MultiplayerUser[];
-      setUsers(users.sort((a, b) => a.index - b.index));
+    const handleUpdate = (users: MultiplayerUser[]) => setUsers(users.sort((a, b) => a.index - b.index));
+    events.on('multiplayerUpdate', handleUpdate);
+    return () => {
+      events.off('multiplayerUpdate', handleUpdate);
     };
-    window.addEventListener('multiplayer-update', handleUpdate);
-
-    return () => window.removeEventListener('multiplayer-update', handleUpdate);
   }, [editorInteractionState.follow]);
 
   return { users, followers };

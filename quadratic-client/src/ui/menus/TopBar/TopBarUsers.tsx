@@ -1,9 +1,9 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { MULTIPLAYER_COLORS } from '@/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
-import { multiplayer } from '@/multiplayer/multiplayer';
 import { TooltipHint } from '@/ui/components/TooltipHint';
 import { displayInitials, displayName } from '@/utils/userUtil';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { Avatar, AvatarGroup, IconButton } from '@mui/material';
 import { EyeOpenIcon } from '@radix-ui/react-icons';
 import { useRecoilValue, useSetRecoilState } from 'recoil';

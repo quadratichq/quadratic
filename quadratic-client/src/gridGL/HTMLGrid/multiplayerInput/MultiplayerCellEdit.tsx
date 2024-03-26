@@ -1,4 +1,6 @@
-import { useRef } from 'react';
+import { CellFormatSummary } from '@/quadratic-core-types';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
+import { useEffect, useRef, useState } from 'react';
 import { sheets } from '../../../grid/controller/Sheets';
 import { CURSOR_THICKNESS } from '../../UI/Cursor';
 import { MultiplayerCell } from './MultiplayerCellEdits';
@@ -10,13 +12,20 @@ interface Props {
 const CURSOR_WIDTH = 2;
 
 export const MultiplayerCellEdit = (props: Props) => {
-  const { cell, italic, bold, text, cursor, playerColor, sessionId } = props.multiplayerCellInput;
+  const input = props.multiplayerCellInput;
   const sheet = sheets.sheet;
-  const cellOffsets = sheet.getCellOffsets(cell.x, cell.y);
+  const cellOffsets = sheet.getCellOffsets(input.location.x, input.location.y);
 
-  const formatting = sheet.getCellFormatSummary(cell.x, cell.y);
-  const displayItalic = italic === null ? formatting?.italic : italic;
-  const displayBold = bold === null ? formatting?.bold : bold;
+  const [formatting, setFormatting] = useState<CellFormatSummary | undefined>();
+  useEffect(() => {
+    (async () => {
+      const format = await quadraticCore.getCellFormatSummary(sheet.id, input.location.x, input.location.y);
+      setFormatting(format);
+    })();
+  }, [input.location, sheet.id]);
+
+  const displayItalic = input.cellEdit.italic === null ? formatting?.italic : input.cellEdit.italic;
+  const displayBold = input.cellEdit.bold === null ? formatting?.bold : input.cellEdit.bold;
   let fontFamily: string = 'OpenSans';
   if (displayItalic && displayBold) {
     fontFamily = 'OpenSans-BoldItalic';
@@ -29,12 +38,12 @@ export const MultiplayerCellEdit = (props: Props) => {
   const textInput = useRef<HTMLDivElement>(null);
 
   // need to add one extra character at end in case the cursor is there
-  const textCharacters = text ? [...text.split(''), ''] : [];
+  const textCharacters = input.cellEdit.text ? [...input.cellEdit.text.split(''), ''] : [];
 
   return (
     <>
       <div
-        className={`multiplayer-cell-edit-${sessionId}`}
+        className={`multiplayer-cell-edit-${input.sessionId}`}
         contentEditable={true}
         suppressContentEditableWarning={true}
         ref={textInput}
@@ -46,7 +55,7 @@ export const MultiplayerCellEdit = (props: Props) => {
           left: 0,
           minWidth: cellOffsets.width - CURSOR_THICKNESS * 2,
           outline: 'none',
-          color: formatting.textColor ?? 'black',
+          color: formatting?.textColor ?? 'black',
           padding: `0 ${CURSOR_THICKNESS}px 0 0`,
           margin: 0,
           lineHeight: `${cellOffsets.height - CURSOR_THICKNESS * 2}px`,
@@ -55,13 +64,13 @@ export const MultiplayerCellEdit = (props: Props) => {
           transform: `translate(${cellOffsets.x + CURSOR_THICKNESS}px, ${cellOffsets.y + CURSOR_THICKNESS}px)`,
           fontFamily,
           fontSize: '14px',
-          backgroundColor: formatting.fillColor ?? 'white',
+          backgroundColor: formatting?.fillColor ?? 'white',
           whiteSpace: 'nowrap',
         }}
       >
         <div style={{ position: 'relative' }}>
           {textCharacters.map((character, index) => {
-            if (index === cursor) {
+            if (index === input.cellEdit.cursor) {
               return (
                 <span key={index} style={{ position: 'relative' }}>
                   <span
@@ -71,7 +80,7 @@ export const MultiplayerCellEdit = (props: Props) => {
                       left: 0,
                       height: '100%',
                       width: `${CURSOR_WIDTH}px`,
-                      backgroundColor: playerColor,
+                      backgroundColor: input.playerColor,
                     }}
                   />
                   <span>{character}</span>

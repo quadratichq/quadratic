@@ -1,5 +1,5 @@
+import { CellBorderLine, Rgba } from '@/quadratic-core-types';
 import { Rectangle, Sprite, Texture, TilingSprite } from 'pixi.js';
-import { CellBorderLine, Rgba } from '../../quadratic-core/quadratic_core';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 
@@ -11,9 +11,9 @@ export interface BorderCull {
 export const borderLineWidth = 1;
 
 function setTexture(sprite: Sprite | TilingSprite, horizontal: boolean, borderLine?: CellBorderLine): void {
-  if (borderLine === CellBorderLine.Dashed) {
+  if (borderLine === 'dashed') {
     sprite.texture = horizontal ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical;
-  } else if (borderLine === CellBorderLine.Dotted) {
+  } else if (borderLine === 'dotted') {
     sprite.texture = horizontal ? dashedTextures.dottedHorizontal : dashedTextures.dottedVertical;
   } else {
     sprite.texture = Texture.WHITE;
@@ -36,10 +36,10 @@ export function drawBorder(options: {
 }): BorderCull[] {
   const borderLines: BorderCull[] = [];
   const { borderType } = options;
-  const lineWidth = borderType === CellBorderLine.Line2 ? 2 : borderType === CellBorderLine.Line3 ? 3 : 1;
+  const lineWidth = borderType === 'line2' ? 2 : borderType === 'line3' ? 3 : 1;
 
-  const tiling = borderType === CellBorderLine.Dashed || borderType === CellBorderLine.Dotted;
-  const doubleDistance = borderType === CellBorderLine.Double ? lineWidth * 2 : 0;
+  const tiling = borderType === 'dashed' || borderType === 'dotted';
+  const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
 
   if (options.top) {
     const top = options.getSprite(tiling);
@@ -188,6 +188,10 @@ export function drawLine(options: {
   };
 }
 
+const convertColor = (rgb: Rgba): number => {
+  return (rgb.red << 16) | (rgb.green << 8) | rgb.blue;
+};
+
 export function drawCellBorder(options: {
   position: Rectangle;
   horizontal?: { type: CellBorderLine; color?: Rgba };
@@ -198,15 +202,15 @@ export function drawCellBorder(options: {
   const borderCull: BorderCull[] = [];
   if (horizontal) {
     const borderType = horizontal.type;
-    const lineWidth = borderType === CellBorderLine.Line2 ? 2 : borderType === CellBorderLine.Line3 ? 3 : 1;
-    const tiling = borderType === CellBorderLine.Dashed || borderType === CellBorderLine.Dotted;
-    const doubleDistance = borderType === CellBorderLine.Double ? lineWidth * 2 : 0;
+    const lineWidth = borderType === 'line2' ? 2 : borderType === 'line3' ? 3 : 1;
+    const tiling = borderType === 'dashed' || borderType === 'dotted';
+    const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
 
     const top = getSprite(tiling);
     setTexture(top, true, borderType);
-    const color = horizontal.color ? horizontal.color.tint() : colors.defaultBorderColor;
+    const color = horizontal.color ? convertColor(horizontal.color) : colors.defaultBorderColor;
     top.tint = color;
-    top.alpha = horizontal.color ? horizontal.color.alpha() : 1;
+    top.alpha = horizontal.color ? horizontal.color.alpha : 1;
     top.width = position.width + lineWidth;
     top.height = lineWidth;
     top.position.set(position.x - lineWidth / 2, position.y - lineWidth / 2);
@@ -233,15 +237,15 @@ export function drawCellBorder(options: {
 
   if (vertical) {
     const borderType = vertical.type;
-    const lineWidth = borderType === CellBorderLine.Line2 ? 2 : borderType === CellBorderLine.Line3 ? 3 : 1;
-    const tiling = borderType === CellBorderLine.Dashed || borderType === CellBorderLine.Dotted;
-    const doubleDistance = borderType === CellBorderLine.Double ? lineWidth * 2 : 0;
+    const lineWidth = borderType === 'line2' ? 2 : borderType === 'line3' ? 3 : 1;
+    const tiling = borderType === 'dashed' || borderType === 'dotted';
+    const doubleDistance = borderType === 'double' ? lineWidth * 2 : 0;
 
     const left = options.getSprite(tiling);
     setTexture(left, false, borderType);
-    const color = vertical.color ? vertical.color.tint() : colors.defaultBorderColor;
+    const color = vertical.color ? convertColor(vertical.color) : colors.defaultBorderColor;
     left.tint = color;
-    left.alpha = vertical.color ? vertical.color.alpha() : 1;
+    left.alpha = vertical.color ? vertical.color.alpha : 1;
     left.width = lineWidth;
     left.height = position.height + lineWidth;
     left.position.set(position.x - lineWidth / 2, position.y - lineWidth / 2);

@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { MultiplayerCursors } from '@/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -27,9 +28,11 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
 
   const [showInput, setShowInput] = useState(false);
   useEffect(() => {
-    const changeInput = (e: any) => setShowInput(e.detail.showInput);
-    window.addEventListener('change-input', changeInput);
-    return () => window.removeEventListener('change-input', changeInput);
+    const changeInput = (input: boolean) => setShowInput(input);
+    events.on('changeInput', changeInput);
+    return () => {
+      events.off('changeInput', changeInput);
+    };
   }, []);
 
   useEffect(() => {
@@ -58,12 +61,14 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
   const [topHeading, setTopHeading] = useState(0);
   const [leftHeading, setLeftHeading] = useState(0);
   useEffect(() => {
-    const updateHeadingSize = (e: any) => {
-      setTopHeading(e.detail.height);
-      setLeftHeading(e.detail.width);
+    const updateHeadingSize = (width: number, height: number) => {
+      setLeftHeading(width);
+      setTopHeading(height);
     };
-    window.addEventListener('heading-size', updateHeadingSize);
-    return () => window.removeEventListener('heading-size', updateHeadingSize);
+    events.on('headingSize', updateHeadingSize);
+    return () => {
+      events.off('headingSize', updateHeadingSize);
+    };
   }, []);
 
   if (!parent) return null;

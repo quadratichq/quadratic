@@ -1,4 +1,4 @@
-export interface SheetPos {
+export interface SheetPosTS {
   x: number;
   y: number;
   sheetId: string;

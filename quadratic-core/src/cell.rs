@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 /// Contents of a single spreadsheet cell.

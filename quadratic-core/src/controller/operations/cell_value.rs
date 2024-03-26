@@ -140,14 +140,19 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    use crate::{controller::GridController, grid::SheetId, CellValue, SheetPos};
+    use crate::{
+        cell_values::CellValues,
+        controller::{operations::operation::Operation, GridController},
+        grid::SheetId,
+        CellValue, SheetPos,
+    };
 
     #[test]
     fn test() {
         let mut client = GridController::test();
         let sheet_id = SheetId::test();
         client.sheet_mut(client.sheet_ids()[0]).id = sheet_id;
-        let summary = client.set_cell_value(
+        client.set_cell_value(
             SheetPos {
                 x: 1,
                 y: 2,
@@ -156,7 +161,20 @@ mod test {
             "hello".to_string(),
             None,
         );
-        assert_eq!(summary.operations, Some("[{\"SetCellValues\":{\"sheet_pos\":{\"x\":1,\"y\":2,\"sheet_id\":{\"id\":\"00000000-0000-0000-0000-000000000000\"}},\"values\":{\"columns\":[{\"0\":{\"type\":\"text\",\"value\":\"hello\"}}],\"w\":1,\"h\":1}}}]".to_string()));
+        let operations = client.last_transaction().unwrap().operations.clone();
+
+        let values = CellValues::from(CellValue::Text("hello".to_string()));
+        assert_eq!(
+            operations,
+            vec![Operation::SetCellValues {
+                sheet_pos: SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id: SheetId::test()
+                },
+                values
+            }]
+        );
     }
 
     #[test]
