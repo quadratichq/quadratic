@@ -79,8 +79,8 @@ impl GridController {
         for sheet_name in sheets {
             // add the sheet
             let add_sheet_operations = self.add_sheet_operations(Some(sheet_name.to_owned()));
-            // TODO(ddimaria): remove this clone
-            if let Operation::AddSheet { sheet } = add_sheet_operations[0].clone() {
+
+            if let Operation::AddSheet { sheet } = &add_sheet_operations[0] {
                 let sheet_id = sheet.id;
                 ops.extend(add_sheet_operations);
 
