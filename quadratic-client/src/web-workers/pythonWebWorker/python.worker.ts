@@ -1,6 +1,6 @@
 /* eslint-disable no-restricted-globals */
 
-import { InspectPythonReturnType, PythonMessage } from './pythonTypes';
+import type { InspectPythonReturnType, PythonMessage } from './pythonTypes';
 
 const TRY_AGAIN_TIMEOUT = 500;
 
