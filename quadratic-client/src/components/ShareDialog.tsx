@@ -410,7 +410,12 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
                 isTeamFile={loaderData?.owner.type === 'team'}
                 uuid={uuid}
               />
-              <Button variant={null} size="icon" onClick={onClose}>
+              <Button
+                variant={null}
+                size="icon"
+                onClick={onClose}
+                className="opacity-70 transition-opacity hover:opacity-100"
+              >
                 <Cross2Icon />
               </Button>
             </div>
