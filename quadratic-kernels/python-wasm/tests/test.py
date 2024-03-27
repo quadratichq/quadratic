@@ -186,6 +186,7 @@ class TestQuadraticApi(IsolatedAsyncioTestCase):
 
 class TestUtils(TestCase):
     def test_to_quadratic_type(self):
+        print("to_quadratic_type", to_quadratic_type("1, 11, 111"))
         # number
         assert to_quadratic_type(1) == ("1", "number")
         assert to_quadratic_type(1.1) == ("1.1", "number")
@@ -218,7 +219,7 @@ class TestUtils(TestCase):
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # duration
-class TestUtils(TestCase):
+        
     def test_to_python_type(self):
         # blank
         assert to_python_type("", "blank") == 0
