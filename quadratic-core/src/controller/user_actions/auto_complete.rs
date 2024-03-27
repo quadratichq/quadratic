@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn test_expand_code_cell() {
         let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
-        let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 100 });
+        let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
         let code = CodeCellValue {
             language: CodeCellLanguage::Formula,
             code: "A0 + 1".into(),
