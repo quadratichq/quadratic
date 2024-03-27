@@ -62,7 +62,7 @@ export function ShareTeamDialog({
     userMakingRequest,
     users,
     invites,
-    team: { name, uuid },
+    team: { uuid },
   } = data;
   const action = ROUTES.TEAM(uuid);
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
