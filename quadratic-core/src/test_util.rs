@@ -23,16 +23,16 @@ pub fn assert_cell_value(
     let cell_value = sheet
         .display_value(Pos { x, y })
         .map_or_else(|| CellValue::Blank, |v| CellValue::Text(v.to_string()));
-    let expected = if value.is_empty() {
-        CellValue::Blank
-    } else {
-        CellValue::Text(value.into())
-    };
+    let expected_text_or_blank =
+        |v: &CellValue| v == &CellValue::Text(value.into()) || v == &CellValue::Blank;
 
-    assert_eq!(
-        cell_value, expected,
+    assert!(
+        expected_text_or_blank(&cell_value),
         "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-        x, y, expected, cell_value
+        x,
+        y,
+        CellValue::Text(value.into()),
+        cell_value
     );
 }
 

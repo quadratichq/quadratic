@@ -89,6 +89,31 @@ export const upgradeFileRust = async (
   }
 };
 
+// create a new grid file and import an xlsx file
+export const importExcel = async (
+  file: File,
+  reportError: (error: string) => void
+): Promise<{
+  contents: string;
+  version: string;
+} | null> => {
+  await init();
+  try {
+    const fileBytes = await readFileAsArrayBuffer(file);
+    const gc = GridController.importExcel(fileBytes, file.name);
+    const contents = gc.exportToFile();
+    return { contents: contents, version: gc.getVersion() };
+  } catch (error) {
+    // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+    // type in the UI.
+    console.error(error);
+    reportError(error as unknown as string);
+    Sentry.captureException(error);
+  }
+
+  return null;
+};
+
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;
@@ -618,13 +643,14 @@ export class Grid {
 
   //#region Imports
 
+  // drag and drop a csv file
   async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
     debugTimeReset();
     const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
-    const file_bytes = await readFileAsArrayBuffer(file);
+    const fileBytes = await readFileAsArrayBuffer(file);
 
     try {
-      const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
+      const summary = this.gridController.importCsv(sheetId, fileBytes, file.name, pos, sheets.getCursorPosition());
       this.transactionResponse(summary);
     } catch (error) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
@@ -636,6 +662,7 @@ export class Grid {
     debugTimeCheck(`uploading and processing csv file ${file.name}`);
   }
 
+  // drag and drop a parquet file
   async importParquet(
     sheetId: string,
     file: File,
@@ -644,16 +671,10 @@ export class Grid {
   ) {
     debugTimeReset();
     const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
-    const file_bytes = await readFileAsArrayBuffer(file);
+    const fileBytes = await readFileAsArrayBuffer(file);
 
     try {
-      const summary = this.gridController.importParquet(
-        sheetId,
-        file_bytes,
-        file.name,
-        pos,
-        sheets.getCursorPosition()
-      );
+      const summary = this.gridController.importParquet(sheetId, fileBytes, file.name, pos, sheets.getCursorPosition());
       this.transactionResponse(summary);
     } catch (error) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
