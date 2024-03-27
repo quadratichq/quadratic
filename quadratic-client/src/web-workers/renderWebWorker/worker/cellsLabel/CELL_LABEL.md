@@ -6,7 +6,7 @@ Each `Sheet` within the `Grid` is rendered independently.
 
 The `CellsSheet` contains a `CellsLabels`, which is responsible for all text
 rendering for a `Sheet`. Text rendering is the most expensive part of rendering
-the Grid. The following is a description of the optimizations we've been to
+the Grid. The following is a description of the optimizations we've added to
 improve the rendering performance.
 
 Note: `CellsLabels` is responsible for rendering individual glyphs that contain
@@ -48,7 +48,7 @@ rendered by `CellsTextHash`.
 
 The CellLabel is responsible for calculating the position and style of
 each glyph within the cell's text. It is also responsible for tracking any
-overflow of the cell's text. It also populates the buffers for the relevant
+overflow of the cell's text. It populates the WebGL buffers for the relevant
 LabelMeshes based on this data.
 
 ### LabelMeshes
@@ -72,7 +72,11 @@ the GPU buffer sizes do not grow too large.
 
 ## Text clipping
 
-TODO: write Description here...
+Each `CellLabel` knows its text width and whether it overflows to the left or
+right. When a `CellLabel` changes, it checks it's neighbors for whether it
+should be clipped. Neighbors are check both in the right and left direction
+until it either finds that it doesn't hit any content given its overflow, or it
+hits content, and therefore clips itself (or sometimes clips its neighbor).
 
 ## GPU Shaders
 

@@ -7,6 +7,8 @@
  * each CellLabel within the hashed region. LabelMeshes may contain multiple
  * LabelMesh children of the same font/style combination to ensure that the
  * webGL buffers do not exceed the maximum size.
+ *
+ * The data calculations occur in renderWebWorker::CellsTextHash.ts.
  */
 
 import { sheets } from '@/grid/controller/Sheets';
@@ -102,17 +104,6 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     text.tint = 0xff0000;
     text.position.set(screen.x, screen.y);
   }
-
-  // TODO: we'll need to send this over as part of the render message
-  // getCellsContentMaxWidth(column: number): number {
-  //   let max = 0;
-  //   // this.labels.forEach((label) => {
-  //   //   if (label.location.x === column) {
-  //   //     max = Math.max(max, label.textWidth);
-  //   //   }
-  //   // });
-  //   return max;
-  // }
 
   adjust(hashX: number | undefined, hashY: number | undefined, delta: number) {
     if (hashX !== undefined) {
