@@ -48,4 +48,8 @@ impl GridController {
     pub fn test() -> Self {
         Self::from_grid(Grid::new(), 0)
     }
+
+    pub fn test_blank() -> Self {
+        Self::from_grid(Grid::new_blank(), 0)
+    }
 }
