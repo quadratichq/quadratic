@@ -1,6 +1,6 @@
 name: CI
 
-# Use runs on `ubuntu-latest-8-cores`. All of our self hosted runners use this tag.
+# Use runs on `test-sh-runner`. All of our self hosted runners use this tag.
 # Our runners pick up jobs first, and if all our runners are being used or are down
 # it will automatically back up to using GitHub hosted runners.
 
@@ -12,7 +12,7 @@ on:
 
 jobs:
   test_rust:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: test-sh-runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -99,7 +99,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   test_unit:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: test-sh-runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -130,7 +130,7 @@ jobs:
           npm run test:ts
 
   test_python:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: test-sh-runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -147,7 +147,7 @@ jobs:
           npm run test
 
   test_api:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: test-sh-runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -161,7 +161,7 @@ jobs:
           npm run docker:test:ci
 
   lint_rust:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: test-sh-runner
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
@@ -176,7 +176,7 @@ jobs:
           cargo clippy -- -D warnings
 
   lint:
-    runs-on: ubuntu-latest-8-cores
+    runs-on: test-sh-runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
