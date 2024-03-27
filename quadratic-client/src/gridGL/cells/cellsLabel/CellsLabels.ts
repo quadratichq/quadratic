@@ -14,6 +14,7 @@ import {
   RenderClientCellsTextHashClear,
   RenderClientLabelMeshEntry,
 } from '@/web-workers/renderWebWorker/renderClientMessages';
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Graphics, Rectangle } from 'pixi.js';
 import { CellsSheet } from '../CellsSheet';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
@@ -134,15 +135,8 @@ export class CellsLabels extends Container {
     });
   }
 
-  getCellsContentMaxWidth(column: number): number {
-    const hashX = Math.floor(column / sheetHashWidth);
-    let max = 0;
-    this.cellsTextHash.forEach((hash) => {
-      if (hash.hashX === hashX) {
-        max = Math.max(max, hash.getCellsContentMaxWidth(column));
-      }
-    });
-    return max;
+  async getCellsContentMaxWidth(column: number): Promise<number> {
+    return await renderWebWorker.getCellsColumnMaxWidth(this.sheetId, column);
   }
 
   unload(hashX: number, hashY: number) {

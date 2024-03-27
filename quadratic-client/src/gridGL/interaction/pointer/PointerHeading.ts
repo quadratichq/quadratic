@@ -249,8 +249,8 @@ export class PointerHeading {
     return false;
   }
 
-  private onDoubleClickColumn(column: number): void {
-    const maxWidth = pixiApp.cellsSheets.getCellsContentMaxWidth(column);
+  private async onDoubleClickColumn(column: number) {
+    const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
     const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
     const size = Math.max(contentSizePlusMargin, CELL_WIDTH);
     const sheetId = sheets.sheet.id;

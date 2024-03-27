@@ -102,11 +102,6 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current?.toggleOutlines(off);
   }
 
-  // todo...
-  // createBorders(): void {
-  //   this.current?.createBorders();
-  // }
-
   // adjust headings for all but the cellsTextHash that changes
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     const { sheetId, delta, row, column } = options;
@@ -121,23 +116,10 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  getCellsContentMaxWidth(column: number): number {
+  async getCellsContentMaxWidth(column: number): Promise<number> {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
     return this.current.cellsLabels.getCellsContentMaxWidth(column);
   }
-
-  // todo...
-  // updateCodeCells(codeCells: SheetId[]): void {
-  //   this.children.forEach((cellsSheet) => {
-  //     if (codeCells.find((id) => id.id === cellsSheet.sheetId)) {
-  //       // todo...
-  //       // cellsSheet.updateCellsArray();
-  //       if (sheets.sheet.id === cellsSheet.sheetId) {
-  //         window.dispatchEvent(new CustomEvent('python-computation-complete'));
-  //       }
-  //     }
-  //   });
-  // }
 
   updateCellsArray(): void {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.updateCellsArray');

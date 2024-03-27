@@ -386,4 +386,15 @@ export class CellsLabels {
       hash.showLabel(x, y, show);
     }
   }
+
+  columnMaxWidth(column: number): number {
+    const hashX = Math.floor(column / sheetHashWidth);
+    let max = 0;
+    this.cellsTextHash.forEach((hash) => {
+      if (hash.hashX === hashX) {
+        max = Math.max(max, hash.getCellsContentMaxWidth(column));
+      }
+    });
+    return max;
+  }
 }

@@ -70,15 +70,30 @@ export interface ClientRenderShowLabel {
   show: boolean;
 }
 
+export interface ClientRenderColumnMaxWidth {
+  type: 'clientRenderColumnMaxWidth';
+  id: number;
+  sheetId: string;
+  column: number;
+}
+
+export interface RenderClientColumnMaxWidth {
+  type: 'renderClientColumnMaxWidth';
+  id: number;
+  maxWidth: number;
+}
+
 export type RenderClientMessage =
   | RenderClientLabelMeshEntry
   | RenderClientCellsTextHashClear
   | RenderClientFirstRenderComplete
   | RenderClientUnload
-  | RenderClientFinalizeCellsTextHash;
+  | RenderClientFinalizeCellsTextHash
+  | RenderClientColumnMaxWidth;
 
 export type ClientRenderMessage =
   | ClientRenderInit
   | ClientRenderViewport
   | ClientRenderSheetOffsetsTransient
-  | ClientRenderShowLabel;
+  | ClientRenderShowLabel
+  | ClientRenderColumnMaxWidth;

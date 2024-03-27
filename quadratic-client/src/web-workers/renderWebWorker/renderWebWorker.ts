@@ -6,11 +6,14 @@ import {
   ClientRenderInit,
   ClientRenderMessage,
   ClientRenderViewport,
+  RenderClientColumnMaxWidth,
   RenderClientMessage,
 } from './renderClientMessages';
 
 class RenderWebWorker {
   private worker: Worker;
+  private id = 0;
+  private waitingForResponse: Record<number, Function> = {};
 
   // render may start working before pixiApp is initialized (b/c React is SLOW)
   private preloadQueue: MessageEvent<RenderClientMessage>[] = [];
@@ -95,6 +98,19 @@ class RenderWebWorker {
       x,
       y,
       show,
+    });
+  }
+
+  getCellsColumnMaxWidth(sheetId: string, column: number): Promise<number> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: RenderClientColumnMaxWidth) => resolve(message.maxWidth);
+      this.send({
+        type: 'clientRenderColumnMaxWidth',
+        id,
+        sheetId,
+        column,
+      });
     });
   }
 }

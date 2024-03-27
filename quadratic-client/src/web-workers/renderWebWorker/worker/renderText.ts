@@ -146,6 +146,12 @@ class RenderText {
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.showLabel');
     cellsLabels.showLabel(x, y, show);
   }
+
+  columnMaxWidth(sheetId: string, column: number): number {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.columnMaxWidth');
+    return cellsLabels.columnMaxWidth(column);
+  }
 }
 
 export const renderText = new RenderText();

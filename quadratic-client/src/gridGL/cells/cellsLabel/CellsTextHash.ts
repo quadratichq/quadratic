@@ -104,24 +104,15 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
   }
 
   // TODO: we'll need to send this over as part of the render message
-  getCellsContentMaxWidth(column: number): number {
-    let max = 0;
-    // this.labels.forEach((label) => {
-    //   if (label.location.x === column) {
-    //     max = Math.max(max, label.textWidth);
-    //   }
-    // });
-    return max;
-  }
-
-  // TODO: we will need to replace this with boxes to avoid rerendering the hashes. this means we'll have to share each CellLabel's bounds
-  showLabel(x: number, y: number, show: boolean) {
-    // const label = this.getLabel(x, y);
-    // if (label && label.visible !== show) {
-    //   label.visible = show;
-    //   this.dirtyBuffers = true;
-    // }
-  }
+  // getCellsContentMaxWidth(column: number): number {
+  //   let max = 0;
+  //   // this.labels.forEach((label) => {
+  //   //   if (label.location.x === column) {
+  //   //     max = Math.max(max, label.textWidth);
+  //   //   }
+  //   // });
+  //   return max;
+  // }
 
   adjust(hashX: number | undefined, hashY: number | undefined, delta: number) {
     if (hashX !== undefined) {
