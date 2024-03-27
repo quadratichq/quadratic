@@ -132,23 +132,6 @@ export class CellsLabels extends Container {
     this.cellsTextHashes.children.forEach((cellsTextHash) => {
       cellsTextHash.adjust(hashX, hashY, delta);
     });
-
-    // const { delta, column, row } = options;
-    // if (column !== undefined) {
-    //   const existing = this.dirtyColumnHeadings.get(column);
-    //   if (existing) {
-    //     this.dirtyColumnHeadings.set(column, existing + delta);
-    //   } else {
-    //     this.dirtyColumnHeadings.set(column, delta);
-    //   }
-    // } else if (row !== undefined) {
-    //   const existing = this.dirtyRowHeadings.get(row);
-    //   if (existing) {
-    //     this.dirtyRowHeadings.set(row, existing + delta);
-    //   } else {
-    //     this.dirtyRowHeadings.set(row, delta);
-    //   }
-    // }
   }
 
   getCellsContentMaxWidth(column: number): number {
@@ -160,17 +143,6 @@ export class CellsLabels extends Container {
       }
     });
     return max;
-  }
-
-  // TODO: remove
-  // update values for cells
-  modified(modified: any /*CellSheetsModified*/[]): void {
-    // for (const update of modified) {
-    //   const cellsHash = this.getCellsHash(Number(update.x) * sheetHashWidth, Number(update.y) * sheetHashHeight, true);
-    //   if (cellsHash) {
-    //     cellsHash.dirty = true;
-    //   }
-    // }
   }
 
   unload(hashX: number, hashY: number) {

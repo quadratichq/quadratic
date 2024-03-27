@@ -220,6 +220,8 @@ export class CellsLabels {
     const bounds = renderText.viewport;
     if (!bounds) return;
 
+    // This divides the hashes into (1) visible in need of rendering, (2) not
+    // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
         if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
@@ -239,11 +241,13 @@ export class CellsLabels {
       return;
     }
 
-    hashesToDelete.sort((a, b) => b.distance - a.distance);
+    // sort hashes to delete so the last one is the farthest from viewport.topLeft
+    hashesToDelete.sort((a, b) => (a.distance < b.distance ? -1 : a.distance > b.distance ? 1 : 0));
 
-    // if hashes are visible, sort (smallest to largest) them by y and return the last one
     if (visibleDirtyHashes.length) {
-      visibleDirtyHashes.sort((a, b) => b.hashY - a.hashY);
+      // if hashes are visible then sort smallest to largest by y and return the first one
+      visibleDirtyHashes.sort((a, b) => (a.hashY < b.hashY ? -1 : a.hashY > b.hashY ? 1 : 0));
+
       while (memory > MAX_RENDERING_MEMORY && hashesToDelete.length) {
         const deleted = hashesToDelete.pop();
         if (deleted) {
@@ -261,14 +265,20 @@ export class CellsLabels {
         );
       return { hash: visibleDirtyHashes[0], visible: true };
     }
-    // otherwise sort notVisible by distance from viewport center (by smallest to largest so we can use pop)
-    notVisibleDirtyHashes.sort((a, b) => a.distance - b.distance);
+    // otherwise sort notVisible by distance from viewport.topLeft (by smallest to largest so we can use pop)
+    notVisibleDirtyHashes.sort((a, b) => (a.distance < b.distance ? -1 : a.distance > b.distance ? 1 : 0));
+
+    // This is the next possible not visible hash to render; we'll use it to
+    // compare the the next hash to unload.
     const nextNotVisibleHash = notVisibleDirtyHashes[0];
+
+    // Free up memory so we can render closer hashes.
     if (hashesToDelete.length) {
       while (
         memory > MAX_RENDERING_MEMORY &&
         hashesToDelete.length &&
-        // ensure we're not deleting hashes that are closer than the nextNotVisibleHash
+        // We ensure that we don't delete a hash that is closer than the the
+        // next not visible hash we plan to render.
         nextNotVisibleHash.distance < hashesToDelete[hashesToDelete.length - 1].distance
       ) {
         hashesToDelete.pop()!.hash.unload();
@@ -277,9 +287,10 @@ export class CellsLabels {
 
       // if the distance of the dirtyHash is greater than the distance of the
       // first hash to delete, then we do nothing. This ensures we're not constantly
-      // deleting and rendering hashes at the edges of memory.
-      if (hashesToDelete.length && nextNotVisibleHash.distance >= hashesToDelete[hashesToDelete.length - 1].distance)
+      // deleting and rendering the same hash at the edges of memory.
+      if (hashesToDelete.length && nextNotVisibleHash.distance >= hashesToDelete[hashesToDelete.length - 1].distance) {
         return;
+      }
 
       if (debugShowLoadingHashes) {
         console.log(

@@ -113,9 +113,10 @@ export class CellsTextHash {
 
   async update(): Promise<boolean> {
     if (this.dirty) {
-      // if dirty is true, then we need to get the cells from the server; but we
+      // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
-      // set to false.
+      // set to false. Therefore, we keep a local copy of dirty flag and allow
+      // the this.dirty to change while fetching the cells.
       const dirty = this.dirty;
       this.dirty = false;
       let cells: JsRenderCell[] | false;
@@ -128,6 +129,9 @@ export class CellsTextHash {
           this.AABB.height
         );
       } else if (dirty === 'show') {
+        // if dirty === 'show' then we only need to update the visibility of the
+        // cells. This is used to change visibility of a CellLabel without
+        // refetching the cell contents.
         cells = false;
       } else {
         cells = dirty as JsRenderCell[];

@@ -106,7 +106,7 @@ impl GridController {
         &mut self,
         sheet_id: SheetId,
         file: Vec<u8>,
-        _file_name: &str,
+        file_name: &str,
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
@@ -117,8 +117,12 @@ impl GridController {
 
         // headers
         let metadata = builder.metadata();
+        let total_size = metadata.file_metadata().num_rows() as u32;
+        dbgjs!(total_size);
         let fields = metadata.file_metadata().schema().get_fields();
         let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
+        let mut width = headers.len() as u32;
+
         ops.push(Operation::SetCellValues {
             sheet_pos: (insert_at.x, insert_at.y, sheet_id).into(),
             values: CellValues::from_flat_array(headers.len() as u32, 1, headers),
@@ -126,10 +130,16 @@ impl GridController {
 
         let reader = builder.build()?;
 
+        let mut height = 0;
+        let mut current_size = 0;
         for (row_index, batch) in reader.enumerate() {
             let batch = batch?;
             let num_rows = batch.num_rows();
             let num_cols = batch.num_columns();
+
+            current_size += num_rows;
+            width = width.max(num_cols as u32);
+            height = height.max(num_rows as u32);
 
             for col_index in 0..num_cols {
                 let col = batch.column(col_index);
@@ -145,6 +155,19 @@ impl GridController {
                     values,
                 };
                 ops.push(operations);
+
+                // update the progress bar every time there's a new operation
+                if cfg!(target_family = "wasm") {
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_size as u32,
+                        total_size as u32,
+                        insert_at.x,
+                        insert_at.y,
+                        width,
+                        height,
+                    );
+                }
             }
         }
 
