@@ -32,7 +32,7 @@ mod tests {
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row, assert_cell_value,
             assert_cell_value_row, print_table,
         },
-        CodeCellValue, Pos, SheetPos, SheetRect,
+        CellValue, CodeCellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
@@ -131,16 +131,14 @@ mod tests {
         };
         let (mut grid, sheet_id) = test_setup(&selected, &[], &[], &[], &[code.clone()]);
         let sheet = grid.grid.sheets()[0].clone();
-        let now = std::time::Instant::now();
         let _ = grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        println!("{}", now.elapsed().as_millis());
         let values = sheet.cell_values_in_rect(&selected, true).unwrap();
-        // let value = values.into_cell_value().unwrap();
+        let value = values.into_cell_value().unwrap();
 
         print_table(&grid, sheet_id, range);
 
-        // assert_eq!(value, CellValue::Code(code));
+        assert_eq!(value, CellValue::Code(code));
     }
 
     #[test]

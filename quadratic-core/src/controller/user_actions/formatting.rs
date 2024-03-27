@@ -395,7 +395,7 @@ mod test {
         let start_pos = Pos { x: 0, y: 0 };
         let end_pos = Pos { x: 0, y: 4 };
 
-        let test_values = vec!["1", "1.2", "1.23", "1.234", "1.2345"];
+        let test_values = ["1", "1.2", "1.23", "1.234", "1.2345"];
         for (i, value) in test_values.iter().enumerate() {
             gc.set_cell_value(
                 SheetPos {
@@ -408,7 +408,7 @@ mod test {
             );
         }
 
-        let expected_values_on_decrement = vec!["1", "1", "1", "1", "1"];
+        let expected_values_on_decrement = ["1", "1", "1", "1", "1"];
         gc.change_decimal_places(
             SheetPos::new(sheet_id, start_pos.x, start_pos.y),
             SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
@@ -422,7 +422,7 @@ mod test {
             assert_eq!(cell.value, expected_values_on_decrement[i]);
         }
 
-        let expected_values_on_increment = vec!["1.0", "1.2", "1.2", "1.2", "1.2"];
+        let expected_values_on_increment = ["1.0", "1.2", "1.2", "1.2", "1.2"];
         gc.change_decimal_places(
             SheetPos::new(sheet_id, start_pos.x, start_pos.y),
             SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
@@ -437,7 +437,7 @@ mod test {
         }
 
         let expected_values_on_5_increments =
-            vec!["1.000000", "1.200000", "1.230000", "1.234000", "1.234500"];
+            ["1.000000", "1.200000", "1.230000", "1.234000", "1.234500"];
         gc.change_decimal_places(
             SheetPos::new(sheet_id, start_pos.x, start_pos.y),
             SheetRect::new_pos_span(start_pos, end_pos, sheet_id),
