@@ -186,27 +186,26 @@ class TestQuadraticApi(IsolatedAsyncioTestCase):
 
 class TestUtils(TestCase):
     def test_to_quadratic_type(self):
-        print("to_quadratic_type", to_quadratic_type("1, 11, 111"))
         # number
         assert to_quadratic_type(1) == ("1", "number")
         assert to_quadratic_type(1.1) == ("1.1", "number")
         assert to_quadratic_type(-1) == ("-1", "number")
-        assert to_quadratic_type("1") == ("1", "number")
-        assert to_quadratic_type("1.1") == ("1.1", "number")
-        assert to_quadratic_type("-1") == ("-1", "number")
 
         # logical
         assert to_quadratic_type(True) == ("True", "logical")
         assert to_quadratic_type(False) == ("False", "logical")
-        assert to_quadratic_type("True") == ("True", "logical")
-        assert to_quadratic_type("False") == ("False", "logical")
-        assert to_quadratic_type("true") == ("True", "logical")
-        assert to_quadratic_type("false") == ("False", "logical")
 
         # string
         assert to_quadratic_type("abc") == ("abc", "text")
         assert to_quadratic_type("123abc") == ("123abc", "text")
         assert to_quadratic_type("abc123") == ("abc123", "text")
+        assert to_quadratic_type("1") == ("1", "text")
+        assert to_quadratic_type("1.1") == ("1.1", "text")
+        assert to_quadratic_type("-1") == ("-1", "text")
+        assert to_quadratic_type("True") == ("True", "text")
+        assert to_quadratic_type("False") == ("False", "text")
+        assert to_quadratic_type("true") == ("True", "text")
+        assert to_quadratic_type("false") == ("False", "text")
 
         # instant
         assert to_quadratic_type(pd.Timestamp("2012-11-10")) == ("1352505600", "instant")
