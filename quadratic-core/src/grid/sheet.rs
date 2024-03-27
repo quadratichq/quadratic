@@ -483,7 +483,7 @@ mod test {
         print_table(&grid, sheet_id, selected);
 
         let sheet = grid.sheet(sheet_id);
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
@@ -500,7 +500,7 @@ mod test {
 
         print_table(&grid, sheet_id, selected);
 
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
@@ -535,7 +535,7 @@ mod test {
 
         print_table(&grid, sheet_id, view_rect);
 
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
