@@ -80,7 +80,7 @@ export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
   useTheme(); // Trigger the theme in the root of the app
 
-  const isLoading = revalidator.state !== 'idle' || navigation.state === 'loading';
+  const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
   const navbar = <Navbar isLoading={isLoading} />;
 
   // When the location changes, close the menu (if it's already open) and reset scroll
