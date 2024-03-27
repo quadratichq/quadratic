@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use arrow_array::{cast::AsArray, Array, ArrayRef};
 use arrow_buffer::ArrowNativeType;
 use arrow_data::ArrayData;
@@ -78,9 +76,7 @@ where
         let data = buffer.typed_data::<T>();
         values.extend(
             data.iter()
-                .map(|v| {
-                    CellValue::Number(BigDecimal::from_str(&v.to_string()).unwrap_or(0.into()))
-                })
+                .map(|v| CellValue::unpack_str_float(&v.to_string(), CellValue::Blank))
                 .collect::<Vec<CellValue>>(),
         );
     }
@@ -171,6 +167,7 @@ where
                         LocalResult::Single(timestamp) => timestamp.format("%H:%M:%S").to_string(),
                         _ => "".into(),
                     };
+                    // TODO(ddimaria): convert to Instant when they're implement
                     CellValue::Text(timestamp)
                 })
                 .collect::<Vec<CellValue>>(),
@@ -192,6 +189,7 @@ fn arryow_timestamp_to_cell_values(array_data: ArrayData) -> Vec<CellValue> {
                         .timestamp_nanos(*v)
                         .format("%Y-%m-%d %H:%M:%S")
                         .to_string();
+                    // TODO(ddimaria): convert to Instant when they're implement
                     CellValue::Text(timestamp)
                 })
                 .collect::<Vec<CellValue>>(),
