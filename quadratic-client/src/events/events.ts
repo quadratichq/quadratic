@@ -72,6 +72,8 @@ interface EventTypes {
   multiplayerCellEdit: (cellEdit: CellEdit, player: MultiplayerUser) => void;
   multiplayerFollow: () => void;
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
+
+  resizeHeadingColumn: (column: number) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

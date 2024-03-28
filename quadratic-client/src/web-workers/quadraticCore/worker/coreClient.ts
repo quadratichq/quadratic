@@ -464,6 +464,10 @@ class CoreClient {
         corePython.init(e.ports[0]);
         break;
 
+      case 'clientCoreImportExcel':
+        this.send({ type: 'coreClientImportExcel', id: e.data.id, ...core.importExcel(e.data) });
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

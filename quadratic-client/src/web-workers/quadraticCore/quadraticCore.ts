@@ -881,6 +881,27 @@ class QuadraticCore {
     this.send({ type: 'clientCoreInitPython' }, port);
   }
 
+  // create a new grid file and import an xlsx file
+  importExcel = async (
+    file: File
+  ): Promise<{
+    contents?: string;
+    version?: string;
+    error?: string;
+  } | null> => {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { contents: string; version: string }) => {
+        resolve(message);
+      };
+      this.send({
+        type: 'clientCoreImportExcel',
+        file,
+        id,
+      });
+    });
+  };
+
   //#endregion
 }
 

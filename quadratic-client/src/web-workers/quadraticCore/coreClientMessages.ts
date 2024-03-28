@@ -760,6 +760,20 @@ export interface CoreClientUpdateCodeCell {
   renderCodeCell?: JsRenderCodeCell;
 }
 
+export interface ClientCoreImportExcel {
+  type: 'clientCoreImportExcel';
+  file: File;
+  id: number;
+}
+
+export interface CoreClientImportExcel {
+  type: 'coreClientImportExcel';
+  id: number;
+  contents?: string;
+  version?: string;
+  error?: string;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -814,7 +828,8 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
-  | ClientCoreInitPython;
+  | ClientCoreInitPython
+  | ClientCoreImportExcel;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -854,4 +869,5 @@ export type CoreClientMessage =
   | CoreClientImportProgress
   | CoreClientTransactionStart
   | CoreClientTransactionProgress
-  | CoreClientUpdateCodeCell;
+  | CoreClientUpdateCodeCell
+  | CoreClientImportExcel;

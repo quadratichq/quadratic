@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
-import { ResizeHeadingColumnEvent } from '../interaction/pointer/PointerHeading';
 
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);
@@ -60,9 +59,7 @@ export const CodeHintInternal = () => {
   });
 
   useEffect(() => {
-    const updateOffsets = (e: Event) => {
-      const customEvent = e as ResizeHeadingColumnEvent;
-      const column = customEvent.detail;
+    const updateOffsets = (column: number) => {
       const { x, y } = sheets.sheet.cursor.cursorPosition;
       // Only update the state if the column being resized is one to the left of
       // where the cursor is
@@ -71,9 +68,9 @@ export const CodeHintInternal = () => {
       }
     };
 
-    window.addEventListener('resize-heading-column', updateOffsets);
+    events.on('resizeHeadingColumn', updateOffsets);
     return () => {
-      window.removeEventListener('resize-heading-column', updateOffsets);
+      events.off('resizeHeadingColumn', updateOffsets);
     };
   });
 

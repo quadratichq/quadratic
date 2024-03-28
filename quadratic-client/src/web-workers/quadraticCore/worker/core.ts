@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
+import { readFileAsArrayBuffer } from '@/helpers/files';
 import {
   CellAlign,
   CellFormatSummary,
@@ -21,9 +22,11 @@ import {
 import initCore, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import { PythonRun } from '@/web-workers/pythonWebWorker/pythonTypes';
+import * as Sentry from '@sentry/react';
 import {
   ClientCoreFindNextColumn,
   ClientCoreFindNextRow,
+  ClientCoreImportExcel,
   ClientCoreLoad,
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
@@ -369,8 +372,17 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const results = this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, new Pos(x, y), cursor);
-        resolve(results);
+        try {
+          this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, new Pos(x, y), cursor);
+          resolve(undefined);
+        } catch (error) {
+          // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+          // type in the UI.
+          console.error(error);
+          reportError(error);
+          Sentry.captureException(error);
+          resolve(error as string);
+        }
       });
     });
   }
@@ -386,14 +398,17 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const results = this.gridController.importParquet(
-          sheetId,
-          new Uint8Array(file),
-          fileName,
-          new Pos(x, y),
-          cursor
-        );
-        resolve(results);
+        try {
+          this.gridController.importParquet(sheetId, new Uint8Array(file), fileName, new Pos(x, y), cursor);
+          resolve(undefined);
+        } catch (error) {
+          // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+          // type in the UI.
+          console.error(error);
+          reportError(error);
+          Sentry.captureException(error);
+          resolve(error as string);
+        }
       });
     });
   }
@@ -793,6 +808,23 @@ class Core {
     const cellsStringified = this.gridController.calculationGetCells(transactionId, x0, y0, x1, y1, sheet, lineNumber);
     const cells = JSON.parse(cellsStringified) as JsGetCellResponse[];
     corePython.sendGetCells(id, cells);
+  }
+
+  async importExcel(message: ClientCoreImportExcel): Promise<{ contents?: string; version?: string; error?: string }> {
+    await initCore();
+    try {
+      const fileBytes = await readFileAsArrayBuffer(message.file);
+      const gc = GridController.importExcel(fileBytes, message.file.name);
+      const contents = gc.exportToFile();
+      return { contents: contents, version: gc.getVersion() };
+    } catch (error: unknown) {
+      // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+      // type in the UI.
+      console.error(error);
+      reportError(error);
+      Sentry.captureException(error);
+      return { error: error as string };
+    }
   }
 }
 
