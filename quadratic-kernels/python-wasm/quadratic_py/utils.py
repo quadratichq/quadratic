@@ -109,10 +109,6 @@ def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | ti
         if value == None or value == "":
             return ("", "blank")
         
-        # TODO(ddimaria): this is brittle, refactor
-        # TODO(ddimaria): removed because of a request from Luke/Jim to treat all strings as strings
-        # if type(value) == str:
-        #     value = normalize_bool(value)
         if type(value) == str:
             return (str(value), "text")
             

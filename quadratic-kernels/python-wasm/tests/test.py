@@ -204,8 +204,8 @@ class TestUtils(TestCase):
         assert to_quadratic_type("-1") == ("-1", "text")
         assert to_quadratic_type("True") == ("True", "text")
         assert to_quadratic_type("False") == ("False", "text")
-        assert to_quadratic_type("true") == ("True", "text")
-        assert to_quadratic_type("false") == ("False", "text")
+        assert to_quadratic_type("true") == ("true", "text")
+        assert to_quadratic_type("false") == ("false", "text")
 
         # instant
         assert to_quadratic_type(pd.Timestamp("2012-11-10")) == ("1352505600", "instant")
