@@ -26,16 +26,16 @@ def error_result(
         "formatted_code": code,
     }
 
-globals = {
-    "getCells": getCells,
-    "getCell": getCell,
-    "c": getCell,
-    "result": None,
-    "cell": getCell,
-    "cells": getCells,
-}
-
 async def run_python(code: str, pos: Tuple[int, int]):
+    globals = {
+        "getCells": getCells,
+        "getCell": getCell,
+        "c": getCell,
+        "result": None,
+        "cell": getCell,
+        "cells": getCells,
+    }
+
     sout = StringIO()
     serr = StringIO()
     output_value = None

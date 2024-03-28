@@ -32,9 +32,15 @@ impl GridController {
     }
 
     pub fn add_sheet(&mut self, cursor: Option<String>) {
-        let ops = self.add_sheet_operations();
+        let ops = self.add_sheet_operations(None);
         self.start_user_transaction(ops, cursor, TransactionName::SheetAdd, None, None);
     }
+
+    pub fn add_sheet_with_name(&mut self, name: String, cursor: Option<String>) {
+        let ops = self.add_sheet_operations(Some(name));
+        self.start_user_transaction(ops, cursor, TransactionName::SheetAdd, None, None);
+    }
+
     pub fn delete_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {
         let ops = self.delete_sheet_operations(sheet_id);
         self.start_user_transaction(ops, cursor, TransactionName::SheetDelete, None, None);

@@ -285,6 +285,26 @@ impl CellValue {
         })
     }
 
+    pub fn unpack_str_unix_timestamp(value: &str) -> anyhow::Result<CellValue> {
+        let parsed: i64 = value.parse()?;
+        Self::unpack_unix_timestamp(parsed)
+    }
+
+    pub fn unpack_unix_timestamp(value: i64) -> anyhow::Result<CellValue> {
+        let timestamp = match Utc.timestamp_opt(value, 0) {
+            chrono::LocalResult::Single(timestamp) => timestamp,
+            _ => bail!("Could not parse timestamp: {}", value),
+        };
+        // TODO(ddimaria): convert to Instant when they're implement
+        Ok(CellValue::Text(
+            timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
+        ))
+    }
+
+    pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
+        BigDecimal::from_str(value).map_or_else(|_| default, CellValue::Number)
+    }
+
     pub fn is_blank_or_empty_string(&self) -> bool {
         self.is_blank() || *self == CellValue::Text(String::new())
     }
@@ -499,14 +519,7 @@ impl CellValue {
                 let is_true = value.eq_ignore_ascii_case("true");
                 CellValue::Logical(is_true)
             }
-            "instant" => {
-                let parsed: i64 = value.parse()?;
-                let timestamp = match Utc.timestamp_opt(parsed, 0) {
-                    chrono::LocalResult::Single(timestamp) => timestamp,
-                    _ => bail!("Could not parse timestamp: {}", value),
-                };
-                CellValue::Text(timestamp.format("%Y-%m-%d %H:%M:%S").to_string())
-            }
+            "instant" => CellValue::unpack_str_unix_timestamp(value)?,
             "duration" => CellValue::Text("not implemented".into()),
             _ => CellValue::Text(value.into()),
         };

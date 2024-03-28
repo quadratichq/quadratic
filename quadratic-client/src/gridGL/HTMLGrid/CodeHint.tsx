@@ -3,11 +3,11 @@ import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
 import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
-import { Coordinate } from '../types/size';
+import { ResizeHeadingColumnEvent } from '../interaction/pointer/PointerHeading';
 
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);
@@ -43,24 +43,39 @@ export const CodeHint = () => {
 };
 
 export const CodeHintInternal = () => {
-  const [hint, setHint] = useState<Coordinate>(sheets.sheet.cursor.cursorPosition);
+  const { x: initialX, y: initialY } = sheets.sheet.cursor.cursorPosition;
+  const [offsets, setOffsets] = useState(sheets.sheet.getCellOffsets(initialX, initialY));
 
   useEffect(() => {
-    const updateCursor = () => {
-      const cursor = sheets.sheet.cursor.cursorPosition;
-      setHint(cursor);
+    const updateOffsets = () => {
+      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      setOffsets(sheets.sheet.getCellOffsets(x, y));
     };
-    events.on('cursorPosition', updateCursor);
-    events.on('changeSheet', updateCursor);
+    events.on('cursorPosition', updateOffsets);
+    events.on('changeSheet', updateOffsets);
     return () => {
-      events.off('cursorPosition', updateCursor);
-      events.off('changeSheet', updateCursor);
+      events.off('cursorPosition', updateOffsets);
+      events.off('changeSheet', updateOffsets);
     };
   });
 
-  const offsets = useMemo(() => {
-    return sheets.sheet.getCellOffsets(hint.x, hint.y);
-  }, [hint]);
+  useEffect(() => {
+    const updateOffsets = (e: Event) => {
+      const customEvent = e as ResizeHeadingColumnEvent;
+      const column = customEvent.detail;
+      const { x, y } = sheets.sheet.cursor.cursorPosition;
+      // Only update the state if the column being resized is one to the left of
+      // where the cursor is
+      if (x - 1 === column) {
+        setOffsets(sheets.sheet.getCellOffsets(x, y));
+      }
+    };
+
+    window.addEventListener('resize-heading-column', updateOffsets);
+    return () => {
+      window.removeEventListener('resize-heading-column', updateOffsets);
+    };
+  });
 
   return (
     <div

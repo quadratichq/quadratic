@@ -475,7 +475,7 @@ mod test {
     fn test_set_cell_values() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 4, y: 1 });
         let vals = vec!["a", "1", "$1.11"];
-        let expected = vec![
+        let expected = [
             CellValue::Text("a".into()),
             CellValue::Number(BigDecimal::from_str("1").unwrap()),
             CellValue::Number(BigDecimal::from_str("1.11").unwrap()),
@@ -485,7 +485,7 @@ mod test {
         print_table(&grid, sheet_id, selected);
 
         let sheet = grid.sheet(sheet_id);
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
@@ -502,7 +502,7 @@ mod test {
 
         print_table(&grid, sheet_id, selected);
 
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
@@ -537,7 +537,7 @@ mod test {
 
         print_table(&grid, sheet_id, view_rect);
 
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()

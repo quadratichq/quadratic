@@ -35,18 +35,19 @@ mod tests {
     use super::*;
     use crate::{
         array,
+        grid::CodeCellLanguage,
         test_util::{
             assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row, assert_cell_value,
             assert_cell_value_row, print_table,
         },
-        Pos, SheetPos, SheetRect,
+        CellValue, CodeCellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
         let bolds = vec![true, false, false, true, false, true, true, false];
 
-        test_setup(selection, &vals, &bolds, &[])
+        test_setup(selection, &vals, &bolds, &[], &[])
     }
 
     fn test_setup_rect_horiz_series(selection: &Rect) -> (GridController, SheetId) {
@@ -56,14 +57,14 @@ mod tests {
         ];
         let bolds = vec![];
 
-        test_setup(selection, &vals, &bolds, &[])
+        test_setup(selection, &vals, &bolds, &[], &[])
     }
 
     fn test_setup_rect_vert_series(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["1", "2", "3"];
         let bolds = vec![];
 
-        test_setup(selection, &vals, &bolds, &[])
+        test_setup(selection, &vals, &bolds, &[], &[])
     }
 
     fn test_setup(
@@ -71,6 +72,7 @@ mod tests {
         vals: &[&str],
         bolds: &[bool],
         fill_colors: &[&str],
+        code_cells: &[CodeCellValue],
     ) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -79,7 +81,9 @@ mod tests {
         for y in selection.y_range() {
             for x in selection.x_range() {
                 let sheet_pos = SheetPos { x, y, sheet_id };
-                grid_controller.set_cell_value(sheet_pos, vals[count].to_string(), None);
+                if let Some(cell_value) = vals.get(count) {
+                    grid_controller.set_cell_value(sheet_pos, cell_value.to_string(), None);
+                }
 
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
@@ -91,6 +95,15 @@ mod tests {
                     grid_controller.set_cell_fill_color(
                         SheetRect::single_sheet_pos(sheet_pos),
                         Some(fill_color.to_lowercase()),
+                        None,
+                    );
+                }
+
+                if let Some(code_cell) = code_cells.get(count) {
+                    grid_controller.set_code_cell(
+                        sheet_pos,
+                        code_cell.language,
+                        code_cell.code.clone(),
                         None,
                     );
                 }
@@ -107,13 +120,33 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
         let (grid_controller, sheet_id) = test_setup_rect(&selected);
         let sheet = grid_controller.sheet(sheet_id);
-        let result = sheet.cell_values_in_rect(&selected).unwrap();
+        let result = sheet.cell_values_in_rect(&selected, false).unwrap();
         let expected = array![
             "a", "h", "x", "g";
             "f", "z", "r", "b";
         ];
 
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_expand_code_cell() {
+        let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
+        let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
+        let code = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "A0 + 1".into(),
+        };
+        let (mut grid, sheet_id) = test_setup(&selected, &[], &[], &[], &[code.clone()]);
+        let sheet = grid.grid.sheets()[0].clone();
+        let _ = grid.autocomplete(sheet_id, selected, range, None).unwrap();
+
+        let values = sheet.cell_values_in_rect(&selected, true).unwrap();
+        let value = values.into_cell_value().unwrap();
+
+        print_table(&grid, sheet_id, range);
+
+        assert_eq!(value, CellValue::Code(code));
     }
 
     #[test]
@@ -244,7 +277,7 @@ mod tests {
         ];
 
         // down + right
-        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(selected.min, Pos { x: 7, y: 6 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 8 });
@@ -258,7 +291,7 @@ mod tests {
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 6, expected);
 
         // up + right
-        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 2, y: -1 }, Pos { x: 7, y: 3 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: 0, y: -3 }, Pos { x: 9, y: 5 });
@@ -272,7 +305,7 @@ mod tests {
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, -1, expected);
 
         // down + left
-        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 1, y: 6 }, selected.max);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 7, y: 8 });
@@ -286,7 +319,7 @@ mod tests {
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 6, expected);
 
         // up + left
-        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 1, y: -1 }, selected.max);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: -1, y: -3 }, Pos { x: 7, y: 5 });

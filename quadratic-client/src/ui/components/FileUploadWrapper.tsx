@@ -1,9 +1,19 @@
+import { isCsv, isParquet } from '@/helpers/files';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
+
+export type DragAndDropFileType = 'csv' | 'parquet';
+
+const getFileType = (file: File): DragAndDropFileType => {
+  if (isCsv(file)) return 'csv';
+  if (isParquet(file)) return 'parquet';
+
+  throw new Error(`Unsupported file type`);
+};
 
 export const FileUploadWrapper = (props: PropsWithChildren) => {
   // drag state
@@ -46,11 +56,9 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      const isCsv = file.type === 'text/csv' || file.type === 'text/tab-separated-values';
-      // NOTE(ddimaria): this mime type was registered in March 2024, so isn't supported yet
-      const isParquet = file.type === 'application/vnd.apache.parquet' || new RegExp(/.parquet$/i).test(file.name);
 
-      if (isCsv || isParquet) {
+      try {
+        const fileType = getFileType(file);
         const clientBoundingRect = divRef?.current?.getBoundingClientRect();
         const world = pixiApp.viewport.toWorld(
           e.pageX - (clientBoundingRect?.left || 0),
@@ -59,16 +67,15 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const insertAtCellLocation = { x: column, y: row } as Coordinate;
 
-        if (isCsv) {
-          const error = await quadraticCore.importCsv(sheets.sheet.id, file, insertAtCellLocation);
-          if (error) addGlobalSnackbar(error);
+        if (fileType === 'csv') {
+          await quadraticCore.importCsv(sheets.sheet.id, file, insertAtCellLocation);
+        } else if (fileType === 'parquet') {
+          await quadraticCore.importParquet(sheets.sheet.id, file, insertAtCellLocation);
+        } else {
+          addGlobalSnackbar('Unsupported file type', { severity: 'warning' });
         }
-        if (isParquet) {
-          const error = await quadraticCore.importParquet(sheets.sheet.id, file, insertAtCellLocation);
-          if (error) addGlobalSnackbar(error);
-        }
-      } else {
-        addGlobalSnackbar('File type not supported. Please upload a CSV file.');
+      } catch (e) {
+        if (e instanceof Error) addGlobalSnackbar(e.message, { severity: 'warning' });
       }
     }
   };

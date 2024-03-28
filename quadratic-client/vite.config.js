@@ -3,8 +3,29 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 import checker from 'vite-plugin-checker';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig(() => {
+  const plugins = [
+    react(),
+    tsconfigPaths(),
+    checker({
+      typescript: true,
+      eslint: {
+        lintCommand: 'eslint --ext .ts,.tsx src',
+      },
+    }),
+  ];
+  if (process.env.SENTRY_AUTH_TOKEN) {
+    plugins.push(
+      sentryVitePlugin({
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: 'quadratic',
+        project: 'quadratic',
+      })
+    );
+  }
+
   return {
     build: {
       outDir: '../build',
@@ -21,24 +42,7 @@ export default defineConfig(() => {
       },
       dedupe: ['monaco-editor', 'vscode'],
     },
-    optimizeDeps: {
-      exclude: ['pyodide'],
-    },
-    plugins: [
-      react(),
-      // tsconfigPaths(),
-      checker({
-        typescript: true,
-        eslint: {
-          lintCommand: 'eslint --ext .ts,.tsx src',
-        },
-      }),
-      sentryVitePlugin({
-        authToken: process.env.SENTRY_AUTH_TOKEN,
-        org: 'quadratic',
-        project: 'quadratic',
-      }),
-    ],
+    plugins,
     worker: {
       format: 'es',
       plugins: () => [

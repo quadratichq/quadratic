@@ -37,9 +37,9 @@ impl GridController {
         util::unused_name("Sheet", sheet_names)
     }
 
-    pub fn add_sheet_operations(&mut self) -> Vec<Operation> {
+    pub fn add_sheet_operations(&mut self, name: Option<String>) -> Vec<Operation> {
         let id = SheetId::new();
-        let name = self.get_next_sheet_name();
+        let name = name.unwrap_or_else(|| self.get_next_sheet_name());
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
         vec![Operation::AddSheet { sheet }]
