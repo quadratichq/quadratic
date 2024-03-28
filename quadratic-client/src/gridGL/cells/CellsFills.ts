@@ -5,6 +5,7 @@ import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { intersects } from '../helpers/intersects';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
 interface SpriteBounds extends Sprite {
@@ -22,6 +23,7 @@ export class CellsFills extends ParticleContainer {
       if (sheetId === this.cellsSheet.sheetId) {
         this.fills = fills;
         this.draw();
+        pixiApp.setViewportDirty();
       }
     });
     events.on('sheetOffsets', (sheetId) => {
