@@ -228,23 +228,19 @@ impl GridController {
         match Regex::new(r#"data-quadratic="(.*)"><tbody"#) {
             Err(_) => Err(Error::msg("Regex creation error")),
             Ok(re) => {
-                let Some(data) = re.captures(&html) else {
-                    return Err(Error::msg("Regex capture error"));
-                };
+                let data = re
+                    .captures(&html)
+                    .ok_or_else(|| Error::msg("Regex capture error"))?;
                 let result = &data.get(1).map_or("", |m| m.as_str());
 
                 // decode html in attribute
-                let unencoded = htmlescape::decode_html(result);
-                if unencoded.is_err() {
-                    return Err(Error::msg("Html decode error"));
-                }
+                let unencoded = htmlescape::decode_html(result)
+                    .map_err(|e| Error::msg(format!("Html decode error: {:?}", e)))?;
 
                 // parse into Clipboard
-                let parsed = serde_json::from_str::<Clipboard>(&unencoded.unwrap());
-                if parsed.is_err() {
-                    return Err(Error::msg("Clipboard parse error"));
-                }
-                let clipboard = parsed.unwrap();
+                let clipboard = serde_json::from_str::<Clipboard>(&unencoded)
+                    .map_err(|e| Error::msg(format!("Clipboard parse error: {:?}", e)))?;
+
                 Ok(self.set_clipboard_cells(sheet_pos, clipboard, special))
             }
         }
