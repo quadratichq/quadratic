@@ -4,23 +4,22 @@
 #[macro_use]
 pub mod util;
 #[macro_use]
-mod error;
+mod error_run;
 mod color;
-mod computation;
 pub mod controller;
+pub mod error_core;
 pub mod ext;
 pub mod formulas;
 pub mod grid;
 mod position;
 mod rle;
 mod span;
-#[cfg(test)]
-mod test_util;
+pub mod test_util;
 mod values;
 #[cfg(feature = "js")]
 pub mod wasm_bindings;
 
-pub use error::*;
+pub use error_run::*;
 pub use ext::*;
 pub use grid::sheet::sheet_offsets;
 pub use position::*;

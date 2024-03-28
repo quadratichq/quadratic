@@ -1,40 +1,34 @@
-import { Button } from '@mui/material';
+import { Button } from '@/shadcn/ui/button';
 import { Link } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
-import { isViewerOrAbove } from '../../../actions';
+import { useSetRecoilState } from 'recoil';
 
+import { useRootRouteLoaderData } from '@/router';
+import mixpanel from 'mixpanel-browser';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 
 export const TopBarShareButton = () => {
-  const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { permission } = editorInteractionState;
+  const { isAuthenticated } = useRootRouteLoaderData();
+  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
 
   return (
     <>
-      {isViewerOrAbove(permission) ? (
+      {isAuthenticated ? (
         <Button
-          variant="contained"
-          size="small"
-          disableElevation
+          size="sm"
           onClick={() => {
             setEditorInteractionState((prev) => ({ ...prev, showShareFileMenu: !prev.showShareFileMenu }));
+            mixpanel.track('[FileSharing].menu.open', { context: 'app' });
           }}
-          sx={{ alignSelf: 'center' }}
+          className="self-center"
         >
           Share
         </Button>
       ) : (
-        <Button
-          replace
-          component={Link}
-          to={ROUTES.LOGIN_WITH_REDIRECT()}
-          variant="outlined"
-          size="small"
-          disableElevation
-          sx={{ alignSelf: 'center' }}
-        >
-          Log in
+        <Button asChild variant="outline" size="sm" className=" self-center">
+          <Link to={ROUTES.LOGIN_WITH_REDIRECT()} replace style={{ whiteSpace: 'nowrap' }}>
+            Log in
+          </Link>
         </Button>
       )}
     </>

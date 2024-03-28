@@ -1,5 +1,6 @@
 use std::{fmt, num::NonZeroU32};
 
+use anyhow::Result;
 use bigdecimal::BigDecimal;
 use itertools::Itertools;
 use rand::Rng;
@@ -8,9 +9,7 @@ use smallvec::{smallvec, SmallVec};
 
 use super::{ArraySize, Axis, CellValue, Spanned, Value};
 use crate::{
-    controller::operation::Operation,
-    grid::{CellRef, Sheet},
-    CodeResult, ErrorMsg, Pos,
+    controller::operations::operation::Operation, grid::Sheet, CodeResult, Pos, RunErrorMsg,
 };
 
 #[macro_export]
@@ -88,6 +87,17 @@ impl From<Vec<Vec<String>>> for Array {
                 .flatten()
                 .map(|s| CellValue::from(s.as_ref()))
                 .collect(),
+        }
+    }
+}
+
+impl From<Vec<Vec<&str>>> for Array {
+    fn from(v: Vec<Vec<&str>>) -> Self {
+        let w = v[0].len();
+        let h = v.len();
+        Array {
+            size: ArraySize::new(w as u32, h as u32).unwrap(),
+            values: v.iter().flatten().map(|s| (*s).into()).collect(),
         }
     }
 }
@@ -200,7 +210,7 @@ impl Array {
     /// if this is not a 1x1 array.
     pub fn cell_value(&self) -> Option<&CellValue> {
         if self.values.len() == 1 {
-            self.values.get(0)
+            self.values.first()
         } else {
             None
         }
@@ -208,13 +218,13 @@ impl Array {
     /// Returns the value at a given position in an array. If the width is 1,
     /// then `x` is ignored. If the height is 1, then `y` is ignored. Otherwise,
     /// returns an error if a coordinate is out of bounds.
-    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, ErrorMsg> {
+    pub fn get(&self, x: u32, y: u32) -> Result<&CellValue, RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         Ok(&self.values[i])
     }
     /// Sets the value at a given position in an array. Returns an error if `x`
     /// or `y` is out of range.
-    pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), ErrorMsg> {
+    pub fn set(&mut self, x: u32, y: u32, value: CellValue) -> Result<(), RunErrorMsg> {
         let i = self.size().flatten_index(x, y)?;
         self.values[i] = value;
         Ok(())
@@ -250,7 +260,7 @@ impl Array {
                 (_, 1) => continue,
                 (1, l) => common_len = l,
                 _ => {
-                    return Err(ErrorMsg::ArrayAxisMismatch {
+                    return Err(RunErrorMsg::ArrayAxisMismatch {
                         axis,
                         expected: common_len,
                         got: new_array_len,
@@ -263,44 +273,34 @@ impl Array {
         Ok(NonZeroU32::new(common_len).expect("bad array size"))
     }
 
-    // todo: this is super complicated; we need to move the number formats into CellValue to simplify this
     pub fn from_string_list(
-        start: CellRef,
+        start: Pos,
         sheet: &mut Sheet,
-        v: Vec<Vec<String>>,
+        v: Vec<Vec<Vec<String>>>,
     ) -> (Option<Array>, Vec<Operation>) {
         let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
-        let values;
-        let pos = sheet.cell_ref_to_pos(start);
-        if let Some(pos) = pos {
-            let mut ops = vec![];
-            let Pos { mut x, mut y } = pos;
-            values = v
-                .iter()
-                .flatten()
-                .map(|s| {
-                    let column_id = sheet.get_or_create_column(x).0.id;
-                    let row_id = sheet.get_or_create_row(y).id;
-                    let cell_ref = CellRef {
-                        sheet: start.sheet,
-                        column: column_id,
-                        row: row_id,
-                    };
-                    x += 1;
-                    if x == v[0].len() as i64 + pos.x {
-                        x = pos.x;
-                        y += 1;
-                    }
-                    let (value, updated_ops) = CellValue::from_string(s, cell_ref, sheet);
-                    ops.extend(updated_ops);
-                    value
-                })
-                .collect();
-            return (Some(Array { size, values }), ops);
-        }
+        let mut ops = vec![];
+        let Pos { mut x, mut y } = start;
 
-        // return nothing when pos is not defined
-        (None, vec![])
+        let values = v
+            .iter()
+            .flatten()
+            .map(|s| {
+                x += 1;
+                if x == v[0].len() as i64 + start.x {
+                    x = start.x;
+                    y += 1;
+                }
+                CellValue::from_js(&s[0], &s[1], start, sheet).unwrap()
+            })
+            // .flatten_ok()
+            .map(|(value, updated_ops)| {
+                ops.extend(updated_ops);
+                value
+            })
+            .collect::<SmallVec<[CellValue; 1]>>();
+
+        (Some(Array { size, values }), ops)
     }
 }
 
@@ -312,7 +312,7 @@ impl Spanned<Array> {
             (1, 1) => Ok(None),
             (_, 1) => Ok(Some(Axis::X)), // height = 1
             (1, _) => Ok(Some(Axis::Y)), // width = 1
-            _ => Err(ErrorMsg::NonLinearArray.with_span(self.span)),
+            _ => Err(RunErrorMsg::NonLinearArray.with_span(self.span)),
         }
     }
     /// Checks that an array is linear along a particular axis, then returns the
@@ -330,7 +330,7 @@ impl Spanned<Array> {
         if expected == got {
             Ok(())
         } else {
-            Err(ErrorMsg::ExactArrayAxisMismatch {
+            Err(RunErrorMsg::ExactArrayAxisMismatch {
                 axis,
                 expected,
                 got,
@@ -347,7 +347,7 @@ impl Spanned<Array> {
         if expected == got {
             Ok(())
         } else {
-            Err(ErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
+            Err(RunErrorMsg::ExactArraySizeMismatch { expected, got }.with_span(self.span))
         }
     }
 }

@@ -1,40 +1,55 @@
 import Editor, { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
-// import { CodeCellValue } from '../../../quadratic-core/types';
+import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
+import { useCodeEditor } from './CodeEditorContext';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from './FormulaLanguageModel';
+import {
+  provideCompletionItems as provideCompletionItemsPython,
+  provideHover as provideHoverPython,
+  provideSignatureHelp as provideSignatureHelpPython,
+} from './PythonLanguageModel';
 import { QuadraticEditorTheme } from './quadraticEditorTheme';
 import { useEditorCellHighlights } from './useEditorCellHighlights';
+// TODO(ddimaria): leave this as we're looking to add this back in once improved
+// import { useEditorDiagnostics } from './useEditorDiagnostics';
+// import { Diagnostic } from 'vscode-languageserver-types';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
-
-// todo: fix types
+import { useEditorReturn } from './useEditorReturn';
 
 interface Props {
   editorContent: string | undefined;
   setEditorContent: (value: string | undefined) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
+  evaluationResult?: EvaluationResult;
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // diagnostics?: Diagnostic[];
 }
 
+// need to track globally since monaco is a singleton
+let registered = false;
+
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor } = props;
-
+  const { editorContent, setEditorContent, closeEditor, evaluationResult } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const readOnly = !isEditorOrAbove(editorInteractionState.permission);
-  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const monacoRef = useRef<Monaco | null>(null);
-
+  const language = editorInteractionState.mode;
+  const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
   const [didMount, setDidMount] = useState(false);
   const [isValidRef, setIsValidRef] = useState(false);
-
-  const language = editorInteractionState.mode;
+  const { editorRef, monacoRef } = useCodeEditor();
 
   useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
+  useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
+
+  // TODO(ddimaria): leave this as we're looking to add this back in once improved
+  // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
   useEffect(() => {
     if (editorInteractionState.showCodeEditor) {
@@ -42,6 +57,7 @@ export const CodeEditorBody = (props: Props) => {
       editorRef.current?.focus();
       editorRef.current?.setPosition({ lineNumber: 0, column: 0 });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInteractionState.showCodeEditor]);
 
   const onMount = useCallback(
@@ -55,18 +71,40 @@ export const CodeEditorBody = (props: Props) => {
       monaco.editor.defineTheme('quadratic', QuadraticEditorTheme);
       monaco.editor.setTheme('quadratic');
 
-      if (didMount) return;
-      // Only register language once
-
-      monaco.languages.register({ id: 'formula' });
-      monaco.languages.setLanguageConfiguration('formula', FormulaLanguageConfig);
-      monaco.languages.setMonarchTokensProvider('formula', FormulaTokenizerConfig);
-      monaco.languages.registerCompletionItemProvider('formula', { provideCompletionItems });
-      monaco.languages.registerHoverProvider('formula', { provideHover });
-
+      // this needs to be before the register conditional below
       setDidMount(true);
+
+      // Only register language once
+      if (registered) return;
+
+      monaco.languages.register({ id: 'Formula' });
+      monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
+      monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
+      monaco.languages.registerCompletionItemProvider('Formula', { provideCompletionItems });
+      monaco.languages.registerHoverProvider('Formula', { provideHover });
+
+      monaco.languages.register({ id: 'python' });
+
+      monaco.languages.registerCompletionItemProvider('python', {
+        provideCompletionItems: provideCompletionItemsPython,
+        triggerCharacters: ['.', '[', '"', "'"],
+      });
+
+      monaco.languages.registerSignatureHelpProvider('python', {
+        provideSignatureHelp: provideSignatureHelpPython,
+        signatureHelpTriggerCharacters: ['(', ','],
+      });
+      monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
+
+      // load the document in the python language server
+      pyrightWorker?.openDocument({
+        textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
+      });
+
+      registered = true;
     },
-    [didMount]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [setDidMount]
   );
 
   useEffect(() => {
@@ -77,10 +115,12 @@ export const CodeEditorBody = (props: Props) => {
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closeEditor, didMount]);
 
   useEffect(() => {
     return () => editorRef.current?.dispose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -94,11 +134,12 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={language === 'PYTHON' ? 'python' : language === 'FORMULA' ? 'formula' : 'plaintext'}
+        language={language === 'Python' ? 'python' : language}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
         options={{
+          theme: 'light',
           readOnly,
           minimap: { enabled: true },
           overviewRulerLanes: 0,
@@ -110,12 +151,8 @@ export const CodeEditorBody = (props: Props) => {
           wordWrap: 'on',
         }}
       />
-      {language === 'PYTHON' && (
-        <CodeEditorPlaceholder
-          editorContent={editorContent}
-          setEditorContent={setEditorContent}
-          editorRef={editorRef}
-        />
+      {language === 'Python' && (
+        <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
       )}
     </div>
   );

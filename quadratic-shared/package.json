@@ -1,0 +1,11 @@
+{
+  "name": "quadratic-shared",
+  "version": "1.0.0",
+  "description": "Code shared between quadratic-api and quadratic-client (each app has to compile this code itself)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

@@ -1,7 +1,8 @@
-import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
+import { htmlCellsHandler } from '@/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import * as Sentry from '@sentry/react';
 import { Point, Rectangle } from 'pixi.js';
-import { debugMockLargeData } from '../../debugFlags';
+import { debugDisableProxy, debugShowMultiplayer } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../../gridGL/helpers/debugPerformance';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
@@ -9,14 +10,12 @@ import { readFileAsArrayBuffer } from '../../helpers/files';
 import init, {
   BorderSelection,
   BorderStyle,
-  CodeCell,
-  CodeCellLanguage,
   GridController,
   JsCodeResult,
   JsComputeGetCells,
   JsRenderBorders,
-  JsRenderCodeCell,
   MinMax,
+  PasteSpecial,
   Pos,
   Rect as RectInternal,
   SheetOffsets,
@@ -26,12 +25,17 @@ import {
   CellAlign,
   CellFormatSummary,
   CellWrap,
+  CodeCellLanguage,
   FormattingSummary,
   JsClipboard,
+  JsCodeCell,
   JsHtmlOutput,
   JsRenderCell,
+  JsRenderCodeCell,
   JsRenderFill,
   Rect,
+  SearchOptions,
+  SheetPos,
   TransactionSummary,
 } from '../../quadratic-core/types';
 import { GridFile } from '../../schemas';
@@ -68,14 +72,15 @@ export const rectToPoint = (rect: Rect): Point => {
 };
 
 export const upgradeFileRust = async (
-  grid: GridFile
+  grid: GridFile,
+  lastSequenceNum: number
 ): Promise<{
   contents: string;
   version: string;
 } | null> => {
   await init();
   try {
-    const gc = GridController.newFromFile(JSON.stringify(grid));
+    const gc = GridController.newFromFile(JSON.stringify(grid), lastSequenceNum);
     const contents = gc.exportToFile();
     return { contents: contents, version: gc.getVersion() };
   } catch (e) {
@@ -84,10 +89,34 @@ export const upgradeFileRust = async (
   }
 };
 
+// create a new grid file and import an xlsx file
+export const importExcel = async (
+  file: File,
+  reportError: (error: string) => void
+): Promise<{
+  contents: string;
+  version: string;
+} | null> => {
+  await init();
+  try {
+    const fileBytes = await readFileAsArrayBuffer(file);
+    const gc = GridController.importExcel(fileBytes, file.name);
+    const contents = gc.exportToFile();
+    return { contents: contents, version: gc.getVersion() };
+  } catch (error) {
+    // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+    // type in the UI.
+    console.error(error);
+    reportError(error as unknown as string);
+    Sentry.captureException(error);
+  }
+
+  return null;
+};
+
 // TS wrapper around Grid.rs
 export class Grid {
   private gridController!: GridController;
-  private _dirty = false;
   thumbnailDirty = false;
 
   transactionResponse(summary: TransactionSummary) {
@@ -107,18 +136,17 @@ export class Grid {
       sheets.updateOffsets(summary.offsets_modified);
       pixiApp.cellsSheets.updateBorders(summary.offsets_modified);
       htmlCellsHandler.updateOffsets(summary.offsets_modified.map((offset) => offset.id));
+      pixiApp.cursor.dirty = true;
+      pixiApp.multiplayerCursor.dirty = true;
     }
 
     if (summary.code_cells_modified.length) {
       pixiApp.cellsSheets.updateCodeCells(summary.code_cells_modified);
+      window.dispatchEvent(new CustomEvent('code-cells-update'));
     }
 
     if (summary.border_sheets_modified.length) {
       pixiApp.cellsSheets.updateBorders(summary.border_sheets_modified);
-    }
-
-    if (summary.transaction_busy) {
-      window.dispatchEvent(new CustomEvent('transaction-busy'));
     }
 
     if (summary.generate_thumbnail) {
@@ -135,38 +163,36 @@ export class Grid {
       sheets.sheet.cursor.load(cursor);
     }
     if (summary.save) {
-      this.dirty = true;
       window.dispatchEvent(new CustomEvent('transaction-complete'));
     }
+
+    // multiplayer transactions
+    if (summary.operations) {
+      multiplayer.sendTransaction(summary.transaction_id!, summary.operations);
+    }
+
+    if (summary.request_transactions) {
+      multiplayer.sendGetTransactions(summary.request_transactions);
+    }
+
+    // todo: this should not be necessary as Update.ts should take care of it; right now
+    //       it renders every time it receives a heartbeat. not a big deal but worth fixing.
     pixiApp.setViewportDirty();
   }
 
-  get dirty(): boolean {
-    // the sheet is never dirty when mocking large data (to stop it from saving over an actual file)
-    return debugMockLargeData ? false : this._dirty;
-  }
-  set dirty(value: boolean) {
-    this._dirty = value;
-  }
-
-  // this cannot be called in the constructor as Rust is not yet loaded
-  init() {
-    this.gridController = new GridController();
+  test() {
+    this.gridController = GridController.test();
   }
 
   // import/export
-  openFromContents(contents: string): boolean {
+  openFromContents(contents: string, lastSequenceNum: number): boolean {
     try {
-      this.gridController = GridController.newFromFile(contents);
+      this.gridController = GridController.newFromFile(contents, lastSequenceNum);
       return true;
     } catch (e) {
       console.warn(e);
       return false;
     }
-  }
-
-  populateWithRandomFloats(sheetId: string, width: number, height: number) {
-    this.gridController.populateWithRandomFloats(sheetId, pointsToRect(0, 0, width, height));
   }
 
   export(): string {
@@ -267,7 +293,7 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
-    return !summary.transaction_busy;
+    return summary.complete;
   }
 
   deleteCellValues(sheetId: string, rectangle: Rectangle) {
@@ -407,8 +433,8 @@ export class Grid {
     this.transactionResponse(summary);
   }
 
-  async setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
-    const summary = await this.gridController.setRegionBorders(
+  setRegionBorders(sheetId: string, rectangle: Rectangle, selection: BorderSelection, style?: BorderStyle) {
+    const summary = this.gridController.setRegionBorders(
       sheetId,
       rectangleToRect(rectangle),
       selection,
@@ -416,7 +442,6 @@ export class Grid {
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
-    this.dirty = true;
   }
 
   setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number) {
@@ -461,7 +486,7 @@ export class Grid {
     return JSON.parse(data);
   }
 
-  getCodeCell(sheetId: string, x: number, y: number): CodeCell | undefined {
+  getCodeCell(sheetId: string, x: number, y: number): JsCodeCell | undefined {
     return this.gridController.getCodeCell(sheetId, new Pos(x, y));
   }
 
@@ -600,13 +625,15 @@ export class Grid {
     y: number;
     plainText: string | undefined;
     html: string | undefined;
+    special: PasteSpecial;
   }) {
-    const { sheetId, x, y, plainText, html } = options;
+    const { sheetId, x, y, plainText, html, special } = options;
     const summary = this.gridController.pasteFromClipboard(
       sheetId,
       new Pos(x, y),
       plainText,
       html,
+      special,
       sheets.getCursorPosition()
     );
     this.transactionResponse(summary);
@@ -616,17 +643,43 @@ export class Grid {
 
   //#region Imports
 
+  // drag and drop a csv file
   async importCsv(sheetId: string, file: File, insertAtCellLocation: Coordinate, reportError: (error: string) => void) {
     debugTimeReset();
     const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
-    const file_bytes = await readFileAsArrayBuffer(file);
+    const fileBytes = await readFileAsArrayBuffer(file);
 
     try {
-      const summary = this.gridController.importCsv(sheetId, file_bytes, file.name, pos, sheets.getCursorPosition());
+      const summary = this.gridController.importCsv(sheetId, fileBytes, file.name, pos, sheets.getCursorPosition());
       this.transactionResponse(summary);
     } catch (error) {
       // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
       // type in the UI.
+      console.error(error);
+      reportError(error as unknown as string);
+      Sentry.captureException(error);
+    }
+    debugTimeCheck(`uploading and processing csv file ${file.name}`);
+  }
+
+  // drag and drop a parquet file
+  async importParquet(
+    sheetId: string,
+    file: File,
+    insertAtCellLocation: Coordinate,
+    reportError: (error: string) => void
+  ) {
+    debugTimeReset();
+    const pos = new Pos(insertAtCellLocation.x, insertAtCellLocation.y);
+    const fileBytes = await readFileAsArrayBuffer(file);
+
+    try {
+      const summary = this.gridController.importParquet(sheetId, fileBytes, file.name, pos, sheets.getCursorPosition());
+      this.transactionResponse(summary);
+    } catch (error) {
+      // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
+      // type in the UI.
+      console.error(error);
       reportError(error as unknown as string);
       Sentry.captureException(error);
     }
@@ -690,43 +743,45 @@ export class Grid {
   //#region Compute
 
   calculationComplete(result: JsCodeResult) {
-    const summary = this.gridController.calculationComplete(result);
-    this.transactionResponse(summary);
-  }
-
-  getTransactionResponse(): TransactionSummary | undefined {
-    return this.gridController.getCalculationTransactionSummary();
+    const summaryResult = this.gridController.calculationComplete(result);
+    if (summaryResult.Ok) {
+      this.transactionResponse(summaryResult.Ok);
+    } else {
+      throw new Error(summaryResult.Err);
+    }
   }
 
   // returns undefined if there was an error fetching cells (eg, invalid sheet name)
   calculationGetCells(
+    transactionId: string,
     rect: RectInternal,
     sheetName: string | undefined,
     lineNumber: number | undefined
   ): { x: number; y: number; value: string }[] | undefined {
-    const getCells = new JsComputeGetCells(rect, sheetName, lineNumber === undefined ? undefined : BigInt(lineNumber));
-    const array = this.gridController.calculationGetCells(getCells);
-    if (array) {
-      // indication that getCells resulted in an error
-      // we get the transactionResponse via a rust call b/c of the way types are converted :(
-      if (array.transaction_response) {
-        const transactionSummary = this.getTransactionResponse();
-        if (transactionSummary) {
-          this.transactionResponse(transactionSummary);
-        }
-        return;
-      }
-      let cell = array.next();
-      const results: { x: number; y: number; value: string }[] = [];
-      while (cell) {
-        const pos = cell.getPos();
-        const value = cell.getValue();
-        results.push({ x: Number(pos.x), y: Number(pos.y), value: value });
-        cell = array.next();
-      }
-      array.free();
-      return results;
+    const getCells = new JsComputeGetCells(transactionId, rect, sheetName, lineNumber);
+    const result = this.gridController.calculationGetCells(getCells);
+    if (result.Err) {
+      this.transactionResponse(result.Err);
+    } else if (result.response) {
+      return result.response;
     }
+  }
+
+  rerunAllCodeCells() {
+    const summary = this.gridController.rerunAllCodeCells(sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
+  rerunSheetCodeCells() {
+    const sheetId = sheets.sheet.id;
+    const summary = this.gridController.rerunSheetCodeCells(sheetId, sheets.getCursorPosition());
+    this.transactionResponse(summary);
+  }
+
+  rerunCodeCell() {
+    const pos = sheets.sheet.cursor.getPos();
+    const summary = this.gridController.rerunCodeCell(sheets.sheet.id, pos, sheets.getCursorPosition());
+    this.transactionResponse(summary);
   }
 
   //#endregion
@@ -743,17 +798,58 @@ export class Grid {
   }
 
   //#endregion
-}
 
-//#end
+  //#region Multiplayer
+  //-----------------
 
-export const grid = GridPerformanceProxy(new Grid());
-
-// workaround so Rust can import TS functions
-declare global {
-  interface Window {
-    transactionSummary: any;
+  multiplayerTransaction(transactionId: string, sequenceNum: number, operations: string) {
+    const summary = this.gridController.multiplayerTransaction(transactionId, sequenceNum, operations);
+    this.transactionResponse(summary);
   }
+
+  setMultiplayerSequenceNum(sequenceNum: number) {
+    this.gridController.setMultiplayerSequenceNum(sequenceNum);
+  }
+
+  receiveSequenceNum(sequenceNum: number) {
+    if (debugShowMultiplayer) console.log(`[Multiplayer] Server is at sequence_num ${sequenceNum}.`);
+    const summary = this.gridController.receiveSequenceNum(sequenceNum);
+    this.transactionResponse(summary);
+  }
+
+  receiveMultiplayerTransactions(transactions: string) {
+    if (debugShowMultiplayer) console.log('[Multiplayer] Received catch-up transactions.');
+    const summaryResponse = this.gridController.receiveMultiplayerTransactions(transactions);
+    if (summaryResponse.Ok) {
+      this.transactionResponse(summaryResponse.Ok);
+    } else {
+      console.error(summaryResponse.Err);
+      throw new Error(summaryResponse.Err);
+    }
+  }
+
+  applyOfflineUnsavedTransaction(transactionId: string, transaction: string) {
+    if (debugShowMultiplayer) console.log('[Multiplayer] Applying an offline unsaved transaction.');
+    const summaryResponse = this.gridController.applyOfflineUnsavedTransaction(transactionId, transaction);
+    this.transactionResponse(summaryResponse);
+  }
+
+  //#endregion
+
+  //#region Search
+  search(text: string, options: SearchOptions): SheetPos[] {
+    return this.gridController.search(text, options);
+  }
+
+  //#endregion
 }
 
-window.transactionSummary = grid.transactionResponse.bind(grid);
+let gridCreate: Grid;
+
+if (debugDisableProxy) {
+  gridCreate = new Grid();
+} else {
+  gridCreate = GridPerformanceProxy(new Grid());
+}
+
+export const grid = gridCreate;

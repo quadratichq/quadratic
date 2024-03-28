@@ -7,7 +7,9 @@ import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { Size } from '../../types/size';
 import { keyboardCell } from './keyboardCell';
 import { keyboardClipboard } from './keyboardClipboard';
+import { keyboardCode } from './keyboardCode';
 import { keyboardPosition } from './keyboardPosition';
+import { keyboardSearch } from './keyboardSearch';
 import { keyboardSelect } from './keyboardSelect';
 import { keyboardUndoRedo } from './keyboardUndoRedo';
 import { keyboardViewport } from './keyboardViewport';
@@ -36,7 +38,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
           setEditorInteractionState,
           presentationMode,
           setPresentationMode,
-        })
+        }) ||
+        keyboardSearch(event, editorInteractionState, setEditorInteractionState)
       ) {
         event.stopPropagation();
         event.preventDefault();
@@ -57,7 +60,8 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
         fileName,
       }) ||
       keyboardUndoRedo(event) ||
-      keyboardSelect(event)
+      keyboardSelect(event) ||
+      keyboardCode(event, editorInteractionState)
     )
       return;
 

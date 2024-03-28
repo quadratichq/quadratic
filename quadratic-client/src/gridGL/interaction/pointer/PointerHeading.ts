@@ -1,6 +1,6 @@
-import { htmlCellsHandler } from '@/gridGL/htmlCells/htmlCellsHandler';
+import { multiplayer } from '@/multiplayer/multiplayer';
 import { InteractivePointerEvent, Point } from 'pixi.js';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '../../../constants/gridConstants';
 import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -12,6 +12,9 @@ import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
 
+export interface ResizeHeadingColumnEvent extends CustomEvent {
+  detail: number;
+}
 export class PointerHeading {
   private active = false;
   private downTimeout: number | undefined;
@@ -60,7 +63,7 @@ export class PointerHeading {
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
 
-    const hasPermission = isEditorOrAbove(pixiAppSettings.editorInteractionState.permission);
+    const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
     const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);
     if (headingResize) {
       pixiApp.setViewportDirty();
@@ -143,7 +146,7 @@ export class PointerHeading {
     this.clicked = false;
 
     if (pixiAppSettings.panMode === PanMode.Disabled) {
-      const hasPermission = isEditorOrAbove(pixiAppSettings.editorInteractionState.permission);
+      const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
       const headingResize = this.active ? this.resizing : headings.intersectsHeadingGridLine(world);
       if (hasPermission && headingResize) {
         this.cursor = headingResize.column !== undefined ? 'col-resize' : 'row-resize';
@@ -182,8 +185,9 @@ export class PointerHeading {
             column: this.resizing.column,
             delta: size - this.resizing.lastSize,
           });
-          htmlCellsHandler.updateOffsets([sheets.sheet.id]);
           this.resizing.lastSize = size;
+
+          window.dispatchEvent(new CustomEvent<number>('resize-heading-column', { detail: this.resizing.column }));
         }
       } else if (this.resizing.row !== undefined) {
         let size: number;
@@ -214,6 +218,7 @@ export class PointerHeading {
         }
       }
     }
+    multiplayer.sendMouseMove(world.x, world.y);
     return true;
   }
 
@@ -248,6 +253,7 @@ export class PointerHeading {
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
       grid.commitSingleResize(sheetId, column, undefined, size);
+      window.dispatchEvent(new CustomEvent<number>('resize-heading-column', { detail: column }));
     }
   }
 

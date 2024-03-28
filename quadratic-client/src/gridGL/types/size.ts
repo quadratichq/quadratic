@@ -1,3 +1,9 @@
+export interface SheetPos {
+  x: number;
+  y: number;
+  sheetId: string;
+}
+
 export interface Coordinate {
   x: number;
   y: number;

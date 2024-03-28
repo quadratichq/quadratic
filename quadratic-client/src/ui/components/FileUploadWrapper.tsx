@@ -1,9 +1,19 @@
+import { isCsv, isParquet } from '@/helpers/files';
 import { DragEvent, PropsWithChildren, useRef, useState } from 'react';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 import { grid } from '../../grid/controller/Grid';
 import { sheets } from '../../grid/controller/Sheets';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
+
+export type DragAndDropFileType = 'csv' | 'parquet';
+
+const getFileType = (file: File): DragAndDropFileType => {
+  if (isCsv(file)) return 'csv';
+  if (isParquet(file)) return 'parquet';
+
+  throw new Error(`Unsupported file type`);
+};
 
 export const FileUploadWrapper = (props: PropsWithChildren) => {
   // drag state
@@ -12,10 +22,10 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
   const moveCursor = (e: DragEvent<HTMLDivElement>): void => {
-    const clientBoudingRect = divRef?.current?.getBoundingClientRect();
+    const clientBoundingRect = divRef?.current?.getBoundingClientRect();
     const world = pixiApp.viewport.toWorld(
-      e.pageX - (clientBoudingRect?.left || 0),
-      e.pageY - (clientBoudingRect?.top || 0)
+      e.pageX - (clientBoundingRect?.left || 0),
+      e.pageY - (clientBoundingRect?.top || 0)
     );
     const sheet = sheets.sheet;
     const offsets = sheet.offsets;
@@ -51,23 +61,31 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      if (file.type === 'text/csv' || file.type === 'text/tab-separated-values') {
-        const clientBoudingRect = divRef?.current?.getBoundingClientRect();
+
+      try {
+        const fileType = getFileType(file);
+        const clientBoundingRect = divRef?.current?.getBoundingClientRect();
         const world = pixiApp.viewport.toWorld(
-          e.pageX - (clientBoudingRect?.left || 0),
-          e.pageY - (clientBoudingRect?.top || 0)
+          e.pageX - (clientBoundingRect?.left || 0),
+          e.pageY - (clientBoundingRect?.top || 0)
         );
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
         const insertAtCellLocation = { x: column, y: row } as Coordinate;
-        grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
-      } else {
-        addGlobalSnackbar('File type not supported. Please upload a CSV file.');
+
+        if (fileType === 'csv') grid.importCsv(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+        if (fileType === 'parquet') grid.importParquet(sheets.sheet.id, file, insertAtCellLocation, addGlobalSnackbar);
+      } catch (e) {
+        if (e instanceof Error) addGlobalSnackbar(e.message, { severity: 'warning' });
       }
     }
   };
 
   return (
-    <div ref={divRef} onDragEnter={handleDrag} style={{ flex: 1 }}>
+    <div
+      ref={divRef}
+      onDragEnter={handleDrag}
+      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+    >
       {props.children}
       {dragActive && (
         <div
