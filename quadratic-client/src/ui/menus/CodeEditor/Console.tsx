@@ -1,5 +1,5 @@
 import { Box, Tab, Tabs, useTheme } from '@mui/material';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { Coordinate } from '@/gridGL/types/size';
@@ -111,7 +111,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
             )}
           </div>
         </TabPanel>
-        <TabPanel value={activeTabIndex} index={1}>
+        <TabPanel value={activeTabIndex} index={1} scrollToBottom={true}>
           <AITab
             // todo: fix this
             evalResult={evaluationResult}
@@ -125,13 +125,26 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
   );
 }
 
-function TabPanel(props: { children: React.ReactElement; value: number; index: number }) {
-  const { children, value, index, ...other } = props;
+function TabPanel(props: { children: React.ReactElement; value: number; index: number; scrollToBottom?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { children, value, index, scrollToBottom, ...other } = props;
+  const hidden = value !== index;
+
+  useEffect(() => {
+    if (!ref.current || hidden) return;
+
+    if (scrollToBottom) {
+      ref.current.scrollIntoView(false);
+    } else {
+      ref.current.scrollIntoView(true);
+    }
+  }, [hidden, scrollToBottom]);
 
   return (
     <div
+      ref={ref}
       role="tabpanel"
-      hidden={value !== index}
+      hidden={hidden}
       id={`console-tabpanel-${index}`}
       aria-labelledby={`console-tab-${index}`}
       {...other}

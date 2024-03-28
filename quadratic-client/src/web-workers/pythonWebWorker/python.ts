@@ -1,9 +1,9 @@
 import { SheetPos } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
+import { JsCodeResult } from '@/quadratic-core/quadratic_core';
 import { TransactionSummary } from '@/quadratic-core/types';
 import mixpanel from 'mixpanel-browser';
 import { grid, pointsToRect } from '../../grid/controller/Grid';
-import { JsCodeResult } from '../../quadratic-core/quadratic_core';
 import { PythonMessage, PythonReturnType } from './pythonTypes';
 
 const IS_TEST = process.env.NODE_ENV === 'test';
@@ -86,7 +86,6 @@ class PythonWebWorker {
           const result = new JsCodeResult(
             transactionId,
             pythonResult.success,
-            pythonResult.formatted_code,
             pythonResult.error_msg,
             pythonResult.std_out,
             pythonResult.output,
@@ -219,7 +218,6 @@ class PythonWebWorker {
     const result = new JsCodeResult(
       transactionId,
       false,
-      undefined,
       'Python execution cancelled by user',
       undefined,
       undefined,

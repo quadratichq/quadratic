@@ -306,7 +306,7 @@ impl GridController {
         };
 
         let code_run = CodeRun {
-            formatted_code_string: js_code_result.formatted_code().clone(),
+            formatted_code_string: None,
             result,
             return_type,
             line_number: js_code_result.line_number(),

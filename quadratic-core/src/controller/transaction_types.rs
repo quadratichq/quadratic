@@ -8,7 +8,6 @@ use crate::Rect;
 pub struct JsCodeResult {
     transaction_id: String,
     success: bool,
-    formatted_code: Option<String>,
     error_msg: Option<String>,
     input_python_std_out: Option<String>,
     output_value: Option<Vec<String>>,
@@ -40,9 +39,6 @@ impl JsCodeResult {
     pub fn line_number(&self) -> Option<u32> {
         self.line_number
     }
-    pub fn formatted_code(&self) -> Option<String> {
-        self.formatted_code.clone()
-    }
     pub fn input_python_std_out(&self) -> Option<String> {
         self.input_python_std_out.clone()
     }
@@ -52,7 +48,6 @@ impl JsCodeResult {
     pub fn new_from_rust(
         transaction_id: String,
         success: bool,
-        formatted_code: Option<String>,
         error_msg: Option<String>,
         input_python_std_out: Option<String>,
         output_value: Option<Vec<String>>,
@@ -64,7 +59,6 @@ impl JsCodeResult {
         JsCodeResult {
             transaction_id,
             success,
-            formatted_code,
             error_msg,
             input_python_std_out,
             output_value,
@@ -83,7 +77,6 @@ impl JsCodeResult {
     pub fn new(
         transaction_id: String,
         success: bool,
-        formatted_code: Option<String>,
         error_msg: Option<String>,
         input_python_std_out: Option<String>,
         output_value: Option<Vec<String>>,
@@ -110,7 +103,6 @@ impl JsCodeResult {
         JsCodeResult {
             transaction_id,
             success,
-            formatted_code,
             error_msg,
             input_python_std_out,
             output_value,
