@@ -1,6 +1,6 @@
 use crate::{
     controller::GridController,
-    grid::{Bold, FillColor, Sheet, SheetId},
+    grid::{Bold, CodeCellLanguage, FillColor, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
 use std::collections::HashMap;
@@ -169,12 +169,18 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
                 fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 
-            vals.push(
-                sheet
+            let cell_value = match sheet.cell_value(pos) {
+                Some(CellValue::Code(code_cell)) => match code_cell.language {
+                    CodeCellLanguage::Formula => code_cell.code.to_string(),
+                    CodeCellLanguage::Python => code_cell.code.to_string(),
+                },
+                _ => sheet
                     .display_value(pos)
                     .unwrap_or(CellValue::Blank)
                     .to_string(),
-            );
+            };
+
+            vals.push(cell_value);
             count_x += 1;
         });
         builder.push_record(vals.clone());
