@@ -47,14 +47,16 @@ impl GridController {
                 ),
             };
 
-            match &attr {
-                CellFmtArray::RenderSize(_) => (), // todo: send html cells
-                CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
-                _ => {
-                    self.send_updated_bounds_rect(&sheet_rect, true);
-                    self.send_render_cells(&sheet_rect)
-                }
-            };
+            if !transaction.is_server() {
+                match &attr {
+                    CellFmtArray::RenderSize(_) => (), // todo: send html cells
+                    CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
+                    _ => {
+                        self.send_updated_bounds_rect(&sheet_rect, true);
+                        self.send_render_cells(&sheet_rect)
+                    }
+                };
+            }
 
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 

@@ -23,7 +23,7 @@ impl GridController {
             }
             let sheet_id = self.grid.add_sheet(Some(sheet.clone()));
 
-            if cfg!(target_family = "wasm") {
+            if cfg!(target_family = "wasm") && !transaction.is_server() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     let sheet_info = SheetInfo::from(sheet);
                     if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
@@ -79,7 +79,7 @@ impl GridController {
                 );
 
                 // if that's the last sheet, then we created a new one and we have to let the workers know
-                if cfg!(target_family = "wasm") {
+                if cfg!(target_family = "wasm") && !transaction.is_server() {
                     if let Some(sheet) = self.try_sheet(new_first_sheet_id) {
                         let sheet_info = SheetInfo::from(sheet);
                         if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
@@ -99,7 +99,7 @@ impl GridController {
                 );
 
                 // otherwise we need to send the deleted sheet information to the workers
-                if cfg!(target_family = "wasm") {
+                if cfg!(target_family = "wasm") && !transaction.is_server() {
                     crate::wasm_bindings::js::jsDeleteSheet(
                         sheet_id.to_string(),
                         transaction.is_user(),
@@ -138,7 +138,7 @@ impl GridController {
                 },
             );
 
-            if cfg!(target_family = "wasm") {
+            if cfg!(target_family = "wasm") && !transaction.is_server() {
                 if let Some(sheet) = self.try_sheet(target) {
                     if let Ok(sheet_info) = serde_json::to_string(&SheetInfo::from(sheet)) {
                         crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
@@ -172,7 +172,7 @@ impl GridController {
                 },
             );
 
-            if cfg!(target_family = "wasm") {
+            if cfg!(target_family = "wasm") && !transaction.is_server() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     if let Ok(sheet_info) = serde_json::to_string(&SheetInfo::from(sheet)) {
                         crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
@@ -206,7 +206,7 @@ impl GridController {
                 },
             );
 
-            if cfg!(target_family = "wasm") {
+            if cfg!(target_family = "wasm") && !transaction.is_server() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     if let Ok(sheet_info) = serde_json::to_string(&SheetInfo::from(sheet)) {
                         crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);

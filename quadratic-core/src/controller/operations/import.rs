@@ -203,7 +203,6 @@ impl GridController {
         // headers
         let metadata = builder.metadata();
         let total_size = metadata.file_metadata().num_rows() as u32;
-        dbgjs!(total_size);
         let fields = metadata.file_metadata().schema().get_fields();
         let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
         let mut width = headers.len() as u32;

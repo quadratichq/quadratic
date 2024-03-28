@@ -465,7 +465,7 @@ class CoreClient {
         break;
 
       case 'clientCoreImportExcel':
-        this.send({ type: 'coreClientImportExcel', id: e.data.id, ...core.importExcel(e.data) });
+        this.send({ type: 'coreClientImportExcel', id: e.data.id, ...(await core.importExcel(e.data)) });
         break;
 
       default:

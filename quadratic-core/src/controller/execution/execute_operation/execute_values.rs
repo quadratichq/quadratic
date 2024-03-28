@@ -19,6 +19,7 @@ impl GridController {
                     // update individual cell values and collect old_values
                     let old_values = sheet.merge_cell_values(sheet_pos.into(), &values);
                     if cfg!(target_family = "wasm")
+                        && !transaction.is_server()
                         && values.into_iter().any(|(_, _, value)| value.is_html())
                     {
                         if let Some(html) = sheet.get_single_html_output(sheet_pos.into()) {
@@ -56,11 +57,12 @@ impl GridController {
                             },
                         );
                     }
-                    // prepare summary
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
-                    self.send_updated_bounds_rect(&sheet_rect, false);
-                    self.send_render_cells(&sheet_rect);
+                    if !transaction.is_server() {
+                        self.send_updated_bounds_rect(&sheet_rect, false);
+                        self.send_render_cells(&sheet_rect);
+                    }
                 }
             }
         }

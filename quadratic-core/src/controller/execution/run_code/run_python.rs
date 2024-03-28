@@ -11,7 +11,7 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
-        if cfg!(target_family = "wasm") {
+        if cfg!(target_family = "wasm") && !transaction.is_server() {
             crate::wasm_bindings::js::jsRunPython(
                 transaction.id.to_string(),
                 sheet_pos.x as i32,

@@ -19,7 +19,7 @@ use crate::{
 impl GridController {
     // loop compute cycle until complete or an async call is made
     pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
-        if cfg!(target_family = "wasm") {
+        if cfg!(target_family = "wasm") && !transaction.is_server() {
             let (x, y, w, h) = if let Some(rect) = transaction.rect {
                 (
                     Some(rect.min.x),
@@ -83,6 +83,7 @@ impl GridController {
                         .insert_or_replace(transaction, true);
                 }
                 TransactionType::Multiplayer => (),
+                TransactionType::Server => (),
                 TransactionType::Unset => panic!("Expected a transaction type"),
             }
         }

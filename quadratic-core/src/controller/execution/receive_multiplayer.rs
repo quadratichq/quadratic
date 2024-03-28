@@ -81,7 +81,7 @@ impl GridController {
     /// there's no need to check or alter the execution order.
     pub fn server_apply_transaction(&mut self, operations: Vec<Operation>) {
         let mut transaction = PendingTransaction {
-            transaction_type: TransactionType::Multiplayer,
+            transaction_type: TransactionType::Server,
             operations: operations.into(),
             ..Default::default()
         };

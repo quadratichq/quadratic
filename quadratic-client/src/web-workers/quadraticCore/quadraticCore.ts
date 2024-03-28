@@ -888,10 +888,11 @@ class QuadraticCore {
     contents?: string;
     version?: string;
     error?: string;
-  } | null> => {
+  }> => {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { contents: string; version: string }) => {
+        debugger;
         resolve(message);
       };
       this.send({

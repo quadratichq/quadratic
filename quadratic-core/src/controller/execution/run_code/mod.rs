@@ -40,7 +40,7 @@ impl GridController {
         );
 
         let old_code_run = if let Some(new_code_run) = &new_code_run {
-            if new_code_run.is_html() && cfg!(target_family = "wasm") {
+            if new_code_run.is_html() && cfg!(target_family = "wasm") && !transaction.is_server() {
                 if let Some(html) = sheet.get_single_html_output(pos) {
                     if let Ok(html) = serde_json::to_string(&html) {
                         crate::wasm_bindings::js::jsUpdateHtml(html);
@@ -62,7 +62,7 @@ impl GridController {
         };
 
         if let Some(old_code_run) = &old_code_run {
-            if old_code_run.is_html() && cfg!(target_family = "wasm") {
+            if old_code_run.is_html() && cfg!(target_family = "wasm") && !transaction.is_server() {
                 if let Some(html) = sheet.get_single_html_output(pos) {
                     if let Ok(html) = serde_json::to_string(&html) {
                         crate::wasm_bindings::js::jsUpdateHtml(html);
@@ -121,7 +121,7 @@ impl GridController {
         }
         transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
-        if cfg!(target_family = "wasm") {
+        if cfg!(target_family = "wasm") && !transaction.is_server() {
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 if let Some(html) = sheet.get_single_html_output(pos) {
                     if let Ok(html) = serde_json::to_string(&html) {
@@ -146,10 +146,9 @@ impl GridController {
                     }
                 }
             }
+            self.send_updated_bounds_rect(&sheet_rect, false);
+            self.send_render_cells(&sheet_rect);
         }
-
-        self.send_updated_bounds_rect(&sheet_rect, false);
-        self.send_render_cells(&sheet_rect);
     }
 
     /// continues the calculate cycle after an async call

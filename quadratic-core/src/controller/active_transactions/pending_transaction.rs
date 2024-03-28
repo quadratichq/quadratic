@@ -123,7 +123,7 @@ impl PendingTransaction {
     /// Sends the transaction to the multiplayer server (if needed)
     pub fn send_transaction(&self) {
         if self.complete && self.is_user_undo_redo() {
-            if cfg!(target_family = "wasm") {
+            if cfg!(target_family = "wasm") && !self.is_server() {
                 let transaction_id = self.id.to_string();
                 match serde_json::to_string(&self.forward_operations) {
                     Ok(ops) => {
@@ -145,6 +145,10 @@ impl PendingTransaction {
                 }
             }
         }
+    }
+
+    pub fn is_server(&self) -> bool {
+        matches!(self.transaction_type, TransactionType::Server)
     }
 
     pub fn is_user(&self) -> bool {

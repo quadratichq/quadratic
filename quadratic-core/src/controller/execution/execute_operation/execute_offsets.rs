@@ -48,7 +48,7 @@ impl GridController {
                 });
             }
 
-            if cfg!(target_family = "wasm") && !client_resized {
+            if cfg!(target_family = "wasm") && !client_resized && !transaction.is_server() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     crate::wasm_bindings::js::jsOffsetsModified(
                         sheet.id.to_string(),
@@ -99,7 +99,7 @@ impl GridController {
                 });
             }
 
-            if cfg!(target_family = "wasm") && !client_resized {
+            if cfg!(target_family = "wasm") && !client_resized && !transaction.is_server() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     crate::wasm_bindings::js::jsOffsetsModified(
                         sheet.id.to_string(),
