@@ -66,15 +66,20 @@ impl Sheet {
     /// TODO(ddimaria): is this necessary as it's more performant to just pluck the data from the sheet directly
     /// davidfig: regrettably, the Array::new_row_major requires the ordering to be row-based and not column based.
     /// we would need to rework how Array works for this to be more performant.
-    pub fn cell_values_in_rect(&self, &selection: &Rect) -> Result<Array> {
+    pub fn cell_values_in_rect(&self, &selection: &Rect, include_code: bool) -> Result<Array> {
         let values = selection
             .y_range()
             .flat_map(|y| {
                 selection
                     .x_range()
                     .map(|x| {
-                        self.display_value(Pos { x, y })
-                            .unwrap_or_else(|| CellValue::Blank)
+                        let pos = Pos { x, y };
+                        let cell_value = self.cell_value(pos).unwrap_or_else(|| CellValue::Blank);
+
+                        match (include_code, &cell_value) {
+                            (true, CellValue::Code(_)) => cell_value,
+                            (_, _) => self.display_value(pos).unwrap_or_else(|| CellValue::Blank),
+                        }
                     })
                     .collect::<Vec<CellValue>>()
             })

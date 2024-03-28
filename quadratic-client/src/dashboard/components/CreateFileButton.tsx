@@ -2,6 +2,7 @@ import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/helpers/fil
 import { Button } from '@/shadcn/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
 import { CaretDownIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import { ChangeEvent, useState } from 'react';
 import { Link, useParams, useSubmit } from 'react-router-dom';
 import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
@@ -40,6 +41,7 @@ export default function CreateFileButton() {
 
       switch (getFileType(file)) {
         case 'grid':
+          mixpanel.track('[Files].importGrid', { fileName: file.name });
           const contents = await file.text().catch((e) => null);
 
           // Ensure it's a valid Quadratic grid file
@@ -57,6 +59,7 @@ export default function CreateFileButton() {
           break;
 
         case 'excel':
+          mixpanel.track('[Files].importExcel', { fileName: file.name });
           const importedFile = await importExcel(file, addGlobalSnackbar);
 
           if (importedFile) {

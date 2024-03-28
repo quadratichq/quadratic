@@ -13,10 +13,11 @@ import { cn } from '@/shadcn/utils';
 import { isJsonObject } from '@/utils/isJsonObject';
 import { Avatar } from '@mui/material';
 import {
+  Cross2Icon,
   EnvelopeClosedIcon,
   ExclamationTriangleIcon,
-  Link1Icon,
-  LinkBreak1Icon,
+  GlobeIcon,
+  LockClosedIcon,
   PersonIcon,
 } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
@@ -46,28 +47,8 @@ function getRoleLabel(role: UserTeamRole | UserFileRole) {
   );
 }
 
-export function ShareDialog({
-  onClose,
-  title,
-  description,
-  children,
-}: {
-  onClose: () => void;
-  title: string;
-  description: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader className={`mr-6 overflow-hidden`}>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <div className={`flex flex-col gap-3`}>{children}</div>
-      </DialogContent>
-    </Dialog>
-  );
+export function DialogBody({ children }: { children: ReactNode }) {
+  return <div className={`flex flex-col gap-3`}>{children}</div>;
 }
 
 export function ShareTeamDialog({
@@ -81,7 +62,7 @@ export function ShareTeamDialog({
     userMakingRequest,
     users,
     invites,
-    team: { name, uuid },
+    team: { uuid },
   } = data;
   const action = ROUTES.TEAM(uuid);
   const numberOfOwners = users.filter((user) => user.role === 'OWNER').length;
@@ -110,111 +91,115 @@ export function ShareTeamDialog({
   const noOfUsers = users.length;
 
   return (
-    <ShareDialog
-      title={`${name} members`}
-      description={
-        <>
-          {noOfUsers} paid member{noOfUsers !== 1 ? 's' : ''} ·{' '}
-          <Button
-            variant="link"
-            onClick={() => {
-              apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
-                window.location.href = data.url;
-              });
-            }}
-            className="h-auto p-0 font-normal leading-4"
-          >
-            Edit billing
-          </Button>
-        </>
-      }
-      onClose={onClose}
-    >
-      {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
-        <InviteForm
-          action={action}
-          intent="create-team-invite"
-          disallowedEmails={exisitingTeamEmails}
-          roles={[
-            ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER ? [UserTeamRoleSchema.enum.OWNER] : []),
-            UserTeamRoleSchema.enum.EDITOR,
-            UserTeamRoleSchema.enum.VIEWER,
-          ]}
-          roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
-        />
-      )}
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Team members</DialogTitle>
+          <DialogDescription>
+            {noOfUsers} paid ·{' '}
+            <Button
+              variant="link"
+              onClick={() => {
+                apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
+                  window.location.href = data.url;
+                });
+              }}
+              className="h-auto p-0 font-normal leading-4"
+            >
+              Edit billing
+            </Button>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogBody>
+          {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
+            <InviteForm
+              action={action}
+              intent="create-team-invite"
+              disallowedEmails={exisitingTeamEmails}
+              roles={[
+                ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER
+                  ? [UserTeamRoleSchema.enum.OWNER]
+                  : []),
+                UserTeamRoleSchema.enum.EDITOR,
+                UserTeamRoleSchema.enum.VIEWER,
+              ]}
+              roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
+            />
+          )}
 
-      {users.map((user) => {
-        const isLoggedInUser = userMakingRequest.id === user.id;
-        const canDelete = isLoggedInUser
-          ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
-          : canDeleteUserInTeam({
-              permissions: userMakingRequest.teamPermissions,
-              loggedInUserRole: userMakingRequest.teamRole,
-              userRole: user.role,
-            });
-        const roles = isLoggedInUser
-          ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
-          : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
-        return (
-          <ManageUser
-            key={user.id}
-            isLoggedInUser={isLoggedInUser}
-            user={user}
-            onUpdate={(submit, userId, role) => {
-              const data: TeamAction['request.update-team-user'] = {
-                intent: 'update-team-user',
-                userId,
-                role,
-              };
-              submit(data, {
-                method: 'POST',
-                action,
-                encType: 'application/json',
-              });
-            }}
-            onDelete={
-              canDelete
-                ? (submit, userId) => {
-                    const data: TeamAction['request.delete-team-user'] = {
-                      intent: 'delete-team-user',
-                      userId,
-                    };
-
-                    submit(data, {
-                      method: 'POST',
-                      action,
-                      encType: 'application/json',
-                    });
-                  }
-                : undefined
-            }
-            roles={roles}
-          />
-        );
-      })}
-      {invites.map((invite) => (
-        <ManageInvite
-          key={invite.id}
-          invite={invite}
-          onDelete={
-            userMakingRequest.teamPermissions.includes('TEAM_EDIT')
-              ? (submit, inviteId) => {
-                  const data: TeamAction['request.delete-team-invite'] = { intent: 'delete-team-invite', inviteId };
+          {users.map((user) => {
+            const isLoggedInUser = userMakingRequest.id === user.id;
+            const canDelete = isLoggedInUser
+              ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
+              : canDeleteUserInTeam({
+                  permissions: userMakingRequest.teamPermissions,
+                  loggedInUserRole: userMakingRequest.teamRole,
+                  userRole: user.role,
+                });
+            const roles = isLoggedInUser
+              ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
+              : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
+            return (
+              <ManageUser
+                key={user.id}
+                isLoggedInUser={isLoggedInUser}
+                user={user}
+                onUpdate={(submit, userId, role) => {
+                  const data: TeamAction['request.update-team-user'] = {
+                    intent: 'update-team-user',
+                    userId,
+                    role,
+                  };
                   submit(data, {
                     method: 'POST',
                     action,
                     encType: 'application/json',
                   });
+                }}
+                onDelete={
+                  canDelete
+                    ? (submit, userId) => {
+                        const data: TeamAction['request.delete-team-user'] = {
+                          intent: 'delete-team-user',
+                          userId,
+                        };
+
+                        submit(data, {
+                          method: 'POST',
+                          action,
+                          encType: 'application/json',
+                        });
+                      }
+                    : undefined
                 }
-              : undefined
-          }
-        />
-      ))}
-      {pendingInvites.map((invite, i) => (
-        <ManageInvite key={i} invite={invite} />
-      ))}
-    </ShareDialog>
+                roles={roles}
+              />
+            );
+          })}
+          {invites.map((invite) => (
+            <ManageInvite
+              key={invite.id}
+              invite={invite}
+              onDelete={
+                userMakingRequest.teamPermissions.includes('TEAM_EDIT')
+                  ? (submit, inviteId) => {
+                      const data: TeamAction['request.delete-team-invite'] = { intent: 'delete-team-invite', inviteId };
+                      submit(data, {
+                        method: 'POST',
+                        action,
+                        encType: 'application/json',
+                      });
+                    }
+                  : undefined
+              }
+            />
+          ))}
+          {pendingInvites.map((invite, i) => (
+            <ManageInvite key={i} invite={invite} />
+          ))}
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -226,12 +211,13 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     userMakingRequest: { filePermissions, id: loggedInUserId },
     owner,
   } = data;
+  const fetchers = useFetchers();
   const action = ROUTES.FILES_SHARE(uuid);
   const canEditFile = filePermissions.includes('FILE_EDIT');
 
   sortLoggedInUserFirst(users, loggedInUserId);
 
-  const pendingInvites = useFetchers()
+  const pendingInvites = fetchers
     .filter(
       (fetcher) =>
         isJsonObject(fetcher.json) && fetcher.json.intent === 'create-file-invite' && fetcher.state !== 'idle'
@@ -252,6 +238,8 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
     ...pendingInvites.map((invite) => invite.email),
   ];
 
+  const isTeamFile = owner.type === 'team';
+
   return (
     <>
       {filePermissions.includes('FILE_EDIT') && (
@@ -263,7 +251,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
         />
       )}
 
-      {owner.type === 'team' && (
+      {isTeamFile && (
         <ListItem className="py-1 text-muted-foreground">
           <div className="flex h-6 w-6 items-center justify-center">
             <PersonIcon className="-mr-[2px]" />
@@ -351,10 +339,53 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
   );
 }
 
+function CopyLinkButton({
+  publicLinkAccess,
+  isTeamFile,
+  uuid,
+}: {
+  publicLinkAccess?: PublicLinkAccess;
+  isTeamFile: boolean;
+  uuid: string;
+}) {
+  const fetchers = useFetchers();
+  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const publicLinkAccessFetcher = fetchers.find(
+    (fetcher) =>
+      isJsonObject(fetcher.json) && fetcher.json.intent === 'update-public-link-access' && fetcher.state !== 'idle'
+  );
+  const optimisticPublicLinkAccess = publicLinkAccessFetcher
+    ? (publicLinkAccessFetcher.json as FileShareAction['request.update-public-link-access']).publicLinkAccess
+    : publicLinkAccess;
+  const url = window.location.origin + ROUTES.FILE(uuid);
+  const disabled = publicLinkAccess ? (isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED') : true;
+
+  return (
+    <Button
+      variant={disabled ? 'ghost' : 'link'}
+      disabled={disabled}
+      className="flex-shrink-0"
+      onClick={() => {
+        mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+        navigator.clipboard
+          .writeText(url)
+          .then(() => {
+            addGlobalSnackbar('Copied link to clipboard.');
+          })
+          .catch(() => {
+            addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
+          });
+      }}
+    >
+      Copy link
+    </Button>
+  );
+}
+
 export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: string; onClose: () => void }) {
   const fetcher = useFetcher();
 
-  let loadState = !fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED';
+  const loadState = !fetcher.data ? 'LOADING' : !fetcher.data.ok ? 'FAILED' : 'LOADED';
 
   // On the initial mount, load the data (if it's not there already)
   useEffect(() => {
@@ -363,37 +394,65 @@ export function ShareFileDialog({ uuid, name, onClose }: { uuid: string; name: s
     }
   }, [fetcher, uuid]);
 
+  const loaderData =
+    loadState === 'LOADED' ? (fetcher.data.data as ApiTypes['/v0/files/:uuid/sharing.GET.response']) : undefined;
+
   return (
-    <ShareDialog title={`Share ${name}`} description="Invite people to collaborate on this file" onClose={onClose}>
-      {loadState === 'LOADING' && (
-        <ListItem>
-          <Skeleton className={`h-6 w-6 rounded-full`} />
-          <Skeleton className={`h-4 w-40 rounded-sm`} />
-          <Skeleton className={`rounded- h-4 w-28 rounded-sm`} />
-        </ListItem>
-      )}
-      {loadState === 'FAILED' && (
-        <div>
-          <Type className="text-destructive">
-            Failed to load,{' '}
-            <button
-              className="underline"
-              onClick={() => {
-                fetcher.load(ROUTES.FILES_SHARE(uuid));
-              }}
-            >
-              try again
-            </button>
-            . If the problem continues,{' '}
-            <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline">
-              contact us
-            </a>
-            .
-          </Type>
-        </div>
-      )}
-      {loadState === 'LOADED' && <ShareFileDialogBody uuid={uuid} data={fetcher.data.data} />}
-    </ShareDialog>
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="[&>button]:hidden">
+        <DialogHeader>
+          <div className={`-mb-1 -mt-2 flex flex-row items-center justify-between`}>
+            <DialogTitle>Share file</DialogTitle>
+
+            <div className="mt-0 flex items-center">
+              <CopyLinkButton
+                publicLinkAccess={loaderData?.file.publicLinkAccess}
+                isTeamFile={loaderData?.owner.type === 'team'}
+                uuid={uuid}
+              />
+              <Button
+                variant={null}
+                size="icon"
+                onClick={onClose}
+                className="opacity-70 transition-opacity hover:opacity-100"
+              >
+                <Cross2Icon />
+              </Button>
+            </div>
+          </div>
+        </DialogHeader>
+        <DialogBody>
+          {loadState === 'LOADING' && (
+            <ListItem>
+              <Skeleton className={`h-6 w-6 rounded-full`} />
+              <Skeleton className={`h-4 w-40 rounded-sm`} />
+              <Skeleton className={`rounded- h-4 w-28 rounded-sm`} />
+            </ListItem>
+          )}
+          {loadState === 'FAILED' && (
+            <div>
+              <Type className="text-destructive">
+                Failed to load,{' '}
+                <button
+                  className="underline"
+                  onClick={() => {
+                    fetcher.load(ROUTES.FILES_SHARE(uuid));
+                  }}
+                >
+                  try again
+                </button>
+                . If the problem continues,{' '}
+                <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline">
+                  contact us
+                </a>
+                .
+              </Type>
+            </div>
+          )}
+          {loadState === 'LOADED' && loaderData && <ShareFileDialogBody uuid={uuid} data={loaderData} />}
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -765,7 +824,6 @@ function ListItemPublicLink({
 }) {
   const fetcher = useFetcher();
   const fetcherUrl = ROUTES.FILES_SHARE(uuid);
-  const { addGlobalSnackbar } = useGlobalSnackbar();
 
   // If we're updating, optimistically show the next value
   if (fetcher.state !== 'idle' && isJsonObject(fetcher.json)) {
@@ -796,11 +854,11 @@ function ListItemPublicLink({
   return (
     <ListItem>
       <div className="flex h-6 w-6 items-center justify-center">
-        {publicLinkAccess === 'NOT_SHARED' ? <LinkBreak1Icon /> : <Link1Icon />}
+        {publicLinkAccess === 'NOT_SHARED' ? <LockClosedIcon /> : <GlobeIcon />}
       </div>
 
       <div className={`flex flex-col`}>
-        <Type variant="body2">Anyone with the public link</Type>
+        <Type variant="body2">Anyone with the link</Type>
         {fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok && (
           <Type variant="caption" className="text-destructive">
             Failed to update
@@ -809,26 +867,6 @@ function ListItemPublicLink({
       </div>
 
       <div className="flex items-center gap-1">
-        {publicLinkAccess !== 'NOT_SHARED' && (
-          <Button
-            variant="link"
-            onClick={() => {
-              mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
-              const url = window.location.origin + ROUTES.FILE(uuid);
-              navigator.clipboard
-                .writeText(url)
-                .then(() => {
-                  addGlobalSnackbar('Copied link to clipboard.');
-                })
-                .catch(() => {
-                  addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
-                });
-            }}
-          >
-            Copy link
-          </Button>
-        )}
-
         {disabled ? (
           <Type className="pr-4">{activeOptionLabel}</Type>
         ) : (

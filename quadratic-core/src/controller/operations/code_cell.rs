@@ -40,6 +40,11 @@ impl GridController {
         // sorting as we need to compare all code cells against every other code cell to find the ordering.
         let mut protect_infinite = 0;
         let mut i = 0;
+
+        if code_cell_positions.is_empty() {
+            return;
+        }
+
         loop {
             let current = code_cell_positions[i];
             let mut changed = false;
