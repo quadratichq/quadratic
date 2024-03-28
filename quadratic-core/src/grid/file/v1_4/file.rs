@@ -267,7 +267,7 @@ fn upgrade_code_runs(sheet: &v1_4::Sheet) -> Vec<(v1_5::Pos, v1_5::CodeRun)> {
                 (
                     cell_ref_to_pos(sheet, cell_ref),
                     v1_5::CodeRun {
-                        formatted_code_string: code_cell_value.formatted_code_string.clone(),
+                        formatted_code_string: None,
                         last_modified: Some(
                             DateTime::from_str(&code_cell_value.last_modified).unwrap_or_default(),
                         ),

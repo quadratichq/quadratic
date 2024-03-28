@@ -83,21 +83,6 @@ async def run_python(code: str, pos: Tuple[int, int]):
     except Exception as err:
         return error_result(err, code, cells_accessed, sout, code_trace.line_number_from_traceback())
     else:
-        # Successfully Created a Result
-        await micropip.install(
-            "autopep8"
-        )  # fixes a timing bug where autopep8 is not yet installed when attempting to import
-        import autopep8
-
-        # Attempt to format code
-        formatted_code = code
-        try:
-            formatted_code = autopep8.fix_code(
-                code, options={"ignore": ["E402"]}
-            )  # Ignore E402 : otherwise breaks imports
-        except Exception:
-            pass
-
         # Process the output
         output = process_output.process_output_value(output_value)
         array_output = output["array_output"]
@@ -132,7 +117,7 @@ async def run_python(code: str, pos: Tuple[int, int]):
             "success": True,
             "input_python_stack_trace": None,
             "code": code,
-            "formatted_code": formatted_code,
+            "formatted_code": code,
         }
 
 print("[Python WebWorker] initialized")
