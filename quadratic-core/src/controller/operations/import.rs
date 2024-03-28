@@ -18,15 +18,31 @@ impl GridController {
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
-        let width = csv::ReaderBuilder::new().from_reader(file).headers()?.len() as u32;
-
-        if width == 0 {
-            bail!("empty files cannot be processed");
-        }
+        let file = match String::from_utf8_lossy(file) {
+            std::borrow::Cow::Borrowed(_) => file,
+            std::borrow::Cow::Owned(_) => {
+                if let Some(ut16) = read_utf16(file) {
+                    let x: String = ut16.chars().filter(|&c| c.is_ascii()).collect();
+                    return self.import_csv_operations(
+                        sheet_id,
+                        x.as_bytes(),
+                        file_name,
+                        insert_at,
+                    );
+                }
+                file
+            }
+        };
 
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
+            .flexible(true)
             .from_reader(file);
+
+        let width = reader.headers()?.len() as u32;
+        if width == 0 {
+            bail!("empty files cannot be processed");
+        }
 
         let mut ops = vec![] as Vec<Operation>;
 
@@ -189,5 +205,14 @@ impl GridController {
         }
 
         Ok(ops)
+    }
+}
+
+fn read_utf16(bytes: &[u8]) -> Option<String> {
+    let (front, slice, back) = unsafe { bytes.align_to::<u16>() };
+    if front.is_empty() && back.is_empty() {
+        String::from_utf16(slice).ok()
+    } else {
+        None
     }
 }
