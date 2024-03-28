@@ -24,6 +24,7 @@ import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
+import { ensureVisible } from '@/gridGL/interaction/viewportHelper';
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -62,6 +63,9 @@ export const CodeEditor = () => {
   const unsaved = useMemo(() => {
     return editorContent !== codeString;
   }, [codeString, editorContent]);
+
+  // ensure cursor is not behind editor
+  useEffect(() => ensureVisible(), [editorWidth]);
 
   // handle someone trying to open a different code editor
   useEffect(() => {

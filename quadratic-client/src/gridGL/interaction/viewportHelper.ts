@@ -10,6 +10,7 @@ export function isVisible() {
   const sheet = sheets.sheet;
   const { cursor } = sheet;
   const headingSize = headings.headingSize;
+  const editorWidth = document.getElementById("QuadraticCodeEditorID")?.getBoundingClientRect()?.width ?? 0;
 
   const column = cursor.keyboardMovePosition.x;
   const row = cursor.keyboardMovePosition.y;
@@ -19,8 +20,8 @@ export function isVisible() {
   if (cell.x + headingSize.width < viewport.left) {
     viewport.left = cell.x - headingSize.width / viewport.scale.x;
     is_off_screen = true;
-  } else if (cell.x + cell.width > viewport.right) {
-    viewport.right = cell.x + cell.width;
+  } else if (cell.x + cell.width > viewport.right - editorWidth) {
+    viewport.right = cell.x + cell.width + editorWidth;
     is_off_screen = true;
   }
 
