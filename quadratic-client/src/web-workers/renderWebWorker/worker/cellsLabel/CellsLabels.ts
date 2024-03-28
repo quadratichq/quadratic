@@ -23,7 +23,6 @@ const MAX_RENDERING_MEMORY = 1024 * 1024 * 500;
 export class CellsLabels {
   sheetId: string;
   sheetOffsets: SheetOffsets;
-  last: any;
   bitmapFonts: RenderBitmapFonts;
 
   // (hashX, hashY) index into cellsTextHashContainer
@@ -155,22 +154,17 @@ export class CellsLabels {
   private updateHeadings(): boolean {
     if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
 
-    // todo: sort by visibility
-
     // hashes that need to update their clipping and buffers
-    const hashesToUpdate: Set<CellsTextHash> = new Set();
+    const hashesToUpdate: Map<CellsTextHash, number> = new Map();
+    const viewport = renderText.viewport;
+    if (!viewport) return false;
+
     this.dirtyColumnHeadings.forEach((delta, column) => {
       const columnHash = Math.floor(column / sheetHashWidth);
       this.cellsTextHash.forEach((hash) => {
         if (hash.hashX === columnHash) {
-          if (columnHash < 0) {
-            if (hash.adjustHeadings({ column, delta })) {
-              hashesToUpdate.add(hash);
-            }
-          } else {
-            if (hash.adjustHeadings({ column, delta })) {
-              hashesToUpdate.add(hash);
-            }
+          if (hash.adjustHeadings({ column, delta }) && !hashesToUpdate.has(hash)) {
+            hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
           }
         }
       });
@@ -181,21 +175,28 @@ export class CellsLabels {
       const rowHash = Math.floor(row / sheetHashHeight);
       this.cellsTextHash.forEach((hash) => {
         if (hash.hashY === rowHash) {
-          if (rowHash < 0) {
-            if (hash.adjustHeadings({ row, delta })) {
-              hashesToUpdate.add(hash);
-            }
-          } else {
-            if (hash.adjustHeadings({ row, delta })) {
-              hashesToUpdate.add(hash);
-            }
+          if (hash.adjustHeadings({ row, delta }) && !hashesToUpdate.has(hash)) {
+            hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
           }
         }
       });
     });
     this.dirtyRowHeadings.clear();
-    hashesToUpdate.forEach((hash) => hash.overflowClip());
-    this.cellsTextHash.forEach((hash) => hash.updateBuffers()); // true
+
+    const hashesToUpdateSorted = Array.from(hashesToUpdate).sort((a, b) => {
+      return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0;
+    });
+    hashesToUpdateSorted.forEach((hash) => {
+      const otherHashes = hash[0].overflowClip();
+      otherHashes.forEach((otherHash) => {
+        if (!hashesToUpdate.has(otherHash)) {
+          hashesToUpdate.set(otherHash, this.hashDistanceSquared(otherHash, viewport));
+        }
+      });
+    });
+    hashesToUpdate.forEach((_, hash) => {
+      hash.updateBuffers();
+    });
 
     return true;
   }

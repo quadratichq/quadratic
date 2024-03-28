@@ -207,7 +207,6 @@ export class CellLabel {
       }
       if (actualRight > this.AABB.right) {
         this.overflowRight = actualRight - this.AABB.right;
-      } else {
       }
       this.position = new Point(actualLeft, this.AABB.y);
     } else if (alignment === 'left') {
@@ -421,13 +420,19 @@ export class CellLabel {
     this.calculatePosition();
   }
 
-  adjustWidth(delta: number, adjustX?: boolean): void {
+  adjustWidth(delta: number, adjustX: boolean) {
     this.AABB.width -= delta;
+    if (adjustX) {
+      this.AABB.x += delta;
+    }
     this.calculatePosition();
   }
 
-  adjustHeight(delta: number, adjustY?: boolean): void {
+  adjustHeight(delta: number, adjustY: boolean): void {
     this.AABB.height -= delta;
+    if (adjustY) {
+      this.AABB.y += delta;
+    }
     this.calculatePosition();
   }
 }

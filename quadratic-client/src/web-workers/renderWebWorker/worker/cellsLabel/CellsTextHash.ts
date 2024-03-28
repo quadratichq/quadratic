@@ -159,12 +159,14 @@ export class CellsTextHash {
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
   }
 
-  overflowClip(): void {
+  overflowClip(): Set<CellsTextHash> {
     const bounds = this.cellsLabels.bounds;
-    if (!bounds) return;
+    if (!bounds) return new Set();
     const clipLeft: TrackClip[] = [];
     const clipRight: TrackClip[] = [];
     this.labels.forEach((cellLabel) => this.checkClip(cellLabel, clipLeft, clipRight));
+
+    const updatedHashes = new Set<CellsTextHash>();
 
     // we need to update any hashes that we may no longer be clipping
     this.leftClip.forEach((clip) => {
@@ -175,7 +177,8 @@ export class CellsTextHash {
       ) {
         const hash = this.cellsLabels.getCellsHash(clip.hashX, clip.hashY, false);
         if (hash) {
-          hash.dirty = true;
+          updatedHashes.add(hash);
+          hash.dirtyBuffers = true;
         }
       }
     });
@@ -187,12 +190,15 @@ export class CellsTextHash {
       ) {
         const hash = this.cellsLabels.getCellsHash(clip.hashX, clip.hashY, false);
         if (hash) {
-          hash.dirty = true;
+          updatedHashes.add(hash);
+          hash.dirtyBuffers = true;
         }
       }
     });
     this.leftClip = clipLeft;
     this.rightClip = clipRight;
+
+    return updatedHashes;
   }
 
   private checkClip(label: CellLabel, leftClip: TrackClip[], rightClip: TrackClip[]) {
@@ -272,6 +278,7 @@ export class CellsTextHash {
       this.labels.forEach((label) => {
         if (label.location.x === column) {
           label.adjustWidth(delta, column < 0);
+          changed = true;
         } else {
           if (column < 0) {
             if (label.location.x < column) {
@@ -290,6 +297,7 @@ export class CellsTextHash {
       this.labels.forEach((label) => {
         if (label.location.y === row) {
           label.adjustHeight(delta, row < 0);
+          changed = true;
         } else {
           if (row < 0) {
             if (label.location.y < row) {
