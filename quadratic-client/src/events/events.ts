@@ -1,4 +1,5 @@
 import { EditingCell } from '@/gridGL/HTMLGrid/hoverCell/HoverCell';
+import { PanMode } from '@/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/gridGL/types/size';
 import {
   JsCodeCell,
@@ -24,6 +25,9 @@ interface EventTypes {
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell) => void;
+
+  zoom: (scale: number) => void;
+  panMode: (pan: PanMode) => void;
 
   undoRedo: (undo: boolean, redo: boolean) => void;
 

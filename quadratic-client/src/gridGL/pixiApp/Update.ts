@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Point } from 'pixi.js';
@@ -53,7 +54,7 @@ export class Update {
       dirty = true;
 
       // this is used to trigger changes to ZoomDropdown
-      window.dispatchEvent(new CustomEvent<number>('zoom-event', { detail: viewport.scale.x }));
+      events.emit('zoom', viewport.scale.x);
     }
     if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {
       this.lastViewportPosition.x = viewport.x;

@@ -160,7 +160,7 @@ class PixiAppSettings {
       this._panMode = mode;
 
       // this is used by QuadraticGrid to trigger changes in pan mode
-      window.dispatchEvent(new CustomEvent('pan-mode', { detail: mode }));
+      events.emit('panMode', mode);
     }
   }
 

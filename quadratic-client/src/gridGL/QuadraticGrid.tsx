@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { ImportProgress } from '@/ui/components/ImportProgress';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -27,8 +28,10 @@ export default function QuadraticGrid() {
     const updatePanMode = (e: any) => {
       setPanMode(e.detail);
     };
-    window.addEventListener('pan-mode', updatePanMode);
-    return () => window.removeEventListener('pan-mode', updatePanMode);
+    events.on('panMode', updatePanMode);
+    return () => {
+      events.off('panMode', updatePanMode);
+    };
   }, []);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
