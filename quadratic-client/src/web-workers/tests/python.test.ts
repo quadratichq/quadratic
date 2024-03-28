@@ -81,6 +81,7 @@ describe('Python/Pyodide', () => {
         end_lineno: 2,
         lineno: 2,
         value_type: 'BinOp',
+        formatted_code: '\n      5 + 3\n',
       });
     },
     30 * 1000

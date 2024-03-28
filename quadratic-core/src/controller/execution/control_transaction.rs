@@ -281,7 +281,6 @@ mod tests {
             true,
             None,
             None,
-            None,
             Some(vec!["1".into(), "number".into()]),
             None,
             None,
