@@ -12,10 +12,10 @@ import { grid } from '../../controller/Grid';
 import { sheets } from '../../controller/Sheets';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';
+const getClipboardLocalStorageKey = async () => (await localforage.getItem(clipboardLocalStorageKey)) as string;
+const setClipboardLocalStorageKey = async (html: string | undefined) => localforage.setItem(clipboardLocalStorageKey, html);
 
-export const fullClipboardSupport = (): boolean => {
-  return !!navigator.clipboard && !!window.ClipboardItem;
-};
+export const fullClipboardSupport = (): boolean => !!navigator.clipboard && !!window.ClipboardItem;
 
 //#region document event handler for copy, paste, and cut
 
@@ -40,7 +40,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
   const rectangle = sheets.sheet.cursor.getRectangle();
-  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, rectangle);
+  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, rectangle);
   if (!e.clipboardData) {
     console.warn('clipboardData is not defined');
     return;
@@ -69,6 +69,10 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   if (e.clipboardData.types.includes('text/plain')) {
     plainText = e.clipboardData.getData('text/plain');
   }
+  if (!html && !fullClipboardSupport()) { // try firefox storage
+    html = await getClipboardLocalStorageKey()
+  }
+
   if (plainText || html) {
     debugTimeReset();
     grid.pasteFromClipboard({
@@ -83,8 +87,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   }
 
   // enables Firefox menu pasting after a ctrl+v paste
-  localforage.setItem(clipboardLocalStorageKey, html);
-
+  setClipboardLocalStorageKey(html);
   e.preventDefault();
 };
 
@@ -108,14 +111,14 @@ const toClipboard = (plainText: string, html: string) => {
   // fallback support for firefox
   else {
     navigator.clipboard.writeText(plainText);
-    localforage.setItem(clipboardLocalStorageKey, html);
+    setClipboardLocalStorageKey(html);
   }
 };
 
 export const cutToClipboard = async () => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
-  const { plainText, html } = await grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  const { plainText, html } = grid.cutToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
   toClipboard(plainText, html);
   debugTimeCheck('cut to clipboard (fallback)');
 };
@@ -191,7 +194,7 @@ export const pasteFromClipboard = async (special: PasteSpecial = PasteSpecial.No
 
   // handles firefox using localStorage :(
   else {
-    const html = (await localforage.getItem(clipboardLocalStorageKey)) as string;
+    const html = await getClipboardLocalStorageKey();
     if (html) {
       debugTimeReset();
       grid.pasteFromClipboard({
