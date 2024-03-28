@@ -19,7 +19,6 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
     const downPosition = cursor.cursorPosition;
     const movePosition = cursor.keyboardMovePosition;
     const sheetId = sheets.sheet.id;
-
     // handle cases for meta/ctrl keys with algorithm:
     // - if on an empty cell then select to the first cell with a value
     // - if on a filled cell then select to the cell before the next empty cell
@@ -27,6 +26,8 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
     // - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
     //   the above checks are always made relative to the original cursor position (the highlighted cell)
     if (event.metaKey || event.ctrlKey) {
+      // needed since we call await to get ranges, and without this, the browser will navigate
+      event.preventDefault();
       if (deltaX === 1) {
         const originX = cursor.originPosition.x;
         const termX = cursor.terminalPosition.x;

@@ -813,8 +813,8 @@ class QuadraticCore {
     const { sheetId, columnStart, row, reverse, withContent } = options;
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { next: number }) => {
-        resolve(message.next);
+      this.waitingForResponse[id] = (message: { column: number }) => {
+        resolve(message.column);
       };
       this.send({
         type: 'clientCoreFindNextColumn',
@@ -838,8 +838,8 @@ class QuadraticCore {
     const { sheetId, column, rowStart, reverse, withContent } = options;
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { next: number }) => {
-        resolve(message.next);
+      this.waitingForResponse[id] = (message: { row: number }) => {
+        resolve(message.row);
       };
       this.send({
         type: 'clientCoreFindNextRow',

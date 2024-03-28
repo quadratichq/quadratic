@@ -34,8 +34,6 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
   // received from render web worker and used for culling
   visibleRectangle: Rectangle;
 
-  // todo: not sure if this is still used as I ran into issues with only rendering buffers:
-
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
