@@ -6,6 +6,7 @@ use crate::{
         operations::operation::Operation, GridController,
     },
     grid::SheetId,
+    ArraySize, Rect,
 };
 
 impl GridController {
@@ -43,7 +44,12 @@ impl GridController {
     fn check_spill(&self, sheet_id: SheetId, index: usize) -> Option<bool> {
         if let Some(sheet) = self.grid.try_sheet(sheet_id) {
             if let Some((pos, code_run)) = sheet.code_runs.get_index(index) {
-                let output = code_run
+                // output sizes of 1x1 cannot spill
+                if matches!(code_run.output_size(), ArraySize::_1X1) {
+                    return None;
+                }
+
+                let output: Rect = code_run
                     .output_sheet_rect(pos.to_sheet_pos(sheet_id), true)
                     .into();
 
