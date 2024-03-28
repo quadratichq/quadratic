@@ -40,6 +40,7 @@ export const runDockerImageBashScript = (
   imageTag: string,
   pulumiEscEnvironmentName: string,
   extraEnvVars: EnvVariables,
+  dependencySetupBashCommand: string = "",
   rebuildOnEveryPulumiRun: boolean = false
 ) => {
   const extraEnvVarsBashCommand = createBashCommandForEnv(extraEnvVars);
@@ -76,11 +77,13 @@ aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS
 
 echo 'Pulling and running Docker image from ECR'
 sudo docker pull ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
+${dependencySetupBashCommand}
 sudo docker run -d \
             --name ${imageRepositoryName} \
             --restart always \
             -p 80:80 \
             --env-file .env \
+            --add-host=host.docker.internal:host-gateway \
             ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
 
 # TODO: In preview environments we should disable datadog

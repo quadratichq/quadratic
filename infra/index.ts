@@ -6,5 +6,7 @@ import { multiplayerPublicDns } from "./multiplayer/multiplayer";
 
 import { filesPublicDns } from "./files/files";
 
+import { apiPublicDns } from "./api/api";
+
 // Global exports
-export { filesPublicDns, multiplayerPublicDns, redisHost, redisPort };
+export { apiPublicDns, filesPublicDns, multiplayerPublicDns, redisHost, redisPort };
