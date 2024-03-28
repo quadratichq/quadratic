@@ -45,8 +45,10 @@ extern "C" {
     pub fn jsRequestTransactions(sequence_num: u64);
     pub fn jsUpdateCodeCell(
         sheet_id: String,
-        code_cell: String,        /*JsCodeCell*/
-        render_code_cell: String, /*JsRenderCodeCell*/
+        x: i64,
+        y: i64,
+        code_cell: Option<String>,        /*JsCodeCell*/
+        render_code_cell: Option<String>, /*JsRenderCodeCell*/
     );
     pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64);
     pub fn jsSetCursor(cursor: String);

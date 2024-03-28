@@ -17,7 +17,7 @@ const SPILL_FILL_ALPHA = 0.025;
 
 export class CellsArray extends Container {
   private cellsSheet: CellsSheet;
-  private codeCells: JsRenderCodeCell[];
+  private codeCells: Map<String, JsRenderCodeCell>;
 
   private particles: ParticleContainer;
   // only used for the spill error indicators (lines are drawn using sprites in particles for performance)
@@ -30,30 +30,48 @@ export class CellsArray extends Container {
     this.graphics = this.addChild(new Graphics());
     this.cellsSheet = cellsSheet;
     this.lines = [];
-    this.codeCells = [];
-    events.on('renderCodeCells', (sheetId, codeCells) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        this.codeCells = codeCells;
-        this.create();
-      }
-    });
-    events.on('sheetOffsets', (sheetId) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        this.create();
-      }
-    });
-    events.on('updateCodeCell', (sheetId, _, renderCodeCell) => {
-      if (sheetId === this.cellsSheet.sheetId) {
-        const index = this.codeCells.findIndex((cell) => cell.x === renderCodeCell.x && cell.y === renderCodeCell.y);
-        if (index === -1) {
-          this.codeCells.push(renderCodeCell);
-        } else {
-          this.codeCells[index] = renderCodeCell;
-        }
-        this.create();
-      }
-    });
+    this.codeCells = new Map();
+    events.on('renderCodeCells', this.renderCodeCells);
+    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('updateCodeCell', this.updateCodeCell);
   }
+
+  destroy() {
+    events.off('renderCodeCells', this.renderCodeCells);
+    events.off('sheetOffsets', this.sheetOffsets);
+    events.off('updateCodeCell', this.create);
+    super.destroy();
+  }
+
+  private key(x: number, y: number): string {
+    return `${x},${y}`;
+  }
+
+  private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      const map = new Map();
+      codeCells.forEach((cell) => map.set(this.key(cell.x, cell.y), cell));
+      this.codeCells = map;
+      this.create();
+    }
+  };
+
+  private sheetOffsets = (sheetId: string) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.create();
+    }
+  };
+
+  private updateCodeCell = (options: { sheetId: string; x: number; y: number; renderCodeCell?: JsRenderCodeCell }) => {
+    if (options.sheetId === this.cellsSheet.sheetId) {
+      if (options.renderCodeCell) {
+        this.codeCells.set(this.key(options.x, options.y), options.renderCodeCell);
+      } else {
+        this.codeCells.delete(this.key(options.x, options.y));
+      }
+      this.create();
+    }
+  };
 
   get sheetId(): string {
     return this.cellsSheet.sheetId;
@@ -65,7 +83,7 @@ export class CellsArray extends Container {
     this.graphics.clear();
     this.cellsSheet.cellsMarkers.clear();
     const codeCells = this.codeCells;
-    if (codeCells.length === 0) {
+    if (codeCells.size === 0) {
       pixiApp.setViewportDirty();
       return;
     }

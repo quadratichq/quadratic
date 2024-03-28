@@ -754,8 +754,10 @@ export interface CoreClientTransactionProgress {
 export interface CoreClientUpdateCodeCell {
   type: 'coreClientUpdateCodeCell';
   sheetId: string;
-  codeCell: JsCodeCell;
-  renderCodeCell: JsRenderCodeCell;
+  x: number;
+  y: number;
+  codeCell?: JsCodeCell;
+  renderCodeCell?: JsRenderCodeCell;
 }
 
 //#endregion

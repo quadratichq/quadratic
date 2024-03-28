@@ -69,6 +69,15 @@ impl GridController {
                     }
                 }
             }
+            if new_code_run.is_none() {
+                crate::wasm_bindings::js::jsUpdateCodeCell(
+                    sheet_id.to_string(),
+                    sheet_pos.x,
+                    sheet_pos.y,
+                    None,
+                    None,
+                );
+            }
         }
 
         let sheet_rect = match (&old_code_run, &new_code_run) {
@@ -129,8 +138,10 @@ impl GridController {
                     ) {
                         crate::wasm_bindings::js::jsUpdateCodeCell(
                             sheet_id.to_string(),
-                            code_cell,
-                            render_code_cell,
+                            sheet_pos.x,
+                            sheet_pos.y,
+                            Some(code_cell),
+                            Some(render_code_cell),
                         );
                     }
                 }

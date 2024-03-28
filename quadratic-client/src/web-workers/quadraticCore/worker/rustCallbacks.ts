@@ -66,7 +66,13 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
-    sendUpdateCodeCell: (sheetId: string, codeCell: JsCodeCell, renderCodeCell: JsRenderCodeCell) => void;
+    sendUpdateCodeCell: (
+      sheetId: string,
+      x: number,
+      y: number,
+      codeCell?: JsCodeCell,
+      renderCodeCell?: JsRenderCodeCell
+    ) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, operations: string) => {
@@ -194,8 +200,18 @@ export const jsRunPython = (transactionId: string, x: number, y: number, sheetId
   self.sendRunPython(transactionId, x, y, sheetId, code);
 };
 
-export const jsUpdateCodeCell = (sheetId: string, codeCellStringified: string, renderCodeCellStringified: string) => {
-  const codeCell = JSON.parse(codeCellStringified) as JsCodeCell;
-  const renderCodeCell = JSON.parse(renderCodeCellStringified) as JsRenderCodeCell;
-  self.sendUpdateCodeCell(sheetId, codeCell, renderCodeCell);
+export const jsUpdateCodeCell = (
+  sheetId: string,
+  x: bigint,
+  y: bigint,
+  codeCellStringified?: string,
+  renderCodeCellStringified?: string
+) => {
+  if (codeCellStringified && renderCodeCellStringified) {
+    const codeCell = JSON.parse(codeCellStringified) as JsCodeCell;
+    const renderCodeCell = JSON.parse(renderCodeCellStringified) as JsRenderCodeCell;
+    self.sendUpdateCodeCell(sheetId, Number(x), Number(y), codeCell, renderCodeCell);
+  } else {
+    self.sendUpdateCodeCell(sheetId, Number(x), Number(y));
+  }
 };

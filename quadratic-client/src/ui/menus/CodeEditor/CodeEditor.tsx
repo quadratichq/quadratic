@@ -129,13 +129,9 @@ export const CodeEditor = () => {
   useEffect(() => {
     updateCodeCell();
 
-    const update = (sheetId: string, codeCell: JsCodeCell) => {
-      if (
-        sheetId === cellLocation.sheetId ||
-        Number(codeCell.x) === cellLocation.x ||
-        Number(codeCell.y) === cellLocation.y
-      ) {
-        updateCodeCell(codeCell);
+    const update = (options: { sheetId: string; x: number; y: number; codeCell?: JsCodeCell }) => {
+      if (options.sheetId === cellLocation.sheetId || options.x === cellLocation.x || options.y === cellLocation.y) {
+        updateCodeCell(options.codeCell);
       }
     };
     events.on('updateCodeCell', update);

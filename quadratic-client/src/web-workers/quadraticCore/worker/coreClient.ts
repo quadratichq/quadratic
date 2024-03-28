@@ -61,7 +61,13 @@ declare var self: WorkerGlobalScope &
       h?: number
     ) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
-    sendUpdateCodeCell: (sheetId: string, codeCell: JsCodeCell, renderCodeCell: JsRenderCodeCell) => void;
+    sendUpdateCodeCell: (
+      sheetId: string,
+      x: number,
+      y: number,
+      codeCell?: JsCodeCell,
+      renderCodeCell?: JsRenderCodeCell
+    ) => void;
   };
 
 class CoreClient {
@@ -566,8 +572,14 @@ class CoreClient {
     this.send({ type: 'coreClientTransactionProgress', transactionId, remainingOperations });
   };
 
-  sendUpdateCodeCell = (sheetId: string, codeCell: JsCodeCell, renderCodeCell: JsRenderCodeCell) => {
-    this.send({ type: 'coreClientUpdateCodeCell', sheetId, codeCell, renderCodeCell });
+  sendUpdateCodeCell = (
+    sheetId: string,
+    x: number,
+    y: number,
+    codeCell?: JsCodeCell,
+    renderCodeCell?: JsRenderCodeCell
+  ) => {
+    this.send({ type: 'coreClientUpdateCodeCell', sheetId, x, y, codeCell, renderCodeCell });
   };
 }
 
