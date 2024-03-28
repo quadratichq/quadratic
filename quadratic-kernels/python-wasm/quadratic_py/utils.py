@@ -104,13 +104,13 @@ def normalize_bool(value: str) -> bool:
 
 # Convert from python types to quadratic types
 def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | time | datetime | pd.Period | timedelta | None) -> Tuple[str, str]:
+    
     try:    
         if value == None or value == "":
             return ("", "blank")
         
-        # TODO(ddimaria): this is brittle, refactor
         if type(value) == str:
-            value = normalize_bool(value)
+            return (str(value), "text")
             
         value = ast.literal_eval(value)
     except:
