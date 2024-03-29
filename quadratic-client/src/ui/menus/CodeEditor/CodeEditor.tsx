@@ -26,8 +26,8 @@ import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
 export const dispatchEditorAction = (name: string) => {
-  window.dispatchEvent(new CustomEvent("run-editor-action", {detail: name}))
-}
+  window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
+};
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -243,14 +243,21 @@ export const CodeEditor = () => {
     if ((event.metaKey || event.ctrlKey) && event.key === '=') {
       event.preventDefault();
       event.stopPropagation();
-      dispatchEditorAction("editor.action.fontZoomIn");
+      dispatchEditorAction('editor.action.fontZoomIn');
     }
 
     // Command + Minus
     if ((event.metaKey || event.ctrlKey) && event.key === '-') {
       event.preventDefault();
       event.stopPropagation();
-      dispatchEditorAction("editor.action.fontZoomOut");
+      dispatchEditorAction('editor.action.fontZoomOut');
+    }
+
+    // Command + 0
+    if ((event.metaKey || event.ctrlKey) && event.key === '0') {
+      event.preventDefault();
+      event.stopPropagation();
+      dispatchEditorAction('editor.action.fontZoomReset');
     }
   };
 
