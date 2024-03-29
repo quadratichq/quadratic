@@ -30,8 +30,10 @@ import {
   ClientCoreLoad,
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
+import { coreClient } from './coreClient';
 import { corePython } from './corePython';
 import { coreRender } from './coreRender';
+import { offline } from './offline';
 import { pointsToRect } from './rustConversions';
 
 class Core {
@@ -211,10 +213,16 @@ class Core {
 
   receiveTransaction(message: MultiplayerCoreReceiveTransaction) {
     return new Promise((resolve) => {
-      this.clientQueue.push(() => {
+      this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         const data = message.transaction;
         this.gridController.multiplayerTransaction(data.id, data.sequence_num, data.operations);
+        offline.markTransactionSent(data.id);
+        if (await offline.unsentTransactionsCount()) {
+          coreClient.sendMultiplayerState('syncing');
+        } else {
+          coreClient.sendMultiplayerState('connected');
+        }
         resolve(undefined);
       });
     });
@@ -222,14 +230,14 @@ class Core {
 
   receiveTransactions(transactions: string) {
     return new Promise((resolve) => {
-      this.clientQueue.push(() => {
+      this.clientQueue.push(async () => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.receiveMultiplayerTransactions(transactions);
-        // if (await offline.unsentTransactionsCount()) {
-        //   this.state = 'syncing';
-        // } else {
-        //   this.state = 'connected';
-        // }
+        if (await offline.unsentTransactionsCount()) {
+          coreClient.sendMultiplayerState('syncing');
+        } else {
+          coreClient.sendMultiplayerState('connected');
+        }
         resolve(undefined);
       });
     });
@@ -777,7 +785,6 @@ class Core {
     const codeResult: JsCodeResult = {
       transaction_id: transactionId,
       success: results.success,
-      formatted_code: results.formatted_code,
       error_msg: results.std_err,
       input_python_std_out: results.std_out,
       output_value: results.output ? (results.output as any as string[]) : null,

@@ -16,6 +16,7 @@ import {
   SheetInfo,
   TransactionName,
 } from '@/quadratic-core-types';
+import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
@@ -91,7 +92,6 @@ class CoreClient {
     self.sendTransactionStart = coreClient.sendTransactionStart;
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
-    offline.init();
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -104,6 +104,7 @@ class CoreClient {
 
     switch (e.data.type) {
       case 'clientCoreLoad':
+        offline.init(e.data.fileId);
         this.send({
           type: 'coreClientLoad',
           id: e.data.id,
@@ -587,6 +588,10 @@ class CoreClient {
   ) => {
     this.send({ type: 'coreClientUpdateCodeCell', sheetId, x, y, codeCell, renderCodeCell });
   };
+
+  sendMultiplayerState(state: MultiplayerState) {
+    this.send({ type: 'coreClientMultiplayerState', state });
+  }
 }
 
 export const coreClient = new CoreClient();

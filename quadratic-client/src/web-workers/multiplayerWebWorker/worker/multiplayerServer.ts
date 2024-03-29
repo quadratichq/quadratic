@@ -274,6 +274,7 @@ export class MultiplayerServer {
   }
 
   sendTransaction(transactionMessage: CoreMultiplayerTransaction) {
+    multiplayerClient.sendState('syncing');
     const message: SendTransaction = {
       type: 'Transaction',
       id: transactionMessage.transaction_id,
@@ -287,6 +288,7 @@ export class MultiplayerServer {
   requestTransactions(sequenceNum: number) {
     if (!this.sessionId) throw new Error('Expected sessionId to be defined in requestTransactions');
     if (!this.fileId) throw new Error('Expected fileId to be defined in requestTransactions');
+    multiplayerClient.sendState('syncing');
     const message: SendGetTransactions = {
       type: 'GetTransactions',
       session_id: this.sessionId,

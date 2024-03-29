@@ -15,6 +15,7 @@ import {
   SheetPos,
   TransactionName,
 } from '@/quadratic-core-types';
+import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
 
 //#region Initialize
 
@@ -24,6 +25,7 @@ export interface ClientCoreLoad {
   version: string;
   sequenceNumber: number;
   id: number;
+  fileId: string;
 }
 
 export interface CoreClientLoad {
@@ -49,6 +51,11 @@ export interface CoreClientUpgradeFile {
 
 export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
+}
+
+export interface CoreClientMultiplayerState {
+  type: 'coreClientMultiplayerState';
+  state: MultiplayerState;
 }
 
 export interface ClientCoreInitPython {
@@ -870,4 +877,5 @@ export type CoreClientMessage =
   | CoreClientTransactionStart
   | CoreClientTransactionProgress
   | CoreClientUpdateCodeCell
-  | CoreClientImportExcel;
+  | CoreClientImportExcel
+  | CoreClientMultiplayerState;

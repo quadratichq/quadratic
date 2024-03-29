@@ -60,7 +60,7 @@ export const debugShowLoadingHashes = debug && false;
 // Misc.
 // --------
 
-export const debugShowFileIO = debug && false;
+export const debugShowFileIO = debug && true;
 
 export const debugGridSettings = debug && false;
 

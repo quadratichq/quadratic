@@ -4,15 +4,13 @@ import { offline } from './offline';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    location: { pathname: string };
     indexedDB: any;
   };
 
 describe('offline', () => {
   beforeAll(async () => {
     self.indexedDB = indexedDB;
-    self.location.pathname = '/file/123';
-    await offline.init();
+    await offline.init('123');
   });
 
   beforeEach(() => {

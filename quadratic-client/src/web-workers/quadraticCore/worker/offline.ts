@@ -12,10 +12,12 @@ declare var self: WorkerGlobalScope &
 class Offline {
   private db: IDBDatabase | undefined;
   private index = 0;
+  fileId?: string;
 
   // Creates a connection to the indexedDb database
-  init(): Promise<undefined> {
+  init(fileId: string): Promise<undefined> {
     return new Promise((resolve) => {
+      this.fileId = fileId;
       const request = self.indexedDB.open(DB_NAME, DB_VERSION);
       request.onerror = (event) => {
         console.error('Error opening indexedDB', event);
@@ -39,11 +41,6 @@ class Offline {
     });
   }
 
-  // gets the fileId to store the proper record
-  get fileId(): string {
-    return self.location.pathname.split('/')[2];
-  }
-
   // gets a file index from the indexedDb
   private getFileIndex(readOnly: boolean, index: string): IDBIndex {
     if (!this.db) throw new Error('Expected db to be initialized in getFileIndex');
@@ -61,6 +58,7 @@ class Offline {
   // Loads the unsent transactions for this file from indexedDb
   async load(): Promise<{ transactionId: string; operations: string }[] | undefined> {
     return new Promise((resolve, reject) => {
+      if (!this.fileId) throw new Error("Expected fileId to be set in 'load' method.");
       const store = this.getFileIndex(true, 'fileId');
       const keyRange = IDBKeyRange.only(this.fileId);
       const getAll = store.getAll(keyRange);
@@ -76,6 +74,7 @@ class Offline {
   // Adds the transaction to the unsent transactions list.
   addUnsentTransaction(transactionId: string, transaction: string) {
     const store = this.getObjectStore(false);
+    if (!this.fileId) throw new Error("Expected fileId to be set in 'addUnsentTransaction' method.");
     store.add({ fileId: this.fileId, transactionId, transaction, index: this.index++ });
     if (debugShowFileIO) {
       console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
@@ -102,7 +101,7 @@ class Offline {
 
   // Checks whether there are any unsent transactions in the indexedDb (ie, whether we have transactions sent to the server but not received back).
   async unsentTransactionsCount(): Promise<number> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const store = this.getFileIndex(true, 'fileId');
       const keyRange = IDBKeyRange.only(this.fileId);
       const request = store.getAllKeys(keyRange);

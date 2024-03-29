@@ -125,6 +125,9 @@ class QuadraticCore {
         renderCodeCell: e.data.renderCodeCell,
       });
       return;
+    } else if (e.data.type === 'coreClientMultiplayerState') {
+      events.emit('multiplayerState', e.data.state);
+      return;
     }
 
     if (e.data.id !== undefined) {
@@ -180,6 +183,7 @@ class QuadraticCore {
         version,
         sequenceNumber,
         id,
+        fileId: window.location.pathname.split('/')[2],
       };
       if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);

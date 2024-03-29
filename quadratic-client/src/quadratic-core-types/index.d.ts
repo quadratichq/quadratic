@@ -44,7 +44,7 @@ export type BorderSelection = "all" | "inner" | "outer" | "horizontal" | "vertic
 export interface BorderStyle { color: Rgba, line: CellBorderLine, }
 export interface JsRenderBorder { x: bigint, y: bigint, w?: number, h?: number, style: BorderStyle, }
 export interface JsRenderBorders { horizontal: Array<JsRenderBorder>, vertical: Array<JsRenderBorder>, }
-export interface JsCodeResult { transaction_id: string, success: boolean, formatted_code: string | null, error_msg: string | null, input_python_std_out: string | null, output_value: Array<string> | null, array_output: Array<Array<Array<string>>> | null, line_number: number | null, output_type: string | null, cancel_compute: boolean | null, }
+export interface JsCodeResult { transaction_id: string, success: boolean, error_msg: string | null, input_python_std_out: string | null, output_value: Array<string> | null, array_output: Array<Array<Array<string>>> | null, line_number: number | null, output_type: string | null, cancel_compute: boolean | null, }
 export interface MinMax { min: number, max: number, }
 export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
 export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
