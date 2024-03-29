@@ -93,18 +93,20 @@ export const TopBar = () => {
           </>
         )}
         <div className="flex self-stretch">
-          <TopBarMenuItem
-            title={`Command palette (${KeyboardSymbols.Command + 'P'})`}
-            noDropdown
-            buttonProps={{
-              style: { alignSelf: 'stretch' },
-              onClick: () => {
-                setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }));
-              },
-            }}
-          >
-            <CommandPaletteIcon style={{ fontSize: '22px' }} />
-          </TopBarMenuItem>
+          {isDesktop && (
+            <TopBarMenuItem
+              title={`Command palette (${KeyboardSymbols.Command + 'P'})`}
+              noDropdown
+              buttonProps={{
+                style: { alignSelf: 'stretch' },
+                onClick: () => {
+                  setEditorInteractionState((prev) => ({ ...prev, showCommandPalette: true }));
+                },
+              }}
+            >
+              <CommandPaletteIcon style={{ fontSize: '22px' }} />
+            </TopBarMenuItem>
+          )}
           <TopBarZoomMenu />
         </div>
       </div>

@@ -32,7 +32,7 @@ export function PermissionOverlay() {
         <Type>
           <strong>Welcome to Quadratic.</strong> You must log in to edit this file.
         </Type>
-        <Stack direction="row" gap={theme.spacing(1)}>
+        <Stack direction="row" gap={theme.spacing(1)} flexShrink={'0'}>
           <Button asChild variant="outline" size="sm">
             <Link to={ROUTES.LOGIN_WITH_REDIRECT()}>Log in</Link>
           </Button>
