@@ -1,4 +1,5 @@
 import { debugShowFileIO } from '@/debugFlags';
+import { core } from './core';
 
 const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;
@@ -127,9 +128,7 @@ class Offline {
     }
 
     unsentTransactions?.forEach((tx) => {
-      console.log(tx);
-      // todo...
-      // grid.applyOfflineUnsavedTransaction(tx.transactionId, tx.operations);
+      core.applyOfflineUnsavedTransaction(tx.transactionId, tx.operations);
     });
   }
 

@@ -158,6 +158,10 @@ class CoreClient {
 
       case 'clientCoreInitMultiplayer':
         coreMultiplayer.init(e.ports[0]);
+
+        // we need the multiplayer to be initialized before we can load
+        // transactions from the offline store
+        offline.loadTransactions();
         break;
 
       case 'clientCoreSummarizeSelection':

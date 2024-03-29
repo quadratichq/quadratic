@@ -834,6 +834,11 @@ class Core {
       return { error: error as string };
     }
   }
+
+  applyOfflineUnsavedTransaction(transactionId: string, operations: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.applyOfflineUnsavedTransaction(transactionId, operations);
+  }
 }
 
 export const core = new Core();

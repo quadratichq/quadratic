@@ -173,7 +173,6 @@ export class MultiplayerServer {
       follow: this.userData.follow,
     };
     this.send(enterRoom);
-    // offline.loadTransactions();
     if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${this.fileId}.`);
   }
 
