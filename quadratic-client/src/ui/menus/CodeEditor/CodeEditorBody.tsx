@@ -22,8 +22,6 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 import useEventListener from '@/hooks/useEventListener';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
-
-// todo: fix types
 import { useEditorReturn } from './useEditorReturn';
 
 interface Props {
