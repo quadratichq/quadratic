@@ -370,10 +370,10 @@ export class CellsLabels {
 
   setOffsets(column: number | undefined, row: number | undefined, delta: number) {
     if (column !== undefined) {
-      const size = this.sheetOffsets.getColumnWidth(column) + delta;
+      const size = this.sheetOffsets.getColumnWidth(column) - delta;
       this.sheetOffsets.setColumnWidth(column, size);
     } else if (row !== undefined) {
-      const size = this.sheetOffsets.getRowHeight(row) + delta;
+      const size = this.sheetOffsets.getRowHeight(row) - delta;
       this.sheetOffsets.setRowHeight(row, size);
     }
     if (delta) {

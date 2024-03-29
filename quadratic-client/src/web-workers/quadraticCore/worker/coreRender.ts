@@ -93,7 +93,7 @@ class CoreRender {
 
   sendSheetBoundsUpdate = (sheetBounds: SheetBounds) => {
     this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds });
-  }
+  };
 }
 
 export const coreRender = new CoreRender();
