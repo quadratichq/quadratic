@@ -19,11 +19,11 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
+import useEventListener from '@/hooks/useEventListener';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 
 // todo: fix types
-=======
 import { useEditorReturn } from './useEditorReturn';
 
 interface Props {
@@ -63,7 +63,7 @@ export const CodeEditorBody = (props: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInteractionState.showCodeEditor]);
 
-  const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run()
+  const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run();
   useEventListener('run-editor-action', runEditorAction);
   const onMount = useCallback(
     (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
