@@ -1,12 +1,18 @@
-import indexedDB from 'fake-indexeddb/auto';
+import 'fake-indexeddb/auto';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { offline } from './offline';
 
-globalThis.window.indexedDB = indexedDB;
+declare var self: WorkerGlobalScope &
+  typeof globalThis & {
+    location: { pathname: string };
+    indexedDB: any;
+  };
 
 describe('offline', () => {
-  beforeAll(() => {
-    window.location.pathname = '/file/123';
+  beforeAll(async () => {
+    self.indexedDB = indexedDB;
+    self.location.pathname = '/file/123';
+    await offline.init();
   });
 
   beforeEach(() => {
@@ -58,17 +64,4 @@ describe('offline', () => {
     offline.markTransactionSent('2');
     expect(await offline.unsentTransactionsCount()).toBe(2);
   });
-
-  // it('loads all transactions on initialization', async () => {
-  //   console.log('here...');
-  //   hello();
-  //   grid.test();
-
-  //   offline.addUnsentTransaction('1', 'a');
-  //   offline.addUnsentTransaction('2', 'b');
-  //   offline.addUnsentTransaction('3', 'c');
-  //   offline.markTransactionSent('2');
-
-  //   await offline.loadTransactions();
-  // });
 });

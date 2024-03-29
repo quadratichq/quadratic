@@ -1,52 +1,59 @@
 import { debugShowFileIO } from '@/debugFlags';
-// import { grid } from '../../../grid/controller/Grid';
 
 const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;
 const DB_STORE = 'transactions';
+
+declare var self: WorkerGlobalScope &
+  typeof globalThis & {
+    addUnsentTransaction: (transactionId: string, operations: string) => void;
+  };
 
 class Offline {
   private db: IDBDatabase | undefined;
   private index = 0;
 
   // Creates a connection to the indexedDb database
-  constructor() {
-    const request = window.indexedDB.open(DB_NAME, DB_VERSION);
-    request.onerror = (event) => {
-      console.error('Error opening indexedDB', event);
-    };
+  init(): Promise<undefined> {
+    return new Promise((resolve) => {
+      const request = self.indexedDB.open(DB_NAME, DB_VERSION);
+      request.onerror = (event) => {
+        console.error('Error opening indexedDB', event);
+      };
 
-    request.onsuccess = () => {
-      this.db = request.result;
-    };
+      request.onsuccess = () => {
+        this.db = request.result;
+        self.addUnsentTransaction = offline.addUnsentTransaction.bind(offline);
+        resolve(undefined);
+      };
 
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      // creates an Object store that holds operations for a given key
-      const objectStore = db.createObjectStore(DB_STORE, {
-        keyPath: ['fileId', 'transactionId', 'index'],
-      });
-      objectStore.createIndex('fileId', 'fileId');
-      objectStore.createIndex('transactionId', 'transactionId');
-      this.db = db;
-    };
+      request.onupgradeneeded = () => {
+        const db = request.result;
+        // creates an Object store that holds operations for a given key
+        const objectStore = db.createObjectStore(DB_STORE, {
+          keyPath: ['fileId', 'transactionId', 'index'],
+        });
+        objectStore.createIndex('fileId', 'fileId');
+        objectStore.createIndex('transactionId', 'transactionId');
+      };
+    });
   }
 
   // gets the fileId to store the proper record
   get fileId(): string {
-    return window.location.pathname.split('/')[2];
+    return self.location.pathname.split('/')[2];
   }
 
   // gets a file index from the indexedDb
   private getFileIndex(readOnly: boolean, index: string): IDBIndex {
-    if (!this.db) throw new Error('Expected db to be initialized in addTransaction');
+    if (!this.db) throw new Error('Expected db to be initialized in getFileIndex');
     const tx = this.db.transaction(DB_STORE, readOnly ? 'readonly' : 'readwrite');
     return tx.objectStore(DB_STORE).index(index);
   }
 
   // gets an object store from the indexedDb
   private getObjectStore(readOnly: boolean): IDBObjectStore {
-    if (!this.db) throw new Error('Expected db to be initialized in addTransaction');
+    if (!this.db) throw new Error('Expected db to be initialized in getObjectStore');
     const tx = this.db.transaction(DB_STORE, readOnly ? 'readonly' : 'readwrite');
     return tx.objectStore(DB_STORE);
   }
@@ -121,6 +128,7 @@ class Offline {
     }
 
     unsentTransactions?.forEach((tx) => {
+      console.log(tx);
       // todo...
       // grid.applyOfflineUnsavedTransaction(tx.transactionId, tx.operations);
     });
@@ -134,6 +142,3 @@ class Offline {
 }
 
 export const offline = new Offline();
-
-// need to bind to window because rustCallbacks.ts cannot include any TS imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
-// self.addTransaction = offline.addUnsentTransaction.bind(offline);

@@ -20,6 +20,7 @@ import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreCli
 import { core } from './core';
 import { coreMultiplayer } from './coreMultiplayer';
 import { corePython } from './corePython';
+import { offline } from './offline';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -90,6 +91,7 @@ class CoreClient {
     self.sendTransactionStart = coreClient.sendTransactionStart;
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
+    offline.init();
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
