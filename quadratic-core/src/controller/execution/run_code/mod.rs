@@ -69,7 +69,7 @@ impl GridController {
                     }
                 }
             }
-            if new_code_run.is_none() {
+            if new_code_run.is_none() && cfg!(target_family = "wasm") && !transaction.is_server() {
                 crate::wasm_bindings::js::jsUpdateCodeCell(
                     sheet_id.to_string(),
                     sheet_pos.x,
