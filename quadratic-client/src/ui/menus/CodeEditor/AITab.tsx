@@ -227,7 +227,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
             size="small"
             fullWidth
             inputRef={inputRef}
-            sx={{ py: '.25rem', pr: '1rem' }}
+            sx={{ py: '.25rem', pr: '1rem', fontSize: '.875rem' }}
           />
         </FormControl>
       </div>

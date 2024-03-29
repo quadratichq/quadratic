@@ -242,7 +242,6 @@ mod test {
             true,
             None,
             None,
-            None,
             Some(vec!["$12".into(), "number".into()]),
             None,
             None,
@@ -293,7 +292,6 @@ mod test {
         let result = JsCodeResult::new(
             transaction.id.to_string(),
             true,
-            None,
             None,
             None,
             None,

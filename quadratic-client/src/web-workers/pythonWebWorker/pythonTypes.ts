@@ -27,7 +27,6 @@ export interface PythonSuccess {
   array_output: string[];
   typed_array_output: [string, outputType][];
   code: string;
-  formatted_code: string;
   input_python_stack_trace: string;
   output?: [string, outputType][];
   output_size?: number[];
@@ -54,7 +53,6 @@ export interface PythonError {
   success: false;
   input_python_stack_trace: string;
   line_number: number;
-  formatted_code: string;
 
   lineno?: number;
 }

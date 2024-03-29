@@ -638,7 +638,6 @@ mod tests {
             true,
             None,
             None,
-            None,
             Some(vec!["<html></html>".into(), "text".into()]),
             None,
             None,
