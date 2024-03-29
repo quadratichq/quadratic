@@ -19,9 +19,10 @@
     "downlevelIteration": true,
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["vitest/importMeta"]
   },
-  "include": ["src"],
+  "include": ["src", "public/pyright.worker.js"],
   "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -25,8 +25,8 @@ export function ResizeControl({ setState, position }: ResizeControlProps) {
           setState(
             position === 'LEFT'
               ? window.innerWidth - event_mousemove.x
-              : // 51 is a bit of a magic number. It's the height of the CodeEditorHeader
-                window.innerHeight - event_mousemove.y - 51
+              : // 25 is a bit of a magic number. It's the height of the CodeEditorHeader
+                window.innerHeight - event_mousemove.y - 25
           );
         }
 

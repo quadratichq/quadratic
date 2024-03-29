@@ -1,8 +1,10 @@
-import { Box, InputBase, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
+import { Type } from '@/components/Type';
+import { useFileRouteLoaderData } from '@/dashboard/FileRoute';
+import { useRootRouteLoaderData } from '@/router';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { isEditorOrAbove } from '../../../actions';
+import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { ROUTES } from '../../../constants/routes';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -13,83 +15,99 @@ export const TopBarFileMenu = () => {
   const [isRenaming, setIsRenaming] = useState<boolean>(false);
   const { name } = useFileContext();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-  const theme = useTheme();
-  const isNarrowScreen = useMediaQuery(theme.breakpoints.down('md'));
-  const { permission } = editorInteractionState;
+  const { permissions } = editorInteractionState;
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexGrow: '1',
-      }}
-    >
+    <div className={`flex flex-grow items-center justify-center`}>
       {isRenaming ? (
         <FileNameInput setIsRenaming={setIsRenaming} />
       ) : (
-        <Stack direction="row" gap={theme.spacing()} alignItems="center">
-          {permission === 'OWNER' && (
-            <>
-              <Typography
-                variant="body2"
-                color={theme.palette.text.disabled}
-                sx={{
-                  [theme.breakpoints.down('md')]: {
-                    display: 'none',
-                  },
-                  '&:hover a': { color: theme.palette.text.primary },
-                }}
-              >
-                <Link to={ROUTES.FILES} reloadDocument style={{ textDecoration: 'none' }}>
-                  My files
-                </Link>
-              </Typography>
+        <div className={`flex flex-row items-center gap-2`}>
+          <FileLocation />
+          <div className={`flex flex-row items-center gap-2`}>
+            <Type variant="body2">
+              {hasPermissionToEditFile(permissions) ? (
+                <>
+                  <button
+                    className={`hidden max-w-[25vw] truncate md:block`}
+                    onClick={() => {
+                      setIsRenaming(true);
+                    }}
+                  >
+                    {name}
+                  </button>
+                  <span className={`block max-w-[25vw] truncate md:hidden`}>{name}</span>
+                </>
+              ) : (
+                <span className={`block max-w-[25vw] truncate`}>{name}</span>
+              )}
+            </Type>
 
-              <Typography
-                variant="body2"
-                color={theme.palette.text.disabled}
-                sx={{
-                  userSelect: 'none',
-                  [theme.breakpoints.down('md')]: {
-                    display: 'none',
-                  },
-                }}
-              >
-                /
-              </Typography>
-            </>
-          )}
-
-          <Stack direction="row" gap={theme.spacing(1)} alignItems="center">
-            <Typography
-              onClick={() => {
-                if (isNarrowScreen || !isEditorOrAbove(permission)) {
-                  return;
-                }
-                setIsRenaming(true);
-              }}
-              variant="body2"
-              style={{
-                display: 'block',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                // this is a little bit of a magic number for now, but it
-                // works and truncates at an appropriate, proportional size
-                maxWidth: '25vw',
-              }}
-            >
-              {name}
-            </Typography>
-            {!isNarrowScreen && <TopBarFileMenuDropdown setIsRenaming={setIsRenaming} />}
-          </Stack>
-        </Stack>
+            <div className="hidden md:block">
+              <TopBarFileMenuDropdown setIsRenaming={setIsRenaming} />
+            </div>
+          </div>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
+
+function FileLocation() {
+  const { isAuthenticated } = useRootRouteLoaderData();
+  const {
+    team,
+    userMakingRequest: { isFileOwner, fileRole },
+  } = useFileRouteLoaderData();
+  const linkProps = {
+    reloadDocument: true,
+    className: 'underline:none text-inherit',
+  };
+
+  // Don't show anything if they're not logged in
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // Figure out the user's relationship to the file and the link back to its
+  // location in the dashboard
+  let DashboardLink;
+  if (team) {
+    DashboardLink = (
+      <Link to={ROUTES.TEAM(team.uuid)} {...linkProps}>
+        {team.name}
+      </Link>
+    );
+  } else if (isFileOwner) {
+    DashboardLink = (
+      <Link to={ROUTES.FILES} {...linkProps}>
+        My files
+      </Link>
+    );
+  } else if (fileRole) {
+    DashboardLink = (
+      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps}>
+        Shared with me
+      </Link>
+    );
+  }
+
+  // They must be seeing the file because the public link is being used
+  if (!DashboardLink) {
+    return null;
+  }
+
+  return (
+    <>
+      <Type className="hidden text-muted-foreground hover:text-foreground hover:underline md:block">
+        {DashboardLink}
+      </Type>
+      <Type variant="body2" className="hidden select-none text-muted-foreground opacity-50 md:block">
+        /
+      </Type>
+    </>
+  );
+}
 
 function FileNameInput({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateAction<boolean>> }) {
   const { name, renameFile } = useFileContext();
@@ -103,7 +121,7 @@ function FileNameInput({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateActi
   }, []);
 
   return (
-    <InputBase
+    <input
       onKeyUp={(e) => {
         if (e.key === 'Enter') {
           inputRef.current?.blur();
@@ -133,10 +151,9 @@ function FileNameInput({ setIsRenaming }: { setIsRenaming: Dispatch<SetStateActi
         renameFile(newName);
       }}
       defaultValue={name}
-      inputRef={inputRef}
+      ref={inputRef}
       autoFocus
-      inputProps={{ style: { textAlign: 'center' } }}
-      sx={{ fontSize: '.875rem', width: '100%' }}
+      className="w-full text-center text-sm outline-none"
     />
   );
 }

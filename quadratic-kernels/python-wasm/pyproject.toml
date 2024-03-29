@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "quadratic-py"
+version = "0.1.0"
+description = ""
+authors = ["Jacob Rice <jacob.rice.systems@gmail.com>"]
+readme = "README.md"
+packages = [{include = "quadratic_py"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = ">=1.23.0"
+nest-asyncio = ">=1.6.0"
+pandas = ">=1.4.3"
+python-dateutil = ">=2.8.2"
+pytz = ">=2022.1"
+requests = ">=2.31.0"
+six = ">=1.16.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = ">=7.4.4"
+
+[tool.poetry.group.typeshed.dependencies]
+types-six = ">=1.16"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

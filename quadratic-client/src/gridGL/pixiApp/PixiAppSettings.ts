@@ -1,4 +1,5 @@
-import { ApiTypes } from '../../api/types';
+import { multiplayer } from '@/multiplayer/multiplayer';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../grid/controller/Sheets';
 import { GridSettings, defaultGridSettings } from '../../ui/menus/TopBar/SubMenus/useGridSettings';
@@ -13,6 +14,8 @@ export enum PanMode {
 interface Input {
   show: boolean;
   initialValue?: string;
+  value?: string;
+  cursor?: number;
   x?: number;
   y?: number;
   sheetId?: string;
@@ -56,19 +59,18 @@ class PixiAppSettings {
     pixiApp.axesLines.dirty = true;
     pixiApp.headings.dirty = true;
 
-    // only rebuild quadrants if showCellTypeOutlines change
     if (
       (this.lastSettings && this.lastSettings.showCellTypeOutlines !== this.settings.showCellTypeOutlines) ||
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
-      pixiApp.cellsSheets.toggleOutlines();
+      pixiApp.cellsSheets.updateCellsArray();
       pixiApp.viewport.dirty = true;
     }
     this.lastSettings = this.settings;
   };
 
-  get permission(): ApiTypes['/v0/files/:uuid.GET.response']['permission'] {
-    return this.editorInteractionState.permission;
+  get permissions(): ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['filePermissions'] {
+    return this.editorInteractionState.permissions;
   }
 
   updateEditorInteractionState(
@@ -100,10 +102,14 @@ class PixiAppSettings {
   }
 
   get showA1Notation(): boolean {
-    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'FORMULA') {
+    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'Formula') {
       return true;
     }
     return this.settings.showA1Notation;
+  }
+
+  get showCodePeek(): boolean {
+    return !this.settings.presentationMode && this.editorInteractionState.showCodeEditor;
   }
 
   setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
@@ -119,6 +125,9 @@ class PixiAppSettings {
   }
 
   changeInput(input: boolean, initialValue?: string) {
+    if (input === false) {
+      multiplayer.sendEndCellEdit();
+    }
     if (
       this._input.show === true &&
       this._input.x !== undefined &&
@@ -130,8 +139,12 @@ class PixiAppSettings {
     if (input === true) {
       const x = sheets.sheet.cursor.cursorPosition.x;
       const y = sheets.sheet.cursor.cursorPosition.y;
-      this._input = { show: input, initialValue, x, y, sheetId: sheets.sheet.id };
-      pixiApp.cellsSheets.showLabel(x, y, sheets.sheet.id, false);
+      if (multiplayer.cellIsBeingEdited(x, y, sheets.sheet.id)) {
+        this._input = { show: false };
+      } else {
+        this._input = { show: input, initialValue, x, y, sheetId: sheets.sheet.id };
+        pixiApp.cellsSheets.showLabel(x, y, sheets.sheet.id, false);
+      }
     } else {
       this._input = { show: false };
     }

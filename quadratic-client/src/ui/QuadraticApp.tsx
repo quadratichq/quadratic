@@ -1,7 +1,11 @@
+import { multiplayer } from '@/multiplayer/multiplayer';
+import { useRootRouteLoaderData } from '@/router';
+import { User } from '@auth0/auth0-spa-js';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { isEditorOrAbove } from '../actions';
+import { v4 } from 'uuid';
+import { hasPermissionToEditFile } from '../actions';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
 import { pythonStateAtom } from '../atoms/pythonStateAtom';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
@@ -10,8 +14,10 @@ import QuadraticUIContext from './QuadraticUIContext';
 import { QuadraticLoading } from './loading/QuadraticLoading';
 
 export default function QuadraticApp() {
+  const { loggedInUser } = useRootRouteLoaderData();
+
   const [loading, setLoading] = useState(true);
-  const { permission } = useRecoilValue(editorInteractionStateAtom);
+  const { permissions, uuid } = useRecoilValue(editorInteractionStateAtom);
   const setLoadedState = useSetRecoilState(pythonStateAtom);
   const didMount = useRef<boolean>(false);
 
@@ -63,13 +69,26 @@ export default function QuadraticApp() {
     didMount.current = true;
 
     // Load python and populate web workers (if supported)
-    if (!isMobile && isEditorOrAbove(permission)) {
+    if (!isMobile && hasPermissionToEditFile(permissions)) {
       setLoadedState((prevState) => ({ ...prevState, pythonState: 'loading' }));
       initializeWebWorkers();
     }
+  }, [permissions, setLoadedState]);
 
-    pixiApp.init().then(() => setLoading(false));
-  }, [permission, setLoadedState]);
+  useEffect(() => {
+    if (uuid && !pixiApp.initialized) {
+      let anonymous = false;
+      let multiplayerUser: User | undefined = loggedInUser;
+      if (!multiplayerUser) {
+        multiplayerUser = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
+        anonymous = true;
+      }
+      pixiApp.init().then(async () => {
+        multiplayer.init(uuid, multiplayerUser, anonymous);
+        setLoading(false);
+      });
+    }
+  }, [uuid, loggedInUser]);
 
   if (loading) {
     return <QuadraticLoading />;

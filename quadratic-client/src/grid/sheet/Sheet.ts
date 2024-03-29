@@ -1,12 +1,14 @@
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { CodeCell, JsRenderCodeCell, OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
+import { OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
 import {
   CellAlign,
   CellFormatSummary,
   FormattingSummary,
+  JsCodeCell,
   JsRenderCell,
+  JsRenderCodeCell,
   JsRenderFill,
 } from '../../quadratic-core/types';
 import { grid } from '../controller/Grid';
@@ -79,7 +81,7 @@ export class Sheet {
     return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
   }
 
-  getCodeCell(x: number, y: number): CodeCell | undefined {
+  getCodeCell(x: number, y: number): JsCodeCell | undefined {
     return grid.getCodeCell(this.id, x, y);
   }
 
@@ -183,6 +185,14 @@ export class Sheet {
   getCellOffsets(column: number, row: number): Rectangle {
     const screenRect = this.offsets.getCellOffsets(column, row);
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+  }
+
+  // todo: change this to a JsValue instead of a Rust struct
+  getColumnRow(x: number, y: number): Coordinate {
+    const columnRow = this.offsets.getColumnRowFromScreen(x, y);
+    const result = { x: columnRow.column, y: columnRow.row };
+    columnRow.free();
+    return result;
   }
 
   // @returns screen rectangle for a column/row rectangle

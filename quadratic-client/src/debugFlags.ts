@@ -16,12 +16,6 @@ export const debugShowCacheCount = debug && true;
 // add a CACHE flag to the footer to indicate when cache is visible instead of cells
 export const debugShowCacheFlag = debug && true;
 
-// -------------
-// Feature Flags
-// -------------
-
-export const debugMockLargeData = (debug && false) || url.has('mock-large-data');
-
 // ------------
 // Transactions
 // ------------
@@ -57,38 +51,20 @@ export const debugShowCellsHashBoxes = (debug && false) || url.has('cell-boxes')
 // shows CellsHash information
 export const debugShowCellHashesInfo = debug && false;
 
-// ----------------
-// Quadrant caching
-// ----------------
-
-// shows information about subquadrant generation
-export const debugShowSubCacheInfo = debug && false;
-
-// always show cache instead of cell rendering
-export const debugAlwaysShowCache = debug && false;
-
-// shows information about quadrant generation
-export const debugShowCacheInfo = debug && false;
-
-// always show cells instead of cache rendering
-export const debugNeverShowCache = debug && false;
-
-// don't render quadrants
-export const debugSkipQuadrantRendering = debug && false;
-
-// show quadrant colored boxes around rendered range
-export const debugShowQuadrantBoxes = debug && false;
-
-// only render getCellsForDirtyQuadrants -- useful for testing the direct draw of multiple dirty quadrants
-export const debugShowCellsForDirtyQuadrants = debug && false;
+// reports on rendering
+export const debugShowHashUpdates = debug && false;
 
 // --------
 // Misc.
 // --------
 
-export const debugShowFileIO = debug && true;
+export const debugShowFileIO = debug && false;
 
 export const debugGridSettings = debug && false;
+
+export const debugShowMultiplayer = debug && true;
+
+export const debugDisableProxy = debug && false;
 
 // --------
 // UI

@@ -36,34 +36,43 @@ pub(crate) mod btreemap_serde {
     }
 }
 
-pub(crate) mod hashmap_serde {
+pub(crate) mod indexmap_serde {
     use std::collections::HashMap;
     use std::hash::Hash;
 
+    use indexmap::IndexMap;
     use serde::ser::SerializeMap;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
-        map: &HashMap<K, V>,
+        map: &IndexMap<K, V>,
         s: S,
     ) -> Result<S::Ok, S::Error> {
         let mut m = s.serialize_map(Some(map.len()))?;
         for (k, v) in map {
-            m.serialize_entry(&serde_json::to_string(k).unwrap(), v)?;
+            if let Ok(key) = serde_json::to_string(k) {
+                m.serialize_entry(&key, v)?;
+            }
         }
         m.end()
     }
     pub fn deserialize<
         'de,
         D: Deserializer<'de>,
-        K: for<'k> Deserialize<'k> + Eq + Hash,
+        K: for<'k> Deserialize<'k> + Ord + Hash,
         V: Deserialize<'de>,
     >(
         d: D,
-    ) -> Result<HashMap<K, V>, D::Error> {
+    ) -> Result<IndexMap<K, V>, D::Error> {
         Ok(HashMap::<String, V>::deserialize(d)?
             .into_iter()
-            .map(|(k, v)| (serde_json::from_str(&k).unwrap(), v))
+            .filter_map(|(k, v)| {
+                if let Ok(key) = serde_json::from_str(&k) {
+                    Some((key, v))
+                } else {
+                    None
+                }
+            })
             .collect())
     }
 }
@@ -246,8 +255,12 @@ pub fn unused_name(prefix: &str, already_used: &[&str]) -> String {
         .collect();
 
     // Find the first number that's not already used.
-    let i = (1..).find(|i| !already_used_numbers.contains(i)).unwrap();
-    format!("{prefix} {i}")
+    if let Some(i) = (1..).find(|i| !already_used_numbers.contains(i)) {
+        format!("{prefix} {i}")
+    } else {
+        let i = already_used.len() + 1;
+        format!("{prefix} {i}")
+    }
 }
 
 pub fn maybe_reverse_range(
@@ -263,11 +276,41 @@ pub fn maybe_reverse_range(
 
 /// For debugging both in tests and in the JS console
 pub fn dbgjs(val: impl fmt::Debug) {
-    if cfg!(test) {
+    if cfg!(test) || cfg!(feature = "multiplayer") {
         dbg!(val);
     } else {
-        crate::wasm_bindings::js::log(&(format!("{:?}", val)));
+        // this unsafe marker is necessary b/c of quadratic-multiplayer uses quadratic-core as a dependency
+        // (although the feature="multiplayer" should prevent this from ever being called form quadratic-multiplayer)
+        #[allow(unused_unsafe)]
+        unsafe {
+            crate::wasm_bindings::js::log(&(format!("{:?}", val)));
+        }
     }
+}
+
+#[allow(unused_macros)]
+macro_rules! dbgjs {
+    ($($arg:tt)*) => {
+        $crate::util::dbgjs($($arg)*)
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! jsTime {
+    ($($arg:tt)*) => {
+        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            $crate::wasm_bindings::js::jsTime($($arg)*)
+        }
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! jsTimeEnd {
+    ($($arg:tt)*) => {
+        if !cfg!(test) && !cfg!(feature = "multiplayer") && !cfg!(feature = "files") {
+            $crate::wasm_bindings::js::jsTimeEnd($($arg)*)
+        }
+    };
 }
 
 pub fn date_string() -> String {

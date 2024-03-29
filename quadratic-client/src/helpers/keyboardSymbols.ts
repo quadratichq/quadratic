@@ -23,7 +23,7 @@ export const KeyboardSymbols: IKeyboardSymbols = {
   ArrowRight: '→',
   ArrowDown: '↓',
   ArrowLeft: '←',
-  Enter: '↵',
+  Enter: '⏎',
   Backspace: '⌫',
   Delete: '⌦',
   Escape: '⎋',
