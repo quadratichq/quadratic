@@ -291,14 +291,13 @@ export class CellsTextHash {
     const { delta, column, row } = options;
     let changed = false;
     if (column !== undefined) {
+      // todo: there's something wrong here
       if (this.AABB.x < 0 && this.AABB.x < column) {
         this.x -= delta;
-        // this.width += delta;
-        console.log(':(');
       } else if (this.AABB.x > 0 && this.AABB.x > column) {
         this.x += delta;
-        this.width -= delta;
       }
+      this.width -= delta;
 
       this.labels.forEach((label) => {
         if (label.location.x === column) {
