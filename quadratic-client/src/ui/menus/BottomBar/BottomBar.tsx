@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { provideFeedbackAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { debugShowCacheCount, debugShowCacheFlag, debugShowFPS } from '../../../debugFlags';
+import { debugShowFPS } from '../../../debugFlags';
 import { sheets } from '../../../grid/controller/Sheets';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
@@ -101,16 +101,6 @@ export const BottomBar = () => {
               &nbsp;
             </div>
             <span className="debug-show-FPS">--</span> FPS
-          </BottomBarItem>
-        )}
-        {debugShowCacheFlag && (
-          <BottomBarItem>
-            <span className="debug-show-cache-on" />
-          </BottomBarItem>
-        )}
-        {debugShowCacheCount && (
-          <BottomBarItem>
-            <span className="debug-show-cache-count" />
           </BottomBarItem>
         )}
       </Stack>
