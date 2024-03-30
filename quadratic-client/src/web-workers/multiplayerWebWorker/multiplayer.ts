@@ -52,7 +52,6 @@ export class Multiplayer {
     // this is only a partial solution mostly for desktop
     // see https://www.igvita.com/2015/11/20/dont-lose-user-and-app-state-use-page-visibility/ for a further discussion
     const alertUser = (e: BeforeUnloadEvent) => {
-      console.log(this.state);
       if (
         this.state === 'syncing' &&
         !this.brokenConnection &&
@@ -91,7 +90,6 @@ export class Multiplayer {
     switch (e.data.type) {
       case 'multiplayerClientState':
         this.state = e.data.state;
-        console.log(this.state);
         if (this.state === 'no internet' || this.state === 'waiting to reconnect') {
           this.clearAllUsers();
         }
