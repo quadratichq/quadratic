@@ -41,31 +41,6 @@ class PythonWebWorker {
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);
   }
 
-  // next(complete: boolean) {
-  //   if (complete) {
-  //     this.running = false;
-  //   }
-
-  //   if (!this.worker || !this.loaded || this.running) {
-  //     this.showChange();
-  //     return;
-  //   }
-
-  //   if (this.executionStack.length) {
-  //     const first = this.executionStack[0];
-  //     if (first) {
-  //       if (!this.running) {
-  //         this.running = true;
-  //         window.dispatchEvent(new CustomEvent('python-computation-started'));
-  //       }
-  //     }
-  //   } else if (complete) {
-  //     window.dispatchEvent(new CustomEvent('python-computation-finished'));
-  //   }
-
-  //   this.showChange();
-  // }
-
   stop() {
     if (this.worker) {
       this.worker.terminate();

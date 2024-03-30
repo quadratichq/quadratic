@@ -9,10 +9,12 @@ import { pythonCore } from './pythonCore';
 
 const TRY_AGAIN_TIMEOUT = 500;
 
+const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+
 class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];
-  private state!: PythonStateType;
+  state: PythonStateType;
   private transactionId?: string;
 
   constructor() {
@@ -47,11 +49,15 @@ class Python {
   init = async () => {
     this.pyodide = await loadPyodide({
       stdout: () => {},
-      indexURL: '/pyodide',
-      packages: ['micropip', 'pyodide-http', 'pandas', '/quadratic_py-0.1.0-py3-none-any.whl'],
+      indexURL: IS_TEST ? 'public/pyodide' : '/pyodide',
+      packages: [
+        'micropip',
+        'pyodide-http',
+        'pandas',
+        `${IS_TEST ? 'public' : ''}/quadratic_py-0.1.0-py3-none-any.whl`,
+      ],
     });
     this.pyodide.registerJsModule('getCellsDB', this.getCells);
-
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
 

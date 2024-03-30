@@ -22,7 +22,7 @@ class PythonCore {
   }
 
   private handleMessage = async (e: MessageEvent<CorePythonMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
+    if (debugWebWorkersMessages) console.log(`[pythonCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'corePythonRun':

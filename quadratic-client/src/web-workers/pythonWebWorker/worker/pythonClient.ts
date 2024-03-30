@@ -21,6 +21,7 @@ class PythonClient {
       case 'clientPythonCoreChannel':
         pythonCore.init(e.ports[0]);
         break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
