@@ -50,17 +50,10 @@ export class CellsTextHash {
   // rebuild only buffers
   dirtyBuffers = false;
 
-  // color to use for drawDebugBox
-  debugColor = Math.floor(Math.random() * 0xffffff);
-
   loaded = false;
 
   // screen coordinates
-  viewRectangle: Rectangle;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  visibleRectangle: Rectangle = new Rectangle();
 
   // keep track of what neighbors we've clipped
   leftClip: TrackClip[] = [];
@@ -77,9 +70,33 @@ export class CellsTextHash {
     const end = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.right, this.AABB.bottom);
     this.width = end.x + end.w - this.x;
     this.height = end.y + end.h - this.y;
-    this.viewRectangle = new Rectangle(this.x, this.y, this.width, this.height);
     this.hashX = hashX;
     this.hashY = hashY;
+  }
+
+  get x(): number {
+    return this.visibleRectangle.x;
+  }
+  set x(value: number) {
+    this.visibleRectangle.x = value;
+  }
+  get y(): number {
+    return this.visibleRectangle.y;
+  }
+  set y(value: number) {
+    this.visibleRectangle.y = value;
+  }
+  get width(): number {
+    return this.visibleRectangle.width;
+  }
+  set width(value: number) {
+    this.visibleRectangle.width = value;
+  }
+  get height(): number {
+    return this.visibleRectangle.height;
+  }
+  set height(value: number) {
+    this.visibleRectangle.height = value;
   }
 
   // key used to find individual cell labels
@@ -142,13 +159,11 @@ export class CellsTextHash {
         await this.createLabels(cells);
       }
       this.overflowClip();
-      this.updateBuffers(); // false
-      this.dirtyBuffers = false;
+      this.updateBuffers();
       return true;
     } else if (this.dirtyBuffers) {
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating only buffers ${this.hashX}, ${this.hashY}`);
-      this.updateBuffers(); // true
-      this.dirtyBuffers = false;
+      this.updateBuffers();
       return true;
     }
     return false;
@@ -260,7 +275,7 @@ export class CellsTextHash {
     this.labels.forEach((cellLabel) => cellLabel.updateLabelMesh(this.labelMeshes));
 
     // prepares the client's CellsTextHash for new content
-    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
+    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.visibleRectangle);
 
     // completes the rendering for the CellsTextHash
     this.labelMeshes.finalize();
@@ -269,12 +284,22 @@ export class CellsTextHash {
     renderClient.finalizeCellsTextHash(this.cellsLabels.sheetId, this.hashX, this.hashY);
 
     this.loaded = true;
+    this.dirtyBuffers = false;
   }
 
   adjustHeadings(options: { delta: number; column?: number; row?: number }): boolean {
     const { delta, column, row } = options;
     let changed = false;
     if (column !== undefined) {
+      if (this.AABB.x < 0 && this.AABB.x < column) {
+        this.x -= delta;
+        // this.width += delta;
+        console.log(':(');
+      } else if (this.AABB.x > 0 && this.AABB.x > column) {
+        this.x += delta;
+        this.width -= delta;
+      }
+
       this.labels.forEach((label) => {
         if (label.location.x === column) {
           label.adjustWidth(delta, column < 0);
@@ -294,6 +319,13 @@ export class CellsTextHash {
         }
       });
     } else if (row !== undefined) {
+      if (this.AABB.y < 0 && this.AABB.y < row) {
+        this.y -= delta;
+      } else if (this.AABB.y > 0 && this.AABB.y > row) {
+        this.y += delta;
+      }
+      this.height += delta;
+
       this.labels.forEach((label) => {
         if (label.location.y === row) {
           label.adjustHeight(delta, row < 0);

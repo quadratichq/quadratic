@@ -151,10 +151,6 @@ export class CellLabel {
     this.dirty = true;
   }
 
-  get cellWidth(): number {
-    return this.AABB.width;
-  }
-
   checkLeftClip(nextRight: number): boolean | 'same' {
     if (this.overflowLeft && this.AABB.left - this.overflowLeft < nextRight) {
       if (this.clipLeft !== nextRight) {
@@ -194,13 +190,13 @@ export class CellLabel {
     this.overflowRight = 0;
     let alignment = this.alignment ?? 'left';
     if (alignment === 'right') {
-      const actualLeft = this.AABB.x + this.cellWidth - this.textWidth - OPEN_SANS_FIX.x * 2;
+      const actualLeft = this.AABB.x + this.AABB.width - this.textWidth - OPEN_SANS_FIX.x * 2;
       if (actualLeft < this.AABB.x) {
         this.overflowLeft = this.AABB.x - actualLeft;
       }
       this.position = new Point(actualLeft, this.AABB.y);
     } else if (alignment === 'center') {
-      const actualLeft = this.AABB.x + this.cellWidth / 2 - this.textWidth / 2 - OPEN_SANS_FIX.x;
+      const actualLeft = this.AABB.x + this.AABB.width / 2 - this.textWidth / 2 - OPEN_SANS_FIX.x;
       const actualRight = actualLeft + this.textWidth;
       if (actualLeft < this.AABB.x) {
         this.overflowLeft = this.AABB.x - actualLeft;
@@ -420,17 +416,17 @@ export class CellLabel {
     this.calculatePosition();
   }
 
-  adjustWidth(delta: number, adjustX: boolean) {
+  adjustWidth(delta: number, negativeX: boolean) {
     this.AABB.width -= delta;
-    if (adjustX) {
+    if (negativeX) {
       this.AABB.x += delta;
     }
     this.calculatePosition();
   }
 
-  adjustHeight(delta: number, adjustY: boolean): void {
+  adjustHeight(delta: number, negativeY: boolean): void {
     this.AABB.height -= delta;
-    if (adjustY) {
+    if (negativeY) {
       this.AABB.y += delta;
     }
     this.calculatePosition();

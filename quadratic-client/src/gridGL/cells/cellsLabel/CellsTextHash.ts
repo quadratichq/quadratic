@@ -11,7 +11,6 @@
  * The data calculations occur in renderWebWorker::CellsTextHash.ts.
  */
 
-import { sheets } from '@/grid/controller/Sheets';
 import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
 import { BitmapText, Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
@@ -92,9 +91,7 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
   }
 
   drawDebugBox(g: Graphics, c: Container) {
-    const sheet = sheets.getById(this.cellsLabels.sheetId);
-    if (!sheet) throw new Error('Expected sheet to be defined in CellsTextHash.drawDebugBox');
-    const screen = sheet.getScreenRectangle(this.AABB.left, this.AABB.top, this.AABB.width, this.AABB.height);
+    const screen = this.visibleRectangle;
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();
@@ -105,13 +102,21 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
 
   adjust(hashX: number | undefined, hashY: number | undefined, delta: number) {
     if (hashX !== undefined) {
-      if ((hashX < 0 && this.hashX < hashX) || (hashX >= 0 && this.hashX > hashX)) {
-        this.position.x += delta;
+      if (hashX < 0 && this.hashX < hashX) {
+        this.x -= delta;
+        this.visibleRectangle.x -= delta;
+      } else if (hashX >= 0 && this.hashX > hashX) {
+        this.x += delta;
+        this.visibleRectangle.x += delta;
       }
     }
     if (hashY !== undefined) {
-      if ((hashY < 0 && this.hashY < hashY) || (hashY >= 0 && this.hashY > hashY)) {
-        this.position.y += delta;
+      if (hashY < 0 && this.hashY < hashY) {
+        this.y -= delta;
+        this.visibleRectangle.y -= delta;
+      } else if (hashY >= 0 && this.hashY > hashY) {
+        this.y += delta;
+        this.visibleRectangle.y += delta;
       }
     }
   }

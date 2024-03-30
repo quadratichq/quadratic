@@ -31,7 +31,8 @@ export class CellsLabels {
   // bounds without formatting
   bounds?: Rectangle;
 
-  // keep track of headings that need adjusting during next update tick
+  // Keep track of headings that need adjusting during next update tick;
+  // we aggregate all requests between update ticks
   private dirtyColumnHeadings: Map<number, number>;
   private dirtyRowHeadings: Map<number, number>;
 
@@ -153,13 +154,18 @@ export class CellsLabels {
 
   private updateHeadings(): boolean {
     if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
+    // make a copy so new dirty markings are properly handled
+    const dirtyColumnHeadings = new Map(this.dirtyColumnHeadings);
+    const dirtyRowHeadings = new Map(this.dirtyRowHeadings);
+    this.dirtyColumnHeadings.clear();
+    this.dirtyRowHeadings.clear();
 
     // hashes that need to update their clipping and buffers
     const hashesToUpdate: Map<CellsTextHash, number> = new Map();
     const viewport = renderText.viewport;
     if (!viewport) return false;
 
-    this.dirtyColumnHeadings.forEach((delta, column) => {
+    dirtyColumnHeadings.forEach((delta, column) => {
       const columnHash = Math.floor(column / sheetHashWidth);
       this.cellsTextHash.forEach((hash) => {
         if (hash.hashX === columnHash) {
@@ -169,9 +175,8 @@ export class CellsLabels {
         }
       });
     });
-    this.dirtyColumnHeadings.clear();
 
-    this.dirtyRowHeadings.forEach((delta, row) => {
+    dirtyRowHeadings.forEach((delta, row) => {
       const rowHash = Math.floor(row / sheetHashHeight);
       this.cellsTextHash.forEach((hash) => {
         if (hash.hashY === rowHash) {
@@ -181,7 +186,6 @@ export class CellsLabels {
         }
       });
     });
-    this.dirtyRowHeadings.clear();
 
     const hashesToUpdateSorted = Array.from(hashesToUpdate).sort((a, b) => {
       return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0;
@@ -194,16 +198,13 @@ export class CellsLabels {
         }
       });
     });
-    hashesToUpdate.forEach((_, hash) => {
-      hash.updateBuffers();
-    });
-
+    hashesToUpdate.forEach((_, hash) => hash.updateBuffers());
     return true;
   }
 
   // distance from viewport center to hash center
   private hashDistanceSquared(hash: CellsTextHash, viewport: Rectangle): number {
-    const hashRectangle = hash.viewRectangle;
+    const hashRectangle = hash.visibleRectangle;
     return Math.pow(viewport.x - hashRectangle.x, 2) + Math.pow(viewport.y - hashRectangle.y, 2);
   }
 
@@ -224,7 +225,7 @@ export class CellsLabels {
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
-      if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+      if (intersects.rectangleRectangle(hash.visibleRectangle, bounds)) {
         if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
           visibleDirtyHashes.push(hash);
         }
@@ -328,7 +329,7 @@ export class CellsLabels {
   }
 
   // adjust headings without recalculating the glyph geometries
-  adjustHeadings(delta: number, column?: number, row?: number): void {
+  adjustHeadings(delta: number, column?: number, row?: number) {
     if (column !== undefined) {
       const existing = this.dirtyColumnHeadings.get(column);
       if (existing) {

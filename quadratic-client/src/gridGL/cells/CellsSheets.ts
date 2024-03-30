@@ -1,3 +1,4 @@
+import { debugShowCellsHashBoxes } from '@/debugFlags';
 import { events } from '@/events/events';
 import { SheetInfo } from '@/quadratic-core-types';
 import {
@@ -109,6 +110,10 @@ export class CellsSheets extends Container<CellsSheet> {
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
     cellsSheet.cellsLabels.adjustHeadings(column, row, delta);
     if (sheets.sheet.id === sheetId) {
+      if (debugShowCellsHashBoxes) {
+        const sheet = this.getById(sheetId);
+        sheet?.show(pixiApp.viewport.getVisibleBounds());
+      }
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
