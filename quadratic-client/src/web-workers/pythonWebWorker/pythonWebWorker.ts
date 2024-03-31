@@ -1,9 +1,11 @@
 import { events } from '@/events/events';
 import mixpanel from 'mixpanel-browser';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
-import { ClientPythonMessage, PythonClientMessage } from './pythonClientMessages';
+import { ClientPythonMessage, PythonClientMessage, PythonStateType } from './pythonClientMessages';
 
 class PythonWebWorker {
+  state: PythonStateType = 'loading';
+
   private worker?: Worker;
 
   private send(message: ClientPythonMessage, port?: MessagePort) {
@@ -18,6 +20,7 @@ class PythonWebWorker {
   private handleMessage = (message: MessageEvent<PythonClientMessage>) => {
     switch (message.data.type) {
       case 'pythonClientState':
+        this.state = message.data.state;
         events.emit(
           'pythonState',
           message.data.state,

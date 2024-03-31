@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate, SheetPosTS } from '@/gridGL/types/size';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
@@ -7,9 +5,10 @@ import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRecoilState, useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { usePythonState } from '@/atoms/usePythonState';
 import { events } from '@/events/events';
 import { JsCodeCell, Pos } from '@/quadratic-core-types';
 import { googleAnalyticsAvailable } from '@/utils/analytics';
@@ -30,7 +29,8 @@ import { SaveChangesAlert } from './SaveChangesAlert';
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
-  const { pythonState } = useRecoilValue(pythonStateAtom);
+
+  const { pythonState } = usePythonState();
 
   // update code cell
   const [codeString, setCodeString] = useState('');

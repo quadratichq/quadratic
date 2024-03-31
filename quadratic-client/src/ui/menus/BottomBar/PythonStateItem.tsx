@@ -1,4 +1,4 @@
-import { PythonState, pythonStateAtom } from '@/atoms/pythonStateAtom';
+import { usePythonState } from '@/atoms/usePythonState';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,14 +7,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shadcn/ui/dropdown-menu';
+import { PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
 import { Check, ErrorOutline, Refresh, Stop } from '@mui/icons-material';
 import { CircularProgress, useTheme } from '@mui/material';
 import { useState } from 'react';
-import { useRecoilValue } from 'recoil';
 import BottomBarItem from './BottomBarItem';
 
-const uiLabelByPythonState: Record<PythonState['pythonState'], string> = {
+const uiLabelByPythonState: Record<PythonStateType, string> = {
   error: 'error loading',
   ready: 'idle',
   loading: 'loading…',
@@ -22,7 +22,7 @@ const uiLabelByPythonState: Record<PythonState['pythonState'], string> = {
 };
 
 const PythonStateItem = () => {
-  let { pythonState } = useRecoilValue(pythonStateAtom);
+  const { pythonState } = usePythonState();
   const [open, setOpen] = useState(false);
   const theme = useTheme();
   const pythonLabel = 'Python 3.11.3';

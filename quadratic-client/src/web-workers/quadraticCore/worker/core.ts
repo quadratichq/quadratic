@@ -844,6 +844,17 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.clearFormatting(sheetId, pointsToRect(x, y, width, height), cursor);
   }
+
+  rerunCodeCells(sheetId?: string, x?: number, y?: number, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    if (sheetId !== undefined && x !== undefined && y !== undefined) {
+      this.gridController.rerunCodeCell(sheetId, new Pos(x, y), cursor);
+    } else if (sheetId !== undefined) {
+      this.gridController.rerunSheetCodeCells(sheetId, cursor);
+    } else {
+      this.gridController.rerunAllCodeCells(cursor);
+    }
+  }
 }
 
 export const core = new Core();

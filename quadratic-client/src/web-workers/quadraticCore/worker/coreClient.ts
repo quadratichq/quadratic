@@ -476,7 +476,11 @@ class CoreClient {
         break;
 
       case 'clientCoreClearFormatting':
-        await core.clearFormatting(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.clearFormatting(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        break;
+
+      case 'clientCoreRerunCodeCells':
+        core.rerunCodeCells(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
         break;
 
       default:
