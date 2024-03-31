@@ -839,6 +839,11 @@ class Core {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.applyOfflineUnsavedTransaction(transactionId, operations);
   }
+
+  clearFormatting(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.clearFormatting(sheetId, pointsToRect(x, y, width, height), cursor);
+  }
 }
 
 export const core = new Core();
