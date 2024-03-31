@@ -53,7 +53,7 @@ export class CellsTextHash {
   loaded = false;
 
   // screen coordinates
-  visibleRectangle: Rectangle = new Rectangle();
+  viewRectangle: Rectangle;
 
   // keep track of what neighbors we've clipped
   leftClip: TrackClip[] = [];
@@ -64,39 +64,16 @@ export class CellsTextHash {
     this.labels = new Map();
     this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    const offsets = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.left, this.AABB.top);
-    this.x = offsets.x;
-    this.y = offsets.y;
-    const end = this.cellsLabels.sheetOffsets.getCellOffsets(this.AABB.right, this.AABB.bottom);
-    this.width = end.x + end.w - this.x;
-    this.height = end.y + end.h - this.y;
+    const screenRect = this.cellsLabels.sheetOffsets.getRectCellOffsets(
+      this.AABB.left,
+      this.AABB.top,
+      sheetHashWidth,
+      sheetHashHeight
+    );
+    this.viewRectangle = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
+    screenRect.free();
     this.hashX = hashX;
     this.hashY = hashY;
-  }
-
-  get x(): number {
-    return this.visibleRectangle.x;
-  }
-  set x(value: number) {
-    this.visibleRectangle.x = value;
-  }
-  get y(): number {
-    return this.visibleRectangle.y;
-  }
-  set y(value: number) {
-    this.visibleRectangle.y = value;
-  }
-  get width(): number {
-    return this.visibleRectangle.width;
-  }
-  set width(value: number) {
-    this.visibleRectangle.width = value;
-  }
-  get height(): number {
-    return this.visibleRectangle.height;
-  }
-  set height(value: number) {
-    this.visibleRectangle.height = value;
   }
 
   // key used to find individual cell labels
@@ -126,6 +103,10 @@ export class CellsTextHash {
     this.loaded = false;
     this.dirty = true;
     renderClient.unload(this.cellsLabels.sheetId, this.hashX, this.hashY);
+  }
+
+  sendViewRectangle() {
+    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
   }
 
   async update(): Promise<boolean> {
@@ -275,7 +256,7 @@ export class CellsTextHash {
     this.labels.forEach((cellLabel) => cellLabel.updateLabelMesh(this.labelMeshes));
 
     // prepares the client's CellsTextHash for new content
-    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.visibleRectangle);
+    renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
 
     // completes the rendering for the CellsTextHash
     this.labelMeshes.finalize();
@@ -291,13 +272,12 @@ export class CellsTextHash {
     const { delta, column, row } = options;
     let changed = false;
     if (column !== undefined) {
-      // todo: there's something wrong here
-      if (this.AABB.x < 0 && this.AABB.x < column) {
-        this.x -= delta;
+      if (this.AABB.x < 0) {
+        this.viewRectangle.x += delta;
       } else if (this.AABB.x > 0 && this.AABB.x > column) {
-        this.x += delta;
+        this.viewRectangle.x -= delta;
       }
-      this.width -= delta;
+      this.viewRectangle.width -= delta;
 
       this.labels.forEach((label) => {
         if (label.location.x === column) {
@@ -318,12 +298,12 @@ export class CellsTextHash {
         }
       });
     } else if (row !== undefined) {
-      if (this.AABB.y < 0 && this.AABB.y < row) {
-        this.y -= delta;
+      if (this.AABB.y < 0 && this.AABB.y <= row) {
+        this.viewRectangle.y += delta;
       } else if (this.AABB.y > 0 && this.AABB.y > row) {
-        this.y += delta;
+        this.viewRectangle.y -= delta;
       }
-      this.height += delta;
+      this.viewRectangle.height += delta;
 
       this.labels.forEach((label) => {
         if (label.location.y === row) {

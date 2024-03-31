@@ -148,6 +148,48 @@ impl SheetOffsets {
         ScreenRect { x, y, w, h }
     }
 
+    /// Gets the start and end screen position for a range of columns (where the
+    /// end is the final position + size).
+    pub fn column_range(&self, x0: i64, x1: i64) -> (f64, f64) {
+        let xs: Vec<f64> = self
+            .column_widths
+            .iter_offsets(Range {
+                start: x0,
+                end: x1 + 2,
+            })
+            .collect();
+        let x1 = *xs.first().unwrap();
+        let x2 = *xs.last().unwrap();
+        (x1, x2)
+    }
+
+    // Gets the start and end screen position for a range of rows (where the end
+    // is the final position + size).
+    pub fn row_range(&self, y0: i64, y1: i64) -> (f64, f64) {
+        let ys: Vec<f64> = self
+            .row_heights
+            .iter_offsets(Range {
+                start: y0,
+                end: y1 + 2,
+            })
+            .collect();
+        let y1 = *ys.first().unwrap();
+        let y2 = *ys.last().unwrap();
+        (y1, y2)
+    }
+
+    // Returns the screen position for a rectangular range of cells.
+    pub fn rect_cell_offsets(&self, rect: Rect) -> ScreenRect {
+        let (x_start, x_end) = self.column_range(rect.min.x, rect.max.x);
+        let (y_start, y_end) = self.row_range(rect.min.y, rect.max.y);
+        ScreenRect {
+            x: x_start,
+            y: y_start,
+            w: x_end - x_start,
+            h: y_end - y_start,
+        }
+    }
+
     /// calculates thumbnail columns and rows that are visible starting from 0,0
     pub fn calculate_thumbnail(&mut self) {
         let mut x = 0;
@@ -181,5 +223,26 @@ impl SheetOffsets {
 
     pub fn total_row_height(&self, start: i64, end: i64) -> f64 {
         self.row_heights.size(start as i64, end as i64)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn rect_cell_offsets() {
+        let sheet = super::SheetOffsets::default();
+        let rect = super::Rect::from_numbers(0, 0, 1, 1);
+        let screen_rect = sheet.rect_cell_offsets(rect);
+        assert_eq!(screen_rect.x, 0.0);
+        assert_eq!(screen_rect.y, 0.0);
+        assert_eq!(screen_rect.w, 100.0);
+        assert_eq!(screen_rect.h, 20.0);
+
+        let rect = super::Rect::from_numbers(0, 0, 2, 2);
+        let screen_rect = sheet.rect_cell_offsets(rect);
+        assert_eq!(screen_rect.x, 0.0);
+        assert_eq!(screen_rect.y, 0.0);
+        assert_eq!(screen_rect.w, 100.0 * 2.0);
+        assert_eq!(screen_rect.h, 20.0 * 2.0);
     }
 }

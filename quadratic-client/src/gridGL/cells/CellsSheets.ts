@@ -89,6 +89,9 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find cellsSheet in cellsTextHashClear');
     }
     cellsSheet.cellsLabels.clearCellsTextHash(message);
+    if (debugShowCellsHashBoxes && sheets.sheet.id === message.sheetId) {
+      pixiApp.setViewportDirty();
+    }
   }
 
   labelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -97,6 +100,9 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find cellsSheet in labelMeshEntry');
     }
     cellsSheet.cellsLabels.addLabelMeshEntry(message);
+    if (sheets.sheet.id === message.sheetId) {
+      pixiApp.setViewportDirty();
+    }
   }
 
   toggleOutlines(off?: boolean): void {

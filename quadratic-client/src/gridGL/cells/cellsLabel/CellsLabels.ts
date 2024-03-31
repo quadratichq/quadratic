@@ -50,11 +50,17 @@ export class CellsLabels extends Container {
   clearCellsTextHash(message: RenderClientCellsTextHashClear) {
     const key = `${message.hashX},${message.hashY}`;
     const cellsTextHash = this.cellsTextHash.get(key);
+    const viewRectangle = new Rectangle(
+      message.viewRectangle.x,
+      message.viewRectangle.y,
+      message.viewRectangle.width,
+      message.viewRectangle.height
+    );
     if (cellsTextHash) {
-      cellsTextHash.clearMeshEntries(message.viewRectangle);
+      cellsTextHash.clearMeshEntries(viewRectangle);
     } else {
       const cellsTextHash = this.cellsTextHashes.addChild(
-        new CellsTextHash(this, message.hashX, message.hashY, message.viewRectangle)
+        new CellsTextHash(message.hashX, message.hashY, viewRectangle)
       );
       this.cellsTextHash.set(key, cellsTextHash);
     }
@@ -80,7 +86,7 @@ export class CellsLabels extends Container {
       // refresh viewport if necessary
       if (sheets.sheet.id === this.cellsSheet.sheetId) {
         const bounds = pixiApp.viewport.getVisibleBounds();
-        if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
+        if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
           cellsTextHash.show();
           pixiApp.setViewportDirty();
         } else {
@@ -104,7 +110,7 @@ export class CellsLabels extends Container {
       this.cellsTextHashDebug.removeChildren();
     }
     this.cellsTextHashes.children.forEach((cellsTextHash) => {
-      if (intersects.rectangleRectangle(cellsTextHash.visibleRectangle, bounds)) {
+      if (intersects.rectangleRectangle(cellsTextHash.viewRectangle, bounds)) {
         cellsTextHash.show();
         if (debugShowCellsHashBoxes) {
           cellsTextHash.drawDebugBox(this.cellsTextDebug, this.cellsTextHashDebug);

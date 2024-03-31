@@ -1,5 +1,5 @@
 use super::SheetOffsets;
-use crate::ScreenRect;
+use crate::{Rect, ScreenRect};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
@@ -21,6 +21,19 @@ impl SheetOffsets {
     #[wasm_bindgen(js_name = "getCellOffsets")]
     pub fn js_get_cell_offsets(&self, column: i32, row: i32) -> ScreenRect {
         self.cell_offsets(column as i64, row as i64)
+    }
+
+    // Returns a rectangle with the screen coordinates for a rectangle of cells
+    #[wasm_bindgen(js_name = "getRectCellOffsets")]
+    pub fn js_get_rect_cell_offsets(
+        &self,
+        column: i32,
+        row: i32,
+        width: i32,
+        height: i32,
+    ) -> ScreenRect {
+        let rect = Rect::from_numbers(column as i64, row as i64, width as i64, height as i64);
+        self.rect_cell_offsets(rect)
     }
 
     /// gets the column width. Returns a f32

@@ -14,13 +14,10 @@
 import { RenderClientLabelMeshEntry } from '@/web-workers/renderWebWorker/renderClientMessages';
 import { BitmapText, Container, Graphics, Rectangle, Renderer } from 'pixi.js';
 import { sheetHashHeight, sheetHashWidth } from '../CellsTypes';
-import { CellsLabels } from './CellsLabels';
 import { LabelMeshEntry } from './LabelMeshEntry';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container<LabelMeshEntry> {
-  private cellsLabels: CellsLabels;
-
   // holds replacement LabelMeshEntry objects that will replace the current children once we receive them all
   private newChildren: LabelMeshEntry[] = [];
 
@@ -31,21 +28,15 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
   AABB: Rectangle;
 
   // received from render web worker and used for culling
-  visibleRectangle: Rectangle;
+  viewRectangle: Rectangle;
 
   // color to use for drawDebugBox
   debugColor = Math.floor(Math.random() * 0xffffff);
 
-  constructor(
-    cellsLabels: CellsLabels,
-    hashX: number,
-    hashY: number,
-    viewRectangle: { x: number; y: number; width: number; height: number }
-  ) {
+  constructor(hashX: number, hashY: number, viewRectangle: Rectangle) {
     super();
-    this.cellsLabels = cellsLabels;
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    this.visibleRectangle = new Rectangle(viewRectangle.x, viewRectangle.y, viewRectangle.width, viewRectangle.height);
+    this.viewRectangle = viewRectangle;
     this.hashX = hashX;
     this.hashY = hashY;
   }
@@ -64,8 +55,8 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     this.newChildren = [];
   }
 
-  clearMeshEntries(viewRectangle: { x: number; y: number; width: number; height: number }) {
-    this.visibleRectangle = new Rectangle(viewRectangle.x, viewRectangle.y, viewRectangle.width, viewRectangle.height);
+  clearMeshEntries(viewRectangle: Rectangle) {
+    this.viewRectangle = viewRectangle;
   }
 
   show(): void {
@@ -91,7 +82,7 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
   }
 
   drawDebugBox(g: Graphics, c: Container) {
-    const screen = this.visibleRectangle;
+    const screen = this.viewRectangle;
     g.beginFill(this.debugColor, 0.25);
     g.drawShape(screen);
     g.endFill();
@@ -104,19 +95,19 @@ export class CellsTextHash extends Container<LabelMeshEntry> {
     if (hashX !== undefined) {
       if (hashX < 0 && this.hashX < hashX) {
         this.x -= delta;
-        this.visibleRectangle.x -= delta;
+        this.viewRectangle.x -= delta;
       } else if (hashX >= 0 && this.hashX > hashX) {
         this.x += delta;
-        this.visibleRectangle.x += delta;
+        this.viewRectangle.x += delta;
       }
     }
     if (hashY !== undefined) {
       if (hashY < 0 && this.hashY < hashY) {
         this.y -= delta;
-        this.visibleRectangle.y -= delta;
+        this.viewRectangle.y -= delta;
       } else if (hashY >= 0 && this.hashY > hashY) {
         this.y += delta;
-        this.visibleRectangle.y += delta;
+        this.viewRectangle.y += delta;
       }
     }
   }

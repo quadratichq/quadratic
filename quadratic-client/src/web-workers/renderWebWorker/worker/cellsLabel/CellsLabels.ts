@@ -162,6 +162,7 @@ export class CellsLabels {
 
     // hashes that need to update their clipping and buffers
     const hashesToUpdate: Map<CellsTextHash, number> = new Map();
+    const hashesToUpdateViewRectangle: Set<CellsTextHash> = new Set();
     const viewport = renderText.viewport;
     if (!viewport) return false;
 
@@ -169,8 +170,13 @@ export class CellsLabels {
       const columnHash = Math.floor(column / sheetHashWidth);
       this.cellsTextHash.forEach((hash) => {
         if (hash.hashX === columnHash) {
-          if (hash.adjustHeadings({ column, delta }) && !hashesToUpdate.has(hash)) {
-            hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
+          if (hash.adjustHeadings({ column, delta })) {
+            if (!hashesToUpdate.has(hash)) {
+              hashesToUpdateViewRectangle.delete(hash);
+              hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
+            }
+          } else if (!hashesToUpdate.has(hash)) {
+            hashesToUpdateViewRectangle.add(hash);
           }
         }
       });
@@ -180,8 +186,13 @@ export class CellsLabels {
       const rowHash = Math.floor(row / sheetHashHeight);
       this.cellsTextHash.forEach((hash) => {
         if (hash.hashY === rowHash) {
-          if (hash.adjustHeadings({ row, delta }) && !hashesToUpdate.has(hash)) {
-            hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
+          if (hash.adjustHeadings({ row, delta })) {
+            if (!!hashesToUpdate.has(hash)) {
+              hashesToUpdateViewRectangle.delete(hash);
+              hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
+            }
+          } else if (!hashesToUpdate.has(hash)) {
+            hashesToUpdateViewRectangle.add(hash);
           }
         }
       });
@@ -199,12 +210,13 @@ export class CellsLabels {
       });
     });
     hashesToUpdate.forEach((_, hash) => hash.updateBuffers());
+    hashesToUpdateViewRectangle.forEach((hash) => hash.sendViewRectangle());
     return true;
   }
 
   // distance from viewport center to hash center
   private hashDistanceSquared(hash: CellsTextHash, viewport: Rectangle): number {
-    const hashRectangle = hash.visibleRectangle;
+    const hashRectangle = hash.viewRectangle;
     return Math.pow(viewport.x - hashRectangle.x, 2) + Math.pow(viewport.y - hashRectangle.y, 2);
   }
 
@@ -225,7 +237,7 @@ export class CellsLabels {
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
-      if (intersects.rectangleRectangle(hash.visibleRectangle, bounds)) {
+      if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
         if (hash.dirty || hash.dirtyBuffers || !hash.loaded) {
           visibleDirtyHashes.push(hash);
         }

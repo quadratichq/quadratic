@@ -63,7 +63,7 @@ class RenderClient {
     self.postMessage(message);
   }
 
-  // sends a message to the main thread to clear the cellsTextHash for the hashX, hashY
+  // sends a message to the main thread to update the cellsTextHash for the hashX, hashY
   sendCellsTextHashClear(
     sheetId: string,
     hashX: number,
