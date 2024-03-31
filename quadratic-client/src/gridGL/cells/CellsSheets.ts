@@ -36,7 +36,7 @@ export class CellsSheets extends Container<CellsSheet> {
     return !!this.current;
   }
 
-  private addSheet = (sheetInfo: SheetInfo, user: boolean) => {
+  private addSheet = (sheetInfo: SheetInfo) => {
     this.addChild(new CellsSheet(sheetInfo.sheet_id));
   };
 
@@ -144,8 +144,7 @@ export class CellsSheets extends Container<CellsSheet> {
 
   showLabel(x: number, y: number, sheetId: string, show: boolean) {
     const cellsSheet = this.getById(sheetId);
-    if (!cellsSheet) throw new Error('Expected to find cellsSheet in showLabel');
-    cellsSheet.showLabel(x, y, show);
+    cellsSheet?.showLabel(x, y, show);
   }
 
   unload(options: { sheetId: string; hashX: number; hashY: number }): void {

@@ -55,6 +55,10 @@ class MultiplayerClient {
         multiplayerServer.userUpdate.selection = e.data.selection;
         break;
 
+      case 'clientMultiplayerFollow':
+        multiplayerServer.userUpdate.follow = e.data.follow;
+        break;
+
       default:
         console.warn('[multiplayerClient] Unhandled message type', e.data);
     }

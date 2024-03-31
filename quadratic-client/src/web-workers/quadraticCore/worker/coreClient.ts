@@ -505,7 +505,6 @@ class CoreClient {
   };
 
   sendDeleteSheet = (sheetId: string, user: boolean) => {
-    console.log('sendDeleteSheet', sheetId, user);
     this.send({ type: 'coreClientDeleteSheet', sheetId, user });
   };
 

@@ -44,6 +44,9 @@ class Sheets {
     if (user) {
       // the timeout is needed because cellsSheets receives the addSheet message after sheets receives the message
       setTimeout(() => (this.current = sheet.id), 0);
+    } else {
+      // otherwise we update the sheet bar since another player added the sheet
+      this.updateSheetBar();
     }
   };
 
@@ -64,6 +67,9 @@ class Sheets {
           this.current = this.sheets[0].id;
         }
       }, 0);
+    } else {
+      // otherwise we update the sheet bar since another player deleted the sheet
+      this.updateSheetBar();
     }
   };
 
