@@ -20,12 +20,17 @@ export const MultiplayerCellEdits = () => {
       setMultiplayerCellInput((prev) => {
         // this shouldn't happen
         if (player.x === undefined || player.y === undefined) return prev;
+        if (!player.parsedSelection) return prev;
 
         const updatedCellEdit: MultiplayerCell = {
           sessionId: player.session_id,
           sheetId: player.sheet_id,
           cellEdit,
-          location: { x: player.x, y: player.y, sheetId: player.sheet_id },
+          location: {
+            x: player.parsedSelection.cursor.x,
+            y: player.parsedSelection.cursor.y,
+            sheetId: player.sheet_id,
+          },
           playerColor: player.colorString,
         };
         const found = prev.findIndex((prev) => prev.sessionId === player.session_id);
