@@ -818,7 +818,6 @@ class Core {
     await initCore();
     try {
       const fileBytes = await readFileAsArrayBuffer(message.file);
-      debugger;
       const gc = GridController.importExcel(fileBytes, message.file.name);
       const contents = gc.exportToFile();
       return { contents: contents, version: gc.getVersion() };

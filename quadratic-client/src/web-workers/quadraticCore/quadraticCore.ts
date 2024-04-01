@@ -900,7 +900,6 @@ class QuadraticCore {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { contents: string; version: string }) => {
-        debugger;
         resolve(message);
       };
       this.send({

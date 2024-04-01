@@ -91,8 +91,9 @@ export const CodeEditor = () => {
     }
   }, [editorInteractionState.waitingForEditorClose, setEditorInteractionState, unsaved]);
 
-  const updateCodeCell = useCallback(
-    async (pushCodeCell?: JsCodeCell) => {
+  // ensure codeCell is created w/content and updated when it receives a change request from Rust
+  useEffect(() => {
+    const updateCodeCell = async (pushCodeCell?: JsCodeCell) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
       if (!editorInteractionState.selectedCellSheet) return;
       const codeCell =
@@ -117,16 +118,8 @@ export const CodeEditor = () => {
         setEvaluationResult(undefined);
         setOut(undefined);
       }
-    },
-    [
-      editorInteractionState.selectedCell.x,
-      editorInteractionState.selectedCell.y,
-      editorInteractionState.selectedCellSheet,
-    ]
-  );
+    };
 
-  // ensure codeCell is created w/content and updated when it receives a change request from Rust
-  useEffect(() => {
     updateCodeCell();
 
     const update = (options: { sheetId: string; x: number; y: number; codeCell?: JsCodeCell }) => {
@@ -138,7 +131,14 @@ export const CodeEditor = () => {
     return () => {
       events.off('updateCodeCell', update);
     };
-  }, [cellLocation.sheetId, cellLocation.x, cellLocation.y, updateCodeCell]);
+  }, [
+    cellLocation.sheetId,
+    cellLocation.x,
+    cellLocation.y,
+    editorInteractionState.selectedCell.x,
+    editorInteractionState.selectedCell.y,
+    editorInteractionState.selectedCellSheet,
+  ]);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEffect(() => {
