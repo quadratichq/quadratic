@@ -214,7 +214,7 @@ export const CodeEditor = () => {
   const cancelPython = () => {
     if (pythonState !== 'running') return;
 
-    pythonWebWorker.restartFromUser();
+    pythonWebWorker.cancelExecution();
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {

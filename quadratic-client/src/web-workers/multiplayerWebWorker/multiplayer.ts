@@ -68,12 +68,7 @@ export class Multiplayer {
     });
   }
 
-  private pythonState = (
-    _state: PythonStateType,
-    _version?: string,
-    current?: CodeRun,
-    awaitingExecution?: CodeRun[]
-  ) => {
+  private pythonState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
     const codeRunning: SheetPosTS[] = [];
     if (current) {
       codeRunning.push(current.sheetPos);

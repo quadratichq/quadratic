@@ -10,8 +10,12 @@ class PythonClient {
     if (debugWebWorkers) console.log('[pythonClient] initialized.');
   }
 
-  private send(message: PythonClientMessage) {
-    self.postMessage(message);
+  private send(message: PythonClientMessage, transfer?: Transferable[]) {
+    if (transfer) {
+      self.postMessage(message, transfer);
+    } else {
+      self.postMessage(message);
+    }
   }
 
   private handleMessage = async (e: MessageEvent<ClientPythonMessage>) => {
@@ -33,16 +37,19 @@ class PythonClient {
 
   sendPythonState(
     state: PythonStateType,
-    options?: { version?: string; error?: string; current?: CodeRun; awaitingExecution?: CodeRun[] }
+    options?: { error?: string; current?: CodeRun; awaitingExecution?: CodeRun[] }
   ) {
     this.send({
       type: 'pythonClientState',
       state,
-      version: options?.version,
       error: options?.error,
       current: options?.current,
       awaitingExecution: options?.awaitingExecution,
     });
+  }
+
+  sendInit(version: string) {
+    this.send({ type: 'pythonClientInit', version });
   }
 }
 

@@ -8,6 +8,7 @@ class PythonCore {
   private coreMessagePort?: MessagePort;
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
+  private getCellsResponse?: number;
 
   init(messagePort: MessagePort) {
     this.coreMessagePort = messagePort;
@@ -34,6 +35,7 @@ class PythonCore {
       const response = this.waitingForResponse[e.data.id];
       if (response) {
         response(e.data);
+        this.getCellsResponse = undefined;
         delete this.waitingForResponse[e.data.id];
         return;
       } else {
@@ -64,6 +66,7 @@ class PythonCore {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CorePythonGetCells) => resolve(message.cells);
+      this.getCellsResponse = id;
       this.send({ type: 'pythonCoreGetCells', transactionId, id, x, y, w, h, sheet, lineNumber });
     });
   }

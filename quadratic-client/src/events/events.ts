@@ -52,7 +52,8 @@ interface EventTypes {
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
 
-  pythonState: (state: PythonStateType, version?: string, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  pythonInit: (version: string) => void;
+  pythonState: (state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
   updateCodeCell: (options: {
     sheetId: string;
     x: number;

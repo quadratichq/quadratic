@@ -35,12 +35,7 @@ export const CodeEditorHeader = (props: Props) => {
   const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
   useEffect(() => {
     // update running computation for player
-    const playerState = (
-      _state: PythonStateType,
-      _version?: string,
-      current?: CodeRun,
-      awaitingExecution?: CodeRun[]
-    ) => {
+    const playerState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       if (!cellLocation) return;
       if (
         current &&
@@ -78,7 +73,9 @@ export const CodeEditorHeader = (props: Props) => {
             user.parsedCodeRunning &&
             user.parsedCodeRunning.find(
               (sheetPos) =>
-                sheetPos.sheetId === cellLocation.sheetId && sheetPos.x === cellLocation.x && sheetPos.y === cellLocation.y
+                sheetPos.sheetId === cellLocation.sheetId &&
+                sheetPos.x === cellLocation.x &&
+                sheetPos.y === cellLocation.y
             )
         )
       ) {

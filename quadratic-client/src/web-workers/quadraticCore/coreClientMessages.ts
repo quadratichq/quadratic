@@ -781,6 +781,11 @@ export interface CoreClientImportExcel {
   error?: string;
 }
 
+export interface ClientCoreCancelExecution {
+  type: 'clientCoreCancelExecution';
+  language: CodeCellLanguage;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -836,7 +841,8 @@ export type ClientCoreMessage =
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
   | ClientCoreInitPython
-  | ClientCoreImportExcel;
+  | ClientCoreImportExcel
+  | ClientCoreCancelExecution;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

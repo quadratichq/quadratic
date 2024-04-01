@@ -885,6 +885,10 @@ class QuadraticCore {
     this.send({ type: 'clientCoreInitPython' }, port);
   }
 
+  sendCancelExecution(language: CodeCellLanguage) {
+    this.send({ type: 'clientCoreCancelExecution', language });
+  }
+
   // create a new grid file and import an xlsx file
   importExcel = async (
     file: File

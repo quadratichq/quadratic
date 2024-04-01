@@ -11,6 +11,9 @@ declare var self: WorkerGlobalScope &
 class CorePython {
   private corePythonPort?: MessagePort;
 
+  // last running transaction (used to cancel execution)
+  lastTransactionId?: string;
+
   init(pythonPort: MessagePort) {
     this.corePythonPort = pythonPort;
     this.corePythonPort.onmessage = this.handleMessage;
@@ -21,6 +24,9 @@ class CorePython {
   private handleMessage = (e: MessageEvent<PythonCoreMessage>) => {
     switch (e.data.type) {
       case 'pythonCoreResults':
+        if (this.lastTransactionId === e.data.transactionId) {
+          this.lastTransactionId = undefined;
+        }
         core.calculationComplete(e.data.transactionId, e.data.results);
         break;
 
@@ -51,6 +57,7 @@ class CorePython {
   }
 
   sendRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+    this.lastTransactionId = transactionId;
     this.send({
       type: 'corePythonRun',
       transactionId,
@@ -67,6 +74,14 @@ class CorePython {
       id,
       cells,
     });
+  }
+
+  cancelExecution() {
+    // It's possible that the transaction was completed before the message was
+    // received.
+    if (this.lastTransactionId) {
+      core.cancelExecution(this.lastTransactionId);
+    }
   }
 }
 

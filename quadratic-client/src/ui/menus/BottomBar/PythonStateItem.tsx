@@ -96,7 +96,7 @@ const PythonStateItem = () => {
         <DropdownMenuItem
           disabled={pythonState !== 'running'}
           onClick={() => {
-            pythonWebWorker.restartFromUser();
+            pythonWebWorker.cancelExecution();
           }}
         >
           <Stop className="mr-2" sx={{ color: theme.palette.text.secondary }} /> Cancel execution

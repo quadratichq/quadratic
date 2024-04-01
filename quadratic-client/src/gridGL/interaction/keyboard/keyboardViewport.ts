@@ -114,7 +114,7 @@ export async function keyboardViewport(options: {
 
   // Command + Escape
   if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-    pythonWebWorker.restartFromUser();
+    pythonWebWorker.cancelExecution();
   }
 
   return false;

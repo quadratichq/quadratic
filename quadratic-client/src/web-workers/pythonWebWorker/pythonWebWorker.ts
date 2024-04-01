@@ -19,15 +19,14 @@ class PythonWebWorker {
 
   private handleMessage = (message: MessageEvent<PythonClientMessage>) => {
     switch (message.data.type) {
+      case 'pythonClientInit':
+        this.state = 'ready';
+        events.emit('pythonInit', message.data.version);
+        break;
+
       case 'pythonClientState':
         this.state = message.data.state;
-        events.emit(
-          'pythonState',
-          message.data.state,
-          message.data.version,
-          message.data.current,
-          message.data.awaitingExecution
-        );
+        events.emit('pythonState', message.data.state, message.data.current, message.data.awaitingExecution);
         break;
 
       default:
@@ -44,40 +43,14 @@ class PythonWebWorker {
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);
   }
 
-  stop() {
-    if (this.worker) {
-      this.worker.terminate();
-    }
-  }
-
-  restart() {
-    this.stop();
-    this.init();
-  }
-
-  restartFromUser() {
+  cancelExecution() {
     mixpanel.track('[PythonWebWorker].restartFromUser');
 
-    // todo...
-    // const transactionId = this.getTransactionId();
-
-    // this.restart();
-    // const result: JsCodeResult = {
-    //   transaction_id: transactionId,
-    //   success: false,
-    //   formatted_code: null,
-    //   error_msg: 'Python execution cancelled by user',
-    //   input_python_std_out: null,
-    //   output_value: null,
-    //   array_output: null,
-    //   line_number: null,
-    //   output_type: null,
-    //   cancel_compute: true,
-    // };
-    // // grid.calculationComplete(result);
-    // console.log(result);
-    // debugger;
-    // this.calculationComplete();
+    if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
+    this.worker.terminate();
+    quadraticCore.sendCancelExecution('Python');
+    this.init();
+    events.emit('pythonState', 'loading');
   }
 }
 

@@ -483,6 +483,14 @@ class CoreClient {
         core.rerunCodeCells(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
         break;
 
+      case 'clientCoreCancelExecution':
+        if (e.data.language === 'Python') {
+          corePython.cancelExecution();
+        } else {
+          console.warn("Unhandled language in 'clientCoreCancelExecution'", e.data.language);
+        }
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

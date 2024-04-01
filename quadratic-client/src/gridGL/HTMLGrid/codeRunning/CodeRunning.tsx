@@ -23,12 +23,7 @@ export const CodeRunning = () => {
 
   // update player's code runs
   useEffect(() => {
-    const updatePythonState = (
-      _state: PythonStateType,
-      _version?: string,
-      current?: CodeRun,
-      awaitingExecution?: CodeRun[]
-    ) => {
+    const updatePythonState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       const code: Code[] = [];
       if (current) {
         const rectangle = sheets.sheet.getCellOffsets(current.sheetPos.x, current.sheetPos.y);

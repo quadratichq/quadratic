@@ -34,6 +34,11 @@ export interface ClientPythonCoreChannel {
   type: 'clientPythonCoreChannel';
 }
 
-export type PythonClientMessage = PythonClientLoadError | PythonClientState;
+export interface PythonClientInit {
+  type: 'pythonClientInit';
+  version: string;
+}
+
+export type PythonClientMessage = PythonClientLoadError | PythonClientState | PythonClientInit;
 
 export type ClientPythonMessage = ClientPythonCoreChannel;

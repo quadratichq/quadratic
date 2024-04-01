@@ -77,7 +77,8 @@ class Python {
     const pyodideVersion = this.pyodide.version;
 
     if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
-    pythonClient.sendPythonState('ready', { version: pythonVersion });
+    pythonClient.sendInit(pythonVersion);
+    pythonClient.sendPythonState('ready');
     this.state = 'ready';
     this.next();
   };

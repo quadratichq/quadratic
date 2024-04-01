@@ -8,14 +8,14 @@ export const usePythonState = (): { pythonState: PythonStateType; version?: stri
   const [version, setVersion] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const updatePythonState = (state: PythonStateType, version?: string) => {
+    const updatePythonVersion = (version: string) => setVersion(version);
+    const updatePythonState = (state: PythonStateType) => {
       setPythonState(state);
-      if (version) {
-        setVersion(version);
-      }
     };
+    events.on('pythonInit', updatePythonVersion);
     events.on('pythonState', updatePythonState);
     return () => {
+      events.off('pythonInit', updatePythonVersion);
       events.off('pythonState', updatePythonState);
     };
   }, []);

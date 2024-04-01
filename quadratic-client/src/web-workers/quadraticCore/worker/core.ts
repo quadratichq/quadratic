@@ -788,10 +788,7 @@ class Core {
       error_msg: results.std_err,
       input_python_std_out: results.std_out,
       output_value: results.output ? (results.output as any as string[]) : null,
-
-      // this one breaks the JsCodeResult interface
       array_output,
-
       line_number: results.lineno ?? null,
       output_type: results.output_type ?? null,
       cancel_compute: false,
@@ -854,6 +851,22 @@ class Core {
     } else {
       this.gridController.rerunAllCodeCells(cursor);
     }
+  }
+
+  cancelExecution(transactionId: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const codeResult: JsCodeResult = {
+      transaction_id: transactionId,
+      success: false,
+      error_msg: 'Python execution cancelled by user',
+      input_python_std_out: null,
+      output_value: null,
+      array_output: null,
+      line_number: null,
+      output_type: null,
+      cancel_compute: false,
+    } as JsCodeResult;
+    this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
 }
 
