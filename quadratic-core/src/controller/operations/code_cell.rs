@@ -367,6 +367,6 @@ mod test {
         );
         gc.rerun_all_code_cells(None);
         gc.rerun_code_cell(sheet_pos, None);
-        gc.rerun_sheet_code_cells_operations(sheet_id);
+        gc.rerun_sheet_code_cells(sheet_id, None);
     }
 }
