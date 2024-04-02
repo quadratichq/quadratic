@@ -53,6 +53,7 @@ extern "C" {
     pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64);
     pub fn jsSetCursor(cursor: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
+    pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
     pub fn jsGenerateThumbnail();
     pub fn jsSheetBorders(sheet_id: String, borders: String);

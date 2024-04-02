@@ -15,6 +15,7 @@ class HTMLCellsHandler {
   constructor() {
     events.on('htmlOutput', this.htmlOutput);
     events.on('htmlUpdate', this.htmlUpdate);
+    events.on('changeSheet', this.changeSheet);
   }
 
   private htmlOutput = (data: JsHtmlOutput[]) => {
@@ -29,15 +30,22 @@ class HTMLCellsHandler {
     // update an existing cell
     for (const cell of this.cells) {
       if (cell.isOutputEqual(data)) {
-        cell.update(data);
+        if (data.html) {
+          cell.update(data);
+        } else {
+          this.getParent().removeChild(cell.div);
+          this.cells.delete(cell);
+        }
         return;
       }
     }
 
     // or add a new cell
-    const cell = new HtmlCell(data);
-    this.getParent().appendChild(cell.div);
-    this.cells.add(cell);
+    if (data.html) {
+      const cell = new HtmlCell(data);
+      this.getParent().appendChild(cell.div);
+      this.cells.add(cell);
+    }
   };
 
   attach(parent: HTMLDivElement) {
@@ -49,7 +57,6 @@ class HTMLCellsHandler {
   init(parent: HTMLDivElement | null) {
     this.div = this.div ?? document.createElement('div');
     this.div.className = 'html-cells';
-    events.on('changeSheet', this.changeSheet);
     if (parent) {
       this.attach(parent);
     }
@@ -57,12 +64,6 @@ class HTMLCellsHandler {
       this.updateHtmlCells(this.dataWaitingForDiv);
       this.dataWaitingForDiv = undefined;
     }
-  }
-
-  destroy() {
-    events.off('changeSheet', this.changeSheet);
-    events.off('htmlOutput', this.htmlOutput);
-    events.off('htmlUpdate', this.htmlUpdate);
   }
 
   private changeSheet = () => {

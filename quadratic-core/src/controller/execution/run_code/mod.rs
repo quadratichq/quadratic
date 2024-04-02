@@ -3,6 +3,7 @@ use chrono::Utc;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
 use crate::error_core::{CoreError, Result};
+use crate::grid::js_types::JsHtmlOutput;
 use crate::grid::CodeRunResult;
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
@@ -39,13 +40,10 @@ impl GridController {
                 .unwrap_or(sheet.code_runs.len()),
         );
 
+        let mut update_html = false;
         let old_code_run = if let Some(new_code_run) = &new_code_run {
             if new_code_run.is_html() && cfg!(target_family = "wasm") && !transaction.is_server() {
-                if let Some(html) = sheet.get_single_html_output(pos) {
-                    if let Ok(html) = serde_json::to_string(&html) {
-                        crate::wasm_bindings::js::jsUpdateHtml(html);
-                    }
-                }
+                update_html = true;
             }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
 
@@ -63,11 +61,7 @@ impl GridController {
 
         if let Some(old_code_run) = &old_code_run {
             if old_code_run.is_html() && cfg!(target_family = "wasm") && !transaction.is_server() {
-                if let Some(html) = sheet.get_single_html_output(pos) {
-                    if let Ok(html) = serde_json::to_string(&html) {
-                        crate::wasm_bindings::js::jsUpdateHtml(html);
-                    }
-                }
+                update_html = true;
             }
             if new_code_run.is_none() && cfg!(target_family = "wasm") && !transaction.is_server() {
                 crate::wasm_bindings::js::jsUpdateCodeCell(
@@ -99,6 +93,22 @@ impl GridController {
                 }
             }
         };
+
+        if update_html {
+            let html = sheet.get_single_html_output(pos).unwrap_or(JsHtmlOutput {
+                sheet_id: sheet_id.to_string(),
+                x: pos.x,
+                y: pos.y,
+                html: None,
+                w: None,
+                h: None,
+            });
+            if let Ok(html) = serde_json::to_string(&html) {
+                crate::wasm_bindings::js::jsUpdateHtml(html);
+            } else {
+                dbgjs!("Error serializing html");
+            }
+        }
 
         transaction.forward_operations.push(Operation::SetCodeRun {
             sheet_pos,

@@ -262,7 +262,7 @@ impl Sheet {
             sheet_id: self.id.to_string(),
             x: pos.x,
             y: pos.y,
-            html: output.to_display(None, None, None),
+            html: Some(output.to_display(None, None, None)),
             w,
             h,
         })
@@ -285,7 +285,7 @@ impl Sheet {
                     sheet_id: self.id.to_string(),
                     x: pos.x,
                     y: pos.y,
-                    html: output.to_display(None, None, None),
+                    html: Some(output.to_display(None, None, None)),
                     w,
                     h,
                 })
@@ -654,7 +654,7 @@ mod tests {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 2,
-                html: "<html></html>".to_string(),
+                html: Some("<html></html>".to_string()),
                 w: None,
                 h: None,
             }
@@ -681,7 +681,7 @@ mod tests {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 2,
-                html: "<html></html>".to_string(),
+                html: Some("<html></html>".to_string()),
                 w: Some("1".into()),
                 h: Some("2".into()),
             }

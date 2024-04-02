@@ -195,7 +195,7 @@ pub struct JsHtmlOutput {
     pub sheet_id: String,
     pub x: i64,
     pub y: i64,
-    pub html: String,
+    pub html: Option<String>,
     pub w: Option<String>,
     pub h: Option<String>,
 }
