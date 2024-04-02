@@ -127,7 +127,7 @@ export const CodeEditor = () => {
     updateCodeCell();
 
     const update = (options: { sheetId: string; x: number; y: number; codeCell?: JsCodeCell }) => {
-      if (options.sheetId === cellLocation.sheetId || options.x === cellLocation.x || options.y === cellLocation.y) {
+      if (options.sheetId === cellLocation.sheetId && options.x === cellLocation.x && options.y === cellLocation.y) {
         updateCodeCell(options.codeCell);
       }
     };
