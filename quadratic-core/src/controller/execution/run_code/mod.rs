@@ -304,7 +304,6 @@ impl GridController {
             let result = if let Some(array_output) = js_code_result.array_output {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.splice(0..0, ops);
-
                 if let Some(array) = array {
                     Value::Array(array)
                 } else {
@@ -320,7 +319,7 @@ impl GridController {
                 transaction.reverse_operations.splice(0..0, ops);
                 Value::Single(cell_value)
             } else {
-                unreachable!("js_code_result_to_code_cell_value: no output")
+                Value::Single(CellValue::Blank)
             };
             CodeRunResult::Ok(result)
         } else {
@@ -459,4 +458,7 @@ mod test {
         // assert!(summary.code_cells_modified.contains(&sheet_id));
         // assert!(summary.generate_thumbnail);
     }
+
+    #[test]
+    fn js_code_result_to_code_cell_value() {}
 }
