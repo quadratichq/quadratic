@@ -3,45 +3,46 @@ import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
-import { redisHost, redisPort } from "../shared/redis";
-import { filesEc2SecurityGroup } from "../shared/securityGroups";
+import { clientEc2SecurityGroup } from "../shared/securityGroups";
+import { multiplayerPublicDns } from "../multiplayer/multiplayer";
 import { apiPublicDns } from "../api/api";
-
 const config = new pulumi.Config();
 
 // Configuration from command line
-const filesSubdomain = config.require("files-subdomain");
+const clientSubdomain = config.require("client-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
-const filesECRName = config.require("files-ecr-repo-name");
-const filesPulumiEscEnvironmentName = config.require(
-  "files-pulumi-esc-environment-name"
+const clientECRName = config.require("client-ecr-repo-name");
+const clientPulumiEscEnvironmentName = config.require(
+  "client-pulumi-esc-environment-name"
 );
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Configuration from Pulumi ESC
-const instanceSize = config.require("files-instance-size");
+const instanceSize = config.require("client-instance-size");
 const domain = config.require("domain");
-const dependencySetupBashCommand = "";
 
-const instance = new aws.ec2.Instance("files-instance", {
+const instance = new aws.ec2.Instance("client-instance", {
   tags: {
-    Name: `files-instance-${filesSubdomain}`,
+    Name: `client-instance-${clientSubdomain}`,
   },
   instanceType: instanceSize,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
-  vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
+  vpcSecurityGroupIds: [clientEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
+  keyName: "dba-quadratic",
   userDataReplaceOnChange: true,
-  userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
+
+  userData: pulumi.all([]).apply(([]) =>
     runDockerImageBashScript(
-      filesECRName,
+      clientECRName,
       dockerImageTag,
-      filesPulumiEscEnvironmentName,
+      clientPulumiEscEnvironmentName,
       {
-        PUBSUB_HOST: host,
-        PUBSUB_PORT: port.toString(),
-        QUADRATIC_API_URI: `http://${apiPublicDns.get()}`,
+        PORT: "80",
+        VITE_QUADRATIC_API_URL: `http://${apiPublicDns.get()}`,
+        VITE_QUADRATIC_MULTIPLAYER_URL: `https://${multiplayerPublicDns.get()}`,
       },
-      dependencySetupBashCommand,
+      "",
       true
     )
   ),
@@ -58,12 +59,12 @@ const hostedZone = pulumi.output(
 );
 
 // Create a Route 53 record pointing to EC2 instance
-const dnsRecord = new aws.route53.Record("files-r53-record", {
+const dnsRecord = new aws.route53.Record("client-r53-record", {
   zoneId: hostedZone.id,
-  name: `${filesSubdomain}.${domain}`, // subdomain you want to use
+  name: `${clientSubdomain}.${domain}`, // subdomain you want to use
   type: "A",
   ttl: 300,
   records: [instance.publicIp],
 });
 
-export const filesPublicDns = dnsRecord.fqdn;
+export const clientPublicDns = dnsRecord.fqdn;

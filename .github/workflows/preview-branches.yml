@@ -54,8 +54,8 @@ jobs:
         pulumi config set multiplayer-subdomain multiplayer-pr-${{ env.PR_ID }}
         pulumi config set files-subdomain files-pr-${{ env.PR_ID }}
         pulumi config set api-subdomain api-pr-${{ env.PR_ID }}
+        pulumi config set client-subdomain client-pr-${{ env.PR_ID }}
         pulumi config set docker-image-tag pr-${{ env.PR_ID }}
-        pulumi config set quadratic-api-uri https://quadratic-api-dev-pr-${{ env.PR_ID }}.herokuapp.com
 
         pulumi up -y
       env:
