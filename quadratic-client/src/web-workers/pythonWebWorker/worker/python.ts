@@ -108,7 +108,6 @@ class Python {
 
   private next = async () => {
     if (this.state === 'ready' && this.awaitingExecution.length > 0) {
-      this.state = 'running';
       const run = this.awaitingExecution.shift();
       if (run) {
         await this.runPython(this.codeRunToCorePython(run));
