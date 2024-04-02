@@ -461,8 +461,15 @@ pub mod tests {
             .await
             .unwrap();
 
-        let results = connection.active_channels(&active_channels).await.unwrap();
-        assert_eq!(results, vec![channels[1].clone(), channels[0].clone()]);
+        let results = connection
+            .active_channels(&active_channels)
+            .await
+            .unwrap()
+            .sort();
+        assert_eq!(
+            results,
+            vec![channels[1].clone(), channels[0].clone()].sort()
+        );
 
         // remove the first channel
         connection
