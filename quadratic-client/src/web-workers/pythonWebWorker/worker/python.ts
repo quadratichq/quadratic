@@ -30,7 +30,7 @@ class Python {
     y1: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<JsGetCellResponse[]> => {
+  ): Promise<JsGetCellResponse[] | undefined> => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCells');
     }
@@ -43,7 +43,13 @@ class Python {
       sheet,
       lineNumber
     );
-    return cells;
+    if (!cells) {
+      // we reload pyodide if there is an error getting cells
+      this.init();
+      pythonClient.sendPythonState('ready');
+    } else {
+      return cells;
+    }
   };
 
   init = async () => {

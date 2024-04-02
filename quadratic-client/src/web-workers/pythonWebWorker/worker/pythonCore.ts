@@ -60,7 +60,7 @@ class PythonCore {
     h: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<JsGetCellResponse[]> {
+  ): Promise<JsGetCellResponse[] | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CorePythonGetCells) => resolve(message.cells);

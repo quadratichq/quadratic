@@ -31,7 +31,7 @@ export interface PythonCoreGetCells {
 export interface CorePythonGetCells {
   type: 'corePythonGetCells';
   id: number;
-  cells: JsGetCellResponse[];
+  cells?: JsGetCellResponse[];
 }
 
 export type CorePythonMessage = CorePythonRun | CorePythonGetCells;

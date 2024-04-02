@@ -71,7 +71,7 @@ class CorePython {
     });
   };
 
-  sendGetCells(id: number, cells: JsGetCellResponse[]) {
+  sendGetCells(id: number, cells?: JsGetCellResponse[]) {
     this.send({
       type: 'corePythonGetCells',
       id,
