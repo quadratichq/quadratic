@@ -34,7 +34,7 @@ jobs:
         npm ci
 
         pulumi org set-default quadratic
-        
+
         STACK_NAME="preview-pr-${{ env.PR_ID }}"
         if ! pulumi stack ls | grep -q "^$STACK_NAME"; then
           echo "Stack $STACK_NAME does not exist. Initializing..."
@@ -65,7 +65,7 @@ jobs:
 
 
   multiplayer_preview:
-    runs-on: ubuntu-latest-8-cores 
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -94,7 +94,7 @@ jobs:
 
 
   files_preview:
-    runs-on: ubuntu-latest-8-cores 
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -122,7 +122,7 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
   api_preview:
-    runs-on: ubuntu-latest-8-cores 
+    runs-on: ubuntu-latest-8-cores
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -151,7 +151,7 @@ jobs:
 
   # client_preview:
   #   needs: infra
-  #   runs-on: ubuntu-latest-8-cores 
+  #   runs-on: ubuntu-latest-8-cores
   #   steps:
   #   - uses: actions/checkout@v4
   #   - uses: actions/setup-node@v4
