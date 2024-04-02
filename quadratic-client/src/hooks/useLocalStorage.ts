@@ -6,6 +6,7 @@ import useEventListener from './useEventListener';
 declare global {
   interface WindowEventMap {
     'local-storage': CustomEvent;
+    'run-editor-action': CustomEvent;
   }
 }
 
