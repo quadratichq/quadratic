@@ -143,7 +143,10 @@ class Python {
     this.transactionId = message.transactionId;
 
     // auto load packages
-    await this.pyodide.loadPackagesFromImports(message.code);
+    await this.pyodide.loadPackagesFromImports(message.code, {
+      messageCallback: () => 0,
+      errorCallback: (e) => console.warn(e),
+    });
 
     let result: any; // result of Python execution
     let pythonRun: any;
