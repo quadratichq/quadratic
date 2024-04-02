@@ -1,5 +1,5 @@
 import { DOCUMENTATION_URL } from '@/constants/urls';
-import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
+import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { codeEditorBaseStyles } from './styles';
