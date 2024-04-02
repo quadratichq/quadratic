@@ -245,7 +245,7 @@ mod test {
     fn set_borders(sheet: &mut Sheet) {
         let selection = vec![BorderSelection::All];
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
@@ -608,7 +608,7 @@ mod test {
 
         let selection = vec![BorderSelection::Outer];
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
@@ -652,7 +652,7 @@ mod test {
             Pos { x: 4, y: 4 },
             sheet_id,
         ));
-        let _ = gc.paste_from_clipboard(
+        gc.paste_from_clipboard(
             SheetPos {
                 x: 0,
                 y: 10,

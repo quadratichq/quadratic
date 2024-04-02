@@ -133,7 +133,8 @@ impl GridController {
         }
 
         self.after_calculation_async(&mut transaction, result)?;
-        Ok(self.finalize_transaction(&mut transaction))
+        self.finalize_transaction(&mut transaction);
+        Ok(())
     }
 }
 

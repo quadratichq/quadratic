@@ -12,6 +12,7 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "calculationGetCells")]
+    #[allow(clippy::too_many_arguments)]
     pub fn js_calculation_get_cells(
         &mut self,
         transaction_id: String,

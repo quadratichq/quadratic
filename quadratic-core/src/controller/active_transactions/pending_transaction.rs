@@ -122,27 +122,29 @@ impl PendingTransaction {
 
     /// Sends the transaction to the multiplayer server (if needed)
     pub fn send_transaction(&self) {
-        if self.complete && self.is_user_undo_redo() {
-            if cfg!(target_family = "wasm") && !self.is_server() {
-                let transaction_id = self.id.to_string();
-                match serde_json::to_string(&self.forward_operations) {
-                    Ok(ops) => {
-                        crate::wasm_bindings::js::jsSendTransaction(transaction_id, ops);
-                    }
-                    Err(e) => {
-                        dbgjs!(format!("Failed to serialize forward operations: {}", e));
-                    }
-                };
-
-                if self.is_undo_redo() {
-                    if let Some(cursor) = &self.cursor_undo_redo {
-                        crate::wasm_bindings::js::jsSetCursor(cursor.clone());
-                    }
+        if self.complete
+            && self.is_user_undo_redo()
+            && cfg!(target_family = "wasm")
+            && !self.is_server()
+        {
+            let transaction_id = self.id.to_string();
+            match serde_json::to_string(&self.forward_operations) {
+                Ok(ops) => {
+                    crate::wasm_bindings::js::jsSendTransaction(transaction_id, ops);
                 }
-
-                if self.generate_thumbnail {
-                    crate::wasm_bindings::js::jsGenerateThumbnail();
+                Err(e) => {
+                    dbgjs!(format!("Failed to serialize forward operations: {}", e));
                 }
+            };
+
+            if self.is_undo_redo() {
+                if let Some(cursor) = &self.cursor_undo_redo {
+                    crate::wasm_bindings::js::jsSetCursor(cursor.clone());
+                }
+            }
+
+            if self.generate_thumbnail {
+                crate::wasm_bindings::js::jsGenerateThumbnail();
             }
         }
     }

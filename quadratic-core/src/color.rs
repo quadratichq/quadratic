@@ -56,7 +56,7 @@ impl Default for Rgba {
 // }
 
 impl Rgba {
-    pub fn from_str(color_str: &str) -> Result<Self, ParseIntError> {
+    pub fn color_from_str(color_str: &str) -> Result<Self, ParseIntError> {
         // TODO(jrice): serde
         assert_eq!(&color_str[0..=0], "#");
 
@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let maybe_color = Rgba::from_str("#224466FF");
+        let maybe_color = Rgba::color_from_str("#224466FF");
         assert!(maybe_color.is_ok());
 
         let color = maybe_color.unwrap();

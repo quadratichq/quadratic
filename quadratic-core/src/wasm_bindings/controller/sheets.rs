@@ -5,7 +5,7 @@ impl GridController {
     /// Adds an empty sheet to the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "addSheet")]
     pub fn js_add_sheet(&mut self, cursor: Option<String>) {
-        self.add_sheet(cursor)
+        self.add_sheet(cursor);
     }
     /// Gets a list of ordered sheet ids
     #[wasm_bindgen(js_name = "getSheetIds")]

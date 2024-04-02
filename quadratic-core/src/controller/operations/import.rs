@@ -41,7 +41,7 @@ impl GridController {
 
         // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
-        let mut cell_values = CellValues::new(width, height as u32);
+        let mut cell_values = CellValues::new(width, height);
         let mut current_y = 0;
         let mut y: u32 = 0;
         for entry in reader.records() {
@@ -72,7 +72,7 @@ impl GridController {
                     },
                     values: cell_values,
                 });
-                current_y = current_y + y;
+                current_y += y;
                 y = 0;
                 let h = (height - current_y).min(IMPORT_LINES_PER_OPERATION);
                 cell_values = CellValues::new(width, h);
@@ -245,7 +245,7 @@ impl GridController {
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_size as u32,
-                        total_size as u32,
+                        total_size,
                         insert_at.x,
                         insert_at.y,
                         width,

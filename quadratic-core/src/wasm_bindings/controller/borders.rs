@@ -19,7 +19,7 @@ impl GridController {
         };
         let style = match &style {
             Some(style) => {
-                let Ok(style) = serde_json::from_str(&style) else {
+                let Ok(style) = serde_json::from_str(style) else {
                     return Result::Err("Invalid style".into());
                 };
                 style

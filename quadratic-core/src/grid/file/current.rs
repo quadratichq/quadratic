@@ -206,7 +206,7 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
                         _ => BorderSelection::Clear,
                     };
                     let style = BorderStyle {
-                        color: Rgba::from_str(&border.color).unwrap_or_else(|_| Rgba {
+                        color: Rgba::color_from_str(&border.color).unwrap_or(Rgba {
                             red: 0,
                             green: 0,
                             blue: 0,

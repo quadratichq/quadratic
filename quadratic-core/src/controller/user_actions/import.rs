@@ -150,7 +150,7 @@ Concord,NH,United States,42605
             Pos { x: 0, y: 0 },
             None,
         );
-        assert!(result.is_ok())
+        assert!(result.is_ok());
     }
 
     #[test]

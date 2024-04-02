@@ -42,7 +42,7 @@ impl GridController {
                 crate::wasm_bindings::js::jsTransactionProgress(
                     transaction.id.to_string(),
                     transaction.operations.len() as i32,
-                )
+                );
             }
         }
     }

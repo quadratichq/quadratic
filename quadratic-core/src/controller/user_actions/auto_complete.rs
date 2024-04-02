@@ -139,7 +139,7 @@ mod tests {
         };
         let (mut grid, sheet_id) = test_setup(&selected, &[], &[], &[], &[code.clone()]);
         let sheet = grid.grid.sheets()[0].clone();
-        let _ = grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         let values = sheet.cell_values_in_rect(&selected, true).unwrap();
         let value = values.into_cell_value().unwrap();
@@ -178,8 +178,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        let summary = grid.autocomplete(sheet_id, selected, range, None).unwrap();
-        println!("{:?}", summary);
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(&grid, sheet_id, range);
 

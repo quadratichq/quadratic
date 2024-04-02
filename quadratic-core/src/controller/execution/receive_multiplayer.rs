@@ -249,16 +249,14 @@ impl GridController {
         // first check if we've already applied this transaction
         if let Some(transaction) = self.transactions.unsaved_transactions.find(transaction_id) {
             // send it to the server if we've not successfully sent it to the server
-            if cfg!(target_family = "wasm") {
-                if !transaction.sent_to_server {
-                    if let Ok(operations) =
-                        serde_json::to_string(&unsaved_transaction.forward.operations)
-                    {
-                        crate::wasm_bindings::js::jsSendTransaction(
-                            transaction_id.to_string(),
-                            operations,
-                        );
-                    }
+            if cfg!(target_family = "wasm") && !transaction.sent_to_server {
+                if let Ok(operations) =
+                    serde_json::to_string(&unsaved_transaction.forward.operations)
+                {
+                    crate::wasm_bindings::js::jsSendTransaction(
+                        transaction_id.to_string(),
+                        operations,
+                    );
                 }
             }
         } else {

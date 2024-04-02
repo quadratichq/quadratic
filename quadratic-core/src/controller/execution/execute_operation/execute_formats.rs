@@ -53,7 +53,7 @@ impl GridController {
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
-                        self.send_render_cells(&sheet_rect)
+                        self.send_render_cells(&sheet_rect);
                     }
                 };
             }

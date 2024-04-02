@@ -42,7 +42,7 @@ impl GridController {
         html: Option<String>,
         special: String,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
+    ) -> Result<(), JsValue> {
         let special = if &special == "None" {
             PasteSpecial::None
         } else if &special == "Values" {
@@ -53,15 +53,15 @@ impl GridController {
             return Err(JsValue::from_str("Invalid special"));
         };
         let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Ok(JsValue::UNDEFINED);
+            return Ok(());
         };
-        let output = self.paste_from_clipboard(
+        self.paste_from_clipboard(
             pos.to_sheet_pos(sheet_id),
             plain_text,
             html,
             special,
             cursor,
         );
-        Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
+        Ok(())
     }
 }
