@@ -876,7 +876,7 @@ class Core {
       array_output: null,
       line_number: null,
       output_type: null,
-      cancel_compute: false,
+      cancel_compute: true,
     } as JsCodeResult;
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }

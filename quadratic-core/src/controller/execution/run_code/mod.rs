@@ -458,7 +458,4 @@ mod test {
         // assert!(summary.code_cells_modified.contains(&sheet_id));
         // assert!(summary.generate_thumbnail);
     }
-
-    #[test]
-    fn js_code_result_to_code_cell_value() {}
 }
