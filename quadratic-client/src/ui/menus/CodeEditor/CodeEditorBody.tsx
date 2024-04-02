@@ -20,7 +20,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 import useEventListener from '@/hooks/useEventListener';
-import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 

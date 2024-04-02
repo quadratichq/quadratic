@@ -1,7 +1,7 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import { JsGetCellResponse } from '@/quadratic-core-types';
-import { CorePythonGetCells, CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
-import { PythonRun } from '../pythonTypes';
+import type { CorePythonGetCells, CorePythonMessage, PythonCoreMessage } from '../pythonCoreMessages';
+import type { PythonRun } from '../pythonTypes';
 import { python } from './python';
 
 class PythonCore {

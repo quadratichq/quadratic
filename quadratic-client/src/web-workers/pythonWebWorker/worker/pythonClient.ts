@@ -1,5 +1,5 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { ClientPythonMessage, CodeRun, PythonClientMessage, PythonStateType } from '../pythonClientMessages';
+import type { ClientPythonMessage, CodeRun, PythonClientMessage, PythonStateType } from '../pythonClientMessages';
 import { pythonCore } from './pythonCore';
 
 declare var self: WorkerGlobalScope & typeof globalThis & {};

@@ -1,9 +1,9 @@
 import { debugWebWorkers } from '@/debugFlags';
 import { JsGetCellResponse } from '@/quadratic-core-types';
 import { PyodideInterface, loadPyodide } from 'pyodide';
-import { CodeRun, PythonStateType } from '../pythonClientMessages';
-import { CorePythonRun } from '../pythonCoreMessages';
-import { InspectPython, PythonError, PythonSuccess } from '../pythonTypes';
+import type { CodeRun, PythonStateType } from '../pythonClientMessages';
+import type { CorePythonRun } from '../pythonCoreMessages';
+import type { InspectPython, PythonError, PythonSuccess } from '../pythonTypes';
 import { pythonClient } from './pythonClient';
 import { pythonCore } from './pythonCore';
 

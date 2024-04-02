@@ -1,10 +1,10 @@
+import { Coordinate } from '@/gridGL/types/size';
+import { useRootRouteLoaderData } from '@/router';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
+import { Circle } from '@mui/icons-material';
 import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { Coordinate } from '@/gridGL/types/size';
-import { useRootRouteLoaderData } from '@/router';
-import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
-import { Circle } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
 import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';

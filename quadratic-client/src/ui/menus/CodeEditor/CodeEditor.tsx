@@ -1,7 +1,7 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate, SheetPosTS } from '@/gridGL/types/size';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
-import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
