@@ -5,13 +5,12 @@ import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import { redisHost, redisPort } from "../shared/redis";
 import { filesEc2SecurityGroup } from "../shared/securityGroups";
-import { apiPublicDns } from "../api/api";
-
 const config = new pulumi.Config();
 
 // Configuration from command line
 const filesSubdomain = config.require("files-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
+const quadraticApiUri = config.require("quadratic-api-uri");
 const filesECRName = config.require("files-ecr-repo-name");
 const filesPulumiEscEnvironmentName = config.require(
   "files-pulumi-esc-environment-name"
@@ -39,7 +38,7 @@ const instance = new aws.ec2.Instance("files-instance", {
       {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
-        QUADRATIC_API_URI: `http://${apiPublicDns.get()}`,
+        QUADRATIC_API_URI: quadraticApiUri,
       },
       dependencySetupBashCommand,
       true

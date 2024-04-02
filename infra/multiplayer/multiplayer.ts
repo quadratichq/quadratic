@@ -8,11 +8,11 @@ import {
   multiplayerEc2SecurityGroup,
   multiplayerNlbSecurityGroup,
 } from "../shared/securityGroups";
-import { apiPublicDns } from "../api/api";
 const config = new pulumi.Config();
 
 // Configuration from command line
 const multiplayerSubdomain = config.require("multiplayer-subdomain");
+const quadraticApiUri = config.require("quadratic-api-uri");
 const dockerImageTag = config.require("docker-image-tag");
 const multiplayerECRName = config.require("multiplayer-ecr-repo-name");
 const multiplayerPulumiEscEnvironmentName = config.require(
@@ -46,7 +46,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
       {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
-        QUADRATIC_API_URI: `http://${apiPublicDns.get()}`,
+        QUADRATIC_API_URI: quadraticApiUri,
       },
       dependencySetupBashCommand,
       true

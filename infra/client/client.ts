@@ -21,6 +21,10 @@ const ecrRegistryUrl = config.require("ecr-registry-url");
 const instanceSize = config.require("client-instance-size");
 const domain = config.require("domain");
 
+// Confugration from other resources
+const apiUri = apiPublicDns.apply((apiPublicDns) => `http://${apiPublicDns}`);
+const multiplayerUri = multiplayerPublicDns.apply((multiplayerPublicDns) => `https://${multiplayerPublicDns}`);
+
 const instance = new aws.ec2.Instance("client-instance", {
   tags: {
     Name: `client-instance-${clientSubdomain}`,
@@ -39,8 +43,8 @@ const instance = new aws.ec2.Instance("client-instance", {
       clientPulumiEscEnvironmentName,
       {
         PORT: "80",
-        VITE_QUADRATIC_API_URL: `http://${apiPublicDns.get()}`,
-        VITE_QUADRATIC_MULTIPLAYER_URL: `https://${multiplayerPublicDns.get()}`,
+        VITE_QUADRATIC_API_URL: apiUri,
+        VITE_QUADRATIC_MULTIPLAYER_URL: multiplayerUri,
       },
       "",
       true
