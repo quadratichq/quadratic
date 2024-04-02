@@ -1,6 +1,5 @@
 import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate, SheetPosTS } from '@/gridGL/types/size';
-import { Pos } from '@/quadratic-core/types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
@@ -11,7 +10,7 @@ import { useRecoilState } from 'recoil';
 // import { Diagnostic } from 'vscode-languageserver-types';
 import { usePythonState } from '@/atoms/usePythonState';
 import { events } from '@/events/events';
-import { JsCodeCell } from '@/quadratic-core-types';
+import { JsCodeCell, Pos } from '@/quadratic-core-types';
 import { googleAnalyticsAvailable } from '@/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
