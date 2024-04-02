@@ -4,12 +4,12 @@ import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import { clientEc2SecurityGroup } from "../shared/securityGroups";
-import { multiplayerPublicDns } from "../multiplayer/multiplayer";
-import { apiPublicDns } from "../api/api";
 const config = new pulumi.Config();
 
 // Configuration from command line
 const clientSubdomain = config.require("client-subdomain");
+const apiSubdomain = config.require("api-subdomain");
+const multiplayerSubdomain = config.require("multiplayer-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
 const clientECRName = config.require("client-ecr-repo-name");
 const clientPulumiEscEnvironmentName = config.require(
@@ -20,10 +20,7 @@ const ecrRegistryUrl = config.require("ecr-registry-url");
 // Configuration from Pulumi ESC
 const instanceSize = config.require("client-instance-size");
 const domain = config.require("domain");
-
-// Confugration from other resources
-const apiUri = apiPublicDns.apply((apiPublicDns) => `http://${apiPublicDns}`);
-const multiplayerUri = multiplayerPublicDns.apply((multiplayerPublicDns) => `https://${multiplayerPublicDns}`);
+const dependencySetupBashCommand = "";
 
 const instance = new aws.ec2.Instance("client-instance", {
   tags: {
@@ -43,10 +40,10 @@ const instance = new aws.ec2.Instance("client-instance", {
       clientPulumiEscEnvironmentName,
       {
         PORT: "80",
-        VITE_QUADRATIC_API_URL: apiUri,
-        VITE_QUADRATIC_MULTIPLAYER_URL: multiplayerUri,
+        VITE_QUADRATIC_API_URL: `http://${apiSubdomain}.${domain}`,
+        VITE_QUADRATIC_MULTIPLAYER_URL: `https://${multiplayerSubdomain}.${domain}`,
       },
-      "",
+      dependencySetupBashCommand,
       true
     )
   ),
