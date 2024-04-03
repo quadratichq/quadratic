@@ -1,6 +1,6 @@
 import { Button } from '@/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/shadcn/ui/dialog';
-import { Skeleton } from '@/shadcn/ui/skeleton';
+import { CircularProgress } from '@mui/material';
 import { PlusIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
@@ -31,37 +31,40 @@ export const ConnectionsList = () => {
     });
   };
 
+  const close2ndDialog = () => {
+    setShowAddConnection(false);
+    closeDialog();
+  };
+
   return (
     <>
-      <Dialog open={true} onOpenChange={closeDialog}>
-        <DialogTrigger>Open</DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Data connections</DialogTitle>
-            <DialogDescription>Manage all database and other data connections.</DialogDescription>
-          </DialogHeader>
-          <div>
-            {fetcher.data ? (
-              <ConnectionsListComponent connections={fetcher.data} />
-            ) : (
-              <Skeleton className="h-[20px] w-full rounded" />
-            )}
-
-            <Button
-              className="mt-1"
-              variant="outline"
-              onClick={() => {
-                setShowAddConnection((prev) => {
-                  return !prev;
-                });
-              }}
-            >
-              <PlusIcon className="mr-2" /> Add connection
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <AddConnection show={showAddConnection} setShow={setShowAddConnection}></AddConnection>
+      {!showAddConnection ? (
+        <Dialog open={true} onOpenChange={closeDialog}>
+          <DialogTrigger>Open</DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Data connections</DialogTitle>
+              <DialogDescription>Manage all database and other data connections.</DialogDescription>
+            </DialogHeader>
+            <div>
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddConnection(true);
+                  }}
+                >
+                  <PlusIcon className="mr-2" /> Add connection
+                </Button>
+                {!fetcher.data && <CircularProgress style={{ width: 18, height: 18 }} />}
+              </div>
+              {fetcher.data && <ConnectionsListComponent connections={fetcher.data} />}
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <AddConnection onClose={close2ndDialog}></AddConnection>
+      )}
     </>
   );
 };

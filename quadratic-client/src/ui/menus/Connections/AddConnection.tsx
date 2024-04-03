@@ -17,7 +17,7 @@ import { ConnectionConfiguration } from '../../../../../quadratic-api/src/routes
 import { apiClient } from '../../../api/apiClient';
 import { ApiTypes } from '../../../api/types';
 
-export const AddConnection = (props: { show: boolean; setShow: (show: boolean) => void }) => {
+export const AddConnection = ({ onClose }: { onClose: () => void }) => {
   const [connectionSchema, setConnectionSchema] = useState<undefined | ConnectionConfiguration>(undefined);
   const formRef = useRef<HTMLFormElement>(null);
   const [formData, setFormData] = useState<{ [key: string]: string }>({} as ApiTypes['/v0/connections.POST.request']);
@@ -39,7 +39,7 @@ export const AddConnection = (props: { show: boolean; setShow: (show: boolean) =
   };
 
   return (
-    <Dialog open={props.show}>
+    <Dialog open={true} onClose={onClose}>
       <DialogTitle>Add Connection | {connectionSchema?.name}</DialogTitle>
       <DialogContent>
         <Stepper nonLinear activeStep={0}>
