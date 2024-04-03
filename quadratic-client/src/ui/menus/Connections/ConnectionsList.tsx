@@ -1,4 +1,7 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from '@mui/material';
+import { Button } from '@/shadcn/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/shadcn/ui/dialog';
+import { Skeleton } from '@/shadcn/ui/skeleton';
+import { PlusIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
 import { useSetRecoilState } from 'recoil';
@@ -19,44 +22,43 @@ export const ConnectionsList = () => {
     }
   }, [fetcher]);
 
+  const closeDialog = () => {
+    setEditorInteractionState((state) => {
+      return {
+        ...state,
+        showConnectionsMenu: false,
+      };
+    });
+  };
+
   return (
     <>
-      <Dialog open={true}>
-        <DialogTitle>Data Connections</DialogTitle>
-        <DialogContent dividers>
-          <Typography gutterBottom>Manage all database and other data connections.</Typography>
+      <Dialog open={true} onOpenChange={closeDialog}>
+        <DialogTrigger>Open</DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Data connections</DialogTitle>
+            <DialogDescription>Manage all database and other data connections.</DialogDescription>
+          </DialogHeader>
+          <div>
+            {fetcher.data ? (
+              <ConnectionsListComponent connections={fetcher.data} />
+            ) : (
+              <Skeleton className="h-[20px] w-full rounded" />
+            )}
 
-          {fetcher.data ? (
-            <ConnectionsListComponent connections={fetcher.data} />
-          ) : (
-            <Typography gutterBottom>Loading...</Typography>
-          )}
-
-          <DialogActions>
             <Button
-              autoFocus
-              onClick={() =>
+              className="mt-1"
+              variant="outline"
+              onClick={() => {
                 setShowAddConnection((prev) => {
                   return !prev;
-                })
-              }
+                });
+              }}
             >
-              Add Connection
+              <PlusIcon className="mr-2" /> Add connection
             </Button>
-            <Button
-              autoFocus
-              onClick={() =>
-                setEditorInteractionState((state) => {
-                  return {
-                    ...state,
-                    showConnectionsMenu: false,
-                  };
-                })
-              }
-            >
-              Close
-            </Button>
-          </DialogActions>
+          </div>
         </DialogContent>
       </Dialog>
       <AddConnection show={showAddConnection} setShow={setShowAddConnection}></AddConnection>
