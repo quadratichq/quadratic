@@ -2,10 +2,10 @@ import { Biotech, DeviceHubOutlined } from '@mui/icons-material';
 import { Avatar, Button, IconButton, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
-import { apiClient } from '../../api/apiClient';
-import { ApiTypes } from '../../api/types';
-import { Empty } from '../../components/Empty';
-import { DashboardHeader } from '../components/DashboardHeader';
+import { apiClient } from '../api/apiClient';
+import { ApiTypes } from '../api/types';
+import { Empty } from '../components/Empty';
+import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return await apiClient.getSupportedConnections();

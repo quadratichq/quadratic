@@ -1,20 +1,22 @@
+import { apiClient } from '@/api/apiClient';
 import { AddOutlined } from '@mui/icons-material';
 import { Button, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
-import { apiClient } from '../../api/apiClient';
-import { ApiTypes } from '../../api/types';
-import { Empty } from '../../components/Empty';
-import { ROUTES } from '../../constants/routes';
-import { DashboardHeader } from '../components/DashboardHeader';
-import { ConnectionsListComponent } from './components/ConnectionsListComponent';
+import { Empty } from '../components/Empty';
+import { ROUTES } from '../constants/routes';
+import { DashboardHeader } from '../dashboard/components/DashboardHeader';
+import { ConnectionsListComponent } from '../dashboard/connections/components/ConnectionsListComponent';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  return await apiClient.getConnections();
+  console.log('fired connections route');
+  const data = await apiClient.getConnections();
+
+  return data;
 };
 
 export const Component = () => {
-  const connections = useLoaderData() as ApiTypes['/v0/connections.GET.response'];
+  const connections = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const theme = useTheme();
 
   return (
