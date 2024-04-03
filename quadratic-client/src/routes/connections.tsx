@@ -9,10 +9,7 @@ import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { ConnectionsListComponent } from '../dashboard/connections/components/ConnectionsListComponent';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
-  console.log('fired connections route');
-  const data = await apiClient.getConnections();
-
-  return data;
+  return await apiClient.getConnections();
 };
 
 export const Component = () => {
