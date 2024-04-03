@@ -81,6 +81,35 @@ const FileSchema = z.object({
   thumbnail: z.string().url().nullable(),
 });
 
+const connection = z.object({
+  uuid: z.string(),
+  name: z.string(),
+  host: z.string(),
+  port: z.string(),
+  database: z.string(),
+  username: z.string(),
+  password: z.string().optional(),
+});
+
+// TODO: duplicated with API
+export const connectionFieldZ = z.object({
+  name: z.string(),
+  description: z.string(),
+  type: z.string(),
+  sensitive: z.enum(['AWS_SECRET', 'ENCRYPTED', 'PLAINTEXT']),
+  required: z.boolean(),
+  default: z.string().optional(),
+});
+
+// TODO: duplicated with API
+export const connectionConfigurationZ = z.object({
+  name: z.string(),
+  type: z.enum(['POSTGRES']),
+  description: z.string(),
+  connectionFields: z.array(connectionFieldZ),
+  cellLevelInput: z.enum(['SINGLE_QUERY_EDITOR']),
+});
+
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
@@ -335,6 +364,23 @@ export const ApiSchemas = {
    *
    */
   '/v0/users.acknowledge.GET.response': z.object({ message: z.string() }),
+
+  // Connections
+  '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ),
+  '/v0/connections.GET.response': z.array(
+    z.object({
+      uuid: z.string(),
+      name: z.string(),
+      created_date: z.string().datetime(),
+      updated_date: z.string().datetime(),
+      type: z.enum(['POSTGRES']),
+      database: z.string(),
+    })
+  ),
+  '/v0/connections.POST.request': connection.omit({ uuid: true }),
+  '/v0/connections.POST.response': z.any(), // TODO:
+  '/v0/connections/:uuid/run.POST.request': z.object({}), // TODO:
+  '/v0/connections/:uuid/run.POST.response': z.any(), // TODO:
 };
 
 type ApiKeys = keyof typeof ApiSchemas;

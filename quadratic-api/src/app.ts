@@ -9,9 +9,6 @@ import path from 'path';
 import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
 import ai_chat_router from './routes/ai_chat';
 import connections_route from './routes/connections';
-import feedback_router from './routes/feedback';
-import files_router from './routes/files/files';
-import sharing_router from './routes/files/sharing';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 
@@ -74,9 +71,6 @@ app.get('/', (req, res) => {
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
 app.use('/ai', ai_chat_router);
-app.use('/v0/files', files_router);
-app.use('/v0/files', sharing_router);
-app.use('/v0/feedback', feedback_router);
 app.use('/v0/connections', connections_route);
 // Internal routes
 app.use('/v0/internal', internal_router);

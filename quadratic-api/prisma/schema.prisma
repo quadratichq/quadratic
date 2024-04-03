@@ -17,6 +17,8 @@ model User {
     UserTeamRole       UserTeamRole[]
     UserFileRole       UserFileRole[]
     UserConnectionRole UserConnectionRole[]
+
+    @@index([auth0Id])
 }
 
 enum LinkPermission {
@@ -118,6 +120,52 @@ enum TeamRole {
     VIEWER
 }
 
+enum ConnectionRole {
+    OWNER
+    EDITOR
+    VIEWER
+}
+
+model Connection {
+    id                  Int                   @id @default(autoincrement())
+    uuid                String                @unique @default(uuid()) // used in URLs
+    name                String
+    created_date        DateTime              @default(now())
+    updated_date        DateTime              @default(now())
+    archived            DateTime?
+    // Details
+    type                String
+    database            Json
+    secretArn           String // AWS Secret Manager ARN
+    UserConnectionRole  UserConnectionRole[]
+    ConnectionRunResult ConnectionRunResult[]
+}
+
+model UserConnectionRole {
+    id           Int            @id @default(autoincrement())
+    userId       Int
+    connectionId Int
+    user         User           @relation(fields: [userId], references: [id])
+    connection   Connection     @relation(fields: [connectionId], references: [id])
+    role         ConnectionRole
+    created_date DateTime       @default(now())
+
+    @@unique([userId, connectionId])
+}
+
+model ConnectionRunResult {
+    id               Int        @id @default(autoincrement())
+    uuid             String     @unique @default(uuid()) // used in URLs
+    connectionId     Int
+    connection       Connection @relation(fields: [connectionId], references: [id])
+    success          Boolean
+    std_out          String?
+    std_err          String?
+    result_meta_data Json?
+    time_start       DateTime   @default(now())
+    time_end         DateTime?
+}
+
 model UserTeamRole {
     id          Int      @id @default(autoincrement())
     userId      Int      @map("user_id")
@@ -182,61 +230,6 @@ model FileInvite {
 // }
 // enum FolderRole {}
 // model UserFolderRole {}
-contents           Bytes
-// Permissions
-owner              User           @relation(fields: [ownerUserId], references: [id])
-ownerUserId        Int
-public_link_access LinkPermission @default(NOT_SHARED)
-// analytics fields
-times_updated      Int            @default(1)
-version            String?
-}
-
-enum ConnectionRole {
-    OWNER
-    EDITOR
-    VIEWER
-}
-
-model Connection {
-    id                  Int                   @id @default(autoincrement())
-    uuid                String                @unique @default(uuid()) // used in URLs
-    name                String
-    created_date        DateTime              @default(now())
-    updated_date        DateTime              @default(now())
-    archived            DateTime?
-    // Details
-    type                String
-    database            Json
-    secretArn           String // AWS Secret Manager ARN
-    UserConnectionRole  UserConnectionRole[]
-    ConnectionRunResult ConnectionRunResult[]
-}
-
-model UserConnectionRole {
-    id           Int            @id @default(autoincrement())
-    userId       Int
-    connectionId Int
-    user         User           @relation(fields: [userId], references: [id])
-    connection   Connection     @relation(fields: [connectionId], references: [id])
-    role         ConnectionRole
-    created_date DateTime       @default(now())
-
-    @@unique([userId, connectionId])
-}
-
-model ConnectionRunResult {
-    id               Int        @id @default(autoincrement())
-    uuid             String     @unique @default(uuid()) // used in URLs
-    connectionId     Int
-    connection       Connection @relation(fields: [connectionId], references: [id])
-    success          Boolean
-    std_out          String?
-    std_err          String?
-    result_meta_data Json?
-    time_start       DateTime   @default(now())
-    time_end         DateTime?
-}
 
 model QFeedback {
     id           Int      @id @default(autoincrement())

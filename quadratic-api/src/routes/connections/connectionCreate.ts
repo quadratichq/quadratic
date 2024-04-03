@@ -1,6 +1,6 @@
 import express from 'express';
+import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { ApiSchemas } from '../../../../src/api/types';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -52,7 +52,7 @@ router.post(
             username: connection.username,
           },
         }),
-        secretArn: response.ARN,
+        secretArn: response.ARN || '',
 
         UserConnectionRole: {
           create: {

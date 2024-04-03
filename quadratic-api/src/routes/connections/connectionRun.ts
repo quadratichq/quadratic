@@ -31,8 +31,15 @@ router.post(
       },
     });
 
+    if (!connection) {
+      return res.status(404).json({ error: { message: 'Connection not found' } });
+    }
+
     const connection_secret = await GetSecret(connection.secretArn);
 
+    if (!connection_secret || !connection_secret.SecretString) {
+      return res.status(500).json({ error: { message: 'Connection secret not found' } });
+    }
     // TODO: run query
     console.log(connection);
     console.log(connection_secret);

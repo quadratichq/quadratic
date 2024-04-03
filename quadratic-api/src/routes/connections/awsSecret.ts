@@ -2,10 +2,10 @@ import { CreateSecretCommand, GetSecretValueCommand, SecretsManagerClient } from
 import { randomUUID } from 'crypto';
 
 const client = new SecretsManagerClient({
-  region: process.env.AWS_S3_REGION,
+  region: process.env.AWS_S3_REGION || 'us-west-2',
   credentials: {
-    accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID || 'fake',
+    secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY || 'fake',
   },
 });
 

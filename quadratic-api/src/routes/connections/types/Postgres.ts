@@ -1,5 +1,5 @@
 import { Client } from 'pg';
-import { connectionConfigurationZ } from '../../../../../src/api/types';
+import { connectionConfigurationZ } from 'quadratic-shared/typesAndSchemas';
 
 export const PostgresConnectionConfiguration = connectionConfigurationZ.parse({
   name: 'Postgres',
