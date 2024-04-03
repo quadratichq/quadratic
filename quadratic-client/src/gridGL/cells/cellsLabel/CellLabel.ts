@@ -1,3 +1,4 @@
+import { colors } from '@/theme/colors';
 import { removeItems } from '@pixi/utils';
 import { BitmapFont, Container, Point, Rectangle, Texture } from 'pixi.js';
 import { Bounds } from '../../../grid/sheet/Bounds';
@@ -17,7 +18,11 @@ interface CharRenderData {
   prevSpaces: number;
 }
 
-const openSansFix = { x: 1.8, y: -1 };
+// magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
+const OPEN_SANS_FIX = { x: 1.8, y: -1 };
+const SPILL_ERROR_TEXT = ' #SPILL';
+const RUN_ERROR_TEXT = ' #ERROR';
+const CHART_TEXT = ' CHART';
 
 // todo: This does not implement RTL overlap clipping or more than 1 cell clipping
 
@@ -58,22 +63,48 @@ export class CellLabel extends Container {
 
   dirty = true;
 
+  private getText(cell: JsRenderCell) {
+    switch (cell?.special) {
+      case 'SpillError':
+        return SPILL_ERROR_TEXT;
+      case 'RunError':
+        return RUN_ERROR_TEXT;
+      case 'Chart':
+        return CHART_TEXT;
+      default:
+        return cell?.value;
+    }
+  }
+
   constructor(cell: JsRenderCell, screenRectangle: Rectangle) {
     super();
-    const cellText = cell.value ? cell.value.replace(/\n/g, '') : '';
-    this.text = cellText;
+    this.text = this.getText(cell);
     this.fontSize = fontSize;
     this.roundPixels = true;
     this.maxWidth = 0;
     this.letterSpacing = 0;
-    this.tint = cell?.textColor ? convertColorStringToTint(cell.textColor) : 0;
+    const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
+    const isChart = cell?.special === 'Chart';
+    if (isError) {
+      this.tint = colors.cellColorError;
+    } else if (isChart) {
+      this.tint = convertColorStringToTint(colors.languagePython);
+    } else if (cell?.textColor) {
+      this.tint = convertColorStringToTint(cell.textColor);
+    } else {
+      this.tint = 0;
+    }
+    if (cell.special === 'True' || cell.special === 'False') {
+      this.text = cell.special === 'True' ? 'TRUE' : 'FALSE';
+      cell.align = cell.align ?? 'center';
+    }
 
     this.location = { x: Number(cell.x), y: Number(cell.y) };
     this.AABB = screenRectangle;
     this.position.set(screenRectangle.x, screenRectangle.y);
 
     this.bold = !!cell?.bold;
-    this.italic = !!cell?.italic;
+    this.italic = !!cell?.italic || isError || isChart;
     this.updateFontName();
     this.alignment = cell.align;
   }
@@ -110,20 +141,37 @@ export class CellLabel extends Container {
     return this.AABB.width;
   }
 
-  checkLeftClip(left: number): void {
+  checkLeftClip(left: number): boolean | 'same' {
     if (this.overflowLeft && this.AABB.left - this.overflowLeft < left) {
-      this.clipLeft = left;
+      if (this.clipLeft !== left) {
+        this.clipLeft = left;
+        return true;
+      } else {
+        return 'same';
+      }
     } else {
-      this.clipLeft = undefined;
+      if (this.clipLeft !== undefined) {
+        this.clipLeft = undefined;
+        return true;
+      }
     }
+    return false;
   }
-
-  checkRightClip(nextLeft: number): void {
+  checkRightClip(nextLeft: number): boolean | 'same' {
     if (this.overflowRight && this.AABB.right + this.overflowRight > nextLeft) {
-      this.clipRight = nextLeft;
+      if (this.clipRight !== nextLeft) {
+        this.clipRight = nextLeft;
+        return true;
+      } else {
+        return 'same';
+      }
     } else {
-      this.clipRight = undefined;
+      if (this.clipRight !== undefined) {
+        this.clipRight = undefined;
+        return true;
+      }
     }
+    return false;
   }
 
   private calculatePosition(): void {
@@ -131,13 +179,13 @@ export class CellLabel extends Container {
     this.overflowRight = 0;
     let alignment = this.alignment ?? 'left';
     if (alignment === 'right') {
-      const actualLeft = this.AABB.x + this.cellWidth - this.textWidth - openSansFix.x * 2;
+      const actualLeft = this.AABB.x + this.cellWidth - this.textWidth - OPEN_SANS_FIX.x * 2;
       if (actualLeft < this.AABB.x) {
         this.overflowLeft = this.AABB.x - actualLeft;
       }
       this.position = new Point(actualLeft, this.AABB.y);
     } else if (alignment === 'center') {
-      const actualLeft = this.AABB.x + this.cellWidth / 2 - this.textWidth / 2;
+      const actualLeft = this.AABB.x + this.cellWidth / 2 - this.textWidth / 2 - OPEN_SANS_FIX.x;
       const actualRight = actualLeft + this.textWidth;
       if (actualLeft < this.AABB.x) {
         this.overflowLeft = this.AABB.x - actualLeft;
@@ -283,8 +331,8 @@ export class CellLabel extends Container {
       if (this.roundPixels) {
         offset = Math.round(offset);
       }
-      const xPos = this.position.x + offset * scale + openSansFix.x;
-      const yPos = this.position.y + char.position.y * scale + openSansFix.y;
+      const xPos = this.position.x + offset * scale + OPEN_SANS_FIX.x;
+      const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
       const labelMesh = labelMeshes.get(char.labelMeshId);
       const texture = char.texture;
       const textureFrame = texture.frame;

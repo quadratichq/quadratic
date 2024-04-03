@@ -1,42 +1,27 @@
-import { FileIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
-import { useState } from 'react';
+import { ShareFileDialog } from '@/components/ShareDialog';
+import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
+import { ReactNode, useState } from 'react';
 import { isMobile } from 'react-device-detect';
-import { ActionFunctionArgs, useFetchers, useLocation } from 'react-router-dom';
-import { apiClient } from '../../api/apiClient';
+import { useFetchers, useLocation } from 'react-router-dom';
 import { Empty } from '../../components/Empty';
-import { ShareFileMenu } from '../../components/ShareFileMenu';
 import useLocalStorage from '../../hooks/useLocalStorage';
-import { FileListItem, FilesListItems } from './FilesListItem';
+import { Action as FilesAction } from '../../routes/files.$uuid';
+import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
 import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';
 
-export type FilesListFile = Awaited<ReturnType<typeof apiClient.getFiles>>[0];
-
-export type Action = {
-  response: { ok: boolean } | null;
-  'request.delete': {
-    action: 'delete';
-  };
-  'request.download': {
-    action: 'download';
-  };
-  'request.duplicate': {
-    action: 'duplicate';
-    file: FilesListFile;
-  };
-  'request.rename': {
-    action: 'rename';
-    name: string;
-  };
-  request:
-    | Action['request.delete']
-    | Action['request.download']
-    | Action['request.duplicate']
-    | Action['request.rename'];
+export type FilesListUserFile = {
+  createdDate: string;
+  name: string;
+  publicLinkAccess: PublicLinkAccess;
+  permissions: FilePermission[];
+  thumbnail: string | null;
+  updatedDate: string;
+  uuid: string;
 };
 
-export function FilesList({ files }: { files: FilesListFile[] }) {
+export function FilesList({ files, emptyState }: { files: FilesListUserFile[]; emptyState?: ReactNode }) {
   const { pathname } = useLocation();
   const [filterValue, setFilterValue] = useState<string>('');
   const fetchers = useFetchers();
@@ -55,10 +40,23 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
   // We will optimistcally render the list of files
   let filesToRender = files;
 
-  // If there are files being duplicated, render them first
+  // If there are files being duplicated, prepend them to the list
+
   const filesBeingDuplicated = fetchers
-    .filter((fetcher) => (fetcher.json as Action['request'])?.action === 'duplicate')
-    .map((fetcher) => (fetcher.json as Action['request.duplicate'])?.file);
+    .filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'duplicate')
+    .map((fetcher, i) => {
+      // Grab the file UUID from the `formAction` whose pattern is: "/files/:uuid"
+      // (filter makes sure there's no trailing slash to deal with)
+      const fileUuid = fetcher.formAction?.split('/').filter(Boolean).pop();
+      // We should never have a file that's duplicating that's not in the list
+      const file = files.find((file) => file.uuid === fileUuid) as FilesListUserFile;
+      return {
+        ...file,
+        uuid: `${fileUuid}--duplicate-${i}`,
+        name: file.name + ` (Copy)`,
+        updatedDate: new Date().toISOString(),
+      };
+    });
   if (filesBeingDuplicated.length > 0) {
     filesToRender = [...filesBeingDuplicated, ...filesToRender];
   }
@@ -76,14 +74,14 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
       const nameB = b.name.toLowerCase();
       comparison = nameA.localeCompare(nameB);
     } else if (viewPreferences.sort === Sort.Created) {
-      comparison = a.created_date.localeCompare(b.created_date);
+      comparison = a.createdDate.localeCompare(b.createdDate);
     } else {
-      comparison = a.updated_date.localeCompare(b.updated_date);
+      comparison = a.updatedDate.localeCompare(b.updatedDate);
     }
     return viewPreferences.order === Order.Ascending ? comparison : -comparison;
   });
 
-  const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as Action['request'])?.action === 'delete');
+  const filesBeingDeleted = fetchers.filter((fetcher) => (fetcher.json as FilesAction['request'])?.action === 'delete');
   const activeShareMenuFileName = files.find((file) => file.uuid === activeShareMenuFileId)?.name || '';
 
   return (
@@ -97,10 +95,10 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
 
       <FilesListItems viewPreferences={viewPreferences}>
         {filesToRender.map((file, i) => (
-          <FileListItem
-            lazyLoad={i > 12}
+          <FilesListItemUserFile
             key={file.uuid}
             file={file}
+            lazyLoad={i > 12}
             filterValue={filterValue}
             activeShareMenuFileId={activeShareMenuFileId}
             setActiveShareMenuFileId={setActiveShareMenuFileId}
@@ -109,107 +107,84 @@ export function FilesList({ files }: { files: FilesListFile[] }) {
         ))}
       </FilesListItems>
 
-      {filterValue && filesToRender.length === 0 && (
-        <Empty
-          title="No matches"
-          description={<>No files found with that specified name.</>}
-          Icon={MagnifyingGlassIcon}
-        />
-      )}
+      {filterValue && filesToRender.length === 0 && <EmptyFilterState />}
 
-      {filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && (
-        <Empty
-          title="No files"
-          description={
-            <>
-              Using the buttons on this page, create a new file or import a <code>.grid</code> file from your computer.
-            </>
-          }
-          Icon={FileIcon}
-        />
-      )}
+      {!filterValue && filesBeingDeleted.length === files.length && filesBeingDuplicated.length === 0 && emptyState}
 
       {activeShareMenuFileId && (
-        <ShareFileMenu
+        <ShareFileDialog
           onClose={() => {
             setActiveShareMenuFileId('');
           }}
-          permission={'OWNER'}
           uuid={activeShareMenuFileId}
-          fileName={activeShareMenuFileName}
+          name={activeShareMenuFileName}
         />
       )}
     </>
   );
 }
 
-export const action = async ({ params, request }: ActionFunctionArgs): Promise<Action['response']> => {
-  const json: Action['request'] = await request.json();
-  const { uuid } = params as { uuid: string };
-  const { action } = json;
-
-  if (action === 'delete') {
-    try {
-      await apiClient.deleteFile(uuid);
-      return { ok: true };
-    } catch (error) {
-      return { ok: false };
-    }
-  }
-
-  if (action === 'download') {
-    try {
-      await apiClient.downloadFile(uuid);
-      return { ok: true };
-    } catch (error) {
-      return { ok: false };
-    }
-  }
-
-  if (action === 'duplicate') {
-    try {
-      const {
-        file: { name },
-      } = json as Action['request.duplicate'];
-
-      // Get the file we want to duplicate
-      const {
-        file: { contents, version, thumbnail },
-      } = await apiClient.getFile(uuid);
-
-      // Create it on the server
-      const newFile = await apiClient.createFile({ name, version, contents });
-
-      // If present, fetch the thumbnail of the file we just dup'd and
-      // save it to the new file we just created
-      if (thumbnail) {
-        try {
-          const res = await fetch(thumbnail);
-          const blob = await res.blob();
-          await apiClient.updateFileThumbnail(newFile.uuid, blob);
-        } catch (err) {
-          // Not a huge deal if it failed, just tell Sentry and move on
-          Sentry.captureEvent({
-            message: 'Failed to duplicate the thumbnail image when duplicating a file',
-            level: 'info',
-          });
-        }
-      }
-      return { ok: true };
-    } catch (error) {
-      return { ok: false };
-    }
-  }
-
-  if (action === 'rename') {
-    try {
-      const { name } = json as Action['request.rename'];
-      await apiClient.updateFile(uuid, { name });
-      return { ok: true };
-    } catch (error) {
-      return { ok: false };
-    }
-  }
-
-  return null;
+export type FilesListExampleFile = {
+  description: string;
+  href: string;
+  name: string;
+  thumbnail: string;
 };
+
+export function ExampleFilesList({ files, emptyState }: { files: FilesListExampleFile[]; emptyState?: ReactNode }) {
+  const { pathname } = useLocation();
+  const [filterValue, setFilterValue] = useState<string>('');
+  const [viewPreferences, setViewPreferences] = useLocalStorage<ViewPreferences>(
+    // Persist the layout preference across views (by URL)
+    `FilesList-${pathname}`,
+    // Initial state
+    {
+      layout: isMobile ? Layout.List : Layout.Grid,
+    }
+  );
+
+  const filesToRender = filterValue
+    ? files.filter(({ name }) => name.toLowerCase().includes(filterValue.toLowerCase()))
+    : files;
+
+  return (
+    <>
+      <FilesListViewControls
+        filterValue={filterValue}
+        setFilterValue={setFilterValue}
+        viewPreferences={viewPreferences}
+        setViewPreferences={setViewPreferences}
+      />
+
+      <FilesListItems viewPreferences={viewPreferences}>
+        {filesToRender.map((file, i) => {
+          const { href, name, thumbnail, description } = file;
+          const lazyLoad = i > 12;
+
+          return (
+            <FilesListItemExampleFile
+              key={href}
+              file={{
+                name,
+                href,
+                thumbnail,
+                description,
+              }}
+              filterValue={filterValue}
+              lazyLoad={lazyLoad}
+              viewPreferences={viewPreferences}
+            />
+          );
+        })}
+      </FilesListItems>
+
+      {filterValue && filesToRender.length === 0 && <EmptyFilterState />}
+    </>
+  );
+}
+
+function EmptyFilterState() {
+  return (
+    <Empty title="No matches" description={<>No files found with that specified name.</>} Icon={MagnifyingGlassIcon} />
+  );
+}

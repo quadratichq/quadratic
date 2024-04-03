@@ -4,6 +4,7 @@ import { sheets } from '../../grid/controller/Sheets';
 export function selectAllCells(): void {
   const sheet = sheets.sheet;
   const bounds = grid.getGridBounds(sheet.id, true);
+
   if (bounds) {
     sheet.cursor.changePosition({
       multiCursor: {

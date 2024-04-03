@@ -1,0 +1,9 @@
+.code-running {
+  position: relative;
+  left: 0;
+  pointer-events: none;
+}
+
+.code-running-indicator {
+  position: absolute;
+}

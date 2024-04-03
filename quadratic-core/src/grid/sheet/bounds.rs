@@ -27,6 +27,13 @@ impl Sheet {
                 self.format_bounds.add(Pos { x, y });
             }
         }
+        self.code_runs.iter().for_each(|(pos, code_cell_value)| {
+            let output_rect = code_cell_value.output_rect(*pos, false);
+            self.data_bounds.add(output_rect.min);
+            self.data_bounds.add(output_rect.max);
+            self.format_bounds.add(output_rect.min);
+            self.format_bounds.add(output_rect.max);
+        });
     }
 
     /// Returns whether the sheet is completely empty.
@@ -50,9 +57,23 @@ impl Sheet {
     /// If `ignore_formatting` is `true`, only data is considered; if it is
     /// `false`, then data and formatting are both considered.
     pub fn column_bounds(&self, column: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column = self.columns.get(&column)?;
-        let range = column.range(ignore_formatting)?;
-        Some((range.start, range.end - 1))
+        let column_data = self.columns.get(&column)?;
+        let range = column_data.range(ignore_formatting);
+        let code_range = self.code_columns_bounds(column, column);
+
+        if range.is_none() && code_range.is_none() {
+            return None;
+        }
+        if let (Some(range), Some(code_range)) = (&range, &code_range) {
+            Some((
+                range.start.min(code_range.start),
+                range.end.max(code_range.end) - 1,
+            ))
+        } else if let Some(range) = range {
+            Some((range.start, range.end - 1))
+        } else {
+            code_range.map(|code_range| (code_range.start, code_range.end - 1))
+        }
     }
 
     /// Returns the lower and upper bounds of a range of columns, or 'None' if the columns are empty
@@ -76,6 +97,11 @@ impl Sheet {
                 found = true;
             }
         }
+        if let Some(code_bounds) = self.code_columns_bounds(column_start, column_end) {
+            min = min.min(code_bounds.start);
+            max = max.max(code_bounds.end - 1);
+            found = true;
+        }
         if found {
             Some((min, max))
         } else {
@@ -94,9 +120,28 @@ impl Sheet {
             true => column.has_data_in_row(row),
             false => column.has_anything_in_row(row),
         };
-        let left = *self.columns.iter().find(column_has_row)?.0;
-        let right = *self.columns.iter().rfind(column_has_row)?.0;
-        Some((left, right))
+        let min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
+            Some(*index)
+        } else {
+            None
+        };
+        let max = if let Some((index, _)) = self.columns.iter().rfind(column_has_row) {
+            Some(*index)
+        } else {
+            None
+        };
+        let code_range = self.code_rows_bounds(row, row);
+
+        if min.is_none() && code_range.is_none() {
+            return None;
+        }
+        if let (Some(min), Some(max), Some(code_range)) = (min, max, &code_range) {
+            Some((min.min(code_range.start), max.max(code_range.end) - 1))
+        } else if let (Some(min), Some(max)) = (min, max) {
+            Some((min, max))
+        } else {
+            code_range.map(|code_range| (code_range.start, code_range.end - 1))
+        }
     }
 
     /// Returns the lower and upper bounds of a range of rows, or 'None' if the rows are empty
@@ -104,7 +149,6 @@ impl Sheet {
     /// If `ignore_formatting` is `true`, only data is considered; if it
     /// is `false`, then data and formatting are both considered.
     ///
-
     pub fn rows_bounds(
         &self,
         row_start: i64,
@@ -120,6 +164,11 @@ impl Sheet {
                 max = max.max(bounds.1);
                 found = true;
             }
+        }
+        if let Some(code_bounds) = self.code_rows_bounds(row_start, row_end) {
+            min = min.min(code_bounds.start);
+            max = max.max(code_bounds.end - 1);
+            found = true;
         }
         if found {
             Some((min, max))
@@ -153,7 +202,7 @@ impl Sheet {
                     column_start.max(rect.min.x)
                 };
                 while x >= rect.min.x && x <= rect.max.x {
-                    let has_content = self.get_cell_value(Pos { x, y: row });
+                    let has_content = self.display_value(Pos { x, y: row });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                         if with_content {
                             return x;
@@ -193,7 +242,7 @@ impl Sheet {
                     row_start.max(rect.min.y)
                 };
                 while y >= rect.min.y && y <= rect.max.y {
-                    let has_content = self.get_cell_value(Pos { x: column, y });
+                    let has_content = self.display_value(Pos { x: column, y });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
                         if with_content {
                             return y;
@@ -212,20 +261,23 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
-        grid::{CellAlign, GridBounds, Sheet},
-        CellValue, Pos, Rect,
+        controller::GridController,
+        grid::{CellAlign, CodeCellLanguage, GridBounds, Sheet},
+        CellValue, IsBlank, Pos, Rect, SheetPos,
     };
+    use proptest::proptest;
+    use std::collections::HashMap;
 
     #[test]
     fn test_is_empty() {
         let mut sheet = Sheet::test();
         assert!(sheet.is_empty());
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
         assert!(!sheet.is_empty());
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
         sheet.recalculate_bounds();
         assert!(sheet.is_empty());
     }
@@ -236,8 +288,9 @@ mod test {
         assert_eq!(sheet.bounds(true), GridBounds::Empty);
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        let _ =
+            sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(
@@ -260,12 +313,13 @@ mod test {
     #[test]
     fn test_column_bounds() {
         let mut sheet = Sheet::test();
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: 100, y: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
@@ -291,23 +345,25 @@ mod test {
     fn test_columns_bounds() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: 100, y: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
 
         // set negative values
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: -100, y: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { x: -100, y: -80 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_formatting_value::<CellAlign>(Pos { x: -100, y: -200 }, Some(CellAlign::Center));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { x: -100, y: -200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.columns_bounds(0, 100, true), Some((-50, 80)));
@@ -327,23 +383,25 @@ mod test {
     fn test_rows_bounds() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { y: 100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
-        sheet.set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
+        let _ = sheet.set_cell_value(Pos { y: 100, x: 80 }, CellValue::Text(String::from("test")));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { y: 100, x: 200 }, Some(CellAlign::Center));
 
         // set negative values
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { y: -100, x: -50 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_cell_value(
+        let _ = sheet.set_cell_value(
             Pos { y: -100, x: -80 },
             CellValue::Text(String::from("test")),
         );
-        sheet.set_formatting_value::<CellAlign>(Pos { y: -100, x: -200 }, Some(CellAlign::Center));
+        let _ = sheet
+            .set_formatting_value::<CellAlign>(Pos { y: -100, x: -200 }, Some(CellAlign::Center));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.rows_bounds(0, 100, true), Some((-50, 80)));
@@ -363,7 +421,7 @@ mod test {
     fn test_find_next_column() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.find_next_column(-1, 2, false, true), 1);
@@ -378,7 +436,7 @@ mod test {
     fn test_find_next_row() {
         let mut sheet = Sheet::test();
 
-        sheet.set_cell_value(Pos { y: 1, x: 2 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { y: 1, x: 2 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.find_next_row(-1, 2, false, true), 1);
@@ -387,5 +445,159 @@ mod test {
         assert_eq!(sheet.find_next_row(0, 2, true, true), 0);
         assert_eq!(sheet.find_next_row(1, 2, false, false), 2);
         assert_eq!(sheet.find_next_row(1, 2, true, false), 0);
+    }
+
+    #[test]
+    fn test_read_write() {
+        let rect = Rect {
+            min: Pos::ORIGIN,
+            max: Pos { x: 49, y: 49 },
+        };
+        let mut sheet = Sheet::test();
+        sheet.random_numbers(&rect);
+        assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(true));
+        assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(false));
+    }
+
+    proptest! {
+        #[test]
+        fn proptest_sheet_writes(writes: Vec<(Pos, CellValue)>) {
+            proptest_sheet_writes_internal(writes);
+        }
+    }
+
+    fn proptest_sheet_writes_internal(writes: Vec<(Pos, CellValue)>) {
+        let mut sheet = Sheet::test();
+
+        // We'll be testing against the  ~ HASHMAP OF TRUTH ~
+        let mut hashmap_of_truth = HashMap::new();
+
+        for (pos, cell_value) in &writes {
+            let _ = sheet.set_cell_value(*pos, cell_value.clone());
+            hashmap_of_truth.insert(*pos, cell_value);
+        }
+
+        let nonempty_positions = hashmap_of_truth
+            .iter()
+            .filter(|(_, value)| !value.is_blank())
+            .map(|(pos, _)| pos);
+        let min_x = nonempty_positions.clone().map(|pos| pos.x).min();
+        let min_y = nonempty_positions.clone().map(|pos| pos.y).min();
+        let max_x = nonempty_positions.clone().map(|pos| pos.x).max();
+        let max_y = nonempty_positions.clone().map(|pos| pos.y).max();
+        let expected_bounds = match (min_x, min_y, max_x, max_y) {
+            (Some(min_x), Some(min_y), Some(max_x), Some(max_y)) => GridBounds::NonEmpty(Rect {
+                min: Pos { x: min_x, y: min_y },
+                max: Pos { x: max_x, y: max_y },
+            }),
+            _ => GridBounds::Empty,
+        };
+
+        for (pos, expected) in hashmap_of_truth {
+            let actual = sheet.display_value(pos);
+            if expected.is_blank() {
+                assert_eq!(None, actual);
+            } else {
+                assert_eq!(Some(expected.clone()), actual);
+            }
+        }
+
+        sheet.recalculate_bounds();
+        assert_eq!(expected_bounds, sheet.bounds(false));
+        assert_eq!(expected_bounds, sheet.bounds(true));
+    }
+
+    #[test]
+    fn code_run_columns_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3; 4, 5, 6}".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.columns_bounds(1, 2, true), Some((2, 3)));
+        assert_eq!(sheet.columns_bounds(1, 2, false), Some((2, 3)));
+    }
+
+    #[test]
+    fn code_run_rows_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3; 4, 5, 6}".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.rows_bounds(0, 2, true), Some((1, 3)));
+        assert_eq!(sheet.rows_bounds(0, 2, false), Some((1, 3)));
+    }
+
+    #[test]
+    fn code_run_column_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3; 4, 5, 6}".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.column_bounds(1, true), Some((2, 3)));
+        assert_eq!(sheet.column_bounds(1, false), Some((2, 3)));
+    }
+
+    #[test]
+    fn code_run_row_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            CodeCellLanguage::Formula,
+            "{1, 2, 3; 4, 5, 6}".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.row_bounds(2, true), Some((1, 3)));
+        assert_eq!(sheet.row_bounds(2, false), Some((1, 3)));
+    }
+
+    #[test]
+    fn single_row_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.row_bounds(2, true), Some((1, 1)));
+        assert_eq!(sheet.row_bounds(2, false), Some((1, 1)));
     }
 }

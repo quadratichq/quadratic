@@ -1,0 +1,67 @@
+Metadata-Version: 2.1
+Name: Logbook
+Version: 1.6.0
+Summary: A logging replacement for Python
+Author: Georg Brandl
+Author-email: Armin Ronacher <armin.ronacher@active-4.com>
+Maintainer-email: Frazer McLean <frazer@frazermclean.co.uk>
+License: BSD-3-Clause
+Project-URL: Documentation, https://logbook.readthedocs.io
+Project-URL: Source Code, https://github.com/getlogbook/logbook
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE
+License-File: AUTHORS
+Provides-Extra: all
+Requires-Dist: Logbook[compression,execnet,jinja,nteventlog,redis,sqlalchemy,zmq] ; extra == 'all'
+Provides-Extra: compression
+Requires-Dist: brotli ; extra == 'compression'
+Provides-Extra: dev
+Requires-Dist: Logbook[test] ; extra == 'dev'
+Requires-Dist: tox >=4 ; extra == 'dev'
+Provides-Extra: docs
+Requires-Dist: Sphinx ; extra == 'docs'
+Requires-Dist: importlib-metadata ; (python_version < "3.8") and extra == 'docs'
+Provides-Extra: execnet
+Requires-Dist: execnet >=1.0.9 ; extra == 'execnet'
+Provides-Extra: jinja
+Requires-Dist: Jinja2 ; extra == 'jinja'
+Provides-Extra: nteventlog
+Requires-Dist: pywin32 ; (platform_system == "Windows") and extra == 'nteventlog'
+Provides-Extra: redis
+Requires-Dist: redis ; extra == 'redis'
+Provides-Extra: sqlalchemy
+Requires-Dist: sqlalchemy >=1.4 ; extra == 'sqlalchemy'
+Provides-Extra: test
+Requires-Dist: pytest >=6 ; extra == 'test'
+Requires-Dist: pytest-rerunfailures ; extra == 'test'
+Provides-Extra: zmq
+Requires-Dist: pyzmq ; extra == 'zmq'
+
+# Welcome to Logbook
+
+<img src="https://raw.githubusercontent.com/getlogbook/logbook/master/docs/_static/logbook-logo.png" width="300">
+
+[![Latest Version][version-img]][pypi]
+![Supported Python Versions][pyver-img]
+[![GitHub Actions][gha-img]][gha]
+[![PyPI Downloads][downloads-img]][pypi]
+
+Logbook is a nice logging replacement.
+
+It should be easy to setup, use and configure and support web applications :)
+
+For more information: https://logbook.readthedocs.org
+
+[version-img]: https://img.shields.io/pypi/v/logbook.svg
+[pypi]: https://pypi.org/pypi/Logbook
+[gha-img]: https://img.shields.io/github/actions/workflow/status/getlogbook/logbook/main.yml
+[gha]: https://github.com/getlogbook/logbook/actions
+[downloads-img]: https://img.shields.io/pypi/dm/logbook
+[pyver-img]: https://img.shields.io/pypi/pyversions/logbook

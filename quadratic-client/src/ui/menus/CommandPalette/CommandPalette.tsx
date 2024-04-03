@@ -1,25 +1,29 @@
-import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
+import { useRootRouteLoaderData } from '@/router';
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shadcn/ui/command';
+import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';
-import React, { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
-import focusInput from '../../../utils/focusInput';
-import '../../styles/floating-dialog.css';
-import { useSheetListItems } from './ListItems/useSheetListItems';
-import { getCommandPaletteListItems } from './getCommandPaletteListItems';
+import { Command } from './CommandPaletteListItem';
+import borderCommandGroup from './commands/Borders';
+import codeCommandGroup from './commands/Code';
+import editCommandGroup from './commands/Edit';
+import fileCommandGroup from './commands/File';
+import formatCommandGroup from './commands/Format';
+import helpCommandGroup from './commands/Help';
+import importCommandGroup from './commands/Import';
+import searchCommandGroup from './commands/Search';
+import getSheetCommandGroup from './commands/Sheets';
+import textCommandGroup from './commands/Text';
+import viewCommandGroup from './commands/View';
 
-interface Props {
-  confirmSheetDelete: () => void;
-}
-
-export const CommandPalette = (props: Props) => {
-  const { confirmSheetDelete } = props;
-
+export const CommandPalette = () => {
+  const { isAuthenticated } = useRootRouteLoaderData();
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const [activeSearchValue, setActiveSearchValue] = React.useState<string>('');
-  const [selectedListItemIndex, setSelectedListItemIndex] = React.useState<number>(0);
-  const { permission } = editorInteractionState;
+  const [activeSearchValue, setActiveSearchValue] = useState<string>('');
+  const { permissions } = editorInteractionState;
 
   // Fn that closes the command palette and gets passed down to individual ListItems
   const closeCommandPalette = () => {
@@ -28,95 +32,84 @@ export const CommandPalette = (props: Props) => {
       showCellTypeMenu: false,
       showCommandPalette: false,
     }));
-    focusGrid();
+    setTimeout(() => {
+      focusGrid();
+    }, 100);
   };
 
   useEffect(() => {
     mixpanel.track('[CommandPalette].open');
   }, []);
 
-  // Upon keyboard navigation, scroll the element into view
-  useEffect(() => {
-    const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
-    if (el) {
-      el.scrollIntoView({
-        block: 'nearest',
-      });
-    }
-  }, [selectedListItemIndex]);
-
-  const sheets = useSheetListItems();
-
-  // Otherwise, define vars and render the list
-  const ListItems = getCommandPaletteListItems({
-    permission,
-    closeCommandPalette,
-    activeSearchValue: activeSearchValue,
-    selectedListItemIndex: selectedListItemIndex,
-    extraItems: sheets,
-    confirmDelete: confirmSheetDelete,
-  });
-
-  const searchLabel = 'Search menus and commands…';
+  const commandGroups = [
+    editCommandGroup,
+    fileCommandGroup,
+    viewCommandGroup,
+    importCommandGroup,
+    borderCommandGroup,
+    textCommandGroup,
+    formatCommandGroup,
+    getSheetCommandGroup(),
+    helpCommandGroup,
+    codeCommandGroup,
+    searchCommandGroup,
+  ];
 
   return (
-    <Dialog open={true} onClose={closeCommandPalette} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
-      <Paper
-        component="form"
-        elevation={12}
-        onKeyDown={(e: React.KeyboardEvent) => {
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            e.stopPropagation();
-            setSelectedListItemIndex(selectedListItemIndex === ListItems.length - 1 ? 0 : selectedListItemIndex + 1);
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            e.stopPropagation();
-            setSelectedListItemIndex(selectedListItemIndex === 0 ? ListItems.length - 1 : selectedListItemIndex - 1);
-          }
-        }}
-        onSubmit={(e: React.FormEvent) => {
-          e.preventDefault();
-          const el = document.querySelector(`[data-command-bar-list-item-index='${selectedListItemIndex}']`);
-          if (el !== undefined) {
-            (el as HTMLElement).click();
-          }
-        }}
-      >
-        <InputBase
-          sx={{ width: '100%', padding: '8px 16px' }}
-          placeholder={searchLabel}
-          inputProps={{
-            'aria-label': searchLabel,
-            autoComplete: 'off',
-            autoCorrect: 'off',
-            autoCapitalize: 'off',
-            spellCheck: 'false',
-          }}
-          inputRef={focusInput}
-          autoFocus
-          value={activeSearchValue}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setSelectedListItemIndex(0);
-            setActiveSearchValue(event.target.value);
-          }}
-        />
+    <CommandDialog
+      dialogProps={{ open: editorInteractionState.showCommandPalette, onOpenChange: closeCommandPalette }}
+      commandProps={{ shouldFilter: false }}
+    >
+      <CommandInput
+        value={activeSearchValue}
+        onValueChange={setActiveSearchValue}
+        placeholder="Search menus and commands…"
+      />
+      <CommandList>
+        {commandGroups.map(({ heading, commands }) => {
+          let filteredCommands: Array<Command & { fuzzysortResult: any }> = [];
+          commands.forEach((command, i) => {
+            const { label, keywords, isAvailable } = command;
 
-        <Divider />
-        <div style={{ maxHeight: '330px', overflowY: 'scroll', paddingBottom: '5px' }}>
-          <List dense={true} disablePadding>
-            {ListItems.length ? (
-              ListItems
-            ) : (
-              <ListItem disablePadding>
-                <ListItemButton disabled>
-                  <ListItemText primary="No matches" />
-                </ListItemButton>
-              </ListItem>
-            )}
-          </List>
-        </div>
-      </Paper>
-    </Dialog>
+            // Is the command even available?
+            if (isAvailable && isAvailable(permissions, isAuthenticated) !== true) {
+              return;
+            }
+
+            // If there's no active search, return the command as is
+            if (activeSearchValue.length === 0) {
+              filteredCommands.push({ ...command, fuzzysortResult: null });
+              return;
+            }
+
+            // If there's an active search, perform it and set the result.
+            // Otherwise return null and we'll filter it out
+            const results = fuzzysort.go(
+              activeSearchValue,
+              // We'll have it search the label, heading and label, and any extra keywords
+              [label, heading + label, ...(keywords ? keywords : [])]
+            );
+            if (results.length > 0) {
+              filteredCommands.push({ ...command, fuzzysortResult: results[0] });
+            }
+          });
+
+          return filteredCommands.length > 0 ? (
+            <CommandGroup key={heading} heading={heading}>
+              {filteredCommands.map(({ label, fuzzysortResult, Component }) => (
+                <Component
+                  key={`${heading}__${label}`}
+                  value={`${heading}__${label}`}
+                  label={label}
+                  fuzzysortResult={fuzzysortResult}
+                  closeCommandPalette={closeCommandPalette}
+                />
+              ))}
+            </CommandGroup>
+          ) : null;
+        })}
+        <CommandEmpty>No results found.</CommandEmpty>
+      </CommandList>
+    </CommandDialog>
   );
 };

@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: autograd
+Version: 1.6.2
+Summary: Efficiently computes derivatives of numpy code.
+Home-page: https://github.com/HIPS/autograd
+Author: Dougal Maclaurin and David Duvenaud and Matthew Johnson
+Author-email: maclaurin@physics.harvard.edu, duvenaud@cs.toronto.edu, mattjj@csail.mit.edu
+License: MIT
+Keywords: Automatic differentiation,backpropagation,gradients,machine learning,optimization,neural networks,Python,Numpy,Scipy
+Classifier: Development Status :: 4 - Beta
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3.5
+Requires-Dist: numpy >=1.12
+Requires-Dist: future >=0.15.2
+

@@ -1,7 +1,7 @@
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 
 use super::{CellValue, IsBlank, Value};
-use crate::{CodeResult, CodeResultExt, ErrorMsg, Span, Spanned, Unspan};
+use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
@@ -79,7 +79,7 @@ where
  */
 
 impl<'a> TryFrom<&'a CellValue> for String {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
     fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
         // All types can coerce to string.
@@ -92,11 +92,13 @@ impl<'a> TryFrom<&'a CellValue> for String {
             CellValue::Instant(i) => Ok(i.to_string()),
             CellValue::Duration(d) => Ok(d.to_string()),
             CellValue::Error(e) => Err(e.msg.clone()),
+            CellValue::Html(s) => Ok(s.clone()),
+            CellValue::Code(_) => Ok(String::new()),
         }
     }
 }
 impl<'a> TryFrom<&'a CellValue> for f64 {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
     fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
         // TODO: maybe remove string conversions once we have a stricter type system?
@@ -110,7 +112,7 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
                 if let Some(rest) = s.strip_prefix(CURRENCY_PREFIXES) {
                     s = rest;
                 }
-                s.parse().map_err(|_| ErrorMsg::Expected {
+                s.parse().map_err(|_| RunErrorMsg::Expected {
                     expected: "number".into(),
                     got: Some(value.type_name().into()),
                 })
@@ -119,30 +121,32 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
             CellValue::Number(n) => Ok(n.to_f64().unwrap()),
             CellValue::Logical(true) => Ok(1.0),
             CellValue::Logical(false) => Ok(0.0),
-            CellValue::Instant(_) | CellValue::Duration(_) => Err(ErrorMsg::Expected {
+            CellValue::Instant(_) | CellValue::Duration(_) => Err(RunErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some(value.type_name().into()),
             }),
             CellValue::Error(e) => Err(e.msg.clone()),
+            CellValue::Html(_) => Ok(0.0),
+            CellValue::Code(_) => Ok(0.0),
         }
     }
 }
 impl<'a> TryFrom<&'a CellValue> for i64 {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
     fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
         Ok(f64::try_from(value)?.round() as i64) // TODO: should be floor for excel compat
     }
 }
 impl<'a> TryFrom<&'a CellValue> for u32 {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
     fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
         Ok(f64::try_from(value)?.round() as u32) // TODO: should be floor for excel compat
     }
 }
 impl<'a> TryFrom<&'a CellValue> for bool {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
     fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
         // TODO: remove string conversions once we have a stricter type system
@@ -152,7 +156,7 @@ impl<'a> TryFrom<&'a CellValue> for bool {
             CellValue::Text(s) if s.eq_ignore_ascii_case("FALSE") => Ok(false),
             CellValue::Number(n) => Ok(!n.is_zero()),
             CellValue::Logical(b) => Ok(*b),
-            _ => Err(ErrorMsg::Expected {
+            _ => Err(RunErrorMsg::Expected {
                 expected: "boolean".into(),
                 got: Some(value.type_name().into()),
             }),
@@ -161,7 +165,7 @@ impl<'a> TryFrom<&'a CellValue> for bool {
 }
 
 impl TryFrom<CellValue> for String {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
     fn try_from(value: CellValue) -> Result<Self, Self::Error> {
         // All types can coerce to string.
@@ -174,7 +178,7 @@ impl TryFrom<CellValue> for String {
 macro_rules! impl_try_from_cell_value_for {
     ($type:ty) => {
         impl TryFrom<CellValue> for $type {
-            type Error = ErrorMsg;
+            type Error = RunErrorMsg;
 
             fn try_from(value: CellValue) -> Result<Self, Self::Error> {
                 <$type>::try_from(&value)
@@ -187,16 +191,16 @@ impl_try_from_cell_value_for!(i64);
 impl_try_from_cell_value_for!(bool);
 
 impl<'a> TryFrom<&'a Value> for &'a CellValue {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
     fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
         value.cell_value()
     }
 }
 impl TryFrom<Value> for CellValue {
-    type Error = ErrorMsg;
+    type Error = RunErrorMsg;
 
-    fn try_from(value: Value) -> Result<Self, ErrorMsg> {
+    fn try_from(value: Value) -> Result<Self, RunErrorMsg> {
         value.into_cell_value()
     }
 }
@@ -204,14 +208,14 @@ impl TryFrom<Value> for CellValue {
 macro_rules! impl_try_from_value_for {
     ($type:ty) => {
         impl<'a> TryFrom<&'a Value> for $type {
-            type Error = ErrorMsg;
+            type Error = RunErrorMsg;
 
             fn try_from(value: &'a Value) -> Result<Self, Self::Error> {
                 value.cell_value()?.try_into()
             }
         }
         impl TryFrom<Value> for $type {
-            type Error = ErrorMsg;
+            type Error = RunErrorMsg;
 
             fn try_from(value: Value) -> Result<Self, Self::Error> {
                 value.into_cell_value()?.try_into()
@@ -235,7 +239,7 @@ where
     /// Coerces a value, returning an error if the value has the wrong type.
     fn try_coerce<T>(self) -> CodeResult<Spanned<T>>
     where
-        Self::Unspanned: TryInto<T, Error = ErrorMsg>,
+        Self::Unspanned: TryInto<T, Error = RunErrorMsg>,
     {
         let span = (&self).into();
 
@@ -247,7 +251,7 @@ where
     /// `Some(Err)` only if the value is itself an error value.
     fn coerce_or_none<T>(self) -> Option<CodeResult<Spanned<T>>>
     where
-        Self::Unspanned: TryInto<T, Error = ErrorMsg>,
+        Self::Unspanned: TryInto<T, Error = RunErrorMsg>,
     {
         let span = (&self).into();
 

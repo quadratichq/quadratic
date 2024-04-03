@@ -1,9 +1,7 @@
-use crate::{grid::SheetId, sheet_offsets::resize_transient::TransientResize};
-
 use super::{
-    operation::Operation, transaction_summary::TransactionSummary, transactions::TransactionType,
-    GridController,
+    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
 };
+use crate::{grid::SheetId, sheet_offsets::resize_transient::TransientResize};
 
 impl GridController {
     /// Commits a transient resize from a local version of SheetOffsets.
@@ -17,24 +15,21 @@ impl GridController {
         cursor: Option<String>,
     ) -> TransactionSummary {
         if let Some(transient_resize) = transient_resize {
-            let sheet = self.grid.sheet_mut_from_id(sheet_id);
             let mut ops = vec![];
             if let Some(column) = transient_resize.column {
-                let (column, _) = sheet.get_or_create_column(column);
                 ops.push(Operation::ResizeColumn {
                     sheet_id,
-                    column: column.id,
+                    column,
                     new_size: transient_resize.new_size,
                 });
             } else if let Some(row) = transient_resize.row {
-                let row = sheet.get_or_create_row(row);
                 ops.push(Operation::ResizeRow {
                     sheet_id,
-                    row: row.id,
+                    row,
                     new_size: transient_resize.new_size,
                 });
             }
-            self.set_in_progress_transaction(ops, cursor, false, TransactionType::Normal)
+            self.start_user_transaction(ops, cursor)
         } else {
             TransactionSummary::default()
         }
@@ -48,19 +43,22 @@ impl GridController {
         size: f64,
         cursor: Option<String>,
     ) -> TransactionSummary {
-        let sheet = self.grid.sheet_from_id(sheet_id);
-        let transient_resize = match (column, row) {
-            (Some(column), None) => {
-                let old_size = sheet.offsets.column_width(column as i64);
-                Some(TransientResize::column(column as i64, old_size, size))
-            }
-            (None, Some(row)) => {
-                let old_size = sheet.offsets.row_height(row as i64);
-                Some(TransientResize::row(row as i64, old_size, size))
-            }
-            _ => None,
-        };
-        self.commit_offsets_resize(sheet_id, transient_resize, cursor)
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            let transient_resize = match (column, row) {
+                (Some(column), None) => {
+                    let old_size = sheet.offsets.column_width(column as i64);
+                    Some(TransientResize::column(column as i64, old_size, size))
+                }
+                (None, Some(row)) => {
+                    let old_size = sheet.offsets.row_height(row as i64);
+                    Some(TransientResize::row(row as i64, old_size, size))
+                }
+                _ => None,
+            };
+            self.commit_offsets_resize(sheet_id, transient_resize, cursor)
+        } else {
+            TransactionSummary::default()
+        }
     }
 }
 
@@ -70,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_commit_offsets_resize() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet = &mut gc.grid_mut().sheets_mut()[0];
         let sheet_id = sheet.id;
         let old_size = 100.0;
@@ -105,7 +103,7 @@ mod tests {
 
     #[test]
     fn test_commit_single_resize() {
-        let mut gc = GridController::new();
+        let mut gc = GridController::test();
         let sheet_id = gc.grid().sheets()[0].id;
 
         gc.commit_single_resize(sheet_id, Some(1), None, 200f64, None);

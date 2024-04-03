@@ -8,6 +8,10 @@ import { calculateAlphaForGridLines } from './gridUtils';
 export class GridLines extends Graphics {
   dirty = true;
 
+  // cache of lines used for snapping
+  gridLinesX: { x: number; y: number; w: number; h: number }[] = [];
+  gridLinesY: { x: number; y: number; w: number; h: number }[] = [];
+
   draw(bounds: Rectangle): void {
     this.lineStyle(1, colors.gridLines, 0.125, 0.5, true);
     this.drawVerticalLines(bounds);
@@ -37,6 +41,8 @@ export class GridLines extends Graphics {
       this.visible = true;
 
       this.lineStyle(1, colors.gridLines, 0.125, 0.5, true);
+      this.gridLinesX = [];
+      this.gridLinesY = [];
       this.drawVerticalLines(bounds);
       this.drawHorizontalLines(bounds);
     }
@@ -56,6 +62,7 @@ export class GridLines extends Graphics {
       if (size !== 0) {
         this.moveTo(x - offset, bounds.top);
         this.lineTo(x - offset, bounds.bottom);
+        this.gridLinesX.push({ x: x - offset, y: bounds.top, w: 1, h: bounds.bottom - bounds.top });
       }
       size = sheets.sheet.offsets.getColumnWidth(column);
       column++;
@@ -76,6 +83,7 @@ export class GridLines extends Graphics {
       if (size !== 0) {
         this.moveTo(bounds.left, y - offset);
         this.lineTo(bounds.right, y - offset);
+        this.gridLinesY.push({ x: bounds.left, y: y - offset, w: bounds.right - bounds.left, h: 1 });
       }
       size = offsets.getRowHeight(row);
       row++;

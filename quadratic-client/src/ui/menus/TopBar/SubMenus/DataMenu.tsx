@@ -1,8 +1,9 @@
 import { downloadSelectionAsCsvAction } from '@/actions';
 import { KeyboardSymbols } from '@/helpers/keyboardSymbols';
 import { useFileContext } from '@/ui/components/FileProvider';
-import { AddCircleOutline, DataObjectOutlined, Download, StorageOutlined, UploadFile } from '@mui/icons-material';
-import { Menu, MenuHeader, MenuItem } from '@szhsin/react-menu';
+import { DataIcon } from '@/ui/icons';
+import { AddCircleOutline, StorageOutlined } from '@mui/icons-material';
+import { Menu, MenuDivider, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useSetRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
@@ -21,20 +22,19 @@ export const DataMenu = () => {
     <>
       <Menu
         menuButton={({ open }) => (
-          <TopBarMenuItem title="Data import" open={open}>
-            <DataObjectOutlined fontSize="small" />
+          <TopBarMenuItem title="Data" open={open}>
+            <DataIcon fontSize="small" />
           </TopBarMenuItem>
         )}
       >
-        <MenuHeader>Import</MenuHeader>
         <MenuItem
           onClick={() => {
             addGlobalSnackbar(CSV_IMPORT_MESSAGE);
           }}
         >
-          <MenuLineItem primary="CSV" Icon={UploadFile} />
+          <MenuLineItem primary="Import CSV" />
         </MenuItem>
-        <MenuHeader>Export</MenuHeader>
+
         <MenuItem
           onClick={() => {
             downloadSelectionAsCsvAction.run({ fileName });
@@ -42,7 +42,6 @@ export const DataMenu = () => {
         >
           <MenuLineItem
             primary={downloadSelectionAsCsvAction.label}
-            Icon={Download}
             secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
           />
         </MenuItem>
@@ -61,6 +60,10 @@ export const DataMenu = () => {
           }
         >
           <MenuLineItem primary="Manage Connections" Icon={StorageOutlined} />
+        </MenuItem>
+        <MenuDivider />
+        <MenuItem disabled>
+          <MenuLineItem primary="Connect database (coming soon)" />
         </MenuItem>
       </Menu>
     </>

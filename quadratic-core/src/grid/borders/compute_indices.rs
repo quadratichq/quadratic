@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::grid::borders::style::BorderSelection;
 use crate::Rect;
 
-pub(super) fn vertical(rect: Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
+pub(super) fn vertical(rect: &Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
     selections
         .iter()
         .flat_map(|&selection| vertical_selection(rect, selection))
@@ -12,7 +12,7 @@ pub(super) fn vertical(rect: Rect, selections: Vec<BorderSelection>) -> Vec<i64>
         .collect()
 }
 
-fn vertical_selection(rect: Rect, selection: BorderSelection) -> Vec<i64> {
+fn vertical_selection(rect: &Rect, selection: BorderSelection) -> Vec<i64> {
     let first = rect.min.x;
     let last = rect.max.x + 1;
     match selection {
@@ -26,7 +26,7 @@ fn vertical_selection(rect: Rect, selection: BorderSelection) -> Vec<i64> {
     }
 }
 
-pub(super) fn horizontal(rect: Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
+pub(super) fn horizontal(rect: &Rect, selections: Vec<BorderSelection>) -> Vec<i64> {
     selections
         .iter()
         .flat_map(|&selection| horizontal_selection(rect, selection))
@@ -35,7 +35,7 @@ pub(super) fn horizontal(rect: Rect, selections: Vec<BorderSelection>) -> Vec<i6
         .collect()
 }
 
-fn horizontal_selection(rect: Rect, selection: BorderSelection) -> Vec<i64> {
+fn horizontal_selection(rect: &Rect, selection: BorderSelection) -> Vec<i64> {
     let first = rect.min.y;
     let last = rect.max.y + 1;
     match selection {
@@ -57,72 +57,72 @@ mod tests {
 
     #[test]
     fn horizontal_indices() {
-        let region = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
+        let rect = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
 
         assert_eq!(
-            horizontal(region, vec![BorderSelection::All]),
+            horizontal(&rect, vec![BorderSelection::All]),
             vec![20, 21, 22, 23, 24]
         );
         assert_eq!(
-            horizontal(region, vec![BorderSelection::Inner]),
+            horizontal(&rect, vec![BorderSelection::Inner]),
             vec![21, 22, 23]
         );
         assert_eq!(
-            horizontal(region, vec![BorderSelection::Outer]),
+            horizontal(&rect, vec![BorderSelection::Outer]),
             vec![20, 24]
         );
         assert_eq!(
-            horizontal(region, vec![BorderSelection::Horizontal]),
+            horizontal(&rect, vec![BorderSelection::Horizontal]),
             vec![21, 22, 23]
         );
-        assert!(horizontal(region, vec![BorderSelection::Vertical]).is_empty());
-        assert!(horizontal(region, vec![BorderSelection::Left]).is_empty());
-        assert_eq!(horizontal(region, vec![BorderSelection::Top]), vec![20]);
-        assert!(horizontal(region, vec![BorderSelection::Right]).is_empty());
-        assert_eq!(horizontal(region, vec![BorderSelection::Bottom]), vec![24]);
+        assert!(horizontal(&rect, vec![BorderSelection::Vertical]).is_empty());
+        assert!(horizontal(&rect, vec![BorderSelection::Left]).is_empty());
+        assert_eq!(horizontal(&rect, vec![BorderSelection::Top]), vec![20]);
+        assert!(horizontal(&rect, vec![BorderSelection::Right]).is_empty());
+        assert_eq!(horizontal(&rect, vec![BorderSelection::Bottom]), vec![24]);
 
         assert_eq!(
-            horizontal(region, vec![BorderSelection::Top, BorderSelection::Bottom]),
+            horizontal(&rect, vec![BorderSelection::Top, BorderSelection::Bottom]),
             vec![20, 24]
         );
         assert_eq!(
-            horizontal(region, vec![BorderSelection::Bottom, BorderSelection::Top]),
+            horizontal(&rect, vec![BorderSelection::Bottom, BorderSelection::Top]),
             vec![20, 24]
         );
-        assert!(horizontal(region, vec![BorderSelection::Left, BorderSelection::Right]).is_empty());
+        assert!(horizontal(&rect, vec![BorderSelection::Left, BorderSelection::Right]).is_empty());
     }
 
     #[test]
     fn vertical_indices() {
-        let region = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
+        let rect = Rect::new_span(Pos { x: 10, y: 20 }, Pos { x: 13, y: 23 });
 
         assert_eq!(
-            vertical(region, vec![BorderSelection::All]),
+            vertical(&rect, vec![BorderSelection::All]),
             vec![10, 11, 12, 13, 14]
         );
         assert_eq!(
-            vertical(region, vec![BorderSelection::Inner]),
+            vertical(&rect, vec![BorderSelection::Inner]),
             vec![11, 12, 13]
         );
-        assert_eq!(vertical(region, vec![BorderSelection::Outer]), vec![10, 14]);
-        assert!(vertical(region, vec![BorderSelection::Horizontal]).is_empty());
+        assert_eq!(vertical(&rect, vec![BorderSelection::Outer]), vec![10, 14]);
+        assert!(vertical(&rect, vec![BorderSelection::Horizontal]).is_empty());
         assert_eq!(
-            vertical(region, vec![BorderSelection::Vertical]),
+            vertical(&rect, vec![BorderSelection::Vertical]),
             vec![11, 12, 13]
         );
-        assert_eq!(vertical(region, vec![BorderSelection::Left]), vec![10]);
-        assert!(vertical(region, vec![BorderSelection::Top]).is_empty());
-        assert_eq!(vertical(region, vec![BorderSelection::Right]), vec![14]);
-        assert!(vertical(region, vec![BorderSelection::Bottom]).is_empty());
+        assert_eq!(vertical(&rect, vec![BorderSelection::Left]), vec![10]);
+        assert!(vertical(&rect, vec![BorderSelection::Top]).is_empty());
+        assert_eq!(vertical(&rect, vec![BorderSelection::Right]), vec![14]);
+        assert!(vertical(&rect, vec![BorderSelection::Bottom]).is_empty());
 
-        assert!(vertical(region, vec![BorderSelection::Top, BorderSelection::Bottom]).is_empty());
+        assert!(vertical(&rect, vec![BorderSelection::Top, BorderSelection::Bottom]).is_empty());
 
         assert_eq!(
-            vertical(region, vec![BorderSelection::Left, BorderSelection::Right]),
+            vertical(&rect, vec![BorderSelection::Left, BorderSelection::Right]),
             vec![10, 14]
         );
         assert_eq!(
-            vertical(region, vec![BorderSelection::Right, BorderSelection::Left]),
+            vertical(&rect, vec![BorderSelection::Right, BorderSelection::Left]),
             vec![10, 14]
         );
     }

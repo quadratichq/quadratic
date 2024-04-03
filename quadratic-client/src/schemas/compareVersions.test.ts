@@ -1,4 +1,5 @@
-import { compareVersions, VersionComparisonResult } from './compareVersions';
+import { describe, expect, test } from 'vitest';
+import { VersionComparisonResult, compareVersions } from './compareVersions';
 
 describe('compare version strings', () => {
   test('higher versions return 1', () => {

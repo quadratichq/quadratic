@@ -20,13 +20,17 @@ If you have any problems getting the project to run locally, please create an is
 
 In order to run the front-end and/or the server locally, you must have all the environment variables configured in `.env.local` (and `quadratic-api/.env.local` if you’re running a local server). You can grab the values from [our team Notion page](https://www.notion.so/Env-Variables-78b1a1da19d0421993abe8c449e51496?pvs=4) or by asking a team member.
 
-1. Start everything in one thread `npm start`
+1. Start everything in one terminal: `npm start`
 
 ### Run front-end locally
 
-1. `npm install` to install dependencies
-2. Configure `.env.local` values
-3. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
+1. `cd quadratic-client`
+2. `npm i` to install dependencies
+3. Configure `.env.local` values: `touch .env.local`
+4. (a) `npm start` to run in browser or `npm run dev` to run with Electron; or (b) `npm run watch:front-end` to run in browser with automatic wasm rebuilding
+
+#### Note:
+To rebuild the rust types after `npm start`, you need to either manually call `npm run build:wasm:types`, or restart the `npm start" script.
 
 ### Run server locally
 

@@ -1,24 +1,24 @@
 import express from 'express';
-import { validateAccessToken } from '../middleware/validateAccessToken';
-import { Request } from '../types/Request';
-
 import rateLimit from 'express-rate-limit';
 import { Configuration, OpenAIApi } from 'openai';
 import { z } from 'zod';
+import { OPENAI_API_KEY, RATE_LIMIT_AI_REQUESTS_MAX, RATE_LIMIT_AI_WINDOW_MS } from '../env-vars';
+import { validateAccessToken } from '../middleware/validateAccessToken';
+import { Request } from '../types/Request';
 
 const ai_chat_router = express.Router();
 
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
 const ai_rate_limiter = rateLimit({
-  windowMs: Number(process.env.RATE_LIMIT_AI_WINDOW_MS) || 3 * 60 * 60 * 1000, // 3 hours
-  max: Number(process.env.RATE_LIMIT_AI_REQUESTS_MAX) || 25, // Limit number of requests per windowMs
+  windowMs: Number(RATE_LIMIT_AI_WINDOW_MS) || 3 * 60 * 60 * 1000, // 3 hours
+  max: Number(RATE_LIMIT_AI_REQUESTS_MAX) || 25, // Limit number of requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  keyGenerator: (request: Request, response) => {
+  keyGenerator: (request: Request) => {
     return request.auth?.sub || 'anonymous';
   },
 });
@@ -33,7 +33,7 @@ const AIMessage = z.object({
 const AIAutoCompleteRequestBody = z.object({
   messages: z.array(AIMessage),
   // optional model
-  model: z.enum(['gpt-4', 'gpt-3-turbo']).optional(),
+  model: z.enum(['gpt-4', 'gpt-3-turbo', 'gpt-4-32k']).optional(),
 });
 
 type AIAutoCompleteRequestBodyType = z.infer<typeof AIAutoCompleteRequestBody>;
@@ -51,7 +51,6 @@ ai_chat_router.post('/chat', validateAccessToken, ai_rate_limiter, async (reques
   try {
     const result = await openai.createChatCompletion({
       model: r_json.model || 'gpt-4',
-      //@ts-expect-error
       messages: r_json.messages,
     });
 
@@ -81,7 +80,6 @@ ai_chat_router.post('/chat/stream', validateAccessToken, ai_rate_limiter, async 
       .createChatCompletion(
         {
           model: r_json.model || 'gpt-4',
-          //@ts-expect-error
           messages: r_json.messages,
           stream: true,
         },

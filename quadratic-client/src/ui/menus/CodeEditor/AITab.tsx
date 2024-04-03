@@ -12,12 +12,13 @@ import { TooltipHint } from '../../components/TooltipHint';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
 import './AITab.css';
+import { QuadraticDocs } from './QuadraticDocs';
 
 // todo: fix types
 
 interface Props {
   editorMode: EditorInteractionState['mode'];
-  evalResult: any | undefined; // CodeCellRunOutput
+  evalResult?: any; // TODO(ddimaria): fix type
   editorContent: string | undefined;
   isActive: boolean;
 }
@@ -28,6 +29,9 @@ type Message = {
 };
 
 export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
+  const evalResultObj = evalResult;
+  const stdErr = evalResultObj?.std_err;
+
   // TODO: Improve these messages. Pass current location and more docs.
   // store in a separate location for different cells
   const systemMessages = [
@@ -39,7 +43,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
     },
     {
       role: 'system',
-      content: `here are the docs: Python Quadratic uses pyodide under the hood to provide a Python scripting environment directly in the browser. No more headaches around setting up or sharing a development environment. If it works for you, it’ll work when you share it. Cells icon Cell positioning within a spreadsheet is explained in the Overview. Referencing individual cells To reference an individual cell, use the global function cell (or c for short) which returns the cell value. cell(2, 3) # Returns the value of the cell c(2, 3) # Returns the value of the cell The resulting value can be used directly in a Pythonic way. c(0, 0) + c(0, 1) # Adds cell 0, 0 and cell 0, 1 c(0, 0) == c(0, 1) # Is cell 0, 0 equal to cell 0, 1 ? When a cell depends on other cells and the other cells update, this dependent cell will also update — just like in Excel. Referencing a range of cells To reference a range of cells, use the global function cells which returns a Pandas DataFrame. cells((0, 0), (2, 2)) # Returns a DataFrame with the cell values If the first row of cells is a header, you can set first_row_header as an argument. cells((2, 2), (7, 52), first_row_header=True) As an example, this code references a table of expenses, filters it based on a user-specified column, and returns the resulting DataFrame to the spreadsheet. # Pull the full expenses table in as a DataFrame expenses_table = cells((2, 2), (7, 52), first_row_header=True) # Take user input at a cell (Category = "Gas") category = cell(10, 0) # Filter the full expenses table to the "Gas" category, return the resulting DataFrame expenses_table[expenses_table["Category"] == category] Returning a Python list of values You can return multiple values to the spreadsheet by returning a list of values in Python. For example: # Loop over a list of values result = [] for x in range(0, 5): result.append(x) # Return it to the spreadsheet result By default arrays are expanded vertically. To have an array expand horizontally, wrap it in a second array, e.g. [result] # result: [0, 1, 2, 3, 4] # Return it to the spreadsheet **vertically** result # [0][ ][ ][ ][ ] # [1][ ][ ][ ][ ] # [2][ ][ ][ ][ ] # [3][ ][ ][ ][ ] # [4][ ][ ][ ][ ] # Return it to the spreadsheet horizontally [result] # [0][1][2][3][4] # [ ][ ][ ][ ][ ] # [ ][ ][ ][ ][ ] # [ ][ ][ ][ ][ ] # [ ][ ][ ][ ][ ] Returning a Pandas DataFrame The following code creates a DataFrame of 15 rows, by 4 columns filled with random numbers between 0 and 100. It is the last expression, so it is returned to the the spreadsheet. # pandas and numpy are preloaded by default! import pandas as pd import numpy as np # using numpy's randint, return df to Grid pd.DataFrame(np.random.randint( 0, 100, size=(15, 4), )) Fetching data You can make an external HTTP request directly from a Quadratic Cell using js.fetch. See pyodide’s docs for detailed information on using the fetch API in Python icon Note: requests are made client-side from your web browser and are subject to CORS limitations. You may need to proxy requests through a CORS proxy such as cors.sh. Example: making an API call to OpenAPI with a prompt import json import pyodide api_key = c(0,3) model = c(0, 5) max_tokens = c(0, 7) temperature = c(0, 9) top_p = c(0, 11) prompt = c(0, 13) # Make API Request response = await pyodide.http.pyfetch( 'https://api.openai.com/v1/completions', method= "POST", headers = { "Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key), }, body = json.dumps({ "model": str(model), "prompt": str(prompt), "max_tokens": int(max_tokens), "temperature":  float(temperature), "top_p": float(top_p) }) ) # debug # print(await response.string()) if (response.status == 401): raise Exception("Check your OpenAI API key") else: response_json = await response.json() result = response_json["choices"][0]["text"].strip() Example: pulling stock data from the Polygon API import json import pyodide api_key = c(0,3) model = c(0, 5) max_tokens = c(0, 7) temperature = c(0, 9) top_p = c(0, 11) prompt = c(0, 13) # Make API Request response = await pyodide.http.pyfetch( 'https://api.openai.com/v1/completions', method= "POST", headers = { "Content-Type": "application/json", "Authorization": "Bearer {}".format(api_key), }, body = json.dumps({ "model": str(model), "prompt": str(prompt), "max_tokens": int(max_tokens), "temperature":  float(temperature), "top_p": float(top_p) }) ) # debug # print(await response.string()) if (response.status == 401): raise Exception("Check your OpenAI API key") else: response_json = await response.json() result = response_json["choices"][0]["text"].strip() Packages The following libraries are included by default: Pandas (https://pandas.pydata.org/) NumPy (https://numpy.org/) SciPy (https://scipy.org/) You can import them like any other native Python package. import pandas as pd Additionally, you can use Micropip to install additional Python packages (and their dependencies). import micropip # 'await' is necessary to wait until the package is available await micropip.install("faker") # import installed package from faker import Faker # use the package! fake = Faker() fake.name() This only works for packages that are either pure Python or for packages with C extensions that are built in Pyodide. If a pure Python package is not found in the Pyodide repository it will be loaded from PyPI. Learn more about how packages work in Pyodide.`,
+      content: `here are the docs: ${QuadraticDocs}`,
     },
     {
       role: 'system',
@@ -47,7 +51,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
     },
     {
       role: 'system',
-      content: 'If the code was recently run here was the result:' + JSON.stringify(evalResult),
+      content: 'If the code was recently run here is the std error:' + stdErr,
     },
   ] as Message[];
 
@@ -55,7 +59,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
   const [loading, setLoading] = useState<boolean>(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const controller = useRef<AbortController>();
-  const { user } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   const inputRef = useRef<HTMLInputElement | undefined>(undefined);
 
   // Focus the input when the tab comes into focus
@@ -74,10 +78,10 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
     if (loading) return;
     controller.current = new AbortController();
     setLoading(true);
-    const token = await authClient.getToken();
+    const token = await authClient.getTokenOrRedirect();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
     const request_body = {
-      model: 'gpt-4',
+      model: 'gpt-4-32k',
       messages: [...systemMessages, ...updatedMessages],
     };
     setMessages(updatedMessages);
@@ -178,7 +182,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
           right: '1rem',
           padding: '1rem 0 .5rem 1rem',
           background: 'linear-gradient(0deg, rgba(255,255,255,1) 85%, rgba(255,255,255,0) 100%)',
-          zIndex: 100,
+          zIndex: 10,
         }}
       >
         <FormControl fullWidth>

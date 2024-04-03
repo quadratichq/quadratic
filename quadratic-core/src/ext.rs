@@ -1,12 +1,12 @@
 //! Extension traits
 
-use super::{CodeResult, ErrorMsg, Span, Spanned};
+use super::{CodeResult, RunErrorMsg, Span, Spanned};
 
 /// Extension trait for `Result<T, ErrorMsg>` that defines `with_span()`.
 pub trait CodeResultExt<T> {
     fn with_span(self, span: impl Into<Span>) -> CodeResult<Spanned<T>>;
 }
-impl<T> CodeResultExt<T> for Result<T, ErrorMsg> {
+impl<T> CodeResultExt<T> for Result<T, RunErrorMsg> {
     fn with_span(self, span: impl Into<Span>) -> CodeResult<Spanned<T>> {
         match self {
             Ok(ok) => Ok(Spanned {

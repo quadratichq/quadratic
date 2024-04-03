@@ -3,12 +3,31 @@ import z from 'zod';
 import { authClient } from '../auth';
 import { apiClient } from './apiClient';
 
-export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z.Schema<T>): Promise<T> {
+export class ApiError extends Error {
+  status: number;
+  details?: string;
+  method?: string;
+
+  constructor(message: string, status: number, method?: string, details?: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status; // Fetch response status code
+    this.method = method; // Fetch request method
+    this.details = details; // Details usefule for debugging
+  }
+}
+
+export async function fetchFromApi<T>(
+  path: string,
+  init: RequestInit,
+  schema: z.Schema<T>
+): Promise<z.infer<typeof schema>> {
   // We'll automatically inject additional headers to the request, starting with auth
   const isAuthenticated = await authClient.isAuthenticated();
+  const token = isAuthenticated ? await authClient.getTokenOrRedirect() : '';
   const headers = new Headers(init.headers);
   if (isAuthenticated) {
-    headers.set('Authorization', `Bearer ${await authClient.getToken()}`);
+    headers.set('Authorization', `Bearer ${token}`);
   }
   // And if we're submitting `FormData`, let the browser set the content-type automatically
   // This allows files to upload properly. Otherwise, we assume it's JSON.
@@ -19,35 +38,35 @@ export async function fetchFromApi<T>(path: string, init: RequestInit, schema: z
   init.headers = headers;
 
   // Make API call
-  const response = await fetch(apiClient.getApiUrl() + path, init);
+  const url = apiClient.getApiUrl() + path;
+  const response = await fetch(url, init);
+
+  // Handle if the response is not JSON
+  const json = await response.json().catch((error) => {
+    Sentry.captureException(error);
+    throw new ApiError('An unknown error occurred: response is not JSON.', response.status, init.method);
+  });
 
   // Handle response if a server error is returned
   if (!response.ok) {
-    const error = await newHTTPError('Unsuccessful response', response, init.method);
-    throw error;
+    // TODO: ensure API only ever returns uniform error response, e.g. `json.errors` or `json.error.message`
+    let details = 'No detailed error message provided';
+    if (json.error.message) {
+      details = json.error.message;
+    } else if (json.errors) {
+      details = JSON.stringify(json.errors);
+    }
+    throw new ApiError(`Failed to fetch ${url}`, response.status, init.method, details);
   }
-
-  // Handle if the response is not JSON
-  const json = await response.json().catch(async () => {
-    const error = await newHTTPError('Not a JSON body', response, init.method);
-    throw error;
-  });
 
   // Compare the response to the expected schema
   const result = schema.safeParse(json);
   if (!result.success) {
-    console.error(result.error);
-    const error = await newHTTPError('Unexpected response schema', response, init.method);
-    throw error;
+    console.log('Schema validation failed.');
+    console.log(result.error);
+    const details = JSON.stringify(result.error);
+    throw new ApiError('Unexpected response schema', response.status, init.method, details);
   }
 
   return result.data;
-}
-
-async function newHTTPError(reason: string, response: Response, method?: string) {
-  const text = await response.text().catch(() => `Response .text() cannot be parsed.`);
-  const message = `Error fetching ${method} ${response.url} ${response.status}. ${reason}`;
-  console.error(`${message}. Response body: ${text}`);
-  Sentry.captureException({ message });
-  return new Error(message);
 }

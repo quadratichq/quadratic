@@ -27,8 +27,8 @@ export const TopBarZoomMenu = () => {
   return (
     <Menu
       menuButton={({ open }) => (
-        <TopBarMenuItem title="Zoom options" style={{ width: '4.5rem' }} open={open}>
-          <Typography variant="subtitle2" color="inherit">
+        <TopBarMenuItem title="Zoom options" open={open} className="w-[70px] self-stretch">
+          <Typography variant="subtitle2" color="inherit" fontSize=".8125rem">
             {zoom === Infinity ? 100 : Math.round(zoom * 100)}%
           </Typography>
         </TopBarMenuItem>

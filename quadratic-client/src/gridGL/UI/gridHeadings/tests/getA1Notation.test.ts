@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { getColumnA1Notation, getRowA1Notation } from '../getA1Notation';
 
 describe('A1 notation translation', () => {

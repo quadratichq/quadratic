@@ -91,6 +91,9 @@ pub struct CodeCellRunOutput {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub std_err: Option<String>,
     pub result: CodeCellRunResult,
+
+    #[serde(default)]
+    pub spill: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -123,6 +126,12 @@ pub struct OutputArray {
 pub struct OutputSize {
     pub w: i64,
     pub h: i64,
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RenderSize {
+    pub w: String,
+    pub h: String,
 }
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -165,6 +174,9 @@ pub struct Column {
     pub text_color: HashMap<String, ColumnFormatType<String>>,
     #[serde(rename = "fill_color")]
     pub fill_color: HashMap<String, ColumnFormatType<String>>,
+    #[serde(default)]
+    #[serde(rename = "render_size")]
+    pub render_size: HashMap<String, ColumnFormatType<RenderSize>>,
 }
 impl Column {
     pub fn with_id(id: Id) -> Self {

@@ -6,7 +6,7 @@ const CodeOutlinesSwitch = styled(Switch)(({ theme }) => {
   return {
     padding: '8px',
     '& .MuiSwitch-track': {
-      borderRadius: 22 / 2,
+      borderRadius: 0,
       background: '#fff',
       border: `1px solid ${colors.darkGray}4d`, // hexadecimal opacity: 30%
       opacity: 1,
@@ -52,6 +52,7 @@ const CodeOutlinesSwitch = styled(Switch)(({ theme }) => {
       width: 12,
       height: 12,
       margin: 4,
+      borderRadius: 0,
     },
     '&:hover .MuiSwitch-thumb': {
       opacity: 1,

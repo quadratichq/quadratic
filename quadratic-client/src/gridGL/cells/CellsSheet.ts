@@ -1,15 +1,16 @@
+import { sheets } from '@/grid/controller/Sheets';
+import { CellSheetsModified } from '@/quadratic-core/types';
 import { Container, Graphics, Rectangle } from 'pixi.js';
-import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '../../debugFlags';
+import { debugShowCellsHashBoxes, debugShowCellsSheetCulling, debugShowHashUpdates } from '../../debugFlags';
 import { grid } from '../../grid/controller/Grid';
 import { Sheet } from '../../grid/sheet/Sheet';
-import { CellSheetsModified } from '../../quadratic-core/types';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from '../pixiApp/PixiApp';
-import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
-import { CellsMarkers } from './CellsMarker';
+import { CellsMarkers } from './CellsMarkers';
+import { CellsSearch } from './CellsSearch';
 import { CellsSheetPreloader } from './CellsSheetPreloader';
 import { CellsTextHash } from './CellsTextHash';
 import { sheetHashHeight, sheetHashWidth } from './CellsTypes';
@@ -51,6 +52,10 @@ export class CellsSheet extends Container {
     this.dirtyRowHeadings = new Map();
     this.cellsFills = this.addChild(new CellsFills(this));
     this.cellsTextDebug = this.addChild(new Graphics());
+
+    // may need to clean this up if we ever move to a SPA
+    this.addChild(new CellsSearch(sheet));
+
     this.cellsTextHashContainer = this.addChild(new Container<CellsTextHash>());
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
@@ -65,33 +70,29 @@ export class CellsSheet extends Container {
     };
   }
 
-  async preload(): Promise<void> {
+  async preload() {
     this.cellsFills.create();
     this.cellsBorders.create();
     this.cellsArray.create();
     const cellsSheetPreloader = new CellsSheetPreloader(this);
     await cellsSheetPreloader.preload();
+    if (sheets.sheet.id === this.sheet.id) {
+      this.show(pixiApp.viewport.getVisibleBounds());
+    }
   }
 
   private createHash(hashX: number, hashY: number): CellsTextHash | undefined {
-    const rect = new Rectangle(
-      hashX * sheetHashWidth,
-      hashY * sheetHashHeight,
-      sheetHashWidth - 1,
-      sheetHashHeight - 1
-    );
-    if (this.sheet.hasRenderCells(rect)) {
-      const key = `${hashX},${hashY}`;
-      const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
-      this.cellsTextHash.set(key, cellsHash);
-      const row = this.cellsRows.get(hashY);
-      if (row) {
-        row.push(cellsHash);
-      } else {
-        this.cellsRows.set(hashY, [cellsHash]);
-      }
-      return cellsHash;
+    const key = `${hashX},${hashY}`;
+    const cellsHash = this.cellsTextHashContainer.addChild(new CellsTextHash(this, hashX, hashY));
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] Creating hash for (${hashX}, ${hashY})`);
+    this.cellsTextHash.set(key, cellsHash);
+    const row = this.cellsRows.get(hashY);
+    if (row) {
+      row.push(cellsHash);
+    } else {
+      this.cellsRows.set(hashY, [cellsHash]);
     }
+    return cellsHash;
   }
 
   createHashes(): boolean {
@@ -128,14 +129,9 @@ export class CellsSheet extends Container {
         cellsTextHash.hide();
       }
     });
-    if (pixiAppSettings.showCellTypeOutlines) {
-      this.cellsArray.visible = true;
-      this.cellsArray.cheapCull(bounds);
-    } else {
-      this.cellsArray.visible = false;
-    }
+    this.cellsArray.visible = true;
+    this.cellsArray.cheapCull(bounds);
     this.cellsFills.cheapCull(bounds);
-    this.cellsMarkers.cheapCull(bounds);
     if (debugShowCellsSheetCulling) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
     }
@@ -145,8 +141,9 @@ export class CellsSheet extends Container {
     this.visible = false;
   }
 
-  toggleOutlines() {
-    this.cellsArray.visible = pixiAppSettings.showCellTypeOutlines;
+  toggleOutlines(off?: boolean) {
+    this.cellsArray.visible = off ?? true;
+    this.cellsMarkers.visible = off ?? true;
   }
 
   createBorders() {
@@ -190,6 +187,7 @@ export class CellsSheet extends Container {
   }
 
   // used for clipping to find neighboring hash - clipping always works from right to left
+  // todo: use the new overflowLeft to make this more efficient
   findPreviousHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
     bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
     if (!bounds) {
@@ -203,9 +201,25 @@ export class CellsSheet extends Container {
     return hash;
   }
 
+  // used for clipping to find neighboring hash
+  // todo: use the new overflowRight to make this more efficient
+  findNextHash(column: number, row: number, bounds?: Rectangle): CellsTextHash | undefined {
+    bounds = bounds ?? grid.getGridBounds(this.sheet.id, true);
+    if (!bounds) {
+      throw new Error('Expected bounds to be defined in findNextHash of CellsSheet');
+    }
+    let hash = this.getCellsHash(column, row);
+    while (!hash && column <= bounds.right) {
+      column++;
+      hash = this.getCellsHash(column, row);
+    }
+    return hash;
+  }
+
   // this assumes that dirtyRows has a size (checked in calling functions)
   private updateNextDirtyRow(): void {
     const nextRow = this.dirtyRows.values().next().value;
+    if (debugShowHashUpdates) console.log(`[CellsTextHash] updateNextDirtyRow for ${nextRow}`);
     this.dirtyRows.delete(nextRow);
     const hashes = this.cellsRows.get(nextRow);
     if (!hashes) throw new Error('Expected hashes to be defined in preload');
@@ -286,48 +300,59 @@ export class CellsSheet extends Container {
     return true;
   }
 
-  private dirtyCellTextHashesByDistance(): CellsTextHash[] {
-    const cellsTextHashes = this.cellsTextHashContainer.children.filter((hash) => hash.dirty || hash.dirtyBuffers);
-    const viewport = pixiApp.viewport;
-    const viewportCenter = viewport.center;
-    const isInsideViewport = (hash: CellsTextHash): boolean => {
-      return (
-        hash.AABB.left >= viewport.left &&
-        hash.AABB.right <= viewport.right &&
-        hash.AABB.top >= viewport.top &&
-        hash.AABB.bottom <= viewport.bottom
-      );
-    };
-    cellsTextHashes.sort((a, b) => {
-      // if hashes are both inside the Viewport then sort by y
-      if (isInsideViewport(a)) {
-        if (!isInsideViewport(b)) return -1;
-        return a.AABB.y - b.AABB.y;
-      }
-      if (isInsideViewport(b)) {
-        return 1;
-      }
-
-      // otherwise sort by distance from viewport center
-      const aDistance =
-        Math.pow(viewportCenter.x - (a.AABB.x + a.AABB.width / 2), 2) +
-        Math.pow(viewportCenter.y - (a.AABB.y + a.AABB.height / 2), 2);
-      const bDistance =
-        Math.pow(viewportCenter.x - (b.AABB.x + b.AABB.width / 2), 2) +
-        Math.pow(viewportCenter.y - (b.AABB.y + b.AABB.height / 2), 2);
-      return aDistance - bDistance;
-    });
-    return cellsTextHashes;
-  }
-
-  update(): boolean {
-    if (this.updateHeadings()) return true;
-    const cellTextHashes = this.dirtyCellTextHashesByDistance();
-    for (const cellTextHash of cellTextHashes) {
-      if (cellTextHash.update()) {
-        return true;
+  private findNextDirtyHash(onlyVisible: boolean): { hash: CellsTextHash; visible: boolean } | undefined {
+    const dirtyHashes = this.cellsTextHashContainer.children.filter((hash) => hash.dirty || hash.dirtyBuffers);
+    const viewportVisibleBounds = pixiApp.viewport.getVisibleBounds();
+    let visible: CellsTextHash[] = [];
+    let notVisible: CellsTextHash[] = [];
+    for (const hash of dirtyHashes) {
+      if (hash.viewRectangle.intersects(viewportVisibleBounds)) {
+        visible.push(hash);
+      } else {
+        notVisible.push(hash);
       }
     }
+
+    // if hashes are visible, sort them by y and return the first one
+    if (visible.length) {
+      visible.sort((a, b) => a.hashY - b.hashY);
+      return { hash: visible[0], visible: true };
+    }
+
+    // if onlyVisible then we're done because we're not going to work on offscreen hashes yet
+    if (onlyVisible || notVisible.length === 0) return;
+
+    // otherwise sort notVisible by distance from viewport center
+    const viewportCenter = pixiApp.viewport.center;
+    notVisible.sort((a, b) => {
+      const aCenter = {
+        x: a.viewRectangle.left + a.viewRectangle.width / 2,
+        y: a.viewRectangle.top + a.viewRectangle.height / 2,
+      };
+      const bCenter = {
+        x: b.viewRectangle.left + b.viewRectangle.width / 2,
+        y: b.viewRectangle.top + b.viewRectangle.height / 2,
+      };
+      const aDistance = Math.pow(viewportCenter.x - aCenter.x, 2) + Math.pow(viewportCenter.y - aCenter.y, 2);
+      const bDistance = Math.pow(viewportCenter.x - bCenter.x, 2) + Math.pow(viewportCenter.y - bCenter.y, 2);
+      return aDistance - bDistance;
+    });
+    return { hash: notVisible[0], visible: false };
+  }
+
+  update(userIsActive: boolean): boolean {
+    if (this.updateHeadings()) return true;
+
+    const next = this.findNextDirtyHash(userIsActive);
+    if (next) {
+      next.hash.update();
+      if (next.visible) {
+        next.hash.show();
+        pixiApp.setViewportDirty();
+      }
+      return true;
+    }
+
     if (this.dirtyRows.size) {
       this.updateNextDirtyRow();
       return true;
