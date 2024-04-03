@@ -57,7 +57,7 @@ mod tests {
     use super::*;
 
     fn read_test_csv_file(file_name: &str) -> Vec<u8> {
-        let path = format!("./tests/csv_import/{file_name}");
+        let path = format!("../quadratic-rust-shared/data/csv/{file_name}");
         std::fs::read(path).expect(&format!("test csv file not found {}", file_name))
     }
 
