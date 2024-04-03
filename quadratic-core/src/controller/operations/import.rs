@@ -21,11 +21,10 @@ impl GridController {
         let file = match String::from_utf8_lossy(file) {
             std::borrow::Cow::Borrowed(_) => file,
             std::borrow::Cow::Owned(_) => {
-                if let Some(ut16) = read_utf16(file) {
-                    let x: String = ut16.chars().filter(|&c| c.is_ascii()).collect();
+                if let Some(utf) = read_utf16(file) {
                     return self.import_csv_operations(
                         sheet_id,
-                        x.as_bytes(),
+                        utf.as_bytes(),
                         file_name,
                         insert_at,
                     );
@@ -209,10 +208,38 @@ impl GridController {
 }
 
 fn read_utf16(bytes: &[u8]) -> Option<String> {
-    let (front, slice, back) = unsafe { bytes.align_to::<u16>() };
-    if front.is_empty() && back.is_empty() {
-        String::from_utf16(slice).ok()
-    } else {
-        None
+    if bytes.len() == 0 && bytes.len() % 2 == 0 {
+        return None;
+    }
+
+    // convert u8 to u16
+    let mut utf16vec: Vec<u16> = Vec::with_capacity(bytes.len() / 2);
+    for chunk in bytes.to_owned().chunks_exact(2) {
+        let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
+            return None;
+        };
+        utf16vec.push(u16::from_ne_bytes(vec2))
+    }
+
+    // convert to string
+    let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
+        return None;
+    };
+
+    // strip invalid characters
+    let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
+    return Some(result);
+}
+
+#[cfg(test)]
+mod test {
+    use super::read_utf16;
+    const INVALID_ENCODING_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
+
+    #[test]
+    fn transmute_u8_to_u16() {
+        let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
+        assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
     }
 }
