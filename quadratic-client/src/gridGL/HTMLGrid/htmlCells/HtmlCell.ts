@@ -30,7 +30,6 @@ export class HtmlCell {
 
   constructor(htmlCell: JsHtmlOutput) {
     if (!htmlCell.html) throw new Error('Expected html to be defined in HtmlCell constructor');
-
     this.htmlCell = htmlCell;
     const sheet = sheets.getById(htmlCell.sheet_id)!;
     if (!sheet) {

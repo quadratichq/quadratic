@@ -1,3 +1,4 @@
+import { Rectangle } from '@/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
@@ -347,10 +348,9 @@ export interface ClientCoreRemoveCellNumericFormat {
 export interface ClientCoreChangeDecimals {
   type: 'clientCoreChangeDecimals';
   sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  sourceX: number;
+  sourceY: number;
+  rectangle: Rectangle;
   delta: number;
   cursor?: string;
 }

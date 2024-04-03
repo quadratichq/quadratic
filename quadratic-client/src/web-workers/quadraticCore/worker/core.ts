@@ -6,6 +6,7 @@
  */
 
 import { debugWebWorkers } from '@/debugFlags';
+import { Rectangle } from '@/gridGL/types/size';
 import { readFileAsArrayBuffer } from '@/helpers/files';
 import {
   CellAlign,
@@ -34,7 +35,7 @@ import { coreClient } from './coreClient';
 import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
-import { pointsToRect } from './rustConversions';
+import { pointsToRect, rectangleToRect } from './rustConversions';
 
 class Core {
   gridController?: GridController;
@@ -879,6 +880,39 @@ class Core {
       cancel_compute: true,
     } as JsCodeResult;
     this.gridController.calculationComplete(JSON.stringify(codeResult));
+  }
+
+  changeDecimals(
+    sheetId: string,
+    sourceX: number,
+    sourceY: number,
+    rectangle: Rectangle,
+    decimals: number,
+    cursor?: string
+  ) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.changeDecimalPlaces(
+      sheetId,
+      new Pos(sourceX, sourceY),
+      rectangleToRect(rectangle),
+      decimals,
+      cursor
+    );
+  }
+
+  setPercentage(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setCellPercentage(sheetId, pointsToRect(x, y, width, height), cursor);
+  }
+
+  setExponential(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.setCellExponential(sheetId, pointsToRect(x, y, width, height), cursor);
+  }
+
+  removeCellNumericFormat(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.removeCellNumericFormat(sheetId, pointsToRect(x, y, width, height), cursor);
   }
 }
 

@@ -534,10 +534,9 @@ class QuadraticCore {
     this.send({
       type: 'clientCoreChangeDecimals',
       sheetId,
-      x,
-      y,
-      width: rectangle.width,
-      height: rectangle.height,
+      sourceX: x,
+      sourceY: y,
+      rectangle,
       delta,
       cursor,
     });

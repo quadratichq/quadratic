@@ -491,6 +491,29 @@ class CoreClient {
         }
         break;
 
+      case 'clientCoreChangeDecimals':
+        core.changeDecimals(
+          e.data.sheetId,
+          e.data.sourceX,
+          e.data.sourceY,
+          e.data.rectangle,
+          e.data.delta,
+          e.data.cursor
+        );
+        break;
+
+      case 'clientCoreSetPercentage':
+        core.setPercentage(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        break;
+
+      case 'clientCoreSetExponential':
+        core.setExponential(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        break;
+
+      case 'clientCoreRemoveCellNumericFormat':
+        core.removeCellNumericFormat(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }

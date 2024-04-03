@@ -2,12 +2,16 @@
  * Conversion between Rust types and TS types.
  */
 
+import { Rectangle as RectangleData } from '@/gridGL/types/size';
 import { Rect } from '@/quadratic-core-types';
 import { Pos, Rect as RectInternal } from '@/quadratic-core/quadratic_core';
 import { Point, Rectangle } from 'pixi.js';
 
-export const rectangleToRect = (rectangle: Rectangle): RectInternal => {
-  return new RectInternal(new Pos(rectangle.left, rectangle.top), new Pos(rectangle.right, rectangle.bottom));
+export const rectangleToRect = (rectangle: Rectangle | RectangleData): RectInternal => {
+  return new RectInternal(
+    new Pos(rectangle.x, rectangle.y),
+    new Pos(rectangle.x + rectangle.width, rectangle.y + rectangle.height)
+  );
 };
 
 export const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
