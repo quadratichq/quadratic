@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
     wasm_bindings::controller::sheet_info::SheetBounds,
-    Pos, Rect, SheetRect,
+    Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{
@@ -14,7 +14,7 @@ use super::{
 impl GridController {
     /// Sends the modified cell sheets to the render web worker
     pub fn send_render_cells(&self, sheet_rect: &SheetRect) {
-        if !cfg!(target_family = "wasm") {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
@@ -54,7 +54,7 @@ impl GridController {
 
     /// Sends the modified fills to the client
     pub fn send_fill_cells(&self, sheet_rect: &SheetRect) {
-        if !cfg!(target_family = "wasm") {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
         if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
@@ -105,5 +105,88 @@ impl GridController {
                 }
             }
         };
+    }
+
+    /// Sends html output to the client within a sheetRect
+    pub fn send_html_output_rect(&self, sheet_rect: &SheetRect) {
+        if cfg!(target_family = "wasm") {
+            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                sheet
+                    .get_html_output()
+                    .iter()
+                    .filter(|html_output| {
+                        sheet_rect.contains(SheetPos {
+                            sheet_id: sheet_rect.sheet_id,
+                            x: html_output.x,
+                            y: html_output.y,
+                        })
+                    })
+                    .for_each(|html_output| {
+                        if let Ok(html) = serde_json::to_string(&html_output) {
+                            crate::wasm_bindings::js::jsUpdateHtml(html);
+                        }
+                    });
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{controller::GridController, grid::SheetId, wasm_bindings::js::expect_js_call};
+
+    #[test]
+    fn send_render_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = SheetId::test();
+        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+
+        gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
+        expect_js_call(
+            "jsRenderCellSheets",
+            format!(
+                "{},{},{},{}",
+                sheet_id, 0, 0, r#"[{"x":0,"y":0,"value":"test 1","special":null}]"#
+            ),
+        );
+
+        gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
+        expect_js_call(
+            "jsRenderCellSheets",
+            format!(
+                "{},{},{},{}",
+                sheet_id, 6, 3, r#"[{"x":100,"y":100,"value":"test 2","special":null}]"#
+            ),
+        );
+    }
+
+    #[test]
+    fn send_fill_cells() {
+        let mut gc = GridController::test();
+        let sheet_id = SheetId::test();
+        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+
+        gc.set_cell_fill_color((0, 0, 1, 1, sheet_id).into(), Some("red".to_string()), None);
+        expect_js_call(
+            "jsSheetFills",
+            format!(
+                "{},{}",
+                sheet_id, r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"}]"#
+            ),
+        );
+
+        gc.set_cell_fill_color(
+            (100, 100, 1, 1, sheet_id).into(),
+            Some("green".to_string()),
+            None,
+        );
+        expect_js_call(
+            "jsSheetFills",
+            format!(
+                "{},{}",
+                sheet_id,
+                r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"},{"x":100,"y":100,"w":1,"h":1,"color":"green"}]"#
+            ),
+        );
     }
 }

@@ -49,7 +49,7 @@ impl GridController {
 
             if !transaction.is_server() {
                 match &attr {
-                    CellFmtArray::RenderSize(_) => (), // todo: send html cells
+                    CellFmtArray::RenderSize(_) => self.send_html_output_rect(&sheet_rect),
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);

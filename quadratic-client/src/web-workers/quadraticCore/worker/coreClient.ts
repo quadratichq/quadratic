@@ -404,7 +404,7 @@ class CoreClient {
         break;
 
       case 'clientCoreSetCellRenderResize':
-        await core.setCellRenderResize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.setCellRenderSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         break;
 
       case 'clientCoreAutocomplete':

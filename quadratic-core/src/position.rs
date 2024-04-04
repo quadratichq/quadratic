@@ -440,6 +440,19 @@ impl From<SheetRect> for SheetPos {
     }
 }
 
+impl From<(i64, i64, i64, i64, SheetId)> for SheetRect {
+    fn from((x, y, w, h, sheet_id): (i64, i64, i64, i64, SheetId)) -> Self {
+        SheetRect {
+            min: Pos { x, y },
+            max: Pos {
+                x: x + w - 1,
+                y: y + h - 1,
+            },
+            sheet_id,
+        }
+    }
+}
+
 impl SheetPos {
     pub fn new(sheet_id: SheetId, x: i64, y: i64) -> Self {
         Self { sheet_id, x, y }

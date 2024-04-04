@@ -14,6 +14,7 @@ extern "C" {
     pub(crate) fn log(s: &str);
 }
 
+#[cfg(not(test))]
 #[wasm_bindgen(
     module = "/../quadratic-client/src/web-workers/quadraticCore/worker/rustCallbacks.ts"
 )]
@@ -39,7 +40,10 @@ extern "C" {
 
     pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */);
     pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */);
+
+    // todo: there should be a jsSheetFillUpdate instead of constantly passing back all sheet fills
     pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */);
+
     pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool);
     pub fn jsDeleteSheet(sheetId: String, user: bool);
     pub fn jsRequestTransactions(sequence_num: u64);
@@ -82,4 +86,326 @@ extern "C" {
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
 
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
+}
+
+#[cfg(test)]
+use std::sync::Mutex;
+
+#[cfg(test)]
+use lazy_static::lazy_static;
+
+#[cfg(test)]
+lazy_static! {
+    static ref TEST_ARRAY: Mutex<Vec<TestFunction>> = Mutex::new(vec![]);
+}
+
+#[cfg(test)]
+pub fn expect_js_call(name: &str, args: String) {
+    let result = TestFunction {
+        name: name.to_string(),
+        args,
+    };
+    let index = TEST_ARRAY.lock().unwrap().iter().position(|x| *x == result);
+    match index {
+        Some(index) => {
+            TEST_ARRAY.lock().unwrap().remove(index);
+        }
+        None => {
+            dbg!(&TEST_ARRAY.lock().unwrap());
+            panic!("Expected to find in TEST_ARRAY: {:?}", result)
+        }
+    }
+}
+
+#[cfg(test)]
+#[derive(serde::Serialize, Debug, PartialEq)]
+pub struct TestFunction {
+    pub name: String,
+    pub args: String,
+}
+
+#[cfg(test)]
+impl TestFunction {
+    pub fn new(name: &str, args: String) -> Self {
+        Self {
+            name: name.to_string(),
+            args,
+        }
+    }
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsTime(name: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsTime", name))
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsTimeEnd(name: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsTimeEnd", name));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRunPython(
+    transactionId: String,
+    x: i32,
+    y: i32,
+    sheet_id: String,
+    code: String,
+) -> JsValue {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRunPython",
+        format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
+    ));
+    JsValue::NULL
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRenderCellSheets(
+    sheet_id: String,
+    hash_x: i64,
+    hash_y: i64,
+    cells: String, /*Vec<JsRenderCell>*/
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRenderCellSheets",
+        format!("{},{},{},{}", sheet_id, hash_x, hash_y, cells),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetInfo(sheets: String /* Vec<JsSheetInfo> */) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsSheetInfo", sheets));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsSheetInfoUpdate", sheet));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSheetFills",
+        format!("{},{}", sheet_id, fills),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsAddSheet",
+        format!("{},{}", sheetInfo, user),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsDeleteSheet(sheetId: String, user: bool) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsDeleteSheet",
+        format!("{},{}", sheetId, user),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRequestTransactions(sequence_num: u64) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRequestTransactions",
+        sequence_num.to_string(),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsUpdateCodeCell(
+    sheet_id: String,
+    x: i64,
+    y: i64,
+    code_cell: Option<String>,        /*JsCodeCell*/
+    render_code_cell: Option<String>, /*JsRenderCodeCell*/
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsUpdateCodeCell",
+        format!(
+            "{},{},{},{},{}",
+            sheet_id,
+            x,
+            y,
+            code_cell.unwrap_or_default(),
+            render_code_cell.unwrap_or_default()
+        ),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsOffsetsModified",
+        format!(
+            "{},{},{},{}",
+            sheet_id,
+            column.unwrap_or_default(),
+            row.unwrap_or_default(),
+            size
+        ),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSetCursor(cursor: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsSetCursor", cursor));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsUpdateHtml", html));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsClearHtml(sheet_id: String, x: i64, y: i64) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsClearHtml",
+        format!("{},{},{}", sheet_id, x, y),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsHtmlOutput", html));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsGenerateThumbnail() {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsGenerateThumbnail", "".to_string()));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetBorders(sheet_id: String, borders: String) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSheetBorders",
+        format!("{},{}", sheet_id, borders),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetCodeCell(sheet_id: String, code_cells: String) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSheetCodeCell",
+        format!("{},{}", sheet_id, code_cells),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetBoundsUpdate(bounds: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsSheetBoundsUpdate", bounds));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsImportProgress(file_name: &str, current: u32, total: u32, x: i64, y: i64, w: u32, h: u32) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsImportProgress",
+        format!(
+            "{},{},{},{},{},{},{}",
+            file_name, current, total, x, y, w, h
+        ),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsTransactionStart(
+    transaction_id: String,
+    name: String,
+    sheet_id: Option<String>,
+    x: Option<i64>,
+    y: Option<i64>,
+    w: Option<u32>,
+    h: Option<u32>,
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsTransactionStart",
+        format!(
+            "{},{},{},{},{},{},{}",
+            transaction_id,
+            name,
+            sheet_id.unwrap_or_default(),
+            x.unwrap_or_default(),
+            y.unwrap_or_default(),
+            w.unwrap_or_default(),
+            h.unwrap_or_default()
+        ),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn addUnsentTransaction(transaction_id: String, transaction: String) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "addUnsentTransaction",
+        format!("{},{}", transaction_id, transaction),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendTransaction(transaction_id: String, transaction: String) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSendTransaction",
+        format!("{},{}", transaction_id, transaction),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsTransactionProgress",
+        format!("{},{}", transaction_id, remaining_operations),
+    ));
 }

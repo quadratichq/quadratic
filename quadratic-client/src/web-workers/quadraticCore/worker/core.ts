@@ -653,11 +653,17 @@ class Core {
     });
   }
 
-  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number, cursor: string) {
+  setCellRenderSize(sheetId: string, x: number, y: number, width: number, height: number, cursor: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellRenderSize(sheetId, pointsToRect(x, y, width, height), cursor);
+        this.gridController.setCellRenderSize(
+          sheetId,
+          pointsToRect(x, y, 1, 1),
+          width.toString(),
+          height.toString(),
+          cursor
+        );
         resolve(undefined);
       });
     });
