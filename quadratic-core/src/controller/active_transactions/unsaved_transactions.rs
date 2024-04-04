@@ -66,6 +66,7 @@ impl UnsavedTransactions {
                         crate::wasm_bindings::js::addUnsentTransaction(
                             transaction.forward.id.to_string(),
                             stringified,
+                            transaction.forward.operations.len() as u32,
                         );
                     }
                 }
@@ -79,6 +80,7 @@ impl UnsavedTransactions {
                         crate::wasm_bindings::js::addUnsentTransaction(
                             unsaved_transaction.forward.id.to_string(),
                             stringified,
+                            unsaved_transaction.forward.operations.len() as u32,
                         );
                     }
                 }

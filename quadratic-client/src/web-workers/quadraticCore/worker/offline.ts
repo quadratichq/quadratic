@@ -1,5 +1,6 @@
 import { debugShowFileIO } from '@/debugFlags';
 import { core } from './core';
+import { coreClient } from './coreClient';
 
 const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;
@@ -7,13 +8,18 @@ const DB_STORE = 'transactions';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    addUnsentTransaction: (transactionId: string, operations: string) => void;
+    addUnsentTransaction: (transactionId: string, transaction: string, operations: number) => void;
   };
 
 class Offline {
   private db: IDBDatabase | undefined;
   private index = 0;
   fileId?: string;
+
+  // The `stats.operations` are not particularly interesting right now because
+  // we send the entire operations batched together; we'll need to send partial
+  // messages with separate operations to get good progress information.
+  stats = { transactions: 0, operations: 0 };
 
   // Creates a connection to the indexedDb database
   init(fileId: string): Promise<undefined> {
@@ -66,17 +72,33 @@ class Offline {
       getAll.onsuccess = () => {
         const results = getAll.result
           .sort((a, b) => a.index - b.index)
-          .map((r) => ({ transactionId: r.transactionId, operations: r.transaction }));
+          .map((r) => {
+            const transaction = JSON.parse(r.transaction);
+            const operations = transaction?.forward.operations?.length ?? 0;
+            return {
+              transactionId: r.transactionId,
+              operations: r.transaction,
+              operationsCount: operations,
+            };
+          });
+        this.stats = {
+          transactions: results.length,
+          operations: results.reduce((acc, r) => acc + r.operationsCount.length, 0),
+        };
+        coreClient.sendOfflineTransactionStats();
         resolve(results);
       };
     });
   }
 
   // Adds the transaction to the unsent transactions list.
-  addUnsentTransaction(transactionId: string, transaction: string) {
+  addUnsentTransaction(transactionId: string, transaction: string, operations: number) {
     const store = this.getObjectStore(false);
     if (!this.fileId) throw new Error("Expected fileId to be set in 'addUnsentTransaction' method.");
     store.add({ fileId: this.fileId, transactionId, transaction, index: this.index++ });
+    this.stats.transactions++;
+    this.stats.operations += operations;
+    coreClient.sendOfflineTransactionStats();
     if (debugShowFileIO) {
       console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
     }
@@ -88,6 +110,11 @@ class Offline {
     index.openCursor(IDBKeyRange.only(transactionId)).onsuccess = (event) => {
       const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
       if (cursor) {
+        const transaction = JSON.parse(cursor.value.transaction);
+        const operations = transaction?.forward.operations?.length ?? 0;
+        this.stats.transactions--;
+        this.stats.operations -= operations;
+        coreClient.sendOfflineTransactionStats();
         cursor.delete();
         if (debugShowFileIO) {
           console.log(`[Offline] Removed transaction ${transactionId} from indexedDB.`);

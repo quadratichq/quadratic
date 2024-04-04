@@ -1,4 +1,12 @@
 import { events } from '@/events/events';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shadcn/ui/dropdown-menu';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { MultiplayerState } from '@/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { Check, ErrorOutline } from '@mui/icons-material';
@@ -18,6 +26,19 @@ export default function SyncState() {
       events.off('multiplayerState', updateState);
     };
   }, []);
+
+  const [unsavedTransactions, setUnsavedTransactions] = useState(0);
+  useEffect(() => {
+    const updateUnsavedTransactions = (transactions: number, _operations: number) => {
+      setUnsavedTransactions(transactions);
+    };
+    events.on('offlineTransactions', updateUnsavedTransactions);
+    return () => {
+      events.off('offlineTransactions', updateUnsavedTransactions);
+    };
+  }, []);
+
+  const [open, setOpen] = useState(false);
 
   let tooltip: string;
   let icon: JSX.Element;
@@ -52,8 +73,21 @@ export default function SyncState() {
   }
 
   return (
-    <BottomBarItem icon={icon}>
-      <Tooltip title={tooltip}>{message}</Tooltip>
-    </BottomBarItem>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <BottomBarItem icon={icon} onClick={() => {}}>
+          <Tooltip title={tooltip}>{message}</Tooltip>
+        </BottomBarItem>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuLabel className={`flexz zw-full zjustify-between`}>Status</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className={`flexz zw-full zjustify-between`}>
+          {unsavedTransactions === 0
+            ? 'Nothing waiting to sync'
+            : `Syncing ${unsavedTransactions} item${unsavedTransactions === 1 ? '' : 's'}.`}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

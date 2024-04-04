@@ -273,6 +273,10 @@ export class MultiplayerServer {
   }
 
   sendTransaction(transactionMessage: CoreMultiplayerTransaction) {
+    if (this.state === 'connecting' || this.state === 'waiting to reconnect') {
+      this.waitingForConnection.push(this.sendTransaction.bind(this, transactionMessage));
+      return;
+    }
     multiplayerClient.sendState('syncing');
     const message: SendTransaction = {
       type: 'Transaction',

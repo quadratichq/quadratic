@@ -786,6 +786,12 @@ export interface ClientCoreCancelExecution {
   language: CodeCellLanguage;
 }
 
+export interface CoreClientOfflineTransactions {
+  type: 'coreClientOfflineTransactionStats';
+  transactions: number;
+  operations: number;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -884,4 +890,5 @@ export type CoreClientMessage =
   | CoreClientTransactionProgress
   | CoreClientUpdateCodeCell
   | CoreClientImportExcel
-  | CoreClientMultiplayerState;
+  | CoreClientMultiplayerState
+  | CoreClientOfflineTransactions;

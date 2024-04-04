@@ -634,6 +634,14 @@ class CoreClient {
   sendMultiplayerState(state: MultiplayerState) {
     this.send({ type: 'coreClientMultiplayerState', state });
   }
+
+  sendOfflineTransactionStats() {
+    this.send({
+      type: 'coreClientOfflineTransactionStats',
+      transactions: offline.stats.transactions,
+      operations: offline.stats.operations,
+    });
+  }
 }
 
 export const coreClient = new CoreClient();

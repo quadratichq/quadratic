@@ -27,9 +27,9 @@ describe('offline', () => {
   });
 
   it('populates and loads offline', async () => {
-    offline.addUnsentTransaction('1', 'a');
-    offline.addUnsentTransaction('2', 'b');
-    offline.addUnsentTransaction('3', 'c');
+    offline.addUnsentTransaction('1', 'a', 1);
+    offline.addUnsentTransaction('2', 'b', 1);
+    offline.addUnsentTransaction('3', 'c', 1);
     const load = await offline.load();
     expect(load?.length).toBe(3);
     expect(load).toStrictEqual([
@@ -40,9 +40,9 @@ describe('offline', () => {
   });
 
   it('marks offline transactions as complete', async () => {
-    offline.addUnsentTransaction('1', 'a');
-    offline.addUnsentTransaction('2', 'b');
-    offline.addUnsentTransaction('3', 'c');
+    offline.addUnsentTransaction('1', 'a', 1);
+    offline.addUnsentTransaction('2', 'b', 1);
+    offline.addUnsentTransaction('3', 'c', 1);
     offline.markTransactionSent('2');
 
     const load = await offline.load();
@@ -55,9 +55,9 @@ describe('offline', () => {
 
   it('checks whether there are any unsent transactions in db', async () => {
     expect(await offline.unsentTransactionsCount()).toBe(0);
-    offline.addUnsentTransaction('1', 'a');
-    offline.addUnsentTransaction('2', 'b');
-    offline.addUnsentTransaction('3', 'c');
+    offline.addUnsentTransaction('1', 'a', 1);
+    offline.addUnsentTransaction('2', 'b', 1);
+    offline.addUnsentTransaction('3', 'c', 1);
     expect(await offline.unsentTransactionsCount()).toBe(3);
     offline.markTransactionSent('2');
     expect(await offline.unsentTransactionsCount()).toBe(2);

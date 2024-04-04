@@ -75,6 +75,8 @@ interface EventTypes {
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
 
   resizeHeadingColumn: (column: number) => void;
+
+  offlineTransactions: (transactions: number, operations: number) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

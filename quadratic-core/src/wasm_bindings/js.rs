@@ -82,7 +82,7 @@ extern "C" {
         w: Option<u32>,
         h: Option<u32>,
     );
-    pub fn addUnsentTransaction(transaction_id: String, transaction: String);
+    pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32);
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
 
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
@@ -385,10 +385,10 @@ pub fn jsTransactionStart(
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn addUnsentTransaction(transaction_id: String, transaction: String) {
+pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "addUnsentTransaction",
-        format!("{},{}", transaction_id, transaction),
+        format!("{},{},{}", transaction_id, transaction, operations),
     ));
 }
 
