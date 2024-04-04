@@ -109,7 +109,7 @@ impl GridController {
 
     /// Sends html output to the client within a sheetRect
     pub fn send_html_output_rect(&self, sheet_rect: &SheetRect) {
-        if cfg!(target_family = "wasm") {
+        if cfg!(target_family = "wasm") | cfg!(test) {
             if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
                 sheet
                     .get_html_output()
@@ -133,7 +133,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, grid::SheetId, wasm_bindings::js::expect_js_call};
+    use crate::{
+        controller::{transaction_types::JsCodeResult, GridController},
+        grid::{js_types::JsHtmlOutput, RenderSize, SheetId},
+        wasm_bindings::js::expect_js_call,
+    };
 
     #[test]
     fn send_render_cells() {
@@ -187,6 +191,93 @@ mod test {
                 sheet_id,
                 r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"},{"x":100,"y":100,"w":1,"h":1,"color":"green"}]"#
             ),
+        );
+    }
+
+    #[test]
+    fn send_html_output_rect() {
+        let mut gc = GridController::test();
+        let sheet_id = SheetId::test();
+        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+
+        gc.set_code_cell(
+            (0, 0, sheet_id).into(),
+            crate::grid::CodeCellLanguage::Python,
+            "test".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id.to_string();
+        let _ = gc.calculation_complete(JsCodeResult {
+            transaction_id,
+            success: true,
+            error_msg: None,
+            input_python_std_out: None,
+            output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
+            array_output: None,
+            line_number: None,
+            output_type: None,
+            cancel_compute: None,
+        });
+
+        expect_js_call(
+            "jsUpdateHtml",
+            serde_json::to_string(&JsHtmlOutput {
+                sheet_id: sheet_id.to_string(),
+                x: 0,
+                y: 0,
+                html: Some("<html></html>".to_string()),
+                w: None,
+                h: None,
+            })
+            .unwrap(),
+        );
+    }
+
+    #[test]
+    fn send_html_output_rect_after_resize() {
+        let mut gc = GridController::test();
+        let sheet_id = SheetId::test();
+        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+
+        gc.set_code_cell(
+            (0, 0, sheet_id).into(),
+            crate::grid::CodeCellLanguage::Python,
+            "test".to_string(),
+            None,
+        );
+        let transaction_id = gc.last_transaction().unwrap().id.to_string();
+        let _ = gc.calculation_complete(JsCodeResult {
+            transaction_id,
+            success: true,
+            error_msg: None,
+            input_python_std_out: None,
+            output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
+            array_output: None,
+            line_number: None,
+            output_type: None,
+            cancel_compute: None,
+        });
+
+        gc.set_cell_render_size(
+            (0, 0, 1, 1, sheet_id).into(),
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+            None,
+        );
+
+        expect_js_call(
+            "jsUpdateHtml",
+            serde_json::to_string(&JsHtmlOutput {
+                sheet_id: sheet_id.to_string(),
+                x: 0,
+                y: 0,
+                html: Some("<html></html>".to_string()),
+                w: Some("1".to_string()),
+                h: Some("2".to_string()),
+            })
+            .unwrap(),
         );
     }
 }

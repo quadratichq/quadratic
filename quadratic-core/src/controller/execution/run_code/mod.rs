@@ -42,7 +42,10 @@ impl GridController {
 
         let mut update_html = false;
         let old_code_run = if let Some(new_code_run) = &new_code_run {
-            if new_code_run.is_html() && cfg!(target_family = "wasm") && !transaction.is_server() {
+            if new_code_run.is_html()
+                && (cfg!(target_family = "wasm") || cfg!(test))
+                && !transaction.is_server()
+            {
                 update_html = true;
             }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
@@ -59,18 +62,23 @@ impl GridController {
             sheet.code_runs.shift_remove(&pos)
         };
 
-        if let Some(old_code_run) = &old_code_run {
-            if old_code_run.is_html() && cfg!(target_family = "wasm") && !transaction.is_server() {
-                update_html = true;
-            }
-            if new_code_run.is_none() && cfg!(target_family = "wasm") && !transaction.is_server() {
-                crate::wasm_bindings::js::jsUpdateCodeCell(
-                    sheet_id.to_string(),
-                    sheet_pos.x,
-                    sheet_pos.y,
-                    None,
-                    None,
-                );
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            // if there was html here, send the html update to the client
+            if let Some(old_code_run) = &old_code_run {
+                if old_code_run.is_html() && !transaction.is_server() {
+                    update_html = true;
+                }
+
+                // if the code run is being removed, tell the client that there is no longer a code cell
+                if new_code_run.is_none() && !transaction.is_server() {
+                    crate::wasm_bindings::js::jsUpdateCodeCell(
+                        sheet_id.to_string(),
+                        sheet_pos.x,
+                        sheet_pos.y,
+                        None,
+                        None,
+                    );
+                }
             }
         }
 
@@ -131,13 +139,14 @@ impl GridController {
         }
         transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
-        if cfg!(target_family = "wasm") && !transaction.is_server() {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let Some(html) = sheet.get_single_html_output(pos) {
-                    if let Ok(html) = serde_json::to_string(&html) {
-                        crate::wasm_bindings::js::jsUpdateHtml(html);
-                    }
-                }
+                // if let Some(html) = sheet.get_single_html_output(pos) {
+                //     dbgjs!(&html);
+                //     if let Ok(html) = serde_json::to_string(&html) {
+                //         crate::wasm_bindings::js::jsUpdateHtml(html);
+                //     }
+                // }
                 if let (Some(code_cell), Some(render_code_cell)) = (
                     sheet.edit_code_value(sheet_pos.into()),
                     sheet.get_render_code_cell(sheet_pos.into()),

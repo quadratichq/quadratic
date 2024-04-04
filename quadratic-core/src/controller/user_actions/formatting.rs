@@ -141,6 +141,24 @@ impl GridController {
         }
         cell_formats
     }
+
+    pub fn set_cell_render_size(
+        &mut self,
+        sheet_rect: SheetRect,
+        value: Option<RenderSize>,
+        cursor: Option<String>,
+    ) {
+        let attr = CellFmtArray::RenderSize(RunLengthEncoding::repeat(value, sheet_rect.len()));
+        let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetFormats,
+            Some(sheet_rect.sheet_id),
+            Some(sheet_rect.into()),
+        );
+        self.send_html_output_rect(&sheet_rect);
+    }
 }
 
 macro_rules! impl_set_cell_fmt_method {
@@ -175,7 +193,8 @@ impl_set_cell_fmt_method!(set_cell_bold<Bold>(CellFmtArray::Bold));
 impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
 impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
 impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
-impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
+
+// impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
 
 #[cfg(test)]
 mod test {
