@@ -41,6 +41,8 @@
     "test:python": "cd quadratic-kernels/python-wasm && ./test.sh",
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:rust": "cargo clippy --all-targets --all-features -- -D warnings",
+    "lint:ts": "npm run lint:ts --workspace=quadratic-client",
+    "lint:prettier": "npm run lint:prettier --workspace=quadratic-client",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
     "lint:clippy:fix": "cd quadratic-core && cargo clippy --all-targets --all-features --fix -- -D warnings",
     "heroku-postbuild": "npm run build --workspace=quadratic-api",
