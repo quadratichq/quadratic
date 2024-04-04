@@ -34,7 +34,7 @@ export default function SyncState() {
     tooltip = 'Connecting to the Quadratic server…';
   } else if (syncState === 'syncing') {
     icon = <CircularProgress size="0.5rem" />;
-    message = <span>Connected</span>;
+    message = <span>Syncing...</span>;
     tooltip = 'Syncing changes to the Quadratic server. Your recent changes are saved locally.';
   } else if (syncState === 'connected') {
     icon = <Check fontSize="inherit" />;
