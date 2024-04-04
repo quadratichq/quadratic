@@ -5,8 +5,7 @@ import { DataIcon } from '@/ui/icons';
 import { AddCircleOutline, StorageOutlined } from '@mui/icons-material';
 import { Menu, MenuDivider, MenuHeader, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
-import { useSetRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
+import { useSearchParams } from 'react-router-dom';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE } from '../../../../constants/appConstants';
 import { MenuLineItem } from '../MenuLineItem';
@@ -15,8 +14,7 @@ import { TopBarMenuItem } from '../TopBarMenuItem';
 export const DataMenu = () => {
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name: fileName } = useFileContext();
-
-  const setEditorInteractionState = useSetRecoilState(editorInteractionStateAtom);
+  const [, setSearchParams] = useSearchParams();
 
   return (
     <>
@@ -51,11 +49,9 @@ export const DataMenu = () => {
         </MenuItem>
         <MenuItem
           onClick={() =>
-            setEditorInteractionState((state) => {
-              return {
-                ...state,
-                showConnectionsMenu: true,
-              };
+            setSearchParams((prev) => {
+              prev.set('connections', 'list');
+              return prev;
             })
           }
         >
