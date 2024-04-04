@@ -6,6 +6,7 @@ let pythonState: PythonStateType;
 vi.mock('./pythonClient.ts', () => {
   return {
     pythonClient: {
+      sendInit: () => (pythonState = 'ready'),
       sendPythonState: (state: PythonStateType) => (pythonState = state),
     },
   };
