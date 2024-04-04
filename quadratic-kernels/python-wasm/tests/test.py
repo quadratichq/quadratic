@@ -37,7 +37,7 @@ class mock_micropip:
 async def mock_fetch_module(source: str):
     return __import__(source)
 
-    
+
 # mock modules needed to import run_python
 sys.modules["pyodide"] = MagicMock()
 sys.modules["pyodide.code"] = MagicMock()
@@ -144,11 +144,11 @@ class TestErrorMessaging(TestCase):
 
     def test_get_return_line(self):
         example_code = r"""import itertools
-        
+
         print("Counting to 0\n\n\n")
         next(itertools.count())
-        
-        
+
+
         """
 
         assert code_trace.get_return_line(example_code) == 4
@@ -156,14 +156,10 @@ class TestErrorMessaging(TestCase):
     def test_error_result(self):
         err = RuntimeError("Test message")
         code = Mock()
-        cells_accessed = Mock()
         sout = Mock(getvalue=Mock())
         line_number = 42
 
-        assert run_python.error_result(err, code, cells_accessed, sout, line_number) == {
-            "output_value": None,
-            "array_output": None,
-            "cells_accessed": cells_accessed,
+        assert run_python.error_result(err, code, sout, line_number) == {
             "std_out": sout.getvalue.return_value,
             "success": False,
             "input_python_stack_trace": "RuntimeError on line 42: Test message",
@@ -218,11 +214,11 @@ class TestUtils(TestCase):
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # duration
-        
+
     def test_to_python_type(self):
         # blank
         assert to_python_type("", "blank") == 0
-        
+
         # number
         assert to_python_type("1", "number") == 1
         assert to_python_type("1.1", "number") == 1.1

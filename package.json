@@ -38,6 +38,7 @@
     "test:ts": "cd quadratic-client && vitest",
     "test:api": "npm run docker:test:dev --workspace=quadratic-api",
     "test:multiplayer": "npm run test --workspace=quadratic-multiplayer",
+    "test:python": "cd quadratic-kernels/python-wasm && ./test.sh",
     "benchmark:rust": "cd quadratic-core && cargo bench",
     "lint:rust": "cargo clippy --all-targets --all-features -- -D warnings",
     "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
