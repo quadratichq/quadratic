@@ -196,6 +196,7 @@ jobs:
 
       - name: Build wasm core
         run: |
+          npm run build:grid-offsets
           cd quadratic-client
           npm run build:wasm:javascript:dev
           npm run build:wasm:types
