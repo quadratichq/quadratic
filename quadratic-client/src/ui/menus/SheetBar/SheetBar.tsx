@@ -115,17 +115,6 @@ export const SheetBar = (): JSX.Element => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
-  // ensure active tab is visible when changed
-  useEffect(() => {
-    if (sheetTabs) {
-      const children = [...sheetTabs.children];
-      const tab = children.find((child) => child.getAttribute('data-id') === activeSheet);
-      if (tab) {
-        // tab.scrollIntoView();
-      }
-    }
-  }, [activeSheet, sheetTabs]);
-
   // handle drag tabs
   const down = useRef<
     | {
