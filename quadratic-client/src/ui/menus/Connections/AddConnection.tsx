@@ -136,9 +136,8 @@ export const AddConnection = () => {
                 setConnectionState((prev) =>
                   prev === 'idle' ? 'loading' : prev === 'loading' ? 'success' : prev === 'success' ? 'error' : 'idle'
                 );
-                return;
 
-                await new Promise((resolve) => setTimeout(resolve, 3000));
+                // await new Promise((resolve) => setTimeout(resolve, 3000));
 
                 // const response = await apiClient.createConnection(formData as ApiTypes['/v0/connections.POST.request']); // TODO: typecasting here is unsafe
                 // console.log('response:', response);
@@ -157,7 +156,7 @@ export const AddConnection = () => {
                 // });
                 // console.log('data:', data);
 
-                setConnectionState('success');
+                // setConnectionState('success');
               }}
             >
               <PlayIcon className="mr-1" /> Test
