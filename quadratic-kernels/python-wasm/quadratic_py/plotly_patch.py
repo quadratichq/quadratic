@@ -1,5 +1,4 @@
 import micropip
-
 from quadratic_py import code_trace
 
 
@@ -44,7 +43,7 @@ class _FigureHolder:
         return self._result_set_from_line
 
 
-async def intercept_plotly_html(code) -> _FigureHolder | None:
+async def intercept_plotly(code) -> _FigureHolder | None:
     import pyodide.code
     if "plotly" not in pyodide.code.find_imports(code):
         return None

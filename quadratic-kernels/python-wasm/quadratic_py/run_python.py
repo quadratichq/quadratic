@@ -44,7 +44,7 @@ async def run_python(code: str, pos: Tuple[int, int]):
     globals['rc'] = globals['rel_cell']
 
     try:
-        plotly_html = await plotly_patch.intercept_plotly_html(code)
+        plotly_output = await plotly_patch.intercept_plotly(code)
 
         # Capture STDOut to sout
         with redirect_stdout(sout):
@@ -70,28 +70,33 @@ async def run_python(code: str, pos: Tuple[int, int]):
         output_value = output["output_value"]
         output_type = output["output_type"]
         output_size = output["output_size"]
+        output_bytes = output["output_bytes"]
         typed_array_output = output["typed_array_output"]
 
+        # todo: this should be moved to process_output.py
+
         # Plotly HTML
-        if plotly_html is not None and plotly_html.result is not None:
+        if plotly_output is not None and plotly_output.result is not None:
             if output_value is not None or array_output is not None:
                 err = RuntimeError(
                     "Cannot return result from cell that has displayed a figure "
-                    f"(displayed on line {plotly_html.result_set_from_line})"
+                    f"(displayed on line {plotly_output.result_set_from_line})"
                 )
 
                 return error_result(
                     err, code, sout, code_trace.get_return_line(code)
                 )
             else:
-                output_value = (plotly_html.result, 'text')
+                output_value = (plotly_output.result, 'text')
                 output_type = "Chart"
+
 
         return {
             "output": output_value,
             "array_output": typed_array_output,
             "output_type": output_type,
             "output_size": output_size,
+            "output_bytes": output_bytes,
             "std_out": sout.getvalue(),
             "std_err": serr.getvalue(),
             "success": True,

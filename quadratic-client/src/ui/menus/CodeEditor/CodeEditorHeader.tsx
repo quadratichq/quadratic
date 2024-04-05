@@ -31,6 +31,11 @@ export const CodeEditorHeader = (props: Props) => {
 
   const language = editorInteractionState.mode;
 
+  const run = () => {
+    setIsRunningComputation('player');
+    saveAndRunCell();
+  };
+
   // show when this cell is already in the execution queue
   const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
   useEffect(() => {
@@ -167,7 +172,7 @@ export const CodeEditorHeader = (props: Props) => {
                 id="QuadraticCodeEditorRunButtonID"
                 size="small"
                 color="primary"
-                onClick={saveAndRunCell}
+                onClick={run}
                 disabled={!!isRunningComputation}
               >
                 <PlayArrow />

@@ -65,6 +65,7 @@ class Python {
     });
     this.pyodide.registerJsModule('getCellsDB', this.getCells);
     // patch requests https://github.com/koenvo/pyodide-http
+
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
 
     try {
@@ -166,6 +167,7 @@ class Python {
         ...inspectionResults,
         outputType,
       };
+      console.log(pythonRun);
     } catch (e) {
       // gracefully recover from deserialization errors
       console.warn(e);

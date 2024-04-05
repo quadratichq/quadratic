@@ -8,6 +8,7 @@ def process_output_value(output_value):
     array_output = None
     output_type = type(output_value).__name__
     output_size = None
+    output_bytes = None
 
     # TODO(ddimaria): figure out if we need to covert back to a list for array_output
     # We should have a single output
@@ -29,7 +30,7 @@ def process_output_value(output_value):
         # flip the dataframe shape
         shape = output_value.shape
         output_size = (shape[1], shape[0])
-        
+
         # If output_value columns is not the default (RangeIndex)
         if type(output_value.columns) != pd.core.indexes.range.RangeIndex:
             # Return Column names and values
@@ -43,11 +44,23 @@ def process_output_value(output_value):
                 output_value.notnull(), None
             ).values.tolist()
 
+    # if isinstance(output_value, bytes):
+    #     output_bytes = (output_value, 'image')
+    #     output_type = 'Image'
+    #     output_value = ''
+
     try:
         import plotly
         if isinstance(output_value, plotly.graph_objs._figure.Figure):
             output_value = output_value.to_html()
             output_type = "Chart"
+
+        # if isinstance(output_value, plotly.BytesIO):
+        #     output_value = ''
+        #     output_bytes = (output_value.getvalue(), 'image')
+        #     output_type = "Chart"
+        #     print("Hello 2!!!")
+
     except:
         pass
 
@@ -68,7 +81,7 @@ def process_output_value(output_value):
         else:
             length_1d = len(array_output)
             length_2d = max(len(row) for row in array_output)
-            
+
             # TODO(ddimaria): is this efficient?
             typed_array_output = [[0 for i in range(length_2d)] for j in range(length_1d)]
 
@@ -92,4 +105,5 @@ def process_output_value(output_value):
         "output_value": output_value,
         "output_type": output_type,
         "output_size": output_size,
+        "output_bytes": output_bytes,
     }
