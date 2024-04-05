@@ -5,10 +5,11 @@ import { multiplayer } from '@/multiplayer/multiplayer';
 import { Pos } from '@/quadratic-core/types';
 import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { Type } from '@/components/Type';
 import { googleAnalyticsAvailable } from '@/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -20,10 +21,13 @@ import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorProvider } from './CodeEditorContext';
 import { CodeEditorHeader } from './CodeEditorHeader';
-import { Console } from './Console';
+import { Console, ConsoleOutput } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
+
+const CODE_EDITOR_MIN_WIDTH = 350;
+const SECOND_PANEL_MIN_WIDTH = 200;
 
 export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
@@ -33,6 +37,9 @@ export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const { pythonState } = useRecoilValue(pythonStateAtom);
+  const [secondPanelWidth, setSecondPanelWidth] = useState(SECOND_PANEL_MIN_WIDTH);
+  const [secondPanelHeightPercentage, setSecondPanelHeightPercentage] = useState<number>(50);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // update code cell
   const [codeString, setCodeString] = useState('');
@@ -288,92 +295,149 @@ export const CodeEditor = () => {
 
   return (
     <CodeEditorProvider>
-      <div
-        id="QuadraticCodeEditorID"
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          width: `${editorWidth}px`,
-          minWidth: '350px',
-          maxWidth: '90%',
-          backgroundColor: '#ffffff',
-          zIndex: 2,
-        }}
-        onKeyDownCapture={onKeyDownEditor}
-        onPointerEnter={() => {
-          // todo: handle multiplayer code editor here
-          multiplayer.sendMouseMove();
-        }}
-        onPointerMove={(e) => {
-          e.stopPropagation();
-        }}
-      >
-        {showSaveChangesAlert && (
-          <SaveChangesAlert
-            onCancel={() => {
-              setShowSaveChangesAlert(!showSaveChangesAlert);
-              setEditorInteractionState((old) => ({
-                ...old,
-                editorEscapePressed: false,
-                waitingForEditorClose: undefined,
-              }));
-            }}
-            onSave={() => {
-              saveAndRunCell();
-              afterDialog();
-            }}
-            onDiscard={() => {
-              afterDialog();
-            }}
-          />
-        )}
-
-        <ResizeControl setState={setEditorWidth} position="LEFT" />
-        <CodeEditorHeader
-          cellLocation={cellLocation}
-          unsaved={unsaved}
-          saveAndRunCell={saveAndRunCell}
-          cancelPython={cancelPython}
-          closeEditor={() => closeEditor(false)}
-        />
-        <CodeEditorBody
-          editorContent={editorContent}
-          setEditorContent={setEditorContent}
-          closeEditor={closeEditor}
-          evaluationResult={evaluationResult}
-        />
-        {editorInteractionState.mode === 'Python' && (
-          <ReturnTypeInspector
-            evaluationResult={evaluationResult}
-            show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
-          />
-        )}
-
-        <ResizeControl setState={setConsoleHeight} position="TOP" />
-        {/* Console Wrapper */}
+      <div ref={containerRef}>
         <div
+          className="absolute bottom-0 top-0 z-[2] flex flex-col bg-white"
+          style={{ right: `${editorWidth}px`, width: `${secondPanelWidth}px` }}
+        >
+          <ResizeControl
+            setState={(mouseEvent) => {
+              const offsetFromRight = window.innerWidth - mouseEvent.x - editorWidth;
+              setSecondPanelWidth(offsetFromRight > SECOND_PANEL_MIN_WIDTH ? offsetFromRight : SECOND_PANEL_MIN_WIDTH);
+              // const xPos = setState(min ? (newValue > min ? newValue : min) : newValue);
+            }}
+            position="LEFT"
+            min={200}
+          />
+
+          <div style={{ height: `${secondPanelHeightPercentage}%` }}>
+            <div className="px-4 py-2">
+              <Type>Console</Type>
+            </div>
+            <div className="px-4 py-2">
+              <ConsoleOutput
+                consoleOutput={out}
+                editorMode={editorMode}
+                editorContent={editorContent}
+                evaluationResult={evaluationResult}
+                spillError={spillError}
+              />
+            </div>
+          </div>
+          <ResizeControl
+            setState={(mouseEvent) => {
+              if (!containerRef.current) return;
+
+              const containerRect = containerRef.current?.getBoundingClientRect();
+              const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
+
+              if (newTopHeight >= 10 && newTopHeight <= 90) {
+                setSecondPanelHeightPercentage(newTopHeight);
+              }
+            }}
+            position="TOP"
+          />
+          <div style={{ height: `${100 - secondPanelHeightPercentage}%` }}>
+            <div className="px-4 py-2">
+              <Type>AI assistant</Type>
+            </div>
+            <div className="px-4 py-2">[content here]</div>
+          </div>
+        </div>
+        <div
+          id="QuadraticCodeEditorID"
           style={{
-            position: 'relative',
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            bottom: 0,
             display: 'flex',
             flexDirection: 'column',
-            minHeight: '100px',
-            background: '#fff',
-            height: `${consoleHeight}px`,
+            width: `${editorWidth}px`,
+            // minWidth: '350px',
+            maxWidth: '90%',
+            backgroundColor: '#ffffff',
+            zIndex: 2,
+          }}
+          onKeyDownCapture={onKeyDownEditor}
+          onPointerEnter={() => {
+            // todo: handle multiplayer code editor here
+            multiplayer.sendMouseMove();
+          }}
+          onPointerMove={(e) => {
+            e.stopPropagation();
           }}
         >
-          {(editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
-            <Console
-              consoleOutput={out}
-              editorMode={editorMode}
-              editorContent={editorContent}
-              evaluationResult={evaluationResult}
-              spillError={spillError}
+          {showSaveChangesAlert && (
+            <SaveChangesAlert
+              onCancel={() => {
+                setShowSaveChangesAlert(!showSaveChangesAlert);
+                setEditorInteractionState((old) => ({
+                  ...old,
+                  editorEscapePressed: false,
+                  waitingForEditorClose: undefined,
+                }));
+              }}
+              onSave={() => {
+                saveAndRunCell();
+                afterDialog();
+              }}
+              onDiscard={() => {
+                afterDialog();
+              }}
             />
           )}
+
+          <ResizeControl
+            setState={(mouseEvent) => {
+              const offsetFromRight = window.innerWidth - mouseEvent.x;
+              setEditorWidth(offsetFromRight > CODE_EDITOR_MIN_WIDTH ? offsetFromRight : CODE_EDITOR_MIN_WIDTH);
+            }}
+            position="LEFT"
+            min={CODE_EDITOR_MIN_WIDTH}
+          />
+          <CodeEditorHeader
+            cellLocation={cellLocation}
+            unsaved={unsaved}
+            saveAndRunCell={saveAndRunCell}
+            cancelPython={cancelPython}
+            closeEditor={() => closeEditor(false)}
+          />
+          <CodeEditorBody
+            editorContent={editorContent}
+            setEditorContent={setEditorContent}
+            closeEditor={closeEditor}
+            evaluationResult={evaluationResult}
+          />
+          {editorInteractionState.mode === 'Python' && (
+            <ReturnTypeInspector
+              evaluationResult={evaluationResult}
+              show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+            />
+          )}
+
+          <ResizeControl setState={() => {}} position="TOP" />
+          {/* Console Wrapper */}
+          <div
+            style={{
+              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: '100px',
+              background: '#fff',
+              height: `${consoleHeight}px`,
+            }}
+          >
+            {(editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
+              <Console
+                consoleOutput={out}
+                editorMode={editorMode}
+                editorContent={editorContent}
+                evaluationResult={evaluationResult}
+                spillError={spillError}
+              />
+            )}
+          </div>
         </div>
       </div>
     </CodeEditorProvider>

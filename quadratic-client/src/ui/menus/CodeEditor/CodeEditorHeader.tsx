@@ -64,7 +64,6 @@ export const CodeEditorHeader = (props: Props) => {
   return (
     <div
       style={{
-        color: colors.darkGray,
         fontSize: '0.875rem',
         display: 'flex',
         justifyContent: 'space-between',

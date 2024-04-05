@@ -1,4 +1,4 @@
-import { Box, Tab, Tabs, useTheme } from '@mui/material';
+import { Box, Tab, Tabs } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
@@ -18,9 +18,9 @@ interface ConsoleProps {
   spillError?: Coordinate[];
 }
 
-export function Console({ consoleOutput, editorMode, editorContent, evaluationResult, spillError }: ConsoleProps) {
+export function Console(props: ConsoleProps) {
+  const { consoleOutput, editorMode, editorContent, evaluationResult, spillError } = props;
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
-  const theme = useTheme();
   const { isAuthenticated } = useRootRouteLoaderData();
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
 
@@ -59,57 +59,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
       </Box>
       <div style={{ flex: '2', overflow: 'scroll', fontSize: '.875rem', lineHeight: '1.5' }}>
         <TabPanel value={activeTabIndex} index={0}>
-          <div
-            contentEditable="true"
-            suppressContentEditableWarning={true}
-            spellCheck={false}
-            onKeyDown={(e) => {
-              if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
-                // Allow a few commands, but nothing else
-              } else {
-                e.preventDefault();
-              }
-            }}
-            style={{
-              outline: 'none',
-              whiteSpace: 'pre-wrap',
-              ...codeEditorBaseStyles,
-            }}
-            // Disable Grammarly
-            data-gramm="false"
-            data-gramm_editor="false"
-            data-enable-grammarly="false"
-          >
-            {hasOutput ? (
-              <>
-                {spillError && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
-                    SPILL ERROR: Array output could not expand because it would overwrite existing content. To fix this,
-                    remove content in cell
-                    {spillError.length > 1 ? 's' : ''}{' '}
-                    {spillError.map(
-                      (pos, index) =>
-                        `(${pos.x}, ${pos.y})${
-                          index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'
-                        }`
-                    )}
-                  </span>
-                )}
-                {consoleOutput?.stdErr && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
-                    ERROR: {consoleOutput?.stdErr}
-                  </span>
-                )}
-                {consoleOutput?.stdOut}
-              </>
-            ) : (
-              <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
-                {editorMode === 'Python'
-                  ? 'Print statements, standard out, and errors will show here.'
-                  : 'Errors will show here.'}
-              </div>
-            )}
-          </div>
+          <ConsoleOutput {...props} />
         </TabPanel>
         <TabPanel value={activeTabIndex} index={1} scrollToBottom={true}>
           <AITab
@@ -122,6 +72,69 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
         </TabPanel>
       </div>
     </>
+  );
+}
+
+export function ConsoleOutput({
+  consoleOutput,
+  editorMode,
+  editorContent,
+  evaluationResult,
+  spillError,
+}: ConsoleProps) {
+  let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+  return (
+    <div
+      contentEditable="true"
+      suppressContentEditableWarning={true}
+      spellCheck={false}
+      onKeyDown={(e) => {
+        if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
+          // Allow a few commands, but nothing else
+        } else {
+          e.preventDefault();
+        }
+      }}
+      style={{
+        outline: 'none',
+        whiteSpace: 'pre-wrap',
+        ...codeEditorBaseStyles,
+      }}
+      // Disable Grammarly
+      data-gramm="false"
+      data-gramm_editor="false"
+      data-enable-grammarly="false"
+    >
+      {hasOutput ? (
+        <>
+          {spillError && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
+              SPILL ERROR: Array output could not expand because it would overwrite existing content. To fix this,
+              remove content in cell
+              {spillError.length > 1 ? 's' : ''}{' '}
+              {spillError.map(
+                (pos, index) =>
+                  `(${pos.x}, ${pos.y})${
+                    index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'
+                  }`
+              )}
+            </span>
+          )}
+          {consoleOutput?.stdErr && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: colors.error }}>
+              ERROR: {consoleOutput?.stdErr}
+            </span>
+          )}
+          {consoleOutput?.stdOut}
+        </>
+      ) : (
+        <div className="mt-1" style={{ ...codeEditorCommentStyles }}>
+          {editorMode === 'Python'
+            ? 'Print statements, standard out, and errors will show here.'
+            : 'Errors will show here.'}
+        </div>
+      )}
+    </div>
   );
 }
 
