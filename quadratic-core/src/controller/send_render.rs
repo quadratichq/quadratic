@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
     wasm_bindings::controller::sheet_info::SheetBounds,
-    Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{
@@ -129,14 +129,55 @@ impl GridController {
             }
         }
     }
+
+    /// Sends a single image to the client
+    pub fn sheet_image(
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+        image: Option<Vec<u8>>,
+        w: Option<u32>,
+        h: Option<u32>,
+    ) {
+        crate::wasm_bindings::js::jsUpdateImage(sheet_id.to_string(), x, y, image, w, h);
+    }
+
+    /// Sends all images to the client
+    pub fn sheet_images(&self, sheet_id: SheetId) {
+        if cfg!(target_family = "wasm") | cfg!(test) {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                sheet.code_runs.iter().for_each(|(pos, code_run)| {
+                    if let Some(value) = code_run.cell_value_at(0, 0) {
+                        match value {
+                            CellValue::Image(image) => {
+                                Self::sheet_image(
+                                    sheet_id,
+                                    pos.x,
+                                    pos.y,
+                                    Some(image.data),
+                                    image.w,
+                                    image.h,
+                                );
+                            }
+                            _ => {}
+                        }
+                    }
+                });
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
+
     use crate::{
+        cellvalue::ImageCellValue,
         controller::{transaction_types::JsCodeResult, GridController},
-        grid::{js_types::JsHtmlOutput, RenderSize, SheetId},
+        grid::{js_types::JsHtmlOutput, CodeRun, CodeRunResult, RenderSize, SheetId},
         wasm_bindings::js::expect_js_call,
+        CellValue, Value,
     };
 
     #[test]
@@ -217,6 +258,7 @@ mod test {
             line_number: None,
             output_type: None,
             cancel_compute: None,
+            output_bytes: None,
         });
 
         expect_js_call(
@@ -256,6 +298,7 @@ mod test {
             line_number: None,
             output_type: None,
             cancel_compute: None,
+            output_bytes: None,
         });
 
         gc.set_cell_render_size(
@@ -278,6 +321,82 @@ mod test {
                 h: Some("2".to_string()),
             })
             .unwrap(),
+        );
+    }
+
+    #[test]
+    fn sheet_images() {
+        let mut gc = GridController::test();
+        let sheet_id = SheetId::test();
+        let sheet = gc.sheet_mut(gc.sheet_ids()[0]);
+        sheet.id = sheet_id;
+
+        sheet.code_runs.insert(
+            (0, 0).into(),
+            CodeRun {
+                formatted_code_string: None,
+                std_out: None,
+                std_err: None,
+                cells_accessed: HashSet::new(),
+                result: CodeRunResult::Ok(Value::Single(CellValue::Image(ImageCellValue {
+                    data: vec![1, 2, 3, 4],
+                    w: Some(1),
+                    h: Some(2),
+                }))),
+                return_type: None,
+                line_number: None,
+                output_type: None,
+                spill_error: false,
+                last_modified: chrono::Utc::now(),
+            },
+        );
+
+        sheet.code_runs.insert(
+            (1, 2).into(),
+            CodeRun {
+                formatted_code_string: None,
+                std_out: None,
+                std_err: None,
+                cells_accessed: HashSet::new(),
+                result: CodeRunResult::Ok(Value::Single(CellValue::Image(ImageCellValue {
+                    data: vec![2, 3, 4, 5],
+                    w: None,
+                    h: None,
+                }))),
+                return_type: None,
+                line_number: None,
+                output_type: None,
+                spill_error: false,
+                last_modified: chrono::Utc::now(),
+            },
+        );
+
+        gc.sheet_images(sheet_id);
+
+        expect_js_call(
+            "jsUpdateImage",
+            format!(
+                "{},{},{},{:?},{:?},{:?}",
+                sheet_id,
+                0,
+                0,
+                Some(vec![1, 2, 3, 4]),
+                Some(1),
+                Some(2)
+            ),
+        );
+
+        expect_js_call(
+            "jsUpdateImage",
+            format!(
+                "{},{},{},{:?},{:?},{:?}",
+                sheet_id,
+                1,
+                2,
+                Some(vec![2, 3, 4, 5]),
+                None::<u32>,
+                None::<u32>
+            ),
         );
     }
 }

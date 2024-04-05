@@ -643,6 +643,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ))
         .ok();
         let sheet = gc.sheet(sheet_id);

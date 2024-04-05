@@ -163,6 +163,7 @@ pub enum CellValue {
     Instant(String),
     Duration(String),
     Error(RunError),
+    Image(ImageCell),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -213,4 +214,11 @@ pub enum CellWrap {
     Overflow,
     Wrap,
     Clip,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ImageCell {
+    pub data: Vec<u8>,
+    pub w: Option<u32>,
+    pub h: Option<u32>,
 }

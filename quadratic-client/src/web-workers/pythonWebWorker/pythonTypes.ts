@@ -21,15 +21,18 @@ export type EvaluationResult = {
   values?: { type: string; value: string }[];
 };
 
-export type outputType = 'number' | 'number' | 'text' | 'logical' | 'instant';
+export type outputType = 'number' | 'number' | 'text' | 'logical' | 'instant' | 'image';
 
 export interface PythonSuccess {
   array_output: string[];
   typed_array_output: [string, outputType][];
   code: string;
   input_python_stack_trace: string;
+
   output?: [string, outputType][];
   output_size?: number[];
+
+  output_bytes?: [Uint8Array, outputType];
 
   // Python type to show in CodeEditor
   output_type?: string;

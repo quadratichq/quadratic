@@ -63,6 +63,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ))
         .ok();
 
@@ -109,6 +110,7 @@ mod tests {
             None,
             None,
             Some(vec!["hello world".into(), "text".into()]),
+            None,
             None,
             None,
             None,
@@ -183,6 +185,7 @@ mod tests {
                 None,
                 None,
                 None,
+                None,
             ))
             .is_ok());
 
@@ -243,6 +246,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ));
 
         // replace the value in (0, 0) to trigger the python calculation
@@ -281,6 +285,7 @@ mod tests {
                 None,
                 None,
                 Some(vec!["11".into(), "number".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -335,6 +340,7 @@ mod tests {
                 None,
                 None,
                 None,
+                None,
             ))
             .is_ok());
 
@@ -376,6 +382,7 @@ mod tests {
             None,
             None,
             Some(true),
+            None,
         );
         gc.calculation_complete(result).unwrap();
         assert!(gc.async_transactions().is_empty());
@@ -414,6 +421,7 @@ mod tests {
                 None,
                 None,
                 Some(vec!["original output".into(), "text".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -459,6 +467,7 @@ mod tests {
                 None,
                 None,
                 None,
+                None,
             ))
             .is_ok());
 
@@ -496,6 +505,7 @@ mod tests {
                 None,
                 None,
                 Some(vec!["new output second time".into(), "text".into()]),
+                None,
                 None,
                 None,
                 None,
@@ -566,6 +576,7 @@ mod tests {
             None,
             None,
             None,
+            None,
         ));
         assert!(result.is_ok());
 
@@ -608,6 +619,7 @@ mod tests {
             None,
             None,
             Some(vec!["3".into(), "number".into()]),
+            None,
             None,
             None,
             None,

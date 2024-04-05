@@ -1,3 +1,4 @@
+use crate::cellvalue::ImageCellValue;
 use crate::color::Rgba;
 use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
@@ -182,6 +183,11 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                     current::CellValue::Error(error) => {
                         CellValue::Error(Box::new((*error).clone().into()))
                     }
+                    current::CellValue::Image(image) => CellValue::Image(ImageCellValue {
+                        data: image.data.clone(),
+                        w: image.w,
+                        h: image.h,
+                    }),
                 };
                 if let Ok(y) = y.parse::<i64>() {
                     col.values.insert(y, cell_value);
@@ -514,6 +520,13 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                         current::RunError::from_grid_run_error(error),
                                     ),
                                     CellValue::Blank => current::CellValue::Blank,
+                                    CellValue::Image(image) => {
+                                        current::CellValue::Image(current::ImageCell {
+                                            data: image.data.clone(),
+                                            w: image.w,
+                                            h: image.h,
+                                        })
+                                    }
                                 },
                             )
                         })

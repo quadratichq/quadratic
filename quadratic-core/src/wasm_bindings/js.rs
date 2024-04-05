@@ -64,6 +64,15 @@ extern "C" {
     pub fn jsSheetCodeCell(sheet_id: String, code_cells: String);
     pub fn jsSheetBoundsUpdate(bounds: String);
 
+    pub fn jsUpdateImage(
+        sheet_id: String,
+        x: i64,
+        y: i64,
+        image: Option<Vec<u8>>,
+        w: Option<u32>,
+        h: Option<u32>,
+    );
+
     pub fn jsImportProgress(
         file_name: &str,
         current: u32,
@@ -97,6 +106,11 @@ use lazy_static::lazy_static;
 #[cfg(test)]
 lazy_static! {
     static ref TEST_ARRAY: Mutex<Vec<TestFunction>> = Mutex::new(vec![]);
+}
+
+#[cfg(test)]
+pub fn clear_js_calls() {
+    TEST_ARRAY.lock().unwrap().clear();
 }
 
 #[cfg(test)]
@@ -407,5 +421,21 @@ pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32) 
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsTransactionProgress",
         format!("{},{}", transaction_id, remaining_operations),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsUpdateImage(
+    sheet_id: String,
+    x: i64,
+    y: i64,
+    image: Option<Vec<u8>>,
+    w: Option<u32>,
+    h: Option<u32>,
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsUpdateImage",
+        format!("{},{},{},{:?},{:?},{:?}", sheet_id, x, y, image, w, h),
     ));
 }

@@ -12,6 +12,7 @@ pub struct JsCodeResult {
     pub line_number: Option<u32>,
     pub output_type: Option<String>,
     pub cancel_compute: Option<bool>,
+    pub output_bytes: Option<Vec<u8>>,
 }
 
 impl JsCodeResult {
@@ -27,6 +28,7 @@ impl JsCodeResult {
         line_number: Option<u32>,
         output_type: Option<String>,
         cancel_compute: Option<bool>,
+        output_bytes: Option<Vec<u8>>,
     ) -> Self {
         JsCodeResult {
             transaction_id,
@@ -38,6 +40,7 @@ impl JsCodeResult {
             line_number,
             output_type,
             cancel_compute,
+            output_bytes,
         }
     }
 }

@@ -25,6 +25,13 @@ pub struct CodeCellValue {
     pub code: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct ImageCellValue {
+    pub data: Vec<u8>,
+    pub w: Option<u32>,
+    pub h: Option<u32>,
+}
+
 /// Non-array value in the formula language.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -52,7 +59,10 @@ pub enum CellValue {
     Html(String),
     #[cfg_attr(test, proptest(skip))]
     Code(CodeCellValue),
+    #[cfg_attr(test, proptest(skip))]
+    Image(ImageCellValue),
 }
+
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -66,6 +76,7 @@ impl fmt::Display for CellValue {
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
             CellValue::Code(code) => write!(f, "{:?}", code),
+            CellValue::Image(_) => write!(f, "[image]"),
         }
     }
 }
@@ -90,6 +101,7 @@ impl CellValue {
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
             CellValue::Code(_) => "python",
+            CellValue::Image(_) => "image",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -105,6 +117,7 @@ impl CellValue {
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
             CellValue::Code(_) => todo!("repr of python"),
+            CellValue::Image(_) => "[image]".to_string(),
         }
     }
 
@@ -213,8 +226,9 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
-            // this should not render
+            // these should not render
             CellValue::Code(_) => String::new(),
+            CellValue::Image(_) => String::new(),
         }
     }
 
@@ -230,8 +244,9 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
-            // this should not be editable
+            // these should not be editable
             CellValue::Code(_) => String::new(),
+            CellValue::Image(_) => String::new(),
         }
     }
 
@@ -352,6 +367,7 @@ impl CellValue {
             | (CellValue::Duration(_), _)
             | (CellValue::Html(_), _)
             | (CellValue::Code(_), _)
+            | (CellValue::Image(_), _)
             | (CellValue::Blank, _) => return Ok(None),
         }))
     }
@@ -374,6 +390,7 @@ impl CellValue {
                 CellValue::Blank => 6,
                 CellValue::Html(_) => 7,
                 CellValue::Code(_) => 8,
+                CellValue::Image(_) => 9,
             }
         }
 
@@ -529,6 +546,10 @@ impl CellValue {
 
     pub fn is_html(&self) -> bool {
         matches!(self, CellValue::Html(_))
+    }
+
+    pub fn is_image(&self) -> bool {
+        matches!(self, CellValue::Image(_))
     }
 }
 
