@@ -11,23 +11,18 @@ import { CreateSecret } from '../connections/awsSecret';
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
-  body: ApiSchemas['/v0/connections.POST.request'],
+  body: ApiSchemas['/v0/connections/create/postgres.POST.request'],
 });
 
+/**
+ * The front-end should call the connetion service BEFORE creating this
+ * just to ensure it works.
+ */
 async function handler(req: RequestWithUser, res: Response) {
   const {
     user: { id: userId },
   } = req;
-  const { body } = parseRequest(req, schema);
-
-  const connection = {
-    username: body.username,
-    password: body.password,
-    host: body.host,
-    port: body.port,
-    database: body.database,
-    name: body.name,
-  };
+  const { body: connection } = parseRequest(req, schema);
 
   const response = await CreateSecret(JSON.stringify(connection));
 
@@ -40,7 +35,7 @@ async function handler(req: RequestWithUser, res: Response) {
       name: connection.name,
       type: 'POSTGRES',
       database: JSON.stringify({
-        non_sensitive_data: {
+        nonSensitiveData: {
           host: connection.host,
           port: connection.port,
           database: connection.database,

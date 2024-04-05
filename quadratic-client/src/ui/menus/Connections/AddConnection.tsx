@@ -12,14 +12,40 @@ import { useSearchParams } from 'react-router-dom';
 import { ConnectionConfiguration } from '../../../../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
 import { apiClient } from '../../../api/apiClient';
 
+type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
+
+export const connections = {
+  postgres: {
+    name: 'Postgres',
+    logoFullUrl: '/images/connections-logo-postgresql.png',
+    // logoIconUrl: ''
+    Component: ConnectionFormFieldsPostgres,
+  },
+  mysql: {
+    name: 'MySQL',
+    logoFullUrl: '/images/connections-logo-mysql.png',
+    // logoIconUrl: ''
+    Component: () => {},
+  },
+};
+
+// TODO: render different component based on the type
 export const AddConnection = () => {
-  const [connectionState, setConnectionState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [connectionSchema, setConnectionSchema] = useState<undefined | ConnectionConfiguration>(undefined);
   const formRef = useRef<HTMLFormElement>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const connections = searchParams.get('connections');
+  const isManage = searchParams.get('manage');
   const open = connections === 'add-postgres' || connections === 'add-mysql';
+
+  const onBack = () => {
+    setSearchParams((prev) => {
+      prev.set('connections', 'list');
+      return prev;
+    });
+  };
   const onClose = () => {
     setSearchParams((prev) => {
       prev.delete('connections');
@@ -41,26 +67,18 @@ export const AddConnection = () => {
 
   console.log('connectionSchema:', connectionSchema);
 
-  const handleInputChange = (name: string, value: string) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className=" max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add {connectionSchema?.name} connection</DialogTitle>
+          <DialogTitle>{isManage ? 'Manage' : 'Create'} Postgres connection</DialogTitle>
           <DialogDescription>
-            For more information on setting up {connectionSchema?.name},{' '}
+            For more information on setting up Postgres,{' '}
             <a href="#TODO:" className="underline">
               read our docs
             </a>
           </DialogDescription>
         </DialogHeader>
-
         <form
           ref={formRef}
           onChange={() => {
@@ -73,85 +91,7 @@ export const AddConnection = () => {
           }}
           className="grid gap-4"
         >
-          <InputWithLabel>
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" name="name" type="text" placeholder="My database" required autoComplete="off" />
-          </InputWithLabel>
-          <div className="grid grid-cols-3 gap-4">
-            <InputWithLabel className="col-span-2">
-              <Label htmlFor="host">Host</Label>
-              <Input id="host" name="host" type="text" placeholder="0.0.0.0" required autoComplete="off" />
-            </InputWithLabel>
-            <InputWithLabel>
-              <Label htmlFor="port">Port</Label>
-              <Input
-                id="port"
-                name="port"
-                type="number"
-                placeholder="0.0.0.0"
-                required
-                autoComplete="off"
-                // onKeyDown={(e) => {
-                //   const currentValue = e.target.value;
-                //   const keyPressed = e.key;
-
-                //   const isDigit = /^\d+$/.test(keyPressed);
-                //   if (!isDigit && ) {
-                //     e.preventDefault();
-                //     return;
-                //   }
-
-                //   const newValue = Number(`${currentValue}${keyPressed}`);
-                //   if (newValue > 65535) {
-                //     e.preventDefault();
-                //     return;
-                //   }
-
-                //   console.log('valid');
-                // }}
-                className="no-stepper"
-                min="0"
-                max="5432"
-              />
-            </InputWithLabel>
-          </div>
-          <InputWithLabel>
-            <Label htmlFor="database">Database</Label>
-            <Input id="database" name="database" type="text" placeholder="my_database" required autoComplete="off" />
-          </InputWithLabel>
-          <div className="grid grid-cols-2 gap-4">
-            <InputWithLabel>
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" name="username" type="text" placeholder="root" required autoComplete="off" />
-            </InputWithLabel>
-            <InputWithLabel>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" placeholder="root" required autoComplete="off" />
-            </InputWithLabel>
-          </div>
-
-          {
-            /*connectionSchema?.connectionFields.map((field, index) => {
-            return (
-              <InputWithLabel key={index}>
-                <Label htmlFor={field.name}>{field.name}</Label>
-                <Input
-                  id={field.name}
-                  placeholder="TODO"
-                  onChange={(e) => handleInputChange(field.name, e.target.value)}
-                  required={field.required}
-                  autoComplete="off"
-                  readOnly={true}
-                  type={field.sensitive === 'AWS_SECRET' ? 'password' : 'text'}
-                  value={formData[field.name] || ''}
-                />
-              </InputWithLabel>
-
-              // value={formData[field.name] || ''} // Use the formData value
-            );
-          })*/ ''
-          }
-
+          <ConnectionFormFieldsPostgres />
           <div
             className={cn(
               'flex items-center rounded border-2 px-2 py-2 pl-3',
@@ -186,7 +126,9 @@ export const AddConnection = () => {
                 </>
               )}
             </div>
+
             <Button
+              type="submit"
               className="ml-auto"
               variant="secondary"
               disabled={false}
@@ -222,10 +164,12 @@ export const AddConnection = () => {
             </Button>
           </div>
         </form>
-
         <DialogFooter>
+          <Button onClick={onBack} variant="link" className="mr-auto px-0">
+            Back to connections
+          </Button>
           <Button onClick={onClose} variant="outline">
-            Close
+            Cancel
           </Button>
           <Button onClick={onClose} disabled={connectionState !== 'success'}>
             Add connection
@@ -238,4 +182,67 @@ export const AddConnection = () => {
 
 export function InputWithLabel({ children, className }: { children: React.ReactNode; className?: string }) {
   return <div className={cn('grid w-full  items-center gap-1.5', className)}>{children}</div>;
+}
+
+function ConnectionFormFieldsPostgres() {
+  return (
+    <>
+      <InputWithLabel>
+        <Label htmlFor="name">Name</Label>
+        <Input id="name" name="name" type="text" placeholder="My database" required autoComplete="off" />
+      </InputWithLabel>
+      <div className="grid grid-cols-3 gap-4">
+        <InputWithLabel className="col-span-2">
+          <Label htmlFor="host">Host</Label>
+          <Input id="host" name="host" type="text" placeholder="0.0.0.0" required autoComplete="off" />
+        </InputWithLabel>
+        <InputWithLabel>
+          <Label htmlFor="port">Port</Label>
+          <Input
+            id="port"
+            name="port"
+            type="number"
+            placeholder="5432"
+            required
+            autoComplete="off"
+            // onKeyDown={(e) => {
+            //   const currentValue = e.target.value;
+            //   const keyPressed = e.key;
+
+            //   const isDigit = /^\d+$/.test(keyPressed);
+            //   if (!isDigit && ) {
+            //     e.preventDefault();
+            //     return;
+            //   }
+
+            //   const newValue = Number(`${currentValue}${keyPressed}`);
+            //   if (newValue > 65535) {
+            //     e.preventDefault();
+            //     return;
+            //   }
+
+            //   console.log('valid');
+            // }}
+            className="no-stepper"
+            min="0"
+            max="65535"
+          />
+        </InputWithLabel>
+      </div>
+      <InputWithLabel>
+        <Label htmlFor="database">Database</Label>
+        <Input id="database" name="database" type="text" placeholder="my_database" required autoComplete="off" />
+      </InputWithLabel>
+      <div className="grid grid-cols-2 gap-4">
+        <InputWithLabel>
+          <Label htmlFor="username">Username</Label>
+          <Input id="username" name="username" type="text" placeholder="root" required autoComplete="off" />
+        </InputWithLabel>
+        <InputWithLabel>
+          <Label htmlFor="password">Password</Label>
+          <Input id="password" name="password" type="password" placeholder="******" required autoComplete="off" />
+        </InputWithLabel>
+      </div>
+    </>
+  );
 }

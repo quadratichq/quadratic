@@ -81,6 +81,8 @@ const FileSchema = z.object({
   thumbnail: z.string().url().nullable(),
 });
 
+const ConnectionNameSchema = z.string().min(1).max(80); // TODO: right length?
+
 const connection = z.object({
   uuid: z.string(),
   name: z.string(),
@@ -113,10 +115,10 @@ export const connectionConfigurationZ = z.object({
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
-   *
+   * ===========================================================================
    * Files
    * Note: these are all files the user owns, so permissions are implicit
-   *
+   * ===========================================================================
    */
   '/v0/files.GET.response': z.array(
     FileSchema.pick({
@@ -140,11 +142,11 @@ export const ApiSchemas = {
   }),
 
   /**
-   *
+   * ===========================================================================
    * File
    * Note: GET `/files/:uuid` may not have an authenticated user. All other
    * requests to this endpoint (or nested under it) require authentication
-   *
+   * ===========================================================================
    */
   '/v0/files/:uuid.GET.response': z.object({
     file: FileSchema,
@@ -240,9 +242,9 @@ export const ApiSchemas = {
   '/v0/files/:uuid/invites/:inviteId.DELETE.response': z.object({ message: z.string() }),
 
   /**
-   *
+   * ===========================================================================
    * Feedback
-   *
+   * ===========================================================================
    */
   '/v0/feedback.POST.request': z.object({
     feedback: z.string(),
@@ -253,11 +255,11 @@ export const ApiSchemas = {
   }),
 
   /**
-   *
+   * ===========================================================================
    * Examples
    * Given the publicly-accessible URL of a (example) file in production,
    * duplicate it to the user's account.
-   *
+   * ===========================================================================
    */
   '/v0/examples.POST.request': z.object({
     publicFileUrlInProduction: z
@@ -278,9 +280,9 @@ export const ApiSchemas = {
   '/v0/examples.POST.response': FileSchema.pick({ name: true, uuid: true }),
 
   /**
-   *
+   * ===========================================================================
    * Teams
-   *
+   * ===========================================================================
    */
   '/v0/teams.GET.response': z.object({
     teams: z.array(
@@ -359,18 +361,22 @@ export const ApiSchemas = {
   '/v0/teams/:uuid/billing/checkout/session.GET.response': z.object({ url: z.string() }),
 
   /**
-   *
+   * ===========================================================================
    * Users
-   *
+   * ===========================================================================
    */
   '/v0/users.acknowledge.GET.response': z.object({ message: z.string() }),
 
-  // Connections
+  /**
+   * ===========================================================================
+   * Connections
+   * ===========================================================================
+   */
   '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ),
   '/v0/connections.GET.response': z.array(
     z.object({
-      uuid: z.string(),
-      name: z.string(),
+      uuid: z.string().uuid(),
+      name: ConnectionNameSchema,
       created_date: z.string().datetime(),
       updated_date: z.string().datetime(),
       type: z.enum(['POSTGRES']),
@@ -381,6 +387,18 @@ export const ApiSchemas = {
   '/v0/connections.POST.response': z.any(), // TODO:
   '/v0/connections/:uuid/run.POST.request': z.object({}), // TODO:
   '/v0/connections/:uuid/run.POST.response': z.any(), // TODO:
+
+  // Connection types
+  '/v0/connections/create/postgres.POST.request': z.object({
+    name: z.string().min(1).max(80), // TODO:
+    host: z.string(),
+    port: z.number().min(0).max(65535),
+    database: z.string().optional(),
+    username: z.string(),
+    password: z.string().optional(),
+  }),
+  '/v0/connections/create/postgres.POST.response': z.object({ message: z.string() }),
+  '/v0/connections/create/mysql.POST.request': z.object({}),
 };
 
 type ApiKeys = keyof typeof ApiSchemas;
