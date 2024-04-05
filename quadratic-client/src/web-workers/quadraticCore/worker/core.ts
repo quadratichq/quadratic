@@ -851,9 +851,9 @@ class Core {
     }
   }
 
-  applyOfflineUnsavedTransaction(transactionId: string, operations: string) {
+  applyOfflineUnsavedTransaction(transactionId: string, transactions: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.applyOfflineUnsavedTransaction(transactionId, operations);
+    this.gridController.applyOfflineUnsavedTransaction(transactionId, transactions);
   }
 
   clearFormatting(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {

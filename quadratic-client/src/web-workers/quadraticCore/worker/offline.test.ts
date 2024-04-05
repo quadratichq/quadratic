@@ -33,9 +33,9 @@ describe('offline', () => {
     const load = await offline.load();
     expect(load?.length).toBe(3);
     expect(load).toStrictEqual([
-      { transactionId: '1', operations: 'a' },
-      { transactionId: '2', operations: 'b' },
-      { transactionId: '3', operations: 'c' },
+      { transactionId: '1', transactions: 'a', operations: 1 },
+      { transactionId: '2', transactions: 'b', operations: 1 },
+      { transactionId: '3', transactions: 'c', operations: 1 },
     ]);
   });
 
@@ -48,8 +48,8 @@ describe('offline', () => {
     const load = await offline.load();
     expect(load?.length).toBe(2);
     expect(await offline.load()).toStrictEqual([
-      { transactionId: '1', operations: 'a' },
-      { transactionId: '3', operations: 'c' },
+      { transactionId: '1', transactions: 'a', operations: 1 },
+      { transactionId: '3', transactions: 'c', operations: 1 },
     ]);
   });
 

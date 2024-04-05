@@ -63,8 +63,8 @@ class Offline {
   }
 
   // Loads the unsent transactions for this file from indexedDb
-  async load(): Promise<{ transactionId: string; operations: string }[] | undefined> {
-    return new Promise((resolve, reject) => {
+  async load(): Promise<{ transactionId: string; transactions: string }[] | undefined> {
+    return new Promise((resolve) => {
       if (!this.fileId) throw new Error("Expected fileId to be set in 'load' method.");
       const store = this.getFileIndex(true, 'fileId');
       const keyRange = IDBKeyRange.only(this.fileId);
@@ -73,17 +73,15 @@ class Offline {
         const results = getAll.result
           .sort((a, b) => a.index - b.index)
           .map((r) => {
-            const transaction = JSON.parse(r.transaction);
-            const operations = transaction?.forward.operations?.length ?? 0;
             return {
               transactionId: r.transactionId,
-              operations: r.transaction,
-              operationsCount: operations,
+              transactions: r.transaction,
+              operations: r.operations ?? 0,
             };
           });
         this.stats = {
           transactions: results.length,
-          operations: results.reduce((acc, r) => acc + r.operationsCount.length, 0),
+          operations: results.reduce((acc, r) => acc + r.operations, 0),
         };
         coreClient.sendOfflineTransactionStats();
         resolve(results);
@@ -95,7 +93,7 @@ class Offline {
   addUnsentTransaction(transactionId: string, transaction: string, operations: number) {
     const store = this.getObjectStore(false);
     if (!this.fileId) throw new Error("Expected fileId to be set in 'addUnsentTransaction' method.");
-    store.add({ fileId: this.fileId, transactionId, transaction, index: this.index++ });
+    store.add({ fileId: this.fileId, transactionId, transaction, operations, index: this.index++ });
     this.stats.transactions++;
     this.stats.operations += operations;
     coreClient.sendOfflineTransactionStats();
@@ -110,10 +108,8 @@ class Offline {
     index.openCursor(IDBKeyRange.only(transactionId)).onsuccess = (event) => {
       const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
       if (cursor) {
-        const transaction = JSON.parse(cursor.value.transaction);
-        const operations = transaction?.forward.operations?.length ?? 0;
         this.stats.transactions--;
-        this.stats.operations -= operations;
+        this.stats.operations -= cursor.value.operations;
         coreClient.sendOfflineTransactionStats();
         cursor.delete();
         if (debugShowFileIO) {
@@ -155,7 +151,7 @@ class Offline {
     }
 
     unsentTransactions?.forEach((tx) => {
-      core.applyOfflineUnsavedTransaction(tx.transactionId, tx.operations);
+      core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions);
     });
   }
 
