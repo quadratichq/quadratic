@@ -193,6 +193,7 @@ pub type CellBorder = v1_4::CellBorder;
 pub enum CodeCellLanguage {
     Python,
     Formula,
+    Javascript,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

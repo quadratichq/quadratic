@@ -1,5 +1,6 @@
 import { useUndo } from '@/events/useUndo';
 import { useRootRouteLoaderData } from '@/router';
+import { javascriptWebWorker } from '@/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/pythonWebWorker';
 import { useEffect, useRef, useState } from 'react';
@@ -28,6 +29,7 @@ export default function QuadraticApp() {
     // Load python and populate web workers (if supported)
     if (!isMobile && hasPermissionToEditFile(permissions)) {
       pythonWebWorker.init();
+      javascriptWebWorker.init();
     }
   }, [permissions]);
 

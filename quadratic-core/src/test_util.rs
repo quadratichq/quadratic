@@ -173,6 +173,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
                 Some(CellValue::Code(code_cell)) => match code_cell.language {
                     CodeCellLanguage::Formula => code_cell.code.to_string(),
                     CodeCellLanguage::Python => code_cell.code.to_string(),
+                    CodeCellLanguage::Javascript => code_cell.code.to_string(),
                 },
                 _ => sheet
                     .display_value(pos)

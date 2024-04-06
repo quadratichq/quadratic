@@ -56,8 +56,6 @@ let CELL_TYPE_OPTIONS = [
       </>
     ),
   },
-
-  // todo: create CodeCellLanguage for these types in Rust (when ready to implement)
   {
     name: 'SQL Query',
     mode: '',
@@ -66,11 +64,10 @@ let CELL_TYPE_OPTIONS = [
     disabled: true,
   },
   {
-    name: 'JavaScript',
+    name: 'Typescript / Javascript',
     mode: '',
     icon: <JavaScript color="disabled" />,
     description: 'The world’s most popular programming language.',
-    disabled: true,
   },
 ] as CellTypeOption[];
 

@@ -19,6 +19,7 @@ import {
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
+import { coreJavascript } from './coreJavascript.ts';
 import { coreMultiplayer } from './coreMultiplayer';
 import { corePython } from './corePython';
 import { offline } from './offline';
@@ -469,6 +470,10 @@ class CoreClient {
 
       case 'clientCoreInitPython':
         corePython.init(e.ports[0]);
+        break;
+
+      case 'clientCoreInitJavascript':
+        coreJavascript.init(e.ports[0]);
         break;
 
       case 'clientCoreImportExcel':

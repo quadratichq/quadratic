@@ -63,6 +63,10 @@ export interface ClientCoreInitPython {
   type: 'clientCoreInitPython';
 }
 
+export interface ClientCoreInitJavascript {
+  type: 'clientCoreInitJavascript';
+}
+
 export interface ClientCoreExport {
   type: 'clientCoreExport';
   id: number;
@@ -847,6 +851,7 @@ export type ClientCoreMessage =
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
   | ClientCoreInitPython
+  | ClientCoreInitJavascript
   | ClientCoreImportExcel
   | ClientCoreCancelExecution;
 

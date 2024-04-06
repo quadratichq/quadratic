@@ -10,6 +10,7 @@ import {
   SheetBounds,
   SheetInfo,
 } from '@/quadratic-core-types';
+import { LanguageState } from '@/web-workers/languageTypes';
 import { MultiplayerState } from '@/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { CellEdit, MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
@@ -54,6 +55,9 @@ interface EventTypes {
 
   pythonInit: (version: string) => void;
   pythonState: (state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  javascriptInit: (version: string) => void;
+  javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
   updateCodeCell: (options: {
     sheetId: string;
     x: number;

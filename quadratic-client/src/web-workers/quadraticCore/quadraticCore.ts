@@ -887,6 +887,10 @@ class QuadraticCore {
     this.send({ type: 'clientCoreInitPython' }, port);
   }
 
+  sendJavascriptInit(port: MessagePort) {
+    this.send({ type: 'clientCoreInitJavascript' }, port);
+  }
+
   sendCancelExecution(language: CodeCellLanguage) {
     this.send({ type: 'clientCoreCancelExecution', language });
   }
