@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
-import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
+import { dockerRunContainer, runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import { clientEc2SecurityGroup } from "../shared/securityGroups";
 const config = new pulumi.Config();
@@ -19,8 +19,21 @@ const clientPulumiEscEnvironmentName = config.require(
 // Configuration from Pulumi ESC
 const instanceSize = config.require("client-instance-size");
 const domain = config.require("domain");
-const dependencySetupBashCommand = "";
 const ecrRegistryUrl = config.require("ecr-registry-url");
+
+const dependencySetupBashCommand = `
+sudo ${dockerRunContainer({
+  name: "caddy",
+  image: "caddy:2.7.6",
+  portMappings: [
+    { hostPort: 80, containerPort: 80 },
+    { hostPort: 443, containerPort: 443 },
+  ],
+  addHostDns: true,
+  addCapabilities: ["NET_ADMIN"],
+  command: `caddy reverse-proxy --from ${clientSubdomain}.${domain}} --to host.docker.internal:3000`,
+})}
+`;
 
 const instance = new aws.ec2.Instance("client-instance", {
   tags: {
@@ -41,7 +54,7 @@ const instance = new aws.ec2.Instance("client-instance", {
         command: "npm start --workspace=quadratic-client -- --host",
         addHostDns: true,
         envFile: ".env",
-        portMappings: [{ hostPort: 80, containerPort: 3000 }]
+        portMappings: [{ hostPort: 3000, containerPort: 3000 }]
       },
       clientPulumiEscEnvironmentName,
       {

@@ -133,6 +133,7 @@ interface DockerRunOptions {
   volumeMappings?: DockerVolumeMapping[];
   command?: string;
   addHostDns?: boolean;
+  addCapabilities?: string[];
 }
 
 export const dockerRunContainer = (options: DockerRunOptions) => {
@@ -163,6 +164,10 @@ export const dockerRunContainer = (options: DockerRunOptions) => {
 
   if (options.envFile) {
     runCommand += ` --env-file ${options.envFile}`;
+  }
+
+  if (options.addCapabilities) {
+    runCommand += ` --cap-add ${options.addCapabilities.join(",")}`;
   }
 
   runCommand += ` ${options.image}`;
