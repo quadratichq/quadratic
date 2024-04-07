@@ -80,8 +80,8 @@ ${dependencySetupBashCommand}
 sudo ${dockerRunContainer(dockerRunOptions)}
 
 # TODO: In preview environments we should disable datadog
-echo 'Setting up Datadog agent'
-sudo ${dockerRunContainer({
+# echo 'Setting up Datadog agent'
+# sudo ${dockerRunContainer({
     name: "datadog-agent",
     image: "datadog/agent:latest",
     envFile: ".env",
