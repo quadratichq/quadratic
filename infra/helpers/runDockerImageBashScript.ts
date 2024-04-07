@@ -36,12 +36,9 @@ const createBashCommandForEnv = (envVariables: EnvVariables) => {
  * @param rebuildOnEveryPulumiRun If true, a random nonce will be added to the Docker image tag to force a rebuild on every run. userDataReplaceOnChange: true must be set on the EC2 instance.
  */
 export const runDockerImageBashScript = (
-  imageRepositoryName: string,
-  imageTag: string,
+  dockerRunOptions: DockerRunOptions,
   pulumiEscEnvironmentName: string,
   extraEnvVars: EnvVariables,
-  portMapping: string = "80:80",
-  runCommand: string = "",
   dependencySetupBashCommand: string = "",
   rebuildOnEveryPulumiRun: boolean = false
 ) => {
@@ -78,24 +75,101 @@ echo 'Logging into ECR'
 aws ecr get-login-password --region us-west-2 | sudo docker login --username AWS --password-stdin ${ecrRegistryUrl}
 
 echo 'Pulling and running Docker image from ECR'
-sudo docker pull ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
 ${dependencySetupBashCommand}
-sudo docker run -d \
-            --name ${imageRepositoryName} \
-            --restart always \
-            -p ${portMapping} \
-            --env-file .env \
-            --add-host=host.docker.internal:host-gateway \
-            ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag} ${runCommand}
+
+sudo ${dockerRunContainer(dockerRunOptions)}
 
 # TODO: In preview environments we should disable datadog
 echo 'Setting up Datadog agent'
-docker run -d --name datadog-agent \
-            --restart always \
-            --env-file .env \
-            -v /var/run/docker.sock:/var/run/docker.sock:ro \
-            -v /proc/:/host/proc/:ro \
-            -v /opt/datadog-agent/run:/opt/datadog-agent/run:rw \
-            -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro \
-            datadog/agent:latest`;
+sudo ${dockerRunContainer({
+    name: "datadog-agent",
+    image: "datadog/agent:latest",
+    envFile: ".env",
+    volumeMappings: [
+      {
+        hostPath: "/var/run/docker.sock",
+        containerPath: "/var/run/docker.sock",
+        permissions: "ro",
+      },
+      {
+        hostPath: "/proc/",
+        containerPath: "/host/proc/",
+        permissions: "ro",
+      },
+      {
+        hostPath: "/opt/datadog-agent/run",
+        containerPath: "/opt/datadog-agent/run",
+        permissions: "rw",
+      },
+      {
+        hostPath: "/sys/fs/cgroup/",
+        containerPath: "/host/sys/fs/cgroup",
+        permissions: "ro",
+      },
+    ],
+  })}
+
+`;
 };
+
+
+
+interface DockerPortMapping {
+  hostPort: number;
+  containerPort: number;
+}
+
+interface DockerVolumeMapping {
+  hostPath: string;
+  containerPath: string;
+  permissions: string;
+}
+
+interface DockerRunOptions {
+  name: string;
+  image: string;
+  portMappings?: DockerPortMapping[];
+  envFile?: string;
+  volumeMappings?: DockerVolumeMapping[];
+  command?: string;
+  addHostDns?: boolean;
+}
+
+export const dockerRunContainer = (options: DockerRunOptions) => {
+  let runCommand = `docker run -d --restart always --name ${options.name}`;
+
+  if (options.addHostDns) {
+    runCommand += " --add-host=host.docker.internal:host-gateway";
+  }
+
+  if (options.portMappings) {
+    let portMapping = ""
+    portMapping = options.portMappings
+      .map((portMapping) => `-p ${portMapping.hostPort}:${portMapping.containerPort}`)
+      .join(" ");
+    runCommand += ` ${portMapping}`;
+  }
+
+  if (options.volumeMappings) {
+    let volumeMapping = "";
+    volumeMapping = options.volumeMappings
+      .map(
+        (volumeMapping) =>
+          `-v ${volumeMapping.hostPath}:${volumeMapping.containerPath}:${volumeMapping.permissions}`
+      )
+      .join(" ");
+    runCommand += ` ${volumeMapping}`;
+  }
+
+  if (options.envFile) {
+    runCommand += ` --env-file ${options.envFile}`;
+  }
+
+  runCommand += ` ${options.image}`;
+
+  if (options.command) {
+    runCommand += ` ${options.command}`;
+  }
+
+  return runCommand;
+}

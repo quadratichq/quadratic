@@ -15,12 +15,12 @@ const clientECRName = config.require("client-ecr-repo-name");
 const clientPulumiEscEnvironmentName = config.require(
   "client-pulumi-esc-environment-name"
 );
-const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Configuration from Pulumi ESC
 const instanceSize = config.require("client-instance-size");
 const domain = config.require("domain");
 const dependencySetupBashCommand = "";
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
 const instance = new aws.ec2.Instance("client-instance", {
   tags: {
@@ -35,15 +35,19 @@ const instance = new aws.ec2.Instance("client-instance", {
 
   userData: pulumi.all([]).apply(([]) =>
     runDockerImageBashScript(
-      clientECRName,
-      dockerImageTag,
+      {
+        name: clientECRName,
+        image: `${ecrRegistryUrl}/${clientECRName}:${dockerImageTag}`,
+        command: "npm start --workspace=quadratic-client -- --host",
+        addHostDns: true,
+        envFile: ".env",
+        portMappings: [{ hostPort: 80, containerPort: 3000 }]
+      },
       clientPulumiEscEnvironmentName,
       {
         VITE_QUADRATIC_API_URL: `http://${apiSubdomain}.${domain}`,
         VITE_QUADRATIC_MULTIPLAYER_URL: `https://${multiplayerSubdomain}.${domain}`,
       },
-      "80:3000",
-      "npm start --workspace=quadratic-client -- --host",
       dependencySetupBashCommand,
       true
     )

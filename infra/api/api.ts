@@ -13,11 +13,11 @@ const apiECRName = config.require("api-ecr-repo-name");
 const apiPulumiEscEnvironmentName = config.require(
   "api-pulumi-esc-environment-name"
 );
-const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Configuration from Pulumi ESC
 const instanceSize = config.require("api-instance-size");
 const domain = config.require("domain");
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // postgres setup
 const postgresPassword = "password";
@@ -61,15 +61,18 @@ const instance = new aws.ec2.Instance("api-instance", {
   userDataReplaceOnChange: true,
   userData: pulumi.all([]).apply(([]) =>
     runDockerImageBashScript(
-      apiECRName,
-      dockerImageTag,
+      {
+        name: apiECRName,
+        image: `${ecrRegistryUrl}/${apiECRName}:${dockerImageTag}`,
+        addHostDns: true,
+        envFile: ".env",
+        portMappings: [{ hostPort: 80, containerPort: 80 }],
+      },
       apiPulumiEscEnvironmentName,
       {
         PORT: "80",
         DATABASE_URL: `postgres://${postgresUser}:${postgresPassword}@host.docker.internal:5432/${postgresDB}`,
       },
-      "80:80",
-      "",
       dependencySetupBashCommand,
       true
     )

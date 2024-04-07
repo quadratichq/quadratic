@@ -20,6 +20,7 @@ const filesPulumiEscEnvironmentName = config.require(
 const instanceSize = config.require("files-instance-size");
 const domain = config.require("domain");
 const dependencySetupBashCommand = "";
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
@@ -32,16 +33,19 @@ const instance = new aws.ec2.Instance("files-instance", {
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(
-      filesECRName,
-      dockerImageTag,
+      {
+        name: filesECRName,
+        image: `${ecrRegistryUrl}/${filesECRName}:${dockerImageTag}`,
+        addHostDns: true,
+        envFile: ".env",
+        portMappings: [{ hostPort: 80, containerPort: 80 }]
+      },
       filesPulumiEscEnvironmentName,
       {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: `http://${apiSubdomain}.${domain}`,
       },
-      "80:80",
-      "",
       dependencySetupBashCommand,
       true
     )
