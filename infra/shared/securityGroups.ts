@@ -76,6 +76,12 @@ export const clientEc2SecurityGroup = new aws.ec2.SecurityGroup("client-sg", {
     { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
     {
       protocol: "tcp",
+      fromPort: 443,
+      toPort: 443,
+      securityGroups: ["0.0.0.0/0"],
+    },
+    {
+      protocol: "tcp",
       fromPort: 80,
       toPort: 80,
       cidrBlocks: ["0.0.0.0/0"],
