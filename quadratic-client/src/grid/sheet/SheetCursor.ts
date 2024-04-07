@@ -1,4 +1,3 @@
-import { Pos } from '@/quadratic-core/quadratic_core';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
@@ -108,11 +107,6 @@ export class SheetCursor {
 
   get terminalPosition(): Coordinate {
     return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
-  }
-
-  // Returns the Rust pos of the cursor
-  getPos(): Pos {
-    return new Pos(this.cursorPosition.x, this.cursorPosition.y);
   }
 
   getRectangle(): Rectangle {

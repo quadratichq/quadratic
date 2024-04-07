@@ -16,6 +16,12 @@ export const COMPONENTS = {
         shortcut: "y",
     },
     types: { color: "magenta", dark: "cyan", name: "Types", shortcut: "t" },
+    rustClient: {
+        name: "RustClient",
+        color: "gray",
+        dark: "gray",
+        shortcut: "e",
+    },
     db: {
         color: "gray",
         dark: "gray",
@@ -46,12 +52,6 @@ export const COMPONENTS = {
         color: "gray",
         dark: "gray",
         name: "Redis",
-    },
-    gridOffsets: {
-        name: "Offsets",
-        color: "gray",
-        dark: "gray",
-        shortcut: "o",
     },
 };
 export const SPACE = "     ";

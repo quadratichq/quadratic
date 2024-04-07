@@ -10,7 +10,7 @@ import { debugShowLoadingHashes } from '@/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/gridGL/cells/CellsTypes';
 import { intersects } from '@/gridGL/helpers/intersects';
 import { JsRenderCell, SheetBounds, SheetInfo } from '@/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
+import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';

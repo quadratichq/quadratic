@@ -1,6 +1,6 @@
 import { events } from '@/events/events';
 import { CellAlign, CellFormatSummary, GridBounds, SheetBounds, SheetInfo } from '@/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-grid-offsets/quadratic_grid_offsets';
+import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';

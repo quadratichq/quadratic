@@ -1,5 +1,6 @@
 import { parsePython } from '@/helpers/parseEditorPythonCell';
 import { CodeCellLanguage } from '@/quadratic-core-types';
+import { parseFormula } from '@/quadratic-rust-client/quadratic_rust_client';
 import monaco, { editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -7,7 +8,6 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
 import { StringId, getKey } from '../../../helpers/getKey';
-import { parse_formula } from '../../../quadratic-core/quadratic_core';
 import { colors } from '../../../theme/colors';
 
 function extractCellsFromParseFormula(
@@ -90,7 +90,7 @@ export const useEditorCellHighlights = (
       }
 
       if (language === 'Formula') {
-        parsed = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
+        parsed = await parseFormula(modelValue, 0, 0);
       }
 
       if (parsed) {

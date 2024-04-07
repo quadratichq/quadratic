@@ -1,6 +1,10 @@
 use quadratic_core::sheet_offsets::SheetOffsets;
 use wasm_bindgen::prelude::*;
 
+pub mod jsexpr;
+pub mod lsp;
+pub mod parse_formula;
+
 #[wasm_bindgen]
 pub struct SheetOffsetsWasm {}
 

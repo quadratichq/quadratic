@@ -19,7 +19,7 @@ export class Control {
   multiplayer?: ChildProcessWithoutNullStreams;
   files?: ChildProcessWithoutNullStreams;
   python?: ChildProcessWithoutNullStreams;
-  gridOffsets?: ChildProcessWithoutNullStreams;
+  rustClient?: ChildProcessWithoutNullStreams;
   db?: ChildProcessWithoutNullStreams;
   npm?: ChildProcessWithoutNullStreams;
   rust?: ChildProcessWithoutNullStreams;
@@ -33,7 +33,7 @@ export class Control {
     multiplayer: false,
     files: false,
     python: false,
-    gridOffsets: false,
+    rustClient: false,
     types: false,
     db: false,
     npm: false,
@@ -83,7 +83,7 @@ export class Control {
       this.kill("multiplayer"),
       this.kill("files"),
       this.kill("python"),
-      this.kill("gridOffsets"),
+      this.kill("rustClient"),
     ]);
     process.exit(0);
   }
@@ -466,23 +466,23 @@ export class Control {
     this.runPython();
   }
 
-  async runGridOffsets() {
+  async runRustClient() {
     if (this.quitting) return;
-    this.status.gridOffsets = false;
-    await this.kill("gridOffsets");
-    this.ui.print("gridOffsets");
-    this.signals.gridOffsets = new AbortController();
-    this.gridOffsets = spawn(
+    this.status.rustClient = false;
+    await this.kill("rustClient");
+    this.ui.print("rustClient");
+    this.signals.rustClient = new AbortController();
+    this.rustClient = spawn(
       "npm",
       [
         "run",
-        this.cli.options.gridOffsets ? "dev" : "build",
-        "--workspace=quadratic-grid-offsets",
+        this.cli.options.rustClient ? "dev" : "build",
+        "--workspace=quadratic-rust-client",
       ],
-      { signal: this.signals.gridOffsets.signal }
+      { signal: this.signals.rustClient.signal }
     );
-    this.ui.printOutput("gridOffsets", (data) =>
-      this.handleResponse("gridOffsets", data, {
+    this.ui.printOutput("rustClient", (data) =>
+      this.handleResponse("rustClient", data, {
         success: "Your wasm pkg is ready to publish",
         error: "error[",
         start: "[Running ",
@@ -581,6 +581,6 @@ export class Control {
     this.runRust();
     this.runDb();
     this.runPython();
-    this.runGridOffsets();
+    this.runRustClient();
   }
 }

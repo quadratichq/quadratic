@@ -4,7 +4,7 @@ import { debugShowFileIO, debugShowMultiplayer } from '@/debugFlags';
 import { loadAssets } from '@/gridGL/loadAssets';
 import { thumbnail } from '@/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/helpers/isEmbed';
-import initGridOffsets from '@/quadratic-grid-offsets/quadratic_grid_offsets';
+import initRustClient from '@/quadratic-rust-client/quadratic_rust_client';
 import { VersionComparisonResult, compareVersions } from '@/schemas/compareVersions';
 import { Button } from '@/shadcn/ui/button';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
@@ -49,7 +49,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     );
 
   // initialize: Rust metadata and PIXI assets
-  await Promise.all([initGridOffsets(), loadAssets()]);
+  await Promise.all([initRustClient(), loadAssets()]);
 
   // initialize Core web worker
   const result = await quadraticCore.load(
