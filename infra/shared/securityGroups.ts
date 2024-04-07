@@ -39,6 +39,7 @@ export const multiplayerEc2SecurityGroup = new aws.ec2.SecurityGroup(
   "multiplayer-sg",
   {
     ingress: [
+      { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
       // { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
       {
         protocol: "tcp",
