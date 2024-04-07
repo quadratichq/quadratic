@@ -46,7 +46,7 @@ const instance = new aws.ec2.Instance("client-instance", {
       clientPulumiEscEnvironmentName,
       {
         VITE_QUADRATIC_API_URL: `http://${apiSubdomain}.${domain}`,
-        VITE_QUADRATIC_MULTIPLAYER_URL: `https://${multiplayerSubdomain}.${domain}`,
+        VITE_QUADRATIC_MULTIPLAYER_URL: `ws://${multiplayerSubdomain}.${domain}/ws`,
       },
       dependencySetupBashCommand,
       true
