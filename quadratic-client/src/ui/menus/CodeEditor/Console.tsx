@@ -21,6 +21,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
   const theme = useTheme();
   const { isAuthenticated } = useRootRouteLoaderData();
+
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
 
   return (

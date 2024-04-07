@@ -1,4 +1,4 @@
-import { JsGetCellResponse } from '@/quadratic-core-types';
+import { JsCodeResult, JsGetCellResponse } from '@/quadratic-core-types';
 
 export interface CoreJavascriptRun {
   type: 'coreJavascriptRun';
@@ -12,7 +12,7 @@ export interface CoreJavascriptRun {
 export interface JavascriptCoreResults {
   type: 'javascriptCoreResults';
   transactionId: string;
-  // results: PythonRun;
+  results: JsCodeResult;
 }
 
 export interface JavascriptCoreGetCells {

@@ -205,6 +205,21 @@ impl GridController {
                     );
                     transaction.waiting_for_async = None;
                 }
+                CodeCellLanguage::Javascript => {
+                    let new_code_run = self.js_code_result_to_code_cell_value(
+                        transaction,
+                        result,
+                        current_sheet_pos,
+                    );
+
+                    self.finalize_code_run(
+                        transaction,
+                        current_sheet_pos,
+                        Some(new_code_run),
+                        None,
+                    );
+                    transaction.waiting_for_async = None;
+                }
                 _ => {
                     return Err(CoreError::UnhandledLanguage(
                         "Transaction.complete called for an unhandled language".into(),
@@ -312,7 +327,7 @@ impl GridController {
                 }),
                 return_type: None,
                 line_number: js_code_result.line_number,
-                output_type: js_code_result.output_type,
+                output_type: js_code_result.output_display_type,
                 std_out: None,
                 std_err: None,
                 spill_error: false,
@@ -321,7 +336,7 @@ impl GridController {
             };
         };
         let result = if js_code_result.success {
-            let result = if let Some(array_output) = js_code_result.array_output {
+            let result = if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.splice(0..0, ops);
                 if let Some(array) = array {
@@ -344,7 +359,7 @@ impl GridController {
             CodeRunResult::Ok(result)
         } else {
             let error_msg = js_code_result
-                .error_msg
+                .std_err
                 .clone()
                 .unwrap_or_else(|| "Unknown Python Error".into());
             let msg = RunErrorMsg::PythonError(error_msg.into());
@@ -366,9 +381,9 @@ impl GridController {
             result,
             return_type,
             line_number: js_code_result.line_number,
-            output_type: js_code_result.output_type,
-            std_out: js_code_result.input_python_std_out,
-            std_err: js_code_result.error_msg,
+            output_type: js_code_result.output_display_type,
+            std_out: js_code_result.std_out,
+            std_err: js_code_result.std_err,
             spill_error: false,
             last_modified: Utc::now(),
             cells_accessed: transaction.cells_accessed.clone(),

@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/debugFlags';
-import { JsGetCellResponse } from '@/quadratic-core-types';
+import { JsCodeResult, JsGetCellResponse } from '@/quadratic-core-types';
 import { CorePythonMessage, PythonCoreMessage } from '../../pythonWebWorker/pythonCoreMessages';
 import { core } from './core';
 
@@ -24,13 +24,37 @@ class CorePython {
   private handleMessage = (e: MessageEvent<PythonCoreMessage>) => {
     switch (e.data.type) {
       case 'pythonCoreResults':
+        // todo: clean up the python completion message.
         if (this.lastTransactionId === e.data.transactionId) {
           this.lastTransactionId = undefined;
         }
         if (e.data.results.input_python_stack_trace) {
           e.data.results.std_err = e.data.results.input_python_stack_trace;
         }
-        core.calculationComplete(e.data.transactionId, e.data.results);
+        const results = e.data.results;
+        let output_array: string[][][] | null = null;
+        if (results.array_output) {
+          // A 1d list was provided. We convert it to a 2d array by changing each entry into an array.
+          if (!Array.isArray(results.array_output[0][0])) {
+            output_array = (results.array_output as any).map((row: any) => [row]);
+          } else {
+            output_array = results.array_output as any as string[][][];
+          }
+        }
+
+        const codeResult: JsCodeResult = {
+          transaction_id: e.data.transactionId,
+          success: results.success,
+          std_err: results.std_err,
+          std_out: results.std_out,
+          output_value: results.output ? (results.output as any as string[]) : null,
+          output_array,
+          line_number: results.lineno ?? null,
+          output_display_type: results.output_type ?? null,
+          cancel_compute: false,
+        };
+
+        core.calculationComplete(codeResult);
         break;
 
       case 'pythonCoreGetCells':

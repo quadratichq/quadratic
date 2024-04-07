@@ -27,7 +27,7 @@ class CoreJavascript {
         if (this.lastTransactionId === e.data.transactionId) {
           this.lastTransactionId = undefined;
         }
-        // core.calculationComplete(e.data.transactionId, e.data.results);
+        core.calculationComplete(e.data.results);
         break;
 
       case 'javascriptCoreGetCells':

@@ -1,5 +1,5 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { JsGetCellResponse } from '@/quadratic-core-types';
+import { JsCodeResult, JsGetCellResponse } from '@/quadratic-core-types';
 import type { CoreJavascriptGetCells, CoreJavascriptMessage, JavascriptCoreMessage } from '../javascriptCoreMessages';
 import { javascript } from './javascript';
 
@@ -12,7 +12,7 @@ class JavascriptCore {
     this.coreMessagePort = messagePort;
     this.coreMessagePort.onmessage = this.handleMessage;
 
-    if (debugWebWorkers) console.log('[pythonCore] initialized');
+    if (debugWebWorkers) console.log('[javascriptCore] initialized');
   }
 
   private send(message: JavascriptCoreMessage) {
@@ -21,7 +21,7 @@ class JavascriptCore {
   }
 
   private handleMessage = async (e: MessageEvent<CoreJavascriptMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[pythonCore] message: ${e.data.type}`);
+    if (debugWebWorkersMessages) console.log(`[javascriptCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'coreJavascriptRun':
@@ -36,18 +36,18 @@ class JavascriptCore {
         delete this.waitingForResponse[e.data.id];
         return;
       } else {
-        console.error(`[pythonCore] no response for id ${e.data.id}`);
+        console.error(`[javascriptCore] no response for id ${e.data.id}`);
       }
     }
 
-    console.warn("[pythonCore] didn't handle message", e.data);
+    console.warn("[javascriptCore] didn't handle message", e.data);
   };
 
-  sendPythonResults(transactionId: string, results: any) {
+  sendJavascriptResults(transactionId: string, results: JsCodeResult) {
     this.send({
       type: 'javascriptCoreResults',
       transactionId,
-      // results,
+      results,
     });
   }
 

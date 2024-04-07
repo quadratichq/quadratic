@@ -200,7 +200,6 @@ export const CodeEditor = () => {
       language,
       cursor: sheets.getCursorPosition(),
     });
-    console.log(language, editorContent);
     setCodeString(editorContent ?? '');
 
     mixpanel.track('[CodeEditor].cellRun', {
@@ -373,7 +372,9 @@ export const CodeEditor = () => {
             height: `${consoleHeight}px`,
           }}
         >
-          {(editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
+          {(editorInteractionState.mode === 'Python' ||
+            editorInteractionState.mode === 'Formula' ||
+            editorInteractionState.mode === 'Javascript') && (
             <Console
               consoleOutput={out}
               editorMode={editorMode}

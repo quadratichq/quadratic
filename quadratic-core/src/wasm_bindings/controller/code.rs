@@ -2,6 +2,7 @@ use super::*;
 
 #[wasm_bindgen]
 impl GridController {
+    /// Called after a external calculation is complete.
     #[wasm_bindgen(js_name = "calculationComplete")]
     pub fn js_calculation_complete(&mut self, result: String) {
         if let Ok(result) = serde_json::from_str(&result) {

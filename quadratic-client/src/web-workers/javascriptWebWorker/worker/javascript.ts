@@ -1,4 +1,4 @@
-import { JsGetCellResponse } from '@/quadratic-core-types';
+import { JsCodeResult, JsGetCellResponse } from '@/quadratic-core-types';
 import type { CodeRun, LanguageState } from '@/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
 import { CoreJavascriptRun } from '../javascriptCoreMessages';
@@ -8,7 +8,11 @@ import { javascriptCore } from './javascriptCore';
 class Javascript {
   private awaitingExecution: CodeRun[];
   state: LanguageState;
+
+  // current running transaction
   private transactionId?: string;
+  private column?: number;
+  private row?: number;
 
   constructor() {
     this.awaitingExecution = [];
@@ -52,6 +56,8 @@ class Javascript {
       // todo: this would create another worker to run the actual code. I don't think this is necessary but it's an option.
       worker: false,
     });
+    this.state = 'ready';
+    javascriptClient.sendState('ready');
     this.next();
   };
 
@@ -80,6 +86,49 @@ class Javascript {
     }
   };
 
+  private convertOutputType(value: any, logs: string[], x?: number, y?: number): string[] | null {
+    if (Array.isArray(value)) {
+      return null;
+    }
+    if (typeof value === 'number') {
+      return [value.toString(), 'number'];
+    } else if (typeof value === 'string') {
+      return [value, 'text'];
+    } else if (value === undefined) {
+      return null;
+    } else {
+      const column = this.column!;
+      const row = this.row!;
+      logs.push(
+        `WARNING: Unsupported output type "${typeof value}" ${
+          x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
+        }`
+      );
+      return null;
+    }
+  }
+
+  private convertOutputArray(value: any, logs: string[]): string[][][] | null {
+    if (!Array.isArray(value)) {
+      return null;
+    }
+    if (!Array.isArray(value[0])) {
+      return value.map((v: any, y: number) => {
+        const outputValue = this.convertOutputType(v, logs, 0, y);
+        if (outputValue) return [outputValue];
+        return [['', 'text']];
+      });
+    } else {
+      return value.map((v: any[], y: number) => {
+        return v.map((v2: any[], x: number) => {
+          const outputValue = this.convertOutputType(v2, logs, x, y);
+          if (outputValue) return outputValue;
+          return ['', 'text'];
+        });
+      });
+    }
+  }
+
   async run(message: CoreJavascriptRun) {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
@@ -91,21 +140,80 @@ class Javascript {
     });
 
     this.transactionId = message.transactionId;
+    this.column = message.x;
+    this.row = message.y;
 
-    const transform = await esbuild.transform(message.code, { loader: 'ts' });
-
-    if (transform.warnings.length > 0) {
-      // todo
-      console.log(transform.warnings);
+    let transform: esbuild.TransformResult;
+    try {
+      transform = await esbuild.transform(message.code, { loader: 'ts' });
+    } catch (e: any) {
+      const codeResult: JsCodeResult = {
+        transaction_id: message.transactionId,
+        success: false,
+        output_value: null,
+        std_err: e.message,
+        std_out: null,
+        output_array: null,
+        line_number: null,
+        output_display_type: null,
+        cancel_compute: false,
+      };
+      javascriptCore.sendJavascriptResults(message.transactionId, codeResult);
+      javascriptClient.sendState('ready');
+      this.state = 'ready';
+      setTimeout(this.next, 0);
+      return;
     }
-
-    // eslint-disable-next-line no-eval
-    const result = eval(transform.code);
-    console.log(result);
 
     // todo: for use when adding libraries to js
     // const result2 = await esbuild.build({ write: false, bundle: true });
-    debugger;
+
+    if (transform.warnings.length > 0) {
+      console.log(transform.warnings);
+    }
+
+    let calculationResult: any;
+    let oldConsoleLog = console.log;
+    const logs: any[] = [];
+    try {
+      console.log = (message: any) => logs.push(message);
+
+      // eslint-disable-next-line no-eval
+      calculationResult = eval(transform.code);
+    } catch (e: any) {
+      const codeResult: JsCodeResult = {
+        transaction_id: message.transactionId,
+        success: false,
+        output_value: null,
+        std_err: e.message,
+        std_out: logs.length ? logs.join('\n') : null,
+        output_array: null,
+        line_number: null,
+        output_display_type: null,
+        cancel_compute: false,
+      };
+      console.log = oldConsoleLog;
+      javascriptCore.sendJavascriptResults(message.transactionId, codeResult);
+      javascriptClient.sendState('ready');
+      this.state = 'ready';
+      setTimeout(this.next, 0);
+      return;
+    }
+    console.log = oldConsoleLog;
+    const output_value = this.convertOutputType(calculationResult, logs);
+    const output_array = this.convertOutputArray(calculationResult, logs);
+    const codeResult: JsCodeResult = {
+      transaction_id: message.transactionId,
+      success: true,
+      output_value,
+      std_out: logs.length ? logs.join('\n') : null,
+      std_err: null,
+      output_array,
+      line_number: null,
+      output_display_type: 'text',
+      cancel_compute: false,
+    };
+    javascriptCore.sendJavascriptResults(message.transactionId, codeResult);
     javascriptClient.sendState('ready', { current: undefined });
     this.state = 'ready';
     setTimeout(this.next, 0);

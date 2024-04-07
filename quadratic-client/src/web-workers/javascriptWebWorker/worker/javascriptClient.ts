@@ -8,7 +8,7 @@ declare var self: WorkerGlobalScope & typeof globalThis & {};
 class JavascriptClient {
   start() {
     self.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[JavascriptClient] initialized.');
+    if (debugWebWorkers) console.log('[javascriptClient] initialized.');
   }
 
   private send(message: JavascriptClientMessage, transfer?: Transferable[]) {
