@@ -3,7 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { dockerRunContainer, runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
-import { clientEc2SecurityGroup } from "../shared/securityGroups";
+//import { clientEc2SecurityGroup } from "../shared/securityGroups";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -41,7 +41,7 @@ const instance = new aws.ec2.Instance("client-instance", {
   },
   instanceType: instanceSize,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
-  vpcSecurityGroupIds: [clientEc2SecurityGroup.id],
+  // vpcSecurityGroupIds: [clientEc2SecurityGroup.id],
   ami: latestAmazonLinuxAmi.id,
   keyName: "dba-quadratic",
   userDataReplaceOnChange: true,

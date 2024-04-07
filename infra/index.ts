@@ -8,11 +8,10 @@ import { filesPublicDns } from "./files/files";
 
 import { apiPublicDns } from "./api/api";
 
-import { clientPublicDns } from "./client/client";
 
 // Global exports
 export {
-    clientPublicDns,
+    //clientPublicDns,
     apiPublicDns,
     filesPublicDns,
     multiplayerPublicDns,
