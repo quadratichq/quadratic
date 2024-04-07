@@ -66,6 +66,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCell: (
       sheetId: string,
       x: number,
@@ -197,6 +198,10 @@ export const jsTransactionProgress = (transactionId: String, remainingOperations
 
 export const jsRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
   self.sendRunPython(transactionId, x, y, sheetId, code);
+};
+
+export const jsRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  self.sendRunJavascript(transactionId, x, y, sheetId, code);
 };
 
 export const jsUpdateCodeCell = (

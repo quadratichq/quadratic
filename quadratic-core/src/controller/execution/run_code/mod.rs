@@ -13,6 +13,7 @@ use crate::{
 
 pub mod get_cells;
 pub mod run_formula;
+pub mod run_javascript;
 pub mod run_python;
 
 impl GridController {

@@ -123,7 +123,7 @@ impl GridController {
                     self.run_formula(transaction, sheet_pos, code);
                 }
                 CodeCellLanguage::Javascript => {
-                    todo!("Javascript code execution")
+                    self.run_javascript(transaction, sheet_pos, code);
                 }
             }
         }

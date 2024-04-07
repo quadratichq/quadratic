@@ -5,14 +5,14 @@ use crate::{
 };
 
 impl GridController {
-    pub(crate) fn run_python(
+    pub(crate) fn run_javascript(
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
     ) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsRunPython(
+            crate::wasm_bindings::js::jsRunJavascript(
                 transaction.id.to_string(),
                 sheet_pos.x as i32,
                 sheet_pos.y as i32,

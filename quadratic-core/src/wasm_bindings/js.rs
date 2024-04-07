@@ -30,6 +30,14 @@ extern "C" {
         code: String,
     ) -> JsValue;
 
+    pub fn jsRunJavascript(
+        transactionId: String,
+        x: i32,
+        y: i32,
+        sheet_id: String,
+        code: String,
+    ) -> JsValue;
+
     // cells: Vec<JsRenderCell>
     pub fn jsRenderCellSheets(
         sheet_id: String,
@@ -163,6 +171,22 @@ pub fn jsRunPython(
 ) -> JsValue {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRunPython",
+        format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
+    ));
+    JsValue::NULL
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsRunJavascript(
+    transactionId: String,
+    x: i32,
+    y: i32,
+    sheet_id: String,
+    code: String,
+) -> JsValue {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsRunJavascript",
         format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
     ));
     JsValue::NULL

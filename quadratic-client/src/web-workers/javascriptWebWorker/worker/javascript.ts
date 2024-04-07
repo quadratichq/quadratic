@@ -105,7 +105,7 @@ class Javascript {
 
     // todo: for use when adding libraries to js
     // const result2 = await esbuild.build({ write: false, bundle: true });
-
+    debugger;
     javascriptClient.sendState('ready', { current: undefined });
     this.state = 'ready';
     setTimeout(this.next, 0);

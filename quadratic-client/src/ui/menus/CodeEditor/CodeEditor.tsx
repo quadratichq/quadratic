@@ -200,7 +200,7 @@ export const CodeEditor = () => {
       language,
       cursor: sheets.getCursorPosition(),
     });
-
+    console.log(language, editorContent);
     setCodeString(editorContent ?? '');
 
     mixpanel.track('[CodeEditor].cellRun', {
