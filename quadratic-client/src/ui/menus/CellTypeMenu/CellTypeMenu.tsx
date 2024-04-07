@@ -65,7 +65,7 @@ let CELL_TYPE_OPTIONS = [
   },
   {
     name: 'Typescript / Javascript',
-    mode: '',
+    mode: 'Javascript',
     icon: <JavaScript color="disabled" />,
     description: 'The world’s most popular programming language.',
   },

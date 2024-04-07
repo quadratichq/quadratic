@@ -132,7 +132,7 @@ export const CodeEditorHeader = (props: Props) => {
             color: 'black',
           }}
         >
-          Cell ({cellLocation.x}, {cellLocation.y}) - {language}
+          Cell ({cellLocation.x}, {cellLocation.y}) - {language === 'Javascript' ? 'Typescript/Javascript' : language}
           {unsaved && (
             <TooltipHint title="Your changes haven’t been saved or run" placement="bottom">
               <FiberManualRecord
