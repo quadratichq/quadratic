@@ -29,8 +29,8 @@ wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core
 echo 'Exporting TS/Rust types...'
 cargo run --bin export_types
 
-echo 'Building quadratic-grid-offsets...'
-npm run build --workspace=quadratic-grid-offsets
+echo 'Building quadratic-rust-client...'
+npm run build --workspace=quadratic-rust-client
 
 echo 'Building front-end...'
 npm ci

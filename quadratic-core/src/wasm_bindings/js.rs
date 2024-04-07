@@ -148,7 +148,7 @@ pub fn jsTime(name: String) {
     TEST_ARRAY
         .lock()
         .unwrap()
-        .push(TestFunction::new("jsTime", name))
+        .push(TestFunction::new("jsTime", name));
 }
 
 #[cfg(test)]

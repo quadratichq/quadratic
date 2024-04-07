@@ -5,7 +5,7 @@ members = [
     "quadratic-core",
     "quadratic-files",
     "quadratic-multiplayer",
-    "quadratic-grid-offsets",
+    "quadratic-rust-client",
     "quadratic-rust-shared",
 ]
 

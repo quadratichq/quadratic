@@ -8,7 +8,7 @@
 
 import { debugShowCellHashesInfo } from '@/debugFlags';
 import { SheetBounds, SheetInfo } from '@/quadratic-core-types';
-import init from '@/quadratic-grid-offsets/quadratic_grid_offsets';
+import init from '@/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
 import { CellsLabels } from './cellsLabel/CellsLabels';

@@ -4,5 +4,5 @@
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "error"
   },
-  "ignorePatterns": ["node_modules/*", "src/quadratic-core/*", "src/quadratic-grid-offsets/*"]
+  "ignorePatterns": ["node_modules/*", "src/quadratic-core/*", "src/quadratic-rust-client/*"]
 }

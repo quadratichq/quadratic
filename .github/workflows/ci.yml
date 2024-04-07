@@ -120,9 +120,9 @@ jobs:
         run: |
           npm run build:wasm:javascript
 
-      - name: Build quadratic-grid-offsets
+      - name: Build quadratic-rust-client
         run: |
-          npm run build:grid-offsets
+          npm run build:rust-client
 
       - name: Build python
         run: |

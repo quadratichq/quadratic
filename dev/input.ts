@@ -113,6 +113,9 @@ export class Input {
       case "d": // toggle dark theme
         this.cli.options.dark = !this.cli.options.dark;
         break;
+      case "O": // toggle showing RustClient
+        this.cli.options.hideRustClient = !this.cli.options.hideRustClient;
+        break;
       case "r": // restart React
         this.control.runClient();
         break;
