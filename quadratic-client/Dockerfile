@@ -4,6 +4,7 @@ COPY package.json .
 COPY package-lock.json .
 COPY quadratic-client ./quadratic-client
 COPY quadratic-shared ./quadratic-shared
+COPY quadratic-core ./quadratic-core
 RUN npm install
 
 FROM node:18-slim AS runtime
