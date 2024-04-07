@@ -40,6 +40,8 @@ export const runDockerImageBashScript = (
   imageTag: string,
   pulumiEscEnvironmentName: string,
   extraEnvVars: EnvVariables,
+  portMapping: string = "80:80",
+  runCommand: string = "",
   dependencySetupBashCommand: string = "",
   rebuildOnEveryPulumiRun: boolean = false
 ) => {
@@ -81,10 +83,10 @@ ${dependencySetupBashCommand}
 sudo docker run -d \
             --name ${imageRepositoryName} \
             --restart always \
-            -p 80:80 \
+            -p ${portMapping} \
             --env-file .env \
             --add-host=host.docker.internal:host-gateway \
-            ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag}
+            ${ecrRegistryUrl}/${imageRepositoryName}:${imageTag} ${runCommand}
 
 # TODO: In preview environments we should disable datadog
 echo 'Setting up Datadog agent'

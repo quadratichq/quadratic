@@ -68,6 +68,8 @@ const instance = new aws.ec2.Instance("api-instance", {
         PORT: "80",
         DATABASE_URL: `postgres://${postgresUser}:${postgresPassword}@host.docker.internal:5432/${postgresDB}`,
       },
+      "80:80",
+      "",
       dependencySetupBashCommand,
       true
     )

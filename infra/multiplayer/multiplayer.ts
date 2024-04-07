@@ -48,6 +48,8 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
       },
+      "80:80",
+      "",
       dependencySetupBashCommand,
       true
     )

@@ -39,10 +39,11 @@ const instance = new aws.ec2.Instance("client-instance", {
       dockerImageTag,
       clientPulumiEscEnvironmentName,
       {
-        PORT: "80",
         VITE_QUADRATIC_API_URL: `http://${apiSubdomain}.${domain}`,
         VITE_QUADRATIC_MULTIPLAYER_URL: `https://${multiplayerSubdomain}.${domain}`,
       },
+      "80:3000",
+      "npm start --workspace=quadratic-client -- --host",
       dependencySetupBashCommand,
       true
     )

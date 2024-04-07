@@ -40,6 +40,8 @@ const instance = new aws.ec2.Instance("files-instance", {
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: `http://${apiSubdomain}.${domain}`,
       },
+      "80:80",
+      "",
       dependencySetupBashCommand,
       true
     )
