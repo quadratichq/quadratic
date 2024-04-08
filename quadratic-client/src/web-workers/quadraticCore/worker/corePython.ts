@@ -58,16 +58,19 @@ class CorePython {
         break;
 
       case 'pythonCoreGetCells':
-        core.getCells(
-          e.data.id,
-          e.data.transactionId,
-          e.data.x,
-          e.data.y,
-          e.data.w,
-          e.data.h,
-          e.data.sheet,
-          e.data.lineNumber
-        );
+        this.send({
+          type: 'corePythonGetCells',
+          id: e.data.id,
+          cells: core.getCells(
+            e.data.transactionId,
+            e.data.x,
+            e.data.y,
+            e.data.w,
+            e.data.h,
+            e.data.sheet,
+            e.data.lineNumber
+          ),
+        });
         break;
 
       default:

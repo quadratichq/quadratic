@@ -5,6 +5,48 @@ import { CoreJavascriptRun } from '../javascriptCoreMessages';
 import { javascriptClient } from './javascriptClient';
 import { javascriptCore } from './javascriptCore';
 
+declare var self: WorkerGlobalScope &
+  typeof globalThis & {
+    getCells: (
+      x0: number,
+      y0: number,
+      x1: number,
+      y1: number,
+      sheet?: string,
+      lineNumber?: number
+    ) => Promise<JsGetCellResponse[] | undefined>;
+  };
+
+// todo: this should be moved to an importable file
+const library = `
+  const getCells = async (x0: number, y0: number, x1: number, y1: number, sheetId?: string) => {
+    const results = await self.getCells(x0, y0, x1, y1, sheetId);
+    if (results) {
+      const cells: any[][] = [];
+      for (let y = y0; y <= y1; y++) {
+        const row: any[] = [];
+        for (let x = x0; x <= x1; x++) {
+          const entry = results.find((r) => r.x === x && r.y === y);
+          if (entry) {
+            const typed = entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
+            row.push(typed);
+          } else {
+            row.push(undefined);
+          }
+        }
+        cells.push(row);
+      }
+      console.log('***', cells)
+      return cells;
+    }
+  };
+  const getCell = async (x: number, y: number, sheetId: string) => {
+    const results = await getCells(x, y, x, y, sheetId);
+    return results?.[0]?.[0];
+  };
+  const c = getCell;
+`;
+
 class Javascript {
   private awaitingExecution: CodeRun[];
   state: LanguageState;
@@ -18,6 +60,7 @@ class Javascript {
     this.awaitingExecution = [];
     this.state = 'loading';
     this.init();
+    self.getCells = this.getCells;
   }
 
   private getCells = async (
@@ -41,8 +84,6 @@ class Javascript {
       lineNumber
     );
     if (!cells) {
-      // we reload if there is an error getting cells
-      this.init();
       javascriptClient.sendState('ready');
     } else {
       return cells;
@@ -129,6 +170,28 @@ class Javascript {
     }
   }
 
+  private async runAsyncCode(code: string) {
+    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+    return new Promise((resolve, reject) => {
+      new AsyncFunction(
+        'resolve',
+        'reject',
+        `try {
+          console.log("${code}");
+            const run = async () => { ${code} };
+            console.log(2);
+            const result = await run();
+            console.log(3);
+            resolve(result);
+            console.log(result);
+          } catch (e) {
+            reject(e);
+            console.log(5);
+          }`
+      )(resolve, reject);
+    });
+  }
+
   async run(message: CoreJavascriptRun) {
     if (this.state !== 'ready') {
       this.awaitingExecution.push(this.coreJavascriptToCodeRun(message));
@@ -145,7 +208,9 @@ class Javascript {
 
     let transform: esbuild.TransformResult;
     try {
-      transform = await esbuild.transform(message.code, { loader: 'ts' });
+      transform = await esbuild.transform(library + message.code, {
+        loader: 'ts',
+      });
     } catch (e: any) {
       const codeResult: JsCodeResult = {
         transaction_id: message.transactionId,
@@ -177,9 +242,7 @@ class Javascript {
     const logs: any[] = [];
     try {
       console.log = (message: any) => logs.push(message);
-
-      // eslint-disable-next-line no-eval
-      calculationResult = eval(transform.code);
+      calculationResult = await this.runAsyncCode(transform.code);
     } catch (e: any) {
       const codeResult: JsCodeResult = {
         transaction_id: message.transactionId,
@@ -200,6 +263,7 @@ class Javascript {
       return;
     }
     console.log = oldConsoleLog;
+    console.log('***', calculationResult);
     const output_value = this.convertOutputType(calculationResult, logs);
     const output_array = this.convertOutputArray(calculationResult, logs);
     const codeResult: JsCodeResult = {

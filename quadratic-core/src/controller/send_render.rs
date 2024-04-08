@@ -210,12 +210,12 @@ mod test {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            error_msg: None,
-            input_python_std_out: None,
+            std_err: None,
+            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            array_output: None,
+            output_array: None,
             line_number: None,
-            output_type: None,
+            output_display_type: None,
             cancel_compute: None,
         });
 
@@ -249,12 +249,12 @@ mod test {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            error_msg: None,
-            input_python_std_out: None,
+            std_err: None,
+            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            array_output: None,
+            output_array: None,
             line_number: None,
-            output_type: None,
+            output_display_type: None,
             cancel_compute: None,
         });
 

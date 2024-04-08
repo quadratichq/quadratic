@@ -31,7 +31,6 @@ import {
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
 import { coreClient } from './coreClient';
-import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
 import { pointsToRect, rectangleToRect } from './rustConversions';
@@ -782,16 +781,7 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(results));
   }
 
-  getCells(
-    id: number,
-    transactionId: string,
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
-    sheet?: string,
-    lineNumber?: number
-  ) {
+  getCells(transactionId: string, x0: number, y0: number, x1: number, y1: number, sheet?: string, lineNumber?: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
       const cellsStringified = this.gridController.calculationGetCells(
@@ -803,11 +793,9 @@ class Core {
         sheet,
         lineNumber
       );
-      const cells = cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
-      corePython.sendGetCells(id, cells);
-    } catch (e) {
-      // there was an error getting the cells (likely, an unknown sheet name)
-      corePython.sendGetCells(id);
+      return cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
+    } catch (_) {
+      return undefined;
     }
   }
 
