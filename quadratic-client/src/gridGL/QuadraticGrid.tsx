@@ -1,6 +1,7 @@
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
+import { sheets } from '../grid/controller/Sheets';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { HTMLGridContainer } from './HTMLGrid/HTMLGridContainer';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
@@ -34,6 +35,24 @@ export default function QuadraticGrid() {
   useEffect(() => {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
   }, [editorInteractionState, setEditorInteractionState]);
+
+  // Convert params.sheet into a sheetId
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('codeX') && params.has('codeY') && params.has('sheet')) {
+      const sheet = params.get('sheet');
+      if (sheet) {
+        const selectedCellSheet = sheets.getSheetByName(sheet, true)?.id;
+        if (selectedCellSheet) {
+          setEditorInteractionState((prev) => ({
+            ...prev,
+            selectedCellSheet,
+            selectedCellSheetName: undefined,
+          }));
+        }
+      }
+    }
+  }, [setEditorInteractionState]);
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
