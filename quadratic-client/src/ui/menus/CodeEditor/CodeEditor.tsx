@@ -43,7 +43,7 @@ export const CodeEditor = () => {
   const [secondPanelWidth, setSecondPanelWidth] = useState(SECOND_PANEL_MIN_WIDTH);
   const [secondPanelHeightPercentage, setSecondPanelHeightPercentage] = useState<number>(50);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [panelPosition, setPanelPosition] = useState<PanelPosition>('left');
+  const [panelPosition, setPanelPosition] = useState<PanelPosition>('bottom');
 
   // update code cell
   const [codeString, setCodeString] = useState('');
