@@ -604,7 +604,7 @@ export class Multiplayer {
     } else if (type === 'CurrentTransaction') {
       this.receiveCurrentTransaction(data);
     } else if (type === 'Error') {
-      if (data.error_level == 'Error') {
+      if (data.error_level === 'Error') {
         Sentry.captureException({
           message: `Error response from the multiplayer server: ${data.error}`,
           level: 'error',
