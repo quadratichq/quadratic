@@ -80,7 +80,7 @@ export function getShareUrlParams(): string {
   }
   const state = pixiAppSettings.editorInteractionState;
   if (state.showCodeEditor) {
-    url += `&codeX=${state.selectedCell.x}&codeY=${state.selectedCell.y}`;
+    url += `&codeLanguage=${state.mode}&codeX=${state.selectedCell.x}&codeY=${state.selectedCell.y}`;
     if (state.selectedCellSheet !== sheets.sheet.id) {
       url += `&codeSheet=${sheets.sheet.name}`;
     }

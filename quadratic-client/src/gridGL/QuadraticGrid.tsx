@@ -1,5 +1,6 @@
 import { events } from '@/events/events';
 import { Sheet } from '@/grid/sheet/Sheet';
+import { CodeCellLanguage } from '@/quadratic-core-types';
 import { ImportProgress } from '@/ui/components/ImportProgress';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
@@ -66,15 +67,22 @@ export default function QuadraticGrid() {
     // change CodeEditor based on URL
     const codeX = params.has('codeX') ? parseInt(params.get('codeX')!) : undefined;
     const codeY = params.has('codeY') ? parseInt(params.get('codeY')!) : undefined;
+    let codeLanguage: string | null = params.get('codeLanguage');
+    if (codeLanguage) {
+      codeLanguage = codeLanguage[0].toUpperCase() + codeLanguage.slice(1).toLowerCase();
+      if (!['Python', 'Javascript', 'Formula'].includes(codeLanguage)) {
+        codeLanguage = null;
+      }
+    }
     let codeSheetName = params.get('codeSheet');
-    if (codeX !== undefined && codeY !== undefined && !isNaN(codeX) && !isNaN(codeY)) {
-      // sheet may be params.codeSheet or params.sheet or the first sheet
+    if (codeLanguage !== undefined && codeX !== undefined && codeY !== undefined && !isNaN(codeX) && !isNaN(codeY)) {
       let codeSheet = codeSheetName ? sheets.getSheetByName(codeSheetName, true) : undefined;
-      codeSheet = codeSheet || sheet || sheets.getFirst();
+      codeSheet = codeSheet || sheets.getFirst();
       const sheetId = codeSheet.id;
       setEditorInteractionState((prev) => ({
         ...prev,
         showCodeEditor: true,
+        mode: codeLanguage as CodeCellLanguage,
         selectedCell: {
           x: codeX,
           y: codeY,
