@@ -1,6 +1,7 @@
 import { apiClient } from '@/api/apiClient';
 import { ROUTES } from '@/constants/routes';
 import { CONTACT_URL } from '@/constants/urls';
+import { getShareUrlParams } from '@/gridGL/interaction/viewportHelper';
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { Button } from '@/shadcn/ui/button';
@@ -361,24 +362,44 @@ function CopyLinkButton({
   const disabled = publicLinkAccess ? (isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED') : true;
 
   return (
-    <Button
-      variant={disabled ? 'ghost' : 'link'}
-      disabled={disabled}
-      className="flex-shrink-0"
-      onClick={() => {
-        mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
-        navigator.clipboard
-          .writeText(url)
-          .then(() => {
-            addGlobalSnackbar('Copied link to clipboard.');
-          })
-          .catch(() => {
-            addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
-          });
-      }}
-    >
-      Copy link
-    </Button>
+    <>
+      <Button
+        variant={disabled ? 'ghost' : 'link'}
+        disabled={disabled}
+        className="flex-shrink-0"
+        onClick={() => {
+          mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+          navigator.clipboard
+            .writeText(url + getShareUrlParams())
+            .then(() => {
+              addGlobalSnackbar('Copied link to clipboard.');
+            })
+            .catch(() => {
+              addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
+            });
+        }}
+      >
+        Copy link with position
+      </Button>
+      <Button
+        variant={disabled ? 'ghost' : 'link'}
+        disabled={disabled}
+        className="flex-shrink-0"
+        onClick={() => {
+          mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+          navigator.clipboard
+            .writeText(url)
+            .then(() => {
+              addGlobalSnackbar('Copied link to clipboard.');
+            })
+            .catch(() => {
+              addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
+            });
+        }}
+      >
+        Copy link
+      </Button>
+    </>
   );
 }
 

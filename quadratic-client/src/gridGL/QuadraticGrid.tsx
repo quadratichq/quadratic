@@ -1,8 +1,10 @@
 import { events } from '@/events/events';
+import { Sheet } from '@/grid/sheet/Sheet';
 import { ImportProgress } from '@/ui/components/ImportProgress';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
+import { sheets } from '../grid/controller/Sheets';
 import { FloatingContextMenu } from '../ui/menus/ContextMenu/FloatingContextMenu';
 import { HTMLGridContainer } from './HTMLGrid/HTMLGridContainer';
 import { useKeyboard } from './interaction/keyboard/useKeyboard';
@@ -38,6 +40,49 @@ export default function QuadraticGrid() {
   useEffect(() => {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
   }, [editorInteractionState, setEditorInteractionState]);
+
+  // Handle URL params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    // change sheet based on URL
+    const sheetName = params.get('sheet');
+    let sheet: Sheet | undefined;
+    if (sheetName) {
+      sheet = sheets.getSheetByName(sheetName, true);
+      if (sheet) {
+        sheets.current = sheet.id;
+      }
+    }
+
+    // change cursor position based on URL
+    const x = params.has('x') ? parseInt(params.get('x')!) : undefined;
+    const y = params.has('y') ? parseInt(params.get('y')!) : undefined;
+    if (x !== undefined && y !== undefined && !isNaN(x) && !isNaN(y)) {
+      sheet = sheet || sheets.getFirst();
+      sheet.cursor.changePosition({ cursorPosition: { x, y } });
+    }
+
+    // change CodeEditor based on URL
+    const codeX = params.has('codeX') ? parseInt(params.get('codeX')!) : undefined;
+    const codeY = params.has('codeY') ? parseInt(params.get('codeY')!) : undefined;
+    let codeSheetName = params.get('codeSheet');
+    if (codeX !== undefined && codeY !== undefined && !isNaN(codeX) && !isNaN(codeY)) {
+      // sheet may be params.codeSheet or params.sheet or the first sheet
+      let codeSheet = codeSheetName ? sheets.getSheetByName(codeSheetName, true) : undefined;
+      codeSheet = codeSheet || sheet || sheets.getFirst();
+      const sheetId = codeSheet.id;
+      setEditorInteractionState((prev) => ({
+        ...prev,
+        showCodeEditor: true,
+        selectedCell: {
+          x: codeX,
+          y: codeY,
+        },
+        selectedCellSheet: sheetId,
+      }));
+    }
+  }, [setEditorInteractionState]);
 
   // Right click menu
   const [showContextMenu, setShowContextMenu] = useState(false);
