@@ -1,3 +1,4 @@
+import { Sheet } from '@/grid/sheet/Sheet';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -36,21 +37,46 @@ export default function QuadraticGrid() {
     pixiAppSettings.updateEditorInteractionState(editorInteractionState, setEditorInteractionState);
   }, [editorInteractionState, setEditorInteractionState]);
 
-  // Convert params.sheet into a sheetId
+  // Handle URL params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.has('codeX') && params.has('codeY') && params.has('sheet')) {
-      const sheet = params.get('sheet');
+
+    // change sheet based on URL
+    const sheetName = params.get('sheet');
+    let sheet: Sheet | undefined;
+    if (sheetName) {
+      sheet = sheets.getSheetByName(sheetName, true);
       if (sheet) {
-        const selectedCellSheet = sheets.getSheetByName(sheet, true)?.id;
-        if (selectedCellSheet) {
-          setEditorInteractionState((prev) => ({
-            ...prev,
-            selectedCellSheet,
-            selectedCellSheetName: undefined,
-          }));
-        }
+        sheets.current = sheet.id;
       }
+    }
+
+    // change cursor position based on URL
+    const x = params.has('x') ? parseInt(params.get('x')!) : undefined;
+    const y = params.has('y') ? parseInt(params.get('y')!) : undefined;
+    if (x !== undefined && y !== undefined && !isNaN(x) && !isNaN(y)) {
+      sheet = sheet || sheets.getFirst();
+      sheet.cursor.changePosition({ cursorPosition: { x, y } });
+    }
+
+    // change CodeEditor based on URL
+    const codeX = params.has('codeX') ? parseInt(params.get('codeX')!) : undefined;
+    const codeY = params.has('codeY') ? parseInt(params.get('codeY')!) : undefined;
+    let codeSheetName = params.get('codeSheet');
+    if (codeX !== undefined && codeY !== undefined && !isNaN(codeX) && !isNaN(codeY)) {
+      // sheet may be params.codeSheet or params.sheet or the first sheet
+      let codeSheet = codeSheetName ? sheets.getSheetByName(codeSheetName, true) : undefined;
+      codeSheet = codeSheet || sheet || sheets.getFirst();
+      const sheetId = codeSheet.id;
+      setEditorInteractionState((prev) => ({
+        ...prev,
+        showCodeEditor: true,
+        selectedCell: {
+          x: codeX,
+          y: codeY,
+        },
+        selectedCellSheet: sheetId,
+      }));
     }
   }, [setEditorInteractionState]);
 

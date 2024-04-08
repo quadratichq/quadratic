@@ -26,17 +26,6 @@ class Sheets {
       this.sheets.push(sheet);
     });
     this.sort();
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('sheet')) {
-      const sheet = params.get('sheet');
-      if (sheet) {
-        const selectedCellSheet = this.getSheetByName(sheet, true)?.id;
-        if (selectedCellSheet) {
-          this.current = selectedCellSheet;
-          return;
-        }
-      }
-    }
     this.current = this.sheets[0].id;
   }
 
@@ -109,7 +98,7 @@ class Sheets {
 
   getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {
     for (const sheet of this.sheets) {
-      if (sheet.name === name || (urlCompare && name.replace('_', ' ').toLowerCase() === sheet.name.toLowerCase())) {
+      if (sheet.name === name || (urlCompare && decodeURI(name).toLowerCase() === sheet.name.toLowerCase())) {
         return sheet;
       }
     }

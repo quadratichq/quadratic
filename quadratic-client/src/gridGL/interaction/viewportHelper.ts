@@ -67,3 +67,18 @@ export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinat
 
   pixiApp.viewportChanged();
 }
+
+export function getShareUrlParams(): string {
+  let url = `x=${sheets.sheet.cursor.cursorPosition.x}&y=${sheets.sheet.cursor.cursorPosition.y}`;
+  if (sheets.sheet !== sheets.getFirst()) {
+    url += `&sheet=${sheets.sheet.name}`;
+  }
+  const state = pixiAppSettings.editorInteractionState;
+  if (state.showCodeEditor) {
+    url += `&codeX=${state.selectedCell.x}&codeY=${state.selectedCell.y}`;
+    if (state.selectedCellSheet !== sheets.sheet.id) {
+      url += `&codeSheet=${sheets.sheet.name}`;
+    }
+  }
+  return url;
+}
