@@ -29,7 +29,10 @@ use crate::{
     config::config,
     error::{MpError, Result},
     message::{
-        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
+        broadcast,
+        handle::handle_message,
+        request::MessageRequest,
+        response::{ErrorLevel, MessageResponse},
     },
     state::{connection::PreConnection, State},
 };
@@ -197,10 +200,19 @@ async fn handle_socket(
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
             Err(error) => {
-                tracing::warn!("Error processing message: {:?}", &error);
+                let mut error_level = ErrorLevel::Warning;
+
+                match error {
+                    MpError::PubSub(_) => {
+                        tracing::error!("Error processing message: {:?}", &error);
+                        error_level = ErrorLevel::Error;
+                    }
+                    _ => tracing::warn!("Error processing message: {:?}", &error),
+                };
 
                 if let Ok(message) = serde_json::to_string(&MessageResponse::Error {
                     error: error.to_owned(),
+                    error_level,
                 }) {
                     // send error message to the client
                     let sent = sender.lock().await.send(Message::Text(message)).await;

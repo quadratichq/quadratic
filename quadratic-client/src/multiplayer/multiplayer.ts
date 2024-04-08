@@ -10,6 +10,7 @@ import { SheetPos } from '@/gridGL/types/size';
 import { displayName } from '@/utils/userUtil';
 import { pythonWebWorker } from '@/web-workers/pythonWebWorker/python';
 import { User } from '@auth0/auth0-spa-js';
+import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
 import sharedConstants from '../../../updateAlertVersion.json';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '../gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
@@ -603,7 +604,15 @@ export class Multiplayer {
     } else if (type === 'CurrentTransaction') {
       this.receiveCurrentTransaction(data);
     } else if (type === 'Error') {
-      console.warn(`[Multiplayer] Error`, data.error);
+      if (data.error_level == 'Error') {
+        Sentry.captureException({
+          message: `Error response from the multiplayer server: ${data.error}`,
+          level: 'error',
+        });
+        console.error(`[Multiplayer] Error`, data.error);
+      } else {
+        console.warn(`[Multiplayer] Error`, data.error);
+      }
     } else if (type !== 'Empty') {
       console.warn(`Unknown message type: ${type}`);
     }
