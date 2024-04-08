@@ -1,10 +1,11 @@
 use crate::{
     cell_values::CellValues,
     controller::GridController,
+    formulas::{ast::AstNodeContents, parse_formula},
     grid::{
         formatting::CellFmtArray,
         series::{find_auto_complete, SeriesOptions},
-        SheetId,
+        CodeCellLanguage, SheetId,
     },
     util::maybe_reverse_range,
     CellValue, Pos, Rect, SheetPos, SheetRect,
@@ -94,6 +95,7 @@ impl GridController {
             operations.extend(ops);
             initial_down_range = Some(range);
         }
+
         // expand left
         if should_expand_left {
             let new_range = Rect::new_span(
@@ -143,6 +145,7 @@ impl GridController {
             let ops = self.expand_right(sheet_id, &selection, &new_range, down_range, up_range)?;
             operations.extend(ops);
         }
+
         Ok(operations)
     }
 
@@ -189,6 +192,7 @@ impl GridController {
                 formats.push(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
+                    &source_row.into(),
                     false,
                     &source_row.into(),
                     &target_row,
@@ -272,6 +276,7 @@ impl GridController {
                 formats.extend(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
+                    &source_row.into(),
                     true,
                     &source_row.into(),
                     &target_row,
@@ -344,6 +349,7 @@ impl GridController {
                 formats.extend(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
+                    &source_col.into(),
                     false,
                     &source_col.into(),
                     &target_col,
@@ -406,6 +412,7 @@ impl GridController {
                 formats.extend(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
+                    &source_col.into(),
                     true,
                     &source_col.into(),
                     &target_col,
@@ -486,6 +493,7 @@ impl GridController {
 
                 let (operations, _) = self.apply_auto_complete(
                     sheet_id,
+                    selection,
                     direction == ExpandDirection::Up,
                     &target_col,
                     &target_col,
@@ -572,6 +580,7 @@ impl GridController {
 
                 let (operations, _) = self.apply_auto_complete(
                     sheet_id,
+                    selection,
                     direction == ExpandDirection::Up,
                     &target_col,
                     &target_col,
@@ -592,6 +601,7 @@ impl GridController {
     fn apply_auto_complete(
         &mut self,
         sheet_id: SheetId,
+        source_selection: &Rect,
         negative: bool,
         selection: &Rect,
         range: &Rect,
@@ -610,17 +620,75 @@ impl GridController {
                 .collect::<Vec<CellValue>>()
         };
 
-        let series = find_auto_complete(SeriesOptions {
+        let mut series = find_auto_complete(SeriesOptions {
             series: values,
             spaces: (range.width() * range.height()) as i32,
             negative,
         });
 
+        println!("\nsource_selection: {:?}", source_selection);
+        println!("selection: {:?}", selection);
+        println!("range: {:?}\n", range);
+
         // gather ComputeCode operations for any code cells
         let compute_code_ops = range
             .iter()
             .enumerate()
-            .filter(|(i, _)| matches!(series.get(*i), Some(CellValue::Code(_))))
+            .filter(|(i, Pos { x, y })| {
+                match series.get_mut(*i) {
+                    Some(CellValue::Code(code_cell_value)) => {
+                        return true;
+                        if code_cell_value.language == CodeCellLanguage::Formula {
+                            let initial_pos = Pos {
+                                x: selection.min.x - range.min.x,
+                                y: selection.min.y - range.min.y,
+                            };
+                            let src_pos = Pos {
+                                x: selection.min.x - (selection.min.x - source_selection.max.x),
+                                y: selection.min.y - (selection.min.y - source_selection.max.y),
+                            };
+                            let dest_pos: Pos = (*x, *y).into();
+                            let new_pos = Pos {
+                                x: src_pos.x - dest_pos.x,
+                                y: src_pos.y - dest_pos.y,
+                            };
+                            // let new_pos = dest_pos;
+                            // println!("src_pos: {:?}", src_pos);
+                            // println!("src_pos: ({},{})", src_pos.x, src_pos.y);
+                            let formula = parse_formula(&code_cell_value.code, new_pos).unwrap();
+                            println!(
+                                "{:?}",
+                                match formula.ast.inner.clone() {
+                                    AstNodeContents::FunctionCall { func, args } => {
+                                        format!("{:?}", args[0].inner)
+                                    }
+                                    _ => "".into(),
+                                }
+                            );
+                            println!(
+                                "{}, {}, initial_pos: ({},{}), src_pos: ({},{}), dest_pos: ({},{}), new_pos: ({},{})",
+                                &code_cell_value.code,
+                                formula.to_string(),
+                                initial_pos.x,
+                                initial_pos.y,
+                                src_pos.x,
+                                src_pos.y,
+                                dest_pos.x,
+                                dest_pos.y,
+                                new_pos.x,
+                                new_pos.y
+                            );
+                            // println!("new_pos: ({},{})", new_pos.x, new_pos.y);
+                            // println!("pos: {:?}", pos);
+
+                            (*code_cell_value).code = formula.to_string();
+                        }
+
+                        true
+                    }
+                    _ => false,
+                }
+            })
             .map(|(_, Pos { x, y })| {
                 let sheet_pos = SheetPos::new(sheet_id, x, y);
                 Operation::ComputeCode { sheet_pos }

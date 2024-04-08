@@ -2,6 +2,7 @@ use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
+    formulas::parse_formula,
     grid::{CodeCellLanguage, CodeRun, SheetId},
     CellValue, CodeCellValue, SheetPos,
 };
@@ -14,6 +15,13 @@ impl GridController {
         language: CodeCellLanguage,
         code: String,
     ) -> Vec<Operation> {
+        // let code = match language {
+        //     CodeCellLanguage::Formula => {
+        //         parse_formula(&code, sheet_pos.into()).unwrap().to_string()
+        //     }
+        //     _ => code,
+        // };
+
         vec![
             Operation::SetCellValues {
                 sheet_pos,

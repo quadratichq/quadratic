@@ -16,6 +16,9 @@ pub enum PasteSpecial {
     Formats,
 }
 
+// To view you clipboard contents, go to https://evercoder.github.io/clipboard-inspector/
+// To decode the html, use https://codebeautify.org/html-decode-string
+
 impl GridController {
     /// Copies clipboard to (plain_text, html).
     pub fn copy_to_clipboard(&self, sheet_rect: SheetRect) -> (String, String) {
@@ -167,6 +170,7 @@ impl GridController {
             values,
             w: sheet_rect.width() as u32,
             h: sheet_rect.height() as u32,
+            src_pos: Some(sheet_rect.into()),
         };
 
         html.push_str("</tr></tbody></table>");
@@ -191,7 +195,7 @@ impl GridController {
 
     pub fn paste_from_clipboard(
         &mut self,
-        sheet_pos: SheetPos,
+        dest_pos: SheetPos,
         plain_text: Option<String>,
         html: Option<String>,
         special: PasteSpecial,
@@ -199,14 +203,14 @@ impl GridController {
     ) -> TransactionSummary {
         // first try html
         if let Some(html) = html {
-            if let Ok(ops) = self.paste_html_operations(sheet_pos, html, special) {
+            if let Ok(ops) = self.paste_html_operations(dest_pos, html, special) {
                 return self.start_user_transaction(ops, cursor);
             }
         }
         // if not quadratic html, then use the plain text
         // first try html
         if let Some(plain_text) = plain_text {
-            let ops = self.paste_plain_text_operations(sheet_pos, plain_text, special);
+            let ops = self.paste_plain_text_operations(dest_pos, plain_text, special);
             self.start_user_transaction(ops, cursor)
         } else {
             TransactionSummary::default()
@@ -222,9 +226,9 @@ mod test {
         controller::GridController,
         grid::{
             generate_borders, js_types::CellFormatSummary, set_rect_borders, BorderSelection,
-            BorderStyle, CellBorderLine, CodeCellLanguage, Sheet,
+            BorderStyle, CellBorderLine, CodeCellLanguage, Sheet, SheetId,
         },
-        CellValue, Pos, Rect, SheetPos, SheetRect,
+        CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use bigdecimal::BigDecimal;
 
@@ -239,20 +243,37 @@ mod test {
         set_rect_borders(sheet, &rect, borders);
     }
 
+    fn set_cell_value(gc: &mut GridController, sheet_id: SheetId, value: &str, x: i64, y: i64) {
+        gc.set_cell_value(SheetPos { x, y, sheet_id }, value.into(), None);
+    }
+
+    fn set_code_cell(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        language: CodeCellLanguage,
+        code: &str,
+        x: i64,
+        y: i64,
+    ) {
+        gc.set_code_cell(SheetPos { x, y, sheet_id }, language, code.into(), None);
+    }
+
+    fn set_formula_code_cell(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        code: &str,
+        x: i64,
+        y: i64,
+    ) {
+        set_code_cell(gc, sheet_id, CodeCellLanguage::Formula, code, x, y);
+    }
+
     #[test]
     fn test_copy_to_clipboard() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            String::from("1, 1"),
-            None,
-        );
+        set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
         gc.set_cell_bold(
             SheetRect {
                 min: Pos { x: 1, y: 1 },
@@ -262,16 +283,7 @@ mod test {
             Some(true),
             None,
         );
-
-        gc.set_cell_value(
-            SheetPos {
-                x: 3,
-                y: 2,
-                sheet_id,
-            },
-            String::from("12"),
-            None,
-        );
+        set_cell_value(&mut gc, sheet_id, "12", 3, 2);
         gc.set_cell_italic(
             SheetRect {
                 min: Pos { x: 3, y: 2 },
@@ -298,11 +310,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            (0, 0, sheet_id).into(),
             Some(clipboard.clone().0),
             None,
             PasteSpecial::None,
@@ -323,11 +331,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            (0, 0, sheet_id).into(),
             Some(String::from("")),
             Some(clipboard.clone().1),
             PasteSpecial::None,
@@ -370,16 +374,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            CodeCellLanguage::Formula,
-            String::from("1 + 1"),
-            None,
-        );
+        set_formula_code_cell(&mut gc, sheet_id, "1 + 1", 1, 1);
 
         assert_eq!(gc.undo_stack.len(), 1);
         let sheet = gc.sheet(sheet_id);
@@ -399,11 +394,7 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 0);
 
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            (0, 0, sheet_id).into(),
             None,
             Some(clipboard.1.clone()),
             PasteSpecial::None,
@@ -419,16 +410,7 @@ mod test {
         assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
 
         // prepare a cell to be overwritten
-        gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            CodeCellLanguage::Formula,
-            String::from("2 + 2"),
-            None,
-        );
+        set_formula_code_cell(&mut gc, sheet_id, "2 + 2", 0, 0);
 
         assert_eq!(gc.undo_stack.len(), 1);
 
@@ -439,11 +421,7 @@ mod test {
         );
 
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            (0, 0, sheet_id).into(),
             Some(String::from("")),
             Some(clipboard.1),
             PasteSpecial::None,
@@ -481,16 +459,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            CodeCellLanguage::Formula,
-            String::from("{1, 2, 3}"),
-            None,
-        );
+        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3}", 1, 1);
 
         assert_eq!(gc.undo_stack.len(), 1);
         let sheet = gc.sheet(sheet_id);
@@ -517,11 +486,7 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 0);
 
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            (0, 0, sheet_id).into(),
             None,
             Some(clipboard.1.clone()),
             PasteSpecial::None,
@@ -560,11 +525,7 @@ mod test {
         let clipboard = gc.copy_to_clipboard(sheet_rect);
 
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 3,
-                y: 3,
-                sheet_id,
-            },
+            (3, 3, sheet_id).into(),
             Some(String::from("")),
             Some(clipboard.1),
             PasteSpecial::None,
@@ -639,11 +600,7 @@ mod test {
             sheet_id,
         ));
         let _ = gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 10,
-                sheet_id,
-            },
+            (0, 10, sheet_id).into(),
             None,
             Some(html),
             PasteSpecial::None,
@@ -692,11 +649,7 @@ mod test {
         );
 
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            (1, 2, sheet_id).into(),
             None,
             Some(pasted_output),
             PasteSpecial::None,
@@ -710,21 +663,63 @@ mod test {
         assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
     }
 
+    // | 1 | A0           |
+    // | 2 | [paste here] |
+    //
+    // paste the code cell (0,1) => A0 from the clipboard to (1,1),
+    // expect value to change to 2
+    #[test]
+    fn test_paste_relative_code_from_quadratic_clipboard() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+        let src_pos: SheetPos = (3, 2, sheet_id).into();
+
+        set_formula_code_cell(&mut gc, sheet_id, "SUM( C2)", src_pos.x, src_pos.y);
+        set_cell_value(&mut gc, sheet_id, "1", 2, 2);
+        set_cell_value(&mut gc, sheet_id, "2", 2, 3);
+        set_cell_value(&mut gc, sheet_id, "3", 2, 4);
+
+        // generate the html from the values above
+        let (_, html) = gc.copy_to_clipboard(src_pos.into());
+
+        let get_value = |gc: &GridController, x, y| {
+            let sheet = gc.sheet(sheet_id);
+            let cell_value = sheet.cell_value(Pos { x, y });
+            let display_value = sheet.display_value(Pos { x, y });
+            (cell_value, display_value)
+        };
+
+        let assert_code_cell = |gc: &mut GridController,
+                                dest_pos: SheetPos,
+                                code: &str,
+                                value: i32| {
+            gc.paste_from_clipboard(dest_pos, None, Some(html.clone()), PasteSpecial::None, None);
+
+            let cell_value = get_value(&gc, dest_pos.x, dest_pos.y);
+            let expected_cell_value = Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: code.into(),
+            }));
+            let expected_display_value = Some(CellValue::Number(BigDecimal::from(value)));
+
+            assert_eq!(cell_value, (expected_cell_value, expected_display_value));
+        };
+
+        // paste code cell (3,2) from the clipboard to (3,3)
+        let dest_pos: SheetPos = (3, 3, sheet_id).into();
+        assert_code_cell(&mut gc, dest_pos, "SUM(C3)", 2);
+
+        // paste code cell (3,2) from the clipboard to (3,4)
+        let dest_pos: SheetPos = (3, 4, sheet_id).into();
+        assert_code_cell(&mut gc, dest_pos, "SUM(C4)", 3);
+    }
+
     #[test]
     fn paste_special_values() {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            CodeCellLanguage::Formula,
-            String::from("{1, 2, 3}"),
-            None,
-        );
+        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3}", 1, 1);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -737,17 +732,13 @@ mod test {
         );
 
         let (plain, html) = gc.copy_to_clipboard(SheetRect {
-            min: Pos { x: 1, y: 1 },
+            min: Pos { x: 3, y: 1 },
             max: Pos { x: 3, y: 1 },
             sheet_id,
         });
 
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 2,
-                sheet_id,
-            },
+            (0, 2, sheet_id).into(),
             Some(plain),
             Some(html),
             PasteSpecial::Values,
@@ -774,15 +765,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            String::from("1"),
-            None,
-        );
+        set_cell_value(&mut gc, sheet_id, "1", 1, 1);
         gc.set_cell_bold(
             SheetRect {
                 min: Pos { x: 1, y: 1 },
@@ -793,15 +776,7 @@ mod test {
             None,
         );
 
-        gc.set_cell_value(
-            SheetPos {
-                x: 2,
-                y: 2,
-                sheet_id,
-            },
-            String::from("12"),
-            None,
-        );
+        set_cell_value(&mut gc, sheet_id, "12", 2, 2);
         gc.set_cell_italic(
             SheetRect {
                 min: Pos { x: 2, y: 2 },
@@ -824,11 +799,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            (0, 0, sheet_id).into(),
             Some(plain_text),
             Some(html),
             PasteSpecial::Formats,
@@ -862,16 +833,7 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
-            CodeCellLanguage::Formula,
-            String::from("{1, 2, 3; 4, 5, 6}"),
-            None,
-        );
+        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3; 4, 5, 6}", 1, 1);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -891,11 +853,7 @@ mod test {
         assert_eq!(gc.undo_stack.len(), 0);
 
         gc.paste_from_clipboard(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            (0, 0, sheet_id).into(),
             Some(clipboard.0),
             Some(clipboard.1),
             PasteSpecial::None,

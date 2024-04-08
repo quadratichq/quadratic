@@ -2,7 +2,7 @@
 #[macro_use]
 mod tests;
 
-mod ast;
+pub mod ast;
 mod cell_ref;
 mod criteria;
 mod ctx;
@@ -35,6 +35,7 @@ pub fn parse_string_literal(s: &str) -> Option<String> {
     let mut string_contents = String::new();
     let mut chars = s.chars().peekable();
     let quote = chars.next()?;
+
     // Read characters.
     loop {
         match chars.next()? {
@@ -51,4 +52,21 @@ pub fn parse_string_literal(s: &str) -> Option<String> {
         // Why is there more after the closing quote?
         None
     }
+}
+
+/// Parses a sheet name from a string, returning the sheet name and the rest of the string
+pub fn parse_sheet_name(s: &str) -> (Option<String>, String) {
+    let mut remaining = s;
+
+    let sheet = s.split_once('!').and_then(|(sheet_name, rest)| {
+        remaining = rest;
+
+        if sheet_name.starts_with(['\'', '"']) {
+            parse_string_literal(sheet_name.trim())
+        } else {
+            Some(sheet_name.trim().into())
+        }
+    });
+
+    (sheet, remaining.into())
 }

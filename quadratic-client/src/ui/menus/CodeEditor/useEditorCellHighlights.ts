@@ -1,3 +1,4 @@
+import { Coordinate } from '@/gridGL/types/size';
 import { parsePython } from '@/helpers/parseEditorPythonCell';
 import { CodeCellLanguage } from '@/quadratic-core/types';
 import monaco, { editor } from 'monaco-editor';
@@ -11,23 +12,26 @@ import { parse_formula } from '../../../quadratic-core/quadratic_core';
 import { colors } from '../../../theme/colors';
 
 function extractCellsFromParseFormula(
-  parsedFormula: ParseFormulaReturnType
+  parsedFormula: ParseFormulaReturnType,
+  cell: Coordinate,
+  sheet: string
 ): { cellId: CellRefId; span: Span; index: number }[] {
   return parsedFormula.cell_refs.map(({ cell_ref, span }, index) => {
     if (cell_ref.type === 'CellRange') {
-      if (cell_ref.start.x.type !== 'Relative' || cell_ref.end.x.type !== 'Relative') {
-        throw new Error('Unhandled non-Relative type in extractCellsFromParseFormula');
-      }
+      const startX = pixiApp.highlightedCells.evalCoord(cell_ref.start.x, cell.x);
+      const startY = pixiApp.highlightedCells.evalCoord(cell_ref.start.y, cell.y);
+      const endX = pixiApp.highlightedCells.evalCoord(cell_ref.end.x, cell.x);
+      const endY = pixiApp.highlightedCells.evalCoord(cell_ref.end.y, cell.y);
+
       return {
-        cellId: `${getKey(cell_ref.start.x.coord, cell_ref.start.y.coord)}:${getKey(
-          cell_ref.end.x.coord,
-          cell_ref.end.y.coord
-        )}`,
+        cellId: `${getKey(startX, startY)}:${getKey(endX, endY)}`,
         span,
         index,
       };
     } else if (cell_ref.type === 'Cell') {
-      return { cellId: getKey(cell_ref.pos.x.coord, cell_ref.pos.y.coord), span, index };
+      const x = pixiApp.highlightedCells.evalCoord(cell_ref.pos.x, cell.x);
+      const y = pixiApp.highlightedCells.evalCoord(cell_ref.pos.y, cell.y);
+      return { cellId: getKey(x, y), span, index };
     } else {
       throw new Error('Unhandled cell_ref type in extractCellsFromParseFormula');
     }
@@ -90,7 +94,11 @@ export const useEditorCellHighlights = (
       }
 
       if (language === 'Formula') {
-        parsed = (await parse_formula(modelValue, 0, 0)) as ParseFormulaReturnType;
+        parsed = (await parse_formula(
+          modelValue,
+          editorInteractionState.selectedCell.x,
+          editorInteractionState.selectedCell.y
+        )) as ParseFormulaReturnType;
       }
 
       if (parsed) {
@@ -102,7 +110,12 @@ export const useEditorCellHighlights = (
 
         if (language !== 'Formula') return;
 
-        const extractedCells = extractCellsFromParseFormula(parsed);
+        const extractedCells = extractCellsFromParseFormula(
+          parsed,
+          editorInteractionState.selectedCell,
+          editorInteractionState.selectedCellSheet
+        );
+        console.log('editorInteractionState.selectedCell', editorInteractionState.selectedCell);
 
         extractedCells.forEach((value, index) => {
           const { cellId, span } = value;
@@ -126,6 +139,7 @@ export const useEditorCellHighlights = (
               inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
             },
           });
+          // decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
 
           cellsMatches.set(cellId, range);
 
@@ -135,19 +149,10 @@ export const useEditorCellHighlights = (
             pixiApp.highlightedCells.setHighlightedCell(index);
           }
         });
-
-        decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
       }
     };
 
     onChangeModel();
     editor.onDidChangeModelContent(onChangeModel);
-  }, [
-    isValidRef,
-    editorRef,
-    monacoRef,
-    editorInteractionState.selectedCell,
-    editorInteractionState.selectedCellSheet,
-    language,
-  ]);
+  }, [isValidRef, editorRef, monacoRef, editorInteractionState, language]);
 };

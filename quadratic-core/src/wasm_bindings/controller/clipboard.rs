@@ -46,7 +46,7 @@ impl GridController {
     pub fn js_paste_from_clipboard(
         &mut self,
         sheet_id: String,
-        pos: Pos,
+        dest_pos: Pos,
         plain_text: Option<String>,
         html: Option<String>,
         special: PasteSpecial,
@@ -54,7 +54,7 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let output = self.paste_from_clipboard(
-            pos.to_sheet_pos(sheet_id),
+            dest_pos.to_sheet_pos(sheet_id),
             plain_text,
             html,
             special,

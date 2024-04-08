@@ -5,6 +5,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
+use crate::formulas::{escape_string, parse_sheet_name};
 use crate::Pos;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -76,9 +77,46 @@ impl fmt::Display for CellRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Self { sheet, x, y } = self;
         if let Some(sheet) = sheet {
-            write!(f, "'{}'!", crate::formulas::escape_string(sheet))?;
+            write!(f, "'{}'!", escape_string(sheet))?;
         }
+        // println!("{:?} {:?}", x, y);
         write!(f, "R{y}C{x}")
+        // let x = match x {
+        //     CellRefCoord::Relative(delta) => delta,
+        //     CellRefCoord::Absolute(coord) => coord,
+        // };
+        // let y = match y {
+        //     CellRefCoord::Relative(delta) => delta,
+        //     CellRefCoord::Absolute(coord) => coord,
+        // };
+        // let pos: Pos = (*x, *y).into();
+        // write!(f, "{}", pos.a1_string())
+    }
+}
+
+impl FromStr for CellRef {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (maybe_sheet, rest) = parse_sheet_name(s);
+
+        lazy_static! {
+            pub static ref CELL_REFERENCE_REGEX: Regex =
+                Regex::new(r"([\[|\{]-?\d+[\]|\}])").unwrap();
+        }
+
+        let captures = CELL_REFERENCE_REGEX
+            .captures_iter(&rest)
+            .collect::<Vec<_>>();
+
+        match (captures.get(0), captures.get(1)) {
+            (Some(row), Some(col)) => Ok(CellRef {
+                sheet: maybe_sheet,
+                x: CellRefCoord::from_str(col.get(0).map_or("0", |m| m.as_str()))?,
+                y: CellRefCoord::from_str(row.get(0).map_or("0", |m| m.as_str()))?,
+            }),
+            _ => Err(()),
+        }
     }
 }
 
@@ -104,27 +142,17 @@ impl CellRef {
     /// A1-style notation.
     pub fn a1_string(&self, base: Pos) -> String {
         let sheet_str = match &self.sheet {
-            Some(sheet_name) => format!("{}!", crate::formulas::escape_string(sheet_name)),
+            Some(sheet_name) => format!("{}!", escape_string(sheet_name)),
             None => String::new(),
         };
         let col = self.x.col_string(base.x);
-        let row = self.y.col_string(base.y);
+        let row = self.y.row_string(base.y);
         format!("{sheet_str}{col}{row}")
     }
 
     /// Parses an A1-style cell reference relative to a given location.
-    pub fn parse_a1(mut s: &str, base: Pos) -> Option<CellRef> {
-        let mut sheet = None;
-        if let Some((sheet_name_str, rest)) = s.split_once('!') {
-            s = rest;
-            if sheet_name_str.starts_with(['\'', '"']) {
-                sheet = crate::formulas::parse_string_literal(sheet_name_str.trim());
-            } else {
-                sheet = Some(sheet_name_str.trim().to_string());
-            }
-        }
-
-        s = s.trim();
+    pub fn parse_a1(s: &str, base: Pos) -> Option<CellRef> {
+        let (sheet, rest) = parse_sheet_name(s);
 
         lazy_static! {
             /// ^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$
@@ -138,7 +166,7 @@ impl CellRef {
                 Regex::new(r"^(\$?)(n?[A-Z]+)(\$?)(n?)(\d+)$").unwrap();
         }
 
-        let captures = A1_CELL_REFERENCE_REGEX.captures(s)?;
+        let captures = A1_CELL_REFERENCE_REGEX.captures(rest.trim())?;
 
         let column_is_absolute = !captures[1].is_empty();
         let column_name = &captures[2];
@@ -188,13 +216,14 @@ impl fmt::Display for CellRefCoord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             CellRefCoord::Relative(delta) => write!(f, "[{delta}]"),
-            CellRefCoord::Absolute(coord) => {
-                if coord < 0 {
-                    write!(f, "n{}", -coord)
-                } else {
-                    write!(f, "{coord}")
-                }
-            }
+            CellRefCoord::Absolute(coord) => write!(f, "{{{coord}}}"),
+            // {
+            //     if coord < 0 {
+            //         write!(f, "n{}", -coord)
+            //     } else {
+            //         write!(f, "{coord}")
+            //     }
+            // }
         }
     }
 }
@@ -204,12 +233,12 @@ impl FromStr for CellRefCoord {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // IIFE to mimic try_block
         let maybe_relative = (|| s.strip_prefix('[')?.strip_suffix(']')?.parse().ok())();
-        if let Some(rel) = maybe_relative {
-            Ok(Self::Relative(rel))
-        } else if let Ok(abs) = s.parse() {
-            Ok(Self::Absolute(abs))
-        } else {
-            Err(())
+        let maybe_absolute = (|| s.strip_prefix('{')?.strip_suffix('}')?.parse().ok())();
+
+        match (maybe_relative, maybe_absolute) {
+            (Some(delta), None) => Ok(Self::Relative(delta)),
+            (None, Some(coord)) => Ok(Self::Absolute(coord)),
+            _ => Err(()),
         }
     }
 }

@@ -20,6 +20,7 @@ pub struct Clipboard {
 
     pub formats: Vec<CellFmtArray>,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
+    pub src_pos: Option<SheetPos>,
 }
 
 impl GridController {
@@ -220,28 +221,56 @@ impl GridController {
     // todo: parse table structure to provide better pasting experience from other spreadsheets
     pub fn paste_html_operations(
         &mut self,
-        sheet_pos: SheetPos,
+        dest_pos: SheetPos,
         html: String,
         special: PasteSpecial,
     ) -> Result<Vec<Operation>> {
+        let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
+
         // use regex to find data-quadratic
         match Regex::new(r#"data-quadratic="(.*)"><tbody"#) {
-            Err(_) => Err(Error::msg("Regex creation error")),
+            Err(e) => Err(error(e.to_string(), "Regex creation error")),
             Ok(re) => {
                 let data = re
                     .captures(&html)
-                    .ok_or_else(|| Error::msg("Regex capture error"))?;
+                    .ok_or_else(|| error("".into(), "Regex capture error"))?;
                 let result = &data.get(1).map_or("", |m| m.as_str());
 
                 // decode html in attribute
-                let unencoded = htmlescape::decode_html(result)
-                    .map_err(|e| Error::msg(format!("Html decode error: {:?}", e)))?;
+                let decoded = htmlescape::decode_html(result)
+                    .map_err(|_| error("".into(), "Html decode error"))?;
 
-                // parse into Clipboard
-                let clipboard = serde_json::from_str::<Clipboard>(&unencoded)
-                    .map_err(|e| Error::msg(format!("Clipboard parse error: {:?}", e)))?;
+                // // parse into Clipboard
+                // let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
+                //     .map_err(|e| error(e.to_string(), "Serialization error"))?;
 
-                Ok(self.set_clipboard_cells(sheet_pos, clipboard, special))
+                // if let Some(src_pos) = clipboard.src_pos {
+                //     for col in clipboard.cells.columns.iter_mut() {
+                //         for (y, cell) in col.iter_mut() {
+                //             match cell {
+                //                 CellValue::Code(code_cell) => match code_cell.language {
+                //                     CodeCellLanguage::Formula => {
+                //                         let new_pos = Pos {
+                //                             x: src_pos.x - dest_pos.x,
+                //                             y: src_pos.y - dest_pos.y + 1,
+                //                         };
+                //                         let formula = parse_formula(&code_cell.code, new_pos)
+                //                             .map_err(|e| error(e.to_string(), "Parse error"))?;
+
+                //                         *code_cell = CodeCellValue {
+                //                             language: CodeCellLanguage::Formula,
+                //                             code: formula.to_string(),
+                //                         };
+                //                     }
+                //                     CodeCellLanguage::Python => { /* noop */ }
+                //                 },
+                //                 _ => { /* noop */ }
+                //             };
+                //         }
+                //     }
+                // }
+
+                Ok(self.set_clipboard_cells(dest_pos, clipboard, special))
             }
         }
     }
