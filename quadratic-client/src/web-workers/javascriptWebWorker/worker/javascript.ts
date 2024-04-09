@@ -5,6 +5,8 @@ import { CoreJavascriptRun } from '../javascriptCoreMessages';
 import { javascriptClient } from './javascriptClient';
 import { javascriptCore } from './javascriptCore';
 
+const ESBUILD_INDENTATION = 2;
+
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     getCells: (
@@ -45,6 +47,8 @@ const library = `
   };
   const c = getCell;
 `;
+
+const libraryLines = library.split('\n').length;
 
 class Javascript {
   private awaitingExecution: CodeRun[];
@@ -175,14 +179,18 @@ class Javascript {
       new AsyncFunction(
         'resolve',
         'reject',
-        `try {
-            const result = ${code};
-            resolve(result);
-          } catch (e) {
-            reject(e);
-          }`
+        `try { const result = ${code};resolve(result); } catch (e) { reject(e); }`
       )(resolve, reject);
     });
+  }
+
+  private errorLineNumber(stack: string): { text: string; line: number | null } {
+    const match = stack.match(/<anonymous>:(\d+):(\d+)/);
+    if (match) {
+      const line = parseInt(match[1]) - libraryLines;
+      return { text: ` at line ${line}:${parseInt(match[2]) - ESBUILD_INDENTATION}`, line };
+    }
+    return { text: '', line: null };
   }
 
   async run(message: CoreJavascriptRun) {
@@ -236,14 +244,15 @@ class Javascript {
       console.log = (message: any) => logs.push(message);
       calculationResult = await this.runAsyncCode(transform.code);
     } catch (e: any) {
+      const errorLineNumber = this.errorLineNumber(e.stack);
       const codeResult: JsCodeResult = {
         transaction_id: message.transactionId,
         success: false,
         output_value: null,
-        std_err: e.message,
+        std_err: e.message + errorLineNumber.text,
         std_out: logs.length ? logs.join('\n') : null,
         output_array: null,
-        line_number: null,
+        line_number: errorLineNumber.line,
         output_display_type: null,
         cancel_compute: false,
       };
