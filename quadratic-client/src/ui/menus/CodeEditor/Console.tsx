@@ -8,6 +8,7 @@ import { colors } from '../../../theme/colors';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 import { Type } from '@/components/Type';
+import { ROUTES } from '@/constants/routes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shadcn/ui/tabs';
 import { cn } from '@/shadcn/utils';
 import { AutoAwesome, TerminalOutlined, ViewStreamOutlined } from '@mui/icons-material';
@@ -42,11 +43,7 @@ export function Console(props: ConsoleProps) {
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   const [tab, setTab] = useState<Tab>('console');
 
-  const consoleBadgeSharedClasses = cn(
-    `font-medium`,
-    hasOutput && `after:h-[5px] after:w-[5px] after:rounded-full after:content-['']`,
-    consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
-  );
+  const consoleBadgeSharedClasses = `font-medium`;
 
   return (
     <>
@@ -62,7 +59,12 @@ export function Console(props: ConsoleProps) {
           <TabsList>
             <TabsTrigger
               value="console"
-              className={cn(`relative after:absolute after:right-1 after:top-1`, consoleBadgeSharedClasses)}
+              className={cn(
+                `relative after:absolute after:right-1 after:top-1`,
+                consoleBadgeSharedClasses,
+                hasOutput && `after:h-[5px] after:w-[5px] after:rounded-full after:content-['']`,
+                consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
+              )}
             >
               Console
             </TabsTrigger>
@@ -115,7 +117,13 @@ export function Console(props: ConsoleProps) {
               isActive={true}
             />
           ) : (
-            'you need an account to use the AI assistant'
+            <Type className="px-2">
+              You need to{' '}
+              <a href={ROUTES.LOGIN} className="underline hover:text-primary">
+                log in to Quadratic
+              </a>{' '}
+              to use the AI assistant.
+            </Type>
           )}
         </TabsContent>
       </Tabs>
