@@ -1,14 +1,18 @@
-import { Box, Tab, Tabs } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { Coordinate } from '@/gridGL/types/size';
 import { useRootRouteLoaderData } from '@/router';
 import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
-import { Circle } from '@mui/icons-material';
 import { colors } from '../../../theme/colors';
-import { AITab } from './AITab';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
+
+import { Type } from '@/components/Type';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shadcn/ui/tabs';
+import { cn } from '@/shadcn/utils';
+import { AutoAwesome, TerminalOutlined, ViewStreamOutlined } from '@mui/icons-material';
+import { AITab } from './AITab';
+import { PanelPosition } from './CodeEditor';
 
 interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
@@ -16,50 +20,102 @@ interface ConsoleProps {
   editorContent: string | undefined;
   evaluationResult?: EvaluationResult;
   spillError?: Coordinate[];
+  children: any;
 }
 
 export function Console(props: ConsoleProps) {
-  const { consoleOutput, editorMode, editorContent, evaluationResult, spillError } = props;
-  const [activeTabIndex, setActiveTabIndex] = useState<number>(0);
+  const {
+    consoleOutput,
+    editorMode,
+    editorContent,
+    evaluationResult,
+    spillError,
+    panelPosition,
+    setPanelPosition,
+    children,
+    editorWidth,
+    secondPanelWidth,
+    secondPanelHeightPercentage,
+  } = props;
   const { isAuthenticated } = useRootRouteLoaderData();
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
 
+  const renderedConsole = <ConsoleOutput {...props} />;
+  const renderedAiTab = isAuthenticated ? (
+    <AITab
+      // todo: fix this
+      evalResult={evaluationResult}
+      editorMode={editorMode}
+      editorContent={editorContent}
+      isActive={true}
+    />
+  ) : (
+    'you need an account to use the AI assistant'
+  );
+
   return (
     <>
-      <Box>
-        <Tabs
-          value={activeTabIndex}
-          onChange={(e: React.SyntheticEvent, newValue: number) => {
-            setActiveTabIndex(newValue);
-          }}
-          aria-label="Console"
-          style={{ minHeight: '32px' }}
-        >
-          <Tab
-            style={{ minHeight: '32px' }}
-            label="Console"
-            id="console-tab-0"
-            aria-controls="console-tabpanel-0"
-            icon={
-              hasOutput ? (
-                <Circle sx={{ fontSize: 8 }} color={consoleOutput?.stdErr ? 'error' : 'inherit'} />
-              ) : undefined
-            }
-            iconPosition="end"
-          ></Tab>
-          {editorMode === 'Python' && isAuthenticated && (
-            <Tab
-              style={{ minHeight: '32px' }}
-              label="AI Assistant"
-              id="console-tab-1"
-              aria-controls="console-tabpanel-1"
-            ></Tab>
-          )}
-        </Tabs>
-      </Box>
-      <div style={{ flex: '2', overflow: 'scroll', fontSize: '.875rem', lineHeight: '1.5' }}>
+      <Tabs
+        defaultValue={'console'}
+        className={cn('grid h-full grid-rows-[auto_1fr] overflow-hidden', panelPosition === 'left' && 'hidden')}
+      >
+        <div className="px-2 pt-2">
+          <TabsList>
+            <TabsTrigger value="console" className="group relative">
+              Console{' '}
+              {hasOutput ? (
+                <div
+                  aria-label="Has output"
+                  className={cn(
+                    `absolute right-1 top-1 h-[5px] w-[5px] rounded-full`,
+                    consoleOutput?.stdErr ? 'bg-destructive' : 'bg-muted-foreground'
+                  )}
+                />
+              ) : undefined}
+            </TabsTrigger>
+            <TabsTrigger value="ai-assistant">AI Assitant</TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="console" className="m-0 grid grid-rows-[1fr_auto] overflow-scroll">
+          {renderedConsole}
+        </TabsContent>
+        <TabsContent value="ai-assistant" className="m-0 grid grid-rows-[1fr_auto] overflow-scroll">
+          {renderedAiTab}
+        </TabsContent>
+      </Tabs>
+
+      <div
+        className={cn(`grid grid-rows-[auto_1fr] overflow-hidden`, panelPosition === 'bottom' && 'hidden')}
+        style={{ height: `${secondPanelHeightPercentage}%` }}
+      >
+        <div className="flex items-center gap-2 px-2 py-3">
+          <TerminalOutlined className="text-foreground" fontSize="small" />
+          <Type className="font-medium">Console</Type>
+        </div>
+        <div className="flex-grow overflow-scroll">{renderedConsole}</div>
+      </div>
+
+      <div
+        className={cn(`grid grid-rows-[auto_1fr] overflow-hidden`, panelPosition === 'bottom' && 'hidden')}
+        style={{ height: `${100 - secondPanelHeightPercentage}%` }}
+      >
+        <div className="flex items-center gap-2 px-2 py-3">
+          <AutoAwesome className="text-foreground" fontSize="small" />
+          <Type className="font-medium">AI assistant</Type>
+        </div>
+
+        <div className="grid grid-rows-[1fr_auto] overflow-scroll">{renderedAiTab}</div>
+      </div>
+
+      <PanelToggle panelPosition={panelPosition} setPanelPosition={setPanelPosition} />
+    </>
+  );
+}
+
+/* <PanelPane>
         <TabPanel value={activeTabIndex} index={0}>
-          <ConsoleOutput {...props} />
+          
         </TabPanel>
         <TabPanel value={activeTabIndex} index={1} scrollToBottom={true}>
           <AITab
@@ -70,9 +126,10 @@ export function Console(props: ConsoleProps) {
             isActive={activeTabIndex === 1}
           ></AITab>
         </TabPanel>
-      </div>
-    </>
-  );
+      </PanelPane> */
+
+export function PanelPane({ children }: { children: React.ReactNode }) {
+  return <div style={{ flex: '2', overflow: 'scroll', fontSize: '.875rem', lineHeight: '1.5' }}>{children}</div>;
 }
 
 export function ConsoleOutput({
@@ -95,11 +152,8 @@ export function ConsoleOutput({
           e.preventDefault();
         }
       }}
-      style={{
-        outline: 'none',
-        whiteSpace: 'pre-wrap',
-        ...codeEditorBaseStyles,
-      }}
+      className=" whitespace-pre-wrap px-2 outline-none"
+      style={codeEditorBaseStyles}
       // Disable Grammarly
       data-gramm="false"
       data-gramm_editor="false"
@@ -166,5 +220,32 @@ function TabPanel(props: { children: React.ReactElement; value: number; index: n
       <div style={{ padding: '.5rem 1rem 0 1rem' }}>{children}</div>
       {/* )} */}
     </div>
+  );
+}
+
+export function PanelToggle({
+  panelPosition,
+  setPanelPosition,
+}: {
+  panelPosition: PanelPosition;
+  setPanelPosition: React.Dispatch<React.SetStateAction<PanelPosition>>;
+}) {
+  return (
+    <Tabs
+      className={cn('absolute', panelPosition === 'bottom' ? 'right-2 top-2' : 'right-1 top-1')}
+      value={panelPosition}
+      onValueChange={(e) => {
+        setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
+      }}
+    >
+      <TabsList>
+        <TabsTrigger value="bottom" className="group relative">
+          <ViewStreamOutlined className="" fontSize="small" style={{}} />
+        </TabsTrigger>
+        <TabsTrigger value="left">
+          <ViewStreamOutlined className="rotate-90" fontSize="small" style={{}} />
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
   );
 }

@@ -62,15 +62,7 @@ export const CodeEditorHeader = (props: Props) => {
   if (!cellLocation) return null;
 
   return (
-    <div
-      style={{
-        fontSize: '0.875rem',
-        display: 'flex',
-        justifyContent: 'space-between',
-        padding: '.25rem .5rem',
-        borderBottom: `1px solid ${colors.mediumGray}`,
-      }}
-    >
+    <div className="flex justify-between px-2 py-1 text-sm">
       <div
         style={{
           display: 'flex',
@@ -87,12 +79,8 @@ export const CodeEditorHeader = (props: Props) => {
         ) : (
           <Subject />
         )}
-        <span
-          style={{
-            color: 'black',
-          }}
-        >
-          Cell ({cellLocation.x}, {cellLocation.y}) - {language}
+        <span className="font-medium">
+          Cell ({cellLocation.x}, {cellLocation.y})
           {unsaved && (
             <TooltipHint title="Your changes haven’t been saved or run" placement="bottom">
               <FiberManualRecord

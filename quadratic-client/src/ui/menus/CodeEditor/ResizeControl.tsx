@@ -2,17 +2,22 @@ import { colors } from '../../../theme/colors';
 import './ResizeControl.css';
 
 interface ResizeControlProps {
-  position: 'TOP' | 'LEFT';
+  position: 'HORIZONTAL' | 'VERTICAL';
   setState: (mouseEvent: globalThis.MouseEvent) => void;
-  min?: number;
+  style?: React.CSSProperties;
 }
 
-export function ResizeControl({ setState, position, min }: ResizeControlProps) {
+export function ResizeControl({ setState, position, style }: ResizeControlProps) {
+  if (!style) {
+    style = {};
+  }
+
   return (
     <div
       className={`resize-control resize-control--position-${position}`}
       data-position={position}
       style={{
+        ...style,
         // @ts-expect-error typescript doesn't like us setting CSS custom properties
         '--resize-control-highlight': colors.quadraticPrimary,
         '--resize-control-background': colors.mediumGray,
@@ -24,16 +29,6 @@ export function ResizeControl({ setState, position, min }: ResizeControlProps) {
 
         function mousemove(mouseEvent: globalThis.MouseEvent) {
           setState(mouseEvent);
-          // const newValue =
-          //   position === 'LEFT'
-          //     ? window.innerWidth - event_mousemove.x
-          //     : // 25 is a bit of a magic number. It's the height of the CodeEditorHeader
-          //       window.innerHeight - event_mousemove.y - 25;
-
-          // // console.log(min, newValue);
-          // // if (min && newValue > min) {
-          // setState(min ? (newValue > min ? newValue : min) : newValue);
-          // }
         }
 
         function mouseup() {

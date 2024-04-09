@@ -9,41 +9,51 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRecoilState, useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
-import { Type } from '@/components/Type';
+import useLocalStorage from '@/hooks/useLocalStorage';
 import { Button } from '@/shadcn/ui/button';
+import { cn } from '@/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/utils/analytics';
-import { AutoAwesome, TerminalOutlined, ViewStreamOutlined } from '@mui/icons-material';
+import { ViewStreamOutlined } from '@mui/icons-material';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
 import { pixiApp } from '../../../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
-import { AITab } from './AITab';
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorProvider } from './CodeEditorContext';
 import { CodeEditorHeader } from './CodeEditorHeader';
-import { Console, ConsoleOutput } from './Console';
+import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
 const CODE_EDITOR_MIN_WIDTH = 350;
-const SECOND_PANEL_MIN_WIDTH = 300;
+const PANEL_MIN_WIDTH = 300;
 
 export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
 };
 
+const CodeEditorLayout = () => {};
+
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const { pythonState } = useRecoilValue(pythonStateAtom);
-  const [secondPanelWidth, setSecondPanelWidth] = useState(SECOND_PANEL_MIN_WIDTH);
-  const [secondPanelHeightPercentage, setSecondPanelHeightPercentage] = useState<number>(50);
+  const [editorWidth, setEditorWidth] = useLocalStorage<number>(
+    'codeEditorWidth',
+    window.innerWidth * 0.35 // default to 35% of the window width
+  );
+  const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>('codeEditorHeightPercentage', 75);
+  const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', PANEL_MIN_WIDTH);
+  const [panelHeightPercentage, setPanelHeightPercentage] = useLocalStorage<number>(
+    'codeEditorPanelHeightPercentage',
+    50
+  );
+  const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'left');
   const containerRef = useRef<HTMLDivElement>(null);
-  const [panelPosition, setPanelPosition] = useState<PanelPosition>('bottom');
 
   // update code cell
   const [codeString, setCodeString] = useState('');
@@ -53,10 +63,6 @@ export const CodeEditor = () => {
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | undefined>(undefined);
   const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
 
-  const [editorWidth, setEditorWidth] = useState<number>(
-    window.innerWidth * 0.35 // default to 35% of the window width
-  );
-  const [consoleHeight, setConsoleHeight] = useState<number>(200);
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
@@ -297,86 +303,25 @@ export const CodeEditor = () => {
     return null;
   }
 
+  const width = editorWidth + (panelPosition === 'left' ? panelWidth : 0);
+  console.log(panelPosition === 'left' ? '100%' : `${100 - editorHeightPercentage}%`);
+
   return (
     <CodeEditorProvider>
-      <div ref={containerRef}>
-        {panelPosition === 'left' && (
-          <div
-            className="absolute bottom-0 top-0 z-[2] flex flex-col bg-white"
-            style={{ right: `${editorWidth}px`, width: `${secondPanelWidth}px` }}
-          >
-            <PanelToggle position={panelPosition} setPosition={setPanelPosition} />
-            <ResizeControl
-              setState={(mouseEvent) => {
-                const offsetFromRight = window.innerWidth - mouseEvent.x - editorWidth;
-                setSecondPanelWidth(
-                  offsetFromRight > SECOND_PANEL_MIN_WIDTH ? offsetFromRight : SECOND_PANEL_MIN_WIDTH
-                );
-                // const xPos = setState(min ? (newValue > min ? newValue : min) : newValue);
-              }}
-              position="LEFT"
-              min={200}
-            />
-
-            <div style={{ height: `${secondPanelHeightPercentage}%` }}>
-              <div className="flex items-center gap-2 px-4 py-3">
-                <TerminalOutlined className="opacity-30" fontSize="small" />
-                <Type>Console</Type>
-              </div>
-              <div className="px-4 py-3">
-                <ConsoleOutput
-                  consoleOutput={out}
-                  editorMode={editorMode}
-                  editorContent={editorContent}
-                  evaluationResult={evaluationResult}
-                  spillError={spillError}
-                />
-              </div>
-            </div>
-            <ResizeControl
-              setState={(mouseEvent) => {
-                if (!containerRef.current) return;
-
-                const containerRect = containerRef.current?.getBoundingClientRect();
-                const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
-
-                if (newTopHeight >= 10 && newTopHeight <= 90) {
-                  setSecondPanelHeightPercentage(newTopHeight);
-                }
-              }}
-              position="TOP"
-            />
-            <div style={{ height: `${100 - secondPanelHeightPercentage}%` }}>
-              <div className="flex items-center gap-2 px-4 py-3">
-                <AutoAwesome className="opacity-30" fontSize="small" />
-                <Type>AI assistant</Type>
-              </div>
-              <div className="overflow-scroll px-4 py-3">
-                <AITab
-                  // todo: fix this
-                  evalResult={evaluationResult}
-                  editorMode={editorMode}
-                  editorContent={editorContent}
-                  isActive={true}
-                />
-              </div>
-            </div>
-          </div>
+      <div
+        ref={containerRef}
+        className={cn(
+          'absolute bottom-0 right-0 top-0 z-[2] flex max-w-[90%] bg-background',
+          panelPosition === 'left' ? '' : 'flex-col'
         )}
+        style={{ width: `${width}px` }}
+      >
         <div
           id="QuadraticCodeEditorID"
+          className={cn('flex flex-col', panelPosition === 'left' ? 'order-2' : 'order-1')}
           style={{
-            position: 'absolute',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
             width: `${editorWidth}px`,
-            // minWidth: '350px',
-            maxWidth: '90%',
-            backgroundColor: '#ffffff',
-            zIndex: 2,
+            height: panelPosition === 'left' ? '100%' : `${editorHeightPercentage}%`,
           }}
           onKeyDownCapture={onKeyDownEditor}
           onPointerEnter={() => {
@@ -407,14 +352,6 @@ export const CodeEditor = () => {
             />
           )}
 
-          <ResizeControl
-            setState={(mouseEvent) => {
-              const offsetFromRight = window.innerWidth - mouseEvent.x;
-              setEditorWidth(offsetFromRight > CODE_EDITOR_MIN_WIDTH ? offsetFromRight : CODE_EDITOR_MIN_WIDTH);
-            }}
-            position="LEFT"
-            min={CODE_EDITOR_MIN_WIDTH}
-          />
           <CodeEditorHeader
             cellLocation={cellLocation}
             unsaved={unsaved}
@@ -435,39 +372,120 @@ export const CodeEditor = () => {
             />
           )}
 
-          <ResizeControl setState={() => {}} position="TOP" />
           {/* Console Wrapper */}
-          {panelPosition === 'bottom' && (
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                minHeight: '100px',
-                background: '#fff',
-                height: `${consoleHeight}px`,
-              }}
-            >
-              {(editorInteractionState.mode === 'Python' || editorInteractionState.mode === 'Formula') && (
-                <Console
-                  consoleOutput={out}
-                  editorMode={editorMode}
-                  editorContent={editorContent}
-                  evaluationResult={evaluationResult}
-                  spillError={spillError}
-                />
-              )}
-              <PanelToggle position={panelPosition} setPosition={setPanelPosition} />
-            </div>
-          )}
         </div>
+
+        <div
+          className={cn(panelPosition === 'left' ? 'order-1' : 'order-2', 'relative flex flex-col bg-background')}
+          style={{
+            width: panelPosition === 'left' ? `${panelWidth}px` : '100%',
+            height: panelPosition === 'left' ? '100%' : `${100 - editorHeightPercentage}%`,
+          }}
+        >
+          <Console
+            consoleOutput={out}
+            editorMode={editorMode}
+            editorContent={editorContent}
+            evaluationResult={evaluationResult}
+            spillError={spillError}
+            panelPosition={panelPosition}
+            setPanelPosition={setPanelPosition}
+            editorWidth={editorWidth}
+            secondPanelWidth={panelWidth}
+            secondPanelHeightPercentage={panelHeightPercentage}
+          />
+        </div>
+
+        {/*panelPosition === 'left' ? (
+          <>
+            
+            
+          </>
+        ) : (
+          <ResizeControl
+            setState={(mouseEvent) => {
+              const offsetFromRight = window.innerWidth - mouseEvent.x;
+              setEditorWidth(offsetFromRight > CODE_EDITOR_MIN_WIDTH ? offsetFromRight : CODE_EDITOR_MIN_WIDTH);
+            }}
+            position="LEFT"
+            min={CODE_EDITOR_MIN_WIDTH}
+          />
+          )*/}
+
+        {panelPosition === 'left' && (
+          <>
+            {/* PanelHeightPercentage */}
+            <ResizeControl
+              style={{ top: panelHeightPercentage + '%', width: panelWidth + 'px' }}
+              setState={(mouseEvent) => {
+                if (!containerRef.current) return;
+
+                const containerRect = containerRef.current?.getBoundingClientRect();
+                const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
+
+                if (newTopHeight >= 25 && newTopHeight <= 75) {
+                  setPanelHeightPercentage(newTopHeight);
+                }
+              }}
+              position="HORIZONTAL"
+            />
+            {/* PanelWidth */}
+            <ResizeControl
+              style={{ left: `-1px` }}
+              setState={(mouseEvent) => {
+                const offsetFromRight = window.innerWidth - mouseEvent.x - editorWidth;
+                setPanelWidth(offsetFromRight > PANEL_MIN_WIDTH ? offsetFromRight : PANEL_MIN_WIDTH);
+                // const xPos = setState(min ? (newValue > min ? newValue : min) : newValue);
+              }}
+              position="VERTICAL"
+            />
+            {/* EditorWidth */}
+            <ResizeControl
+              style={{ left: panelWidth + 'px' }}
+              setState={(mouseEvent) => {
+                const offsetFromRight = window.innerWidth - mouseEvent.x;
+                setEditorWidth(offsetFromRight > CODE_EDITOR_MIN_WIDTH ? offsetFromRight : CODE_EDITOR_MIN_WIDTH);
+              }}
+              position="VERTICAL"
+            />
+          </>
+        )}
+
+        {panelPosition === 'bottom' && (
+          <>
+            {/* PanelAndEditorWidth */}
+            <ResizeControl
+              style={{ left: '-1px' }}
+              setState={(mouseEvent) => {
+                const offsetFromRight = window.innerWidth - mouseEvent.x;
+                setEditorWidth(offsetFromRight > CODE_EDITOR_MIN_WIDTH ? offsetFromRight : CODE_EDITOR_MIN_WIDTH);
+              }}
+              position="VERTICAL"
+            />
+            {/* PanelAndEditorHeightPercentage */}
+            <ResizeControl
+              style={{ top: editorHeightPercentage + '%', width: '100%' }}
+              setState={(mouseEvent) => {
+                if (!containerRef.current) return;
+
+                const containerRect = containerRef.current?.getBoundingClientRect();
+                const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
+
+                if (newTopHeight >= 25 && newTopHeight <= 75) {
+                  setEditorHeightPercentage(newTopHeight);
+                }
+              }}
+              position="HORIZONTAL"
+            />
+          </>
+        )}
       </div>
     </CodeEditorProvider>
   );
 };
 
 type PanelPosition = 'bottom' | 'left';
-function PanelToggle({
+export function PanelToggle({
   position,
   setPosition,
 }: {

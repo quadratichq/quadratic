@@ -5,18 +5,16 @@
 }
 
 /* Vertical control, left side */
-.resize-control--position-LEFT {
+.resize-control--position-VERTICAL {
   width: 1px;
   height: 100%;
   position: absolute;
-  top: 0;
-  left: -1px;
   cursor: col-resize;
 }
 
 /* Horizontal control, top side */
-.resize-control--position-TOP {
-  position: relative;
+.resize-control--position-HORIZONTAL {
+  position: absolute;
   width: 100%;
   height: 1px;
   cursor: row-resize;
@@ -27,14 +25,14 @@
   content: '';
   transition: 0.2s ease background-color 0ms;
 }
-.resize-control--position-LEFT:before {
+.resize-control--position-VERTICAL:before {
   position: absolute;
   width: 5px;
   height: 100%;
   left: -2px;
   top: 0;
 }
-.resize-control--position-TOP:before {
+.resize-control--position-HORIZONTAL:before {
   position: absolute;
   width: 100%;
   height: 5px;
@@ -54,9 +52,9 @@
 body:has(.resize-control--is-dragging) {
   user-select: none;
 }
-body:has(.resize-control--is-dragging.resize-control--position-LEFT) {
+body:has(.resize-control--is-dragging.resize-control--position-VERTICAL) {
   cursor: col-resize !important;
 }
-body:has(.resize-control--is-dragging.resize-control--position-TOP) {
+body:has(.resize-control--is-dragging.resize-control--position-HORIZONTAL) {
   cursor: row-resize !important;
 }
