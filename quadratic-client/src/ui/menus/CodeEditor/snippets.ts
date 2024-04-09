@@ -58,28 +58,31 @@ print(x.text)`,
   },
   {
     label: 'Select DataFrame columns',
-    code: `# reference range of cells from the sheet, or get you data some other way
-df = cells((x1, y1), (x2, y2), first_row_header=True)
+    code: `import pandas as pd 
+
+# reference range of cells from the sheet, or get your data some other way
+df = pd.DataFrame({'num_legs': [2, 4, 8, 0],
+                   'num_wings': [2, 0, 0, 0],
+                   'num_specimen_seen': [10, 2, 1, 8]})
 
 # get single column by column name 
-col = df['column_name_here']
+col = df['num_legs']
 
 # create new DataFrame from multiple columns by column names
-df = df.filter(items=['column_name_one', 'column_name_two', 'etc.'])
+df = df.filter(items=['num_legs', 'num_wings'])
 
-# return column as series to sheet or return filtered df
-col`,
+# return filtered DataFrame
+df`,
   },
   {
     label: 'Filter a DataFrame',
     keywords: 'query filter slice',
     code: `import pandas as pd 
 
-# reference range of cells from the sheet, or get you data some other way
-df = cells((x1, y1), (x2, y2), first_row_header=True)
-
-# example query
-filtered_df = df.query('column_one > 1 and column_two == "Male"')
+# reference range of cells from the sheet, or get your data some other way
+df = pd.DataFrame({'num_legs': [2, 4, 8, 0],
+                   'num_wings': [2, 0, 0, 0],
+                   'num_specimen_seen': [10, 2, 1, 8]})
 
 # filtering range of rows - example gets first 3 rows, zero-indexed
 filtered_df = df.loc[0:2]
@@ -89,6 +92,9 @@ filtered_df = df.tail(1)
 
 # get first five rows of DataFrame 
 filtered_df = df.head(5)
+
+# example query
+filtered_df = df.query('num_legs > 2 and num_specimen_seen >= 1')
 
 # return your filtered DataFrame to the sheet
 filtered_df`,

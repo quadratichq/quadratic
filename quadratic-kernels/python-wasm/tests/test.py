@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import numpy as np
 import pandas as pd
 from process_output_test import *
-from quadratic_py.utils import (Blank, attempt_fix_await, to_python_type,
+from quadratic_py.utils import (attempt_fix_await, to_python_type,
                                 to_quadratic_type)
 
 
@@ -190,22 +190,22 @@ class TestUtils(TestCase):
         assert to_quadratic_type(1) == ("1", "number")
         assert to_quadratic_type(1.1) == ("1.1", "number")
         assert to_quadratic_type(-1) == ("-1", "number")
-        assert to_quadratic_type("1") == ("1", "number")
-        assert to_quadratic_type("1.1") == ("1.1", "number")
-        assert to_quadratic_type("-1") == ("-1", "number")
 
         # logical
         assert to_quadratic_type(True) == ("True", "logical")
         assert to_quadratic_type(False) == ("False", "logical")
-        assert to_quadratic_type("True") == ("True", "logical")
-        assert to_quadratic_type("False") == ("False", "logical")
-        assert to_quadratic_type("true") == ("True", "logical")
-        assert to_quadratic_type("false") == ("False", "logical")
 
         # string
         assert to_quadratic_type("abc") == ("abc", "text")
         assert to_quadratic_type("123abc") == ("123abc", "text")
         assert to_quadratic_type("abc123") == ("abc123", "text")
+        assert to_quadratic_type("1") == ("1", "text")
+        assert to_quadratic_type("1.1") == ("1.1", "text")
+        assert to_quadratic_type("-1") == ("-1", "text")
+        assert to_quadratic_type("True") == ("True", "text")
+        assert to_quadratic_type("False") == ("False", "text")
+        assert to_quadratic_type("true") == ("true", "text")
+        assert to_quadratic_type("false") == ("false", "text")
 
         # instant
         assert to_quadratic_type(pd.Timestamp("2012-11-10")) == ("1352505600", "instant")
@@ -218,10 +218,10 @@ class TestUtils(TestCase):
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # duration
-class TestUtils(TestCase):
+        
     def test_to_python_type(self):
         # blank
-        assert to_python_type("", "blank") == 0
+        assert to_python_type("", "blank") is None
         
         # number
         assert to_python_type("1", "number") == 1
@@ -243,32 +243,6 @@ class TestUtils(TestCase):
         # instant
         assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00+00:00")
         assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00+00:00")
-
-    def test_blank(self):
-        assert Blank() + 1 == 1
-        assert Blank() + 1.1 == 1.1
-        assert Blank() + -1 == -1
-        assert Blank() - 1 == -1
-        assert Blank() * 2 == 0
-        assert Blank() / 2 == 0
-        assert Blank() % 2 == 0
-        assert Blank() ** 2 == 0
-        assert bool(Blank()) == False
-        assert str(Blank()) == ""
-        assert Blank() == Blank()
-        assert Blank() == 0
-        assert Blank() == None
-        assert Blank() == ""
-        assert Blank() == False
-        assert Blank() == 0.0
-        assert Blank() < 1
-        assert Blank() < 1.1
-        assert Blank() > -1
-        assert Blank() > -1.1
-        assert Blank() <= 0
-        assert Blank() <= 1
-        assert Blank() >= 0
-        assert Blank() >= -1
 
 
 
