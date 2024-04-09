@@ -63,8 +63,6 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
   const { loggedInUser: user } = useRootRouteLoaderData();
   const inputRef = useRef<HTMLInputElement | undefined>(undefined);
 
-  console.log(messages);
-
   // Focus the input when the tab comes into focus
   useEffect(() => {
     if (isActive && inputRef.current) {

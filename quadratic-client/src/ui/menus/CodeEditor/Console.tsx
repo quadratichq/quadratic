@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { Coordinate } from '@/gridGL/types/size';
@@ -20,7 +20,9 @@ interface ConsoleProps {
   editorContent: string | undefined;
   evaluationResult?: EvaluationResult;
   spillError?: Coordinate[];
-  children: any;
+  panelPosition: PanelPosition;
+  panelHeightPercentage: number;
+  setPanelPosition: React.Dispatch<React.SetStateAction<PanelPosition>>;
 }
 
 type Tab = 'console' | 'ai-assistant';
@@ -34,10 +36,7 @@ export function Console(props: ConsoleProps) {
     spillError,
     panelPosition,
     setPanelPosition,
-    children,
-    editorWidth,
-    secondPanelWidth,
-    secondPanelHeightPercentage,
+    panelHeightPercentage,
   } = props;
   const { isAuthenticated } = useRootRouteLoaderData();
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
@@ -78,7 +77,7 @@ export function Console(props: ConsoleProps) {
             'm-0 grid grid-rows-[auto_1fr] overflow-hidden',
             panelPosition === 'bottom' && tab !== 'console' && 'hidden'
           )}
-          style={panelPosition === 'left' ? { height: `${secondPanelHeightPercentage}%` } : {}}
+          style={panelPosition === 'left' ? { height: `${panelHeightPercentage}%` } : {}}
         >
           {/* Only visible when panel is on the left */}
           {panelPosition === 'left' && (
@@ -98,7 +97,7 @@ export function Console(props: ConsoleProps) {
             panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]',
             panelPosition === 'bottom' && tab !== 'ai-assistant' && 'hidden'
           )}
-          style={panelPosition === 'left' ? { height: `${100 - secondPanelHeightPercentage}%` } : {}}
+          style={panelPosition === 'left' ? { height: `${100 - panelHeightPercentage}%` } : {}}
         >
           {panelPosition === 'left' && (
             <div className="flex items-center gap-2 px-2 py-3">
@@ -121,38 +120,24 @@ export function Console(props: ConsoleProps) {
         </TabsContent>
       </Tabs>
 
-      {/* <div
-        className={cn(`grid grid-rows-[auto_1fr] overflow-hidden`, panelPosition === 'bottom' && 'hidden')}
-        style={{ height: `${secondPanelHeightPercentage}%` }}
-      ></div>
-
-      <div
-        className={cn(`grid grid-rows-[auto_1fr] overflow-hidden`, panelPosition === 'bottom' && 'hidden')}
-        style={{ height: `${100 - secondPanelHeightPercentage}%` }}
-      ></div> */}
-
-      <PanelToggle panelPosition={panelPosition} setPanelPosition={setPanelPosition} />
+      <Tabs
+        className={cn('absolute', panelPosition === 'bottom' ? 'right-2 top-2' : 'right-1 top-1')}
+        value={panelPosition}
+        onValueChange={(e) => {
+          setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
+        }}
+      >
+        <TabsList>
+          <TabsTrigger value="bottom" className="group relative">
+            <ViewStreamOutlined className="" fontSize="small" style={{}} />
+          </TabsTrigger>
+          <TabsTrigger value="left">
+            <ViewStreamOutlined className="rotate-90" fontSize="small" style={{}} />
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
     </>
   );
-}
-
-/* <PanelPane>
-        <TabPanel value={activeTabIndex} index={0}>
-          
-        </TabPanel>
-        <TabPanel value={activeTabIndex} index={1} scrollToBottom={true}>
-          <AITab
-            // todo: fix this
-            evalResult={evaluationResult}
-            editorMode={editorMode}
-            editorContent={editorContent}
-            isActive={activeTabIndex === 1}
-          ></AITab>
-        </TabPanel>
-      </PanelPane> */
-
-export function PanelPane({ children }: { children: React.ReactNode }) {
-  return <div style={{ flex: '2', overflow: 'scroll', fontSize: '.875rem', lineHeight: '1.5' }}>{children}</div>;
 }
 
 export function ConsoleOutput({
@@ -212,63 +197,5 @@ export function ConsoleOutput({
         </div>
       )}
     </div>
-  );
-}
-
-function TabPanel(props: { children: React.ReactElement; value: number; index: number; scrollToBottom?: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { children, value, index, scrollToBottom, ...other } = props;
-  const hidden = value !== index;
-
-  useEffect(() => {
-    if (!ref.current || hidden) return;
-
-    if (scrollToBottom) {
-      ref.current.scrollIntoView(false);
-    } else {
-      ref.current.scrollIntoView(true);
-    }
-  }, [hidden, scrollToBottom]);
-
-  return (
-    <div
-      ref={ref}
-      role="tabpanel"
-      hidden={hidden}
-      id={`console-tabpanel-${index}`}
-      aria-labelledby={`console-tab-${index}`}
-      {...other}
-    >
-      {/* {value === index && ( */}
-      <div style={{ padding: '.5rem 1rem 0 1rem' }}>{children}</div>
-      {/* )} */}
-    </div>
-  );
-}
-
-export function PanelToggle({
-  panelPosition,
-  setPanelPosition,
-}: {
-  panelPosition: PanelPosition;
-  setPanelPosition: React.Dispatch<React.SetStateAction<PanelPosition>>;
-}) {
-  return (
-    <Tabs
-      className={cn('absolute', panelPosition === 'bottom' ? 'right-2 top-2' : 'right-1 top-1')}
-      value={panelPosition}
-      onValueChange={(e) => {
-        setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
-      }}
-    >
-      <TabsList>
-        <TabsTrigger value="bottom" className="group relative">
-          <ViewStreamOutlined className="" fontSize="small" style={{}} />
-        </TabsTrigger>
-        <TabsTrigger value="left">
-          <ViewStreamOutlined className="rotate-90" fontSize="small" style={{}} />
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
   );
 }

@@ -10,10 +10,8 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
 import useLocalStorage from '@/hooks/useLocalStorage';
-import { Button } from '@/shadcn/ui/button';
 import { cn } from '@/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/utils/analytics';
-import { ViewStreamOutlined } from '@mui/icons-material';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { grid } from '../../../grid/controller/Grid';
@@ -31,6 +29,9 @@ import { SaveChangesAlert } from './SaveChangesAlert';
 
 const CODE_EDITOR_MIN_WIDTH = 350;
 const PANEL_MIN_WIDTH = 300;
+const GRID_MIN_VISIBLE_WIDTH = 150;
+
+export type PanelPosition = 'bottom' | 'left';
 
 export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
@@ -299,22 +300,67 @@ export const CodeEditor = () => {
     }
   };
 
+  // Whenever we change the position of the panel to be left-to-right, make sure
+  // there's enough width for the editor and the panel
+  useEffect(() => {
+    if (panelPosition === 'left') {
+      if (editorWidth + panelWidth > window.innerWidth - GRID_MIN_VISIBLE_WIDTH) {
+        setPanelWidth(PANEL_MIN_WIDTH);
+        setEditorWidth(window.innerWidth - PANEL_MIN_WIDTH - GRID_MIN_VISIBLE_WIDTH);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelPosition]);
+
+  // When the window resizes, recalculate the appropriate proportions for
+  // the editor and the panel
+  useEffect(() => {
+    const handleResize = (event: any) => {
+      const width = event.target.innerWidth;
+
+      if (width < 1024) return;
+
+      const availableWidth = width - GRID_MIN_VISIBLE_WIDTH;
+      if (panelPosition === 'left' && panelWidth + editorWidth > availableWidth) {
+        const totalOldWidth = editorWidth + panelWidth;
+
+        setEditorWidth((oldEditorWidth) => {
+          const editorPercentage = oldEditorWidth / totalOldWidth;
+          return availableWidth * editorPercentage;
+        });
+
+        setPanelWidth((oldPanelWidth) => {
+          const panelPercentage = oldPanelWidth / totalOldWidth;
+          return availableWidth * panelPercentage;
+        });
+      } else if (panelPosition === 'bottom' && editorWidth > availableWidth) {
+        const totalOldWidth = editorWidth;
+        setEditorWidth((oldEditorWidth) => {
+          const editorPercentage = oldEditorWidth / totalOldWidth;
+          return availableWidth * editorPercentage;
+        });
+      }
+    };
+
+    window.addEventListener('resize', handleResize, true);
+    return () => {
+      window.removeEventListener('resize', handleResize, true);
+    };
+  }, [editorWidth, panelPosition, panelWidth, setEditorWidth, setPanelWidth]);
+
   if (!showCodeEditor) {
     return null;
   }
-
-  const width = editorWidth + (panelPosition === 'left' ? panelWidth : 0);
-  console.log(panelPosition === 'left' ? '100%' : `${100 - editorHeightPercentage}%`);
 
   return (
     <CodeEditorProvider>
       <div
         ref={containerRef}
         className={cn(
-          'absolute bottom-0 right-0 top-0 z-[2] flex max-w-[90%] bg-background',
+          'absolute bottom-0 right-0 top-0 z-[2] hidden max-w-[90%] bg-background lg:flex',
           panelPosition === 'left' ? '' : 'flex-col'
         )}
-        style={{ width: `${width}px` }}
+        style={{ width: `${editorWidth + (panelPosition === 'left' ? panelWidth : 0)}px` }}
       >
         <div
           id="QuadraticCodeEditorID"
@@ -390,61 +436,47 @@ export const CodeEditor = () => {
             spillError={spillError}
             panelPosition={panelPosition}
             setPanelPosition={setPanelPosition}
-            editorWidth={editorWidth}
-            secondPanelWidth={panelWidth}
-            secondPanelHeightPercentage={panelHeightPercentage}
+            panelHeightPercentage={panelHeightPercentage}
           />
         </div>
 
-        {/*panelPosition === 'left' ? (
-          <>
-            
-            
-          </>
-        ) : (
-          <ResizeControl
-            setState={(mouseEvent) => {
-              const offsetFromRight = window.innerWidth - mouseEvent.x;
-              setEditorWidth(offsetFromRight > CODE_EDITOR_MIN_WIDTH ? offsetFromRight : CODE_EDITOR_MIN_WIDTH);
-            }}
-            position="LEFT"
-            min={CODE_EDITOR_MIN_WIDTH}
-          />
-          )*/}
-
         {panelPosition === 'left' && (
           <>
-            {/* PanelHeightPercentage */}
+            {/* left-to-right: height of sections in panel */}
             <ResizeControl
               style={{ top: panelHeightPercentage + '%', width: panelWidth + 'px' }}
               setState={(mouseEvent) => {
                 if (!containerRef.current) return;
 
                 const containerRect = containerRef.current?.getBoundingClientRect();
-                const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
-
-                if (newTopHeight >= 25 && newTopHeight <= 75) {
-                  setPanelHeightPercentage(newTopHeight);
+                const newValue = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
+                if (newValue >= 25 && newValue <= 75) {
+                  setPanelHeightPercentage(newValue);
                 }
               }}
               position="HORIZONTAL"
             />
-            {/* PanelWidth */}
+            {/* left-to-right: panel width */}
             <ResizeControl
               style={{ left: `-1px` }}
               setState={(mouseEvent) => {
                 const offsetFromRight = window.innerWidth - mouseEvent.x - editorWidth;
-                setPanelWidth(offsetFromRight > PANEL_MIN_WIDTH ? offsetFromRight : PANEL_MIN_WIDTH);
-                // const xPos = setState(min ? (newValue > min ? newValue : min) : newValue);
+                const min = PANEL_MIN_WIDTH;
+                const max = window.innerWidth - editorWidth - GRID_MIN_VISIBLE_WIDTH;
+                const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
+                setPanelWidth(newValue);
               }}
               position="VERTICAL"
             />
-            {/* EditorWidth */}
+            {/* left-to-right: editor width */}
             <ResizeControl
-              style={{ left: panelWidth + 'px' }}
+              style={{ left: `${panelWidth}px` }}
               setState={(mouseEvent) => {
                 const offsetFromRight = window.innerWidth - mouseEvent.x;
-                setEditorWidth(offsetFromRight > CODE_EDITOR_MIN_WIDTH ? offsetFromRight : CODE_EDITOR_MIN_WIDTH);
+                const min = CODE_EDITOR_MIN_WIDTH;
+                const max = window.innerWidth - panelWidth - GRID_MIN_VISIBLE_WIDTH;
+                const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
+                setEditorWidth(newValue);
               }}
               position="VERTICAL"
             />
@@ -453,16 +485,19 @@ export const CodeEditor = () => {
 
         {panelPosition === 'bottom' && (
           <>
-            {/* PanelAndEditorWidth */}
+            {/* top-to-bottom: editor width */}
             <ResizeControl
               style={{ left: '-1px' }}
               setState={(mouseEvent) => {
                 const offsetFromRight = window.innerWidth - mouseEvent.x;
-                setEditorWidth(offsetFromRight > CODE_EDITOR_MIN_WIDTH ? offsetFromRight : CODE_EDITOR_MIN_WIDTH);
+                const min = CODE_EDITOR_MIN_WIDTH;
+                const max = window.innerWidth - GRID_MIN_VISIBLE_WIDTH;
+                const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
+                setEditorWidth(newValue);
               }}
               position="VERTICAL"
             />
-            {/* PanelAndEditorHeightPercentage */}
+            {/* top-to-bottom: height of sections */}
             <ResizeControl
               style={{ top: editorHeightPercentage + '%', width: '100%' }}
               setState={(mouseEvent) => {
@@ -483,23 +518,3 @@ export const CodeEditor = () => {
     </CodeEditorProvider>
   );
 };
-
-type PanelPosition = 'bottom' | 'left';
-export function PanelToggle({
-  position,
-  setPosition,
-}: {
-  position: PanelPosition;
-  setPosition: React.Dispatch<React.SetStateAction<PanelPosition>>;
-}) {
-  return (
-    <div className="absolute right-1 top-1">
-      <Button size="icon" variant={position === 'bottom' ? 'secondary' : 'ghost'} onClick={() => setPosition('bottom')}>
-        <ViewStreamOutlined className="text-foreground opacity-50" fontSize="small" style={{}} />
-      </Button>
-      <Button size="icon" variant={position === 'left' ? 'secondary' : 'ghost'} onClick={() => setPosition('left')}>
-        <ViewStreamOutlined className="rotate-90 opacity-50" fontSize="small" />
-      </Button>
-    </div>
-  );
-}
