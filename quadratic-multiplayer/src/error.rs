@@ -136,3 +136,22 @@ impl From<jsonwebtoken::errors::Error> for MpError {
         MpError::Authentication(error.to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_error_level_conversions_and_logs() {
+        let mp_error = MpError::PubSub("pubsub error".into());
+        let error_level = ErrorLevel::from(&mp_error);
+        error_level.log("test log");
+        assert!(matches!(error_level, ErrorLevel::Error));
+
+        let mp_error = MpError::RoomNotFound("room error".into());
+        let error_level = ErrorLevel::from(&mp_error);
+        error_level.log("test log");
+        assert!(matches!(error_level, ErrorLevel::Warning));
+    }
+}
