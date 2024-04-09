@@ -2,19 +2,12 @@
 //!
 //! A central place for websocket messages responses.
 
-use crate::error::MpError;
+use crate::error::{ErrorLevel, MpError};
 use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
 use uuid::Uuid;
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display, EnumString)]
-pub(crate) enum ErrorLevel {
-    Error,
-    Warning,
-}
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

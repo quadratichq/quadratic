@@ -7,10 +7,35 @@
 
 use quadratic_rust_shared::{Aws, SharedError};
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 use thiserror::Error;
 use uuid::Uuid;
 
 pub(crate) type Result<T> = std::result::Result<T, MpError>;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display, EnumString)]
+pub(crate) enum ErrorLevel {
+    Error,
+    Warning,
+}
+
+impl From<&MpError> for ErrorLevel {
+    fn from(error: &MpError) -> Self {
+        match error {
+            MpError::PubSub(_) => ErrorLevel::Error,
+            _ => ErrorLevel::Warning,
+        }
+    }
+}
+
+impl ErrorLevel {
+    pub(crate) fn log(&self, msg: &str) {
+        match self {
+            ErrorLevel::Error => tracing::error!("{}", msg),
+            ErrorLevel::Warning => tracing::warn!("{}", msg),
+        }
+    }
+}
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub(crate) enum MpError {

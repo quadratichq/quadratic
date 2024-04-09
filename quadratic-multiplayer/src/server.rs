@@ -27,12 +27,9 @@ use crate::{
     auth::{authorize, get_jwks},
     background_worker,
     config::config,
-    error::{MpError, Result},
+    error::{ErrorLevel, MpError, Result},
     message::{
-        broadcast,
-        handle::handle_message,
-        request::MessageRequest,
-        response::{ErrorLevel, MessageResponse},
+        broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
     state::{connection::PreConnection, State},
 };
@@ -200,15 +197,8 @@ async fn handle_socket(
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
             Err(error) => {
-                let mut error_level = ErrorLevel::Warning;
-
-                match error {
-                    MpError::PubSub(_) => {
-                        tracing::error!("Error processing message: {:?}", &error);
-                        error_level = ErrorLevel::Error;
-                    }
-                    _ => tracing::warn!("Error processing message: {:?}", &error),
-                };
+                let error_level = ErrorLevel::from(&error);
+                error_level.log(&format!("Error processing message: {:?}", &error));
 
                 if let Ok(message) = serde_json::to_string(&MessageResponse::Error {
                     error: error.to_owned(),
@@ -337,7 +327,6 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 pub(crate) mod tests {
 
     use super::*;
-    use crate::state::pubsub::PubSub;
     use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
     use crate::test_util::{
@@ -349,9 +338,7 @@ pub(crate) mod tests {
     };
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
-    use quadratic_rust_shared::pubsub::{
-        redis_streams::RedisStreamsConfig, Config as PubSubConfig,
-    };
+
     use tower::ServiceExt;
     use uuid::Uuid;
 
