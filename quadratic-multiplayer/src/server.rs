@@ -337,6 +337,7 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
 pub(crate) mod tests {
 
     use super::*;
+    use crate::state::pubsub::PubSub;
     use crate::state::settings::MinVersion;
     use crate::state::user::{User, UserStateUpdate};
     use crate::test_util::{
@@ -348,6 +349,9 @@ pub(crate) mod tests {
     };
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
+    use quadratic_rust_shared::pubsub::{
+        redis_streams::RedisStreamsConfig, Config as PubSubConfig,
+    };
     use tower::ServiceExt;
     use uuid::Uuid;
 
