@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 // import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
 import { Coordinate } from '@/gridGL/types/size';
@@ -23,6 +23,8 @@ interface ConsoleProps {
   children: any;
 }
 
+type Tab = 'console' | 'ai-assistant';
+
 export function Console(props: ConsoleProps) {
   const {
     consoleOutput,
@@ -39,74 +41,95 @@ export function Console(props: ConsoleProps) {
   } = props;
   const { isAuthenticated } = useRootRouteLoaderData();
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+  const [tab, setTab] = useState<Tab>('console');
 
-  const renderedConsole = <ConsoleOutput {...props} />;
-  const renderedAiTab = isAuthenticated ? (
-    <AITab
-      // todo: fix this
-      evalResult={evaluationResult}
-      editorMode={editorMode}
-      editorContent={editorContent}
-      isActive={true}
-    />
-  ) : (
-    'you need an account to use the AI assistant'
+  const consoleBadgeSharedClasses = cn(
+    `font-medium`,
+    hasOutput && `after:h-[5px] after:w-[5px] after:rounded-full after:content-['']`,
+    consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
   );
 
   return (
     <>
       <Tabs
-        defaultValue={'console'}
-        className={cn('grid h-full grid-rows-[auto_1fr] overflow-hidden', panelPosition === 'left' && 'hidden')}
+        value={tab}
+        onValueChange={(value) => {
+          setTab(value as Tab);
+        }}
+        className={cn('h-full', panelPosition === 'bottom' && 'grid grid-rows-[auto_1fr]')}
       >
-        <div className="px-2 pt-2">
+        {/* Only visible when panel is on the bottom */}
+        <div className={cn(panelPosition !== 'bottom' && 'hidden', 'px-2 pb-2 pt-2')}>
           <TabsList>
-            <TabsTrigger value="console" className="group relative">
-              Console{' '}
-              {hasOutput ? (
-                <div
-                  aria-label="Has output"
-                  className={cn(
-                    `absolute right-1 top-1 h-[5px] w-[5px] rounded-full`,
-                    consoleOutput?.stdErr ? 'bg-destructive' : 'bg-muted-foreground'
-                  )}
-                />
-              ) : undefined}
+            <TabsTrigger
+              value="console"
+              className={cn(`relative after:absolute after:right-1 after:top-1`, consoleBadgeSharedClasses)}
+            >
+              Console
             </TabsTrigger>
             <TabsTrigger value="ai-assistant">AI Assitant</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="console" className="m-0 grid grid-rows-[1fr_auto] overflow-scroll">
-          {renderedConsole}
+        <TabsContent
+          forceMount={true}
+          value="console"
+          className={cn(
+            'm-0 grid grid-rows-[auto_1fr] overflow-hidden',
+            panelPosition === 'bottom' && tab !== 'console' && 'hidden'
+          )}
+          style={panelPosition === 'left' ? { height: `${secondPanelHeightPercentage}%` } : {}}
+        >
+          {/* Only visible when panel is on the left */}
+          {panelPosition === 'left' && (
+            <div className="flex items-center gap-2 px-2 py-3">
+              <TerminalOutlined className="text-foreground" fontSize="small" />
+              <Type className={cn('flex items-center gap-2 ', consoleBadgeSharedClasses)}>Console</Type>
+            </div>
+          )}
+          <ConsoleOutput {...props} />
         </TabsContent>
-        <TabsContent value="ai-assistant" className="m-0 grid grid-rows-[1fr_auto] overflow-scroll">
-          {renderedAiTab}
+        <TabsContent
+          forceMount={true}
+          value="ai-assistant"
+          className={cn(
+            'm-0 grid overflow-hidden',
+            panelPosition === 'bottom' && 'grid-rows-[1fr_auto]',
+            panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]',
+            panelPosition === 'bottom' && tab !== 'ai-assistant' && 'hidden'
+          )}
+          style={panelPosition === 'left' ? { height: `${100 - secondPanelHeightPercentage}%` } : {}}
+        >
+          {panelPosition === 'left' && (
+            <div className="flex items-center gap-2 px-2 py-3">
+              <AutoAwesome className="text-foreground" fontSize="small" />
+              <Type className="font-medium">AI assistant</Type>
+            </div>
+          )}
+
+          {isAuthenticated ? (
+            <AITab
+              // todo: fix this
+              evalResult={evaluationResult}
+              editorMode={editorMode}
+              editorContent={editorContent}
+              isActive={true}
+            />
+          ) : (
+            'you need an account to use the AI assistant'
+          )}
         </TabsContent>
       </Tabs>
 
-      <div
+      {/* <div
         className={cn(`grid grid-rows-[auto_1fr] overflow-hidden`, panelPosition === 'bottom' && 'hidden')}
         style={{ height: `${secondPanelHeightPercentage}%` }}
-      >
-        <div className="flex items-center gap-2 px-2 py-3">
-          <TerminalOutlined className="text-foreground" fontSize="small" />
-          <Type className="font-medium">Console</Type>
-        </div>
-        <div className="flex-grow overflow-scroll">{renderedConsole}</div>
-      </div>
+      ></div>
 
       <div
         className={cn(`grid grid-rows-[auto_1fr] overflow-hidden`, panelPosition === 'bottom' && 'hidden')}
         style={{ height: `${100 - secondPanelHeightPercentage}%` }}
-      >
-        <div className="flex items-center gap-2 px-2 py-3">
-          <AutoAwesome className="text-foreground" fontSize="small" />
-          <Type className="font-medium">AI assistant</Type>
-        </div>
-
-        <div className="grid grid-rows-[1fr_auto] overflow-scroll">{renderedAiTab}</div>
-      </div>
+      ></div> */}
 
       <PanelToggle panelPosition={panelPosition} setPanelPosition={setPanelPosition} />
     </>
@@ -152,7 +175,7 @@ export function ConsoleOutput({
           e.preventDefault();
         }
       }}
-      className=" whitespace-pre-wrap px-2 outline-none"
+      className="overflow-scroll whitespace-pre-wrap pl-2 pr-4 outline-none"
       style={codeEditorBaseStyles}
       // Disable Grammarly
       data-gramm="false"
