@@ -36,7 +36,6 @@ const library = `
         }
         cells.push(row);
       }
-      console.log('***', cells)
       return cells;
     }
   };
@@ -177,16 +176,10 @@ class Javascript {
         'resolve',
         'reject',
         `try {
-          console.log("${code}");
-            const run = async () => { ${code} };
-            console.log(2);
-            const result = await run();
-            console.log(3);
+            const result = ${code};
             resolve(result);
-            console.log(result);
           } catch (e) {
             reject(e);
-            console.log(5);
           }`
       )(resolve, reject);
     });
@@ -205,10 +198,9 @@ class Javascript {
     this.transactionId = message.transactionId;
     this.column = message.x;
     this.row = message.y;
-
     let transform: esbuild.TransformResult;
     try {
-      transform = await esbuild.transform(library + message.code, {
+      transform = await esbuild.transform('(async () => {' + library + message.code + '})()', {
         loader: 'ts',
       });
     } catch (e: any) {
@@ -263,7 +255,6 @@ class Javascript {
       return;
     }
     console.log = oldConsoleLog;
-    console.log('***', calculationResult);
     const output_value = this.convertOutputType(calculationResult, logs);
     const output_array = this.convertOutputArray(calculationResult, logs);
     const codeResult: JsCodeResult = {
