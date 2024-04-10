@@ -226,13 +226,11 @@ class Javascript {
       }
     } catch (e) {
       const failure = e as esbuild.BuildFailure;
-      console.log(failure.errors);
-      debugger;
       const codeResult: JsCodeResult = {
         transaction_id: message.transactionId,
         success: false,
         output_value: null,
-        std_err: null,
+        std_err: failure.errors.join('\n'),
         std_out: null,
         output_array: null,
         line_number: null,
@@ -246,12 +244,12 @@ class Javascript {
       return;
     }
 
+    const logs: any[] = [];
     if (buildResult.warnings.length > 0) {
-      console.log(buildResult.warnings);
+      logs.push(...buildResult.warnings.map((w) => w.text));
     }
     let calculationResult: any;
     let oldConsoleLog = console.log;
-    const logs: any[] = [];
     try {
       console.log = (message: any) => logs.push(message);
       calculationResult = await this.runAsyncCode(code);
