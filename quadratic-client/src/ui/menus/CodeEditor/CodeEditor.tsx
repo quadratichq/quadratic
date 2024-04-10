@@ -3,7 +3,7 @@ import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { Pos } from '@/quadratic-core/types';
-import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
+import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -24,6 +24,10 @@ import { Console } from './Console';
 import { ResizeControl } from './ResizeControl';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
+
+export const dispatchEditorAction = (name: string) => {
+  window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
+};
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -233,6 +237,27 @@ export const CodeEditor = () => {
       event.preventDefault();
       event.stopPropagation();
       cancelPython();
+    }
+
+    // Command + Plus
+    if ((event.metaKey || event.ctrlKey) && event.key === '=') {
+      event.preventDefault();
+      event.stopPropagation();
+      dispatchEditorAction('editor.action.fontZoomIn');
+    }
+
+    // Command + Minus
+    if ((event.metaKey || event.ctrlKey) && event.key === '-') {
+      event.preventDefault();
+      event.stopPropagation();
+      dispatchEditorAction('editor.action.fontZoomOut');
+    }
+
+    // Command + 0
+    if ((event.metaKey || event.ctrlKey) && event.key === '0') {
+      event.preventDefault();
+      event.stopPropagation();
+      dispatchEditorAction('editor.action.fontZoomReset');
     }
   };
 
