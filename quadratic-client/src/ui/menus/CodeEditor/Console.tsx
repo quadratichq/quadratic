@@ -130,11 +130,11 @@ export function Console(props: ConsoleProps) {
         }}
       >
         <TabsList>
-          <TabsTrigger value="bottom" className="group relative">
-            <ViewStreamOutlined className="" fontSize="small" style={{}} />
+          <TabsTrigger value="bottom">
+            <ViewStreamOutlined fontSize="small" />
           </TabsTrigger>
           <TabsTrigger value="left">
-            <ViewStreamOutlined className="rotate-90" fontSize="small" style={{}} />
+            <ViewStreamOutlined fontSize="small" className="rotate-90" />
           </TabsTrigger>
         </TabsList>
       </Tabs>
