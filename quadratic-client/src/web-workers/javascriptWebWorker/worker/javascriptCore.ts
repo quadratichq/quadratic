@@ -1,7 +1,7 @@
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
 import { JsCodeResult, JsGetCellResponse } from '@/quadratic-core-types';
 import type { CoreJavascriptGetCells, CoreJavascriptMessage, JavascriptCoreMessage } from '../javascriptCoreMessages';
-import { javascript } from './javascript';
+import { javascript } from './javascript/javascript';
 
 class JavascriptCore {
   private coreMessagePort?: MessagePort;

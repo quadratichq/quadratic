@@ -1,9 +1,10 @@
 import { JsCodeResult, JsGetCellResponse } from '@/quadratic-core-types';
 import type { CodeRun, LanguageState } from '@/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
-import { CoreJavascriptRun } from '../javascriptCoreMessages';
-import { javascriptClient } from './javascriptClient';
-import { javascriptCore } from './javascriptCore';
+import { CoreJavascriptRun } from '../../javascriptCoreMessages';
+import { javascriptClient } from '../javascriptClient';
+import { javascriptCore } from '../javascriptCore';
+import { javascriptLibrary, javascriptLibraryLines } from './javascriptLibrary';
 
 const ESBUILD_INDENTATION = 2;
 
@@ -18,37 +19,6 @@ declare var self: WorkerGlobalScope &
       lineNumber?: number
     ) => Promise<JsGetCellResponse[] | undefined>;
   };
-
-// todo: this should be moved to an importable file
-const library = `
-  const getCells = async (x0: number, y0: number, x1: number, y1: number, sheetId?: string) => {
-    const results = await self.getCells(x0, y0, x1, y1, sheetId);
-    if (results) {
-      const cells: any[][] = [];
-      for (let y = y0; y <= y1; y++) {
-        const row: any[] = [];
-        for (let x = x0; x <= x1; x++) {
-          const entry = results.find((r) => r.x === x && r.y === y);
-          if (entry) {
-            const typed = entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
-            row.push(typed);
-          } else {
-            row.push(undefined);
-          }
-        }
-        cells.push(row);
-      }
-      return cells;
-    }
-  };
-  const getCell = async (x: number, y: number, sheetId: string) => {
-    const results = await getCells(x, y, x, y, sheetId);
-    return results?.[0]?.[0];
-  };
-  const c = getCell;
-`;
-
-const libraryLines = library.split('\n').length;
 
 class Javascript {
   private awaitingExecution: CodeRun[];
@@ -187,10 +157,21 @@ class Javascript {
   private errorLineNumber(stack: string): { text: string; line: number | null } {
     const match = stack.match(/<anonymous>:(\d+):(\d+)/);
     if (match) {
-      const line = parseInt(match[1]) - libraryLines;
+      const line = parseInt(match[1]) - javascriptLibraryLines;
       return { text: ` at line ${line}:${parseInt(match[2]) - ESBUILD_INDENTATION}`, line };
     }
     return { text: '', line: null };
+  }
+
+  // separates imports from code so it can be placed above anonymous async function
+  private transformCode(code: string) {
+    // from https://stackoverflow.com/a/73265022/1955997
+    const regExp =
+      // eslint-disable-next-line no-useless-escape
+      /import(?:(?:(?:[ \n\t]+([^ *\n\t\{\},]+)[ \n\t]*(?:,|[ \n\t]+))?([ \n\t]*\{(?:[ \n\t]*[^ \n\t"'\{\}]+[ \n\t]*,?)+\})?[ \n\t]*)|[ \n\t]*\*[ \n\t]*as[ \n\t]+([^ \n\t\{\}]+)[ \n\t]+)from[ \n\t]*(?:['"])([^'"\n]+)(['"])/gm;
+    const imports = (code.match(regExp)?.join('\n') || '') + ';';
+    let transformedCode = code.replace(regExp, '');
+    return { code: transformedCode, imports };
   }
 
   async run(message: CoreJavascriptRun) {
@@ -206,17 +187,52 @@ class Javascript {
     this.transactionId = message.transactionId;
     this.column = message.x;
     this.row = message.y;
-    let transform: esbuild.TransformResult;
-    try {
-      transform = await esbuild.transform('(async () => {' + library + message.code + '})()', {
-        loader: 'ts',
-      });
-    } catch (e: any) {
+    let buildResult: esbuild.BuildResult;
+    let code = '';
+    const transform = this.transformCode(message.code);
+    if (transform.imports !== ';') {
       const codeResult: JsCodeResult = {
         transaction_id: message.transactionId,
         success: false,
         output_value: null,
-        std_err: e.message,
+        std_err: 'Javascript import statements are not supported yet',
+        std_out: null,
+        output_array: null,
+        line_number: null,
+        output_display_type: null,
+        cancel_compute: false,
+      };
+      javascriptCore.sendJavascriptResults(message.transactionId, codeResult);
+      javascriptClient.sendState('ready');
+      this.state = 'ready';
+      setTimeout(this.next, 0);
+      return;
+    }
+    try {
+      buildResult = await esbuild.build({
+        stdin: {
+          contents: '(async () => {' + javascriptLibrary + transform.code + '})()',
+          loader: 'ts',
+        },
+
+        // we use cjs since we don't want the output wrapped in another anonymous
+        // function(we wrap it in an async function ourselves)
+        format: 'cjs',
+
+        write: false,
+      });
+      if (buildResult.outputFiles?.length) {
+        code = buildResult.outputFiles[0].text;
+      }
+    } catch (e) {
+      const failure = e as esbuild.BuildFailure;
+      console.log(failure.errors);
+      debugger;
+      const codeResult: JsCodeResult = {
+        transaction_id: message.transactionId,
+        success: false,
+        output_value: null,
+        std_err: null,
         std_out: null,
         output_array: null,
         line_number: null,
@@ -230,19 +246,15 @@ class Javascript {
       return;
     }
 
-    // todo: for use when adding libraries to js
-    // const result2 = await esbuild.build({ write: false, bundle: true });
-
-    if (transform.warnings.length > 0) {
-      console.log(transform.warnings);
+    if (buildResult.warnings.length > 0) {
+      console.log(buildResult.warnings);
     }
-
     let calculationResult: any;
     let oldConsoleLog = console.log;
     const logs: any[] = [];
     try {
       console.log = (message: any) => logs.push(message);
-      calculationResult = await this.runAsyncCode(transform.code);
+      calculationResult = await this.runAsyncCode(code);
     } catch (e: any) {
       const errorLineNumber = this.errorLineNumber(e.stack);
       const codeResult: JsCodeResult = {
