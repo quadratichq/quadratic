@@ -51,7 +51,7 @@ export const CodeEditor = () => {
     'codeEditorPanelHeightPercentage',
     50
   );
-  const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'left');
+  const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
   const containerRef = useRef<HTMLDivElement>(null);
 
   // update code cell
