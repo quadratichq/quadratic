@@ -12,7 +12,7 @@ import ConditionalWrapper from '../../components/ConditionalWrapper';
 import { TooltipHint } from '../../components/TooltipHint';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
-import './AITab.css';
+import './AiAssistant.css';
 import { QuadraticDocs } from './QuadraticDocs';
 
 // todo: fix types
