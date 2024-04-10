@@ -62,8 +62,8 @@ export function Console(props: ConsoleProps) {
               className={cn(
                 `relative after:absolute after:right-1 after:top-1`,
                 consoleBadgeSharedClasses,
-                hasOutput && `after:h-[5px] after:w-[5px] after:rounded-full after:content-['']`,
-                consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
+                tab !== 'console' && hasOutput && `after:h-[5px] after:w-[5px] after:rounded-full after:content-['']`,
+                tab !== 'console' && consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
               )}
             >
               Console
