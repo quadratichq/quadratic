@@ -235,11 +235,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         </div>
       </div>
       <form
-        className="flex gap-2 px-2 pb-2"
-        style={{
-          background: 'linear-gradient(0deg, rgba(255,255,255,1) 85%, rgba(255,255,255,0) 100%)',
-          zIndex: 10,
-        }}
+        className="z-10 flex gap-2 px-2 pb-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
