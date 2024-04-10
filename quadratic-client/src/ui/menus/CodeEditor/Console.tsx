@@ -55,7 +55,7 @@ export function Console(props: ConsoleProps) {
         className={cn('h-full', panelPosition === 'bottom' && 'grid grid-rows-[auto_1fr]')}
       >
         {/* Only visible when panel is on the bottom */}
-        <div className={cn(panelPosition !== 'bottom' && 'hidden', 'px-2 pb-2 pt-2')}>
+        <div className={cn(panelPosition !== 'bottom' && 'hidden', 'px-3 pb-2 pt-2')}>
           <TabsList>
             <TabsTrigger
               value="console"
@@ -83,7 +83,7 @@ export function Console(props: ConsoleProps) {
         >
           {/* Only visible when panel is on the left */}
           {panelPosition === 'left' && (
-            <Type className={cn('flex items-center gap-2 px-2 py-3', consoleBadgeSharedClasses)}>Console</Type>
+            <Type className={cn('flex items-center gap-2 px-3 py-3', consoleBadgeSharedClasses)}>Console</Type>
           )}
           <ConsoleOutput {...props} />
         </TabsContent>
@@ -99,7 +99,7 @@ export function Console(props: ConsoleProps) {
           style={panelPosition === 'left' ? { height: `${100 - panelHeightPercentage}%` } : {}}
         >
           {panelPosition === 'left' && (
-            <Type className={cn(`gap-2 px-2 py-3`, consoleBadgeSharedClasses)}>AI assistant</Type>
+            <Type className={cn(`gap-2 px-3 py-3`, consoleBadgeSharedClasses)}>AI assistant</Type>
           )}
 
           {isAuthenticated ? (
@@ -111,7 +111,7 @@ export function Console(props: ConsoleProps) {
               isActive={true}
             />
           ) : (
-            <Type className="px-2">
+            <Type className="px-3">
               You need to{' '}
               <a href={ROUTES.LOGIN} className="underline hover:text-primary">
                 log in to Quadratic
@@ -123,17 +123,17 @@ export function Console(props: ConsoleProps) {
       </Tabs>
 
       <Tabs
-        className={cn('absolute', panelPosition === 'bottom' ? 'right-2 top-2' : 'right-1 top-1')}
+        className={cn('absolute', panelPosition === 'bottom' ? 'right-2 top-2' : 'right-2 top-2')}
         value={panelPosition}
         onValueChange={(e) => {
           setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
         }}
       >
-        <TabsList>
-          <TabsTrigger value="bottom">
+        <TabsList className={panelPosition === 'left' ? 'h-8 py-0.5' : ''}>
+          <TabsTrigger value="bottom" className={panelPosition === 'left' ? 'py-0.5' : ''}>
             <ViewStreamOutlined fontSize="small" />
           </TabsTrigger>
-          <TabsTrigger value="left">
+          <TabsTrigger value="left" className={panelPosition === 'left' ? 'py-0.5' : ''}>
             <ViewStreamOutlined fontSize="small" className="rotate-90" />
           </TabsTrigger>
         </TabsList>
@@ -162,7 +162,7 @@ export function ConsoleOutput({
           e.preventDefault();
         }
       }}
-      className="overflow-y-auto whitespace-pre-wrap pl-2 pr-4 outline-none"
+      className="overflow-y-auto whitespace-pre-wrap pl-3 pr-4 outline-none"
       style={codeEditorBaseStyles}
       // Disable Grammarly
       data-gramm="false"

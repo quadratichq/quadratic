@@ -176,7 +176,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
   return (
     <>
       <div
-        className="overflow-y-auto whitespace-pre-wrap pb-2 pl-2 pr-4 text-sm outline-none"
+        className="overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -235,7 +235,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-2 pb-2"
+        className="z-10 flex gap-2 px-3 pb-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}

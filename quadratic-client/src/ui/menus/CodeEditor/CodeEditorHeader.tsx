@@ -62,14 +62,13 @@ export const CodeEditorHeader = (props: Props) => {
   if (!cellLocation) return null;
 
   return (
-    <div className="flex justify-between px-2 py-1 text-sm">
+    <div className="flex justify-between px-3 py-1 text-sm">
       <div
         style={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
           gap: '.5rem',
-          padding: '0 .5rem',
         }}
       >
         {language === 'Python' ? (
