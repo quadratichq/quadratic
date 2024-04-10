@@ -139,7 +139,7 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={language === 'Python' ? 'python' : language}
+        language={language === 'Python' ? 'python' : language === 'Javascript' ? 'javascript' : undefined}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
