@@ -10,7 +10,7 @@ class HTMLCellsHandler {
   private div?: HTMLDivElement;
 
   attach(parent: HTMLDivElement) {
-    if (this.div && parent) {
+    if (this.div) {
       parent.appendChild(this.div);
     }
   }
