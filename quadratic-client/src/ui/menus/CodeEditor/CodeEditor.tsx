@@ -465,6 +465,7 @@ export const CodeEditor = () => {
                 const max = window.innerWidth - editorWidth - GRID_MIN_VISIBLE_WIDTH;
                 const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
                 setPanelWidth(newValue);
+                setEditorWidth(window.innerWidth - newValue);
               }}
               position="VERTICAL"
             />
@@ -472,11 +473,13 @@ export const CodeEditor = () => {
             <ResizeControl
               style={{ left: `${panelWidth}px` }}
               setState={(mouseEvent) => {
+                const total = editorWidth + panelWidth;
                 const offsetFromRight = window.innerWidth - mouseEvent.x;
                 const min = CODE_EDITOR_MIN_WIDTH;
                 const max = window.innerWidth - panelWidth - GRID_MIN_VISIBLE_WIDTH;
                 const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
                 setEditorWidth(newValue);
+                setPanelWidth(total - newValue);
               }}
               position="VERTICAL"
             />
