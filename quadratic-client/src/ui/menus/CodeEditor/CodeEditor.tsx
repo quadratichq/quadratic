@@ -353,10 +353,11 @@ export const CodeEditor = () => {
           closeEditor={closeEditor}
           evaluationResult={evaluationResult}
         />
-        {editorInteractionState.mode === 'Python' && (
+        {['Javascript', 'Python'].includes(editorInteractionState.mode as string) && (
           <ReturnTypeInspector
             evaluationResult={evaluationResult}
             show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+            language={editorInteractionState.mode}
           />
         )}
 

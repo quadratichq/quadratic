@@ -156,7 +156,7 @@ export const CodeEditorBody = (props: Props) => {
           wordWrap: 'on',
         }}
       />
-      {language === 'Python' && (
+      {['Python', 'Javascript'].includes(language as string) && (
         <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
       )}
     </div>
