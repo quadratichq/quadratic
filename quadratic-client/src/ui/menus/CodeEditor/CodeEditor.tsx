@@ -37,8 +37,6 @@ export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
 };
 
-const CodeEditorLayout = () => {};
-
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
