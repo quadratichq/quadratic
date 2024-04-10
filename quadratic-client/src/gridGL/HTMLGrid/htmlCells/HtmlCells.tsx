@@ -5,9 +5,9 @@ import { htmlCellsHandler } from './htmlCellsHandler';
 // parent of htmlCells. Handled in htmlCells.ts
 export const HtmlCells = () => {
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
-  const divRef = useCallback((node: HTMLDivElement) => {
+  const divRef = useCallback((node: HTMLDivElement | null) => {
     setDiv(node);
-    htmlCellsHandler.attach(node);
+    if (node) htmlCellsHandler.attach(node);
   }, []);
 
   useEffect(() => {
