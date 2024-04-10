@@ -214,6 +214,25 @@ impl super::PubSub for RedisConnection {
         Ok(())
     }
 
+    /// Trim messages from a channel
+    async fn trim(&mut self, channel: &str, key: &str, exact: bool) -> Result<i64> {
+        let optional = if exact { "=" } else { "~" };
+        let xtrim = cmd("XTRIM")
+            .arg(channel)
+            .arg("MINID")
+            .arg(optional)
+            .arg(key)
+            .to_owned();
+        let value = self.multiplex.send_packed_command(&xtrim).await?;
+
+        match value {
+            Value::Int(num) => Ok(num),
+            _ => Err(SharedError::PubSub(
+                "Error trimming messages for channel {channel} key {key}".into(),
+            )),
+        }
+    }
+
     /// Get unread messages from a channel.  Specify the keys to get messages for,
     /// or None to get all new messages.
     ///
@@ -253,6 +272,13 @@ impl super::PubSub for RedisConnection {
             .collect::<Vec<_>>();
 
         Ok(messages)
+    }
+
+    /// Get messages from the beginning of a channel ending at a specific id
+    async fn get_messages_before(&mut self, channel: &str, id: &str) -> Result<Vec<Message>> {
+        let messages: StreamRangeReply = self.multiplex.xrange(channel, "-", id).await?;
+
+        Ok(stream_ids_to_messages(messages.ids))
     }
 
     /// Get messages from a channel starting from a specific id

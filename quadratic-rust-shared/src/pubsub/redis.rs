@@ -112,12 +112,24 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
+    async fn trim(&mut self, _channel: &str, _key: &str, _exact: bool) -> Result<i64> {
+        unimplemented!()
+    }
+
     async fn messages(
         &mut self,
         _channel: &str,
         _group: &str,
         _keys: Option<Vec<&str>>,
         _max_messages: usize,
+    ) -> Result<Vec<(String, String)>> {
+        unimplemented!()
+    }
+
+    async fn get_messages_before(
+        &mut self,
+        _channel: &str,
+        _id: &str,
     ) -> Result<Vec<(String, String)>> {
         unimplemented!()
     }

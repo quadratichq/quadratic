@@ -12,6 +12,7 @@ use tokio::time;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use crate::truncate::truncate_processed_transactions;
 use crate::{
     config::config,
     error::{FilesError, Result},
@@ -20,6 +21,7 @@ use crate::{
 };
 
 const HEALTHCHECK_INTERVAL_S: u64 = 5;
+const TRANSACTION_AGE_DAYS: u64 = 7;
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
@@ -76,6 +78,29 @@ pub(crate) async fn serve() -> Result<()> {
 
                 if let Err(error) = process(&state, &config.pubsub_active_channels).await {
                     tracing::error!("Error processing files: {error}");
+                }
+            }
+        }
+    });
+
+    // in a separate thread, truncate streams/channels
+    tokio::spawn({
+        let state = Arc::clone(&state);
+
+        async move {
+            let mut interval = time::interval(Duration::from_secs(config.file_check_s as u64));
+
+            loop {
+                interval.tick().await;
+
+                if let Err(error) = truncate_processed_transactions(
+                    &state,
+                    &config.pubsub_processed_transactions_channel,
+                    TRANSACTION_AGE_DAYS,
+                )
+                .await
+                {
+                    tracing::error!("Error truncating streams: {error}");
                 }
             }
         }

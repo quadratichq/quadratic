@@ -23,6 +23,7 @@ use quadratic_rust_shared::{
 use crate::{
     error::{FilesError, Result},
     state::{settings::Settings, State},
+    truncate::{add_processed_transaction, processed_transaction_key},
 };
 
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
@@ -204,6 +205,15 @@ pub(crate) async fn process_queue_for_room(
         CURRENT_VERSION.into(),
         key.to_owned(),
         aws_s3_bucket_name.to_owned(),
+    )
+    .await?;
+
+    // add FILE_ID.SEQUENCE_NUM to the processed transactions channel
+    let message = processed_transaction_key(&file_id.to_string(), &last_sequence_num.to_string());
+    add_processed_transaction(
+        state,
+        &state.settings.pubsub_processed_transactions_channel,
+        &message,
     )
     .await?;
 

@@ -59,12 +59,25 @@ pub trait PubSub {
         active_channel: Option<&str>,
     ) -> impl Future<Output = Result<()>> + Send;
 
+    fn trim(
+        &mut self,
+        channel: &str,
+        key: &str,
+        exact: bool,
+    ) -> impl Future<Output = Result<i64>> + Send;
+
     fn messages(
         &mut self,
         channel: &str,
         group: &str,
         keys: Option<Vec<&str>>,
         max_messages: usize,
+    ) -> impl Future<Output = Result<Vec<(String, String)>>> + Send;
+
+    fn get_messages_before(
+        &mut self,
+        channel: &str,
+        id: &str,
     ) -> impl Future<Output = Result<Vec<(String, String)>>> + Send;
 
     fn get_messages_from(
