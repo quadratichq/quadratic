@@ -30,7 +30,7 @@ export function PermissionOverlay() {
     return (
       <FixedBottomAlert>
         <Type>
-          Welcome to Quadratic.
+          <strong>Welcome to Quadratic.</strong>
         </Type>
         <Stack direction="row" gap={theme.spacing(1)} flexShrink={'0'}>
           <Button asChild variant="outline" size="sm">
