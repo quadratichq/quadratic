@@ -152,7 +152,7 @@ export function ConsoleOutput({
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   return (
     <div
-      contentEditable="true"
+      contentEditable={hasOutput}
       suppressContentEditableWarning={true}
       spellCheck={false}
       onKeyDown={(e) => {
