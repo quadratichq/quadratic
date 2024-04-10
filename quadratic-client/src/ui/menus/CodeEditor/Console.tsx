@@ -162,7 +162,7 @@ export function ConsoleOutput({
           e.preventDefault();
         }
       }}
-      className="overflow-scroll whitespace-pre-wrap pl-2 pr-4 outline-none"
+      className="overflow-y-auto whitespace-pre-wrap pl-2 pr-4 outline-none"
       style={codeEditorBaseStyles}
       // Disable Grammarly
       data-gramm="false"

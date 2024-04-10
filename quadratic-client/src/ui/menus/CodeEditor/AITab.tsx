@@ -176,7 +176,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
   return (
     <>
       <div
-        className="overflow-scroll whitespace-pre-wrap pb-2 pl-2 pr-4 text-sm outline-none"
+        className="overflow-y-auto whitespace-pre-wrap pb-2 pl-2 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
