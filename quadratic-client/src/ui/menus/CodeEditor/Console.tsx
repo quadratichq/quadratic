@@ -12,7 +12,7 @@ import { ROUTES } from '@/constants/routes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shadcn/ui/tabs';
 import { cn } from '@/shadcn/utils';
 import { ViewStreamOutlined } from '@mui/icons-material';
-import { AITab } from './AITab';
+import { AiAssistant } from './AITab';
 import { PanelPosition } from './CodeEditor';
 
 interface ConsoleProps {
@@ -103,7 +103,7 @@ export function Console(props: ConsoleProps) {
           )}
 
           {isAuthenticated ? (
-            <AITab
+            <AiAssistant
               // todo: fix this
               evalResult={evaluationResult}
               editorMode={editorMode}

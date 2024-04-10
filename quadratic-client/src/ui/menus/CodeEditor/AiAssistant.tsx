@@ -29,7 +29,7 @@ type Message = {
   content: string;
 };
 
-export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
+export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
   const evalResultObj = evalResult;
   const stdErr = evalResultObj?.std_err;
 
