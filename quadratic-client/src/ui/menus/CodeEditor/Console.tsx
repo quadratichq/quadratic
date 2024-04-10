@@ -12,7 +12,7 @@ import { ROUTES } from '@/constants/routes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shadcn/ui/tabs';
 import { cn } from '@/shadcn/utils';
 import { ViewStreamOutlined } from '@mui/icons-material';
-import { AiAssistant } from './AITab';
+import { AiAssistant } from './AiAssistant';
 import { PanelPosition } from './CodeEditor';
 
 interface ConsoleProps {
