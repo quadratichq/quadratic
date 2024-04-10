@@ -27,9 +27,9 @@ import { ResizeControl } from './ResizeControl';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
-const CODE_EDITOR_MIN_WIDTH = 350;
-const PANEL_MIN_WIDTH = 300;
-const GRID_MIN_VISIBLE_WIDTH = 150;
+const MIN_WIDTH_EDITOR = 350;
+const MIN_WIDTH_PANEL = 300;
+const MIN_WIDTH_VISIBLE_GRID = 150;
 
 export type PanelPosition = 'bottom' | 'left';
 
@@ -48,7 +48,7 @@ export const CodeEditor = () => {
     window.innerWidth * 0.35 // default to 35% of the window width
   );
   const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>('codeEditorHeightPercentage', 75);
-  const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', PANEL_MIN_WIDTH);
+  const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', MIN_WIDTH_PANEL);
   const [panelHeightPercentage, setPanelHeightPercentage] = useLocalStorage<number>(
     'codeEditorPanelHeightPercentage',
     50
@@ -304,9 +304,9 @@ export const CodeEditor = () => {
   // there's enough width for the editor and the panel
   useEffect(() => {
     if (panelPosition === 'left') {
-      if (editorWidth + panelWidth > window.innerWidth - GRID_MIN_VISIBLE_WIDTH) {
-        setPanelWidth(PANEL_MIN_WIDTH);
-        setEditorWidth(window.innerWidth - PANEL_MIN_WIDTH - GRID_MIN_VISIBLE_WIDTH);
+      if (editorWidth + panelWidth > window.innerWidth - MIN_WIDTH_VISIBLE_GRID) {
+        setPanelWidth(MIN_WIDTH_PANEL);
+        setEditorWidth(window.innerWidth - MIN_WIDTH_PANEL - MIN_WIDTH_VISIBLE_GRID);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -320,7 +320,7 @@ export const CodeEditor = () => {
 
       if (width < 1024) return;
 
-      const availableWidth = width - GRID_MIN_VISIBLE_WIDTH;
+      const availableWidth = width - MIN_WIDTH_VISIBLE_GRID;
       if (panelPosition === 'left' && panelWidth + editorWidth > availableWidth) {
         const totalOldWidth = editorWidth + panelWidth;
 
@@ -357,7 +357,7 @@ export const CodeEditor = () => {
       <div
         ref={containerRef}
         className={cn(
-          'absolute bottom-0 right-0 top-0 z-[2] hidden max-w-[90%] bg-background lg:flex',
+          'absolute bottom-0 right-0 top-0 z-[2] hidden bg-background lg:flex',
           panelPosition === 'left' ? '' : 'flex-col'
         )}
         style={{ width: `${editorWidth + (panelPosition === 'left' ? panelWidth : 0)}px` }}
@@ -456,30 +456,43 @@ export const CodeEditor = () => {
               }}
               position="HORIZONTAL"
             />
-            {/* left-to-right: panel width */}
+            {/* left-to-right: outer edge */}
             <ResizeControl
               style={{ left: `-1px` }}
               setState={(mouseEvent) => {
-                const offsetFromRight = window.innerWidth - mouseEvent.x - editorWidth;
-                const min = PANEL_MIN_WIDTH;
-                const max = window.innerWidth - editorWidth - GRID_MIN_VISIBLE_WIDTH;
-                const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
-                setPanelWidth(newValue);
-                setEditorWidth(window.innerWidth - newValue);
+                const offsetFromRight = window.innerWidth - mouseEvent.x;
+                const min = MIN_WIDTH_PANEL + MIN_WIDTH_EDITOR;
+                const max = window.innerWidth - MIN_WIDTH_VISIBLE_GRID;
+
+                if (offsetFromRight > min && offsetFromRight < max) {
+                  const totalOldWidth = editorWidth + panelWidth;
+                  setEditorWidth((oldEditorWidth) => {
+                    const editorPercentage = oldEditorWidth / totalOldWidth;
+                    const newValue = offsetFromRight * editorPercentage;
+                    return newValue > MIN_WIDTH_EDITOR ? newValue : MIN_WIDTH_EDITOR;
+                  });
+                  setPanelWidth((oldPanelWidth) => {
+                    const panelPercentage = oldPanelWidth / totalOldWidth;
+                    const newValue = offsetFromRight * panelPercentage;
+                    return newValue > MIN_WIDTH_PANEL ? newValue : MIN_WIDTH_PANEL;
+                  });
+                }
               }}
               position="VERTICAL"
             />
-            {/* left-to-right: editor width */}
+            {/* left-to-right: middle line */}
             <ResizeControl
               style={{ left: `${panelWidth}px` }}
               setState={(mouseEvent) => {
-                const total = editorWidth + panelWidth;
                 const offsetFromRight = window.innerWidth - mouseEvent.x;
-                const min = CODE_EDITOR_MIN_WIDTH;
-                const max = window.innerWidth - panelWidth - GRID_MIN_VISIBLE_WIDTH;
-                const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
-                setEditorWidth(newValue);
-                setPanelWidth(total - newValue);
+                const totalWidth = editorWidth + panelWidth;
+                const newEditorWidth = offsetFromRight;
+                const newPanelWidth = totalWidth - offsetFromRight;
+
+                if (newEditorWidth > MIN_WIDTH_EDITOR && newPanelWidth > MIN_WIDTH_PANEL) {
+                  setEditorWidth(newEditorWidth);
+                  setPanelWidth(newPanelWidth);
+                }
               }}
               position="VERTICAL"
             />
@@ -493,8 +506,8 @@ export const CodeEditor = () => {
               style={{ left: '-1px' }}
               setState={(mouseEvent) => {
                 const offsetFromRight = window.innerWidth - mouseEvent.x;
-                const min = CODE_EDITOR_MIN_WIDTH;
-                const max = window.innerWidth - GRID_MIN_VISIBLE_WIDTH;
+                const min = MIN_WIDTH_EDITOR;
+                const max = window.innerWidth - MIN_WIDTH_VISIBLE_GRID;
                 const newValue = offsetFromRight > max ? max : offsetFromRight < min ? min : offsetFromRight;
                 setEditorWidth(newValue);
               }}

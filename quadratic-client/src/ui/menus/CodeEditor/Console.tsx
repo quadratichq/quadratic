@@ -11,7 +11,7 @@ import { Type } from '@/components/Type';
 import { ROUTES } from '@/constants/routes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shadcn/ui/tabs';
 import { cn } from '@/shadcn/utils';
-import { AutoAwesome, TerminalOutlined, ViewStreamOutlined } from '@mui/icons-material';
+import { ViewStreamOutlined } from '@mui/icons-material';
 import { AITab } from './AITab';
 import { PanelPosition } from './CodeEditor';
 
@@ -40,7 +40,7 @@ export function Console(props: ConsoleProps) {
     panelHeightPercentage,
   } = props;
   const { isAuthenticated } = useRootRouteLoaderData();
-  let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+  const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   const [tab, setTab] = useState<Tab>('console');
 
   const consoleBadgeSharedClasses = `font-medium`;
@@ -68,7 +68,7 @@ export function Console(props: ConsoleProps) {
             >
               Console
             </TabsTrigger>
-            <TabsTrigger value="ai-assistant">AI Assitant</TabsTrigger>
+            <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>
           </TabsList>
         </div>
 
@@ -83,10 +83,7 @@ export function Console(props: ConsoleProps) {
         >
           {/* Only visible when panel is on the left */}
           {panelPosition === 'left' && (
-            <div className="flex items-center gap-2 px-2 py-3">
-              <TerminalOutlined className="text-foreground" fontSize="small" />
-              <Type className={cn('flex items-center gap-2 ', consoleBadgeSharedClasses)}>Console</Type>
-            </div>
+            <Type className={cn('flex items-center gap-2 px-2 py-3', consoleBadgeSharedClasses)}>Console</Type>
           )}
           <ConsoleOutput {...props} />
         </TabsContent>
@@ -102,10 +99,7 @@ export function Console(props: ConsoleProps) {
           style={panelPosition === 'left' ? { height: `${100 - panelHeightPercentage}%` } : {}}
         >
           {panelPosition === 'left' && (
-            <div className="flex items-center gap-2 px-2 py-3">
-              <AutoAwesome className="text-foreground" fontSize="small" />
-              <Type className="font-medium">AI assistant</Type>
-            </div>
+            <Type className={cn(`gap-2 px-2 py-3`, consoleBadgeSharedClasses)}>AI assistant</Type>
           )}
 
           {isAuthenticated ? (
