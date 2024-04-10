@@ -30,12 +30,16 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
       </>
     );
   } else if (language === 'Javascript') {
-    message = <>Use `return`` to output value(s) to the sheet.</>;
+    if (evaluationResult?.output_type) {
+      message = <>Returned {evaluationResult.output_type}</>;
+    } else {
+      message = <>Use `return`` to output value(s) to the sheet.</>;
+    }
   } else {
     message = <></>;
   }
 
-  if (show)
+  if (show && language === 'Python')
     message = (
       <>
         Line {evaluationResult?.line_number} returned a{' '}

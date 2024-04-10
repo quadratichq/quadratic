@@ -129,11 +129,11 @@ class Javascript {
   }
 
   // Formats the display type for an array based on a Set of types.
-  private formatDisplayType(types: Set<string>): string {
+  private formatDisplayType(types: Set<string>, twoDimensional: boolean): string {
     if (types.size === 1) {
-      return types.values().next().value + '[]';
+      return types.values().next().value + '[]' + (twoDimensional ? '[]' : '');
     } else {
-      return `(${Array.from(types).join('|')})[]`;
+      return `(${Array.from(types).join('|')})[]` + (twoDimensional ? '[]' : '');
     }
   }
 
@@ -154,7 +154,7 @@ class Javascript {
           }
           return [['', 'text']];
         }),
-        displayType: '(' + Array.from(types).join('|') + ')[]',
+        displayType: this.formatDisplayType(types, false),
       };
     } else {
       return {
@@ -168,7 +168,7 @@ class Javascript {
             return ['', 'text'];
           });
         }),
-        displayType: this.formatDisplayType(types),
+        displayType: this.formatDisplayType(types, true),
       };
     }
   }
@@ -179,7 +179,7 @@ class Javascript {
       new AsyncFunction(
         'resolve',
         'reject',
-        `try { const result = ${code};resolve(result); } catch (e) { reject(e); }`
+        `try { const result = ${code}; resolve(result); } catch (e) { reject(e); }`
       )(resolve, reject);
     });
   }
@@ -246,7 +246,7 @@ class Javascript {
     try {
       buildResult = await esbuild.build({
         stdin: {
-          contents: '(async () => {' + javascriptLibrary + transform.code + '})()',
+          contents: '(async () => {' + javascriptLibrary + transform.code + '})();',
           loader: 'ts',
         },
 
