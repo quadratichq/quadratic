@@ -18,10 +18,7 @@ export const MultiplayerCellEdits = () => {
   useEffect(() => {
     const updateMultiplayerCellEdit = (cellEdit: CellEdit, player: MultiplayerUser) => {
       setMultiplayerCellInput((prev) => {
-        // this shouldn't happen
-        if (player.x === undefined || player.y === undefined) return prev;
-        if (!player.parsedSelection) return prev;
-
+        if (player.x === undefined || player.y === undefined || !player.parsedSelection) return prev;
         const updatedCellEdit: MultiplayerCell = {
           sessionId: player.session_id,
           sheetId: player.sheet_id,
