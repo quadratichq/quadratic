@@ -68,6 +68,7 @@ export const TeamSchema = z.object({
 // Shared types
 const PublicLinkAccessSchema = z.enum(['EDIT', 'READONLY', 'NOT_SHARED']);
 export type PublicLinkAccess = z.infer<typeof PublicLinkAccessSchema>;
+const EduStatusSchema = z.enum(['INELIGIBLE', 'ELIGIBLE', 'ENROLLED', 'UNENROLLED']);
 
 const FileSchema = z.object({
   uuid: z.string().uuid(),
@@ -334,7 +335,17 @@ export const ApiSchemas = {
    * Users
    *
    */
-  '/v0/users.acknowledge.GET.response': z.object({ message: z.string() }),
+  '/v0/user.POST.request': z.object({
+    eduStatus: EduStatusSchema,
+  }),
+  '/v0/user.POST.response': z.object({
+    eduStatus: EduStatusSchema,
+  }),
+  '/v0/user.GET.response': z.object({
+    id: z.number(),
+    eduStatus: EduStatusSchema.optional(),
+  }),
+  '/v0/users/acknowledge.GET.response': z.object({ message: z.string() }),
 };
 
 type ApiKeys = keyof typeof ApiSchemas;

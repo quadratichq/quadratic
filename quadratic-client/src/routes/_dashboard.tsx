@@ -1,6 +1,7 @@
 import { apiClient } from '@/api/apiClient';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { AvatarTeam } from '@/components/AvatarTeam';
+import { BadgeEdu } from '@/components/BadgeEdu';
 import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
@@ -13,9 +14,11 @@ import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { Avatar, AvatarFallback } from '@/shadcn/ui/avatar';
 import { Button } from '@/shadcn/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
 import { cn } from '@/shadcn/utils';
 import { LiveChatWidget } from '@livechat/widget-react';
+import { SchoolOutlined } from '@mui/icons-material';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import {
   Cross2Icon,
@@ -77,8 +80,10 @@ export const Component = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
-  const { loggedInUser: user } = useRootRouteLoaderData();
+  const { loggedInUser: user, loggedInQUser: quser } = useRootRouteLoaderData();
   useTheme(); // Trigger the theme in the root of the app
+
+  console.log(quser, user);
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
   const navbar = <Navbar isLoading={isLoading} />;
@@ -128,6 +133,7 @@ export const Component = () => {
           {navbar}
         </div>
         {dashboardState.showCreateTeamDialog && <CreateTeamDialog />}
+        {quser?.eduStatus === 'ELIGIBLE' && <EducationDialog />}
       </div>
     </DashboardContext.Provider>
   );
@@ -394,5 +400,38 @@ function SidebarNavLink({
     >
       {children}
     </NavLink>
+  );
+}
+
+function EducationDialog() {
+  const handleEnroll = () => {};
+  const handleNoThanks = () => {};
+  return (
+    <Dialog open={true} onOpenChange={handleNoThanks}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader className="text-center sm:text-center">
+          <div className="flex flex-col items-center py-4">
+            <SchoolOutlined sx={{ fontSize: '64px' }} className="text-primary" />
+            <div>
+              <BadgeEdu />
+            </div>
+          </div>
+          <DialogTitle>You’re eligible</DialogTitle>
+          <DialogDescription>
+            Your email address qualifies you for{' '}
+            <a href="TODO:" target="_blank" rel="noreferrer" className="underline hover:text-primary">
+              Quadratic’s education plan
+            </a>
+            . By enrolling, you agree to receive future emails about our education plan.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="justify-center text-center sm:justify-center">
+          <Button variant="outline" onClick={handleNoThanks}>
+            No, thanks
+          </Button>
+          <Button onClick={handleEnroll}>Enroll</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
