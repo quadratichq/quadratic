@@ -13,7 +13,7 @@ use crate::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
     grid::{CodeCellLanguage, SheetId},
-    Rect, SheetPos, SheetRect,
+    wasm_bindings, Rect, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;
@@ -124,7 +124,7 @@ impl PendingTransaction {
     pub fn send_transaction(&self) {
         if self.complete
             && self.is_user_undo_redo()
-            && cfg!(target_family = "wasm")
+            && (cfg!(target_family = "wasm") || cfg!(test))
             && !self.is_server()
         {
             let transaction_id = self.id.to_string();

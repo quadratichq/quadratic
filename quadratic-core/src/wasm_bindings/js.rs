@@ -86,6 +86,8 @@ extern "C" {
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
 
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
+
+    pub fn jsUndoRedo(undo: bool, redo: bool);
 }
 
 #[cfg(test)]
@@ -407,5 +409,14 @@ pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32) 
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsTransactionProgress",
         format!("{},{}", transaction_id, remaining_operations),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsUndoRedo(undo: bool, redo: bool) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsUndoRedo",
+        format!("{},{}", undo, redo),
     ));
 }
