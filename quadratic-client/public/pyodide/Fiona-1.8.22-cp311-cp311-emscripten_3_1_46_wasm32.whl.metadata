@@ -33,9 +33,9 @@ Requires-Dist: setuptools
 Requires-Dist: argparse ; python_version < "2.7"
 Requires-Dist: ordereddict ; python_version < "2.7"
 Provides-Extra: all
-Requires-Dist: pytest >=3 ; extra == 'all'
 Requires-Dist: pytest-cov ; extra == 'all'
 Requires-Dist: boto3 >=1.2.4 ; extra == 'all'
+Requires-Dist: pytest >=3 ; extra == 'all'
 Requires-Dist: shapely ; extra == 'all'
 Requires-Dist: mock ; (python_version < "3.4") and extra == 'all'
 Provides-Extra: calc

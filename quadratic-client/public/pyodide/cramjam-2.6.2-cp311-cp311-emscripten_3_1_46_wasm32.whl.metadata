@@ -9,9 +9,9 @@ Author-email: Miles Granger <miles59923@gmail.com>
 License: MIT
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown; charset=UTF-8; variant=GFM
-Project-URL: repository, https://github.com/milesgranger/pyrus-cramjam
-Project-URL: homepage, https://github.com/milesgranger/pyrus-cramjam
 Project-URL: documentation, https://docs.rs/cramjam/latest/cramjam
+Project-URL: homepage, https://github.com/milesgranger/pyrus-cramjam
+Project-URL: repository, https://github.com/milesgranger/pyrus-cramjam
 
 # pyrus-cramjam
 
