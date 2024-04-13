@@ -36,7 +36,7 @@ class JavascriptWebWorker {
   };
 
   init() {
-    this.worker = new Worker(new URL('./worker/Javascript.worker.ts', import.meta.url), { type: 'module' });
+    this.worker = new Worker(new URL('./worker/javascript.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
 
     const JavascriptCoreChannel = new MessageChannel();

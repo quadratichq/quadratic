@@ -1,4 +1,5 @@
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { CodeCellLanguage } from '@/quadratic-core-types';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
@@ -6,27 +7,39 @@ import { codeEditorBaseStyles } from './styles';
 
 interface ReturnTypeInspectorProps {
   evaluationResult?: EvaluationResult;
+  language?: CodeCellLanguage;
   show: boolean;
 }
 
-export function ReturnTypeInspector({ evaluationResult, show }: ReturnTypeInspectorProps) {
+export function ReturnTypeInspector({ evaluationResult, show, language }: ReturnTypeInspectorProps) {
   const theme = useTheme();
 
-  let message = (
-    <>
-      The last line is returned to the sheet.{' '}
-      <Link
-        to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
-        target="_blank"
-        rel="nofollow"
-        className="underline"
-      >
-        Learn more.
-      </Link>{' '}
-    </>
-  );
+  let message: JSX.Element;
+  if (language === 'Python') {
+    message = (
+      <>
+        The last line is returned to the sheet.{' '}
+        <Link
+          to={DOCUMENTATION_URL + '/writing-python/return-data-to-the-sheet'}
+          target="_blank"
+          rel="nofollow"
+          className="underline"
+        >
+          Learn more.
+        </Link>{' '}
+      </>
+    );
+  } else if (language === 'Javascript') {
+    if (evaluationResult?.output_type) {
+      message = <>Returned {evaluationResult.output_type}</>;
+    } else {
+      message = <>Use `return`` to output value(s) to the sheet.</>;
+    }
+  } else {
+    message = <></>;
+  }
 
-  if (show)
+  if (show && language === 'Python')
     message = (
       <>
         Line {evaluationResult?.line_number} returned a{' '}

@@ -20,6 +20,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 import useEventListener from '@/hooks/useEventListener';
+import { javascriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/javascriptLibrary';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
@@ -106,6 +107,11 @@ export const CodeEditorBody = (props: Props) => {
         textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
       });
 
+      monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+        diagnosticCodesToIgnore: [1108, 1375, 1378],
+      });
+      monaco.editor.createModel(javascriptLibrary, 'typescript');
+
       registered = true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,7 +145,7 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={language === 'Python' ? 'python' : language}
+        language={language === 'Python' ? 'python' : language === 'Javascript' ? 'typescript' : undefined}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
@@ -156,7 +162,7 @@ export const CodeEditorBody = (props: Props) => {
           wordWrap: 'on',
         }}
       />
-      {language === 'Python' && (
+      {['Python', 'Javascript'].includes(language as string) && (
         <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
       )}
     </div>

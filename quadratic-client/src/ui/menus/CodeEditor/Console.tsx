@@ -104,7 +104,7 @@ export function Console({ consoleOutput, editorMode, editorContent, evaluationRe
               </>
             ) : (
               <div style={{ ...codeEditorCommentStyles, marginTop: theme.spacing(0.5) }}>
-                {editorMode === 'Python'
+                {['Python', 'Javascript'].includes(editorMode as string)
                   ? 'Print statements, standard out, and errors will show here.'
                   : 'Errors will show here.'}
               </div>
