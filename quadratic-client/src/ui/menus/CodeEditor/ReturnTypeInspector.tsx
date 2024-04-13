@@ -33,7 +33,7 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
     if (evaluationResult?.output_type) {
       message = <>Returned {evaluationResult.output_type}</>;
     } else {
-      message = <>Use `return`` to output value(s) to the sheet.</>;
+      message = <>Use `return` to output value(s) to the sheet.</>;
     }
   } else {
     message = <></>;

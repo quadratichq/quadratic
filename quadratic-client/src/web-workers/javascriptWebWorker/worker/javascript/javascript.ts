@@ -8,6 +8,8 @@ import { javascriptLibrary, javascriptLibraryLines } from './javascriptLibrary';
 
 const ESBUILD_INDENTATION = 2;
 
+type CellType = number | string | undefined;
+
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     getCells: (
@@ -17,7 +19,9 @@ declare var self: WorkerGlobalScope &
       y1: number,
       sheet?: string,
       lineNumber?: number
-    ) => Promise<JsGetCellResponse[] | undefined>;
+    ) => Promise<CellType[][]>;
+    getCell: (x: number, y: number, sheet?: string, lineNumber?: number) => Promise<CellType[][]>;
+    c: (x: number, y: number, sheet?: string, lineNumber?: number) => Promise<CellType>;
   };
 
 class Javascript {
@@ -34,6 +38,12 @@ class Javascript {
     this.state = 'loading';
     this.init();
     self.getCells = this.getCells;
+    self.getCell = this.getCell;
+    self.c = this.getCell;
+  }
+
+  private convertType(entry: JsGetCellResponse): CellType {
+    return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
   }
 
   private getCells = async (
@@ -43,11 +53,11 @@ class Javascript {
     y1: number,
     sheet?: string,
     lineNumber?: number
-  ): Promise<JsGetCellResponse[] | undefined> => {
+  ): Promise<CellType[][] | undefined> => {
     if (!this.transactionId) {
       throw new Error('No transactionId in getCells');
     }
-    const cells = await javascriptCore.sendGetCells(
+    const results = await javascriptCore.sendGetCells(
       this.transactionId,
       x0,
       y0,
@@ -56,10 +66,54 @@ class Javascript {
       sheet,
       lineNumber
     );
-    if (!cells) {
+
+    // error was thrown while getting cells (probably SheetName was not available)
+    if (!results) {
       javascriptClient.sendState('ready');
-    } else {
-      return cells;
+      return undefined;
+    }
+
+    const cells: CellType[][] = [];
+    for (let y = y0; y <= y1; y++) {
+      const row: any[] = [];
+      for (let x = x0; x <= x1; x++) {
+        const entry = results.find((r) => Number(r.x) === x && Number(r.y) === y);
+        if (entry) {
+          const typed = this.convertType(entry);
+          row.push(typed);
+        } else {
+          row.push(undefined);
+        }
+      }
+      cells.push(row);
+    }
+
+    return cells;
+  };
+
+  private getCell = async (
+    x: number,
+    y: number,
+    sheet?: string,
+    lineNumber?: number
+  ): Promise<CellType | undefined> => {
+    if (!this.transactionId) {
+      throw new Error('No transactionId in getCell');
+    }
+
+    if (!this.transactionId) {
+      throw new Error('No transactionId in getCells');
+    }
+    const results = await javascriptCore.sendGetCells(this.transactionId, x, y, x, y, sheet, lineNumber);
+
+    // error was thrown while getting cells (probably SheetName was not available)
+    if (!results) {
+      javascriptClient.sendState('ready');
+      return undefined;
+    }
+
+    if (results[0]) {
+      return this.convertType(results[0]);
     }
   };
 
