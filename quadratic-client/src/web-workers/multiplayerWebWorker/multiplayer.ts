@@ -9,6 +9,7 @@ import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/gridGL/types/size';
 import { displayName } from '@/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
+import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
 import updateAlertVersion from '../../../../updateAlertVersion.json';
 import { CodeRun, PythonStateType } from '../pythonWebWorker/pythonClientMessages';
@@ -46,7 +47,16 @@ export class Multiplayer {
   constructor() {
     this.worker = new Worker(new URL('./worker/multiplayer.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
-    this.worker.onerror = (e) => console.warn(`[multiplayer.worker] error: ${e.message}`);
+    this.worker.onerror = (e) => {
+      console.warn(`[multiplayer.worker] error: ${e.message}`);
+      Sentry.captureException({
+        message: 'Error for multiplayer.worker',
+        level: 'error',
+        extra: {
+          error: e.message,
+        },
+      });
+    };
     this.sessionId = uuid();
 
     // this is only a partial solution mostly for desktop

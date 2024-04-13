@@ -27,7 +27,7 @@ use crate::{
     auth::{authorize, get_jwks},
     background_worker,
     config::config,
-    error::{MpError, Result},
+    error::{ErrorLevel, MpError, Result},
     message::{
         broadcast, handle::handle_message, request::MessageRequest, response::MessageResponse,
     },
@@ -197,10 +197,12 @@ async fn handle_socket(
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
             Err(error) => {
-                tracing::warn!("Error processing message: {:?}", &error);
+                let error_level = ErrorLevel::from(&error);
+                error_level.log(&format!("Error processing message: {:?}", &error));
 
                 if let Ok(message) = serde_json::to_string(&MessageResponse::Error {
                     error: error.to_owned(),
+                    error_level,
                 }) {
                     // send error message to the client
                     let sent = sender.lock().await.send(Message::Text(message)).await;
@@ -336,6 +338,7 @@ pub(crate) mod tests {
     };
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::grid::SheetId;
+
     use tower::ServiceExt;
     use uuid::Uuid;
 

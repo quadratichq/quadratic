@@ -796,6 +796,12 @@ export interface CoreClientOfflineTransactions {
   operations: number;
 }
 
+export interface CoreClientUndoRedo {
+  type: 'coreClientUndoRedo';
+  undo: boolean;
+  redo: boolean;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -896,4 +902,5 @@ export type CoreClientMessage =
   | CoreClientUpdateCodeCell
   | CoreClientImportExcel
   | CoreClientMultiplayerState
-  | CoreClientOfflineTransactions;
+  | CoreClientOfflineTransactions
+  | CoreClientUndoRedo;

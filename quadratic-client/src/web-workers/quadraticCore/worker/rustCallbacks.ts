@@ -74,6 +74,7 @@ declare var self: WorkerGlobalScope &
       codeCell?: JsCodeCell,
       renderCodeCell?: JsRenderCodeCell
     ) => void;
+    sendUndoRedo: (undo: string, redo: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -218,4 +219,8 @@ export const jsUpdateCodeCell = (
   } else {
     self.sendUpdateCodeCell(sheetId, Number(x), Number(y));
   }
+};
+
+export const jsUndoRedo = (undo: string, redo: string) => {
+  self.sendUndoRedo(undo, redo);
 };

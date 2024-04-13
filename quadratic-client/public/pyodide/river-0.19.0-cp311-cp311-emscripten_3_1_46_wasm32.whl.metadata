@@ -17,12 +17,12 @@ Classifier: Programming Language :: Python :: Implementation :: PyPy
 Requires-Python: >=3.8.0
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: numpy >=1.26.1
+Requires-Dist: numpy >=1.26.4
 Requires-Dist: scipy >=1.5
 Requires-Dist: pandas >=1.3
 Requires-Dist: dataclasses ; python_version == '3.6'
 Provides-Extra: benchmark
-Requires-Dist: numpy >=1.26.1 ; extra == 'benchmark'
+Requires-Dist: numpy >=1.26.4 ; extra == 'benchmark'
 Requires-Dist: scipy >=1.5 ; extra == 'benchmark'
 Requires-Dist: pandas >=1.3 ; extra == 'benchmark'
 Requires-Dist: scikit-learn ==1.1.2 ; extra == 'benchmark'
@@ -34,7 +34,7 @@ Requires-Dist: slugify ==0.0.1 ; extra == 'benchmark'
 Requires-Dist: watermark ==2.3.1 ; extra == 'benchmark'
 Requires-Dist: river-torch ==0.1.2 ; extra == 'benchmark'
 Provides-Extra: compat
-Requires-Dist: numpy >=1.26.1 ; extra == 'compat'
+Requires-Dist: numpy >=1.26.4 ; extra == 'compat'
 Requires-Dist: scipy >=1.5 ; extra == 'compat'
 Requires-Dist: pandas >=1.3 ; extra == 'compat'
 Requires-Dist: scikit-learn ; extra == 'compat'
@@ -43,7 +43,7 @@ Requires-Dist: vaex ; extra == 'compat'
 Provides-Extra: deep
 Requires-Dist: deep-river ; extra == 'deep'
 Provides-Extra: dev
-Requires-Dist: numpy >=1.26.1 ; extra == 'dev'
+Requires-Dist: numpy >=1.26.4 ; extra == 'dev'
 Requires-Dist: scipy >=1.5 ; extra == 'dev'
 Requires-Dist: pandas >=1.3 ; extra == 'dev'
 Requires-Dist: black >=22.1.0 ; extra == 'dev'
@@ -58,7 +58,7 @@ Requires-Dist: scikit-learn >=1.0.1 ; extra == 'dev'
 Requires-Dist: sqlalchemy >=2.0.0 ; extra == 'dev'
 Requires-Dist: sympy >=1.10.1 ; extra == 'dev'
 Provides-Extra: docs
-Requires-Dist: numpy >=1.26.1 ; extra == 'docs'
+Requires-Dist: numpy >=1.26.4 ; extra == 'docs'
 Requires-Dist: scipy >=1.5 ; extra == 'docs'
 Requires-Dist: pandas >=1.3 ; extra == 'docs'
 Requires-Dist: dominate ; extra == 'docs'

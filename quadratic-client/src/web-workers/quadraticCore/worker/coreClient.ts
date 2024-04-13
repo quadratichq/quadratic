@@ -71,6 +71,7 @@ declare var self: WorkerGlobalScope &
       codeCell?: JsCodeCell,
       renderCodeCell?: JsRenderCodeCell
     ) => void;
+    sendUndoRedo: (undo: boolean, redo: boolean) => void;
   };
 
 class CoreClient {
@@ -93,6 +94,7 @@ class CoreClient {
     self.sendTransactionStart = coreClient.sendTransactionStart;
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
+    self.sendUndoRedo = coreClient.sendUndoRedo;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -647,6 +649,10 @@ class CoreClient {
       operations: offline.stats.operations,
     });
   }
+
+  sendUndoRedo = (undo: boolean, redo: boolean) => {
+    this.send({ type: 'coreClientUndoRedo', undo, redo });
+  };
 }
 
 export const coreClient = new CoreClient();

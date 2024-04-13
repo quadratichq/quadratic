@@ -23,38 +23,6 @@ impl Default for Rgba {
     }
 }
 
-// #[wasm_bindgen]
-// impl Rgba {
-//     pub fn new(red: u8, green: u8, blue: u8, alpha: u8) -> Self {
-//         Self {
-//             red,
-//             green,
-//             blue,
-//             alpha,
-//         }
-//     }
-
-//     #[cfg_attr(feature = "js", wasm_bindgen(constructor))]
-//     pub fn from_js(red: f64, green: f64, blue: f64, alpha: f64) -> Self {
-//         Self {
-//             red: red.clamp(0.0f64, 255.0f64) as u8,
-//             green: green.clamp(0.0f64, 255.0f64) as u8,
-//             blue: blue.clamp(0.0f64, 255.0f64) as u8,
-//             alpha: alpha.clamp(0.0f64, 255.0f64) as u8,
-//         }
-//     }
-
-//     #[wasm_bindgen]
-//     pub fn tint(&self) -> u32 {
-//         ((self.red as u32) << 16) | ((self.green as u32) << 8) | (self.blue as u32)
-//     }
-
-//     #[wasm_bindgen]
-//     pub fn alpha(&self) -> f32 {
-//         (self.alpha as f32) / 255.0
-//     }
-// }
-
 impl Rgba {
     pub fn color_from_str(color_str: &str) -> Result<Self, ParseIntError> {
         // TODO(jrice): serde

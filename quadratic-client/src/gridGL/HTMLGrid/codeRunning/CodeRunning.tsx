@@ -35,18 +35,16 @@ export const CodeRunning = () => {
           alpha: 1,
         });
       }
-      if (awaitingExecution?.length) {
-        awaitingExecution.forEach((cell) => {
-          const rectangle = sheets.sheet.getCellOffsets(cell.sheetPos.x, cell.sheetPos.y);
-          code.push({
-            sheetId: cell.sheetPos.sheetId,
-            left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
-            top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
-            color: 'black',
-            alpha: WAITING_EXECUTION_ALPHA,
-          });
+      awaitingExecution?.forEach((cell) => {
+        const rectangle = sheets.sheet.getCellOffsets(cell.sheetPos.x, cell.sheetPos.y);
+        code.push({
+          sheetId: cell.sheetPos.sheetId,
+          left: `${rectangle.x + rectangle.width / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
+          top: `${rectangle.y + rectangle.height / 2 - CIRCULAR_PROGRESS_SIZE / 2}px`,
+          color: 'black',
+          alpha: WAITING_EXECUTION_ALPHA,
         });
-      }
+      });
       setPlayerCode(code);
     };
     events.on('pythonState', updatePythonState);
