@@ -19,7 +19,7 @@ import {
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
-import { coreJavascript } from './coreJavascript.ts';
+import { coreJavascript } from './coreJavascript';
 import { coreMultiplayer } from './coreMultiplayer';
 import { corePython } from './corePython';
 import { offline } from './offline';

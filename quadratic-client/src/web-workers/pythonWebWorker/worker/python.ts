@@ -93,6 +93,7 @@ class Python {
     return {
       transactionId: corePythonRun.transactionId,
       sheetPos: { x: corePythonRun.x, y: corePythonRun.y, sheetId: corePythonRun.sheetId },
+      sheetName: corePythonRun.sheetName,
       code: corePythonRun.code,
     };
   };
@@ -103,6 +104,7 @@ class Python {
     x: codeRun.sheetPos.x,
     y: codeRun.sheetPos.y,
     sheetId: codeRun.sheetPos.sheetId,
+    sheetName: codeRun.sheetName,
     code: codeRun.code,
   });
 
@@ -153,7 +155,7 @@ class Python {
     let output: PythonSuccess | PythonError | undefined;
     let inspectionResults: InspectPython | undefined;
     try {
-      result = await this.pyodide.globals.get('run_python')(message.code, [message.x, message.y]);
+      result = await this.pyodide.globals.get('run_python')(message.code, [message.x, message.y, message.sheetName]);
       output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
       inspectionResults = await this.inspectPython(message.code || '');
       let outputType = output?.output_type || '';

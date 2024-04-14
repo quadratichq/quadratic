@@ -26,7 +26,7 @@ def error_result(
         "formatted_code": code,
     }
 
-async def run_python(code: str, pos: Tuple[int, int]):
+async def run_python(code: str, pos: Tuple[int, int, str]):
     globals = {
         "getCells": getCells,
         "getCell": getCell,
@@ -39,9 +39,9 @@ async def run_python(code: str, pos: Tuple[int, int]):
     sout = StringIO()
     serr = StringIO()
     output_value = None
-    globals['pos'] = lambda: (pos.x, pos.y)
     globals['rel_cell'] = lambda x, y: getCell(x + pos.x, y + pos.y)
     globals['rc'] = globals['rel_cell']
+    globals['pos'] = lambda pos: pos,
 
     try:
         plotly_html = await plotly_patch.intercept_plotly_html(code)

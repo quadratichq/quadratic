@@ -4,6 +4,7 @@ export interface CoreJavascriptRun {
   type: 'coreJavascriptRun';
   transactionId: string;
   sheetId: string;
+  sheetName: string;
   x: number;
   y: number;
   code: string;

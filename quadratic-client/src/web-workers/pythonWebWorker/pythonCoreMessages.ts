@@ -5,6 +5,7 @@ export interface CorePythonRun {
   type: 'corePythonRun';
   transactionId: string;
   sheetId: string;
+  sheetName: string;
   x: number;
   y: number;
   code: string;

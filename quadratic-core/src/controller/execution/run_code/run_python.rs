@@ -12,13 +12,16 @@ impl GridController {
         code: String,
     ) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsRunPython(
-                transaction.id.to_string(),
-                sheet_pos.x as i32,
-                sheet_pos.y as i32,
-                sheet_pos.sheet_id.to_string(),
-                code,
-            );
+            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                crate::wasm_bindings::js::jsRunPython(
+                    transaction.id.to_string(),
+                    sheet_pos.x as i32,
+                    sheet_pos.y as i32,
+                    sheet_pos.sheet_id.to_string(),
+                    sheet.name.clone(),
+                    code,
+                );
+            }
         }
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);

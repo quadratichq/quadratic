@@ -27,6 +27,7 @@ extern "C" {
         x: i32,
         y: i32,
         sheet_id: String,
+        sheet_name: String,
         code: String,
     ) -> JsValue;
 
@@ -35,6 +36,7 @@ extern "C" {
         x: i32,
         y: i32,
         sheet_id: String,
+        sheet_name: String,
         code: String,
     ) -> JsValue;
 
@@ -169,11 +171,15 @@ pub fn jsRunPython(
     x: i32,
     y: i32,
     sheet_id: String,
+    sheet_name: String,
     code: String,
 ) -> JsValue {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRunPython",
-        format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
+        format!(
+            "{},{},{},{},{},{}",
+            transactionId, x, y, sheet_id, sheet_name, code
+        ),
     ));
     JsValue::NULL
 }
@@ -185,11 +191,15 @@ pub fn jsRunJavascript(
     x: i32,
     y: i32,
     sheet_id: String,
+    sheet_name: String,
     code: String,
 ) -> JsValue {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRunJavascript",
-        format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
+        format!(
+            "{},{},{},{},{},{}",
+            transactionId, x, y, sheet_id, sheet_name, code
+        ),
     ));
     JsValue::NULL
 }

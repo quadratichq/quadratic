@@ -63,7 +63,7 @@ class value_object:
 class TestTesting(IsolatedAsyncioTestCase):
     async def test_run_python(self):
 
-        result = await run_python.run_python("1 + 1", {"x": 0, "y": 0})
+        result = await run_python.run_python("1 + 1", (0, 0, "Sheet 1"))
 
         # NOTE: this approach bypasses the entire env of Pyodide.
         # We should make the run_python e2e tests run via playwright
@@ -179,6 +179,11 @@ class TestQuadraticApi(IsolatedAsyncioTestCase):
     async def test_getCells_1d_array_header(self):
         cells = await getCells((0, 0), (0, 1), first_row_header=True)
         assert cells.equals(pd.DataFrame([["hello 0"]], columns=["hello 0"]))
+
+class TestPos(IsolatedAsyncioTestCase):
+    async def test_pos(self):
+        result = await run_python.run_python("pos()", (0, 0, "Sheet 1"));
+        self.assertEqual(result.get("success"), False)
 
 class TestUtils(TestCase):
     def test_to_quadratic_type(self):

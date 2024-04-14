@@ -41,6 +41,7 @@ async function runPython(code: string): Promise<any> {
     x: 0,
     y: 0,
     sheetId: 'test',
+    sheetName: 'test name',
     code,
   });
 

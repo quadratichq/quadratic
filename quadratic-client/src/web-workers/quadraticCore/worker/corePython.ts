@@ -5,7 +5,14 @@ import { core } from './core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
+    sendRunPython: (
+      transactionId: string,
+      x: number,
+      y: number,
+      sheetId: string,
+      sheetName: string,
+      code: string
+    ) => void;
   };
 
 class CorePython {
@@ -86,7 +93,7 @@ class CorePython {
     this.corePythonPort.postMessage(message);
   }
 
-  sendRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
+  sendRunPython = (transactionId: string, x: number, y: number, sheetId: string, sheetName: string, code: string) => {
     this.lastTransactionId = transactionId;
     this.send({
       type: 'corePythonRun',
@@ -94,6 +101,7 @@ class CorePython {
       x,
       y,
       sheetId,
+      sheetName,
       code,
     });
   };

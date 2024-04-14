@@ -1,8 +1,9 @@
 from typing import Tuple
 
-from ..utils import result_to_value, to_python_type, stack_line_number
 import getCellsDB
 from pandas import DataFrame, Series
+
+from ..utils import result_to_value, stack_line_number, to_python_type
 
 results = None
 
@@ -22,7 +23,7 @@ async def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bo
     Returns:
         The value of the cell referenced.
 
-    Typical usage example:    
+    Typical usage example:
         c = getCell(0, 0)
     """
 
@@ -45,7 +46,7 @@ async def cell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool 
     Returns:
         The value of the cell referenced.
 
-    Typical usage example:    
+    Typical usage example:
         c = cell(0, 0)
     """
 
@@ -63,7 +64,7 @@ async def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | N
     Returns:
         The value of the cell referenced.
 
-    Typical usage example:    
+    Typical usage example:
         c = c(0, 0)
     """
 
@@ -83,7 +84,7 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
     Returns:
         A pandas DataFrame of the cells referenced.
 
-    Typical usage example:    
+    Typical usage example:
         c = getCells((0, 0), (1, 1))
     """
 
@@ -95,13 +96,13 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
     # TODO(ddimaria): consider removing after team decides this is the right approach
     # for always returning a dataframe.
     #
-    # return a panda series for a 1d vertical array of cells     
+    # return a panda series for a 1d vertical array of cells
     # if cell_range_width == 1:
-    #     cell_list = [result_to_value(cell) for cell in cells]        
+    #     cell_list = [result_to_value(cell) for cell in cells]
     #     return Series(cell_list)
 
     # Create empty df of the correct size
-    df = DataFrame(  
+    df = DataFrame(
         index=range(cell_range_height),
         columns=range(cell_range_width),
     )
@@ -135,7 +136,7 @@ async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first
     Returns:
         A pandas DataFrame of the cells referenced.
 
-    Typical usage example:    
+    Typical usage example:
         c = cells((0, 0), (1, 1))
     """
 
@@ -143,15 +144,15 @@ async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
-def pos() -> tuple[int, int]:
+def pos() -> tuple[int, int, str]:
     """
     A relative reference to the current cell in the grid.
 
     Returns:
-        The tuple (x, y) coordinates of the current cell.
+        The tuple (x, y, sheet) coordinates of the current cell.
 
-    Typical usage example:    
-        (x, y) = pos()
+    Typical usage example:
+        (x, y, sheet) = pos()
     """
 
     return None
@@ -165,11 +166,11 @@ async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
     Args:
         x: The relative grid X coordinate from the current cell.
         y: The relative grid Y coordinate from the current cell.
-        
+
     Returns:
         The value of the relative cell referenced.
 
-    Typical usage example:    
+    Typical usage example:
         c = rel_cell(-1, 0) # references the cell to the left of this cell
     """
 
@@ -184,13 +185,12 @@ async def rc(x: int, y: int) -> int | float | str | bool | None:
     Args:
         x: The relative grid X coordinate from the current cell.
         y: The relative grid Y coordinate from the current cell.
-        
+
     Returns:
         The value of the relative cell referenced.
 
-    Typical usage example:    
+    Typical usage example:
         c = rel_cell(-1, 0) # references the cell to the left of this cell
     """
 
     return None
-
