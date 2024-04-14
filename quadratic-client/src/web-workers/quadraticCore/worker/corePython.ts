@@ -5,14 +5,7 @@ import { core } from './core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendRunPython: (
-      transactionId: string,
-      x: number,
-      y: number,
-      sheetId: string,
-      sheetName: string,
-      code: string
-    ) => void;
+    sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
   };
 
 class CorePython {
