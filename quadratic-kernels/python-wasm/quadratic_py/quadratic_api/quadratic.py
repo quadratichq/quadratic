@@ -144,15 +144,15 @@ async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
-def pos() -> tuple[int, int, str]:
+def pos() -> tuple[int, int]:
     """
     A relative reference to the current cell in the grid.
 
     Returns:
-        The tuple (x, y, sheet) coordinates of the current cell.
+        The tuple (x, y) coordinates of the current cell.
 
     Typical usage example:
-        (x, y, sheet) = pos()
+        (x, y) = pos()
     """
 
     return None

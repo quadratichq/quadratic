@@ -93,7 +93,7 @@ class CorePython {
     this.corePythonPort.postMessage(message);
   }
 
-  sendRunPython = (transactionId: string, x: number, y: number, sheetId: string, sheetName: string, code: string) => {
+  sendRunPython = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
     this.lastTransactionId = transactionId;
     this.send({
       type: 'corePythonRun',
@@ -101,7 +101,6 @@ class CorePython {
       x,
       y,
       sheetId,
-      sheetName,
       code,
     });
   };
