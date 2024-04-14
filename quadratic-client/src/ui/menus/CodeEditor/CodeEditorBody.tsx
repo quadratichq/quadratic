@@ -21,6 +21,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { Diagnostic } from 'vscode-languageserver-types';
 import useEventListener from '@/hooks/useEventListener';
 import { javascriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/javascriptLibrary';
+import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
@@ -110,7 +111,8 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
         diagnosticCodesToIgnore: [1108, 1375, 1378],
       });
-      monaco.editor.createModel(javascriptLibrary, 'typescript');
+      monaco.editor.createModel(javascriptLibrary, 'javascript');
+      monaco.editor.createModel(typescriptLibrary, 'typescript');
 
       registered = true;
     },
@@ -145,7 +147,7 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={language === 'Python' ? 'python' : language === 'Javascript' ? 'typescript' : undefined}
+        language={language === 'Python' ? 'python' : language === 'Javascript' ? 'javascript' : undefined}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}

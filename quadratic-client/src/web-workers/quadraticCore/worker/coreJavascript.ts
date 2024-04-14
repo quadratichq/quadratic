@@ -5,14 +5,7 @@ import { core } from './core';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendRunJavascript: (
-      transactionId: string,
-      x: number,
-      y: number,
-      sheetId: string,
-      sheetName: string,
-      code: string
-    ) => void;
+    sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
   };
 
 class CoreJavascript {
@@ -66,14 +59,7 @@ class CoreJavascript {
     this.coreJavascriptPort.postMessage(message);
   }
 
-  sendRunJavascript = (
-    transactionId: string,
-    x: number,
-    y: number,
-    sheetId: string,
-    sheetName: string,
-    code: string
-  ) => {
+  sendRunJavascript = (transactionId: string, x: number, y: number, sheetId: string, code: string) => {
     this.lastTransactionId = transactionId;
     this.send({
       type: 'coreJavascriptRun',
@@ -81,7 +67,6 @@ class CoreJavascript {
       x,
       y,
       sheetId,
-      sheetName,
       code,
     });
   };

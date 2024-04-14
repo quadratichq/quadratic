@@ -9,7 +9,7 @@ import { javascriptLibrary, javascriptLibraryLines } from './javascriptLibrary';
 const ESBUILD_INDENTATION = 2;
 
 export type CellType = number | string | undefined;
-export type CellPos = { x: number; y: number; sheet: string };
+export type CellPos = { x: number; y: number };
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -23,7 +23,9 @@ declare var self: WorkerGlobalScope &
     ) => Promise<CellType[][] | undefined>;
     getCell: (x: number, y: number, sheet?: string, lineNumber?: number) => Promise<CellType | undefined>;
     c: (x: number, y: number, sheet?: string, lineNumber?: number) => Promise<CellType | undefined>;
-    getPos: () => { x: number; y: number; sheet: string };
+    pos: () => { x: number; y: number };
+    relCell: (x: number, y: number) => Promise<CellType | undefined>;
+    rc: (x: number, y: number) => Promise<CellType | undefined>;
   };
 
 class Javascript {
@@ -34,7 +36,6 @@ class Javascript {
   private transactionId?: string;
   private column?: number;
   private row?: number;
-  private sheetName?: string;
 
   constructor() {
     this.awaitingExecution = [];
@@ -42,8 +43,10 @@ class Javascript {
     this.init();
     self.getCells = this.getCells;
     self.getCell = this.getCell;
-    self.getPos = this.getPos;
+    self.pos = this.getPos;
     self.c = this.getCell;
+    self.relCell = this.relCell;
+    self.rc = this.relCell;
   }
 
   private convertType(entry: JsGetCellResponse): CellType {
@@ -95,6 +98,13 @@ class Javascript {
     return cells;
   };
 
+  private relCell = async (x: number, y: number) => {
+    if (this.column === undefined || this.row === undefined) {
+      throw new Error('Expected column and row to be defined in javascript.relCell');
+    }
+    return await this.getCell(this.column + x, this.row + y);
+  };
+
   private getCell = async (
     x: number,
     y: number,
@@ -121,12 +131,12 @@ class Javascript {
     }
   };
 
-  private getPos(): CellPos {
-    if (this.column === undefined || this.row === undefined || this.sheetName === undefined) {
+  private getPos = (): CellPos => {
+    if (this.column === undefined || this.row === undefined) {
       throw new Error('Expected CellPos to be defined');
     }
-    return { x: this.column, y: this.row, sheet: this.sheetName };
-  }
+    return { x: this.column, y: this.row };
+  };
 
   init = async () => {
     await esbuild.initialize({
@@ -146,14 +156,12 @@ class Javascript {
     x: codeRun.sheetPos.x,
     y: codeRun.sheetPos.y,
     sheetId: codeRun.sheetPos.sheetId,
-    sheetName: codeRun.sheetName,
     code: codeRun.code,
   });
 
   private coreJavascriptToCodeRun = (coreJavascriptRun: CoreJavascriptRun) => ({
     transactionId: coreJavascriptRun.transactionId,
     sheetPos: { x: coreJavascriptRun.x, y: coreJavascriptRun.y, sheetId: coreJavascriptRun.sheetId },
-    sheetName: coreJavascriptRun.sheetName,
     code: coreJavascriptRun.code,
   });
 
@@ -285,7 +293,6 @@ class Javascript {
     this.transactionId = message.transactionId;
     this.column = message.x;
     this.row = message.y;
-    this.sheetName = message.sheetName;
     let buildResult: esbuild.BuildResult;
     let code = '';
     const transform = this.transformCode(message.code);
@@ -315,7 +322,7 @@ class Javascript {
       buildResult = await esbuild.build({
         stdin: {
           contents: '(async () => {' + javascriptLibrary + transform.code + '})();',
-          loader: 'ts',
+          loader: 'js',
         },
 
         // we use cjs since we don't want the output wrapped in another anonymous
