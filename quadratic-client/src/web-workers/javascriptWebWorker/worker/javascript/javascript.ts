@@ -317,6 +317,13 @@ class Javascript {
       return;
     }
 
+    // Keep track of all logs and warnings.
+    let oldConsoleLog = console.log;
+    let oldConsoleWarn = console.warn;
+    const logs: any[] = [];
+    console.log = (message: any) => logs.push(message);
+    console.warn = (message: any) => logs.push(message);
+
     // Build the code to convert TS to Javascript and wrap it in an async wrapper to enable top-level await.
     try {
       buildResult = await esbuild.build({
@@ -341,7 +348,9 @@ class Javascript {
         transaction_id: message.transactionId,
         success: false,
         output_value: null,
-        std_err: failure.errors.join('\n'),
+        std_err: failure.errors
+          .map((e) => `${e.text} ${e.location ? `on line ${e.location.line - javascriptLibraryLines + 1}` : ''}`)
+          .join('\n'),
         std_out: null,
         output_array: null,
         line_number: null,
@@ -351,21 +360,17 @@ class Javascript {
       javascriptCore.sendJavascriptResults(message.transactionId, codeResult);
       javascriptClient.sendState('ready');
       this.state = 'ready';
+      console.log = oldConsoleLog;
+      console.warn = oldConsoleWarn;
       setTimeout(this.next, 0);
       return;
     }
 
-    // Keep track of all logs and warnings.
-    const logs: any[] = [];
     if (buildResult.warnings.length > 0) {
       logs.push(...buildResult.warnings.map((w) => w.text));
     }
     let calculationResult: any;
-    let oldConsoleLog = console.log;
-    let oldConsoleWarn = console.warn;
     try {
-      console.log = (message: any) => logs.push(message);
-      console.warn = (message: any) => logs.push(message);
       calculationResult = await this.runAsyncCode(code);
     } catch (e: any) {
       // Catch any thrown errors and use them as the return result.
