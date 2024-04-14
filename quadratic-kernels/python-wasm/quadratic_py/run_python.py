@@ -39,7 +39,7 @@ async def run_python(code: str, pos: Tuple[int, int]):
     sout = StringIO()
     serr = StringIO()
     output_value = None
-    globals['pos'] = lambda: (pos.x, pos.y),
+    globals['pos'] = lambda: (pos.x, pos.y)
     globals['rel_cell'] = lambda x, y: getCell(x + pos.x, y + pos.y)
     globals['rc'] = globals['rel_cell']
 
