@@ -156,6 +156,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_execute_operation_resize_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
