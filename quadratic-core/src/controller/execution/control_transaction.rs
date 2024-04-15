@@ -91,8 +91,8 @@ impl GridController {
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             crate::wasm_bindings::js::jsUndoRedo(
-                self.undo_stack.len() != 0,
-                self.redo_stack.len() != 0,
+                !self.undo_stack.is_empty(),
+                !self.redo_stack.is_empty(),
             );
         }
     }
