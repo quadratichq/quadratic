@@ -62,7 +62,7 @@ impl GridController {
         self.active_transactions()
             .unsaved_transactions
             .last()
-            .and_then(|t| Some(&t.forward))
+            .map(|t| &t.forward)
     }
 
     pub fn test_blank() -> Self {

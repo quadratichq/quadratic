@@ -426,7 +426,7 @@ pub fn jsSendTransaction(transaction_id: String, _transaction: String) {
     // the TEST_ARRAY because of its potential size.
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendTransaction",
-        format!("{}", transaction_id),
+        transaction_id.to_string(),
     ));
 }
 
