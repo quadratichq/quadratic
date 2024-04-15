@@ -102,7 +102,7 @@ lazy_static! {
 }
 
 #[cfg(test)]
-pub fn expect_js_call(name: &str, args: String) {
+pub fn expect_js_call(name: &str, args: String, clear: bool) {
     let result = TestFunction {
         name: name.to_string(),
         args,
@@ -117,6 +117,30 @@ pub fn expect_js_call(name: &str, args: String) {
             panic!("Expected to find in TEST_ARRAY: {:?}", result)
         }
     }
+    if clear {
+        TEST_ARRAY.lock().unwrap().clear();
+    }
+}
+
+#[cfg(test)]
+pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
+    let mut found = 0;
+    TEST_ARRAY.lock().unwrap().retain(|x| {
+        if x.name == name {
+            found += 1;
+            return false;
+        }
+        true
+    });
+    assert_eq!(found, count);
+    if clear {
+        TEST_ARRAY.lock().unwrap().clear();
+    }
+}
+
+#[cfg(test)]
+pub fn clear_js_calls() {
+    TEST_ARRAY.lock().unwrap().clear();
 }
 
 #[cfg(test)]
@@ -176,11 +200,12 @@ pub fn jsRenderCellSheets(
     sheet_id: String,
     hash_x: i64,
     hash_y: i64,
-    cells: String, /*Vec<JsRenderCell>*/
+    _cells: String, /*Vec<JsRenderCell>*/
 ) {
+    // cells gets too large to store in the test array
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRenderCellSheets",
-        format!("{},{},{},{}", sheet_id, hash_x, hash_y, cells),
+        format!("{},{},{}", sheet_id, hash_x, hash_y),
     ));
 }
 
@@ -396,10 +421,12 @@ pub fn addUnsentTransaction(transaction_id: String, transaction: String, operati
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendTransaction(transaction_id: String, transaction: String) {
+pub fn jsSendTransaction(transaction_id: String, _transaction: String) {
+    // We do not include the actual transaction as we don't want to save that in
+    // the TEST_ARRAY because of its potential size.
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendTransaction",
-        format!("{},{}", transaction_id, transaction),
+        format!("{}", transaction_id),
     ));
 }
 

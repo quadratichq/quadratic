@@ -2,7 +2,7 @@
 
 Thank you for considering contributing to Quadratic, the infinite data science spreadsheet :sparkles:
 
-**Before contributing**, please respond to the issue you'd like to work on; someone on the team will get in touch to help. Alternatively, feel free to [reach out](https://www.quadratichq.com/contact) to the team to get in touch and discuss contributing. 
+**Before contributing**, please respond to the issue you'd like to work on; someone on the team will get in touch to help. Alternatively, feel free to [reach out](https://www.quadratichq.com/contact) to the team to get in touch and discuss contributing.
 
 Read our [Code of Conduct](./CODE_OF_CONDUCT.md) to keep our community approachable and respectable.
 
@@ -116,3 +116,22 @@ We review all PRs quickly, so we will give you feedback in short order!
 Congratulations! :tada::tada: Quadratic is better because of you. :sparkles:
 
 Once your PR is merged, contributors will be publicly visible on the GitHub Page.
+
+## How to test js.rs functions (Rust functions that call into TS)
+Use `#[serial]` from `use serial_test::serial;` for the test function.
+
+Any time a jsFunction is called from js.rs, the function and its args are added
+to the `lazy_static TEST_ARRAY` in js.rs. You can access the results of that via
+two functions:
+
+`expect_js_call(name: &str, args: String, clear: bool)` - asserts whether the
+function with the `name` has the args (usually formatted as `format!("{},{}",
+&arg1, &arg2)` -- but check the js.rs for the actual format). This removes that
+call from the `TEST_ARRAY`. If `clear` = true then it also clears the entire
+`TEST_ARRAY` (which is needed since we don't have 100% coverage on all js.rs
+calls yet).`
+
+`expect_js_call_count(name: &str, count: usize, clear: bool)` - asserts whether
+the `name` function was called a specific number of times. If it matches it will
+clear the `TEST_ARRAY` of those functions. If `clear` = true then it will also
+clear the entire `TEST_ARRAY` (for the same reason as above).

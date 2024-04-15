@@ -2,11 +2,12 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
-    wasm_bindings::controller::sheet_info::SheetBounds,
+    wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{
+    active_transactions::pending_transaction::PendingTransaction,
     transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     GridController,
 };
@@ -129,6 +130,37 @@ impl GridController {
             }
         }
     }
+
+    /// Sends add sheet to the client
+    pub fn send_add_sheet(&self, sheet_id: SheetId, transaction: &PendingTransaction) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                let sheet_info = SheetInfo::from(sheet);
+                if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
+                    crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user());
+                }
+            }
+        }
+    }
+
+    /// Sends delete sheet to the client
+    pub fn send_delete_sheet(&self, sheet_id: SheetId, transaction: &PendingTransaction) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            crate::wasm_bindings::js::jsDeleteSheet(sheet_id.to_string(), transaction.is_user());
+        }
+    }
+
+    /// Sends sheet info to the client
+    pub fn send_sheet_info(&self, sheet_id: SheetId) {
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                let sheet_info = SheetInfo::from(sheet);
+                if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
+                    crate::wasm_bindings::js::jsSheetInfoUpdate(sheet_info);
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -138,8 +170,10 @@ mod test {
         grid::{js_types::JsHtmlOutput, RenderSize, SheetId},
         wasm_bindings::js::expect_js_call,
     };
+    use serial_test::serial;
 
     #[test]
+    #[serial]
     fn send_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = SheetId::test();
@@ -149,22 +183,31 @@ mod test {
         expect_js_call(
             "jsRenderCellSheets",
             format!(
-                "{},{},{},{}",
-                sheet_id, 0, 0, r#"[{"x":0,"y":0,"value":"test 1","special":null}]"#
+                "{},{},{}",
+                sheet_id,
+                0,
+                0,
+                //r#"[{"x":0,"y":0,"value":"test 1","special":null}]"#
             ),
+            true,
         );
 
         gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
         expect_js_call(
             "jsRenderCellSheets",
             format!(
-                "{},{},{},{}",
-                sheet_id, 6, 3, r#"[{"x":100,"y":100,"value":"test 2","special":null}]"#
+                "{},{},{}",
+                sheet_id,
+                6,
+                3,
+                //r#"[{"x":100,"y":100,"value":"test 2","special":null}]"#
             ),
+            true,
         );
     }
 
     #[test]
+    #[serial]
     fn send_fill_cells() {
         let mut gc = GridController::test();
         let sheet_id = SheetId::test();
@@ -177,6 +220,7 @@ mod test {
                 "{},{}",
                 sheet_id, r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"}]"#
             ),
+            true,
         );
 
         gc.set_cell_fill_color(
@@ -191,10 +235,12 @@ mod test {
                 sheet_id,
                 r#"[{"x":0,"y":0,"w":1,"h":1,"color":"red"},{"x":100,"y":100,"w":1,"h":1,"color":"green"}]"#
             ),
+            true,
         );
     }
 
     #[test]
+    #[serial]
     fn send_html_output_rect() {
         let mut gc = GridController::test();
         let sheet_id = SheetId::test();
@@ -230,10 +276,12 @@ mod test {
                 h: None,
             })
             .unwrap(),
+            true,
         );
     }
 
     #[test]
+    #[serial]
     fn send_html_output_rect_after_resize() {
         let mut gc = GridController::test();
         let sheet_id = SheetId::test();
@@ -278,6 +326,7 @@ mod test {
                 h: Some("2".to_string()),
             })
             .unwrap(),
+            true,
         );
     }
 }
