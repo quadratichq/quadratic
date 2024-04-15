@@ -118,7 +118,8 @@ Congratulations! :tada::tada: Quadratic is better because of you. :sparkles:
 Once your PR is merged, contributors will be publicly visible on the GitHub Page.
 
 ## How to test js.rs functions (Rust functions that call into TS)
-Use `#[serial]` from `use serial_test::serial;` for the test function.
+Use `#[serial]` from `use serial_test::serial;` for the test function (this
+ensures that the global static `TEST_ARRAY` is not changed by other functions).
 
 Any time a jsFunction is called from js.rs, the function and its args are added
 to the `lazy_static TEST_ARRAY` in js.rs. You can access the results of that via
