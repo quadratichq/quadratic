@@ -124,7 +124,7 @@ impl PendingTransaction {
     pub fn send_transaction(&self) {
         if self.complete
             && self.is_user_undo_redo()
-            && cfg!(target_family = "wasm")
+            && (cfg!(target_family = "wasm") || cfg!(test))
             && !self.is_server()
         {
             let transaction_id = self.id.to_string();

@@ -86,6 +86,8 @@ extern "C" {
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
 
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
+
+    pub fn jsUndoRedo(undo: bool, redo: bool);
 }
 
 #[cfg(test)]
@@ -100,7 +102,7 @@ lazy_static! {
 }
 
 #[cfg(test)]
-pub fn expect_js_call(name: &str, args: String) {
+pub fn expect_js_call(name: &str, args: String, clear: bool) {
     let result = TestFunction {
         name: name.to_string(),
         args,
@@ -115,6 +117,30 @@ pub fn expect_js_call(name: &str, args: String) {
             panic!("Expected to find in TEST_ARRAY: {:?}", result)
         }
     }
+    if clear {
+        TEST_ARRAY.lock().unwrap().clear();
+    }
+}
+
+#[cfg(test)]
+pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
+    let mut found = 0;
+    TEST_ARRAY.lock().unwrap().retain(|x| {
+        if x.name == name {
+            found += 1;
+            return false;
+        }
+        true
+    });
+    assert_eq!(found, count);
+    if clear {
+        TEST_ARRAY.lock().unwrap().clear();
+    }
+}
+
+#[cfg(test)]
+pub fn clear_js_calls() {
+    TEST_ARRAY.lock().unwrap().clear();
 }
 
 #[cfg(test)]
@@ -174,11 +200,12 @@ pub fn jsRenderCellSheets(
     sheet_id: String,
     hash_x: i64,
     hash_y: i64,
-    cells: String, /*Vec<JsRenderCell>*/
+    _cells: String, /*Vec<JsRenderCell>*/
 ) {
+    // cells gets too large to store in the test array
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRenderCellSheets",
-        format!("{},{},{},{}", sheet_id, hash_x, hash_y, cells),
+        format!("{},{},{}", sheet_id, hash_x, hash_y),
     ));
 }
 
@@ -248,12 +275,8 @@ pub fn jsUpdateCodeCell(
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsUpdateCodeCell",
         format!(
-            "{},{},{},{},{}",
-            sheet_id,
-            x,
-            y,
-            code_cell.unwrap_or_default(),
-            render_code_cell.unwrap_or_default()
+            "{},{},{},{:?},{:?}",
+            sheet_id, x, y, code_cell, render_code_cell
         ),
     ));
 }
@@ -263,13 +286,7 @@ pub fn jsUpdateCodeCell(
 pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsOffsetsModified",
-        format!(
-            "{},{},{},{}",
-            sheet_id,
-            column.unwrap_or_default(),
-            row.unwrap_or_default(),
-            size
-        ),
+        format!("{},{:?},{:?},{}", sheet_id, column, row, size),
     ));
 }
 
@@ -394,10 +411,12 @@ pub fn addUnsentTransaction(transaction_id: String, transaction: String, operati
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsSendTransaction(transaction_id: String, transaction: String) {
+pub fn jsSendTransaction(transaction_id: String, _transaction: String) {
+    // We do not include the actual transaction as we don't want to save that in
+    // the TEST_ARRAY because of its potential size.
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSendTransaction",
-        format!("{},{}", transaction_id, transaction),
+        transaction_id.to_string(),
     ));
 }
 
@@ -407,5 +426,14 @@ pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32) 
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsTransactionProgress",
         format!("{},{}", transaction_id, remaining_operations),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsUndoRedo(undo: bool, redo: bool) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsUndoRedo",
+        format!("{},{}", undo, redo),
     ));
 }

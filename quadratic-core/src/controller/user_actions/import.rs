@@ -63,6 +63,7 @@ mod tests {
 
     use crate::{
         test_util::{assert_cell_value_row, print_table},
+        wasm_bindings::js::clear_js_calls,
         Rect,
     };
 
@@ -85,7 +86,7 @@ Concord,NH,United States,42605
     const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/basic.xlsx";
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/financial_sample.xlsx";
     const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
-    const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
+    // const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
     // const LARGE_PARQUET_FILE: &str =
     // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
 
@@ -151,6 +152,7 @@ Concord,NH,United States,42605
             None,
         );
         assert!(result.is_ok());
+        clear_js_calls();
     }
 
     #[test]
@@ -313,24 +315,28 @@ Concord,NH,United States,42605
         );
     }
 
-    #[test]
-    fn imports_a_medium_parquet() {
-        let mut grid_controller = GridController::test();
-        let sheet_id = grid_controller.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
-        let mut file = File::open(MEDIUM_PARQUET_FILE).unwrap();
-        let metadata = std::fs::metadata(MEDIUM_PARQUET_FILE).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("buffer overflow");
+    // The following tests run too slowly to be included in the test suite:
 
-        let _ = grid_controller.import_parquet(sheet_id, buffer, "lineitem.parquet", pos, None);
+    // #[test]
+    // fn imports_a_medium_parquet() {
+    //     let mut grid_controller = GridController::test();
+    //     let sheet_id = grid_controller.grid.sheets()[0].id;
+    //     let pos = Pos { x: 0, y: 0 };
+    //     let mut file = File::open(MEDIUM_PARQUET_FILE).unwrap();
+    //     let metadata = std::fs::metadata(MEDIUM_PARQUET_FILE).expect("unable to read metadata");
+    //     let mut buffer = vec![0; metadata.len() as usize];
+    //     file.read_exact(&mut buffer).expect("buffer overflow");
 
-        print_table(
-            &grid_controller,
-            sheet_id,
-            Rect::new_span(Pos { x: 8, y: 0 }, Pos { x: 15, y: 10 }),
-        );
-    }
+    //     let _ = grid_controller.import_parquet(sheet_id, buffer, "lineitem.parquet", pos, None);
+
+    //      print_table(
+    //          &grid_controller,
+    //          sheet_id,
+    //          Rect::new_span(Pos { x: 8, y: 0 }, Pos { x: 15, y: 10 }),
+    //      );
+
+    //     expect_js_call_count("jsRenderCellSheets", 33026, true);
+    // }
 
     // #[test]
     // fn imports_a_large_parquet() {

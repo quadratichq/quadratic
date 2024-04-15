@@ -53,6 +53,7 @@
     "docker:down:kill-volumes": "docker compose down -v"
   },
   "dependencies": {
+    "vitest": "^1.5.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {

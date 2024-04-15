@@ -2,7 +2,7 @@ import { events } from '@/events/events';
 import { Typography } from '@mui/material';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { zoomInOut, zoomToFit, zoomToSelection } from '../../../gridGL/helpers/zoom';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
@@ -12,7 +12,13 @@ import { TopBarMenuItem } from './TopBarMenuItem';
 export const TopBarZoomMenu = () => {
   const [zoom, setZoom] = useState(1);
   const handleZoom = useCallback((scale: number) => setZoom(scale), [setZoom]);
-  events.on('zoom', handleZoom);
+
+  useEffect(() => {
+    events.on('zoom', handleZoom);
+    return () => {
+      events.off('zoom', handleZoom);
+    };
+  }, [handleZoom]);
 
   const setZoomState = useCallback((value: number) => {
     zoomInOut(value);

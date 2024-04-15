@@ -68,20 +68,3 @@ impl Grid {
         ret
     }
 }
-
-#[cfg(test)]
-mod test {
-    // use super::*;
-
-    #[test]
-    fn grid_offsets() {
-        // let mut grid = Grid::new();
-        // let sheet = &mut grid.sheets_mut()[0];
-        // sheet.id = SheetId::test();
-        // let offsets = grid.grid_offsets();
-        // assert_eq!(
-        //     offsets,
-        //     r#"{"00000000-0000-0000-0000-000000000000":{"column_widths":{"default":100.0,"sizes":{}},"row_heights":{"default":20.0,"sizes":{}},"thumbnail":[13,36]}}"#
-        // );
-    }
-}

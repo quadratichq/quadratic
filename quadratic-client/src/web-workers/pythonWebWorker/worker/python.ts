@@ -153,7 +153,7 @@ class Python {
     let output: PythonSuccess | PythonError | undefined;
     let inspectionResults: InspectPython | undefined;
     try {
-      result = await this.pyodide.globals.get('run_python')(message.code, [message.x, message.y]);
+      result = await this.pyodide.globals.get('run_python')(message.code, { x: message.x, y: message.y });
       output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
       inspectionResults = await this.inspectPython(message.code || '');
       let outputType = output?.output_type || '';

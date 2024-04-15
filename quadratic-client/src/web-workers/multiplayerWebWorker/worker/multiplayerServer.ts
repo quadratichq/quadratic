@@ -4,6 +4,7 @@
 
 import { debugShow, debugShowMultiplayer } from '@/debugFlags';
 import { User } from '@auth0/auth0-spa-js';
+import * as Sentry from '@sentry/react';
 import sharedConstants from '../../../../../updateAlertVersion.json';
 import { ClientMultiplayerInit, MultiplayerState } from '../multiplayerClientMessages';
 import { CoreMultiplayerTransaction } from '../multiplayerCoreMessages';
@@ -23,7 +24,7 @@ import {
 import { multiplayerClient } from './multiplayerClient';
 import { multiplayerCore } from './multiplayerCore';
 
-const UPDATE_TIME = 1000 / 60;
+const UPDATE_TIME_MS = 1000 / 60;
 const HEARTBEAT_TIME = 1000 * 10;
 const RECONNECT_AFTER_ERROR_TIMEOUT = 1000 * 5;
 
@@ -138,7 +139,7 @@ export class MultiplayerServer {
       this.waitingForConnection = [];
       this.lastHeartbeat = Date.now();
       if (!this.updateId) {
-        this.updateId = self.setInterval(this.update, UPDATE_TIME);
+        this.updateId = self.setInterval(this.update, UPDATE_TIME_MS);
       }
     });
   }
@@ -253,7 +254,15 @@ export class MultiplayerServer {
         break;
 
       case 'Error':
-        console.warn(`[Multiplayer] Error`, data.error);
+        if (data.error_level === 'Error') {
+          Sentry.captureException({
+            message: `Error response from the multiplayer server: ${data.error}`,
+            level: 'error',
+          });
+          console.error(`[Multiplayer] Error`, data.error);
+        } else {
+          console.warn(`[Multiplayer] Error`, data.error);
+        }
         break;
 
       default:

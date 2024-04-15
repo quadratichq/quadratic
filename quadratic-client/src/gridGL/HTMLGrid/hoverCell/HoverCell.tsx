@@ -1,6 +1,7 @@
 import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
+import { pluralize } from '@/helpers/pluralize';
 import { JsRenderCodeCell } from '@/quadratic-core-types';
 import { cn } from '@/shadcn/utils';
 import { useGridSettings } from '@/ui/menus/TopBar/SubMenus/useGridSettings';
@@ -83,7 +84,7 @@ export const HoverCell = () => {
             <div className="hover-cell-body">
               <div>Array output could not expand because it would overwrite existing values.</div>
               <div>
-                To fix this, remove content in cell{spillError.length > 1 ? 's' : ''}{' '}
+                To fix this, remove content in {pluralize('cell', spillError.length)}{' '}
                 {spillError.map((pos, index) => (
                   <>
                     <code className="hover-cell-code">

@@ -141,12 +141,6 @@ impl GridController {
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                // if let Some(html) = sheet.get_single_html_output(pos) {
-                //     dbgjs!(&html);
-                //     if let Ok(html) = serde_json::to_string(&html) {
-                //         crate::wasm_bindings::js::jsUpdateHtml(html);
-                //     }
-                // }
                 if let (Some(code_cell), Some(render_code_cell)) = (
                     sheet.edit_code_value(sheet_pos.into()),
                     sheet.get_render_code_cell(sheet_pos.into()),

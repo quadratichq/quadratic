@@ -2,7 +2,7 @@
 //!
 //! A central place for websocket messages responses.
 
-use crate::error::MpError;
+use crate::error::{ErrorLevel, MpError};
 use crate::state::settings::MinVersion;
 use crate::state::user::{User, UserStateUpdate};
 use dashmap::DashMap;
@@ -40,6 +40,7 @@ pub(crate) enum MessageResponse {
     },
     Error {
         error: MpError,
+        error_level: ErrorLevel,
     },
 }
 

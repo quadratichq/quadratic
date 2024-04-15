@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.3
 Name: sourmash
 Version: 4.8.4
 Classifier: Development Status :: 5 - Production/Stable
@@ -22,7 +22,7 @@ Requires-Dist: scipy
 Requires-Dist: deprecation >=2.0.6
 Requires-Dist: cachetools >=4, <6
 Requires-Dist: bitstring >=3.1.9, <5
-Requires-Dist: importlib_metadata >=3.6 ; python_version < '3.10'
+Requires-Dist: importlib-metadata >=3.6 ; python_version < '3.10'
 Requires-Dist: pytest >=6.2.4, <7.5.0 ; extra == 'test'
 Requires-Dist: pytest-cov >=2.12, <5.0 ; extra == 'test'
 Requires-Dist: pytest-xdist ; extra == 'test'
@@ -31,11 +31,11 @@ Requires-Dist: recommonmark ; extra == 'test'
 Requires-Dist: hypothesis ; extra == 'test'
 Requires-Dist: build ; extra == 'test'
 Requires-Dist: jupyter ; extra == 'demo'
-Requires-Dist: jupyter_client ; extra == 'demo'
+Requires-Dist: jupyter-client ; extra == 'demo'
 Requires-Dist: ipython ; extra == 'demo'
 Requires-Dist: sphinx >=4.4.0, <8 ; extra == 'doc'
 Requires-Dist: myst-parser ==2.0.0 ; extra == 'doc'
-Requires-Dist: Jinja2 ==3.1.2 ; extra == 'doc'
+Requires-Dist: jinja2 ==3.1.2 ; extra == 'doc'
 Requires-Dist: alabaster ; extra == 'doc'
 Requires-Dist: sphinxcontrib-napoleon ; extra == 'doc'
 Requires-Dist: nbsphinx ; extra == 'doc'

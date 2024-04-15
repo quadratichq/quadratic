@@ -60,13 +60,11 @@ class Sheets {
     // todo: this code should be in quadratic-core, not here
     if (user) {
       // the timeout is needed because cellsSheets receives the deleteSheet message after sheets receives the message
-      setTimeout(() => {
-        if (index - 1 >= 0 && index - 1 < this.sheets.length) {
-          this.current = this.sheets[index - 1].id;
-        } else {
-          this.current = this.sheets[0].id;
-        }
-      }, 0);
+      if (index - 1 >= 0 && index - 1 < this.sheets.length) {
+        this.current = this.sheets[index - 1].id;
+      } else {
+        this.current = this.sheets[0].id;
+      }
     } else {
       // otherwise we update the sheet bar since another player deleted the sheet
       this.updateSheetBar();
@@ -231,33 +229,11 @@ class Sheets {
   }
 
   duplicate() {
-    // const oldSheetId = this.current;
     quadraticCore.duplicateSheet(this.current, sheets.getCursorPosition());
-
-    // // sets the current sheet to the duplicated sheet
-    // const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
-    // if (currentIndex === -1) throw new Error('Expected to find current sheet in duplicateSheet');
-    // const duplicate = this.sheets[currentIndex + 1];
-    // if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
-    // this.current = duplicate.id;
-    // this.sort();
   }
 
   userDeleteSheet(id: string) {
     quadraticCore.deleteSheet(id, this.getCursorPosition());
-
-    // // set current to next sheet (before this.sheets is updated)
-    // if (this.sheets.length) {
-    //   const next = this.getNext(order);
-    //   if (next) {
-    //     this.current = next.id;
-    //   } else {
-    //     const first = this.getFirst();
-    //     if (first) {
-    //       this.current = first.id;
-    //     }
-    //   }
-    // }
   }
 
   moveSheet(options: { id: string; toBefore?: string; delta?: number }) {

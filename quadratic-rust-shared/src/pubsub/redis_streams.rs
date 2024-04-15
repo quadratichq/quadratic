@@ -453,7 +453,9 @@ pub mod tests {
         let mut results = connection.active_channels(&active_channels).await.unwrap();
 
         // active channels should exist and contain the channels (order seems random; although it was indicated to be in order when test was first written)
-        assert_eq!(results.sort(), channels.sort());
+        results.sort();
+        channels.sort();
+        assert_eq!(results, channels);
 
         // now update the first channel
         connection
@@ -461,15 +463,11 @@ pub mod tests {
             .await
             .unwrap();
 
-        let results = connection
-            .active_channels(&active_channels)
-            .await
-            .unwrap()
-            .sort();
-        assert_eq!(
-            results,
-            vec![channels[1].clone(), channels[0].clone()].sort()
-        );
+        let mut results = connection.active_channels(&active_channels).await.unwrap();
+        results.sort();
+        let mut channel_results = vec![channels[1].clone(), channels[0].clone()];
+        channel_results.sort();
+        assert_eq!(results, channel_results);
 
         // remove the first channel
         connection

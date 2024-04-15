@@ -1,4 +1,5 @@
 import { events } from '@/events/events';
+import { pluralize } from '@/helpers/pluralize';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,7 +86,7 @@ export default function SyncState() {
         <DropdownMenuItem className={`flexz zw-full zjustify-between`}>
           {unsavedTransactions === 0
             ? 'Nothing waiting to sync'
-            : `Syncing ${unsavedTransactions} item${unsavedTransactions === 1 ? '' : 's'}.`}
+            : `Syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}.`}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

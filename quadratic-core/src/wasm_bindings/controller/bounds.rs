@@ -41,10 +41,7 @@ impl GridController {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             };
-            let Ok(min_max) = serde_json::to_string(&min_max) else {
-                return None;
-            };
-            Some(min_max)
+            serde_json::to_string(&min_max).ok()
         } else {
             None
         }
@@ -66,10 +63,7 @@ impl GridController {
                 min: bounds.0 as i32,
                 max: bounds.1 as i32,
             };
-            let Ok(min_max) = serde_json::to_string(&min_max) else {
-                return None;
-            };
-            Some(min_max)
+            serde_json::to_string(&min_max).ok()
         } else {
             None
         }

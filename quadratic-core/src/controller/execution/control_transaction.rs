@@ -88,6 +88,13 @@ impl GridController {
             }
         }
         transaction.send_transaction();
+
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            crate::wasm_bindings::js::jsUndoRedo(
+                !self.undo_stack.is_empty(),
+                !self.redo_stack.is_empty(),
+            );
+        }
     }
 
     pub fn start_user_transaction(

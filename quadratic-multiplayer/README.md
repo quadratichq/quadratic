@@ -4,7 +4,7 @@ An Axum Websocket Server for handling presence and file syncing.
 
 ## Running
 
-First, copy over the environment variables (customize if applicable):
+First, copy over the environment variables (customize as needed):
 
 ```shell
 cp .env.example .env

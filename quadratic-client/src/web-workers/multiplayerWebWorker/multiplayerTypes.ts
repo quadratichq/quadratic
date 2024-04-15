@@ -131,6 +131,7 @@ export interface ReceiveCurrentTransaction {
 export interface ReceiveError {
   type: 'Error';
   error: string;
+  error_level: string;
 }
 
 export type ReceiveMessages =
