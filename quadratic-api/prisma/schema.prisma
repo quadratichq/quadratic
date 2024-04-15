@@ -25,7 +25,7 @@ enum EduStatus {
     INELIGIBLE
     ELIGIBLE
     ENROLLED
-    UNENROLLED
+    NOT_ENROLLED
 }
 
 enum LinkPermission {

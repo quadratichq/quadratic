@@ -13,7 +13,7 @@ const universities: { domains: string[] }[] = JSON.parse(
 
 export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/users/:auth0Id.GET.response']>) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user.GET.response']>) {
   const {
     user: { auth0Id, id, eduStatus },
   } = req;

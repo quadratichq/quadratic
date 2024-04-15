@@ -68,7 +68,7 @@ export const TeamSchema = z.object({
 // Shared types
 const PublicLinkAccessSchema = z.enum(['EDIT', 'READONLY', 'NOT_SHARED']);
 export type PublicLinkAccess = z.infer<typeof PublicLinkAccessSchema>;
-const EduStatusSchema = z.enum(['INELIGIBLE', 'ELIGIBLE', 'ENROLLED', 'UNENROLLED']);
+const EduStatusSchema = z.enum(['INELIGIBLE', 'ELIGIBLE', 'ENROLLED', 'NOT_ENROLLED']);
 
 const FileSchema = z.object({
   uuid: z.string().uuid(),

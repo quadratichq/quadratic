@@ -1,18 +1,6 @@
 // FYI: this was basically copy-pasted from what the marketing website uses
 // https://github.com/quadratichq/quadratic-website/blob/main/lib/sanity-fetch.ts
 
-export type SanityExample = {
-  name: string;
-  description: string;
-  priority: number;
-  url: string;
-  thumbnail: string | null;
-  slug: string;
-  tags: Array<string>;
-  _createdAt: string;
-  _updatedAt: string;
-};
-
 function sanityFetch(groqQueryString: string) {
   // If it's production, use the freshest stuff. Otherwise use the cached CDN (less $$$)
   const subdomain = 'api'; // process.env.NODE_ENV === 'production' ? 'api' : 'apicdn';
@@ -35,7 +23,20 @@ const fields = `{
 }`;
 
 export const sanityClient = {
-  getExamples: async (): Promise<SanityExample[]> =>
-    sanityFetch(`*[_type == "gallery"] | order(priority asc) ${fields}`),
-  getExample: async (slug: string): Promise<SanityExample> => sanityFetch(`*[slug == "${slug}"][0] ${fields}`),
+  examples: {
+    list: async (): Promise<Example[]> => sanityFetch(`*[_type == "gallery"] | order(priority asc) ${fields}`),
+    get: async (slug: string): Promise<Example> => sanityFetch(`*[slug == "${slug}"][0] ${fields}`),
+  },
+};
+
+type Example = {
+  name: string;
+  description: string;
+  priority: number;
+  url: string;
+  thumbnail: string | null;
+  slug: string;
+  tags: Array<string>;
+  _createdAt: string;
+  _updatedAt: string;
 };

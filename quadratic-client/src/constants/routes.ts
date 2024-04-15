@@ -19,6 +19,7 @@ export const ROUTES = {
   EDIT_TEAM: (uuid: string) => `/teams/${uuid}/edit`,
   EXAMPLES: '/examples',
   ACCOUNT: '/account',
+  USER: '/user',
 };
 
 export const ROUTE_LOADER_IDS = {

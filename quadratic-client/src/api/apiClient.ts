@@ -287,6 +287,13 @@ export const apiClient = {
     async get() {
       return fetchFromApi(`/v0/user`, { method: 'GET' }, ApiSchemas['/v0/user.GET.response']);
     },
+    async update(body: ApiTypes['/v0/user.POST.request']) {
+      return fetchFromApi(
+        `/v0/user`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/user.POST.response']
+      );
+    },
   },
 
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
