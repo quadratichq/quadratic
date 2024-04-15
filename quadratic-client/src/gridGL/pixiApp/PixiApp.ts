@@ -92,6 +92,21 @@ export class PixiApp {
     });
   }
 
+  // move the viewport based on URL params
+  private moveViewportBasedOnURL() {
+    const search = new URLSearchParams(window.location.search);
+    if (search.has('vx') && search.has('vy') && search.has('vw') && search.has('vh')) {
+      const vx = Number(search.get('vx'));
+      const vy = Number(search.get('vy'));
+      const vw = Number(search.get('vw'));
+      const vh = Number(search.get('vh'));
+      if (!isNaN(vx) && !isNaN(vy) && !isNaN(vw) && !isNaN(vh)) {
+        this.viewport.fit(false, vw, vh);
+        this.viewport.moveCenter(new Point(vx + this.viewport.x, vy + this.viewport.y));
+      }
+    }
+  }
+
   // called after RenderText has no more updates to send
   firstRenderComplete() {
     if (this.waitingForFirstRender) {
@@ -100,6 +115,7 @@ export class PixiApp {
       pixiApp.renderer.render(pixiApp.stage);
       this.waitingForFirstRender();
       this.waitingForFirstRender = undefined;
+      this.moveViewportBasedOnURL();
     } else {
       this.alreadyRendered = true;
     }
