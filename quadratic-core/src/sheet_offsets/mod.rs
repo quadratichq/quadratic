@@ -122,8 +122,8 @@ impl SheetOffsets {
                 end: column + 2,
             })
             .collect();
-        let x1 = *xs.first().unwrap();
-        let x2 = *xs.last().unwrap();
+        let x1 = *xs.first().unwrap_or(&0f64);
+        let x2 = *xs.last().unwrap_or(&0f64);
         (x1, x2 - x1)
     }
 
@@ -136,8 +136,8 @@ impl SheetOffsets {
                 end: row + 2,
             })
             .collect();
-        let y1 = *ys.first().unwrap();
-        let y2 = *ys.last().unwrap();
+        let y1 = *ys.first().unwrap_or(&0f64);
+        let y2 = *ys.last().unwrap_or(&0f64);
         (y1, y2 - y1)
     }
 
@@ -158,8 +158,8 @@ impl SheetOffsets {
                 end: x1 + 2,
             })
             .collect();
-        let x1 = *xs.first().unwrap();
-        let x2 = *xs.last().unwrap();
+        let x1 = *xs.first().unwrap_or(&0f64);
+        let x2 = *xs.last().unwrap_or(&0f64);
         (x1, x2)
     }
 
@@ -173,8 +173,8 @@ impl SheetOffsets {
                 end: y1 + 2,
             })
             .collect();
-        let y1 = *ys.first().unwrap();
-        let y2 = *ys.last().unwrap();
+        let y1 = *ys.first().unwrap_or(&0f64);
+        let y2 = *ys.last().unwrap_or(&0f64);
         (y1, y2)
     }
 

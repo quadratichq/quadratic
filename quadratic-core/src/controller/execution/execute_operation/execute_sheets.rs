@@ -246,9 +246,13 @@ impl GridController {
             }
             self.grid.add_sheet(Some(new_sheet));
 
-            // *** todo...
-            // transaction.summary.sheet_list_modified = true;
-            // transaction.summary.html.insert(new_sheet_id);
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                if let Some(sheet) = self.try_sheet(new_sheet_id) {
+                    if let Ok(sheet_info) = serde_json::to_string(&SheetInfo::from(sheet)) {
+                        crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user());
+                    }
+                }
+            }
 
             transaction
                 .forward_operations

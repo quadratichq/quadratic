@@ -26,8 +26,6 @@ import { ChangeBorder, useBorders } from '../useBorders';
 import './useGetBorderMenu.css';
 
 export function useGetBorderMenu(): JSX.Element {
-  const sheet = sheets.sheet;
-
   const [lineStyle, setLineStyle] = useState<CellBorderLine | undefined>();
   const [borderSelection, setBorderSelection] = useState<BorderSelection | undefined>();
   const defaultColor = convertTintToString(colors.defaultBorderColor);
@@ -35,11 +33,11 @@ export function useGetBorderMenu(): JSX.Element {
 
   const { changeBorders } = useBorders();
 
-  const [multiCursor, setMultiCursor] = useState(!!sheet.cursor.multiCursor);
+  const [multiCursor, setMultiCursor] = useState(!!sheets.sheet.cursor.multiCursor);
   const clearSelection = useCallback(() => {
     setBorderSelection('clear');
-    setMultiCursor(!!sheet.cursor.multiCursor);
-  }, [sheet.cursor]);
+    setMultiCursor(!!sheets.sheet.cursor.multiCursor);
+  }, []);
 
   // clear border type when changing selection
   useEffect(() => {

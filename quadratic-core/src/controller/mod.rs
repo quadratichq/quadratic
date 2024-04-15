@@ -59,11 +59,10 @@ impl GridController {
 
     // get the last active transaction for testing purposes
     pub fn last_transaction(&self) -> Option<&Transaction> {
-        if let Some(last) = self.active_transactions().unsaved_transactions.last() {
-            Some(&last.forward)
-        } else {
-            None
-        }
+        self.active_transactions()
+            .unsaved_transactions
+            .last()
+            .and_then(|t| Some(&t.forward))
     }
 
     pub fn test_blank() -> Self {

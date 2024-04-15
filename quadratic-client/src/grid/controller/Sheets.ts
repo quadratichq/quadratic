@@ -60,16 +60,11 @@ class Sheets {
     // todo: this code should be in quadratic-core, not here
     if (user) {
       // the timeout is needed because cellsSheets receives the deleteSheet message after sheets receives the message
-      setTimeout(() => {
-        // Change the sheet after a deletion to either the previous sheet or the
-        // first sheet (in the event that all sheets were deleted, then the
-        // newly created sheet gets focus)
-        if (index - 1 >= 0 && index - 1 < this.sheets.length) {
-          this.current = this.sheets[index - 1].id;
-        } else {
-          this.current = this.sheets[0].id;
-        }
-      }, 0);
+      if (index - 1 >= 0 && index - 1 < this.sheets.length) {
+        this.current = this.sheets[index - 1].id;
+      } else {
+        this.current = this.sheets[0].id;
+      }
     } else {
       // otherwise we update the sheet bar since another player deleted the sheet
       this.updateSheetBar();
