@@ -127,7 +127,7 @@ pub(crate) async fn process_queue_for_room(
     // get all transactions for the room in the queue
     let transactions = pubsub
         .connection
-        .get_messages_from(channel, &checkpoint_sequence_num.to_string())
+        .get_messages_from(channel, &checkpoint_sequence_num.to_string(), false)
         .await?
         .iter()
         .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
@@ -192,7 +192,7 @@ pub(crate) async fn process_queue_for_room(
     // confirm that transactions have been processed
     pubsub
         .connection
-        .ack(channel, GROUP_NAME, keys, Some(active_channels))
+        .ack(channel, GROUP_NAME, keys, Some(active_channels), false)
         .await?;
 
     // update the checkpoint in quadratic-api
