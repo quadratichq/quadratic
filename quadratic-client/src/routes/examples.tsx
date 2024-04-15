@@ -1,6 +1,6 @@
-import { sanityClient } from '@/api/sanityClient';
 import { ROUTES } from '@/constants/routes';
 import { ExampleFilesList, FilesListExampleFile } from '@/dashboard/components/FilesList';
+import { sanityClient } from 'quadratic-shared/sanityClient';
 import { useLoaderData } from 'react-router-dom';
 import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 

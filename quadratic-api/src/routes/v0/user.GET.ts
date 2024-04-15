@@ -26,7 +26,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user.GE
 
     const { email } = usersById[id];
     const matches = universities.filter((u) => u.domains.some((d) => email.endsWith(d)));
-    console.log(matches);
+    console.log('Checking for matches', email, matches);
 
     // TODO: Get list of eligible domains from Sanity
 

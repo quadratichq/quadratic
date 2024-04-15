@@ -1,4 +1,4 @@
-// FYI: this was basically copy-pasted from what the marketing website uses
+// FYI: this was originally copy-pasted from what the marketing website uses
 // https://github.com/quadratichq/quadratic-website/blob/main/lib/sanity-fetch.ts
 
 function sanityFetch(groqQueryString: string) {
@@ -27,6 +27,10 @@ export const sanityClient = {
     list: async (): Promise<Example[]> => sanityFetch(`*[_type == "gallery"] | order(priority asc) ${fields}`),
     get: async (slug: string): Promise<Example> => sanityFetch(`*[slug == "${slug}"][0] ${fields}`),
   },
+  settings: {
+    // TODO: update to `*[_type == "appSettings" && "name" == "production"][0]`
+    get: async (): Promise<Settings> => sanityFetch(`*[_type == "appSettings"][0]`),
+  },
 };
 
 type Example = {
@@ -39,4 +43,8 @@ type Example = {
   tags: Array<string>;
   _createdAt: string;
   _updatedAt: string;
+};
+
+type Settings = {
+  educationDomainWhitelist: string[];
 };
