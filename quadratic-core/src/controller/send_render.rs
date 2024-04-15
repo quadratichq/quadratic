@@ -137,7 +137,10 @@ impl GridController {
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 let sheet_info = SheetInfo::from(sheet);
                 if let Ok(sheet_info) = serde_json::to_string(&sheet_info) {
-                    crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user());
+                    crate::wasm_bindings::js::jsAddSheet(
+                        sheet_info,
+                        transaction.is_user_undo_redo(),
+                    );
                 }
             }
         }
@@ -146,7 +149,10 @@ impl GridController {
     /// Sends delete sheet to the client
     pub fn send_delete_sheet(&self, sheet_id: SheetId, transaction: &PendingTransaction) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsDeleteSheet(sheet_id.to_string(), transaction.is_user());
+            crate::wasm_bindings::js::jsDeleteSheet(
+                sheet_id.to_string(),
+                transaction.is_user_undo_redo(),
+            );
         }
     }
 

@@ -254,7 +254,7 @@ mod tests {
         // was jsAdSheet called with the right stuff
         gc.undo(None);
         assert_eq!(gc.grid.sheets().len(), 1);
-        expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, false), true);
+        expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
     }
 
     #[test]
@@ -274,10 +274,10 @@ mod tests {
         let sheet_info = SheetInfo::from(sheet);
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), false),
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
             false,
         );
-        expect_js_call("jsDeleteSheet", format!("{},{}", new_sheet_id, false), true);
+        expect_js_call("jsDeleteSheet", format!("{},{}", new_sheet_id, true), true);
     }
 
     #[test]
@@ -420,7 +420,7 @@ mod tests {
         assert_eq!(gc.grid.sheets().len(), 1);
         expect_js_call(
             "jsDeleteSheet",
-            format!("{},{}", duplicated_sheet_id, false),
+            format!("{},{}", duplicated_sheet_id, true),
             true,
         );
 
@@ -451,7 +451,7 @@ mod tests {
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         expect_js_call(
             "jsDeleteSheet",
-            format!("{},{}", duplicated_sheet_id3, false),
+            format!("{},{}", duplicated_sheet_id3, true),
             true,
         );
 
@@ -461,7 +461,7 @@ mod tests {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), false),
+            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
             true,
         );
     }
