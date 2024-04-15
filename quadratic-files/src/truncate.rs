@@ -59,7 +59,7 @@ pub(crate) async fn truncate_processed_transaction(
     tracing::trace!("Attempting to truncate at sequence number {sequence_num} for file {file_id}");
 
     // Redis does not trim inclusively, so we need to add a 1 to the sequence number
-    let inclusive_sequence_num = u64::from_str_radix(sequence_num, 10).unwrap_or(0) + 1;
+    let inclusive_sequence_num = sequence_num.parse::<u64>().unwrap_or(0) + 1;
 
     // trim the channel at the sequence number
     pubsub
