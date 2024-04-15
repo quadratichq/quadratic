@@ -54,6 +54,7 @@
     "copy:esbuild": "cp -f node_modules/esbuild-wasm/esbuild.wasm quadratic-client/public/"
   },
   "dependencies": {
+    "vitest": "^1.5.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {

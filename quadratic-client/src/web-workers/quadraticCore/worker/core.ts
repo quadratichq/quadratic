@@ -68,6 +68,7 @@ class Core {
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
       console.error('Error loading grid file:', e);
+      Sentry.captureException(e);
       return { error: 'Unable to load file' };
     }
     if (debugWebWorkers) console.log('[core] GridController loaded');
