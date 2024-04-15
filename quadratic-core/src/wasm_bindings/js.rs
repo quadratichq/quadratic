@@ -275,12 +275,8 @@ pub fn jsUpdateCodeCell(
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsUpdateCodeCell",
         format!(
-            "{},{},{},{},{}",
-            sheet_id,
-            x,
-            y,
-            code_cell.unwrap_or_default(),
-            render_code_cell.unwrap_or_default()
+            "{},{},{},{:?},{:?}",
+            sheet_id, x, y, code_cell, render_code_cell
         ),
     ));
 }
@@ -290,13 +286,7 @@ pub fn jsUpdateCodeCell(
 pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsOffsetsModified",
-        format!(
-            "{},{},{},{}",
-            sheet_id,
-            column.unwrap_or_default(),
-            row.unwrap_or_default(),
-            size
-        ),
+        format!("{},{:?},{:?},{}", sheet_id, column, row, size),
     ));
 }
 

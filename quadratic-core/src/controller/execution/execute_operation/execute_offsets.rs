@@ -48,7 +48,10 @@ impl GridController {
                 });
             }
 
-            if cfg!(target_family = "wasm") && !client_resized && !transaction.is_server() {
+            if (cfg!(target_family = "wasm") || cfg!(test))
+                && !client_resized
+                && !transaction.is_server()
+            {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     crate::wasm_bindings::js::jsOffsetsModified(
                         sheet.id.to_string(),
@@ -99,7 +102,10 @@ impl GridController {
                 });
             }
 
-            if cfg!(target_family = "wasm") && !client_resized && !transaction.is_server() {
+            if (cfg!(target_family = "wasm") || cfg!(test))
+                && !client_resized
+                && !transaction.is_server()
+            {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     crate::wasm_bindings::js::jsOffsetsModified(
                         sheet.id.to_string(),
@@ -115,11 +121,13 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::controller::GridController;
+    use crate::{controller::GridController, wasm_bindings::js::expect_js_call};
+    use serial_test::serial;
 
     // also see tests in sheet_offsets.rs
 
     #[test]
+    #[serial]
     fn test_execute_operation_resize_column() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
@@ -134,11 +142,17 @@ mod tests {
             .column_width(column as i64);
         assert_eq!(column_width, new_size);
 
-        // todo: find some way to check if the js function was called
-        // assert_eq!(summary.offsets_modified.len(), 1);
-        // let mut offsets = HashSet::new();
-        // offsets.insert(sheet_id);
-        // assert_eq!(summary.offsets_modified, offsets);
+        expect_js_call(
+            "jsOffsetsModified",
+            format!(
+                "{},{:?},{:?},{}",
+                sheet_id,
+                Some(column),
+                None::<i64>,
+                new_size
+            ),
+            true,
+        );
     }
 
     #[test]
@@ -156,10 +170,16 @@ mod tests {
             .row_height(row as i64);
         assert_eq!(row_height, new_size);
 
-        // todo: find some way to test if the js function was called
-        // assert_eq!(summary.offsets_modified.len(), 1);
-        // let mut offsets = HashSet::new();
-        // offsets.insert(sheet_id);
-        // assert_eq!(summary.offsets_modified, offsets);
+        expect_js_call(
+            "jsOffsetsModified",
+            format!(
+                "{},{:?},{:?},{}",
+                sheet_id,
+                None::<i64>,
+                Some(row),
+                new_size
+            ),
+            true,
+        );
     }
 }
