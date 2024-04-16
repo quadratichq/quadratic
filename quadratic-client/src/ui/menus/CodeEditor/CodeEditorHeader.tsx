@@ -12,7 +12,7 @@ import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStat
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
-import { Formula, Python } from '../../icons';
+import { Formula, JavaScript, Python } from '../../icons';
 import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
@@ -124,6 +124,8 @@ export const CodeEditorHeader = (props: Props) => {
           <Python sx={{ color: colors.languagePython }} fontSize="small" />
         ) : language === 'Formula' ? (
           <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
+        ) : language === 'Javascript' ? (
+          <JavaScript sx={{ color: colors.languageJavascript }} fontSize="small" />
         ) : (
           <Subject />
         )}

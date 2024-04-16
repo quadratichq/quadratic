@@ -36,6 +36,7 @@ export const colors = {
   languagePython: '#3776ab',
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
+  languageJavascript: '#f0db4f',
   error: '#f25f5c',
   cellHighlightColor: [
     muiColors.orange['900'],
