@@ -53,6 +53,16 @@ export const CodeEditor = () => {
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
+  // used to trigger vanilla changes to code editor
+  useEffect(() => {
+    events.emit('codeEditor');
+  }, [
+    showCodeEditor,
+    editorInteractionState.selectedCell.x,
+    editorInteractionState.selectedCell.y,
+    editorInteractionState.mode,
+  ]);
+
   const cellLocation: SheetPosTS = useMemo(() => {
     return {
       x: editorInteractionState.selectedCell.x,

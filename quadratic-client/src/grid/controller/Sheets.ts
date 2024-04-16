@@ -138,7 +138,7 @@ class Sheets {
       pixiAppSettings.changeInput(false);
       pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
-      pixiApp.loadViewport();
+      pixiApp.viewport.loadViewport();
     }
   }
 

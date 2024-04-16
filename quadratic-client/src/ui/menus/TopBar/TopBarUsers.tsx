@@ -133,7 +133,7 @@ function UserAvatar({
         multiplayer.sendFollow('');
         return { ...prev, follow: undefined };
       }
-      pixiApp.loadMultiplayerViewport(JSON.parse(viewport));
+      pixiApp.viewport.loadMultiplayerViewport(JSON.parse(viewport));
       multiplayer.sendFollow(sessionId);
       return { ...prev, follow: sessionId };
     });
