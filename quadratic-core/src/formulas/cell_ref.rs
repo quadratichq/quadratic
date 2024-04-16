@@ -268,7 +268,7 @@ impl CellRefCoord {
     /// Returns the human-friendly string representing this coordinate, if it is
     /// a row coordinate.
     fn row_string(self, base: i64) -> String {
-        let row = self.resolve_from(base);
+        let row = crate::util::row_name(self.resolve_from(base));
         format!("{}{row}", self.prefix())
     }
 

@@ -240,9 +240,9 @@ impl GridController {
                 let decoded = htmlescape::decode_html(result)
                     .map_err(|_| error("".into(), "Html decode error"))?;
 
-                // // parse into Clipboard
-                // let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
-                //     .map_err(|e| error(e.to_string(), "Serialization error"))?;
+                // parse into Clipboard
+                let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
+                    .map_err(|e| error(e.to_string(), "Serialization error"))?;
 
                 // if let Some(src_pos) = clipboard.src_pos {
                 //     for col in clipboard.cells.columns.iter_mut() {

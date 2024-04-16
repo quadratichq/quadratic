@@ -105,8 +105,6 @@ impl SyntaxRule for CellReference {
         let cell_ref = CellRef::parse_a1(p.token_str(), p.pos)
             .or_else(|| CellRef::from_str(p.token_str()).ok());
 
-        println!("cell_ref: {:?}", cell_ref);
-
         cell_ref.map_or_else(
             || Err(RunErrorMsg::BadCellReference.with_span(p.span())),
             |mut cell_ref| {
