@@ -3,7 +3,7 @@ import { pythonStateAtom } from '@/atoms/pythonStateAtom';
 import { Coordinate } from '@/gridGL/types/size';
 import { multiplayer } from '@/multiplayer/multiplayer';
 import { Pos } from '@/quadratic-core/types';
-import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
+import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
