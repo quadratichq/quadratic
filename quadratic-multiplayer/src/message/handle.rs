@@ -223,6 +223,7 @@ pub(crate) async fn handle_message(
             let response = MessageResponse::Transactions {
                 transactions: serde_json::to_string(&transactions)?,
             };
+
             Ok(Some(response))
         }
 

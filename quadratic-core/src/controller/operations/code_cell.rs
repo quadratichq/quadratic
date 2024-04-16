@@ -41,7 +41,7 @@ impl GridController {
         let mut protect_infinite = 0;
         let mut i = 0;
 
-        if code_cell_positions.is_empty() {
+        if code_cell_positions.len() <= 1 {
             return;
         }
 
@@ -348,5 +348,25 @@ mod test {
         second(&mut gc);
         first(&mut gc);
         check_sheet_operations(&gc);
+    }
+
+    #[test]
+    fn rerun_all_code_cells_one() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+        );
+        gc.rerun_all_code_cells(None);
+        gc.rerun_code_cell(sheet_pos, None);
+        gc.rerun_sheet_code_cells(sheet_id, None);
     }
 }
