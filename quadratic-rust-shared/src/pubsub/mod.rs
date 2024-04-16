@@ -57,37 +57,38 @@ pub trait PubSub {
         group: &str,
         keys: Vec<&str>,
         active_channel: Option<&str>,
+        preserve_sequence: bool,
     ) -> impl Future<Output = Result<()>> + Send;
 
-    fn trim(
-        &mut self,
-        channel: &str,
-        key: &str,
-        exact: bool,
-    ) -> impl Future<Output = Result<i64>> + Send;
+    fn trim(&mut self, channel: &str, key: &str) -> impl Future<Output = Result<i64>> + Send;
 
     fn messages(
         &mut self,
         channel: &str,
         group: &str,
-        keys: Option<Vec<&str>>,
+        consumer: &str,
+        keys: Option<&str>,
         max_messages: usize,
+        preserve_sequence: bool,
     ) -> impl Future<Output = Result<Vec<(String, String)>>> + Send;
 
     fn get_messages_before(
         &mut self,
         channel: &str,
         id: &str,
+        preserve_sequence: bool,
     ) -> impl Future<Output = Result<Vec<(String, String)>>> + Send;
 
     fn get_messages_from(
         &mut self,
         channel: &str,
         id: &str,
+        preserve_sequence: bool,
     ) -> impl Future<Output = Result<Vec<(String, String)>>> + Send;
 
     fn last_message(
         &mut self,
         channel: &str,
+        preserve_sequence: bool,
     ) -> impl Future<Output = Result<(String, String)>> + Send;
 }

@@ -108,11 +108,12 @@ impl super::PubSub for RedisConnection {
         _group: &str,
         _keys: Vec<&str>,
         _active_channel: Option<&str>,
+        _preserve_sequence: bool,
     ) -> Result<()> {
         unimplemented!()
     }
 
-    async fn trim(&mut self, _channel: &str, _key: &str, _exact: bool) -> Result<i64> {
+    async fn trim(&mut self, _channel: &str, _key: &str) -> Result<i64> {
         unimplemented!()
     }
 
@@ -120,8 +121,10 @@ impl super::PubSub for RedisConnection {
         &mut self,
         _channel: &str,
         _group: &str,
-        _keys: Option<Vec<&str>>,
+        _consumer: &str,
+        _keys: Option<&str>,
         _max_messages: usize,
+        _preserve_sequence: bool,
     ) -> Result<Vec<(String, String)>> {
         unimplemented!()
     }
@@ -130,6 +133,7 @@ impl super::PubSub for RedisConnection {
         &mut self,
         _channel: &str,
         _id: &str,
+        _preserve_sequence: bool,
     ) -> Result<Vec<(String, String)>> {
         unimplemented!()
     }
@@ -138,11 +142,16 @@ impl super::PubSub for RedisConnection {
         &mut self,
         _channel: &str,
         _id: &str,
+        _preserve_sequence: bool,
     ) -> Result<Vec<(String, String)>> {
         unimplemented!()
     }
 
-    async fn last_message(&mut self, _channel: &str) -> Result<(String, String)> {
+    async fn last_message(
+        &mut self,
+        _channel: &str,
+        _preserve_sequence: bool,
+    ) -> Result<(String, String)> {
         unimplemented!()
     }
 

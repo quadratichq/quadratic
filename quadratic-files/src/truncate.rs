@@ -30,12 +30,10 @@ pub(crate) async fn add_processed_transaction(
     channel: &str,
     message: &str,
 ) -> Result<()> {
-    let mut pubsub = state.pubsub.lock().await;
-
-    // subscribe to the channel
-    pubsub.connection.subscribe(channel, GROUP_NAME).await?;
-
-    pubsub
+    state
+        .pubsub
+        .lock()
+        .await
         .connection
         .publish(channel, "*", message, None)
         .await?;
