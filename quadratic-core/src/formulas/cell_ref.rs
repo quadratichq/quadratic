@@ -109,7 +109,7 @@ impl FromStr for CellRef {
             .captures_iter(&rest)
             .collect::<Vec<_>>();
 
-        match (captures.get(0), captures.get(1)) {
+        match (captures.first(), captures.get(1)) {
             (Some(row), Some(col)) => Ok(CellRef {
                 sheet: maybe_sheet,
                 x: CellRefCoord::from_str(col.get(0).map_or("0", |m| m.as_str()))?,

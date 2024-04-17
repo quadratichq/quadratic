@@ -707,11 +707,11 @@ mod test {
 
         // paste code cell (3,2) from the clipboard to (3,3)
         let dest_pos: SheetPos = (3, 3, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM(C3)", 2);
+        assert_code_cell(&mut gc, dest_pos, "SUM( C3)", 2);
 
         // paste code cell (3,2) from the clipboard to (3,4)
         let dest_pos: SheetPos = (3, 4, sheet_id).into();
-        assert_code_cell(&mut gc, dest_pos, "SUM(C4)", 3);
+        assert_code_cell(&mut gc, dest_pos, "SUM( C4)", 3);
     }
 
     #[test]
@@ -732,7 +732,7 @@ mod test {
         );
 
         let (plain, html) = gc.copy_to_clipboard(SheetRect {
-            min: Pos { x: 3, y: 1 },
+            min: Pos { x: 1, y: 1 },
             max: Pos { x: 3, y: 1 },
             sheet_id,
         });

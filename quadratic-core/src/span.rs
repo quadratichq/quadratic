@@ -61,9 +61,9 @@ impl From<[u32; 2]> for Span {
         }
     }
 }
-impl Into<Range<usize>> for Span {
-    fn into(self) -> Range<usize> {
-        let Span { start, end } = self;
+impl From<Span> for Range<usize> {
+    fn from(val: Span) -> Self {
+        let Span { start, end } = val;
         start as usize..end as usize
     }
 }

@@ -2,8 +2,12 @@ use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::{user_actions::clipboard::PasteSpecial, GridController},
-    grid::{formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders},
-    CellValue, Pos, SheetPos, SheetRect,
+    formulas::{replace_a1_notation, replace_internal_cell_references},
+    grid::{
+        formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders,
+        CodeCellLanguage,
+    },
+    CellValue, CodeCellValue, Pos, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use regex::Regex;
@@ -244,31 +248,35 @@ impl GridController {
                 let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
 
-                // if let Some(src_pos) = clipboard.src_pos {
-                //     for col in clipboard.cells.columns.iter_mut() {
-                //         for (y, cell) in col.iter_mut() {
-                //             match cell {
-                //                 CellValue::Code(code_cell) => match code_cell.language {
-                //                     CodeCellLanguage::Formula => {
-                //                         let new_pos = Pos {
-                //                             x: src_pos.x - dest_pos.x,
-                //                             y: src_pos.y - dest_pos.y + 1,
-                //                         };
-                //                         let formula = parse_formula(&code_cell.code, new_pos)
-                //                             .map_err(|e| error(e.to_string(), "Parse error"))?;
+                if let Some(src_pos) = clipboard.src_pos {
+                    for col in clipboard.cells.columns.iter_mut() {
+                        for (_y, cell) in col.iter_mut() {
+                            match cell {
+                                CellValue::Code(code_cell) => match code_cell.language {
+                                    CodeCellLanguage::Formula => {
+                                        println!("src_pos: {:?}", src_pos);
+                                        println!("dest_pos: {:?}", dest_pos);
+                                        let formula =
+                                            replace_a1_notation(&code_cell.code, src_pos.into());
+                                        println!("formula: {:?}", formula);
 
-                //                         *code_cell = CodeCellValue {
-                //                             language: CodeCellLanguage::Formula,
-                //                             code: formula.to_string(),
-                //                         };
-                //                     }
-                //                     CodeCellLanguage::Python => { /* noop */ }
-                //                 },
-                //                 _ => { /* noop */ }
-                //             };
-                //         }
-                //     }
-                // }
+                                        let replaced = replace_internal_cell_references(
+                                            &formula,
+                                            dest_pos.into(),
+                                        );
+                                        println!("replaced: {:?}", replaced);
+                                        *code_cell = CodeCellValue {
+                                            language: CodeCellLanguage::Formula,
+                                            code: replaced,
+                                        };
+                                    }
+                                    CodeCellLanguage::Python => { /* noop */ }
+                                },
+                                _ => { /* noop */ }
+                            };
+                        }
+                    }
+                }
 
                 Ok(self.set_clipboard_cells(dest_pos, clipboard, special))
             }
