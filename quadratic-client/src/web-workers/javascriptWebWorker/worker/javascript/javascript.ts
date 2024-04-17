@@ -6,8 +6,7 @@ import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { javascriptConsole } from './javascriptConsole';
 import { javascriptLibrary, javascriptLibraryLines } from './javascriptLibrary';
-
-const ESBUILD_INDENTATION = 2;
+import { javascriptConvertOutputArray, javascriptConvertOutputType, javascriptErrorLineNumber } from './javascriptUtil';
 
 export type CellType = number | string | undefined;
 export type CellPos = { x: number; y: number };
@@ -177,74 +176,6 @@ class Javascript {
     }
   };
 
-  // Converts a single cell output and sets the displayType.
-  private convertOutputType(value: any, x?: number, y?: number): { output: string[]; displayType: string } | null {
-    if (Array.isArray(value)) {
-      return null;
-    }
-    if (typeof value === 'number') {
-      return { output: [value.toString(), 'number'], displayType: 'number' };
-    } else if (typeof value === 'string') {
-      return { output: [value, 'text'], displayType: 'string' };
-    } else if (value === undefined) {
-      return null;
-    } else {
-      const column = this.column!;
-      const row = this.row!;
-      javascriptConsole.push(
-        `WARNING: Unsupported output type "${typeof value}" ${
-          x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
-        }`
-      );
-      return null;
-    }
-  }
-
-  // Formats the display type for an array based on a Set of types.
-  private formatDisplayType(types: Set<string>, twoDimensional: boolean): string {
-    if (types.size === 1) {
-      return types.values().next().value + '[]' + (twoDimensional ? '[]' : '');
-    } else {
-      return `(${Array.from(types).join('|')})[]` + (twoDimensional ? '[]' : '');
-    }
-  }
-
-  // Converts an array output and sets the displayType.
-  private convertOutputArray(value: any): { output: string[][][]; displayType: string } | null {
-    if (!Array.isArray(value)) {
-      return null;
-    }
-    const types: Set<string> = new Set();
-    if (!Array.isArray(value[0])) {
-      return {
-        output: value.map((v: any, y: number) => {
-          const outputValue = this.convertOutputType(v, 0, y);
-          types.add(outputValue?.displayType || 'text');
-          if (outputValue) {
-            types.add(outputValue.displayType);
-            return [outputValue.output];
-          }
-          return [['', 'text']];
-        }),
-        displayType: this.formatDisplayType(types, false),
-      };
-    } else {
-      return {
-        output: value.map((v: any[], y: number) => {
-          return v.map((v2: any[], x: number) => {
-            const outputValue = this.convertOutputType(v2, x, y);
-            if (outputValue) {
-              types.add(outputValue.displayType);
-              return outputValue.output;
-            }
-            return ['', 'text'];
-          });
-        }),
-        displayType: this.formatDisplayType(types, true),
-      };
-    }
-  }
-
   private async runAsyncCode(code: string) {
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
     return new Promise((resolve, reject) => {
@@ -254,16 +185,6 @@ class Javascript {
         `try { const result = ${code}; resolve(result); } catch (e) { reject(e); }`
       )(resolve, reject);
     });
-  }
-
-  // calculate the error line number but excluding the Quadratic library size
-  private errorLineNumber(stack: string): { text: string; line: number | null } {
-    const match = stack.match(/<anonymous>:(\d+):(\d+)/);
-    if (match) {
-      const line = parseInt(match[1]) - javascriptLibraryLines;
-      return { text: ` at line ${line}:${parseInt(match[2]) - ESBUILD_INDENTATION}`, line };
-    }
-    return { text: '', line: null };
   }
 
   // separates imports from code so it can be placed above anonymous async function
@@ -325,7 +246,7 @@ class Javascript {
     try {
       buildResult = await esbuild.build({
         stdin: {
-          contents: '(async () => {' + javascriptLibrary + transform.code + '})();',
+          contents: '(async () => {' + javascriptLibrary + transform.code + '\n })();',
           loader: 'js',
         },
 
@@ -337,6 +258,14 @@ class Javascript {
       });
       if (buildResult.outputFiles?.length) {
         code = buildResult.outputFiles[0].text;
+
+        // Uncomments the below lines to see what the transpiled code looks
+        // like. The library needs to be kept consistent with
+        // javascriptLibrary#javascriptLibraryWithoutComments.
+        //
+        // console.log = oldConsoleLog;
+        // console.log(code);
+        // console.log = javascriptConsole.consoleMap;
       }
     } catch (e) {
       // Catch any build errors and use them as the return result.
@@ -346,7 +275,12 @@ class Javascript {
         success: false,
         output_value: null,
         std_err: failure.errors
-          .map((e) => `${e.text} ${e.location ? `on line ${e.location.line - javascriptLibraryLines + 1}` : ''}`)
+          .map(
+            (e) =>
+              `${e.text} ${
+                e.location ? `on line ${e.location.line - javascriptLibraryLines + 1}:${e.location.column}` : ''
+              }`
+          )
           .join('\n'),
         std_out: null,
         output_array: null,
@@ -371,7 +305,7 @@ class Javascript {
       calculationResult = await this.runAsyncCode(code);
     } catch (e: any) {
       // Catch any thrown errors and use them as the return result.
-      const errorLineNumber = this.errorLineNumber(e.stack);
+      const errorLineNumber = javascriptErrorLineNumber(e.stack);
       const codeResult: JsCodeResult = {
         transaction_id: message.transactionId,
         success: false,
@@ -395,8 +329,8 @@ class Javascript {
     // Send the code result back to core.
     console.log = oldConsoleLog;
     console.warn = oldConsoleWarn;
-    const outputType = this.convertOutputType(calculationResult);
-    const outputArray = this.convertOutputArray(calculationResult);
+    const outputType = javascriptConvertOutputType(calculationResult, message.x, message.y);
+    const outputArray = javascriptConvertOutputArray(calculationResult, message.x, message.y);
     const codeResult: JsCodeResult = {
       transaction_id: message.transactionId,
       success: true,

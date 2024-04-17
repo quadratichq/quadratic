@@ -61,6 +61,7 @@ let CELL_TYPE_OPTIONS = [
     mode: 'Javascript',
     icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
     description: 'The world’s most popular programming language.',
+    experimental: true,
   },
   {
     name: 'SQL Query',
