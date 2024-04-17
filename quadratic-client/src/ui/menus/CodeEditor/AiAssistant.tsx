@@ -1,17 +1,18 @@
 import { Send, Stop } from '@mui/icons-material';
-import { Avatar, CircularProgress, FormControl, IconButton, InputAdornment, OutlinedInput } from '@mui/material';
+import { Avatar, CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '../../../api/apiClient';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { authClient } from '../../../auth';
 // import { CodeCellRunOutput } from '../../../quadratic-core/types';
+import { Input } from '@/shadcn/ui/input';
 import { useRootRouteLoaderData } from '../../../router';
 import { colors } from '../../../theme/colors';
 import ConditionalWrapper from '../../components/ConditionalWrapper';
 import { TooltipHint } from '../../components/TooltipHint';
 import { AI } from '../../icons';
 import { CodeBlockParser } from './AICodeBlockParser';
-import './AITab.css';
+import './AiAssistant.css';
 import { QuadraticDocs } from './QuadraticDocs';
 
 // todo: fix types
@@ -28,7 +29,7 @@ type Message = {
   content: string;
 };
 
-export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
+export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
   const evalResultObj = evalResult;
   const stdErr = evalResultObj?.std_err;
 
@@ -175,64 +176,7 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
   return (
     <>
       <div
-        style={{
-          position: 'absolute',
-          bottom: '0',
-          left: '0',
-          right: '1rem',
-          padding: '1rem 0 .5rem 1rem',
-          background: 'linear-gradient(0deg, rgba(255,255,255,1) 85%, rgba(255,255,255,0) 100%)',
-          zIndex: 10,
-        }}
-      >
-        <FormControl fullWidth>
-          <OutlinedInput
-            id="prompt-input"
-            value={prompt}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              setPrompt(event.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && prompt.length > 0) {
-                submitPrompt();
-              }
-            }}
-            placeholder="Ask a question"
-            endAdornment={
-              <InputAdornment position="end">
-                {loading && <CircularProgress size="1.25rem" sx={{ mx: '1rem' }} />}
-                {loading ? (
-                  <TooltipHint title="Stop generating">
-                    <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
-                      <Stop />
-                    </IconButton>
-                  </TooltipHint>
-                ) : (
-                  <ConditionalWrapper
-                    condition={prompt.length !== 0}
-                    Wrapper={({ children }) => <TooltipHint title="Send">{children as React.ReactElement}</TooltipHint>}
-                  >
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={submitPrompt}
-                      edge="end"
-                      {...(prompt.length === 0 ? { disabled: true } : {})}
-                    >
-                      <Send />
-                    </IconButton>
-                  </ConditionalWrapper>
-                )}
-              </InputAdornment>
-            }
-            size="small"
-            fullWidth
-            inputRef={inputRef}
-            sx={{ py: '.25rem', pr: '1rem', fontSize: '.875rem' }}
-          />
-        </FormControl>
-      </div>
-      <div
+        className="overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -240,11 +184,6 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
           } else {
             e.preventDefault();
           }
-        }}
-        style={{
-          outline: 'none',
-          whiteSpace: 'pre-wrap',
-          paddingBottom: '5rem',
         }}
         // Disable Grammarly
         data-gramm="false"
@@ -295,6 +234,53 @@ export const AITab = ({ evalResult, editorMode, editorContent, isActive }: Props
           <div id="ai-streaming-output-anchor" key="ai-streaming-output-anchor" />
         </div>
       </div>
+      <form
+        className="z-10 flex gap-2 px-3 pb-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
+      >
+        <Input
+          id="prompt-input"
+          value={prompt}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            setPrompt(event.target.value);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && prompt.length > 0) {
+              submitPrompt();
+            }
+          }}
+          autoComplete="off"
+          placeholder="Ask a question"
+        />
+
+        <div className="relative flex items-center">
+          {loading && <CircularProgress size="1rem" className="absolute right-14 top-2.5" />}
+          {loading ? (
+            <TooltipHint title="Stop generating">
+              <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
+                <Stop />
+              </IconButton>
+            </TooltipHint>
+          ) : (
+            <ConditionalWrapper
+              condition={prompt.length !== 0}
+              Wrapper={({ children }) => <TooltipHint title="Send">{children as React.ReactElement}</TooltipHint>}
+            >
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={submitPrompt}
+                edge="end"
+                {...(prompt.length === 0 ? { disabled: true } : {})}
+              >
+                <Send />
+              </IconButton>
+            </ConditionalWrapper>
+          )}
+        </div>
+      </form>
     </>
   );
 };
