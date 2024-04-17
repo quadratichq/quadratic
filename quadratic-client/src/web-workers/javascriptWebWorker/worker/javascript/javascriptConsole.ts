@@ -41,6 +41,10 @@ class JavascriptConsole {
         s += this.tab(level + 1) + `${i}: ` + this.mapArgument(a[i], level + 2);
       }
       return s + this.tab(level) + ']\n';
+    } else if (a === null) {
+      return 'null\n';
+    } else if (typeof a == 'bigint') {
+      return `${a.toString()}n\n`;
     } else if (a instanceof Date) {
       return `${a.toString()}\n`;
     } else if (typeof a === 'object') {
@@ -51,6 +55,8 @@ class JavascriptConsole {
       return s + this.tab(level) + '}\n';
     } else if (typeof a === 'string') {
       return `'${a}'\n`;
+    } else if (a === undefined) {
+      return 'undefined\n';
     } else {
       return `${a}\n`;
     }
