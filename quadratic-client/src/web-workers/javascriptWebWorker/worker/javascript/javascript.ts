@@ -4,6 +4,7 @@ import * as esbuild from 'esbuild-wasm';
 import { CoreJavascriptRun } from '../../javascriptCoreMessages';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
+import { javascriptConsole } from './javascriptConsole';
 import { javascriptLibrary, javascriptLibraryLines } from './javascriptLibrary';
 
 const ESBUILD_INDENTATION = 2;
@@ -30,6 +31,7 @@ declare var self: WorkerGlobalScope &
 
 class Javascript {
   private awaitingExecution: CodeRun[];
+
   state: LanguageState;
 
   // current running transaction
@@ -176,12 +178,7 @@ class Javascript {
   };
 
   // Converts a single cell output and sets the displayType.
-  private convertOutputType(
-    value: any,
-    logs: string[],
-    x?: number,
-    y?: number
-  ): { output: string[]; displayType: string } | null {
+  private convertOutputType(value: any, x?: number, y?: number): { output: string[]; displayType: string } | null {
     if (Array.isArray(value)) {
       return null;
     }
@@ -194,7 +191,7 @@ class Javascript {
     } else {
       const column = this.column!;
       const row = this.row!;
-      logs.push(
+      javascriptConsole.push(
         `WARNING: Unsupported output type "${typeof value}" ${
           x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
         }`
@@ -213,7 +210,7 @@ class Javascript {
   }
 
   // Converts an array output and sets the displayType.
-  private convertOutputArray(value: any, logs: string[]): { output: string[][][]; displayType: string } | null {
+  private convertOutputArray(value: any): { output: string[][][]; displayType: string } | null {
     if (!Array.isArray(value)) {
       return null;
     }
@@ -221,7 +218,7 @@ class Javascript {
     if (!Array.isArray(value[0])) {
       return {
         output: value.map((v: any, y: number) => {
-          const outputValue = this.convertOutputType(v, logs, 0, y);
+          const outputValue = this.convertOutputType(v, 0, y);
           types.add(outputValue?.displayType || 'text');
           if (outputValue) {
             types.add(outputValue.displayType);
@@ -235,7 +232,7 @@ class Javascript {
       return {
         output: value.map((v: any[], y: number) => {
           return v.map((v2: any[], x: number) => {
-            const outputValue = this.convertOutputType(v2, logs, x, y);
+            const outputValue = this.convertOutputType(v2, x, y);
             if (outputValue) {
               types.add(outputValue.displayType);
               return outputValue.output;
@@ -320,9 +317,9 @@ class Javascript {
     // Keep track of all logs and warnings.
     let oldConsoleLog = console.log;
     let oldConsoleWarn = console.warn;
-    const logs: any[] = [];
-    console.log = (message: any) => logs.push(message);
-    console.warn = (message: any) => logs.push(message);
+    javascriptConsole.reset();
+    console.log = javascriptConsole.consoleMap;
+    console.warn = javascriptConsole.consoleMap;
 
     // Build the code to convert TS to Javascript and wrap it in an async wrapper to enable top-level await.
     try {
@@ -367,7 +364,7 @@ class Javascript {
     }
 
     if (buildResult.warnings.length > 0) {
-      logs.push(...buildResult.warnings.map((w) => w.text));
+      javascriptConsole.push(buildResult.warnings.map((w) => w.text));
     }
     let calculationResult: any;
     try {
@@ -380,7 +377,7 @@ class Javascript {
         success: false,
         output_value: null,
         std_err: e.message + errorLineNumber.text,
-        std_out: logs.length ? logs.join('\n') : null,
+        std_out: javascriptConsole.output(),
         output_array: null,
         line_number: errorLineNumber.line,
         output_display_type: null,
@@ -398,13 +395,13 @@ class Javascript {
     // Send the code result back to core.
     console.log = oldConsoleLog;
     console.warn = oldConsoleWarn;
-    const outputType = this.convertOutputType(calculationResult, logs);
-    const outputArray = this.convertOutputArray(calculationResult, logs);
+    const outputType = this.convertOutputType(calculationResult);
+    const outputArray = this.convertOutputArray(calculationResult);
     const codeResult: JsCodeResult = {
       transaction_id: message.transactionId,
       success: true,
       output_value: outputType ? outputType.output : null,
-      std_out: logs.length ? logs.join('\n') : null,
+      std_out: javascriptConsole.output(),
       std_err: null,
       output_array: outputArray ? outputArray.output : null,
       line_number: null,
