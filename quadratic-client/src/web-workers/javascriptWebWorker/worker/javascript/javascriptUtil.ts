@@ -16,7 +16,23 @@ export function javascriptConvertOutputType(
   if (Array.isArray(value)) {
     return null;
   }
+
   if (typeof value === 'number') {
+    if (isNaN(value)) {
+      javascriptConsole.push(
+        `Warning: Unsupported output type: 'NaN' ${
+          x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
+        }`
+      );
+      return null;
+    } else if (value === Infinity) {
+      javascriptConsole.push(
+        `Warning: Unsupported output type: 'Infinity' ${
+          x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
+        }`
+      );
+      return null;
+    }
     return { output: [value.toString(), 'number'], displayType: 'number' };
   } else if (value === 'function') {
     javascriptConsole.push(

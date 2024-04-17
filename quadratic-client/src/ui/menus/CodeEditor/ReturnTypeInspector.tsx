@@ -13,7 +13,6 @@ interface ReturnTypeInspectorProps {
 
 export function ReturnTypeInspector({ evaluationResult, show, language }: ReturnTypeInspectorProps) {
   const theme = useTheme();
-  console.log(evaluationResult);
   let message: JSX.Element;
   if (language === 'Python') {
     message = (
