@@ -47,9 +47,12 @@
   transition: 0.2s ease background-color 300ms;
 }
 
-/* When control is being dragged, applies styles to body to prevent text
+/* When control is being dragged, applies styles to prevent text
    selection and try to keep correct cursor displayed */
-body:has(.resize-control--is-dragging) {
+body:has(.resize-control--is-dragging) * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 body:has(.resize-control--is-dragging.resize-control--position-VERTICAL) {
