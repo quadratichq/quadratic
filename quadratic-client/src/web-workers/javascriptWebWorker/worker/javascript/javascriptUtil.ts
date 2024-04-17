@@ -17,6 +17,13 @@ export function javascriptConvertOutputType(
   }
   if (typeof value === 'number') {
     return { output: [value.toString(), 'number'], displayType: 'number' };
+  } else if (value === 'function') {
+    javascriptConsole.push(
+      `WARNING: Unsupported output type: 'function' ${
+        x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
+      }`
+    );
+    return null;
   } else if (typeof value === 'string') {
     return { output: [value, 'text'], displayType: 'string' };
   } else if (value === undefined) {
@@ -46,7 +53,7 @@ export function javascriptConvertOutputArray(
   column: number,
   row: number
 ): { output: string[][][]; displayType: string } | null {
-  if (!Array.isArray(value)) {
+  if (!Array.isArray(value) || value.length === 0) {
     return null;
   }
   const types: Set<string> = new Set();

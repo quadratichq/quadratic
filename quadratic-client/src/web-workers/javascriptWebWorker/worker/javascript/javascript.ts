@@ -28,6 +28,8 @@ declare var self: WorkerGlobalScope &
     rc: (x: number, y: number) => Promise<CellType | undefined>;
   };
 
+const LINE_NUMBER_VAR = '___line_number___';
+
 class Javascript {
   private awaitingExecution: CodeRun[];
 
@@ -176,13 +178,13 @@ class Javascript {
     }
   };
 
-  private async runAsyncCode(code: string) {
+  private async runAsyncCode(code: string): Promise<[any, number]> {
     const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
     return new Promise((resolve, reject) => {
       new AsyncFunction(
         'resolve',
         'reject',
-        `try { const result = ${code}; resolve(result); } catch (e) { reject(e); }`
+        `try { let ${LINE_NUMBER_VAR} = 0; const result = await ${code}; resolve([result, ${LINE_NUMBER_VAR}]); } catch (e) { reject(e); }`
       )(resolve, reject);
     });
   }
@@ -242,11 +244,18 @@ class Javascript {
     console.log = javascriptConsole.consoleMap;
     console.warn = javascriptConsole.consoleMap;
 
-    // Build the code to convert TS to Javascript and wrap it in an async wrapper to enable top-level await.
+    // Build the code to convert TS to Javascript and wrap it in an async
+    // wrapper to enable top-level await. First, we try the naive line number
+    // variable.
+
     try {
       buildResult = await esbuild.build({
         stdin: {
-          contents: '(async () => {' + javascriptLibrary + transform.code + '\n })();',
+          contents:
+            '(async () => {' +
+            javascriptLibrary +
+            transform.code.split('\n').join(`;${LINE_NUMBER_VAR}++;\n`) +
+            '\n })();',
           loader: 'js',
         },
 
@@ -258,14 +267,11 @@ class Javascript {
       });
       if (buildResult.outputFiles?.length) {
         code = buildResult.outputFiles[0].text;
-
         // Uncomments the below lines to see what the transpiled code looks
         // like. The library needs to be kept consistent with
         // javascriptLibrary#javascriptLibraryWithoutComments.
         //
-        // console.log = oldConsoleLog;
-        // console.log(code);
-        // console.log = javascriptConsole.consoleMap;
+        // oldConsoleLog(code);
       }
     } catch (e) {
       // Catch any build errors and use them as the return result.
@@ -300,9 +306,13 @@ class Javascript {
     if (buildResult.warnings.length > 0) {
       javascriptConsole.push(buildResult.warnings.map((w) => w.text));
     }
-    let calculationResult: any;
+    let calculationResult: any, lineNumber: number | undefined;
     try {
-      calculationResult = await this.runAsyncCode(code);
+      const result = await this.runAsyncCode(code);
+      if (result) {
+        calculationResult = result[0];
+        lineNumber = result[1];
+      }
     } catch (e: any) {
       // Catch any thrown errors and use them as the return result.
       const errorLineNumber = javascriptErrorLineNumber(e.stack);
@@ -329,6 +339,7 @@ class Javascript {
     // Send the code result back to core.
     console.log = oldConsoleLog;
     console.warn = oldConsoleWarn;
+
     const outputType = javascriptConvertOutputType(calculationResult, message.x, message.y);
     const outputArray = javascriptConvertOutputArray(calculationResult, message.x, message.y);
     const codeResult: JsCodeResult = {
@@ -338,7 +349,7 @@ class Javascript {
       std_out: javascriptConsole.output(),
       std_err: null,
       output_array: outputArray ? outputArray.output : null,
-      line_number: null,
+      line_number: lineNumber !== undefined ? lineNumber + 1 : null,
       output_display_type: outputType?.displayType || outputArray?.displayType || null,
       cancel_compute: false,
     };

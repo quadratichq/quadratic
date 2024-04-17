@@ -47,7 +47,7 @@ export function Console(props: ConsoleProps) {
     <>
       <Tabs
         value={tab}
-        onValueChange={setTab}
+        onValueChange={(e: string) => setTab(e as Tab)}
         className={cn('h-full', panelPosition === 'bottom' && 'grid grid-rows-[auto_1fr]')}
       >
         {/* Only visible when panel is on the bottom */}
