@@ -695,7 +695,7 @@ mod test {
                                 value: i32| {
             gc.paste_from_clipboard(dest_pos, None, Some(html.clone()), PasteSpecial::None, None);
 
-            let cell_value = get_value(&gc, dest_pos.x, dest_pos.y);
+            let cell_value = get_value(gc, dest_pos.x, dest_pos.y);
             let expected_cell_value = Some(CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
                 code: code.into(),

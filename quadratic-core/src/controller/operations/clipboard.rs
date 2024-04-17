@@ -7,7 +7,7 @@ use crate::{
         formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders,
         CodeCellLanguage,
     },
-    CellValue, CodeCellValue, Pos, SheetPos, SheetRect,
+    CellValue, Pos, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use regex::Regex;
@@ -254,21 +254,15 @@ impl GridController {
                             match cell {
                                 CellValue::Code(code_cell) => match code_cell.language {
                                     CodeCellLanguage::Formula => {
-                                        println!("src_pos: {:?}", src_pos);
-                                        println!("dest_pos: {:?}", dest_pos);
                                         let formula =
                                             replace_a1_notation(&code_cell.code, src_pos.into());
-                                        println!("formula: {:?}", formula);
 
                                         let replaced = replace_internal_cell_references(
                                             &formula,
                                             dest_pos.into(),
                                         );
-                                        println!("replaced: {:?}", replaced);
-                                        *code_cell = CodeCellValue {
-                                            language: CodeCellLanguage::Formula,
-                                            code: replaced,
-                                        };
+
+                                        code_cell.code = replaced;
                                     }
                                     CodeCellLanguage::Python => { /* noop */ }
                                 },

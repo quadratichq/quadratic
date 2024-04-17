@@ -2,9 +2,10 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
+    formulas::replace_internal_cell_references,
     grid::{
         js_types::{JsCodeCell, JsReturnInfo},
-        CodeRun, RenderSize,
+        CodeCellLanguage, CodeRun, RenderSize,
     },
     CellValue, Pos, Rect,
 };
@@ -142,7 +143,13 @@ impl Sheet {
         let code_cell = code_cell?;
 
         match code_cell {
-            CellValue::Code(code_cell) => {
+            CellValue::Code(mut code_cell) => {
+                // replace internal cell references with a1 notation
+                if matches!(code_cell.language, CodeCellLanguage::Formula) {
+                    let replaced = replace_internal_cell_references(&code_cell.code, code_pos);
+                    code_cell.code = replaced;
+                }
+
                 if let Some(code_run) = self.code_run(code_pos) {
                     let evaluation_result =
                         serde_json::to_string(&code_run.result).unwrap_or("".into());

@@ -215,7 +215,7 @@ pub fn column_from_name(mut s: &str) -> Option<i64> {
 }
 
 /// Returns a row's name from its number.
-pub fn row_name(mut n: i64) -> String {
+pub fn row_name(n: i64) -> String {
     let negative = n < 0;
 
     match negative {

@@ -1,11 +1,10 @@
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    formulas::{ast::AstNodeContents, parse_formula},
     grid::{
         formatting::CellFmtArray,
         series::{find_auto_complete, SeriesOptions},
-        CodeCellLanguage, SheetId,
+        SheetId,
     },
     util::maybe_reverse_range,
     CellValue, Pos, Rect, SheetPos, SheetRect,
@@ -192,7 +191,6 @@ impl GridController {
                 formats.push(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
-                    &source_row.into(),
                     false,
                     &source_row.into(),
                     &target_row,
@@ -276,7 +274,6 @@ impl GridController {
                 formats.extend(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
-                    &source_row.into(),
                     true,
                     &source_row.into(),
                     &target_row,
@@ -349,7 +346,6 @@ impl GridController {
                 formats.extend(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
-                    &source_col.into(),
                     false,
                     &source_col.into(),
                     &target_col,
@@ -412,7 +408,6 @@ impl GridController {
                 formats.extend(format);
                 let (operations, cell_values) = self.apply_auto_complete(
                     sheet_id,
-                    &source_col.into(),
                     true,
                     &source_col.into(),
                     &target_col,
@@ -493,7 +488,6 @@ impl GridController {
 
                 let (operations, _) = self.apply_auto_complete(
                     sheet_id,
-                    selection,
                     direction == ExpandDirection::Up,
                     &target_col,
                     &target_col,
@@ -580,7 +574,6 @@ impl GridController {
 
                 let (operations, _) = self.apply_auto_complete(
                     sheet_id,
-                    selection,
                     direction == ExpandDirection::Up,
                     &target_col,
                     &target_col,
@@ -601,7 +594,6 @@ impl GridController {
     fn apply_auto_complete(
         &mut self,
         sheet_id: SheetId,
-        source_selection: &Rect,
         negative: bool,
         selection: &Rect,
         range: &Rect,
@@ -620,7 +612,7 @@ impl GridController {
                 .collect::<Vec<CellValue>>()
         };
 
-        let mut series = find_auto_complete(SeriesOptions {
+        let series = find_auto_complete(SeriesOptions {
             series: values,
             spaces: (range.width() * range.height()) as i32,
             negative,
@@ -630,35 +622,7 @@ impl GridController {
         let compute_code_ops = range
             .iter()
             .enumerate()
-            .filter(|(i, Pos { x, y })| {
-                match series.get_mut(*i) {
-                    Some(CellValue::Code(code_cell_value)) => {
-                        return true;
-                        // if code_cell_value.language == CodeCellLanguage::Formula {
-                        //     let initial_pos = Pos {
-                        //         x: selection.min.x - range.min.x,
-                        //         y: selection.min.y - range.min.y,
-                        //     };
-                        //     let src_pos = Pos {
-                        //         x: selection.min.x - (selection.min.x - source_selection.max.x),
-                        //         y: selection.min.y - (selection.min.y - source_selection.max.y),
-                        //     };
-                        //     let dest_pos: Pos = (*x, *y).into();
-                        //     let new_pos = Pos {
-                        //         x: src_pos.x - dest_pos.x,
-                        //         y: src_pos.y - dest_pos.y,
-                        //     };
-
-                        //     let formula = parse_formula(&code_cell_value.code, new_pos).unwrap();
-
-                        //     (*code_cell_value).code = formula.to_string();
-                        // }
-
-                        // true
-                    }
-                    _ => false,
-                }
-            })
+            .filter(|(i, _)| matches!(series.get(*i), Some(CellValue::Code(_))))
             .map(|(_, Pos { x, y })| {
                 let sheet_pos = SheetPos::new(sheet_id, x, y);
                 Operation::ComputeCode { sheet_pos }
