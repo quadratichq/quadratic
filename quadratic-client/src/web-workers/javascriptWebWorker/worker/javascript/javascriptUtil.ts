@@ -1,3 +1,4 @@
+import { LINE_NUMBER_VAR } from './javascript';
 import { javascriptConsole } from './javascriptConsole';
 import { javascriptCompiledLibraryLines } from './javascriptLibrary';
 
@@ -97,4 +98,27 @@ export function javascriptErrorLineNumber(stack: string): { text: string; line: 
     } else console.log(stack, match, line, javascriptCompiledLibraryLines);
   }
   return { text: '', line: null };
+}
+
+// Adds line number variables to the code. It uses a naive approach to handling
+// multi-line strings. We track the ` character and only add the variables where
+// there's an even number of them. This may break in some situations, but seeing
+// as esbuild strips comments on build, we may be mostly okay here except where
+// ` is used within other strings.
+export function javascriptAddLineNumberVars(code: string): string {
+  const list = code.split('\n');
+  let multiLineCount = 0;
+  let s = '';
+  let add = 1;
+  for (let i = 0; i < list.length; i++) {
+    multiLineCount += [...list[i].matchAll(/`/g)].length;
+    s += list[i];
+    if (multiLineCount % 2 === 0) {
+      s += `;${LINE_NUMBER_VAR} += ${add};\n`;
+      add = 1;
+    } else {
+      add++;
+    }
+  }
+  return s;
 }

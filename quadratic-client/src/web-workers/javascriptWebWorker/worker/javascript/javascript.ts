@@ -6,7 +6,12 @@ import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { javascriptConsole } from './javascriptConsole';
 import { javascriptLibrary, javascriptLibraryLines } from './javascriptLibrary';
-import { javascriptConvertOutputArray, javascriptConvertOutputType, javascriptErrorLineNumber } from './javascriptUtil';
+import {
+  javascriptAddLineNumberVars,
+  javascriptConvertOutputArray,
+  javascriptConvertOutputType,
+  javascriptErrorLineNumber,
+} from './javascriptUtil';
 
 export type CellType = number | string | undefined;
 export type CellPos = { x: number; y: number };
@@ -28,7 +33,7 @@ declare var self: WorkerGlobalScope &
     rc: (x: number, y: number) => Promise<CellType | undefined>;
   };
 
-const LINE_NUMBER_VAR = '___line_number___';
+export const LINE_NUMBER_VAR = '___line_number___';
 
 class Javascript {
   private awaitingExecution: CodeRun[];
@@ -251,11 +256,7 @@ class Javascript {
     try {
       buildResult = await esbuild.build({
         stdin: {
-          contents:
-            '(async () => {' +
-            javascriptLibrary +
-            transform.code.split('\n').join(`;${LINE_NUMBER_VAR}++;\n`) +
-            '\n })();',
+          contents: '(async () => {' + javascriptLibrary + javascriptAddLineNumberVars(transform.code) + '\n })();',
           loader: 'js',
         },
 

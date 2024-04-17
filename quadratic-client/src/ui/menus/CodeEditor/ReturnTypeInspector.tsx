@@ -13,7 +13,7 @@ interface ReturnTypeInspectorProps {
 
 export function ReturnTypeInspector({ evaluationResult, show, language }: ReturnTypeInspectorProps) {
   const theme = useTheme();
-
+  console.log(evaluationResult);
   let message: JSX.Element;
   if (language === 'Python') {
     message = (
@@ -31,7 +31,15 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
     );
   } else if (language === 'Javascript') {
     if (evaluationResult?.output_type) {
-      message = <>Returned {evaluationResult.output_type}</>;
+      message = (
+        <>
+          Returned{' '}
+          <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
+            {evaluationResult.output_type}
+          </span>{' '}
+          on line {evaluationResult.line_number}
+        </>
+      );
     } else {
       message = <>Use `return` to output value(s) to the sheet.</>;
     }

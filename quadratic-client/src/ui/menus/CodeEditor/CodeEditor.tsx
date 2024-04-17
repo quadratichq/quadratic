@@ -420,6 +420,7 @@ export const CodeEditor = () => {
             <ReturnTypeInspector
               evaluationResult={evaluationResult}
               show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+              language={editorInteractionState.mode}
             />
           )}
 
