@@ -278,14 +278,10 @@ mod test {
             sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
-        println!(
-            "{:?}",
-            sheet_2.edit_code_value(Pos { x: 0, y: 0 }).unwrap().std_err
+        assert_eq!(
+            sheet_2.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
         );
-        // assert_eq!(
-        //     sheet_2.edit_code_value(Pos { x: 0, y: 0 }),
-        //     Some(CellValue::Number(BigDecimal::from(2)))
-        // );
 
         check_operations(&gc);
 

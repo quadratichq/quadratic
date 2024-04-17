@@ -79,18 +79,8 @@ impl fmt::Display for CellRef {
         if let Some(sheet) = sheet {
             write!(f, "{}!", escape_string(sheet))?;
         }
-        // println!("{:?} {:?}", x, y);
+
         write!(f, "R{y}C{x}")
-        // let x = match x {
-        //     CellRefCoord::Relative(delta) => delta,
-        //     CellRefCoord::Absolute(coord) => coord,
-        // };
-        // let y = match y {
-        //     CellRefCoord::Relative(delta) => delta,
-        //     CellRefCoord::Absolute(coord) => coord,
-        // };
-        // let pos: Pos = (*x, *y).into();
-        // write!(f, "{}", pos.a1_string())
     }
 }
 
@@ -217,13 +207,6 @@ impl fmt::Display for CellRefCoord {
         match *self {
             CellRefCoord::Relative(delta) => write!(f, "[{delta}]"),
             CellRefCoord::Absolute(coord) => write!(f, "{{{coord}}}"),
-            // {
-            //     if coord < 0 {
-            //         write!(f, "n{}", -coord)
-            //     } else {
-            //         write!(f, "{coord}")
-            //     }
-            // }
         }
     }
 }
