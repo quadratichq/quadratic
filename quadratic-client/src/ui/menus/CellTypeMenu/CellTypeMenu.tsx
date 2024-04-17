@@ -57,17 +57,17 @@ let CELL_TYPE_OPTIONS = [
     ),
   },
   {
+    name: 'Javascript',
+    mode: 'Javascript',
+    icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
+    description: 'The world’s most popular programming language.',
+  },
+  {
     name: 'SQL Query',
     mode: '',
     icon: <Sql color="disabled" />,
     description: 'Import your data with queries.',
     disabled: true,
-  },
-  {
-    name: 'Javascript',
-    mode: 'Javascript',
-    icon: <JavaScript color="disabled" />,
-    description: 'The world’s most popular programming language.',
   },
 ] as CellTypeOption[];
 
