@@ -49,9 +49,11 @@ pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
 ///
 /// # Example
 /// ```rust
+/// use quadratic_core::{formulas::replace_internal_cell_references, Pos};
+///
 /// let pos = Pos { x: 0, y: 0 };
-/// let replaced = replace_internal_cell_references("R[0]C[-1]", pos);
-/// assert_eq!(replaced, "SUM(nA0)");"
+/// let replaced = replace_internal_cell_references("SUM(R[0]C[-1])", pos);
+/// assert_eq!(replaced, "SUM(nA0)");
 /// ```
 pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
     let replace_fn = |cell_ref: RangeRef| cell_ref.a1_string(pos);
@@ -62,9 +64,11 @@ pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
 ///
 /// # Example
 /// ```rust
+/// use quadratic_core::{formulas::replace_a1_notation, Pos};
+///
 /// let pos = Pos { x: 0, y: 0 };
 /// let replaced = replace_a1_notation("SUM(nA0)", pos);
-/// assert_eq!(replaced, "R[0]C[-1]");"
+/// assert_eq!(replaced, "SUM(R[0]C[-1])");
 /// ```
 pub fn replace_a1_notation(source: &str, pos: Pos) -> String {
     let replace_fn = |cell_ref: RangeRef| cell_ref.to_string();

@@ -77,7 +77,7 @@ impl fmt::Display for CellRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let Self { sheet, x, y } = self;
         if let Some(sheet) = sheet {
-            write!(f, "'{}'!", escape_string(sheet))?;
+            write!(f, "{}!", escape_string(sheet))?;
         }
         // println!("{:?} {:?}", x, y);
         write!(f, "R{y}C{x}")

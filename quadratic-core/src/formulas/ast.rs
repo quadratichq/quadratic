@@ -14,13 +14,6 @@ use crate::{
 pub struct Formula {
     pub ast: AstNode,
 }
-impl Formula {
-    pub fn to_src(self) -> &'static str {
-        self.ast.map(|node| println!("* {:?}", &node));
-
-        ""
-    }
-}
 impl fmt::Display for Formula {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.ast, f)
