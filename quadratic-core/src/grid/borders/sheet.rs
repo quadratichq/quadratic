@@ -465,7 +465,7 @@ mod tests {
         let selection = vec![BorderSelection::All];
 
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
 
@@ -525,7 +525,7 @@ mod tests {
         let selection = vec![BorderSelection::Outer];
 
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
 
@@ -559,7 +559,7 @@ mod tests {
         let selection_2 = vec![BorderSelection::All];
 
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
 
@@ -614,7 +614,7 @@ mod tests {
         let selection_2 = vec![BorderSelection::All];
 
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
 
@@ -653,11 +653,11 @@ mod tests {
         let selection_2 = vec![BorderSelection::Horizontal];
 
         let style_1 = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let style_2 = BorderStyle {
-            color: Rgba::from_str("#FFFFFF").unwrap(),
+            color: Rgba::color_from_str("#FFFFFF").unwrap(),
             line: CellBorderLine::Dotted,
         };
 
@@ -726,11 +726,11 @@ mod tests {
         let selection_2 = vec![BorderSelection::Horizontal];
 
         let style_1 = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let style_2 = BorderStyle {
-            color: Rgba::from_str("#FFFFFF").unwrap(),
+            color: Rgba::color_from_str("#FFFFFF").unwrap(),
             line: CellBorderLine::Dotted,
         };
 

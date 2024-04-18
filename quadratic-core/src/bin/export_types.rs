@@ -1,14 +1,27 @@
 use std::fs::create_dir_all;
 
 use quadratic_core::{
-    controller::transaction_summary::{CellSheetsModified, TransactionSummary},
+    color::Rgba,
+    controller::{
+        active_transactions::transaction_name::TransactionName,
+        execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
+        user_actions::clipboard::PasteSpecial,
+    },
     grid::{
         js_types::{
-            JsCodeCell, JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-            JsRenderCodeCellState,
+            JsCodeCell, JsHtmlOutput, JsRenderBorder, JsRenderBorders, JsRenderCell,
+            JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
-        CodeCellLanguage,
+        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
+    },
+    sheet_offsets::{
+        resize_transient::TransientResize,
+        sheet_offsets_wasm::{ColumnRow, Placement},
+    },
+    wasm_bindings::controller::{
+        bounds::MinMax,
+        sheet_info::{SheetBounds, SheetInfo},
     },
     Rect, *,
 };
@@ -29,8 +42,6 @@ fn main() {
     s += "// Do not modify it manually.\n\n";
 
     s += &generate_type_declarations!(
-        TransactionSummary,
-        CellSheetsModified,
         CodeCellLanguage,
         JsHtmlOutput,
         JsCodeCell,
@@ -64,10 +75,26 @@ fn main() {
         Span,
         SearchOptions,
         SheetPos,
+        Placement,
+        ColumnRow,
+        SheetInfo,
+        PasteSpecial,
+        Rgba,
+        CellBorderLine,
+        BorderSelection,
+        BorderStyle,
+        JsRenderBorder,
+        JsRenderBorders,
+        JsCodeResult,
+        MinMax,
+        TransientResize,
+        SheetBounds,
+        TransactionName,
+        JsGetCellResponse,
     );
 
-    if create_dir_all("../quadratic-client/src/quadratic-core").is_ok() {
-        std::fs::write("../quadratic-client/src/quadratic-core/types.d.ts", s)
+    if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {
+        std::fs::write("../quadratic-client/src/quadratic-core-types/index.d.ts", s)
             .expect("failed to write types file");
     }
 }

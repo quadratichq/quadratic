@@ -1,4 +1,15 @@
-import { MultiplayerState, multiplayer } from '@/multiplayer/multiplayer';
+import { events } from '@/events/events';
+import { pluralize } from '@/helpers/pluralize';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shadcn/ui/dropdown-menu';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { MultiplayerState } from '@/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { Check, ErrorOutline } from '@mui/icons-material';
 import { CircularProgress, Tooltip, useTheme } from '@mui/material';
 import { useEffect, useState } from 'react';
@@ -10,10 +21,25 @@ export default function SyncState() {
   const [syncState, setSyncState] = useState<MultiplayerState>(multiplayer.state);
 
   useEffect(() => {
-    const updateState = (e: any) => setSyncState(e.detail);
-    window.addEventListener('multiplayer-state', updateState);
-    return () => window.removeEventListener('multiplayer-state', updateState);
+    const updateState = (state: MultiplayerState) => setSyncState(state);
+    events.on('multiplayerState', updateState);
+    return () => {
+      events.off('multiplayerState', updateState);
+    };
   }, []);
+
+  const [unsavedTransactions, setUnsavedTransactions] = useState(0);
+  useEffect(() => {
+    const updateUnsavedTransactions = (transactions: number, _operations: number) => {
+      setUnsavedTransactions(transactions);
+    };
+    events.on('offlineTransactions', updateUnsavedTransactions);
+    return () => {
+      events.off('offlineTransactions', updateUnsavedTransactions);
+    };
+  }, []);
+
+  const [open, setOpen] = useState(false);
 
   let tooltip: string;
   let icon: JSX.Element;
@@ -30,7 +56,7 @@ export default function SyncState() {
     tooltip = 'Connecting to the Quadratic server…';
   } else if (syncState === 'syncing') {
     icon = <CircularProgress size="0.5rem" />;
-    message = <span>Connected</span>;
+    message = <span>Syncing...</span>;
     tooltip = 'Syncing changes to the Quadratic server. Your recent changes are saved locally.';
   } else if (syncState === 'connected') {
     icon = <Check fontSize="inherit" />;
@@ -48,8 +74,21 @@ export default function SyncState() {
   }
 
   return (
-    <BottomBarItem icon={icon}>
-      <Tooltip title={tooltip}>{message}</Tooltip>
-    </BottomBarItem>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <BottomBarItem icon={icon} onClick={() => {}}>
+          <Tooltip title={tooltip}>{message}</Tooltip>
+        </BottomBarItem>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuLabel className={`flexz zw-full zjustify-between`}>Status</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className={`flexz zw-full zjustify-between`}>
+          {unsavedTransactions === 0
+            ? 'Nothing waiting to sync'
+            : `Syncing ${unsavedTransactions} ${pluralize('item', unsavedTransactions)}.`}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

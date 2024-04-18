@@ -1,10 +1,10 @@
+import { provideCompletionItems, provideHover } from '@/quadratic-rust-client/quadratic_rust_client';
 import Editor, { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { provideCompletionItems, provideHover } from '../../../quadratic-core/quadratic_core';
 import { pyrightWorker, uri } from '../../../web-workers/pythonLanguageServer/worker';
 import { useCodeEditor } from './CodeEditorContext';
 import { CodeEditorPlaceholder } from './CodeEditorPlaceholder';
@@ -20,7 +20,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 import useEventListener from '@/hooks/useEventListener';
-import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 
@@ -83,7 +83,9 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.register({ id: 'Formula' });
       monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
       monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
-      monaco.languages.registerCompletionItemProvider('Formula', { provideCompletionItems });
+      monaco.languages.registerCompletionItemProvider('Formula', {
+        provideCompletionItems,
+      });
       monaco.languages.registerHoverProvider('Formula', { provideHover });
 
       monaco.languages.register({ id: 'python' });

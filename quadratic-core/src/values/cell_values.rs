@@ -1,3 +1,7 @@
+//! CellValues is a 2D array of CellValue used for Operation::SetCellValues.
+
+//! The height must be known, but the width can grow as needed.
+
 use crate::CellValue;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -26,7 +30,20 @@ impl CellValues {
     }
 
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
-        assert!(x < self.w && y < self.h, "CellValues::set out of bounds");
+        assert!(y < self.h, "CellValues::set y is out of bounds");
+
+        // w can grow if too small
+        if x >= self.w {
+            for _ in self.w..=x {
+                self.columns.push(BTreeMap::new());
+                self.w += 1;
+            }
+        }
+        assert_eq!(
+            self.columns.len() as u32,
+            self.w,
+            "CellValues::set w mismatch"
+        );
         self.columns[x as usize].insert(y as u64, value);
     }
 
@@ -117,6 +134,8 @@ impl From<CellValue> for CellValues {
 
 #[cfg(test)]
 mod test {
+    use crate::wasm_bindings::js::clear_js_calls;
+
     use super::*;
 
     #[test]
@@ -206,5 +225,16 @@ mod test {
         }
         let json = serde_json::to_string(&cell_values).unwrap();
         assert!(json.len() > (w * h * 3) as usize);
+        clear_js_calls();
+    }
+
+    #[test]
+    fn cell_values_w_grows() {
+        let mut cell_values = CellValues::new(1, 1);
+        cell_values.set(1, 0, CellValue::from("a"));
+        assert_eq!(cell_values.w, 2);
+        assert_eq!(cell_values.columns.len(), 2);
+        assert_eq!(cell_values.h, 1);
+        assert_eq!(cell_values.get(1, 0), Some(&CellValue::from("a")));
     }
 }

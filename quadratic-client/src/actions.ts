@@ -6,10 +6,10 @@ import { EditorInteractionState } from './atoms/editorInteractionStateAtom';
 import { GlobalSnackbar } from './components/GlobalSnackbarProvider';
 import { ROUTES } from './constants/routes';
 import { DOCUMENTATION_URL } from './constants/urls';
-import { grid } from './grid/controller/Grid';
 import { downloadFile, downloadQuadraticFile } from './helpers/downloadFileInBrowser';
 import { Action } from './routes/files.$uuid';
 import { FileContextType } from './ui/components/FileProvider';
+import { quadraticCore } from './web-workers/quadraticCore/quadraticCore';
 const { FILE_EDIT, FILE_DELETE } = FilePermissionSchema.enum;
 
 export type GenericAction = {
@@ -87,8 +87,8 @@ export const duplicateFileWithCurrentOwnerAction = {
 export const downloadFileAction = {
   label: 'Download',
   isAvailable: isLoggedIn,
-  run({ name }: { name: FileContextType['name'] }) {
-    downloadQuadraticFile(name, grid.export());
+  async run({ name }: { name: FileContextType['name'] }) {
+    downloadQuadraticFile(name, await quadraticCore.export());
   },
 };
 
@@ -174,8 +174,8 @@ export const rerunSheetAction = {
 
 export const downloadSelectionAsCsvAction = {
   label: 'Download selection as CSV',
-  run({ fileName }: { fileName: string }) {
-    downloadFile(fileName, grid.exportCsvSelection(), 'text/plain', 'csv');
+  async run({ fileName }: { fileName: string }) {
+    downloadFile(fileName, await quadraticCore.exportCsvSelection(), 'text/plain', 'csv');
   },
 };
 

@@ -1,37 +1,4 @@
-export interface PythonReturnType {
-  code: string;
-  success: boolean;
-  input_python_stack_trace: string;
-  input_python_std_out: string;
-  output_value: string | null;
-  output_type: string | null;
-}
-
-export interface CellRef {
-  x: number;
-  y: number;
-  sheetId: string;
-}
-
-export interface PythonMessage {
-  type:
-    | 'results'
-    | 'execute'
-    | 'not-loaded'
-    | 'get-cells'
-    | 'python-loaded'
-    | 'python-error'
-    | 'inspect'
-    | 'inspect-results';
-  python?: string;
-  results?: any;
-  error?: string;
-  range?: { sheet: string; x0: number; y0: number; x1: number; y1: number; lineNumber: number };
-  pos?: { x: number; y: number };
-  cells?: { x: number; y: number; value: string; type_name: string }[];
-}
-
-export interface InspectPythonReturnType {
+export interface InspectPython {
   lineno: number;
   col_offset: number;
   end_lineno: number;
@@ -39,7 +6,7 @@ export interface InspectPythonReturnType {
   value_type?: string;
 }
 
-export type ComputedPythonReturnType = InspectPythonReturnType & { output_type?: string; output_size?: string };
+export type ComputedInspectPython = InspectPython & { output_type?: string; output_size?: string };
 
 export type EvaluationResult = {
   output_type?: string;
@@ -53,3 +20,41 @@ export type EvaluationResult = {
   size?: { w: number; h: number };
   values?: { type: string; value: string }[];
 };
+
+export type outputType = 'number' | 'number' | 'text' | 'logical' | 'instant';
+
+export interface PythonSuccess {
+  array_output: string[];
+  typed_array_output: [string, outputType][];
+  code: string;
+  input_python_stack_trace: string;
+  output?: [string, outputType][];
+  output_size?: number[];
+
+  // Python type to show in CodeEditor
+  output_type?: string;
+
+  std_err: string;
+  std_out: string;
+  success: true;
+
+  lineno: undefined;
+}
+
+export interface PythonError {
+  std_out: string;
+  std_err: string;
+
+  output: undefined;
+  output_type: undefined;
+  output_size: undefined;
+  array_output: undefined;
+
+  success: false;
+  input_python_stack_trace: string;
+  line_number: number;
+
+  lineno?: number;
+}
+
+export type PythonRun = PythonSuccess | PythonError;

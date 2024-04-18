@@ -1,4 +1,6 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { events } from '@/events/events';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { ArrowDropDown } from '@mui/icons-material';
 import { Box, Fade, IconButton, Paper, Popper, Stack, Typography, useTheme } from '@mui/material';
 import { MouseEvent, PointerEvent, useEffect, useRef, useState } from 'react';
@@ -6,7 +8,6 @@ import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { grid } from '../../../grid/controller/Grid';
 import { sheets } from '../../../grid/controller/Sheets';
 import { Sheet } from '../../../grid/sheet/Sheet';
 import { focusGrid } from '../../../helpers/focusGrid';
@@ -56,6 +57,7 @@ export const SheetBarTab = (props: Props): JSX.Element => {
               left: '0',
               right: '0',
               boxShadow: `inset 1px 0 0 ${theme.palette.divider}, inset -1px 0 0 ${theme.palette.divider}`,
+              zIndex: 1,
             }
           : {}),
       }}
@@ -199,7 +201,7 @@ function TabName({
               setNameExists(false);
               setIsRenaming(false);
               sheet.setName(value);
-              grid.setSheetName(sheet.id, value);
+              quadraticCore.setSheetName(sheet.id, value, sheets.getCursorPosition());
             }
           }
           focusGrid();
@@ -341,11 +343,11 @@ function TabMultiplayer({ sheetId }: { sheetId: string }) {
     };
     updateUsers();
 
-    window.addEventListener('multiplayer-change-sheet', updateUsers);
-    window.addEventListener('multiplayer-update', updateUsers);
+    events.on('multiplayerChangeSheet', updateUsers);
+    events.on('multiplayerUpdate', updateUsers);
     return () => {
-      window.removeEventListener('multiplayer-change-sheet', updateUsers);
-      window.removeEventListener('multiplayer-update', updateUsers);
+      events.off('multiplayerChangeSheet', updateUsers);
+      events.off('multiplayerUpdate', updateUsers);
     };
   }, [sheetId]);
 
