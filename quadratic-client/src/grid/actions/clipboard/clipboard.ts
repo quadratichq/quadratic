@@ -45,12 +45,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
     rectangle,
     sheets.getCursorPosition()
   );
-  if (!e.clipboardData) {
-    console.warn('clipboardData is not defined');
-    return;
-  }
-  e.clipboardData.setData('text/html', html);
-  e.clipboardData.setData('text', plainText);
+  toClipboard(plainText, html);
   e.preventDefault();
   debugTimeCheck('[Clipboard] cut to clipboard');
 };
