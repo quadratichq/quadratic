@@ -10,6 +10,7 @@ export class CLI {
             .option("-r, --react", "Do NOT watch quadratic-client (React)")
             .option("-c, --core", "Watch the quadratic-core directory")
             .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
+            .option("-e, --rust-client", "Watch the quadratic-rust-client directory")
             .option("-f, --files", "Watch the quadratic-files directory")
             .option("-o, --rustClient", "Watch the quadratic-rust-client directory")
             .option("-y, --python", "Watch the quadratic-kernels/python-wasm directory")
@@ -24,6 +25,7 @@ export class CLI {
             .option("-F, --hideFiles", "Hide Files output")
             .option("-Y, --hidePython", "Hide Python output")
             .option("-O, --rustClient", "Hide RustClient")
+            .option("-E, --hideRustClient", "Hide RustClient")
             .option("-d, --dark", "Use dark theme")
             .showHelpAfterError();
         program.parse();
