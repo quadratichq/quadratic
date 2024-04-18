@@ -60,7 +60,7 @@ def process_output_value(output_value):
 
     if array_output is not None:
         typed_array_output = []
-        is_2d_array = isinstance(array_output[0], list)
+        is_2d_array = isinstance(array_output[0], list) and array_output[0].__len__() > 0
 
         # insure that all rows are the same length
         if not is_2d_array:

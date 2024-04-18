@@ -52,7 +52,12 @@ class PythonWebWorker {
         case 'results': {
           const transactionId = this.getTransactionId();
           const pythonResult = event.results;
-          const nothingReturned = pythonResult.output_type === 'NoneType' && isEmpty(pythonResult.output);
+          const empty2dArray =
+            Array.isArray(pythonResult.output_size) &&
+            pythonResult.output_size[0] === 0 &&
+            pythonResult.output_size[1] === 0;
+          const nothingReturned =
+            (pythonResult.output_type === 'NoneType' && isEmpty(pythonResult.output)) || empty2dArray;
 
           if (!pythonResult) throw new Error('Expected results to be defined in python.ts');
 

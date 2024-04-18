@@ -1,13 +1,16 @@
 use crate::color::Rgba;
-use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
-    block::SameValue, formatting::RenderSize, generate_borders, set_rect_borders,
-    sheet::sheet_offsets::SheetOffsets, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
-    CellWrap, CodeRun, Column, ColumnData, Grid, GridBounds, NumericFormat, NumericFormatKind,
-    Sheet, SheetBorders, SheetId,
+    block::SameValue,
+    file::v1_5::schema::{self as current},
+    formatting::RenderSize,
+    generate_borders, set_rect_borders,
+    sheet::sheet_offsets::SheetOffsets,
+    BorderSelection, BorderStyle, CellAlign, CellBorderLine, CellWrap, CodeCellLanguage, CodeRun,
+    CodeRunResult, Column, ColumnData, Grid, GridBounds, NumericFormat, NumericFormatKind, Sheet,
+    SheetBorders, SheetId,
 };
-use crate::grid::{CodeCellLanguage, CodeRunResult};
 use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
+
 use anyhow::Result;
 use bigdecimal::BigDecimal;
 use chrono::Utc;
