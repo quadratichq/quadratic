@@ -78,10 +78,10 @@ export const CodeEditorBody = (props: Props) => {
 
       // this needs to be before the register conditional below
       setDidMount(true);
-      console.log(1);
+
       // Only register language once
       if (registered) return;
-      console.log(2);
+
       monaco.languages.register({ id: 'Formula' });
       monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
       monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
@@ -104,16 +104,18 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
 
       // load the document in the python language server
-      pyrightWorker?.openDocument({
-        textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
-      });
+      if (language === 'Python') {
+        pyrightWorker?.openDocument({
+          textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
+        });
+      }
 
       monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
         diagnosticCodesToIgnore: [1108, 1375, 1378],
       });
       monaco.editor.createModel(javascriptLibrary, 'javascript');
       monaco.editor.createModel(typescriptLibrary, 'typescript');
-      console.log(3);
+
       registered = true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -46,6 +46,7 @@ export function javascriptConvertOutputType(
   } else if (value === undefined) {
     return null;
   } else if (typeof value === 'boolean') {
+    console.log(value);
     return { output: [value ? 'true' : 'false', 'logical'], displayType: 'boolean' };
   } else {
     javascriptConsole.push(

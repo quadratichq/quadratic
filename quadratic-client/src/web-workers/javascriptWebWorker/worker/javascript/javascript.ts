@@ -11,7 +11,7 @@ import {
   javascriptConvertOutputArray,
   javascriptConvertOutputType,
   javascriptErrorLineNumber,
-} from './javascriptUtil';
+} from './javascriptOutput';
 
 export type CellType = number | string | undefined;
 export type CellPos = { x: number; y: number };
