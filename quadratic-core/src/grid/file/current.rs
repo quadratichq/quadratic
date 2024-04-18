@@ -229,6 +229,11 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
         "text" => CellValue::Text(value.to_owned()),
         "number" => CellValue::Number(BigDecimal::from_str(value).unwrap_or_default()),
         "html" => CellValue::Html(value.to_owned()),
+        "logical" => match value.to_ascii_uppercase().as_str() {
+            "TRUE" => CellValue::Logical(true),
+            "FALSE" => CellValue::Logical(false),
+            _ => CellValue::Logical(false),
+        },
         _ => CellValue::Blank,
     }
 }
