@@ -25,8 +25,8 @@ export default function QuadraticGrid() {
 
   const [panMode, setPanMode] = useState<PanMode>(PanMode.Disabled);
   useEffect(() => {
-    const updatePanMode = (e: any) => {
-      setPanMode(e.detail);
+    const updatePanMode = (panMode: PanMode) => {
+      setPanMode(panMode);
     };
     events.on('panMode', updatePanMode);
     return () => {
