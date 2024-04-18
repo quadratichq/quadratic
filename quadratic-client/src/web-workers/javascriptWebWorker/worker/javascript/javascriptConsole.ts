@@ -36,6 +36,9 @@ class JavascriptConsole {
   // Better console.log for objects and array
   private mapArgument(a: any, level = 0): string {
     if (Array.isArray(a)) {
+      if (a.length === 0) {
+        return 'Array: []\n';
+      }
       let s = 'Array: [\n';
       for (let i = 0; i < a.length; i++) {
         s += this.tab(level + 1) + `${i}: ` + this.mapArgument(a[i], level + 2);
