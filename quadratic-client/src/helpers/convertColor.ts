@@ -13,7 +13,7 @@ export function convertColorStringToTint(color: string): number {
   } catch (e: any) {
     console.error('Error converting color string to tint', e);
     Sentry.captureException(e, { data: color });
-    return 0;
+    return 0xaaaaaa;
   }
 }
 
@@ -23,7 +23,7 @@ export function convertTintToString(color: number): string {
   } catch (e: any) {
     console.error('Error converting color tint to string', e);
     Sentry.captureException(e, { data: color });
-    return 'black';
+    return 'gray';
   }
 }
 
