@@ -18,10 +18,10 @@ function extractCellsFromParseFormula(
 ): { cellId: CellRefId; span: Span; index: number }[] {
   return parsedFormula.cell_refs.map(({ cell_ref, span }, index) => {
     if (cell_ref.type === 'CellRange') {
-      const startX = pixiApp.highlightedCells.evalCoord(cell_ref.start.x, cell.x);
-      const startY = pixiApp.highlightedCells.evalCoord(cell_ref.start.y, cell.y);
-      const endX = pixiApp.highlightedCells.evalCoord(cell_ref.end.x, cell.x);
-      const endY = pixiApp.highlightedCells.evalCoord(cell_ref.end.y, cell.y);
+      const startX = pixiApp.highlightedCells.evalCoord(cell_ref.start.x, cell.x) + cell_ref.start.x.coord;
+      const startY = pixiApp.highlightedCells.evalCoord(cell_ref.start.y, cell.y) + cell_ref.start.y.coord;
+      const endX = pixiApp.highlightedCells.evalCoord(cell_ref.end.x, cell.x) + cell_ref.end.x.coord;
+      const endY = pixiApp.highlightedCells.evalCoord(cell_ref.end.y, cell.y) + cell_ref.end.y.coord;
 
       return {
         cellId: `${getKey(startX, startY)}:${getKey(endX, endY)}`,
@@ -29,8 +29,8 @@ function extractCellsFromParseFormula(
         index,
       };
     } else if (cell_ref.type === 'Cell') {
-      const x = pixiApp.highlightedCells.evalCoord(cell_ref.pos.x, cell.x);
-      const y = pixiApp.highlightedCells.evalCoord(cell_ref.pos.y, cell.y);
+      const x = pixiApp.highlightedCells.evalCoord(cell_ref.pos.x, cell.x) + cell_ref.pos.x.coord;
+      const y = pixiApp.highlightedCells.evalCoord(cell_ref.pos.y, cell.y) + cell_ref.pos.y.coord;
       return { cellId: getKey(x, y), span, index };
     } else {
       throw new Error('Unhandled cell_ref type in extractCellsFromParseFormula');
@@ -84,7 +84,6 @@ export const useEditorCellHighlights = (
 
       const cellColorReferences = new Map<string, number>();
       let newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
-      const cellsMatches: CellMatch = new Map();
 
       const modelValue = editor.getValue();
       let parsed;
@@ -115,7 +114,6 @@ export const useEditorCellHighlights = (
           editorInteractionState.selectedCell,
           editorInteractionState.selectedCellSheet
         );
-        console.log('editorInteractionState.selectedCell', editorInteractionState.selectedCell);
 
         extractedCells.forEach((value, index) => {
           const { cellId, span } = value;
@@ -132,6 +130,7 @@ export const useEditorCellHighlights = (
             startPosition.column + span.end - span.start
           );
 
+          // decorations color the cell references in the editor
           newDecorations.push({
             range,
             options: {
@@ -139,9 +138,6 @@ export const useEditorCellHighlights = (
               inlineClassName: `cell-reference-${cellColorReferences.get(cellId)}`,
             },
           });
-          // decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
-
-          cellsMatches.set(cellId, range);
 
           const editorCursorPosition = editor.getPosition();
 
@@ -149,6 +145,9 @@ export const useEditorCellHighlights = (
             pixiApp.highlightedCells.setHighlightedCell(index);
           }
         });
+
+        // update the cell references in the editor
+        decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
       }
     };
 

@@ -2,7 +2,7 @@ use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::{user_actions::clipboard::PasteSpecial, GridController},
-    formulas::{replace_a1_notation, replace_internal_cell_references},
+    formulas::replace_internal_cell_references,
     grid::{
         formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders,
         CodeCellLanguage,
@@ -24,7 +24,6 @@ pub struct Clipboard {
 
     pub formats: Vec<CellFmtArray>,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
-    pub src_pos: Option<SheetPos>,
 }
 
 impl GridController {
@@ -248,27 +247,20 @@ impl GridController {
                 let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
                     .map_err(|e| error(e.to_string(), "Serialization error"))?;
 
-                if let Some(src_pos) = clipboard.src_pos {
-                    for col in clipboard.cells.columns.iter_mut() {
-                        for (_y, cell) in col.iter_mut() {
-                            match cell {
-                                CellValue::Code(code_cell) => match code_cell.language {
-                                    CodeCellLanguage::Formula => {
-                                        let formula =
-                                            replace_a1_notation(&code_cell.code, src_pos.into());
-
-                                        let replaced = replace_internal_cell_references(
-                                            &formula,
-                                            dest_pos.into(),
-                                        );
-
-                                        code_cell.code = replaced;
-                                    }
-                                    CodeCellLanguage::Python => { /* noop */ }
-                                },
-                                _ => { /* noop */ }
-                            };
-                        }
+                // loop through the clipboard and replace cell references in formulas
+                for col in clipboard.cells.columns.iter_mut() {
+                    for (_y, cell) in col.iter_mut() {
+                        match cell {
+                            CellValue::Code(code_cell) => {
+                                if matches!(code_cell.language, CodeCellLanguage::Formula) {
+                                    code_cell.code = replace_internal_cell_references(
+                                        &code_cell.code,
+                                        dest_pos.into(),
+                                    );
+                                }
+                            }
+                            _ => { /* noop */ }
+                        };
                     }
                 }
 

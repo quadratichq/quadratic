@@ -2,8 +2,10 @@ use crate::cell_values::CellValues;
 use crate::controller::{
     operations::clipboard::Clipboard, transaction_summary::TransactionSummary, GridController,
 };
-use crate::Rect;
+use crate::formulas::replace_a1_notation;
+use crate::grid::CodeCellLanguage;
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
+use crate::{CellValue, Rect};
 use htmlescape;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -37,6 +39,7 @@ impl GridController {
                 plain_text.push('\n');
                 html.push_str("</tr>");
             }
+
             html.push_str("<tr>");
 
             for x in sheet_rect.x_range() {
@@ -44,6 +47,7 @@ impl GridController {
                     plain_text.push('\t');
                     html.push_str("</td>");
                 }
+
                 html.push_str("<td>");
                 let pos = Pos { x, y };
 
@@ -54,7 +58,17 @@ impl GridController {
                 let real_value = sheet.cell_value(pos);
 
                 // create quadratic clipboard values
-                if let Some(real_value) = real_value {
+                if let Some(mut real_value) = real_value {
+                    // replace cell references in formulas
+                    match &mut real_value {
+                        CellValue::Code(code_cell) => {
+                            if matches!(code_cell.language, CodeCellLanguage::Formula) {
+                                code_cell.code = replace_a1_notation(&code_cell.code, pos);
+                            }
+                        }
+                        _ => { /* noop */ }
+                    };
+
                     cells.set(
                         (x - sheet_rect.min.x) as u32,
                         (y - sheet_rect.min.y) as u32,
@@ -82,6 +96,7 @@ impl GridController {
                     } else {
                         (false, false)
                     };
+
                 if bold || italic {
                     html.push_str("<span style={");
                     if bold {
@@ -170,7 +185,6 @@ impl GridController {
             values,
             w: sheet_rect.width() as u32,
             h: sheet_rect.height() as u32,
-            src_pos: Some(sheet_rect.into()),
         };
 
         html.push_str("</tr></tbody></table>");
