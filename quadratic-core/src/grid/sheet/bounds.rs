@@ -44,7 +44,7 @@ impl Sheet {
             || old_format_bounds != self.format_bounds.to_bounds_rect()
     }
 
-    /// Adds a SheetRct to the bounds of the sheet.
+    /// Adds a SheetRect to the bounds of the sheet.
     ///
     /// Returns whether any of the sheet's bounds has changed
     pub fn recalculate_add_bounds(&mut self, rect: Rect, format: bool) -> bool {
@@ -162,7 +162,7 @@ impl Sheet {
             return None;
         }
         if let (Some(min), Some(max), Some(code_range)) = (min, max, &code_range) {
-            Some((min.min(code_range.start), max.max(code_range.end) - 1))
+            Some((min.min(code_range.start), max.max(code_range.end - 1)))
         } else if let (Some(min), Some(max)) = (min, max) {
             Some((min, max))
         } else {
@@ -671,5 +671,23 @@ mod test {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::from_numbers(1, 2, 3, 4))
         );
+    }
+
+    #[test]
+    fn row_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
+        gc.set_code_cell(
+            (1, 0, sheet_id).into(),
+            CodeCellLanguage::Formula,
+            "[['c','d']]".into(),
+            None,
+        );
+        gc.set_cell_value((3, 0, sheet_id).into(), "d".into(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.row_bounds(0, true), Some((0, 3)));
+        assert_eq!(sheet.row_bounds(0, false), Some((0, 3)));
     }
 }
