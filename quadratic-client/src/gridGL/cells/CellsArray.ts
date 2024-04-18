@@ -128,6 +128,8 @@ export class CellsArray extends Container {
       tint = colors.cellColorUserPython;
     } else if (codeCell.language === 'Formula') {
       tint = colors.cellColorUserFormula;
+    } else if (codeCell.language === 'Javascript') {
+      tint = colors.cellColorUserJavascript;
     }
 
     if (!pixiAppSettings.showCellTypeOutlines) {
