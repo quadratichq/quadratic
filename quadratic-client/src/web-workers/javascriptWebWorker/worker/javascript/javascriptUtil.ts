@@ -45,6 +45,8 @@ export function javascriptConvertOutputType(
     return { output: [value, 'text'], displayType: 'string' };
   } else if (value === undefined) {
     return null;
+  } else if (typeof value === 'boolean') {
+    return { output: [value ? 'true' : 'false', 'logical'], displayType: 'boolean' };
   } else {
     javascriptConsole.push(
       `WARNING: Unsupported output type "${typeof value}" ${

@@ -78,10 +78,10 @@ export const CodeEditorBody = (props: Props) => {
 
       // this needs to be before the register conditional below
       setDidMount(true);
-
+      console.log(1);
       // Only register language once
       if (registered) return;
-
+      console.log(2);
       monaco.languages.register({ id: 'Formula' });
       monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
       monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
@@ -113,7 +113,7 @@ export const CodeEditorBody = (props: Props) => {
       });
       monaco.editor.createModel(javascriptLibrary, 'javascript');
       monaco.editor.createModel(typescriptLibrary, 'typescript');
-
+      console.log(3);
       registered = true;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
