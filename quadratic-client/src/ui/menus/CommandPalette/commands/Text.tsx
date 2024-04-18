@@ -1,4 +1,5 @@
 import { FontBoldIcon, FontItalicIcon, TextAlignCenterIcon, TextAlignLeftIcon, TextAlignRightIcon } from '@/ui/icons';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
@@ -16,8 +17,13 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<FontBoldIcon />}
-            action={() => {
-              setBold(!sheets.sheet.getFormatPrimaryCell()?.bold);
+            action={async () => {
+              const summary = await quadraticCore.getCellFormatSummary(
+                sheets.sheet.id,
+                sheets.sheet.cursor.originPosition.x,
+                sheets.sheet.cursor.originPosition.y
+              );
+              setBold(!summary.bold);
             }}
             shortcut="B"
             shortcutModifiers={[KeyboardSymbols.Command]}
@@ -33,8 +39,13 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<FontItalicIcon />}
-            action={() => {
-              setItalic(!sheets.sheet.getFormatPrimaryCell()?.italic);
+            action={async () => {
+              const summary = await quadraticCore.getCellFormatSummary(
+                sheets.sheet.id,
+                sheets.sheet.cursor.originPosition.x,
+                sheets.sheet.cursor.originPosition.y
+              );
+              setItalic(!summary.italic);
             }}
             shortcut="I"
             shortcutModifiers={KeyboardSymbols.Command}

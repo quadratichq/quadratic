@@ -1,8 +1,9 @@
-import { offline } from '@/grid/controller/offline';
+import { events } from '@/events/events';
 import { isEmbed } from '@/helpers/isEmbed';
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Drag, Viewport } from 'pixi-viewport';
-import { Container, Graphics, Point, Rectangle, Renderer } from 'pixi.js';
+import { Container, Graphics, Point, Rectangle, Renderer, utils } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import { HEADING_SIZE } from '../../constants/gridConstants';
@@ -23,7 +24,6 @@ import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
-import { loadAssets } from '../loadAssets';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
@@ -33,9 +33,16 @@ import './pixiApp.css';
 // todo: move viewport stuff to a viewport.ts file
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 
+utils.skipHello();
+
 export class PixiApp {
   private parent?: HTMLDivElement;
   private update!: Update;
+
+  // Used to track whether we're done with the first render (either before or
+  // after init is called, depending on timing).
+  private waitingForFirstRender?: Function;
+  private alreadyRendered = false;
 
   highlightedCells = new HighlightedCells();
   canvas!: HTMLCanvasElement;
@@ -46,7 +53,7 @@ export class PixiApp {
   multiplayerCursor!: UIMultiPlayerCursor;
   headings!: GridHeadings;
   boxCells!: BoxCells;
-  cellsSheets!: CellsSheets;
+  cellsSheets: CellsSheets;
   pointer!: Pointer;
   viewportContents!: Container;
   htmlPlaceholders!: HtmlPlaceholders;
@@ -59,20 +66,43 @@ export class PixiApp {
   // for testing purposes
   debug!: Graphics;
 
+  // used for timing purposes for sheets initialized after first render
+  sheetsCreated = false;
+
   initialized = false;
 
-  async init() {
+  constructor() {
+    // This is created first so it can listen to messages from QuadraticCore.
+    this.cellsSheets = new CellsSheets();
+    this.viewport = new Viewport();
+  }
+
+  init() {
     this.initialized = true;
-    await loadAssets();
     this.initCanvas();
-    await this.rebuild();
-    offline.loadTransactions();
+    this.rebuild();
+    if (this.sheetsCreated) {
+      renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds());
+    }
+    return new Promise((resolve) => {
+      this.waitingForFirstRender = resolve;
+      if (this.alreadyRendered) {
+        this.firstRenderComplete();
+      }
+    });
+  }
 
-    // keep a reference of app on window, used for Playwright tests
-    //@ts-expect-error
-    window.pixiapp = this;
-
-    console.log('[QuadraticGL] environment ready');
+  // called after RenderText has no more updates to send
+  firstRenderComplete() {
+    if (this.waitingForFirstRender) {
+      // perform a render to warm up the GPU
+      this.cellsSheets.showAll(sheets.sheet.id);
+      pixiApp.renderer.render(pixiApp.stage);
+      this.waitingForFirstRender();
+      this.waitingForFirstRender = undefined;
+    } else {
+      this.alreadyRendered = true;
+    }
   }
 
   private initCanvas() {
@@ -88,8 +118,7 @@ export class PixiApp {
       antialias: true,
       backgroundColor: 0xffffff,
     });
-
-    this.viewport = new Viewport({ interaction: this.renderer.plugins.interaction });
+    this.viewport.options.interaction = this.renderer.plugins.interaction;
     this.stage.addChild(this.viewport);
     this.viewport
       .drag({
@@ -134,7 +163,7 @@ export class PixiApp {
     // useful for debugging at viewport locations
     this.debug = this.viewportContents.addChild(new Graphics());
 
-    this.cellsSheets = this.viewportContents.addChild(new CellsSheets());
+    this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
@@ -262,9 +291,7 @@ export class PixiApp {
     pixiAppSettings.setEditorInteractionState?.(editorInteractionStateDefault);
   }
 
-  async rebuild() {
-    sheets.create();
-    await this.cellsSheets.create();
+  rebuild() {
     this.paused = true;
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
@@ -338,21 +365,25 @@ export class PixiApp {
   ): void {
     this.cursor.dirty = true;
     this.headings.dirty = true;
-    this.cellsSheets.updateCellsArray();
+    if (!pixiAppSettings.showCellTypeOutlines) {
+      this.cellsSheets.updateCellsArray();
+    }
     if (options.ensureVisible) ensureVisible();
 
     // triggers useGetBorderMenu clearSelection()
-    window.dispatchEvent(new CustomEvent('cursor-position'));
+    events.emit('cursorPosition');
   }
 
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     this.cellsSheets.adjustHeadings(options);
-    this.cellsSheets.updateBordersString([options.sheetId]);
+    this.cellsSheets.adjustOffsetsBorders(options.sheetId);
     htmlCellsHandler.updateOffsets([sheets.sheet.id]);
-    this.headings.dirty = true;
-    this.gridLines.dirty = true;
-    this.cursor.dirty = true;
-    this.multiplayerCursor.dirty = true;
+    if (sheets.sheet.id === options.sheetId) {
+      pixiApp.gridLines.dirty = true;
+      pixiApp.cursor.dirty = true;
+      pixiApp.headings.dirty = true;
+      this.multiplayerCursor.dirty = true;
+    }
   }
 }
 

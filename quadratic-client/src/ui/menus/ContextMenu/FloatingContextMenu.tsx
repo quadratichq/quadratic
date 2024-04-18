@@ -1,4 +1,3 @@
-import { PasteSpecial } from '@/quadratic-core/quadratic_core';
 import { colors } from '@/theme/colors';
 import {
   BorderAllIcon,
@@ -240,8 +239,8 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
           <IconButton
             size="small"
-            onClick={() => {
-              const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+            onClick={async () => {
+              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
               setBold(!formatPrimaryCell?.bold);
             }}
           >
@@ -252,8 +251,8 @@ export const FloatingContextMenu = (props: Props) => {
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
           <IconButton
             size="small"
-            onClick={() => {
-              const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+            onClick={async () => {
+              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
               setItalic(!formatPrimaryCell?.italic);
             }}
           >
@@ -406,7 +405,7 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <MenuItem
             onClick={() => {
-              pasteFromClipboard(PasteSpecial.Values);
+              pasteFromClipboard('Values');
               moreMenuToggle();
             }}
           >
@@ -417,7 +416,7 @@ export const FloatingContextMenu = (props: Props) => {
           </MenuItem>
           <MenuItem
             onClick={() => {
-              pasteFromClipboard(PasteSpecial.Formats);
+              pasteFromClipboard('Formats');
               moreMenuToggle();
             }}
           >

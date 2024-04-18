@@ -1,180 +1,150 @@
+import { events } from '@/events/events';
+import { CellAlign, CellFormatSummary, GridBounds, SheetBounds, SheetInfo } from '@/quadratic-core-types';
+import { SheetOffsets, SheetOffsetsWasm } from '@/quadratic-rust-client/quadratic_rust_client';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
-import { OffsetsSizeChanges, Pos, SheetOffsets } from '../../quadratic-core/quadratic_core';
-import {
-  CellAlign,
-  CellFormatSummary,
-  FormattingSummary,
-  JsCodeCell,
-  JsRenderCell,
-  JsRenderCodeCell,
-  JsRenderFill,
-} from '../../quadratic-core/types';
-import { grid } from '../controller/Grid';
+import { sheets } from '../controller/Sheets';
 import { SheetCursor } from './SheetCursor';
 
 export class Sheet {
   id: string;
   cursor: SheetCursor;
-  offsets: SheetOffsets;
 
   name: string;
   order: string;
   color?: string;
 
-  constructor(index: number | 'test') {
-    if (index === 'test') {
-      this.id = 'test';
-      this.offsets = new SheetOffsets();
-      this.name = 'test';
-      this.order = 'A0';
-    } else {
-      const sheetId = grid.sheetIndexToId(index);
-      if (!sheetId) throw new Error('Expected sheetId to be defined in Sheet');
-      this.id = sheetId;
-      this.name = grid.getSheetName(sheetId) ?? '';
-      this.order = grid.getSheetOrder(sheetId);
-      this.color = grid.getSheetColor(sheetId);
-      this.offsets = grid.getOffsets(this.id);
-    }
+  offsets: SheetOffsets;
+  bounds: GridBounds;
+  boundsWithoutFormatting: GridBounds;
+
+  constructor(info: SheetInfo) {
+    this.id = info.sheet_id;
+    this.name = info.name;
+    this.order = info.order;
+    this.color = info.color ?? undefined;
+    this.offsets = SheetOffsetsWasm.load(info.offsets);
     this.cursor = new SheetCursor(this);
+    this.bounds = info.bounds;
+    this.boundsWithoutFormatting = info.bounds_without_formatting;
+    events.on('sheetBounds', this.updateBounds);
   }
 
-  updateMetadata() {
-    this.name = grid.getSheetName(this.id) ?? '';
-    this.order = grid.getSheetOrder(this.id);
-    this.color = grid.getSheetColor(this.id);
-  }
+  private updateBounds = (sheetsBounds: SheetBounds) => {
+    if (this.id === sheetsBounds.sheet_id) {
+      this.bounds = sheetsBounds.bounds;
+      this.boundsWithoutFormatting = sheetsBounds.bounds_without_formatting;
+    }
+  };
 
   //#region set sheet actions
   // -----------------------------------
 
   setName(name: string): void {
     if (name !== this.name) {
-      grid.setSheetName(this.id, name);
+      quadraticCore.setSheetName(this.id, name, sheets.getCursorPosition());
       this.name = name;
     }
   }
 
-  setCellValue(x: number, y: number, value: string): void {
-    grid.setCellValue({ sheetId: this.id, x, y, value });
+  deleteCells(rectangle: Rectangle) {
+    quadraticCore.deleteCellValues(this.id, rectangle, sheets.getCursorPosition());
   }
 
-  deleteCells(rectangle: Rectangle): void {
-    grid.deleteCellValues(this.id, rectangle);
+  updateSheetInfo(info: SheetInfo) {
+    this.name = info.name;
+    this.order = info.order;
+    this.color = info.color ?? undefined;
+    this.offsets = SheetOffsetsWasm.load(info.offsets);
   }
 
   //#endregion
 
   //#region get grid information
-
-  getRenderCells(rectangle: Rectangle): JsRenderCell[] {
-    return grid.getRenderCells(this.id, rectangle);
-  }
-
-  hasRenderCells(rectangle: Rectangle): boolean {
-    return grid.hasRenderCells(this.id, rectangle);
-  }
-
-  getRenderCell(x: number, y: number): JsRenderCell | undefined {
-    return grid.getRenderCells(this.id, new Rectangle(x, y, 0, 0))?.[0];
-  }
-
-  getCodeCell(x: number, y: number): JsCodeCell | undefined {
-    return grid.getCodeCell(this.id, x, y);
-  }
-
-  getEditCell(x: number, y: number): string {
-    return grid.getEditCell(this.id, new Pos(x, y));
-  }
-
-  getRenderFills(rectangle: Rectangle): JsRenderFill[] {
-    return grid.getRenderFills(this.id, rectangle);
-  }
-
-  getAllRenderFills(): JsRenderFill[] {
-    return grid.getAllRenderFills(this.id);
-  }
-
-  getRenderCodeCells(): JsRenderCodeCell[] {
-    return grid.getRenderCodeCells(this.id);
-  }
-
-  getFormattingSummary(rectangle: Rectangle): FormattingSummary {
-    return grid.getFormattingSummary(this.id, rectangle);
-  }
-
-  getCellFormatSummary(x: number, y: number): CellFormatSummary {
-    return grid.getCellFormatSummary(this.id, x, y);
-  }
-
-  getGridBounds(onlyData: boolean): Rectangle | undefined {
-    return grid.getGridBounds(this.id, onlyData);
-  }
-
   getMinMax(onlyData: boolean): Coordinate[] | undefined {
-    const bounds = this.getGridBounds(onlyData);
-    if (!bounds) return;
+    const bounds = onlyData ? this.boundsWithoutFormatting : this.bounds;
+    if (bounds.type === 'empty') return;
     return [
-      { x: bounds.left, y: bounds.top },
-      { x: bounds.right, y: bounds.bottom },
+      { x: Number(bounds.min.x), y: Number(bounds.min.y) },
+      { x: Number(bounds.max.x), y: Number(bounds.max.y) },
     ];
+  }
+
+  getBounds(onlyData: boolean): Rectangle | undefined {
+    const bounds = onlyData ? this.boundsWithoutFormatting : this.bounds;
+    if (bounds.type === 'empty') return;
+    return new Rectangle(
+      Number(bounds.min.x),
+      Number(bounds.min.y),
+      Number(bounds.max.x) - Number(bounds.min.x),
+      Number(bounds.max.y) - Number(bounds.min.y)
+    );
   }
 
   //#region set grid information
 
   setCellFillColor(rectangle: Rectangle, fillColor?: string) {
-    return grid.setCellFillColor(this.id, rectangle, fillColor);
+    quadraticCore.setCellFillColor(this.id, rectangle, fillColor, sheets.getCursorPosition());
   }
 
-  setCellBold(rectangle: Rectangle, bold: boolean): void {
-    grid.setCellBold(this.id, rectangle, bold);
+  setCellBold(rectangle: Rectangle, bold: boolean) {
+    quadraticCore.setCellBold(this.id, rectangle, bold, sheets.getCursorPosition());
   }
 
   setCellItalic(rectangle: Rectangle, italic: boolean): void {
-    grid.setCellItalic(this.id, rectangle, italic);
+    quadraticCore.setCellItalic(this.id, rectangle, italic, sheets.getCursorPosition());
   }
 
   setCellTextColor(rectangle: Rectangle, color?: string): void {
-    grid.setCellTextColor(this.id, rectangle, color);
+    quadraticCore.setCellTextColor(this.id, rectangle, color, sheets.getCursorPosition());
   }
 
   setCellAlign(rectangle: Rectangle, align?: CellAlign): void {
-    grid.setCellAlign(this.id, rectangle, align);
+    quadraticCore.setCellAlign(this.id, rectangle, align, sheets.getCursorPosition());
   }
 
   setCurrency(rectangle: Rectangle, symbol: string = '$') {
-    grid.setCellCurrency(this.id, rectangle, symbol);
+    quadraticCore.setCellCurrency(this.id, rectangle, symbol, sheets.getCursorPosition());
+  }
+
+  toggleCommas(source: Coordinate, rectangle: Rectangle) {
+    quadraticCore.toggleCommas(this.id, source, rectangle, sheets.getCursorPosition());
   }
 
   setPercentage(rectangle: Rectangle) {
-    grid.setCellPercentage(this.id, rectangle);
+    quadraticCore.setCellPercentage(this.id, rectangle, sheets.getCursorPosition());
   }
 
   setExponential(rectangle: Rectangle) {
-    grid.setCellExponential(this.id, rectangle);
+    quadraticCore.setCellExponential(this.id, rectangle, sheets.getCursorPosition());
   }
 
   removeCellNumericFormat(rectangle: Rectangle) {
-    grid.removeCellNumericFormat(this.id, rectangle);
+    quadraticCore.removeCellNumericFormat(this.id, rectangle, sheets.getCursorPosition());
   }
 
   changeDecimals(delta: number): void {
-    grid.changeDecimalPlaces(
+    quadraticCore.changeDecimalPlaces(
       this.id,
-      new Pos(this.cursor.originPosition.x, this.cursor.originPosition.y),
+      this.cursor.originPosition.x,
+      this.cursor.originPosition.y,
       this.cursor.getRectangle(),
-      delta
+      delta,
+      sheets.getCursorPosition()
     );
   }
 
   clearFormatting(): void {
-    grid.clearFormatting(this.id, this.cursor.getRectangle());
+    quadraticCore.clearFormatting(this.id, this.cursor.getRectangle());
   }
 
-  getFormatPrimaryCell(): CellFormatSummary {
-    return grid.getCellFormatSummary(this.id, this.cursor.originPosition.x, this.cursor.originPosition.y);
+  async getFormatPrimaryCell(): Promise<CellFormatSummary> {
+    return await quadraticCore.getCellFormatSummary(
+      this.id,
+      this.cursor.originPosition.x,
+      this.cursor.originPosition.y
+    );
   }
 
   //#endregion
@@ -202,17 +172,12 @@ export class Sheet {
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
   }
 
-  updateSheetOffsets() {
-    const newOffsets = grid.getOffsets(this.id);
-    const offsetSizeChanges: OffsetsSizeChanges = this.offsets.findResizeChanges(newOffsets);
-    const columns = offsetSizeChanges.getChanges(true);
-    for (let i = 0; i < columns.length; i += 2) {
-      const index = columns[i];
-      const delta = columns[i + 1];
-      pixiApp.cellsSheets.adjustHeadings({ sheetId: this.id, column: index, delta });
+  updateSheetOffsets(column: number | undefined, row: number | undefined, size: number) {
+    if (column !== undefined) {
+      this.offsets.setColumnWidth(column, size);
+    } else if (row !== undefined) {
+      this.offsets.setRowHeight(row, size);
     }
-    this.offsets.free();
-    this.offsets = newOffsets;
   }
 
   //#endregion

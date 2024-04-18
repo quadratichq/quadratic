@@ -1,4 +1,5 @@
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::GridController;
 use crate::{grid::SheetId, Rect};
 use anyhow::Result;
 
@@ -16,9 +17,16 @@ impl GridController {
         selection: Rect,
         range: Rect,
         cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let ops = self.autocomplete_operations(sheet_id, selection, range)?;
-        Ok(self.start_user_transaction(ops, cursor))
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::Autocomplete,
+            Some(sheet_id),
+            Some(range),
+        );
+        Ok(())
     }
 }
 
@@ -131,7 +139,7 @@ mod tests {
         };
         let (mut grid, sheet_id) = test_setup(&selected, &[], &[], &[], &[code.clone()]);
         let sheet = grid.grid.sheets()[0].clone();
-        let _ = grid.autocomplete(sheet_id, selected, range, None).unwrap();
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         let values = sheet.cell_values_in_rect(&selected, true).unwrap();
         let value = values.into_cell_value().unwrap();
@@ -170,8 +178,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        let summary = grid.autocomplete(sheet_id, selected, range, None).unwrap();
-        println!("{:?}", summary);
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(&grid, sheet_id, range);
 

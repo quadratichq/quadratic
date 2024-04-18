@@ -1,3 +1,5 @@
+/** Contains the Shader for a tinted MSDF font (which requires an additional color information). */
+
 export const msdfFrag = `
 varying vec2 vTextureCoord;
 varying vec4 vColors;

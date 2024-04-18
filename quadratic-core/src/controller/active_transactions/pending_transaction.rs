@@ -11,17 +11,29 @@ use uuid::Uuid;
 use crate::{
     controller::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
-        transaction_summary::TransactionSummary,
     },
     grid::{CodeCellLanguage, SheetId},
-    SheetPos, SheetRect,
+    Rect, SheetPos, SheetRect,
 };
+
+use super::transaction_name::TransactionName;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PendingTransaction {
     pub id: Uuid,
 
+    // a name for the transaction for user display purposes
+    pub transaction_name: TransactionName,
+
+    // the SheetId the transaction starts for user display purposes
+    pub sheet_id: Option<SheetId>,
+
+    // the optional rect for the transaction for user display purposes
+    pub rect: Option<Rect>,
+
+    // cursor sent as part of this transaction
     pub cursor: Option<String>,
+
     pub transaction_type: TransactionType,
 
     // pending operations
@@ -33,14 +45,8 @@ pub struct PendingTransaction {
     // list of operations to share with other players
     pub forward_operations: Vec<Operation>,
 
-    // tracks sheets that will need updated bounds calculations
-    pub sheets_with_dirty_bounds: HashSet<SheetId>,
-
     // tracks whether there are any async calls (which changes how the transaction is finalized)
     pub has_async: bool,
-
-    // tracks the TransactionSummary to return to the TS client for (mostly) rendering updates
-    pub summary: TransactionSummary,
 
     // used by Code Cell execution to track dependencies
     pub cells_accessed: HashSet<SheetRect>,
@@ -53,24 +59,33 @@ pub struct PendingTransaction {
 
     // whether transaction is complete
     pub complete: bool,
+
+    // whether to generate a thumbnail after transaction completes
+    pub generate_thumbnail: bool,
+
+    // cursor saved for an Undo or Redo
+    pub cursor_undo_redo: Option<String>,
 }
 
 impl Default for PendingTransaction {
     fn default() -> Self {
         PendingTransaction {
             id: Uuid::new_v4(),
+            transaction_name: TransactionName::Unknown,
+            sheet_id: None,
+            rect: None,
             cursor: None,
             transaction_type: TransactionType::User,
             operations: VecDeque::new(),
             reverse_operations: Vec::new(),
             forward_operations: Vec::new(),
-            sheets_with_dirty_bounds: HashSet::new(),
             has_async: false,
-            summary: TransactionSummary::default(),
             cells_accessed: HashSet::new(),
             current_sheet_pos: None,
             waiting_for_async: None,
             complete: false,
+            generate_thumbnail: false,
+            cursor_undo_redo: None,
         }
     }
 }
@@ -105,23 +120,37 @@ impl PendingTransaction {
         }
     }
 
-    /// returns the TransactionSummary
-    pub fn prepare_summary(&mut self, complete: bool) -> TransactionSummary {
-        if complete && self.is_user_undo_redo() {
-            self.summary.transaction_id = Some(self.id.to_string());
+    /// Sends the transaction to the multiplayer server (if needed)
+    pub fn send_transaction(&self) {
+        if self.complete
+            && self.is_user_undo_redo()
+            && (cfg!(target_family = "wasm") || cfg!(test))
+            && !self.is_server()
+        {
+            let transaction_id = self.id.to_string();
             match serde_json::to_string(&self.forward_operations) {
                 Ok(ops) => {
-                    self.summary.operations = Some(ops);
+                    crate::wasm_bindings::js::jsSendTransaction(transaction_id, ops);
                 }
                 Err(e) => {
                     dbgjs!(format!("Failed to serialize forward operations: {}", e));
                 }
             };
+
+            if self.is_undo_redo() {
+                if let Some(cursor) = &self.cursor_undo_redo {
+                    crate::wasm_bindings::js::jsSetCursor(cursor.clone());
+                }
+            }
+
+            if self.generate_thumbnail {
+                crate::wasm_bindings::js::jsGenerateThumbnail();
+            }
         }
-        let mut summary = self.summary.clone();
-        summary.save = complete;
-        self.summary.clear(complete);
-        summary
+    }
+
+    pub fn is_server(&self) -> bool {
+        matches!(self.transaction_type, TransactionType::Server)
     }
 
     pub fn is_user(&self) -> bool {
@@ -140,7 +169,7 @@ impl PendingTransaction {
 
 #[cfg(test)]
 mod tests {
-    use crate::controller::operations::operation::Operation;
+    use crate::{controller::operations::operation::Operation, grid::SheetId};
 
     use super::*;
 

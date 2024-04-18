@@ -1,19 +1,17 @@
-import { useState } from 'react';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-// import { CodeCellRunOutput, CodeCellValue } from '../../../quadratic-core/types';
-import { Coordinate } from '@/gridGL/types/size';
-import { useRootRouteLoaderData } from '@/router';
-import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
-import { colors } from '../../../theme/colors';
-import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
-
 import { Type } from '@/components/Type';
 import { ROUTES } from '@/constants/routes';
+import { Coordinate } from '@/gridGL/types/size';
+import { useRootRouteLoaderData } from '@/router';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shadcn/ui/tabs';
 import { cn } from '@/shadcn/utils';
+import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { ViewStreamOutlined } from '@mui/icons-material';
+import { useState } from 'react';
+import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { colors } from '../../../theme/colors';
 import { AiAssistant } from './AiAssistant';
 import { PanelPosition } from './CodeEditor';
+import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
   consoleOutput?: { stdOut?: string; stdErr?: string };
