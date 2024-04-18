@@ -1,7 +1,7 @@
 import { cellTypeMenuOpenedCountAtom } from '@/atoms/cellTypeMenuOpenedCountAtom';
 import { CodeCellLanguage } from '@/quadratic-core-types';
+import { Badge } from '@/shadcn/ui/badge';
 import {
-  Chip,
   Dialog,
   Divider,
   InputBase,
@@ -175,8 +175,17 @@ export default function CellTypeMenu() {
                 <ListItemText
                   primary={
                     <>
-                      {name} {disabled && <Chip label="Coming soon" size="small" />}{' '}
-                      {experimental && <Chip label="Experimental" size="small" color="warning" variant="outlined" />}
+                      {name}
+                      {disabled && (
+                        <Badge variant="secondary" className="ml-1">
+                          Coming soon
+                        </Badge>
+                      )}
+                      {experimental && (
+                        <Badge variant="warning" className="ml-1">
+                          Experimental
+                        </Badge>
+                      )}
                     </>
                   }
                   secondary={description}
