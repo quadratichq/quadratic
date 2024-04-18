@@ -149,12 +149,7 @@ export class Cursor extends Graphics {
         editor_selected_cell.x === cell.x &&
         editor_selected_cell.y === cell.y
       )
-        color =
-          editorInteractionState.mode === 'Python'
-            ? colors.cellColorUserPython
-            : editorInteractionState.mode === 'Formula'
-            ? colors.cellColorUserFormula
-            : colors.cursorCell;
+        color = colors.cursorCell;
       this.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -164,16 +159,27 @@ export class Cursor extends Graphics {
     if (!editorInteractionState.showCodeEditor || sheets.sheet.id !== editorInteractionState.selectedCellSheet) return;
     const cell = editorInteractionState.selectedCell;
     const { x, y, width, height } = sheets.sheet.getCellOffsets(cell.x, cell.y);
-    const color =
-      editorInteractionState.mode === 'Python'
-        ? colors.cellColorUserPython
-        : editorInteractionState.mode === 'Formula'
-        ? colors.cellColorUserFormula
-        : colors.independence;
+    const color = colors.cursorCell;
+
+    // Same as drawCursor()
+    this.lineStyle({
+      width: CURSOR_THICKNESS,
+      color,
+      alignment: 0,
+    });
+    this.moveTo(x, y);
+    this.lineTo(x + width, y);
+    this.lineTo(x + width, y + height - 0);
+    this.moveTo(x + width - 0, y + height);
+    this.lineTo(x, y + height);
+    this.lineTo(x, y);
+
+    // Same as active style for drawCursor()
     this.lineStyle({
       width: CURSOR_THICKNESS * 1.5,
       color,
-      alignment: 0.5,
+      alpha: CURSOR_INPUT_ALPHA,
+      alignment: 1,
     });
     this.drawRect(x, y, width, height);
   }
