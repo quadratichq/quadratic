@@ -149,9 +149,18 @@ export const useEditorCellHighlights = (
         // update the cell references in the editor
         decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
       }
+
+      console.log('HERE');
     };
 
     onChangeModel();
     editor.onDidChangeModelContent(onChangeModel);
-  }, [isValidRef, editorRef, monacoRef, editorInteractionState, language]);
+  }, [
+    isValidRef,
+    editorRef,
+    monacoRef,
+    editorInteractionState.selectedCell,
+    editorInteractionState.selectedCellSheet,
+    language,
+  ]);
 };
