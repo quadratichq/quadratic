@@ -1,4 +1,14 @@
+export const JAVASCRIPT_X_COORDINATE = '___x___';
+export const JAVASCRIPT_Y_COORDINATE = '___y___';
+
 export const javascriptLibrary = `
+  const javascriptSendMessageAwaitingResponse = async (message) => {
+    return new Promise((resolve) => {
+      self.onmessage = (event) => resolve(event.data);
+      self.postMessage(message);
+    });
+  };
+
   /**
    * Get a range of cells from the sheet
    * @param {number} x0 x coordinate of the top-left cell
@@ -9,7 +19,7 @@ export const javascriptLibrary = `
    * @returns Promise<(number | string | undefined)[][]> 2D array [y][x] of the cells
    */
   const getCells = async (x0, y0, x1, y1, sheetName) => {
-    return await self.getCells(x0, y0, x1, y1, sheetName);
+    return await javascriptSendMessageAwaitingResponse({ type: 'getCells', x0, y0, x1, y1, sheetName });
   };
 
   /**
@@ -35,10 +45,10 @@ export const javascriptLibrary = `
 
   /**
    * Gets the position of the code cell
-   * @returns Promise<{ x: number, y: number, sheet: string }>
+   * @returns { x: number, y: number }
    */
   const pos = () => {
-    return self.pos();
+    return { x: ${JAVASCRIPT_X_COORDINATE}, y: ${JAVASCRIPT_Y_COORDINATE} };
   };
 
   /**
@@ -48,7 +58,8 @@ export const javascriptLibrary = `
    * @returns Promise<number | string | undefined>
    */
   const relCell = async (x, y) => {
-    return await self.relCell(x, y);
+    const p = pos();
+    return await self.getCell(x + p.x, y + p.y);
   };
 
   /**
@@ -60,24 +71,4 @@ export const javascriptLibrary = `
   const rc = relCell;
 `;
 
-// this should be kept consistent with the actual output of the esbuild transpiler (see javascript.ts#343)
-const javascriptLibraryWithoutComments = `
-(async () => {
-  const getCells = async (x0, y0, x1, y1, sheetName) => {
-    return await self.getCells(x0, y0, x1, y1, sheetName);
-  };
-  const getCell = async (x, y, sheetName) => {
-    const results = await getCells(x, y, x, y, sheetName);
-    return results?.[0]?.[0];
-  };
-  const c = getCell;
-  const pos = () => {
-    return self.pos();
-  };
-  const relCell = async (x, y) => {
-    return await self.relCell(x, y);
-  };
-  const rc = relCell;`;
-
 export const javascriptLibraryLines = javascriptLibrary.split('\n').length;
-export const javascriptCompiledLibraryLines = javascriptLibraryWithoutComments.split('\n').length;

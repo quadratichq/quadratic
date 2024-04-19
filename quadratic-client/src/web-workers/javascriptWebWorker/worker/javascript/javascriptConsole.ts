@@ -3,6 +3,10 @@ const TAB = '  ';
 class JavascriptConsole {
   logs: string[] = [];
 
+  constructor() {
+    console.log = this.consoleMap;
+  }
+
   consoleMap = (...args: any[]) => {
     args = args.map((a) => {
       return this.mapArgument(a);
