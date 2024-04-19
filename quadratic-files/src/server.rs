@@ -21,7 +21,6 @@ use crate::{
 };
 
 const HEALTHCHECK_INTERVAL_S: u64 = 5;
-const TRANSACTION_AGE_DAYS: u64 = 7;
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
@@ -88,7 +87,8 @@ pub(crate) async fn serve() -> Result<()> {
         let state = Arc::clone(&state);
 
         async move {
-            let mut interval = time::interval(Duration::from_secs(config.file_check_s as u64));
+            let mut interval =
+                time::interval(Duration::from_secs(config.truncate_file_check_s as u64));
 
             loop {
                 interval.tick().await;
@@ -96,7 +96,7 @@ pub(crate) async fn serve() -> Result<()> {
                 if let Err(error) = truncate_processed_transactions(
                     &state,
                     &config.pubsub_processed_transactions_channel,
-                    TRANSACTION_AGE_DAYS,
+                    config.truncate_transaction_age_days as u64,
                 )
                 .await
                 {
