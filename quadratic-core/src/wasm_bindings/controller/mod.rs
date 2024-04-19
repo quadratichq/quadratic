@@ -1,6 +1,6 @@
 use super::*;
-use crate::controller::transaction_types::{JsCodeResult, JsComputeGetCells};
 use crate::grid::js_types::*;
+use crate::wasm_bindings::controller::sheet_info::SheetInfo;
 use std::str::FromStr;
 
 pub mod auto_complete;
@@ -14,20 +14,73 @@ pub mod formatting;
 pub mod import;
 pub mod render;
 pub mod search;
+pub mod sheet_info;
 pub mod sheet_offsets;
 pub mod sheets;
 pub mod summarize;
 pub mod transactions;
+pub mod worker;
 
 #[wasm_bindgen]
 impl GridController {
     /// Imports a [`GridController`] from a JSON string.
     #[wasm_bindgen(js_name = "newFromFile")]
-    pub fn js_new_from_file(file: &str, last_sequence_num: u32) -> Result<GridController, JsValue> {
-        Ok(GridController::from_grid(
-            file::import(file).map_err(|e| e.to_string())?,
-            last_sequence_num as u64,
-        ))
+    pub fn js_new_from_file(
+        file: &str,
+        last_sequence_num: u32,
+        initialize: bool,
+    ) -> Result<GridController, JsValue> {
+        if let Ok(file) = file::import(file).map_err(|e| e.to_string()) {
+            let grid = GridController::from_grid(file, last_sequence_num as u64);
+
+            // populate data for client and text renderer
+            if initialize {
+                // first recalculate all bounds in sheets
+                let mut html = vec![];
+                let sheets_info = grid
+                    .sheet_ids()
+                    .iter()
+                    .filter_map(|sheet_id| {
+                        grid.try_sheet(*sheet_id).map(|sheet| {
+                            html.extend(sheet.get_html_output());
+                            SheetInfo::from(sheet)
+                        })
+                    })
+                    .collect::<Vec<SheetInfo>>();
+                if let Ok(sheets_info) = serde_json::to_string(&sheets_info) {
+                    crate::wasm_bindings::js::jsSheetInfo(sheets_info);
+                }
+                if !html.is_empty() {
+                    if let Ok(html) = serde_json::to_string(&html) {
+                        crate::wasm_bindings::js::jsHtmlOutput(html);
+                    }
+                }
+                grid.sheet_ids().iter().for_each(|sheet_id| {
+                    let fills = grid.sheet_fills(*sheet_id);
+                    if let Ok(fills) = serde_json::to_string(&fills) {
+                        crate::wasm_bindings::js::jsSheetFills(sheet_id.to_string(), fills);
+                    }
+                    if let Some(sheet) = grid.try_sheet(*sheet_id) {
+                        let borders = sheet.render_borders();
+                        if let Ok(borders) = serde_json::to_string(&borders) {
+                            crate::wasm_bindings::js::jsSheetBorders(sheet_id.to_string(), borders);
+                        }
+                        let code = sheet.get_all_render_code_cells();
+                        if !code.is_empty() {
+                            if let Ok(code) = serde_json::to_string(&code) {
+                                crate::wasm_bindings::js::jsSheetCodeCell(
+                                    sheet_id.to_string(),
+                                    code,
+                                );
+                            }
+                        }
+                    }
+                });
+            }
+            Ok(grid)
+        } else {
+            Err(JsValue::from_str("Failed to import grid"))
+        }
     }
 
     #[wasm_bindgen(js_name = "test")]

@@ -1,15 +1,13 @@
 use crate::cell_values::CellValues;
-use crate::controller::{
-    operations::clipboard::Clipboard, transaction_summary::TransactionSummary, GridController,
-};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::{operations::clipboard::Clipboard, GridController};
 use crate::Rect;
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use htmlescape;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum PasteSpecial {
     None,
     Values,
@@ -183,10 +181,16 @@ impl GridController {
         &mut self,
         sheet_rect: SheetRect,
         cursor: Option<String>,
-    ) -> (TransactionSummary, String, String) {
+    ) -> (String, String) {
         let (ops, plain_text, html) = self.cut_to_clipboard_operations(sheet_rect);
-        let summary = self.start_user_transaction(ops, cursor);
-        (summary, plain_text, html)
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::CutClipboard,
+            Some(sheet_rect.sheet_id),
+            Some(sheet_rect.into()),
+        );
+        (plain_text, html)
     }
 
     pub fn paste_from_clipboard(
@@ -196,20 +200,30 @@ impl GridController {
         html: Option<String>,
         special: PasteSpecial,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(sheet_pos, html, special) {
-                return self.start_user_transaction(ops, cursor);
+                return self.start_user_transaction(
+                    ops,
+                    cursor,
+                    TransactionName::PasteClipboard,
+                    Some(sheet_pos.sheet_id),
+                    Some(Rect::single_pos(sheet_pos.into())),
+                );
             }
         }
         // if not quadratic html, then use the plain text
         // first try html
         if let Some(plain_text) = plain_text {
             let ops = self.paste_plain_text_operations(sheet_pos, plain_text, special);
-            self.start_user_transaction(ops, cursor)
-        } else {
-            TransactionSummary::default()
+            self.start_user_transaction(
+                ops,
+                cursor,
+                TransactionName::PasteClipboard,
+                Some(sheet_pos.sheet_id),
+                Some(Rect::single_pos(sheet_pos.into())),
+            );
         }
     }
 }
@@ -231,7 +245,7 @@ mod test {
     fn set_borders(sheet: &mut Sheet) {
         let selection = vec![BorderSelection::All];
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
@@ -594,7 +608,7 @@ mod test {
 
         let selection = vec![BorderSelection::Outer];
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 });
@@ -602,22 +616,22 @@ mod test {
         set_rect_borders(sheet, &rect, borders);
 
         // weird: can't test them by comparing arrays since the order is seemingly random
-        let render = gc.get_render_borders(sheet_id.to_string());
-        assert!(render.get_horizontal().iter().any(|border| {
+        let borders = sheet.render_borders();
+        assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 0
                 && border.w == Some(5)
                 && border.h.is_none()
                 && border.style == style
         }));
-        assert!(render.get_horizontal().iter().any(|border| {
+        assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 5
                 && border.w == Some(5)
                 && border.h.is_none()
                 && border.style == style
         }));
-        assert!(render.get_vertical().iter().any(|border| {
+        assert!(borders.vertical.iter().any(|border| {
             border.x == 0
                 && border.y == 0
                 && border.w.is_none()
@@ -625,7 +639,7 @@ mod test {
                 && border.style == style
         }));
 
-        assert!(render.get_vertical().iter().any(|border| {
+        assert!(borders.vertical.iter().any(|border| {
             border.x == 5
                 && border.y == 0
                 && border.w.is_none()
@@ -638,7 +652,7 @@ mod test {
             Pos { x: 4, y: 4 },
             sheet_id,
         ));
-        let _ = gc.paste_from_clipboard(
+        gc.paste_from_clipboard(
             SheetPos {
                 x: 0,
                 y: 10,
@@ -650,29 +664,30 @@ mod test {
             None,
         );
 
-        let render = gc.get_render_borders(sheet_id.to_string());
-        assert!(render.get_horizontal().iter().any(|border| {
+        let sheet = gc.sheet_mut(sheet_id);
+        let borders = sheet.render_borders();
+        assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 10
                 && border.w == Some(5)
                 && border.h.is_none()
                 && border.style == style
         }));
-        assert!(render.get_horizontal().iter().any(|border| {
+        assert!(borders.horizontal.iter().any(|border| {
             border.x == 0
                 && border.y == 15
                 && border.w == Some(5)
                 && border.h.is_none()
                 && border.style == style
         }));
-        assert!(render.get_vertical().iter().any(|border| {
+        assert!(borders.vertical.iter().any(|border| {
             border.x == 0
                 && border.y == 10
                 && border.w.is_none()
                 && border.h == Some(5)
                 && border.style == style
         }));
-        assert!(render.get_vertical().iter().any(|border| {
+        assert!(borders.vertical.iter().any(|border| {
             border.x == 5
                 && border.y == 10
                 && border.w.is_none()

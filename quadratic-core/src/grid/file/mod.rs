@@ -183,7 +183,7 @@ mod tests {
         let rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
         let selection = vec![BorderSelection::Bottom];
         let style = BorderStyle {
-            color: Rgba::from_str("#000000").unwrap(),
+            color: Rgba::color_from_str("#000000").unwrap(),
             line: CellBorderLine::Line1,
         };
         let borders = generate_borders(&sheets[0], &rect, selection, Some(style));

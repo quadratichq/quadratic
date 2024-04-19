@@ -1,33 +1,35 @@
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
-import { Sheet } from '@/grid/sheet/Sheet';
-import { SheetPos } from '@/quadratic-core/types';
 import { colors } from '@/theme/colors';
 import { Graphics } from 'pixi.js';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { SheetPosTS } from '../types/size';
 
 export class CellsSearch extends Graphics {
-  private sheet: Sheet;
+  private sheetId: string;
 
-  constructor(sheet: Sheet) {
+  constructor(sheetId: string) {
     super();
-    this.sheet = sheet;
-    window.addEventListener('search', this.handleSearch);
+    this.sheetId = sheetId;
+    events.on('search', this.handleSearch);
   }
 
-  private handleSearch = (event: any) => {
+  private handleSearch = (found?: SheetPosTS[], current?: number) => {
     this.clear();
-    if (event.detail) {
-      event.detail.found.forEach((cell: SheetPos, index: number) => {
-        const { x, y, sheet_id } = cell;
-        if (this.sheet.id === sheet_id.id) {
-          const offsets = this.sheet.getCellOffsets(Number(x), Number(y));
-          this.beginFill(colors.searchCell, event.detail.current === index ? 1 : 0.1);
+    if (found?.length) {
+      found.forEach((cell: SheetPosTS, index: number) => {
+        const { x, y, sheetId } = cell;
+        if (this.sheetId === sheetId) {
+          const sheet = sheets.getById(sheetId);
+          if (!sheet) throw new Error('Expected sheet to be defined in CellsSearch.handleSearch');
+          const offsets = sheet.getCellOffsets(Number(x), Number(y));
+          this.beginFill(colors.searchCell, current === index ? 1 : 0.1);
           this.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
           this.endFill();
         }
       });
     }
-    if (sheets.sheet.id === this.sheet.id) {
+    if (sheets.sheet.id === this.sheetId) {
       pixiApp.setViewportDirty();
     }
   };

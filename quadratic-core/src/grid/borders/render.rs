@@ -90,7 +90,7 @@ mod tests {
             let selection = vec![BorderSelection::All];
 
             let style = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -118,7 +118,7 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -149,7 +149,7 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -190,11 +190,11 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style_1 = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
             let style_2 = BorderStyle {
-                color: Rgba::from_str("#FFFFFF").unwrap(),
+                color: Rgba::color_from_str("#FFFFFF").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -232,7 +232,7 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -263,11 +263,11 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style_1 = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
             let style_2 = BorderStyle {
-                color: Rgba::from_str("#FFFFFF").unwrap(),
+                color: Rgba::color_from_str("#FFFFFF").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -303,7 +303,7 @@ mod tests {
             let selection = vec![BorderSelection::All];
 
             let style = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -331,7 +331,7 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -362,7 +362,7 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -399,11 +399,11 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style_1 = BorderStyle {
-                color: Rgba::from_str("#FFFFFF").unwrap(),
+                color: Rgba::color_from_str("#FFFFFF").unwrap(),
                 line: CellBorderLine::Line1,
             };
             let style_2 = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 
@@ -441,11 +441,11 @@ mod tests {
             let selection_2 = selection_1.clone();
 
             let style_1 = BorderStyle {
-                color: Rgba::from_str("#FFFFFF").unwrap(),
+                color: Rgba::color_from_str("#FFFFFF").unwrap(),
                 line: CellBorderLine::Line1,
             };
             let style_2 = BorderStyle {
-                color: Rgba::from_str("#000000").unwrap(),
+                color: Rgba::color_from_str("#000000").unwrap(),
                 line: CellBorderLine::Line1,
             };
 

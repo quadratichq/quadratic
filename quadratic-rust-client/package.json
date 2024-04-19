@@ -1,0 +1,9 @@
+{
+  "name": "quadratic-rust-client",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-rust-client --weak-refs",
+    "dev": "cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/quadratic-rust-client --weak-refs'"
+  }
+}

@@ -1,5 +1,7 @@
+import { Point } from 'pixi.js';
 import { HEADING_SIZE } from '../../constants/gridConstants';
 import { sheets } from '../../grid/controller/Sheets';
+import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
@@ -54,14 +56,17 @@ export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinat
   if (!center && !topLeft) return;
   const sheet = sheets.sheet;
 
+  const bounds = pixiApp.viewport.getVisibleBounds();
   if (center) {
     const cell = sheet.getCellOffsets(center.x, center.y);
+    if (intersects.rectanglePoint(bounds, new Point(cell.x, cell.y))) return;
     pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
   }
 
   if (topLeft) {
     const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE : 0;
-    const cell = sheet.getCellOffsets(topLeft.x + adjust, topLeft.y + adjust);
+    const cell = sheet.getCellOffsets(topLeft.x, topLeft.y);
+    if (intersects.rectanglePoint(bounds, new Point(cell.x + adjust, cell.y + adjust))) return;
     pixiApp.viewport.moveCorner(cell.x, cell.y);
   }
 

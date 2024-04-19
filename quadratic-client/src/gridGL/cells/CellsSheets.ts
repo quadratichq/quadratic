@@ -1,51 +1,70 @@
+import { debugShowCellsHashBoxes } from '@/debugFlags';
+import { events } from '@/events/events';
+import { SheetInfo } from '@/quadratic-core-types';
+import {
+  RenderClientCellsTextHashClear,
+  RenderClientFinalizeCellsTextHash,
+  RenderClientLabelMeshEntry,
+} from '@/web-workers/renderWebWorker/renderClientMessages';
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
-import { CellSheetsModified, SheetId } from '../../quadratic-core/types';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
 export class CellsSheets extends Container<CellsSheet> {
   current?: CellsSheet;
 
-  async create(): Promise<void> {
-    this.removeChildren();
-    if (!sheets.size) return;
+  constructor() {
+    super();
+    events.on('addSheet', this.addSheet);
+    events.on('deleteSheet', this.deleteSheet);
+  }
 
+  async create() {
+    this.removeChildren();
     for (const sheet of sheets.sheets) {
-      const child = this.addChild(new CellsSheet(sheet));
-      await child.preload();
+      const child = this.addChild(new CellsSheet(sheet.id));
       if (sheet.id === sheets.sheet.id) {
         this.current = child;
       }
     }
+    renderWebWorker.pixiIsReady(sheets.sheet.id, pixiApp.viewport.getVisibleBounds());
   }
 
   isReady(): boolean {
     return !!this.current;
   }
 
-  async addSheet(id: string): Promise<void> {
-    const sheet = sheets.getById(id);
-    if (!sheet) {
-      throw new Error('Expected to find new sheet in cellSheet');
-    }
-    const cellsSheet = this.addChild(new CellsSheet(sheet));
-    await cellsSheet.preload();
-  }
+  private addSheet = (sheetInfo: SheetInfo) => {
+    this.addChild(new CellsSheet(sheetInfo.sheet_id));
+  };
 
-  deleteSheet(id: string): void {
-    const cellsSheet = this.children.find((cellsSheet) => cellsSheet.sheet.id === id);
-    if (!cellsSheet) {
-      throw new Error('Expected to find cellsSheet in CellSheets.delete');
-    }
+  private deleteSheet = (sheetId: string) => {
+    const cellsSheet = this.children.find((cellsSheet) => cellsSheet.sheetId === sheetId);
+    if (!cellsSheet) throw new Error('Expected to find cellsSheet in CellSheets.delete');
     this.removeChild(cellsSheet);
     cellsSheet.destroy();
+  };
+
+  // used to render all cellsTextHashes to warm up the GPU
+  showAll(id: string) {
+    this.children.forEach((child) => {
+      if (child.sheetId === id) {
+        if (this.current?.sheetId !== child?.sheetId) {
+          this.current = child;
+          child.show(pixiApp.viewport.getVisibleBounds());
+        }
+      } else {
+        child.hide();
+      }
+    });
   }
 
   show(id: string): void {
     this.children.forEach((child) => {
-      if (child.sheet.id === id) {
-        if (this.current?.sheet.id !== child?.sheet.id) {
+      if (child.sheetId === id) {
+        if (this.current?.sheetId !== child?.sheetId) {
           this.current = child;
           child.show(pixiApp.viewport.getVisibleBounds());
         }
@@ -61,26 +80,28 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   private getById(id: string): CellsSheet | undefined {
-    return this.children.find((search) => search.sheet.id === id);
+    return this.children.find((search) => search.sheetId === id);
   }
 
-  // this updates the first dirty CellsSheet, always starting with the current sheet
-  // * userIsActive indicates whether to hold off on rendering sheets that are not visible
-  update(userIsActive: boolean): void {
-    if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
-    if (this.current.update(userIsActive)) {
-      return;
+  cellsTextHashClear(message: RenderClientCellsTextHashClear) {
+    const cellsSheet = this.getById(message.sheetId);
+    if (!cellsSheet) {
+      throw new Error('Expected to find cellsSheet in cellsTextHashClear');
     }
-    // if the current sheet is not dirty, check the other sheets
-    if (!userIsActive) {
-      // find the next non-visible sheet to render, and do one per inactive frame
-      for (const child of this.children) {
-        if (this.current !== child) {
-          if (child.update(false)) {
-            return;
-          }
-        }
-      }
+    cellsSheet.cellsLabels.clearCellsTextHash(message);
+    if (debugShowCellsHashBoxes && sheets.sheet.id === message.sheetId) {
+      pixiApp.setViewportDirty();
+    }
+  }
+
+  labelMeshEntry(message: RenderClientLabelMeshEntry) {
+    const cellsSheet = this.getById(message.sheetId);
+    if (!cellsSheet) {
+      throw new Error('Expected to find cellsSheet in labelMeshEntry');
+    }
+    cellsSheet.cellsLabels.addLabelMeshEntry(message);
+    if (sheets.sheet.id === message.sheetId) {
+      pixiApp.setViewportDirty();
     }
   }
 
@@ -88,55 +109,27 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current?.toggleOutlines(off);
   }
 
-  createBorders(): void {
-    this.current?.createBorders();
-  }
-
-  updateFills(sheetIds: SheetId[]): void {
-    this.children.forEach((cellsSheet) => {
-      if (sheetIds.find((id) => id.id === cellsSheet.sheet.id)) {
-        cellsSheet.updateFill();
-      }
-    });
-  }
-
-  // adjust headings without recalculating the glyph geometries
+  // adjust headings for all but the cellsTextHash that changes
   adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
     const { sheetId, delta, row, column } = options;
     const cellsSheet = this.getById(sheetId);
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
-    cellsSheet.adjustHeadings({ delta, row, column });
+    cellsSheet.cellsLabels.adjustHeadings(column, row, delta);
     if (sheets.sheet.id === sheetId) {
+      if (debugShowCellsHashBoxes) {
+        const sheet = this.getById(sheetId);
+        sheet?.show(pixiApp.viewport.getVisibleBounds());
+      }
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
       pixiApp.headings.dirty = true;
+      this.updateCellsArray();
     }
   }
 
-  getCellsContentMaxWidth(column: number): number {
+  async getCellsContentMaxWidth(column: number): Promise<number> {
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets.getCellsContentMaxWidth');
-    return this.current.getCellsContentMaxWidth(column);
-  }
-
-  modified(cellSheetsModified: CellSheetsModified[]): void {
-    for (const cellSheet of this.children) {
-      const modified = cellSheetsModified.filter((modified) => modified.sheet_id === cellSheet.sheet.id);
-      if (modified.length) {
-        cellSheet.updateCellsArray();
-        cellSheet.modified(modified);
-      }
-    }
-  }
-
-  updateCodeCells(codeCells: SheetId[]): void {
-    this.children.forEach((cellsSheet) => {
-      if (codeCells.find((id) => id.id === cellsSheet.sheet.id)) {
-        cellsSheet.updateCellsArray();
-        if (sheets.sheet.id === cellsSheet.sheet.id) {
-          window.dispatchEvent(new CustomEvent('python-computation-complete'));
-        }
-      }
-    });
+    return this.current.cellsLabels.getCellsContentMaxWidth(column);
   }
 
   updateCellsArray(): void {
@@ -144,25 +137,28 @@ export class CellsSheets extends Container<CellsSheet> {
     this.current.updateCellsArray();
   }
 
-  updateBorders(borderSheets: SheetId[]): void {
-    this.children.forEach((cellsSheet) => {
-      if (borderSheets.find((id) => id.id === cellsSheet.sheet.id)) {
-        cellsSheet.createBorders();
-      }
-    });
-  }
-
-  updateBordersString(borderSheets: String[]): void {
-    this.children.forEach((cellsSheet) => {
-      if (borderSheets.find((id) => id === cellsSheet.sheet.id)) {
-        cellsSheet.createBorders();
-      }
-    });
+  adjustOffsetsBorders(sheetId: string): void {
+    const cellsSheet = this.getById(sheetId);
+    cellsSheet?.adjustOffsets();
   }
 
   showLabel(x: number, y: number, sheetId: string, show: boolean) {
     const cellsSheet = this.getById(sheetId);
-    if (!cellsSheet) throw new Error('Expected to find cellsSheet in showLabel');
-    cellsSheet.showLabel(x, y, show);
+    cellsSheet?.showLabel(x, y, show);
+  }
+
+  unload(options: { sheetId: string; hashX: number; hashY: number }): void {
+    const { sheetId, hashX, hashY } = options;
+    const cellsSheet = this.getById(sheetId);
+    if (cellsSheet) {
+      cellsSheet.unload(hashX, hashY);
+    }
+  }
+
+  finalizeCellsTextHash(message: RenderClientFinalizeCellsTextHash) {
+    const cellsSheet = this.getById(message.sheetId);
+    if (cellsSheet) {
+      cellsSheet.cellsLabels.finalizeCellsTextHash(message.hashX, message.hashY);
+    }
   }
 }

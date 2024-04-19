@@ -14,30 +14,6 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::SetCellFormats { sheet_rect, attr } = op {
-            transaction
-                .sheets_with_dirty_bounds
-                .insert(sheet_rect.sheet_id);
-
-            if !matches!(attr, CellFmtArray::RenderSize(_))
-                && !matches!(attr, CellFmtArray::FillColor(_))
-            {
-                transaction
-                    .summary
-                    .add_cell_sheets_modified_rect(&sheet_rect);
-            }
-
-            if matches!(attr, CellFmtArray::FillColor(_)) {
-                transaction
-                    .summary
-                    .fill_sheets_modified
-                    .insert(sheet_rect.sheet_id);
-            }
-
-            // todo: this is too slow -- perhaps call this again when we have a better way of setting multiple formats within an array
-            // or when we get rid of CellRefs (which I think is the reason this is slow)
-            // summary.generate_thumbnail =
-            //     summary.generate_thumbnail || self.thumbnail_dirty_region(region.clone());
-
             let old_attr = match attr.clone() {
                 CellFmtArray::Align(align) => CellFmtArray::Align(
                     self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align),
@@ -63,22 +39,26 @@ impl GridController {
                 CellFmtArray::TextColor(text_color) => CellFmtArray::TextColor(
                     self.set_cell_formats_for_type::<TextColor>(&sheet_rect, text_color),
                 ),
-                CellFmtArray::FillColor(fill_color) => {
-                    transaction
-                        .summary
-                        .fill_sheets_modified
-                        .insert(sheet_rect.sheet_id);
-                    CellFmtArray::FillColor(
-                        self.set_cell_formats_for_type::<FillColor>(&sheet_rect, fill_color),
-                    )
-                }
-                CellFmtArray::RenderSize(output_size) => {
-                    transaction.summary.html.insert(sheet_rect.sheet_id);
-                    CellFmtArray::RenderSize(
-                        self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
-                    )
-                }
+                CellFmtArray::FillColor(fill_color) => CellFmtArray::FillColor(
+                    self.set_cell_formats_for_type::<FillColor>(&sheet_rect, fill_color),
+                ),
+                CellFmtArray::RenderSize(output_size) => CellFmtArray::RenderSize(
+                    self.set_cell_formats_for_type::<RenderSize>(&sheet_rect, output_size),
+                ),
             };
+
+            if !transaction.is_server() {
+                match &attr {
+                    CellFmtArray::RenderSize(_) => self.send_html_output_rect(&sheet_rect),
+                    CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
+                    _ => {
+                        self.send_updated_bounds_rect(&sheet_rect, true);
+                        self.send_render_cells(&sheet_rect);
+                    }
+                };
+            }
+
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
             transaction
                 .forward_operations

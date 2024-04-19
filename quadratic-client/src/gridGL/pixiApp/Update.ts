@@ -1,3 +1,6 @@
+import { events } from '@/events/events';
+import { sheets } from '@/grid/controller/Sheets';
+import { renderWebWorker } from '@/web-workers/renderWebWorker/renderWebWorker';
 import { Point } from 'pixi.js';
 import { debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
@@ -38,7 +41,12 @@ export class Update {
     }
   }
 
-  private updateViewport(): void {
+  sendRenderViewport() {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    renderWebWorker.updateViewport(sheets.sheet.id, bounds);
+  }
+
+  updateViewport(): void {
     const { viewport } = pixiApp;
     let dirty = false;
     if (this.lastViewportScale !== viewport.scale.x) {
@@ -46,7 +54,7 @@ export class Update {
       dirty = true;
 
       // this is used to trigger changes to ZoomDropdown
-      window.dispatchEvent(new CustomEvent<number>('zoom-event', { detail: viewport.scale.x }));
+      events.emit('zoom', viewport.scale.x);
     }
     if (this.lastViewportPosition.x !== viewport.x || this.lastViewportPosition.y !== viewport.y) {
       this.lastViewportPosition.x = viewport.x;
@@ -55,6 +63,7 @@ export class Update {
     }
     if (dirty) {
       pixiApp.viewportChanged();
+      this.sendRenderViewport();
     }
   }
 
@@ -106,9 +115,6 @@ export class Update {
     debugTimeCheck('[Update] cursor');
     pixiApp.multiplayerCursor.update();
     debugTimeCheck('[Update] multiplayerCursor');
-
-    pixiApp.cellsSheets.update(pixiApp.viewport.dirty || rendererDirty);
-    debugTimeCheck('[Update] cellsSheets');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
