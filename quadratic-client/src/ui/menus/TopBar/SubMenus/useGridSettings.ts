@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import mixpanel from 'mixpanel-browser';
 import { AtomEffect, atom, useRecoilState } from 'recoil';
 import { debugGridSettings } from '../../../../debugFlags';
@@ -34,7 +35,7 @@ const localStorageEffect: AtomEffect<GridSettings> = ({ setSelf, onSet }) => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
     if (debugGridSettings) console.log('[gridSettings] initializing with values from localStorage', newSettings);
     setSelf(newSettings);
-    window.dispatchEvent(new Event('grid-settings'));
+    events.emit('gridSettings');
   }
 
   onSet((newValue, _, isReset) => {
@@ -45,9 +46,9 @@ const localStorageEffect: AtomEffect<GridSettings> = ({ setSelf, onSet }) => {
 
 // Emit an event so pixi app can respond and pull latest values from localStorage
 const emitGridSettingsChange: AtomEffect<GridSettings> = ({ onSet }) => {
-  onSet((newValue) => {
+  onSet(() => {
     if (debugGridSettings) console.log('[gridSettings] emitting `grid-settings` event');
-    window.dispatchEvent(new Event('grid-settings'));
+    events.emit('gridSettings');
   });
 };
 

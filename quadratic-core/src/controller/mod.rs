@@ -1,14 +1,13 @@
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::grid::Grid;
-#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
-
 pub mod active_transactions;
 pub mod dependencies;
 pub mod execution;
 pub mod export;
 pub mod formula;
 pub mod operations;
+pub mod send_render;
 pub mod sheet_offsets;
 pub mod sheets;
 pub mod thumbnail;
@@ -16,7 +15,7 @@ pub mod transaction;
 pub mod transaction_summary;
 pub mod transaction_types;
 pub mod user_actions;
-//
+
 #[derive(Debug, Default, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 pub struct GridController {
@@ -37,6 +36,14 @@ impl GridController {
         }
     }
 
+    pub fn upgrade_grid(grid: Grid, last_sequence_num: u64) -> Self {
+        GridController {
+            grid,
+            transactions: ActiveTransactions::new(last_sequence_num),
+            ..Default::default()
+        }
+    }
+
     pub fn grid(&self) -> &Grid {
         &self.grid
     }
@@ -45,8 +52,17 @@ impl GridController {
         &mut self.grid
     }
 
+    // create a new gc for testing purposes in both Rust and TS
     pub fn test() -> Self {
         Self::from_grid(Grid::new(), 0)
+    }
+
+    // get the last active transaction for testing purposes
+    pub fn last_transaction(&self) -> Option<&Transaction> {
+        self.active_transactions()
+            .unsaved_transactions
+            .last()
+            .map(|t| &t.forward)
     }
 
     pub fn test_blank() -> Self {

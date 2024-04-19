@@ -14,11 +14,7 @@ impl GridController {
     pub fn js_copy_to_clipboard(&self, sheet_id: String, rect: &Rect) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         let (plain_text, html) = self.copy_to_clipboard(rect.to_sheet_rect(sheet_id));
-        let output = JsClipboard {
-            plain_text,
-            html,
-            summary: None,
-        };
+        let output = JsClipboard { plain_text, html };
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
 
@@ -31,13 +27,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let (summary, plain_text, html) =
-            self.cut_to_clipboard(rect.to_sheet_rect(sheet_id), cursor);
-        let output = JsClipboard {
-            plain_text,
-            html,
-            summary: Some(summary),
-        };
+        let (plain_text, html) = self.cut_to_clipboard(rect.to_sheet_rect(sheet_id), cursor);
+        let output = JsClipboard { plain_text, html };
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
 
@@ -49,17 +40,28 @@ impl GridController {
         dest_pos: Pos,
         plain_text: Option<String>,
         html: Option<String>,
-        special: PasteSpecial,
+        special: String,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let output = self.paste_from_clipboard(
+    ) -> Result<(), JsValue> {
+        let special = if &special == "None" {
+            PasteSpecial::None
+        } else if &special == "Values" {
+            PasteSpecial::Values
+        } else if &special == "Formats" {
+            PasteSpecial::Formats
+        } else {
+            return Err(JsValue::from_str("Invalid special"));
+        };
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            return Ok(());
+        };
+        self.paste_from_clipboard(
             dest_pos.to_sheet_pos(sheet_id),
             plain_text,
             html,
             special,
             cursor,
         );
-        Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
+        Ok(())
     }
 }

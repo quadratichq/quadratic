@@ -1,4 +1,4 @@
-import { grid } from '../../../grid/controller/Grid';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { isMac } from '../../../utils/isMac';
 
 export function keyboardUndoRedo(event: React.KeyboardEvent<HTMLElement>): boolean {
@@ -7,14 +7,14 @@ export function keyboardUndoRedo(event: React.KeyboardEvent<HTMLElement>): boole
     ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'z') ||
     ((event.metaKey || event.ctrlKey) && event.key === 'y' && !isMac)
   ) {
-    grid.redo();
+    quadraticCore.redo();
     event.preventDefault();
     return true;
   }
 
   // Undo
   if ((event.metaKey || event.ctrlKey) && event.key === 'z') {
-    grid.undo();
+    quadraticCore.undo();
     event.preventDefault();
     return true;
   }

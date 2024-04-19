@@ -190,7 +190,7 @@ mod test {
                 CodeCellLanguage::Formula,
                 "1 + 1".to_string(),
                 None,
-            )
+            );
         };
 
         // (1, 1) = A0
@@ -205,7 +205,7 @@ mod test {
                 CodeCellLanguage::Formula,
                 "A0".to_string(),
                 None,
-            )
+            );
         };
 
         // (0, 0, sheet 2) = sheet 1:A1
@@ -220,7 +220,7 @@ mod test {
                 CodeCellLanguage::Formula,
                 "'Sheet 1'!A0".to_string(),
                 None,
-            )
+            );
         };
 
         let check_operations = |gc: &GridController| {

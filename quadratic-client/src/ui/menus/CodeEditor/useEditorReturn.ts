@@ -1,5 +1,5 @@
-import { CodeCellLanguage } from '@/quadratic-core/types';
-import type { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
+import { CodeCellLanguage } from '@/quadratic-core-types';
+import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import monaco, { Range, editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 

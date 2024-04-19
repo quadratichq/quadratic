@@ -1,4 +1,4 @@
-import { CodeCellLanguage } from '@/quadratic-core/types';
+import { CodeCellLanguage } from '@/quadratic-core-types';
 import monaco, { editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { Diagnostic } from 'vscode-languageserver-types';

@@ -1,18 +1,13 @@
 use crate::{
-    grid::{Column, GridBounds},
-    CellValue, Pos,
+    grid::{bounds::BoundsRect, Column, GridBounds},
+    CellValue, Pos, Rect,
 };
 
 use super::Sheet;
 
 impl Sheet {
-    /// Recalculates all bounds of the sheet.
-    ///
-    /// This should be called whenever data in the sheet is modified.
-    pub fn recalculate_bounds(&mut self) {
-        self.data_bounds.clear();
-        self.format_bounds.clear();
-
+    /// calculates all bounds
+    pub fn calculate_bounds(&mut self) {
         for (&x, column) in &self.columns {
             if let Some(data_range) = column.range(true) {
                 let y = data_range.start;
@@ -27,13 +22,43 @@ impl Sheet {
                 self.format_bounds.add(Pos { x, y });
             }
         }
+    }
+
+    /// Recalculates all bounds of the sheet.
+    ///
+    /// Returns whether any of the sheet's bounds has changed
+    pub fn recalculate_bounds(&mut self) -> bool {
+        let old_data_bounds = self.data_bounds.to_bounds_rect();
+        let old_format_bounds = self.format_bounds.to_bounds_rect();
+        self.data_bounds.clear();
+        self.format_bounds.clear();
+
+        self.calculate_bounds();
+
         self.code_runs.iter().for_each(|(pos, code_cell_value)| {
             let output_rect = code_cell_value.output_rect(*pos, false);
             self.data_bounds.add(output_rect.min);
             self.data_bounds.add(output_rect.max);
-            self.format_bounds.add(output_rect.min);
-            self.format_bounds.add(output_rect.max);
         });
+        old_data_bounds != self.data_bounds.to_bounds_rect()
+            || old_format_bounds != self.format_bounds.to_bounds_rect()
+    }
+
+    /// Adds a SheetRect to the bounds of the sheet.
+    ///
+    /// Returns whether any of the sheet's bounds has changed
+    pub fn recalculate_add_bounds(&mut self, rect: Rect, format: bool) -> bool {
+        if format {
+            let old_format_bounds = self.format_bounds.to_bounds_rect();
+            self.format_bounds.add(rect.min);
+            self.format_bounds.add(rect.max);
+            old_format_bounds != self.format_bounds.to_bounds_rect()
+        } else {
+            let old_data_bounds = self.format_bounds.to_bounds_rect();
+            self.data_bounds.add(rect.min);
+            self.data_bounds.add(rect.max);
+            old_data_bounds != self.data_bounds.to_bounds_rect()
+        }
     }
 
     /// Returns whether the sheet is completely empty.
@@ -51,6 +76,7 @@ impl Sheet {
             false => GridBounds::merge(self.data_bounds, self.format_bounds),
         }
     }
+
     /// Returns the lower and upper bounds of a column, or `None` if the column
     /// is empty.
     ///
@@ -136,7 +162,7 @@ impl Sheet {
             return None;
         }
         if let (Some(min), Some(max), Some(code_range)) = (min, max, &code_range) {
-            Some((min.min(code_range.start), max.max(code_range.end) - 1))
+            Some((min.min(code_range.start), max.max(code_range.end - 1)))
         } else if let (Some(min), Some(max)) = (min, max) {
             Some((min, max))
         } else {
@@ -256,6 +282,16 @@ impl Sheet {
             }
         }
     }
+
+    /// Returns the bounds of the sheet.
+    ///
+    /// Returns `(data_bounds, format_bounds)`.
+    pub fn to_bounds_rects(&self) -> (Option<BoundsRect>, Option<BoundsRect>) {
+        (
+            self.data_bounds.to_bounds_rect(),
+            self.format_bounds.to_bounds_rect(),
+        )
+    }
 }
 
 #[cfg(test)]
@@ -263,7 +299,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{CellAlign, CodeCellLanguage, GridBounds, Sheet},
-        CellValue, IsBlank, Pos, Rect, SheetPos,
+        CellValue, IsBlank, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -271,10 +307,11 @@ mod test {
     #[test]
     fn test_is_empty() {
         let mut sheet = Sheet::test();
+        assert!(!sheet.recalculate_bounds());
         assert!(sheet.is_empty());
 
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
-        sheet.recalculate_bounds();
+        assert!(sheet.recalculate_bounds());
         assert!(!sheet.is_empty());
 
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
@@ -291,7 +328,7 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
         let _ =
             sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
-        sheet.recalculate_bounds();
+        assert!(sheet.recalculate_bounds());
 
         assert_eq!(
             sheet.bounds(true),
@@ -320,7 +357,7 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 100, y: 80 }, CellValue::Text(String::from("test")));
         let _ = sheet
             .set_formatting_value::<CellAlign>(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
-        sheet.recalculate_bounds();
+        assert!(sheet.recalculate_bounds());
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
         assert_eq!(sheet.column_bounds(100, false), Some((-50, 200)));
@@ -599,5 +636,58 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(2, true), Some((1, 1)));
         assert_eq!(sheet.row_bounds(2, false), Some((1, 1)));
+    }
+
+    #[test]
+    fn send_updated_bounds_rect() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value(
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id,
+            },
+            "test".to_string(),
+            None,
+        );
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.data_bounds,
+            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
+        );
+        gc.set_cell_bold(
+            SheetRect::from_numbers(3, 5, 1, 1, sheet_id),
+            Some(true),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.bounds(true),
+            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 1, 1))
+        );
+        assert_eq!(
+            sheet.bounds(false),
+            GridBounds::NonEmpty(Rect::from_numbers(1, 2, 3, 4))
+        );
+    }
+
+    #[test]
+    fn row_bounds() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
+        gc.set_code_cell(
+            (1, 0, sheet_id).into(),
+            CodeCellLanguage::Formula,
+            "[['c','d']]".into(),
+            None,
+        );
+        gc.set_cell_value((3, 0, sheet_id).into(), "d".into(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.row_bounds(0, true), Some((0, 3)));
+        assert_eq!(sheet.row_bounds(0, false), Some((0, 3)));
     }
 }

@@ -1,6 +1,6 @@
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
-import { MultiplayerUser } from '@/multiplayer/multiplayerTypes';
 import { displayName } from '@/utils/userUtil';
+import { MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { StopCircleOutlined } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useSetRecoilState } from 'recoil';

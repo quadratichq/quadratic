@@ -3,19 +3,45 @@ use uuid::Uuid;
 use super::{GridController, TransactionType};
 use crate::{
     controller::{
-        active_transactions::pending_transaction::PendingTransaction,
+        active_transactions::{
+            pending_transaction::PendingTransaction, transaction_name::TransactionName,
+        },
         operations::operation::Operation,
         transaction::Transaction,
-        transaction_summary::{TransactionSummary, CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+        transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    Pos,
+    grid::SheetId,
+    Pos, Rect,
 };
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
     pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
+        if cfg!(target_family = "wasm") && !transaction.is_server() {
+            let (x, y, w, h) = if let Some(rect) = transaction.rect {
+                (
+                    Some(rect.min.x),
+                    Some(rect.min.y),
+                    Some(rect.width()),
+                    Some(rect.height()),
+                )
+            } else {
+                (None, None, None, None)
+            };
+            let transaction_name = serde_json::to_string(&transaction.transaction_name)
+                .unwrap_or("Unknown".to_string());
+            crate::wasm_bindings::js::jsTransactionStart(
+                transaction.id.to_string(),
+                transaction_name,
+                transaction.sheet_id.map(|s| s.to_string()),
+                x,
+                y,
+                w,
+                h,
+            );
+        }
         loop {
             if transaction.operations.is_empty() {
                 transaction.complete = true;
@@ -23,7 +49,6 @@ impl GridController {
             }
 
             self.execute_operation(transaction);
-
             if transaction.waiting_for_async.is_some() {
                 self.transactions.add_async_transaction(transaction);
                 break;
@@ -32,11 +57,7 @@ impl GridController {
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
-    pub(super) fn finalize_transaction(
-        &mut self,
-        transaction: &mut PendingTransaction,
-    ) -> TransactionSummary {
-        self.recalculate_sheet_bounds(transaction);
+    pub(super) fn finalize_transaction(&mut self, transaction: &mut PendingTransaction) {
         if transaction.complete {
             match transaction.transaction_type {
                 TransactionType::User => {
@@ -62,25 +83,39 @@ impl GridController {
                         .insert_or_replace(transaction, true);
                 }
                 TransactionType::Multiplayer => (),
+                TransactionType::Server => (),
                 TransactionType::Unset => panic!("Expected a transaction type"),
             }
         }
-        transaction.prepare_summary(transaction.complete)
+        transaction.send_transaction();
+
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            crate::wasm_bindings::js::jsUndoRedo(
+                !self.undo_stack.is_empty(),
+                !self.redo_stack.is_empty(),
+            );
+        }
     }
 
     pub fn start_user_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+        transaction_name: TransactionName,
+        sheet_id: Option<SheetId>,
+        rect: Option<Rect>,
+    ) {
         let mut transaction = PendingTransaction {
             transaction_type: TransactionType::User,
             operations: operations.into(),
             cursor,
+            transaction_name,
+            sheet_id,
+            rect,
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
-        self.finalize_transaction(&mut transaction)
+        self.finalize_transaction(&mut transaction);
     }
 
     pub fn start_undo_transaction(
@@ -88,16 +123,16 @@ impl GridController {
         transaction: Transaction,
         transaction_type: TransactionType,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let mut pending = transaction.to_undo_transaction(transaction_type, cursor);
         pending.id = Uuid::new_v4();
         self.start_transaction(&mut pending);
-        self.finalize_transaction(&mut pending)
+        self.finalize_transaction(&mut pending);
     }
 
     /// Externally called when an async calculation completes
-    pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<TransactionSummary> {
-        let transaction_id = Uuid::parse_str(&result.transaction_id())?;
+    pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<()> {
+        let transaction_id = Uuid::parse_str(&result.transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
         if result.cancel_compute.unwrap_or(false) {
@@ -105,7 +140,8 @@ impl GridController {
         }
 
         self.after_calculation_async(&mut transaction, result)?;
-        Ok(self.finalize_transaction(&mut transaction))
+        self.finalize_transaction(&mut transaction);
+        Ok(())
     }
 }
 
@@ -206,7 +242,13 @@ mod tests {
         assert!(!gc.has_undo());
         assert!(!gc.has_redo());
 
-        gc.start_user_transaction(vec![operation.clone()], None);
+        gc.start_user_transaction(
+            vec![operation.clone()],
+            None,
+            TransactionName::Unknown,
+            Some(gc.sheet_ids()[0]),
+            None,
+        );
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
@@ -220,15 +262,6 @@ mod tests {
         gc.redo(None);
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
-    }
-
-    #[test]
-    fn test_transactions_transaction_summary() {
-        let mut transaction = PendingTransaction::default();
-        assert_eq!(
-            transaction.prepare_summary(false),
-            TransactionSummary::default()
-        );
     }
 
     #[test]
@@ -264,7 +297,7 @@ mod tests {
     fn test_js_calculation_complete() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let summary = gc.set_code_cell(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 0,
@@ -274,10 +307,11 @@ mod tests {
             "1 + 1".into(),
             None,
         );
-        assert!(summary.transaction_id.is_some());
+
+        let transaction_id = gc.last_transaction().unwrap().id;
 
         let result = gc.calculation_complete(JsCodeResult::new(
-            summary.transaction_id.unwrap(),
+            transaction_id.to_string(),
             true,
             None,
             None,
