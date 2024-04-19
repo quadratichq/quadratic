@@ -6,7 +6,6 @@ use quadratic_rust_shared::pubsub::PubSub as PubSubTrait;
 
 use crate::{
     error::{FilesError, Result},
-    file::GROUP_NAME,
     state::State,
 };
 
@@ -24,21 +23,33 @@ pub(crate) fn parse_processed_transaction_key(key: &str) -> Result<(String, Stri
     Ok((split[0].to_string(), split[1].to_string()))
 }
 
-/// Process outstanding transactions in the queue
-pub(crate) async fn add_processed_transaction(
+/// Process outstanding transactions in the queue, but only for the given key.
+/// This is useful for testing as we need to create timestamps in the past
+/// rather than accepting NOW() (the default).
+async fn add_processed_transaction_with_key(
     state: &Arc<State>,
     channel: &str,
     message: &str,
+    key: &str,
 ) -> Result<()> {
     state
         .pubsub
         .lock()
         .await
         .connection
-        .publish(channel, "*", message, None)
+        .publish(channel, key, message, None)
         .await?;
 
     Ok(())
+}
+
+/// Process outstanding transactions in the queue
+pub(crate) async fn add_processed_transaction(
+    state: &Arc<State>,
+    channel: &str,
+    message: &str,
+) -> Result<()> {
+    add_processed_transaction_with_key(state, channel, message, "*").await
 }
 
 /// Process outstanding transactions in the queue
@@ -152,8 +163,6 @@ mod tests {
                 .await
                 .unwrap();
 
-            println!("{file_id}: {:?}\n", messages);
-
             assert_eq!(
                 messages.len(),
                 expected,
@@ -164,11 +173,26 @@ mod tests {
         }
     }
 
+    pub(crate) async fn add_processed_transaction_in_days(
+        state: &Arc<State>,
+        channel: &str,
+        message: &str,
+        days_old: u64,
+    ) -> Result<()> {
+        let millis = Utc::now()
+            .checked_sub_days(Days::new(days_old))
+            .unwrap()
+            .timestamp_millis();
+
+        add_processed_transaction_with_key(state, channel, message, &millis.to_string()).await
+    }
+
     #[tokio::test]
     async fn truncates_files() {
         let state = new_arc_state().await;
         let channel = format!("processed_transactions_{}", Uuid::new_v4());
         let mut file_ids = vec![];
+        const AGE: u64 = 5;
 
         // add 10 transactions to 10 channels
         for i in 1..=10 {
@@ -191,7 +215,7 @@ mod tests {
                     .unwrap();
 
                 let message = processed_transaction_key(&file_id.to_string(), &j.to_string());
-                add_processed_transaction(&state, &channel, &message)
+                add_processed_transaction_in_days(&state, &channel, &message, AGE)
                     .await
                     .unwrap();
             }
@@ -203,8 +227,22 @@ mod tests {
         // verify the messages are in the FILE_ID channel
         assert_file_messages(state.clone(), &file_ids, 10).await;
 
+        // verify the messages are NOT ready to be processed (AGE + 1 days old)
+        let process_transactions_messages = get_messages(&state, &channel, AGE + 1).await.unwrap();
+        assert_eq!(process_transactions_messages.len(), 0);
+
+        truncate_processed_transactions(&state, &channel, AGE + 1)
+            .await
+            .unwrap();
+
+        // wait
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+        // verify the messages are in the FILE_ID channel
+        assert_file_messages(state.clone(), &file_ids, 10).await;
+
         // verify the messages are in the process_transactions channel
-        let process_transactions_messages = get_messages(&state, &channel, 0).await.unwrap();
+        let process_transactions_messages = get_messages(&state, &channel, AGE).await.unwrap();
         assert_eq!(process_transactions_messages.len(), 100);
 
         truncate_processed_transactions(&state, &channel, 0)
@@ -215,7 +253,7 @@ mod tests {
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
         // the most recent message should be remain since redis is range exclusive
-        let process_transactions_messages = get_messages(&state, &channel, 0).await.unwrap();
+        let process_transactions_messages = get_messages(&state, &channel, AGE).await.unwrap();
         assert_eq!(process_transactions_messages.len(), 1);
 
         // all files should be processed
