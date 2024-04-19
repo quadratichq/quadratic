@@ -4,7 +4,7 @@
 
 import { Rectangle as RectangleData } from '@/app/gridGL/types/size';
 import { Rect } from '@/app/quadratic-core-types';
-import { Pos, Rect as RectInternal } from '@/quadratic-core/quadratic_core';
+import { Pos, Rect as RectInternal } from '@/app/quadratic-core/quadratic_core';
 import { Point, Rectangle } from 'pixi.js';
 
 export const rectangleToRect = (rectangle: Rectangle | RectangleData): RectInternal => {

@@ -1,5 +1,5 @@
 {
-  "extends": "../../../../tsconfig.generic.json",
+  "extends": "../../../../../tsconfig.generic.json",
   "compilerOptions": {
     "lib": ["ESNext", "webworker"],
     "types": ["vitest/importMeta", "vite/client"]

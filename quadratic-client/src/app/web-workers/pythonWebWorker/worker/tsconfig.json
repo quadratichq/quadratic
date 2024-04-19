@@ -1,7 +1,7 @@
 {
-  "extends": "../../../../tsconfig.generic.json",
+  "extends": "../../../../../tsconfig.generic.json",
   "compilerOptions": {
-    "rootDir": "../../../",
+    "rootDir": "../../../../",
     "module": "ESNext",
     "lib": ["ESNext", "webworker"]
   }

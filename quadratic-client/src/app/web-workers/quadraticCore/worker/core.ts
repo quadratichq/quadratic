@@ -5,6 +5,9 @@
  * directly accessed by its siblings.
  */
 
+import { debugWebWorkers } from '@/app/debugFlags';
+import { Rectangle } from '@/app/gridGL/types/size';
+import { readFileAsArrayBuffer } from '@/app/helpers/files';
 import {
   CellAlign,
   CellFormatSummary,
@@ -17,12 +20,9 @@ import {
   SearchOptions,
   SheetPos,
 } from '@/app/quadratic-core-types';
-import { debugWebWorkers } from '@/debugFlags';
-import { Rectangle } from '@/gridGL/types/size';
-import { readFileAsArrayBuffer } from '@/helpers/files';
-import initCore, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
-import { MultiplayerCoreReceiveTransaction } from '@/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import { PythonRun } from '@/web-workers/pythonWebWorker/pythonTypes';
+import initCore, { GridController, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
+import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
+import { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import * as Sentry from '@sentry/react';
 import {
   ClientCoreFindNextColumn,
