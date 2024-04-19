@@ -1,6 +1,5 @@
-use crate::controller::{
-    operations::operation::Operation, transaction_summary::TransactionSummary, GridController,
-};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::{operations::operation::Operation, GridController};
 use crate::{
     grid::{
         formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
@@ -16,11 +15,13 @@ impl GridController {
         values: RunLengthEncoding<Option<A::Value>>,
     ) -> RunLengthEncoding<Option<A::Value>> {
         // todo: add better error handling for sheet removal
-        if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
+        let result = if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
             sheet.set_cell_formats_for_type::<A>(sheet_rect, values)
         } else {
             RunLengthEncoding::new()
-        }
+        };
+        self.send_updated_bounds_rect(sheet_rect, true);
+        result
     }
 
     /// set currency type for a region
@@ -30,19 +31,27 @@ impl GridController {
         sheet_rect: &SheetRect,
         symbol: Option<String>,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let ops = self.set_currency_operations(sheet_rect, symbol);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetFormats,
+            Some(sheet_rect.sheet_id),
+            Some((*sheet_rect).into()),
+        );
     }
 
     /// Sets NumericFormat and NumericDecimals to None
-    pub fn remove_number_formatting(
-        &mut self,
-        sheet_rect: &SheetRect,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
+    pub fn remove_number_formatting(&mut self, sheet_rect: &SheetRect, cursor: Option<String>) {
         let ops = self.remove_number_formatting_operations(sheet_rect);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetFormats,
+            Some(sheet_rect.sheet_id),
+            Some((*sheet_rect).into()),
+        );
     }
 
     pub fn change_decimal_places(
@@ -51,9 +60,15 @@ impl GridController {
         sheet_rect: SheetRect,
         delta: isize,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let ops = self.change_decimal_places_operations(source, sheet_rect, delta);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetFormats,
+            Some(sheet_rect.sheet_id),
+            Some(sheet_rect.into()),
+        );
     }
 
     pub fn toggle_commas(
@@ -61,9 +76,15 @@ impl GridController {
         source: SheetPos,
         sheet_rect: SheetRect,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let ops = self.toggle_commas_operations(source, sheet_rect);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetFormats,
+            Some(sheet_rect.sheet_id),
+            Some(sheet_rect.into()),
+        );
     }
 
     pub fn get_all_cell_formats(&self, sheet_rect: SheetRect) -> Vec<CellFmtArray> {
@@ -120,6 +141,24 @@ impl GridController {
         }
         cell_formats
     }
+
+    pub fn set_cell_render_size(
+        &mut self,
+        sheet_rect: SheetRect,
+        value: Option<RenderSize>,
+        cursor: Option<String>,
+    ) {
+        let attr = CellFmtArray::RenderSize(RunLengthEncoding::repeat(value, sheet_rect.len()));
+        let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetFormats,
+            Some(sheet_rect.sheet_id),
+            Some(sheet_rect.into()),
+        );
+        self.send_html_output_rect(&sheet_rect);
+    }
 }
 
 macro_rules! impl_set_cell_fmt_method {
@@ -130,11 +169,17 @@ macro_rules! impl_set_cell_fmt_method {
                 sheet_rect: SheetRect,
                 value: Option<<$cell_fmt_attr_type as CellFmtAttr>::Value>,
                 cursor: Option<String>,
-            ) -> TransactionSummary {
+            ) {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, sheet_rect.len()));
                 let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-                self.start_user_transaction(ops, cursor)
+                self.start_user_transaction(
+                    ops,
+                    cursor,
+                    TransactionName::SetFormats,
+                    Some(sheet_rect.sheet_id),
+                    Some(sheet_rect.into()),
+                );
             }
         }
     };
@@ -148,7 +193,8 @@ impl_set_cell_fmt_method!(set_cell_bold<Bold>(CellFmtArray::Bold));
 impl_set_cell_fmt_method!(set_cell_italic<Italic>(CellFmtArray::Italic));
 impl_set_cell_fmt_method!(set_cell_text_color<TextColor>(CellFmtArray::TextColor));
 impl_set_cell_fmt_method!(set_cell_fill_color<FillColor>(CellFmtArray::FillColor));
-impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
+
+// impl_set_cell_fmt_method!(set_cell_render_size<RenderSize>(CellFmtArray::RenderSize));
 
 #[cfg(test)]
 mod test {

@@ -1,7 +1,7 @@
 import { CELL_HEIGHT, CELL_WIDTH } from '@/constants/gridConstants';
 import { sheets } from '@/grid/controller/Sheets';
 import { Sheet } from '@/grid/sheet/Sheet';
-import { JsHtmlOutput } from '@/quadratic-core/types';
+import { JsHtmlOutput } from '@/quadratic-core-types';
 import { colors } from '@/theme/colors';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -29,6 +29,7 @@ export class HtmlCell {
   div: HTMLDivElement;
 
   constructor(htmlCell: JsHtmlOutput) {
+    if (!htmlCell.html) throw new Error('Expected html to be defined in HtmlCell constructor');
     this.htmlCell = htmlCell;
     const sheet = sheets.getById(htmlCell.sheet_id)!;
     if (!sheet) {
@@ -163,6 +164,7 @@ export class HtmlCell {
   };
 
   update(htmlCell: JsHtmlOutput) {
+    if (!htmlCell.html) throw new Error('Expected html to be defined in HtmlCell.update');
     if (htmlCell.w !== this.htmlCell.w && htmlCell.h !== this.htmlCell.h) {
       this.iframe.width = htmlCell.w ?? DEFAULT_HTML_WIDTH;
       this.iframe.height = htmlCell.h ?? DEFAULT_HTML_HEIGHT;

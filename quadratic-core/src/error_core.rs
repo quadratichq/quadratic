@@ -27,6 +27,9 @@ pub enum CoreError {
 
     #[error("IndexedDb error: {0}")]
     IndexedDbError(String),
+
+    #[error("CodeCellSheetError: {0}")]
+    CodeCellSheetError(String),
 }
 
 impl From<serde_json::Error> for CoreError {

@@ -8,6 +8,7 @@ import {
   DONE,
   KILLED,
   NO_LOGS,
+  PERF,
   SPACE,
   WATCH,
 } from "./constants.js";
@@ -128,6 +129,9 @@ export class UI {
     } else {
       this.write(" " + DONE, "green");
     }
+    if (component === "core" && this.cli.options.perf) {
+      this.write(PERF);
+    }
     this.write(SPACE);
   }
 
@@ -173,6 +177,7 @@ export class UI {
     this.statusItem("multiplayer");
     this.statusItem("files");
     this.statusItem("types");
+    this.statusItem("rustClient");
     this.statusItem("python");
     if (this.help === "cli") {
       this.write(helpCLI);

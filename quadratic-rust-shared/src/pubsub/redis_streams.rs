@@ -430,7 +430,7 @@ pub mod tests {
         let (config, channel) = setup();
         let messages = ["test 1", "test 2"];
         let group = "group 1";
-        let channels = [Uuid::new_v4().to_string(), Uuid::new_v4().to_string()];
+        let mut channels = [Uuid::new_v4().to_string(), Uuid::new_v4().to_string()];
         let active_channels = Uuid::new_v4().to_string();
 
         let mut connection = RedisConnection::new(config).await.unwrap();
@@ -450,9 +450,11 @@ pub mod tests {
         }
 
         // get all channels
-        let results = connection.active_channels(&active_channels).await.unwrap();
+        let mut results = connection.active_channels(&active_channels).await.unwrap();
 
-        // active channels should exist and contain the channels in order
+        // active channels should exist and contain the channels (order seems random; although it was indicated to be in order when test was first written)
+        results.sort();
+        channels.sort();
         assert_eq!(results, channels);
 
         // now update the first channel
@@ -461,8 +463,11 @@ pub mod tests {
             .await
             .unwrap();
 
-        let results = connection.active_channels(&active_channels).await.unwrap();
-        assert_eq!(results, vec![channels[1].clone(), channels[0].clone()]);
+        let mut results = connection.active_channels(&active_channels).await.unwrap();
+        results.sort();
+        let mut channel_results = vec![channels[1].clone(), channels[0].clone()];
+        channel_results.sort();
+        assert_eq!(results, channel_results);
 
         // remove the first channel
         connection

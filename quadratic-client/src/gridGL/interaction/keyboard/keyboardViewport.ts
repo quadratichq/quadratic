@@ -2,17 +2,17 @@ import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
 import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
-import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/python';
+import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
-export function keyboardViewport(options: {
+export async function keyboardViewport(options: {
   event: KeyboardEvent;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   presentationMode: boolean;
   setPresentationMode: Function;
-}): boolean {
+}): Promise<boolean> {
   const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
   const { pointer } = pixiApp;
 
@@ -101,20 +101,20 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+    const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
     setBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    const formatPrimaryCell = sheets.sheet.getFormatPrimaryCell();
+    const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
     setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
     return true;
   }
 
   // Command + Escape
   if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
-    pythonWebWorker.restartFromUser();
+    pythonWebWorker.cancelExecution();
   }
 
   return false;

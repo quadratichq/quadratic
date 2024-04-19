@@ -1,9 +1,10 @@
+import { debugShowFileIO } from '@/debugFlags';
 import FontFaceObserver from 'fontfaceobserver';
 import { BitmapFont, Loader } from 'pixi.js';
 import { createBorderTypes } from './dashedTextures';
 
 const intervalToCheckBitmapFonts = 100;
-const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
+export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
 function loadFont(fontName: string): void {
   const font = new FontFaceObserver(fontName);
@@ -15,6 +16,7 @@ export function ensureBitmapFontLoaded(resolve: () => void): void {
     if (bitmapFonts.find((font) => !BitmapFont.available[font])) {
       setTimeout(waitForLoad, intervalToCheckBitmapFonts);
     } else {
+      if (debugShowFileIO) console.log('[pixiApp] assets loaded.');
       resolve();
     }
   };
@@ -24,6 +26,7 @@ export function ensureBitmapFontLoaded(resolve: () => void): void {
 
 export function loadAssets(): Promise<void> {
   return new Promise((resolve) => {
+    if (debugShowFileIO) console.log('[pixiApp] Loading assets...');
     createBorderTypes();
 
     // Load HTML fonts for Input

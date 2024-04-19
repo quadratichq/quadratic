@@ -61,11 +61,12 @@ impl UnsavedTransactions {
                     reverse,
                     sent_to_server: false,
                 };
-                if !cfg!(test) && !cfg!(feature = "multiplayer") && send {
+                if cfg!(target_family = "wasm") && send {
                     if let Ok(stringified) = serde_json::to_string(&transaction) {
                         crate::wasm_bindings::js::addUnsentTransaction(
                             transaction.forward.id.to_string(),
                             stringified,
+                            transaction.forward.operations.len() as u32,
                         );
                     }
                 }
@@ -74,11 +75,12 @@ impl UnsavedTransactions {
             Some((_, unsaved_transaction)) => {
                 unsaved_transaction.forward = forward;
                 unsaved_transaction.reverse = reverse;
-                if !cfg!(test) && !cfg!(feature = "multiplayer") && send {
+                if cfg!(target_family = "wasm") && send {
                     if let Ok(stringified) = serde_json::to_string(&unsaved_transaction) {
                         crate::wasm_bindings::js::addUnsentTransaction(
                             unsaved_transaction.forward.id.to_string(),
                             stringified,
+                            unsaved_transaction.forward.operations.len() as u32,
                         );
                     }
                 }
@@ -141,6 +143,7 @@ mod test {
             sheet_id: SheetId::new(),
             row: 0,
             new_size: 0.0,
+            client_resized: true,
         });
         unsaved_transactions.insert_or_replace(&pending_2, false);
         assert_eq!(unsaved_transactions.len(), 1);

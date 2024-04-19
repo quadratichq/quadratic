@@ -1,4 +1,4 @@
-import { multiplayer } from '@/multiplayer/multiplayer';
+import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { Coordinate } from '../types/size';

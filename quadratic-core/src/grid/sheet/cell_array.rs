@@ -3,8 +3,7 @@ use std::collections::HashSet;
 use anyhow::{anyhow, Result};
 
 use crate::{
-    controller::execution::run_code::get_cells::{GetCellResponse, GetCellsResponse},
-    Array, CellValue, Pos, Rect,
+    controller::execution::run_code::get_cells::JsGetCellResponse, Array, CellValue, Pos, Rect,
 };
 
 use super::Sheet;
@@ -33,20 +32,20 @@ impl Sheet {
         old_values
     }
 
-    pub fn get_cells_response(&self, rect: Rect) -> GetCellsResponse {
+    pub fn get_cells_response(&self, rect: Rect) -> Vec<JsGetCellResponse> {
         let mut response = vec![];
 
         for y in rect.y_range() {
             for x in rect.x_range() {
                 if let Some(cell) = self.display_value(Pos { x, y }) {
-                    response.push(GetCellResponse {
+                    response.push(JsGetCellResponse {
                         x,
                         y,
                         value: cell.to_edit(),
                         type_name: cell.type_name().into(),
                     });
                 } else {
-                    response.push(GetCellResponse {
+                    response.push(JsGetCellResponse {
                         x,
                         y,
                         value: "".into(),
@@ -56,7 +55,7 @@ impl Sheet {
             }
         }
 
-        GetCellsResponse { response }
+        response
     }
 
     // todo: the following two functions are probably in the wrong place
@@ -174,34 +173,32 @@ mod tests {
         let response = sheet.get_cells_response(Rect::from_numbers(0, 0, 2, 2));
         assert_eq!(
             response,
-            GetCellsResponse {
-                response: vec![
-                    GetCellResponse {
-                        x: 0,
-                        y: 0,
-                        value: "1".into(),
-                        type_name: "number".into(),
-                    },
-                    GetCellResponse {
-                        x: 1,
-                        y: 0,
-                        value: "2".into(),
-                        type_name: "number".into(),
-                    },
-                    GetCellResponse {
-                        x: 0,
-                        y: 1,
-                        value: "3".into(),
-                        type_name: "number".into(),
-                    },
-                    GetCellResponse {
-                        x: 1,
-                        y: 1,
-                        value: "4".into(),
-                        type_name: "number".into(),
-                    },
-                ],
-            }
+            vec![
+                JsGetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "1".into(),
+                    type_name: "number".into(),
+                },
+                JsGetCellResponse {
+                    x: 1,
+                    y: 0,
+                    value: "2".into(),
+                    type_name: "number".into(),
+                },
+                JsGetCellResponse {
+                    x: 0,
+                    y: 1,
+                    value: "3".into(),
+                    type_name: "number".into(),
+                },
+                JsGetCellResponse {
+                    x: 1,
+                    y: 1,
+                    value: "4".into(),
+                    type_name: "number".into(),
+                },
+            ],
         );
     }
 
