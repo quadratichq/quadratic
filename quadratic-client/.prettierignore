@@ -2,3 +2,6 @@
 src/quadratic-core
 src/shadcn/ui
 src/web-workers/pythonLanguageServer/pyright-initialization.json
+src/quadratic-core
+src/quadratic-core-types
+src/quadratic-rust-client

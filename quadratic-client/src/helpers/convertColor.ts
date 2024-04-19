@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import Color from 'color';
 import { ColorResult } from 'react-color';
 
@@ -7,11 +8,23 @@ export function convertReactColorToString(color: ColorResult): string {
 }
 
 export function convertColorStringToTint(color: string): number {
-  return Color(color).rgbNumber();
+  try {
+    return Color(color).rgbNumber();
+  } catch (e: any) {
+    console.error('Error converting color string to tint', e);
+    Sentry.captureException(e, { data: color });
+    return 0xaaaaaa;
+  }
 }
 
 export function convertTintToString(color: number): string {
-  return Color(color).rgb().toString();
+  try {
+    return Color(color).rgb().toString();
+  } catch (e: any) {
+    console.error('Error converting color tint to string', e);
+    Sentry.captureException(e, { data: color });
+    return 'gray';
+  }
 }
 
 export function convertTintToArray(color: number): [number, number, number, number] {

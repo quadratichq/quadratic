@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { Add, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import { Stack, useTheme } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
@@ -30,13 +31,17 @@ export const SheetBar = (): JSX.Element => {
   // activate sheet
   const [activeSheet, setActiveSheet] = useState(sheets.current);
 
+  const dragTimeOut = useRef<number | undefined>();
+
   useEffect(() => {
     const updateSheet = () => {
-      setTrigger((trigger) => trigger + 1);
       setActiveSheet(sheets.current);
+      setTrigger((trigger) => trigger + 1);
     };
-    window.addEventListener('change-sheet', updateSheet);
-    return () => window.removeEventListener('change-sheet', updateSheet);
+    events.on('changeSheet', updateSheet);
+    return () => {
+      events.off('changeSheet', updateSheet);
+    };
   }, []);
 
   // handle disabling left arrow and right arrow
@@ -110,17 +115,6 @@ export const SheetBar = (): JSX.Element => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
-  // ensure active tab is visible when changed
-  useEffect(() => {
-    if (sheetTabs) {
-      const children = [...sheetTabs.children];
-      const tab = children.find((child) => child.getAttribute('data-id') === activeSheet);
-      if (tab) {
-        // tab.scrollIntoView();
-      }
-    }
-  }, [activeSheet, sheetTabs]);
-
   // handle drag tabs
   const down = useRef<
     | {
@@ -191,7 +185,7 @@ export const SheetBar = (): JSX.Element => {
           originalOrderIndex,
           actualOrderIndex: originalOrderIndex,
         };
-        setTimeout(() => {
+        dragTimeOut.current = window.setTimeout(() => {
           if (down.current) {
             tab.style.boxShadow = '0rem -0.5rem 0.75rem rgba(0,0,0,0.25)';
           }
@@ -344,6 +338,10 @@ export const SheetBar = (): JSX.Element => {
   }, []);
 
   const handlePointerUp = useCallback(() => {
+    if (dragTimeOut.current) {
+      window.clearTimeout(dragTimeOut.current);
+      dragTimeOut.current = undefined;
+    }
     if (down.current) {
       if (scrolling.current) {
         window.clearInterval(scrolling.current);
@@ -430,7 +428,7 @@ export const SheetBar = (): JSX.Element => {
         <SheetBarButton
           onClick={() => {
             mixpanel.track('[Sheets].add');
-            sheets.createNew();
+            sheets.userAddSheet();
             focusGrid();
           }}
           style={{ borderTop: `1px solid ${theme.palette.divider}` }}

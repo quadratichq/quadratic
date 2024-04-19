@@ -8,6 +8,7 @@ export class CLI {
     multiplayer: boolean;
     files: boolean;
     python: boolean;
+    rustClient: boolean;
     skipTypes: boolean;
     all: boolean;
     perf: boolean;
@@ -18,6 +19,7 @@ export class CLI {
     hideMultiplayer: boolean;
     hideFiles: boolean;
     hidePython: boolean;
+    hideRustClient: boolean;
     dark: boolean;
   };
 
@@ -32,7 +34,9 @@ export class CLI {
       .option("-r, --react", "Do NOT watch quadratic-client (React)")
       .option("-c, --core", "Watch the quadratic-core directory")
       .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
+      .option("-e, --rust-client", "Watch the quadratic-rust-client directory")
       .option("-f, --files", "Watch the quadratic-files directory")
+      .option("-o, --rustClient", "Watch the quadratic-rust-client directory")
       .option(
         "-y, --python",
         "Watch the quadratic-kernels/python-wasm directory"
@@ -50,6 +54,8 @@ export class CLI {
       .option("-M, --hideMultiplayer", "Hide Multiplayer output")
       .option("-F, --hideFiles", "Hide Files output")
       .option("-Y, --hidePython", "Hide Python output")
+      .option("-O, --rustClient", "Hide RustClient")
+      .option("-E, --hideRustClient", "Hide RustClient")
       .option("-d, --dark", "Use dark theme")
       .showHelpAfterError();
 
@@ -61,6 +67,7 @@ export class CLI {
       this.options.core = true;
       this.options.multiplayer = true;
       this.options.files = true;
+      this.options.rustClient = true;
       this.options.python = true;
     }
   }

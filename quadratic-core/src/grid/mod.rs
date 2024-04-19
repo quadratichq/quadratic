@@ -31,7 +31,6 @@ pub mod file;
 pub mod formatting;
 mod ids;
 pub mod js_types;
-mod offsets;
 pub mod search;
 pub mod series;
 pub mod sheet;

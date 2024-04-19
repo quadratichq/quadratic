@@ -37,6 +37,13 @@ impl GridController {
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
             }
+
+            if cfg!(target_family = "wasm") && !transaction.is_server() {
+                crate::wasm_bindings::js::jsTransactionProgress(
+                    transaction.id.to_string(),
+                    transaction.operations.len() as i32,
+                );
+            }
         }
     }
 }

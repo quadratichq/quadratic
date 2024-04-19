@@ -1,12 +1,12 @@
 import { cellTypeMenuOpenedCountAtom } from '@/atoms/cellTypeMenuOpenedCountAtom';
 import { editorInteractionStateAtom } from '@/atoms/editorInteractionStateAtom';
+import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
-import { Rectangle } from 'pixi.js';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';
 import { CURSOR_THICKNESS } from '../UI/Cursor';
-import { ResizeHeadingColumnEvent } from '../interaction/pointer/PointerHeading';
 
 export const CodeHint = () => {
   const [cellHasValue, setCellHasValue] = useState(false);
@@ -14,17 +14,17 @@ export const CodeHint = () => {
   const { showCodeEditor, permissions } = useRecoilValue(editorInteractionStateAtom);
 
   useEffect(() => {
-    const updateCursor = () => {
+    const updateCursor = async () => {
       const { x, y } = sheets.sheet.cursor.cursorPosition;
-      const newCellHasValue = sheets.sheet.hasRenderCells(new Rectangle(x, y, 0, 0));
+      const newCellHasValue = await quadraticCore.hasRenderCells(sheets.sheet.id, x, y, 0, 0);
       setCellHasValue(newCellHasValue);
     };
     updateCursor();
-    window.addEventListener('cursor-position', updateCursor);
-    window.addEventListener('change-sheet', updateCursor);
+    events.on('cursorPosition', updateCursor);
+    events.on('changeSheet', updateCursor);
     return () => {
-      window.removeEventListener('cursor-position', updateCursor);
-      window.removeEventListener('change-sheet', updateCursor);
+      events.off('cursorPosition', updateCursor);
+      events.off('changeSheet', updateCursor);
     };
   }, []);
 
@@ -50,19 +50,16 @@ export const CodeHintInternal = () => {
       const { x, y } = sheets.sheet.cursor.cursorPosition;
       setOffsets(sheets.sheet.getCellOffsets(x, y));
     };
-
-    window.addEventListener('cursor-position', updateOffsets);
-    window.addEventListener('change-sheet', updateOffsets);
+    events.on('cursorPosition', updateOffsets);
+    events.on('changeSheet', updateOffsets);
     return () => {
-      window.removeEventListener('cursor-position', updateOffsets);
-      window.removeEventListener('change-sheet', updateOffsets);
+      events.off('cursorPosition', updateOffsets);
+      events.off('changeSheet', updateOffsets);
     };
   });
 
   useEffect(() => {
-    const updateOffsets = (e: Event) => {
-      const customEvent = e as ResizeHeadingColumnEvent;
-      const column = customEvent.detail;
+    const updateOffsets = (column: number) => {
       const { x, y } = sheets.sheet.cursor.cursorPosition;
       // Only update the state if the column being resized is one to the left of
       // where the cursor is
@@ -71,9 +68,9 @@ export const CodeHintInternal = () => {
       }
     };
 
-    window.addEventListener('resize-heading-column', updateOffsets);
+    events.on('resizeHeadingColumn', updateOffsets);
     return () => {
-      window.removeEventListener('resize-heading-column', updateOffsets);
+      events.off('resizeHeadingColumn', updateOffsets);
     };
   });
 
