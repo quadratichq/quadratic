@@ -404,6 +404,10 @@ export class Control {
             start: "[Running ",
         }));
     }
+    async restartRustClient() {
+        this.cli.options.rustClient = !this.cli.options.rustClient;
+        this.runRustClient();
+    }
     async runDb() {
         if (this.quitting)
             return;
