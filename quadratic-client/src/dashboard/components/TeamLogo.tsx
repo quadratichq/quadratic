@@ -1,6 +1,6 @@
-import { Button } from '@/shadcn/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
-import { Slider } from '@/shadcn/ui/slider';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { Slider } from '@/shared/shadcn/ui/slider';
 import { useRef, useState } from 'react';
 import AvatarEditor from 'react-avatar-editor';
 
