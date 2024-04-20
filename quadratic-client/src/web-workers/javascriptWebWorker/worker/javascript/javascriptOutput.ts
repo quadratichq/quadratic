@@ -35,6 +35,10 @@ export function javascriptConvertOutputType(
       }`
     );
     return null;
+  } else if (value instanceof OffscreenCanvas) {
+    return null;
+    // const data = await (value as OffscreenCanvas).convertToBlob({ type: 'image/png' });
+    // return { output: [data, displayType: 'Chart' };
   } else if (typeof value === 'string') {
     return { output: [value, 'text'], displayType: 'string' };
   } else if (value === undefined) {

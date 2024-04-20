@@ -164,6 +164,9 @@ export const CodeEditorBody = (props: Props) => {
             horizontal: 'hidden',
           },
           wordWrap: 'on',
+
+          // need to ignore unused b/c of the async wrapper around the code and import code
+          showUnused: language === 'Javascript' ? false : true,
         }}
       />
       {['Python', 'Javascript'].includes(language as string) && (

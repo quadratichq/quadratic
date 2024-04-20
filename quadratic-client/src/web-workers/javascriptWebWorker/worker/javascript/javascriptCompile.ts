@@ -5,13 +5,20 @@ import * as esbuild from 'esbuild-wasm';
 // there's an even number of them. This may break in some situations, but seeing
 // as esbuild strips comments on build, we may be mostly okay here except where
 
-import { CoreJavascriptRun } from '../../javascriptCoreMessages';
 import { LINE_NUMBER_VAR } from './javascript';
 import { JAVASCRIPT_X_COORDINATE, JAVASCRIPT_Y_COORDINATE, javascriptLibrary } from './runner/javascriptLibrary';
 
-export async function javascriptFindSyntaxError(code: string): Promise<{ text: string; lineNumber?: number } | false> {
+export interface JavascriptTransformedCode {
+  imports: string;
+  code: string;
+}
+
+export async function javascriptFindSyntaxError(transformed: {
+  code: string;
+  imports: string;
+}): Promise<{ text: string; lineNumber?: number } | false> {
   try {
-    await esbuild.transform(code, { loader: 'js' });
+    await esbuild.transform(`${transformed.imports};(async() => {\n${transformed.code}\n})()`, { loader: 'js' });
     return false;
   } catch (e: any) {
     const error = e as esbuild.TransformFailure;
@@ -49,7 +56,7 @@ export function javascriptAddLineNumberVars(code: string): string {
 
 // Separates imports from the code so it can be placed above anonymous async
 // function. This is necessary because JS does not support top-level await (yet).
-function transformCode(code: string): { code: string; imports: string } {
+export function transformCode(code: string): JavascriptTransformedCode {
   // from https://stackoverflow.com/a/73265022/1955997
   const regExp =
     // eslint-disable-next-line no-useless-escape
@@ -63,7 +70,12 @@ function transformCode(code: string): { code: string; imports: string } {
 // moving import statements outside of async wrapper; adding line number
 // variables (although if we get an error, we'll try it without the variables);
 // and adding the quadratic libraries and console tracking code.
-export function prepareJavascriptCode(message: CoreJavascriptRun, withLineNumbers: boolean): string {
+export function prepareJavascriptCode(
+  transform: JavascriptTransformedCode,
+  x: number,
+  y: number,
+  withLineNumbers: boolean
+): string {
   // if (withLineNumbers) {
   //   return (
   //     transform.imports +
@@ -79,17 +91,16 @@ export function prepareJavascriptCode(message: CoreJavascriptRun, withLineNumber
   // console.log("hello")
   // return 123;
   // `;
-  const transform = transformCode(message.code);
   const compiledCode =
     transform.imports +
-    `const ${JAVASCRIPT_X_COORDINATE} = ${message.x}; const ${JAVASCRIPT_Y_COORDINATE} = ${message.y}` +
+    `const ${JAVASCRIPT_X_COORDINATE} = ${x}; const ${JAVASCRIPT_Y_COORDINATE} = ${y}` +
     javascriptLibrary +
     '(async() => {try{' +
     'const results = await (async () => {' +
     transform.code +
     '\n })();' +
     'self.postMessage({ type: "results", results, console: javascriptConsole.output() });' +
-    '} catch (e) { self.postMessage({ type: "error", error: e, console: javascriptConsole.output() }); }' +
+    '} catch (e) { const error = e.message; const stack = e.stack; self.postMessage({ type: "error", error, stack, console: javascriptConsole.output() }); }' +
     '})();';
   return compiledCode;
   // }

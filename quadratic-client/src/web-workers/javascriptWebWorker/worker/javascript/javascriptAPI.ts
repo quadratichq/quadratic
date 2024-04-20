@@ -13,7 +13,8 @@ export class JavascriptAPI {
     this.javascript = javascript;
   }
 
-  private convertType(entry: JsGetCellResponse): CellType {
+  private convertType(entry: JsGetCellResponse): CellType | undefined {
+    if (entry.type_name === 'blank') return undefined;
     return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
   }
 

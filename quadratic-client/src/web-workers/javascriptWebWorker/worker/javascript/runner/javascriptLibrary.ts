@@ -62,7 +62,7 @@ export const javascriptLibrary =
    */
   const relCell = async (x, y) => {
     const p = pos();
-    return await self.getCell(x + p.x, y + p.y);
+    return await getCell(x + p.x, y + p.y);
   };
 
   /**

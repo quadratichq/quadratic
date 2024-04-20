@@ -20,6 +20,7 @@ export interface RunnerJavascriptResults {
 export interface RunnerJavascriptError {
   type: 'error';
   error: string;
+  stack: string;
   console: string;
 }
 

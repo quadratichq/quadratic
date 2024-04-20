@@ -18,12 +18,12 @@ import { javascriptConvertOutputArray, javascriptConvertOutputType } from './jav
 //   return { text: '', line: null };
 // }
 
-export function javascriptErrorResult(transactionId: string, message: string, console?: string, lineNumber?: number) {
+export function javascriptErrorResult(transactionId: string, message: string, lineNumber?: number) {
   const codeResult: JsCodeResult = {
     transaction_id: transactionId,
     success: false,
     output_value: null,
-    std_err: message + console ? '\n' + console : '',
+    std_err: message,
     std_out: '',
     output_array: null,
     line_number: lineNumber ?? null,
@@ -48,8 +48,8 @@ export function javascriptResults(
   const codeResult: JsCodeResult = {
     transaction_id: transactionId,
     success: true,
-    output_value: outputType ? outputType.output : null,
-    std_out: console + message.length ? message.join('\n') : '',
+    output_value: outputType?.output ? outputType.output : null,
+    std_out: console + (message.length ? message.join('\n') : ''),
     std_err: null,
     output_array: outputArray ? outputArray.output : null,
     line_number: lineNumber !== undefined ? lineNumber + 1 : null,

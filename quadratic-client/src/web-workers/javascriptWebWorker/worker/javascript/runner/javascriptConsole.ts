@@ -5,7 +5,13 @@ export const javascriptConsole = `
     logs = [];
 
     constructor() {
+      this.oldConsoleLog = console.log;
       console.log = this.consoleMap;
+      console.warn = this.consoleMap;
+    }
+
+    log(...args) {
+      this.oldConsoleLog(args);
     }
 
     consoleMap = (...args) => {

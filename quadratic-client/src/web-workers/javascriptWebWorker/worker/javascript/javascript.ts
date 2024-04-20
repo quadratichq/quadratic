@@ -4,9 +4,10 @@ import * as esbuild from 'esbuild-wasm';
 import { CoreJavascriptRun } from '../../javascriptCoreMessages';
 import { javascriptClient } from '../javascriptClient';
 import { JavascriptAPI } from './javascriptAPI';
-import { javascriptFindSyntaxError, prepareJavascriptCode } from './javascriptCompile';
+import { javascriptFindSyntaxError, prepareJavascriptCode, transformCode } from './javascriptCompile';
 import { javascriptErrorResult, javascriptResults } from './javascriptResults';
 import { JavascriptRunnerGetCells, RunnerJavascriptMessage } from './javascriptRunnerMessages';
+import { javascriptLibraryLines } from './runner/javascriptLibrary';
 
 export const LINE_NUMBER_VAR = '___line_number___';
 
@@ -73,10 +74,11 @@ export class Javascript {
       return;
     }
 
+    const transformedCode = transformCode(message.code);
     if (withLineNumbers) {
-      const error = await javascriptFindSyntaxError(message.code);
+      const error = await javascriptFindSyntaxError(transformedCode);
       if (error) {
-        javascriptErrorResult(message.transactionId, error.text, '', error.lineNumber);
+        javascriptErrorResult(message.transactionId, error.text, error.lineNumber);
         return;
       }
     }
@@ -91,7 +93,7 @@ export class Javascript {
     this.row = message.y;
 
     try {
-      const code = prepareJavascriptCode(message, this.withLineNumbers);
+      const code = prepareJavascriptCode(transformedCode, message.x, message.y, this.withLineNumbers);
       const runner = new Worker(URL.createObjectURL(new Blob([code], { type: 'application/javascript' })), {
         type: 'module',
         name: 'javascriptWorker',
@@ -115,7 +117,31 @@ export class Javascript {
             }
           });
         } else if (e.data.type === 'error') {
-          javascriptErrorResult(message.transactionId, e.data.error, e.data.console);
+          let errorLine: number | undefined;
+          let errorColumn: number | undefined;
+          let errorMessage = e.data.error;
+          if (e.data.stack) {
+            const stack = e.data.stack;
+            const errorSplit = stack.split('\n')[1].split(':');
+            if (errorSplit.length >= 2) {
+              errorLine = parseInt(errorSplit[errorSplit.length - 2]);
+              errorColumn = parseInt(errorSplit[errorSplit.length - 1]);
+              if (isNaN(errorLine)) {
+                errorLine = undefined;
+              } else {
+                errorLine -= javascriptLibraryLines - 1;
+                if (errorLine < 0) {
+                  errorLine = undefined;
+                } else {
+                  errorMessage += ` at line ${errorLine}:${errorColumn}`;
+                }
+              }
+            }
+          }
+          if (e.data.console) {
+            errorMessage += '\n' + e.data.console;
+          }
+          javascriptErrorResult(message.transactionId, errorMessage, errorLine);
           this.state = 'ready';
           setTimeout(this.next, 0);
         } else {
