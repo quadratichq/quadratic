@@ -1,7 +1,10 @@
+import { javascriptConsole } from './javascriptConsole';
+
 export const JAVASCRIPT_X_COORDINATE = '___x___';
 export const JAVASCRIPT_Y_COORDINATE = '___y___';
 
-export const javascriptLibrary = `
+export const javascriptLibrary =
+  `
   const javascriptSendMessageAwaitingResponse = async (message) => {
     return new Promise((resolve) => {
       self.onmessage = (event) => resolve(event.data);
@@ -69,6 +72,8 @@ export const javascriptLibrary = `
    * @returns Promise<number | string | undefined>
    */
   const rc = relCell;
-`;
+
+
+` + javascriptConsole;
 
 export const javascriptLibraryLines = javascriptLibrary.split('\n').length;

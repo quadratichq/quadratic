@@ -1,7 +1,6 @@
-import { javascriptConsole } from './javascriptConsole';
-
 // Converts a single cell output and sets the displayType.
 export function javascriptConvertOutputType(
+  message: string[],
   value: any,
   column: number,
   row: number,
@@ -14,14 +13,14 @@ export function javascriptConvertOutputType(
 
   if (typeof value === 'number') {
     if (isNaN(value)) {
-      javascriptConsole.push(
+      message.push(
         `Warning: Unsupported output type: 'NaN' ${
           x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
         }`
       );
       return null;
     } else if (value === Infinity) {
-      javascriptConsole.push(
+      message.push(
         `Warning: Unsupported output type: 'Infinity' ${
           x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
         }`
@@ -30,7 +29,7 @@ export function javascriptConvertOutputType(
     }
     return { output: [value.toString(), 'number'], displayType: 'number' };
   } else if (value === 'function') {
-    javascriptConsole.push(
+    message.push(
       `WARNING: Unsupported output type: 'function' ${
         x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
       }`
@@ -43,7 +42,7 @@ export function javascriptConvertOutputType(
   } else if (typeof value === 'boolean') {
     return { output: [value ? 'true' : 'false', 'logical'], displayType: 'boolean' };
   } else {
-    javascriptConsole.push(
+    message.push(
       `WARNING: Unsupported output type "${typeof value}" ${
         x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
       }`
@@ -63,6 +62,7 @@ export function javascriptFormatDisplayType(types: Set<string>, twoDimensional: 
 
 // Converts an array output and sets the displayType.
 export function javascriptConvertOutputArray(
+  message: string[],
   value: any,
   column: number,
   row: number
@@ -74,7 +74,7 @@ export function javascriptConvertOutputArray(
   if (!Array.isArray(value[0])) {
     return {
       output: value.map((v: any, y: number) => {
-        const outputValue = javascriptConvertOutputType(v, column, row, 0, y);
+        const outputValue = javascriptConvertOutputType(message, v, column, row, 0, y);
         types.add(outputValue?.displayType || 'text');
         if (outputValue) {
           types.add(outputValue.displayType);
@@ -88,7 +88,7 @@ export function javascriptConvertOutputArray(
     return {
       output: value.map((v: any[], y: number) => {
         return v.map((v2: any[], x: number) => {
-          const outputValue = javascriptConvertOutputType(v2, column, row, x, y);
+          const outputValue = javascriptConvertOutputType(message, v2, column, row, x, y);
           if (outputValue) {
             types.add(outputValue.displayType);
             return outputValue.output;

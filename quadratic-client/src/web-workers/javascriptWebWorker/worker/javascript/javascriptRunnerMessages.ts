@@ -17,6 +17,12 @@ export interface RunnerJavascriptResults {
   console: string;
 }
 
+export interface RunnerJavascriptError {
+  type: 'error';
+  error: string;
+  console: string;
+}
+
 export type JavascriptRunnerMessage = JavascriptRunnerGetCells;
 
-export type RunnerJavascriptMessage = RunnerJavascriptGetCell | RunnerJavascriptResults;
+export type RunnerJavascriptMessage = RunnerJavascriptGetCell | RunnerJavascriptResults | RunnerJavascriptError;
