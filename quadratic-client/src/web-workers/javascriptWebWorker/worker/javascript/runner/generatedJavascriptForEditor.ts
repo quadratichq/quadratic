@@ -1,4 +1,5 @@
-declare var self: WorkerGlobalScope & typeof globalThis;
+// Generated file from ./compileJavascriptRunner.mjs
+export const javascriptLibraryForEditor = `declare var self: WorkerGlobalScope & typeof globalThis;
 
 declare global {
   function getCells(
@@ -99,3 +100,4 @@ export const relCell = async (deltaX: number, deltaY: number) => {
  * @returns value of the cell
  */
 export const rc = relCell;
+`;

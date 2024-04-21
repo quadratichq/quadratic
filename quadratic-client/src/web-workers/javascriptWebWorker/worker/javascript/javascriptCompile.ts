@@ -11,7 +11,7 @@
 
 import * as esbuild from 'esbuild-wasm';
 import { LINE_NUMBER_VAR } from './javascript';
-import { JAVASCRIPT_X_COORDINATE, JAVASCRIPT_Y_COORDINATE, javascriptLibrary } from './runner/javascriptLibrary';
+import { javascriptLibrary } from './runner/generateJavascriptForRunner';
 
 export interface JavascriptTransformedCode {
   imports: string;
@@ -41,11 +41,12 @@ export async function javascriptFindSyntaxError(transformed: {
 // number variables within multiline strings. TODO: A full JS parser would be
 // better as it would handle all cases and can be used to move the import
 // statements to the top of the code as well.
-export function javascriptAddLineNumberVars(code: string): string {
-  const list = code.split('\n');
+export function javascriptAddLineNumberVars(transform: JavascriptTransformedCode): string {
+  const imports = transform.imports.split('\n');
+  const list = transform.code.split('\n');
   let multiLineCount = 0;
   let s = '';
-  let add = 1;
+  let add = imports.length + 1;
   for (let i = 0; i < list.length; i++) {
     multiLineCount += [...list[i].matchAll(/`/g)].length;
     s += list[i];
@@ -81,32 +82,19 @@ export function prepareJavascriptCode(
   y: number,
   withLineNumbers: boolean
 ): string {
-  // if (withLineNumbers) {
-  //   return (
-  //     transform.imports +
-  //     javascriptLibrary +
-  //     '(async () => {' +
-  //     javascriptAddLineNumberVars(transform.code) +
-  //     '\n })();debugger'
-  //   );
-  // } else {
-  // const codeTest = `
-  // import * as d3 from "https://esm.run/d3";
-  // console.log(!!d3);
-  // console.log("hello")
-  // return 123;
-  // `;
+  const code = withLineNumbers ? javascriptAddLineNumberVars(transform) : transform.code;
   const compiledCode =
     transform.imports +
-    `const ${JAVASCRIPT_X_COORDINATE} = ${x}; const ${JAVASCRIPT_Y_COORDINATE} = ${y}` +
-    javascriptLibrary +
+    (withLineNumbers ? `let ${LINE_NUMBER_VAR} = 1;` : '') +
+    javascriptLibrary.replace('{x:0,y:0}', `{x:${x},y:${y}}`) + // replace the pos() with the correct x,y coordinates
     '(async() => {try{' +
     'const results = await (async () => {' +
-    transform.code +
+    code +
     '\n })();' +
-    'self.postMessage({ type: "results", results, console: javascriptConsole.output() });' +
-    '} catch (e) { const error = e.message; const stack = e.stack; self.postMessage({ type: "error", error, stack, console: javascriptConsole.output() }); }' +
+    `self.postMessage({ type: "results", results, console: javascriptConsole.output()${
+      withLineNumbers ? `, lineNumber: ${LINE_NUMBER_VAR} - 1` : ''
+    } });` +
+    `} catch (e) { const error = e.message; const stack = e.stack; self.postMessage({ type: "error", error, stack, console: javascriptConsole.output() }); }` +
     '})();';
   return compiledCode;
-  // }
 }

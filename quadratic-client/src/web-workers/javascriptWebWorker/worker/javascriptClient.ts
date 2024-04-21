@@ -3,7 +3,7 @@ import { CodeRun, LanguageState } from '@/web-workers/languageTypes';
 import type { ClientJavascriptMessage, JavascriptClientMessage } from '../javascriptClientMessages';
 import { javascriptCore } from './javascriptCore';
 
-declare var self: WorkerGlobalScope & typeof globalThis & {};
+declare var self: WorkerGlobalScope & typeof globalThis;
 
 class JavascriptClient {
   start() {

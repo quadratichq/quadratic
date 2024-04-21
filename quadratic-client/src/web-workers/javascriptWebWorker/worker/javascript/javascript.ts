@@ -1,4 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// This file is the main entry point for the javascript worker. It handles
+// managing the Javascript runners, which is where the code is executed.
+
 import type { CodeRun, LanguageState } from '@/web-workers/languageTypes';
 import * as esbuild from 'esbuild-wasm';
 import { CoreJavascriptRun } from '../../javascriptCoreMessages';
@@ -7,7 +9,7 @@ import { JavascriptAPI } from './javascriptAPI';
 import { javascriptFindSyntaxError, prepareJavascriptCode, transformCode } from './javascriptCompile';
 import { javascriptErrorResult, javascriptResults } from './javascriptResults';
 import { JavascriptRunnerGetCells, RunnerJavascriptMessage } from './javascriptRunnerMessages';
-import { javascriptLibraryLines } from './runner/javascriptLibrary';
+import { javascriptLibraryLines } from './runner/generateJavascriptForRunner';
 
 export const LINE_NUMBER_VAR = '___line_number___';
 
@@ -61,8 +63,6 @@ export class Javascript {
       const run = this.awaitingExecution.shift();
       if (run) {
         await this.run(this.codeRunToCoreJavascript(run));
-        this.state = 'ready';
-        javascriptClient.sendState('running', { current: run, awaitingExecution: this.awaitingExecution });
       }
     } else {
       javascriptClient.sendState('ready');
@@ -100,16 +100,24 @@ export class Javascript {
         name: 'javascriptWorker',
       });
       runner.onerror = (e) => {
-        console.log(e);
-
         // todo: handle worker errors (although there should not be any)
-        debugger;
+        javascriptErrorResult(message.transactionId, e.message);
+        this.state = 'ready';
+        setTimeout(this.next, 0);
       };
       runner.onmessage = (e: MessageEvent<RunnerJavascriptMessage>) => {
         if (e.data.type === 'results') {
-          javascriptResults(message.transactionId, message.x, message.y, e.data.results, e.data.console);
+          javascriptResults(
+            message.transactionId,
+            message.x,
+            message.y,
+            e.data.results,
+            e.data.console,
+            e.data.lineNumber
+          );
           this.state = 'ready';
           setTimeout(this.next, 0);
+          runner.terminate();
         } else if (e.data.type === 'getCells') {
           this.api.getCells(e.data.x0, e.data.y0, e.data.x1, e.data.y1, e.data.sheetName).then((results) => {
             if (results) {
@@ -145,6 +153,7 @@ export class Javascript {
           if (e.data.console) {
             errorMessage += '\n' + e.data.console;
           }
+          runner.terminate();
           javascriptErrorResult(message.transactionId, errorMessage, errorLine);
           this.state = 'ready';
           setTimeout(this.next, 0);

@@ -1,3 +1,6 @@
+// Messages sent between the javascript web worker and the javascript runner
+// (which is where the user code is executed).
+
 import { CellType } from './javascriptAPI';
 
 export type JavascriptRunnerGetCells = CellType[][] | undefined;
@@ -15,6 +18,7 @@ export interface RunnerJavascriptResults {
   type: 'results';
   results: any;
   console: string;
+  lineNumber?: number;
 }
 
 export interface RunnerJavascriptError {

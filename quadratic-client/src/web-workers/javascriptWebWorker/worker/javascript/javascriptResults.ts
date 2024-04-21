@@ -26,7 +26,7 @@ export function javascriptResults(
   x: number,
   y: number,
   result: any,
-  console: string,
+  consoleOutput: string,
   lineNumber?: number
 ) {
   const message: string[] = [];
@@ -36,10 +36,10 @@ export function javascriptResults(
     transaction_id: transactionId,
     success: true,
     output_value: outputType?.output ? outputType.output : null,
-    std_out: (console ? console : '') + (message.length ? message.join('\n') : ''),
+    std_out: (consoleOutput ? consoleOutput : '') + (message.length ? message.join('\n') : ''),
     std_err: null,
     output_array: outputArray ? outputArray.output : null,
-    line_number: lineNumber !== undefined ? lineNumber + 1 : null,
+    line_number: lineNumber !== undefined ? lineNumber : null,
     output_display_type: outputType?.displayType || outputArray?.displayType || null,
     cancel_compute: false,
   };

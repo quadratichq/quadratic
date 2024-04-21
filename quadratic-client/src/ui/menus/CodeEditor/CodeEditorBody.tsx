@@ -20,8 +20,8 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 import useEventListener from '@/hooks/useEventListener';
-import { javascriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/runner/javascriptLibrary';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
+import { javascriptLibraryForEditor } from '@/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
@@ -82,39 +82,42 @@ export const CodeEditorBody = (props: Props) => {
       // Only register language once
       if (registered) return;
 
-      monaco.languages.register({ id: 'Formula' });
-      monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
-      monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
-      monaco.languages.registerCompletionItemProvider('Formula', {
-        provideCompletionItems,
-      });
-      monaco.languages.registerHoverProvider('Formula', { provideHover });
+      if (language === 'Formula') {
+        monaco.languages.register({ id: 'Formula' });
+        monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
+        monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
+        monaco.languages.registerCompletionItemProvider('Formula', {
+          provideCompletionItems,
+        });
+        monaco.languages.registerHoverProvider('Formula', { provideHover });
+      }
 
-      monaco.languages.register({ id: 'python' });
-
-      monaco.languages.registerCompletionItemProvider('python', {
-        provideCompletionItems: provideCompletionItemsPython,
-        triggerCharacters: ['.', '[', '"', "'"],
-      });
-
-      monaco.languages.registerSignatureHelpProvider('python', {
-        provideSignatureHelp: provideSignatureHelpPython,
-        signatureHelpTriggerCharacters: ['(', ','],
-      });
-      monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
-
-      // load the document in the python language server
       if (language === 'Python') {
+        monaco.languages.register({ id: 'python' });
+
+        monaco.languages.registerCompletionItemProvider('python', {
+          provideCompletionItems: provideCompletionItemsPython,
+          triggerCharacters: ['.', '[', '"', "'"],
+        });
+
+        monaco.languages.registerSignatureHelpProvider('python', {
+          provideSignatureHelp: provideSignatureHelpPython,
+          signatureHelpTriggerCharacters: ['(', ','],
+        });
+        monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
+
+        // load the document in the python language server
         pyrightWorker?.openDocument({
           textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
         });
       }
 
-      monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-        diagnosticCodesToIgnore: [1108, 1375, 1378],
-      });
-      monaco.editor.createModel(javascriptLibrary, 'javascript');
-      // monaco.editor.createModel(typescriptLibrary, 'typescript');
+      if (language === 'Javascript') {
+        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+          diagnosticCodesToIgnore: [1108, 1375, 1378],
+        });
+        monaco.editor.createModel(javascriptLibraryForEditor, 'javascript');
+      }
 
       registered = true;
     },
