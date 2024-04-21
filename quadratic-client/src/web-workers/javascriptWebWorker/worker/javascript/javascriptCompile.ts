@@ -1,10 +1,15 @@
+// Converts the Javascript code before sending it to the worker. This includes
+// using esbuild to find syntax errors, promoting import statements to the top
+// of the file (this is to ensure they are not placed inside of the async
+// anonymous function that allows await at the top level), and attempting to
+// track line numbers so we can return a lineNumber for the return statement. It
+// uses a naive approach to handling multi-line strings with return numbers. We
+// track the ` character and only add the variables where there's an even number
+// of them. We always try to compile and run the code with and without line
+// numbers to ensure that we don't break something when inserting the line
+// numbers.
+
 import * as esbuild from 'esbuild-wasm';
-
-// Adds line number variables to the code. It uses a naive approach to handling
-// multi-line strings. We track the ` character and only add the variables where
-// there's an even number of them. This may break in some situations, but seeing
-// as esbuild strips comments on build, we may be mostly okay here except where
-
 import { LINE_NUMBER_VAR } from './javascript';
 import { JAVASCRIPT_X_COORDINATE, JAVASCRIPT_Y_COORDINATE, javascriptLibrary } from './runner/javascriptLibrary';
 

@@ -1,3 +1,6 @@
+// Converts the Javascript output to the Rust format and the
+// display type for use in the Code Editor.
+
 // Converts a single cell output and sets the displayType.
 export function javascriptConvertOutputType(
   message: string[],

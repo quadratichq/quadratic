@@ -1,10 +1,9 @@
+// Converts
+
 import { JsCodeResult } from '@/quadratic-core-types';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { javascriptConvertOutputArray, javascriptConvertOutputType } from './javascriptOutput';
-
-// The number of spaces the transpiled code is indented.
-// const ESBUILD_INDENTATION = 2;
 
 export function javascriptErrorResult(transactionId: string, message: string, lineNumber?: number) {
   const codeResult: JsCodeResult = {

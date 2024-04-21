@@ -15,7 +15,7 @@ export class Javascript {
   private api: JavascriptAPI;
   private awaitingExecution: CodeRun[];
 
-  _state: LanguageState;
+  state: LanguageState = 'loading';
 
   // current running transaction
   transactionId?: string;
@@ -25,17 +25,8 @@ export class Javascript {
 
   constructor() {
     this.awaitingExecution = [];
-    this._state = 'loading';
     this.init();
     this.api = new JavascriptAPI(this);
-  }
-
-  set state(state: LanguageState) {
-    this._state = state;
-    javascriptClient.sendState(state);
-  }
-  get state() {
-    return this._state;
   }
 
   init = async () => {
@@ -71,7 +62,10 @@ export class Javascript {
       if (run) {
         await this.run(this.codeRunToCoreJavascript(run));
         this.state = 'ready';
+        javascriptClient.sendState('running', { current: run, awaitingExecution: this.awaitingExecution });
       }
+    } else {
+      javascriptClient.sendState('ready');
     }
   };
 
@@ -107,6 +101,8 @@ export class Javascript {
       });
       runner.onerror = (e) => {
         console.log(e);
+
+        // todo: handle worker errors (although there should not be any)
         debugger;
       };
       runner.onmessage = (e: MessageEvent<RunnerJavascriptMessage>) => {

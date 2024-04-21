@@ -1,3 +1,8 @@
+// This has the Javascript API functions. Internally, we only need getCells, as
+// most of the other functions are derivatives of getCells. We hardcode the
+// (x,y) position with the code, so `pos()` and `relCell()` can be calculated
+// within the worker using getCells.
+
 import { JsGetCellResponse } from '@/quadratic-core-types';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
@@ -14,7 +19,6 @@ export class JavascriptAPI {
   }
 
   private convertType(entry: JsGetCellResponse): CellType | undefined {
-    console.log(entry);
     if (entry.type_name === 'blank') return undefined;
     return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
   }
