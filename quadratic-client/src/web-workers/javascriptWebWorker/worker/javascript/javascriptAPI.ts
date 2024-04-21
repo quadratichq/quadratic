@@ -3,7 +3,7 @@ import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { Javascript } from './javascript';
 
-export type CellType = number | string | undefined;
+export type CellType = number | string | boolean | undefined;
 export type CellPos = { x: number; y: number };
 
 export class JavascriptAPI {
@@ -14,6 +14,7 @@ export class JavascriptAPI {
   }
 
   private convertType(entry: JsGetCellResponse): CellType | undefined {
+    console.log(entry);
     if (entry.type_name === 'blank') return undefined;
     return entry.type_name === 'number' ? parseFloat(entry.value) : entry.value;
   }
