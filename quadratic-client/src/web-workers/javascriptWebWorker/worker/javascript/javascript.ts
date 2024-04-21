@@ -15,7 +15,7 @@ export class Javascript {
   private api: JavascriptAPI;
   private awaitingExecution: CodeRun[];
 
-  state: LanguageState;
+  _state: LanguageState;
 
   // current running transaction
   transactionId?: string;
@@ -25,9 +25,17 @@ export class Javascript {
 
   constructor() {
     this.awaitingExecution = [];
-    this.state = 'loading';
+    this._state = 'loading';
     this.init();
     this.api = new JavascriptAPI(this);
+  }
+
+  set state(state: LanguageState) {
+    this._state = state;
+    javascriptClient.sendState(state);
+  }
+  get state() {
+    return this._state;
   }
 
   init = async () => {
@@ -39,7 +47,6 @@ export class Javascript {
     });
 
     this.state = 'ready';
-    javascriptClient.sendState('ready');
     this.next();
   };
 
@@ -113,7 +120,8 @@ export class Javascript {
               const message: JavascriptRunnerGetCells = results;
               runner.postMessage(message);
             } else {
-              // todo: we're done here b/c of an error in getCells (viz., sheet name was incorrect)...
+              this.state = 'ready';
+              setTimeout(this.next, 0);
             }
           });
         } else if (e.data.type === 'error') {

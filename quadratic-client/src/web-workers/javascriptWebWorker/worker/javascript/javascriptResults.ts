@@ -6,18 +6,6 @@ import { javascriptConvertOutputArray, javascriptConvertOutputType } from './jav
 // The number of spaces the transpiled code is indented.
 // const ESBUILD_INDENTATION = 2;
 
-// // calculate the error line number but excluding the Quadratic library size
-// function javascriptErrorLineNumber(stack: string): { text: string; line: number | null } {
-//   const match = stack.match(/<anonymous>:(\d+):(\d+)/);
-//   if (match) {
-//     const line = parseInt(match[1]) - javascriptLibraryLines;
-//     if (line >= 0) {
-//       return { text: ` at line ${line}:${parseInt(match[2]) - ESBUILD_INDENTATION}`, line };
-//     } else console.log(stack, match, line, javascriptLibraryLines);
-//   }
-//   return { text: '', line: null };
-// }
-
 export function javascriptErrorResult(transactionId: string, message: string, lineNumber?: number) {
   const codeResult: JsCodeResult = {
     transaction_id: transactionId,
@@ -49,7 +37,7 @@ export function javascriptResults(
     transaction_id: transactionId,
     success: true,
     output_value: outputType?.output ? outputType.output : null,
-    std_out: console + (message.length ? message.join('\n') : ''),
+    std_out: (console ? console : '') + (message.length ? message.join('\n') : ''),
     std_err: null,
     output_array: outputArray ? outputArray.output : null,
     line_number: lineNumber !== undefined ? lineNumber + 1 : null,
