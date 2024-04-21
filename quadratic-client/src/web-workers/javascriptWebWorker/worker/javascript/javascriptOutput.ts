@@ -2,18 +2,17 @@
 // display type for use in the Code Editor.
 
 // Converts a single cell output and sets the displayType.
-export function javascriptConvertOutputType(
+export async function javascriptConvertOutputType(
   message: string[],
   value: any,
   column: number,
   row: number,
   x?: number,
   y?: number
-): { output: string[]; displayType: string } | null {
+): Promise<{ output: [string, string]; displayType: string } | null> {
   if (Array.isArray(value)) {
     return null;
   }
-
   if (typeof value === 'number') {
     if (isNaN(value)) {
       message.push(
@@ -38,10 +37,10 @@ export function javascriptConvertOutputType(
       }`
     );
     return null;
-  } else if (value instanceof OffscreenCanvas) {
-    return null;
-    // const data = await (value as OffscreenCanvas).convertToBlob({ type: 'image/png' });
-    // return { output: [data, displayType: 'Chart' };
+  } else if (value instanceof Blob && (value as Blob).type.includes('image')) {
+    const image = await (value as Blob).text();
+    console.log(image);
+    return { output: [image, 'image'], displayType: 'Blob/image' };
   } else if (typeof value === 'string') {
     return { output: [value, 'text'], displayType: 'string' };
   } else if (value === undefined) {
@@ -68,42 +67,44 @@ export function javascriptFormatDisplayType(types: Set<string>, twoDimensional: 
 }
 
 // Converts an array output and sets the displayType.
-export function javascriptConvertOutputArray(
+export async function javascriptConvertOutputArray(
   message: string[],
   value: any,
   column: number,
   row: number
-): { output: string[][][]; displayType: string } | null {
+): Promise<{ output: [string, string][][]; displayType: string } | null> {
   if (!Array.isArray(value) || value.length === 0) {
     return null;
   }
   const types: Set<string> = new Set();
+  const output: [string, string][][] = [];
   if (!Array.isArray(value[0])) {
-    return {
-      output: value.map((v: any, y: number) => {
-        const outputValue = javascriptConvertOutputType(message, v, column, row, 0, y);
-        types.add(outputValue?.displayType || 'text');
+    for (const [y, v] of value.entries()) {
+      const outputValue = await javascriptConvertOutputType(message, v, column, row, 0, y);
+      types.add(outputValue?.displayType || 'text');
+      if (outputValue) {
+        types.add(outputValue.displayType);
+        output.push([outputValue.output]);
+      } else {
+        output.push([['', 'blank']]);
+      }
+    }
+  } else {
+    for (const [y, v] of value.entries()) {
+      output.push([]);
+      for (const [x, v2] of v.entries()) {
+        const outputValue = await javascriptConvertOutputType(message, v2, column, row, x, y);
         if (outputValue) {
           types.add(outputValue.displayType);
-          return [outputValue.output];
+          output[y].push(outputValue.output);
+        } else {
+          output[y].push(['', 'blank']);
         }
-        return [['', 'text']];
-      }),
-      displayType: javascriptFormatDisplayType(types, false),
-    };
-  } else {
-    return {
-      output: value.map((v: any[], y: number) => {
-        return v.map((v2: any[], x: number) => {
-          const outputValue = javascriptConvertOutputType(message, v2, column, row, x, y);
-          if (outputValue) {
-            types.add(outputValue.displayType);
-            return outputValue.output;
-          }
-          return ['', 'text'];
-        });
-      }),
-      displayType: javascriptFormatDisplayType(types, true),
-    };
+      }
+    }
   }
+  return {
+    output,
+    displayType: javascriptFormatDisplayType(types, false),
+  };
 }

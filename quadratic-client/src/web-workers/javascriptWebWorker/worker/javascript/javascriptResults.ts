@@ -21,7 +21,7 @@ export function javascriptErrorResult(transactionId: string, message: string, li
   javascriptClient.sendState('ready');
 }
 
-export function javascriptResults(
+export async function javascriptResults(
   transactionId: string,
   x: number,
   y: number,
@@ -30,8 +30,8 @@ export function javascriptResults(
   lineNumber?: number
 ) {
   const message: string[] = [];
-  const outputType = javascriptConvertOutputType(message, result, x, y);
-  const outputArray = javascriptConvertOutputArray(message, result, x, y);
+  const outputType = await javascriptConvertOutputType(message, result, x, y);
+  const outputArray = await javascriptConvertOutputArray(message, result, x, y);
   const codeResult: JsCodeResult = {
     transaction_id: transactionId,
     success: true,

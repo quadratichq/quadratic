@@ -15,9 +15,13 @@ class JavascriptCore {
     if (debugWebWorkers) console.log('[javascriptCore] initialized');
   }
 
-  private send(message: JavascriptCoreMessage) {
+  private send(message: JavascriptCoreMessage, transfer?: Transferable) {
     if (!this.coreMessagePort) throw new Error('coreMessagePort not initialized');
-    this.coreMessagePort.postMessage(message);
+    if (transfer) {
+      this.coreMessagePort.postMessage(message, [transfer]);
+    } else {
+      this.coreMessagePort.postMessage(message);
+    }
   }
 
   private handleMessage = async (e: MessageEvent<CoreJavascriptMessage>) => {
@@ -43,12 +47,15 @@ class JavascriptCore {
     console.warn("[javascriptCore] didn't handle message", e.data);
   };
 
-  sendJavascriptResults(transactionId: string, results: JsCodeResult) {
-    this.send({
-      type: 'javascriptCoreResults',
-      transactionId,
-      results,
-    });
+  sendJavascriptResults(transactionId: string, results: JsCodeResult, transfer?: Transferable) {
+    this.send(
+      {
+        type: 'javascriptCoreResults',
+        transactionId,
+        results,
+      },
+      transfer
+    );
   }
 
   sendGetCells(
