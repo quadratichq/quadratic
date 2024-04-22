@@ -21,14 +21,14 @@ export type EvaluationResult = {
   values?: { type: string; value: string }[];
 };
 
-export type outputType = 'number' | 'number' | 'text' | 'logical' | 'instant';
+export type outputType = 'blank' | 'number' | 'text' | 'logical' | 'instant';
 
 export interface PythonSuccess {
-  array_output: string[];
+  array_output: string[][];
   typed_array_output: [string, outputType][];
   code: string;
   input_python_stack_trace: string;
-  output?: [string, outputType][];
+  output?: [string, outputType];
   output_size?: number[];
 
   // Python type to show in CodeEditor
@@ -49,6 +49,7 @@ export interface PythonError {
   output_type: undefined;
   output_size: undefined;
   array_output: undefined;
+  typed_array_output?: [string, outputType][];
 
   success: false;
   input_python_stack_trace: string;

@@ -3,13 +3,17 @@ import { JsGetCellResponse } from '@/quadratic-core-types';
 import { PyodideInterface, loadPyodide } from 'pyodide';
 import type { CodeRun, PythonStateType } from '../pythonClientMessages';
 import type { CorePythonRun } from '../pythonCoreMessages';
-import type { InspectPython, PythonError, PythonSuccess } from '../pythonTypes';
+import type { InspectPython, PythonError, PythonSuccess, outputType } from '../pythonTypes';
 import { pythonClient } from './pythonClient';
 import { pythonCore } from './pythonCore';
 
 const TRY_AGAIN_TIMEOUT = 500;
 
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+
+function isEmpty(value: [string, outputType] | string | null | undefined) {
+  return value == null || (typeof value === 'string' && value.trim().length === 0);
+}
 
 class Python {
   private pyodide: PyodideInterface | undefined;
@@ -63,7 +67,9 @@ class Python {
         `${IS_TEST ? 'public' : ''}/quadratic_py-0.1.0-py3-none-any.whl`,
       ],
     });
+
     this.pyodide.registerJsModule('getCellsDB', this.getCells);
+
     // patch requests https://github.com/koenvo/pyodide-http
     await this.pyodide.runPythonAsync('import pyodide_http; pyodide_http.patch_all();');
 
@@ -83,6 +89,7 @@ class Python {
     const pyodideVersion = this.pyodide.version;
 
     if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
+
     pythonClient.sendInit(pythonVersion);
     pythonClient.sendPythonState('ready');
     this.state = 'ready';
@@ -135,6 +142,7 @@ class Python {
       this.awaitingExecution.push(this.corePythonRunToCodeRun(message));
       return;
     }
+
     pythonClient.sendPythonState('running', {
       current: this.corePythonRunToCodeRun(message),
       awaitingExecution: this.awaitingExecution,
@@ -152,11 +160,31 @@ class Python {
     let pythonRun: any;
     let output: PythonSuccess | PythonError | undefined;
     let inspectionResults: InspectPython | undefined;
+
     try {
       result = await this.pyodide.globals.get('run_python')(message.code, { x: message.x, y: message.y });
       output = Object.fromEntries(result.toJs()) as PythonSuccess | PythonError;
       inspectionResults = await this.inspectPython(message.code || '');
       let outputType = output?.output_type || '';
+
+      const empty2dArray =
+        Array.isArray(output.output_size) && output.output_size[0] === 0 && output.output_size[1] === 0;
+      const nothingReturned = (output.output_type === 'NoneType' && isEmpty(output.output)) || empty2dArray;
+
+      if (!output) throw new Error('Expected results to be defined in python.ts');
+
+      if (nothingReturned) {
+        output.array_output = undefined;
+        output.typed_array_output = undefined;
+        output.output = ['', 'blank'];
+      } else {
+        if (output.array_output && output.array_output.length) {
+          if (!Array.isArray(output.array_output[0][0])) {
+            output.array_output = output.array_output.map((row: any) => [row]);
+          }
+        }
+      }
+
       if (output.output_size) {
         outputType = `${output.output_size[0]}x${output.output_size[1]} ${outputType}`;
       }
@@ -169,11 +197,13 @@ class Python {
     } catch (e) {
       // gracefully recover from deserialization errors
       console.warn(e);
+
       if (output) {
         pythonRun = output;
       } else {
         pythonRun = {} as PythonError;
       }
+
       pythonRun = {
         ...pythonRun,
         array_output: [],
@@ -183,6 +213,7 @@ class Python {
         input_python_stack_trace: String(e),
       };
     }
+
     if (pythonRun) {
       pythonCore.sendPythonResults(message.transactionId, pythonRun);
     }
