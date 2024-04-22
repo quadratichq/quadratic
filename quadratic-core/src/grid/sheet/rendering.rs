@@ -360,6 +360,7 @@ impl Sheet {
             },
             state,
             spill_error,
+            cells_accessed: Some(run.cells_accessed.iter().map(|v| *v).collect()),
         })
     }
 
@@ -402,6 +403,9 @@ impl Sheet {
                                 language: code.language,
                                 state,
                                 spill_error,
+                                cells_accessed: Some(
+                                    run.cells_accessed.iter().map(|v| *v).collect(),
+                                ),
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
@@ -842,6 +846,7 @@ mod tests {
                 language: CodeCellLanguage::Python,
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
+                cells_accessed: None,
             })
         );
     }

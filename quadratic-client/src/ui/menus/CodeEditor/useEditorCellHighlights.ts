@@ -1,7 +1,7 @@
 import { Coordinate } from '@/gridGL/types/size';
 import { parsePython } from '@/helpers/parseEditorPythonCell';
 import { CodeCellLanguage } from '@/quadratic-core-types';
-import { parseFormula } from '@/quadratic-rust-client/quadratic_rust_client';
+import { SheetRect, parseFormula } from '@/quadratic-rust-client/quadratic_rust_client';
 import monaco, { editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -45,7 +45,8 @@ export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
   monacoRef: React.MutableRefObject<typeof monaco | null>,
-  language?: CodeCellLanguage
+  language?: CodeCellLanguage,
+  cellsAccessed?: SheetRect[] | null
 ) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   let decorations = useRef<editor.IEditorDecorationsCollection | undefined>(undefined);
@@ -89,7 +90,7 @@ export const useEditorCellHighlights = (
       let parsed;
 
       if (language === 'Python') {
-        parsed = parsePython(modelValue) as ParseFormulaReturnType;
+        parsed = parsePython(cellsAccessed) as ParseFormulaReturnType;
       }
 
       if (language === 'Formula') {
@@ -149,8 +150,6 @@ export const useEditorCellHighlights = (
         // update the cell references in the editor
         decorations.current = editorRef.current?.createDecorationsCollection(newDecorations);
       }
-
-      console.log('HERE');
     };
 
     onChangeModel();
@@ -162,5 +161,6 @@ export const useEditorCellHighlights = (
     editorInteractionState.selectedCell,
     editorInteractionState.selectedCellSheet,
     language,
+    cellsAccessed,
   ]);
 };

@@ -2,7 +2,7 @@ import { usePythonState } from '@/atoms/usePythonState';
 import { events } from '@/events/events';
 import { sheets } from '@/grid/controller/Sheets';
 import { Coordinate, SheetPosTS } from '@/gridGL/types/size';
-import { JsCodeCell, Pos } from '@/quadratic-core-types';
+import { JsCodeCell, JsRenderCodeCell, Pos } from '@/quadratic-core-types';
 import { multiplayer } from '@/web-workers/multiplayerWebWorker/multiplayer';
 import { EvaluationResult } from '@/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
@@ -12,6 +12,7 @@ import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
 import useLocalStorage from '@/hooks/useLocalStorage';
+import { SheetRect } from '@/quadratic-rust-client/quadratic_rust_client';
 import { cn } from '@/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -63,6 +64,7 @@ export const CodeEditor = () => {
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | undefined>(undefined);
   const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
+  const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
 
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
@@ -109,7 +111,7 @@ export const CodeEditor = () => {
 
   // ensure codeCell is created w/content and updated when it receives a change request from Rust
   useEffect(() => {
-    const updateCodeCell = async (pushCodeCell?: JsCodeCell) => {
+    const updateCodeCell = async (pushCodeCell?: JsCodeCell, cellsAccessed?: SheetRect[] | null) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
       if (!editorInteractionState.selectedCellSheet) return;
       const codeCell =
@@ -122,9 +124,11 @@ export const CodeEditor = () => {
 
       if (codeCell) {
         setCodeString(codeCell.code_string);
+        setCellsAccessed(cellsAccessed);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
 
         if (!pushCodeCell) setEditorContent(codeCell.code_string);
+
         const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
@@ -138,9 +142,15 @@ export const CodeEditor = () => {
 
     updateCodeCell();
 
-    const update = (options: { sheetId: string; x: number; y: number; codeCell?: JsCodeCell }) => {
+    const update = (options: {
+      sheetId: string;
+      x: number;
+      y: number;
+      codeCell?: JsCodeCell;
+      renderCodeCell?: JsRenderCodeCell;
+    }) => {
       if (options.sheetId === cellLocation.sheetId && options.x === cellLocation.x && options.y === cellLocation.y) {
-        updateCodeCell(options.codeCell);
+        updateCodeCell(options.codeCell, options.renderCodeCell?.cells_accessed);
       }
     };
     events.on('updateCodeCell', update);
@@ -412,6 +422,7 @@ export const CodeEditor = () => {
             setEditorContent={setEditorContent}
             closeEditor={closeEditor}
             evaluationResult={evaluationResult}
+            cellsAccessed={!unsaved ? cellsAccessed : []}
           />
           {editorInteractionState.mode === 'Python' && (
             <ReturnTypeInspector
