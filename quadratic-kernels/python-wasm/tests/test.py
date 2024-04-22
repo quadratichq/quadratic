@@ -187,6 +187,7 @@ class TestUtils(TestCase):
         assert to_quadratic_type(1) == ("1", "number")
         assert to_quadratic_type(1.1) == ("1.1", "number")
         assert to_quadratic_type(-1) == ("-1", "number")
+        assert to_quadratic_type(np.float64("1.1")) == ("1.1", "number")
 
         # logical
         assert to_quadratic_type(True) == ("True", "logical")
