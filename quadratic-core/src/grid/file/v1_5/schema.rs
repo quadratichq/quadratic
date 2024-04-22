@@ -163,6 +163,7 @@ pub enum CellValue {
     Instant(String),
     Duration(String),
     Error(RunError),
+    Image(String),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

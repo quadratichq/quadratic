@@ -74,6 +74,7 @@ impl GridController {
                                 );
                             }
                         }
+                        sheet.send_all_images();
                     }
                 });
             }

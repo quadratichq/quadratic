@@ -134,6 +134,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
       return;
+    } else if (e.data.type === 'coreClientImage') {
+      events.emit('updateImage', e.data);
+      return;
     }
 
     if (e.data.id !== undefined) {

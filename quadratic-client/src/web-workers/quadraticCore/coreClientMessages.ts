@@ -804,6 +804,16 @@ export interface CoreClientUndoRedo {
 
 //#endregion
 
+export interface CoreClientImage {
+  type: 'coreClientImage';
+  sheetId: string;
+  x: number;
+  y: number;
+  image?: string;
+  w?: string;
+  h?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -903,4 +913,5 @@ export type CoreClientMessage =
   | CoreClientImportExcel
   | CoreClientMultiplayerState
   | CoreClientOfflineTransactions
-  | CoreClientUndoRedo;
+  | CoreClientUndoRedo
+  | CoreClientImage;

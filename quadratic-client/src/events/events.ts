@@ -15,6 +15,7 @@ import { MultiplayerState } from '@/web-workers/multiplayerWebWorker/multiplayer
 import { CellEdit, MultiplayerUser } from '@/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/web-workers/pythonWebWorker/pythonClientMessages';
 import {
+  CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
@@ -65,6 +66,7 @@ interface EventTypes {
     codeCell?: JsCodeCell;
     renderCodeCell?: JsRenderCodeCell;
   }) => void;
+  updateImage: (message: CoreClientImage) => void;
 
   importProgress: (message: CoreClientImportProgress) => void;
   transactionStart: (message: CoreClientTransactionStart) => void;

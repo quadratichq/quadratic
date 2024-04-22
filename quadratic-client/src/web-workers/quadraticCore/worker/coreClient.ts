@@ -72,6 +72,7 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
+    sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
   };
 
 class CoreClient {
@@ -95,6 +96,7 @@ class CoreClient {
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
+    self.sendImage = coreClient.sendImage;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -652,6 +654,10 @@ class CoreClient {
 
   sendUndoRedo = (undo: boolean, redo: boolean) => {
     this.send({ type: 'coreClientUndoRedo', undo, redo });
+  };
+
+  sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
+    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
   };
 }
 

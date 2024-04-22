@@ -183,6 +183,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                     current::CellValue::Error(error) => {
                         CellValue::Error(Box::new((*error).clone().into()))
                     }
+                    current::CellValue::Image(image) => CellValue::Image(image.to_owned()),
                 };
                 if let Ok(y) = y.parse::<i64>() {
                     col.values.insert(y, cell_value);
@@ -234,6 +235,7 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
         "text" => CellValue::Text(value.to_owned()),
         "number" => CellValue::Number(BigDecimal::from_str(value).unwrap_or_default()),
         "html" => CellValue::Html(value.to_owned()),
+        "image" => CellValue::Image(value.to_owned()),
         _ => CellValue::Blank,
     }
 }
@@ -518,6 +520,9 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                         current::RunError::from_grid_run_error(error),
                                     ),
                                     CellValue::Blank => current::CellValue::Blank,
+                                    CellValue::Image(image) => {
+                                        current::CellValue::Image(image.clone())
+                                    }
                                 },
                             )
                         })
