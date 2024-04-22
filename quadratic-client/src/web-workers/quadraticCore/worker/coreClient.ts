@@ -217,7 +217,7 @@ class CoreClient {
           e.data.y,
           e.data.width,
           e.data.height,
-          e.data.fillColor ?? '',
+          e.data.fillColor,
           e.data.cursor
         );
         break;
