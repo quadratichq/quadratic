@@ -4,7 +4,7 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 use crate::error_core::{CoreError, Result};
 use crate::grid::js_types::JsHtmlOutput;
-use crate::grid::CodeRunResult;
+use crate::grid::{CodeRunResult, RenderSize};
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
     grid::{CodeCellLanguage, CodeRun},
@@ -42,12 +42,19 @@ impl GridController {
         );
 
         let mut update_html = false;
+        let mut update_image = false;
         let old_code_run = if let Some(new_code_run) = &new_code_run {
             if new_code_run.is_html()
                 && (cfg!(target_family = "wasm") || cfg!(test))
                 && !transaction.is_server()
             {
                 update_html = true;
+            }
+            if new_code_run.is_image()
+                && (cfg!(target_family = "wasm") || cfg!(test))
+                && !transaction.is_server()
+            {
+                update_image = true;
             }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
 
@@ -69,7 +76,9 @@ impl GridController {
                 if old_code_run.is_html() && !transaction.is_server() {
                     update_html = true;
                 }
-
+                if old_code_run.is_image() && !transaction.is_server() {
+                    update_image = true;
+                }
                 // if the code run is being removed, tell the client that there is no longer a code cell
                 if new_code_run.is_none() && !transaction.is_server() {
                     crate::wasm_bindings::js::jsUpdateCodeCell(
@@ -119,6 +128,29 @@ impl GridController {
             }
         }
 
+        if update_image {
+            let image = match &new_code_run {
+                Some(new_code_run) => match &new_code_run.cell_value_at(0, 0) {
+                    Some(CellValue::Image(image)) => Some(image.clone()),
+                    _ => None,
+                },
+                None => None,
+            };
+            let (w, h) = if let Some(size) = sheet.get_formatting_value::<RenderSize>(pos) {
+                (Some(size.w), Some(size.h))
+            } else {
+                (None, None)
+            };
+
+            crate::wasm_bindings::js::jsSendImage(
+                sheet_id.to_string(),
+                pos.x as i32,
+                pos.y as i32,
+                image,
+                w,
+                h,
+            );
+        }
         transaction.forward_operations.push(Operation::SetCodeRun {
             sheet_pos,
             code_run: new_code_run,

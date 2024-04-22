@@ -540,6 +540,10 @@ impl CellValue {
     pub fn is_html(&self) -> bool {
         matches!(self, CellValue::Html(_))
     }
+
+    pub fn is_image(&self) -> bool {
+        matches!(self, CellValue::Image(_))
+    }
 }
 
 #[cfg(test)]
@@ -767,5 +771,13 @@ mod test {
         let sheet = &mut Sheet::test();
         let value = CellValue::from_js(&"test".to_string(), "image", (0, 1).into(), sheet);
         assert_eq!(value.unwrap().0, CellValue::Image("test".into()));
+    }
+
+    #[test]
+    fn test_is_image() {
+        let value = CellValue::Image("test".into());
+        assert!(value.is_image());
+        let value = CellValue::Text("test".into());
+        assert!(!value.is_image());
     }
 }
