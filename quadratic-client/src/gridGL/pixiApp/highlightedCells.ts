@@ -40,11 +40,9 @@ export class HighlightedCells {
     span: Span,
     index: number
   ) {
-    // parse_formula always returns absolute regardless of type
-    let relative = false; //cellRange.start.x.type === 'Relative';
     this.highlightedCells.add({
-      column: (relative ? cell.x : 0) + cellRange.start.x.coord,
-      row: (relative ? cell.y : 0) + cellRange.start.y.coord,
+      column: this.evalCoord(cellRange.start.x, cell.x) + cellRange.start.x.coord,
+      row: this.evalCoord(cellRange.start.y, cell.y) + cellRange.start.y.coord,
       width: cellRange.end.x.coord - cellRange.start.x.coord,
       height: cellRange.end.y.coord - cellRange.start.y.coord,
       sheet: this.getSheet(cellRange.start.sheet, sheet),
@@ -53,12 +51,18 @@ export class HighlightedCells {
     });
   }
 
+  private isRelative(cell: { type: 'Relative' | 'Absolute'; coord: number }) {
+    return cell.type === 'Relative';
+  }
+
+  public evalCoord(cell: { type: 'Relative' | 'Absolute'; coord: number }, origin: number) {
+    return this.isRelative(cell) ? origin : 0;
+  }
+
   private fromCell(cell: CellPosition, origin: Coordinate, sheet: string, span: Span, index: number) {
-    // parse_formula always returns absolute regardless of type
-    const relative = false; //cell.x.type === 'Relative';
     this.highlightedCells.add({
-      column: cell.x.coord + (relative ? origin.x : 0),
-      row: cell.y.coord + (relative ? origin.y : 0),
+      column: cell.x.coord + this.evalCoord(cell.x, origin.x),
+      row: cell.y.coord + this.evalCoord(cell.y, origin.y),
       width: 0,
       height: 0,
       sheet: this.getSheet(cell.sheet, sheet),
@@ -69,14 +73,17 @@ export class HighlightedCells {
 
   fromFormula(formula: ParseFormulaReturnType, cell: Coordinate, sheet: string) {
     this.highlightedCells.clear();
+
     formula.cell_refs.forEach((cellRef, index) => {
       switch (cellRef.cell_ref.type) {
         case 'CellRange':
           this.fromCellRange(cellRef.cell_ref, cell, sheet, cellRef.span, index);
           break;
+
         case 'Cell':
           this.fromCell(cellRef.cell_ref.pos, cell, sheet, cellRef.span, index);
           break;
+
         default:
           throw new Error('Unsupported cell-ref in fromFormula');
       }

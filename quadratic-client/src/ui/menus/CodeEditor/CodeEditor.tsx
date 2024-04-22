@@ -75,11 +75,7 @@ export const CodeEditor = () => {
       y: editorInteractionState.selectedCell.y,
       sheetId: editorInteractionState.selectedCellSheet,
     };
-  }, [
-    editorInteractionState.selectedCell.x,
-    editorInteractionState.selectedCell.y,
-    editorInteractionState.selectedCellSheet,
-  ]);
+  }, [editorInteractionState]);
 
   const unsaved = useMemo(() => {
     return editorContent !== codeString;
