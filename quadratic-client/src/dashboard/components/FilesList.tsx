@@ -1,12 +1,12 @@
-import { ShareFileDialog } from '@/components/ShareDialog';
+import { Action as FilesAction } from '@/routes/files.$uuid';
+import { ShareFileDialog } from '@/shared/components/ShareDialog';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { FilePermission, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ReactNode, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useFetchers, useLocation } from 'react-router-dom';
-import { Empty } from '../../components/Empty';
-import useLocalStorage from '../../hooks/useLocalStorage';
-import { Action as FilesAction } from '../../routes/files.$uuid';
+import { Empty } from './Empty';
 import { FilesListItemExampleFile, FilesListItemUserFile, FilesListItems } from './FilesListItem';
 import { FilesListViewControls } from './FilesListViewControls';
 import { Layout, Order, Sort, ViewPreferences } from './FilesListViewControlsDropdown';

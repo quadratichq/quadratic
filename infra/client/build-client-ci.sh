@@ -24,7 +24,7 @@ echo 'Packaging quadratic_py'
 cd quadratic-core
 
 echo 'Building wasm...'
-wasm-pack build --target web --out-dir ../quadratic-client/src/quadratic-core
+wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core
 
 echo 'Exporting TS/Rust types...'
 cargo run --bin export_types

@@ -93,8 +93,8 @@ fn main() {
         JsGetCellResponse,
     );
 
-    if create_dir_all("../quadratic-client/src/quadratic-core-types").is_ok() {
-        std::fs::write("../quadratic-client/src/quadratic-core-types/index.d.ts", s)
+    if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {
+        std::fs::write("../quadratic-client/src/app/quadratic-core-types/index.d.ts", s)
             .expect("failed to write types file");
     }
 }
