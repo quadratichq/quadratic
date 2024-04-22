@@ -2,6 +2,7 @@ use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
+    formulas::replace_a1_notation,
     grid::{CodeCellLanguage, CodeRun, SheetId},
     CellValue, CodeCellValue, SheetPos,
 };
@@ -14,6 +15,11 @@ impl GridController {
         language: CodeCellLanguage,
         code: String,
     ) -> Vec<Operation> {
+        let code = match language {
+            CodeCellLanguage::Formula => replace_a1_notation(&code, sheet_pos.into()),
+            _ => code,
+        };
+
         vec![
             Operation::SetCellValues {
                 sheet_pos,
@@ -262,6 +268,8 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet_id_2 = gc.sheet_ids()[1];
         let sheet = gc.sheet(sheet_id);
+        let sheet_2 = gc.sheet(sheet_id_2);
+
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(2)))
@@ -270,7 +278,6 @@ mod test {
             sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
-        let sheet_2 = gc.sheet(sheet_id_2);
         assert_eq!(
             sheet_2.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from(2)))

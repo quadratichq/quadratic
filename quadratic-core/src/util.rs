@@ -145,6 +145,16 @@ pub fn column_from_name(mut s: &str) -> Option<i64> {
     Some(ret)
 }
 
+/// Returns a row's name from its number.
+pub fn row_name(n: i64) -> String {
+    let negative = n < 0;
+
+    match negative {
+        true => format!("n{}", -n),
+        false => format!("{}", n),
+    }
+}
+
 /// Returns a human-friendly list of things, joined at the end by the given
 /// conjuction.
 pub fn join_with_conjunction(conjunction: &str, items: &[impl fmt::Display]) -> String {
