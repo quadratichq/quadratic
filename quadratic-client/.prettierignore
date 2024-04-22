@@ -1,6 +1,6 @@
 *.svg
 src/app/quadratic-core
-src/app/shadcn/ui
+src/shared/shadcn/ui
 src/app/web-workers/pythonLanguageServer/pyright-initialization.json
 src/app/quadratic-core
 src/app/quadratic-core-types
