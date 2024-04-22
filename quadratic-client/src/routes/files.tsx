@@ -1,6 +1,7 @@
 import { Type } from '@/components/Type';
 import { ROUTES } from '@/constants/routes';
 import { DOCUMENTATION_URL } from '@/constants/urls';
+import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { Button } from '@/shadcn/ui/button';
 import { cn } from '@/shadcn/utils';
 import { Box, useTheme } from '@mui/material';
@@ -136,6 +137,7 @@ export const Component = () => {
           />
         }
       />
+      <EducationDialog />
     </>
   );
 };

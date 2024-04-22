@@ -4,16 +4,12 @@ import { ActionFunctionArgs, LoaderFunctionArgs, SubmitOptions } from 'react-rou
 import { apiClient } from '../api/apiClient';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  return apiClient.users.get();
+  return null;
 };
 
 type Action = {
   response: { ok: boolean } | null;
-  'request.update-edu-status': {
-    action: 'update-edu-status';
-    eduStatus: ApiTypes['/v0/user.POST.request']['eduStatus'];
-  };
-  request: Action['request.update-edu-status'];
+  request: UpdateEducationActionData;
 };
 
 export const action = async ({ params, request }: ActionFunctionArgs): Promise<Action['response']> => {
@@ -22,8 +18,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'update-edu-status') {
     try {
-      const { eduStatus } = json as Action['request.update-edu-status'];
-      await apiClient.users.update({ eduStatus });
+      const { email } = json as UpdateEducationActionData;
+      await apiClient.education.update({ email });
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -33,15 +29,16 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   return null;
 };
 
-export function getUpdateUserAction(eduStatus: ApiTypes['/v0/user.POST.request']['eduStatus']) {
+type UpdateEducationActionData = ReturnType<typeof getUpdateEducationAction>['data'];
+export function getUpdateEducationAction({ email }: ApiTypes['/v0/education.POST.request']) {
   const options: SubmitOptions = {
     method: 'POST',
-    action: ROUTES.USER,
+    action: ROUTES.EDUCATION,
     encType: 'application/json',
   };
-  const data: Action['request.update-edu-status'] = {
+  const data = {
     action: 'update-edu-status',
-    eduStatus,
+    email,
   };
   return { data, options };
 }

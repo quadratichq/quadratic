@@ -5,7 +5,6 @@ import { Type } from '@/components/Type';
 import { TYPE } from '@/constants/appConstants';
 import { DOCUMENTATION_URL } from '@/constants/urls';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
-import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { QuadraticLogoType } from '@/dashboard/components/QuadraticLogoType';
 import useLocalStorage from '@/hooks/useLocalStorage';
 import { useTheme } from '@/hooks/useTheme';
@@ -78,7 +77,7 @@ export const Component = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
-  const { loggedInUser: user, loggedInQUser: quser } = useRootRouteLoaderData();
+  const { loggedInUser: user } = useRootRouteLoaderData();
   useTheme(); // Trigger the theme in the root of the app
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
@@ -129,7 +128,6 @@ export const Component = () => {
           {navbar}
         </div>
         {dashboardState.showCreateTeamDialog && <CreateTeamDialog />}
-        {quser?.eduStatus === 'ELIGIBLE' && <EducationDialog />}
       </div>
     </DashboardContext.Provider>
   );

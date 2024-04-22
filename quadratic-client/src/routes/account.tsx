@@ -1,13 +1,11 @@
 import { Type } from '@/components/Type';
 import { themes, useTheme } from '@/hooks/useTheme';
 import { Button } from '@/shadcn/ui/button';
-import { Checkbox } from '@/shadcn/ui/checkbox';
 import { ReactNode } from 'react';
-import { Form, useFetcher } from 'react-router-dom';
+import { Form } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { useRootRouteLoaderData } from '../router';
-import { getUpdateUserAction } from './user';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
@@ -30,7 +28,13 @@ export const Component = () => {
           <Type variant="body2">{user?.email}</Type>
         </Row>
 
-        <EducationEnrollmentRow />
+        <Row>
+          <Type variant="body2" className="font-bold">
+            Education plan
+          </Type>
+
+          <Type variant="body2">Enrolled</Type>
+        </Row>
 
         {theme !== null && (
           <Row>
@@ -77,42 +81,5 @@ function Row(props: { children: ReactNode }) {
     <div className={`grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
       {props.children}
     </div>
-  );
-}
-
-function EducationEnrollmentRow() {
-  const { loggedInQUser: quser } = useRootRouteLoaderData();
-  const fetcher = useFetcher();
-
-  // Optimistically update status
-  const eduStatus =
-    fetcher.state !== 'idle'
-      ? (fetcher.json as ReturnType<typeof getUpdateUserAction>['data']).eduStatus
-      : quser?.eduStatus;
-
-  if (!(eduStatus === 'ENROLLED' || eduStatus === 'NOT_ENROLLED')) {
-    return null;
-  }
-
-  return (
-    <Row>
-      <Type variant="body2" className="font-bold">
-        Education plan
-      </Type>
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="education-enrollment"
-          checked={eduStatus === 'ENROLLED'}
-          onCheckedChange={(checked) => {
-            const { data, options } = getUpdateUserAction(checked ? 'ENROLLED' : 'NOT_ENROLLED');
-            fetcher.submit(data, options);
-          }}
-        />
-
-        <label htmlFor="education-enrollment">
-          <Type as="span">Enrolled</Type>
-        </label>
-      </div>
-    </Row>
   );
 }

@@ -3,7 +3,6 @@ import { User } from '@auth0/auth0-spa-js';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import {
   Link,
   Navigate,
@@ -33,10 +32,7 @@ window.lf = localforage;
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
-  // The user as defined in auth0
   loggedInUser?: User;
-  // The user as defined in the Quadratic database
-  loggedInQUser?: ApiTypes['/v0/user.GET.response'];
 };
 
 export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
@@ -63,12 +59,9 @@ export const router = createBrowserRouter(
 
           initializeAnalytics(auth0User);
 
-          const quser = auth0User && auth0User.sub ? await apiClient.users.get() : undefined;
-
           return {
             isAuthenticated,
             loggedInUser: auth0User,
-            loggedInQUser: quser ? { id: quser.id, eduStatus: quser.eduStatus } : undefined,
           };
         }}
         element={<Root />}
@@ -125,7 +118,7 @@ export const router = createBrowserRouter(
             </Route>
           </Route>
 
-          <Route path={ROUTES.USER} lazy={() => import('./routes/user')} />
+          <Route path={ROUTES.EDUCATION} lazy={() => import('./routes/education')} />
 
           <Route
             path="/cloud-migration"

@@ -1,66 +1,58 @@
-import { getUpdateUserAction } from '@/routes/user';
+import { useRootRouteLoaderData } from '@/router';
+import { getUpdateEducationAction } from '@/routes/education';
 import { Button } from '@/shadcn/ui/button';
-
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/shadcn/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
 import { SchoolOutlined } from '@mui/icons-material';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
-import { BadgeEdu } from '../../components/BadgeEdu';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
 
 export function EducationDialog() {
+  const [open, onOpenChange] = useState<boolean>(false);
   const fetcher = useFetcher();
-  const { addGlobalSnackbar } = useGlobalSnackbar();
+  const { loggedInUser } = useRootRouteLoaderData();
 
-  const handleEnroll = () => {
-    const { data, options } = getUpdateUserAction('ENROLLED');
-    fetcher.submit(data, options);
-  };
+  // TODO: localstorage get when this last fetched so we can throttle every few mins
 
-  const handleNoThanks = () => {
-    const { data, options } = getUpdateUserAction('NOT_ENROLLED');
-    fetcher.submit(data, options);
+  const handleClose = () => {
+    onOpenChange(false);
+    // const { data, options } = getUpdateEducationAction('NOT_ENROLLED');
+    // fetcher.submit(data, options);
   };
 
   useEffect(() => {
-    if (fetcher.state === 'idle' && fetcher.data && !fetcher.data.ok) {
-      addGlobalSnackbar('Enrollment failed. Try again.', { severity: 'error' });
+    if (fetcher.state === 'idle' && !fetcher.data) {
+      const email = loggedInUser?.email;
+      if (typeof email === 'undefined') {
+        // sentry error
+        return;
+      }
+
+      const { data, options } = getUpdateEducationAction({ email });
+      console.log('Fired mount fetch', data, options);
     }
-  }, [fetcher, addGlobalSnackbar]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <AlertDialog open={true} onOpenChange={handleNoThanks}>
-      <AlertDialogContent className="max-w-sm">
-        <AlertDialogHeader className="text-center sm:text-center">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader className="text-center sm:text-center">
           <div className="flex flex-col items-center py-4">
             <SchoolOutlined sx={{ fontSize: '64px' }} className="text-primary" />
-            <div>
-              <BadgeEdu />
-            </div>
           </div>
-          <AlertDialogTitle>You’re eligible</AlertDialogTitle>
-          <AlertDialogDescription>
-            Your email address qualifies you for{' '}
+          <DialogTitle>Enrolled in Quadratic for Education</DialogTitle>
+          <DialogDescription>
+            You have an educational email address which qualifies you for{' '}
             <a href="TODO:" target="_blank" rel="noreferrer" className="underline hover:text-primary">
-              Quadratic’s education plan
-            </a>
-            . By enrolling, you agree to receive future emails about our education plan.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter className="justify-center text-center sm:justify-center">
-          <Button variant="outline" onClick={handleNoThanks}>
-            No, thanks
-          </Button>
-          <Button onClick={handleEnroll}>Enroll</Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+              the education plan
+            </a>{' '}
+            where students, teachers, and researchers get free access.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="justify-center text-center sm:justify-center">
+          <Button onClick={handleClose}>Ok, thanks</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
