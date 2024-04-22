@@ -1,4 +1,5 @@
 import { Type } from '@/components/Type';
+import { events } from '@/events/events';
 import { Button } from '@/shadcn/ui/button';
 import { RocketIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
@@ -7,10 +8,10 @@ import { FixedBottomAlert } from './components/PermissionOverlay';
 export const UpdateAlertVersion = () => {
   const [showDialog, setShowDialog] = useState<false | 'recommended' | 'required'>(false);
   useEffect(() => {
-    const needRefresh = (message: any /* { detail: 'required' | 'recommended' } */) => setShowDialog(message.detail);
-    window.addEventListener('need-refresh', needRefresh);
+    const needRefresh = (refresh: 'required' | 'recommended') => setShowDialog(refresh);
+    events.on('needRefresh', needRefresh);
     return () => {
-      window.removeEventListener('need-refresh', needRefresh);
+      events.off('needRefresh', needRefresh);
     };
   });
 

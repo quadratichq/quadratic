@@ -281,7 +281,6 @@ impl Array {
         let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
         let mut ops = vec![];
         let Pos { mut x, mut y } = start;
-
         let values = v
             .iter()
             .flatten()
@@ -291,7 +290,10 @@ impl Array {
                     x = start.x;
                     y += 1;
                 }
-                CellValue::from_js(&s[0], &s[1], start, sheet).unwrap()
+                match CellValue::from_js(&s[0], &s[1], start, sheet) {
+                    Ok(value) => value,
+                    Err(_) => (CellValue::Blank, vec![]),
+                }
             })
             // .flatten_ok()
             .map(|(value, updated_ops)| {

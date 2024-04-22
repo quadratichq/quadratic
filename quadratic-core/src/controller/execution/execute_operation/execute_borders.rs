@@ -10,15 +10,7 @@ impl GridController {
                 sheet_rect,
                 borders,
             } => {
-                transaction
-                    .sheets_with_dirty_bounds
-                    .insert(sheet_rect.sheet_id);
-                transaction
-                    .summary
-                    .border_sheets_modified
-                    .insert(sheet_rect.sheet_id);
-                transaction.summary.generate_thumbnail |=
-                    self.thumbnail_dirty_sheet_rect(&sheet_rect);
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&sheet_rect);
 
                 let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) else {
                     // sheet may have been deleted
@@ -26,7 +18,6 @@ impl GridController {
                 };
                 let old_borders = sheet.set_region_borders(&sheet_rect.into(), borders.clone());
 
-                // should be removed
                 transaction.forward_operations.push(Operation::SetBorders {
                     sheet_rect,
                     borders,
@@ -38,6 +29,18 @@ impl GridController {
                         borders: old_borders,
                     },
                 );
+
+                if cfg!(target_family = "wasm") && !transaction.is_server() {
+                    self.send_updated_bounds(sheet_rect.sheet_id);
+                    if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                        if let Ok(borders) = serde_json::to_string(&sheet.render_borders()) {
+                            crate::wasm_bindings::js::jsSheetBorders(
+                                sheet_rect.sheet_id.to_string(),
+                                borders,
+                            );
+                        }
+                    }
+                }
             }
             _ => unreachable!("Expected Operation::SetBorders"),
         }

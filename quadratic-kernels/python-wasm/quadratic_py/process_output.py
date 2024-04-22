@@ -2,6 +2,10 @@ import pandas as pd
 
 from .utils import to_quadratic_type
 
+def isListEmpty(inList):
+    if isinstance(inList, list):
+        return all( map(isListEmpty, inList) )
+    return False
 
 def process_output_value(output_value):
     # return array_output if output is an array
@@ -12,7 +16,7 @@ def process_output_value(output_value):
     # TODO(ddimaria): figure out if we need to covert back to a list for array_output
     # We should have a single output
     if isinstance(output_value, list):
-        if len(output_value) > 0:
+        if len(output_value) > 0 and not isListEmpty(output_value):
             array_output = output_value
             if (isinstance(output_value[0], list)):
                 output_size = (len(output_value[0]), len(output_value))
@@ -60,10 +64,10 @@ def process_output_value(output_value):
 
     if array_output is not None:
         typed_array_output = []
-        is_2d_array = isinstance(array_output[0], list)
+        is_2d_array = isinstance(array_output[0], list) and len(array_output[0]) > 0
 
         # insure that all rows are the same length
-        if not is_2d_array:
+        if not is_2d_array:            
             typed_array_output = list(map(to_quadratic_type, array_output))
         else:
             length_1d = len(array_output)

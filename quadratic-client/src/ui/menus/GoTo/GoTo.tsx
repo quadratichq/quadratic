@@ -53,7 +53,7 @@ export const GoTo = () => {
       cursorPosition,
       multiCursor,
     });
-    moveViewport({ center: cursorPosition });
+    moveViewport({ topLeft: cursorPosition });
     closeMenu();
     focusGrid();
   };

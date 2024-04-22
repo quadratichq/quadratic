@@ -1,3 +1,5 @@
+import { events } from '@/events/events';
+import { ImportProgress } from '@/ui/components/ImportProgress';
 import { MouseEvent, useCallback, useEffect, useState } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
@@ -23,11 +25,13 @@ export default function QuadraticGrid() {
 
   const [panMode, setPanMode] = useState<PanMode>(PanMode.Disabled);
   useEffect(() => {
-    const updatePanMode = (e: any) => {
-      setPanMode(e.detail);
+    const updatePanMode = (panMode: PanMode) => {
+      setPanMode(panMode);
     };
-    window.addEventListener('pan-mode', updatePanMode);
-    return () => window.removeEventListener('pan-mode', updatePanMode);
+    events.on('panMode', updatePanMode);
+    return () => {
+      events.off('panMode', updatePanMode);
+    };
   }, []);
 
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -83,6 +87,7 @@ export default function QuadraticGrid() {
     <div
       ref={containerRef}
       style={{
+        position: 'relative',
         width: '100%',
         height: '100%',
         outline: 'none',
@@ -113,6 +118,7 @@ export default function QuadraticGrid() {
     >
       <HTMLGridContainer parent={container} />
       <FloatingContextMenu container={container} showContextMenu={showContextMenu} />
+      <ImportProgress />
     </div>
   );
 }

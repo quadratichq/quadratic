@@ -1,8 +1,10 @@
+import { events } from '@/events/events';
+import { SheetInfo } from '@/quadratic-core-types';
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
-import { SheetId } from '../../quadratic-core/types';
 import { Sheet } from '../sheet/Sheet';
-import { grid } from './Grid';
+import { SheetCursorSave } from '../sheet/SheetCursor';
 
 class Sheets {
   sheets: Sheet[];
@@ -16,49 +18,93 @@ class Sheets {
   constructor() {
     this.sheets = [];
     this._current = '';
+    events.on('sheetInfo', this.create);
+    events.on('addSheet', this.addSheet);
+    events.on('deleteSheet', this.deleteSheet);
+    events.on('sheetInfoUpdate', this.updateSheet);
+    events.on('setCursor', this.setCursor);
+    events.on('sheetOffsets', this.updateOffsets);
   }
 
-  async create() {
+  private create = (sheetInfo: SheetInfo[]) => {
     this.sheets = [];
-    const sheetIds = grid.getSheetIds();
-    sheetIds.forEach((_, index) => {
-      const sheet = new Sheet(index);
+    sheetInfo.forEach((info) => {
+      const sheet = new Sheet(info);
       this.sheets.push(sheet);
     });
     this.sort();
-    this.current = this.sheets[0].id;
-  }
+    this._current = this.sheets[0].id;
+    pixiApp.cellsSheets.create();
+  };
 
-  // ensures there's a Sheet.ts for every Sheet.rs
-  repopulate() {
-    const sheetIds = grid.getSheetIds();
-    // ensure the sheets exist
-    sheetIds.forEach((sheetId, index) => {
-      if (!this.sheets.find((search) => search.id === sheetId)) {
-        const sheet = new Sheet(index);
-        this.sheets.push(sheet);
-        pixiApp.cellsSheets.addSheet(sheet.id);
-      }
-    });
+  private addSheet = (sheetInfo: SheetInfo, user: boolean) => {
+    const sheet = new Sheet(sheetInfo);
+    this.sheets.push(sheet);
+    this.sort();
+    if (user) {
+      // the timeout is needed because cellsSheets receives the addSheet message after sheets receives the message
+      setTimeout(() => (this.current = sheet.id), 0);
+    } else {
+      // otherwise we update the sheet bar since another player added the sheet
+      this.updateSheetBar();
+    }
+  };
 
-    // delete any sheets that no longer exist
-    this.sheets.forEach((sheet, index) => {
-      if (!sheetIds.includes(sheet.id)) {
-        this.sheets.splice(index, 1);
-        pixiApp.cellsSheets.deleteSheet(sheet.id);
-        if (this.current === sheet.id) {
-          this.current = this.sheets[0].id;
-        }
+  private deleteSheet = (sheetId: string, user: boolean) => {
+    const index = this.sheets.findIndex((sheet) => sheet.id === sheetId);
+
+    // it's possible we deleted the sheet locally before receiving the message
+    if (index === -1) return;
+    this.sheets.splice(index, 1);
+
+    // todo: this code should be in quadratic-core, not here
+    if (user) {
+      // the timeout is needed because cellsSheets receives the deleteSheet message after sheets receives the message
+      if (index - 1 >= 0 && index - 1 < this.sheets.length) {
+        this.current = this.sheets[index - 1].id;
+      } else {
+        this.current = this.sheets[0].id;
       }
-    });
-    this.sheets.forEach((sheet) => sheet.updateMetadata());
+    } else {
+      // otherwise we update the sheet bar since another player deleted the sheet
+      this.updateSheetBar();
+    }
+  };
+
+  private updateSheet = (sheetInfo: SheetInfo) => {
+    const sheet = this.getById(sheetInfo.sheet_id);
+
+    // it's possible we deleted the sheet locally before receiving the message
+    if (!sheet) return;
+    sheet.updateSheetInfo(sheetInfo);
     this.updateSheetBar();
-  }
+  };
+
+  private updateOffsets = (sheetId: string, column: number | undefined, row: number | undefined, size: number) => {
+    const sheet = this.getById(sheetId);
+
+    // it's possible we deleted the sheet locally before receiving the message
+    if (!sheet) return;
+    sheet.updateSheetOffsets(column, row, size);
+    pixiApp.headings.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.cursor.dirty = true;
+    pixiApp.multiplayerCursor.dirty = true;
+  };
+
+  private setCursor = (cursorStringified: string) => {
+    const cursor: SheetCursorSave = JSON.parse(cursorStringified);
+    if (cursor.sheetId !== this.current) {
+      this.current = cursor.sheetId;
+    }
+    this.sheet.cursor.load(cursor);
+  };
 
   // updates the SheetBar UI
-  private updateSheetBar(): void {
+  private updateSheetBar() {
     this.sort();
-    window.dispatchEvent(new CustomEvent('change-sheet'));
+    // this avoids React complaints about rendering one component while another one is rendering
+    setTimeout(() => events.emit('changeSheet'), 0);
   }
 
   private sort(): void {
@@ -178,45 +224,16 @@ class Sheets {
     return this.sheets.find((sheet) => sheet.id === id);
   }
 
-  // Sheet operations
-  // ----------------
-
-  createNew() {
-    grid.addSheet();
-
-    // sets the current sheet to the new sheet
-    this.current = this.sheets[this.sheets.length - 1].id;
+  userAddSheet() {
+    quadraticCore.addSheet(sheets.getCursorPosition());
   }
 
   duplicate() {
-    const oldSheetId = this.current;
-    grid.duplicateSheet(this.current);
-
-    // sets the current sheet to the duplicated sheet
-    const currentIndex = this.sheets.findIndex((sheet) => sheet.id === oldSheetId);
-    if (currentIndex === -1) throw new Error('Expected to find current sheet in duplicateSheet');
-    const duplicate = this.sheets[currentIndex + 1];
-    if (!duplicate) throw new Error('Expected to find duplicate sheet in duplicateSheet');
-    this.current = duplicate.id;
-    this.sort();
+    quadraticCore.duplicateSheet(this.current, sheets.getCursorPosition());
   }
 
-  deleteSheet(id: string) {
-    const order = this.sheet.order;
-    grid.deleteSheet(id);
-
-    // set current to next sheet (before this.sheets is updated)
-    if (this.sheets.length) {
-      const next = this.getNext(order);
-      if (next) {
-        this.current = next.id;
-      } else {
-        const first = this.getFirst();
-        if (first) {
-          this.current = first.id;
-        }
-      }
-    }
+  userDeleteSheet(id: string) {
+    quadraticCore.deleteSheet(id, this.getCursorPosition());
   }
 
   moveSheet(options: { id: string; toBefore?: string; delta?: number }) {
@@ -232,7 +249,7 @@ class Sheets {
 
         const nextNext = next ? this.getNext(next.order) : undefined;
 
-        grid.moveSheet(id, nextNext?.id);
+        quadraticCore.moveSheet(id, nextNext?.id, this.getCursorPosition());
       } else if (delta === -1) {
         const previous = this.getPrevious(sheet.order);
 
@@ -240,31 +257,18 @@ class Sheets {
         if (!previous) return;
 
         // if not defined, then this is id will become first sheet
-        grid.moveSheet(id, previous?.id);
+        quadraticCore.moveSheet(id, previous?.id, this.getCursorPosition());
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
     } else {
-      grid.moveSheet(id, toBefore);
+      quadraticCore.moveSheet(id, toBefore, this.getCursorPosition());
     }
     this.sort();
   }
 
   getCursorPosition(): string {
     return JSON.stringify(this.sheet.cursor.save());
-  }
-
-  // handle changes to sheet offsets by only updating columns/rows impacted by resize
-  updateOffsets(sheetIds: SheetId[]) {
-    sheetIds.forEach((sheetId) => {
-      const sheet = this.getById(sheetId.id);
-      if (!sheet) throw new Error('Expected sheet to be defined in updateOffsets');
-      sheet.updateSheetOffsets();
-    });
-    pixiApp.headings.dirty = true;
-    pixiApp.gridLines.dirty = true;
-    pixiApp.cursor.dirty = true;
-    pixiApp.multiplayerCursor.dirty = true;
   }
 
   getMultiplayerSelection(): string {

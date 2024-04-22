@@ -2,6 +2,7 @@
 
 use std::borrow::{Borrow, BorrowMut};
 use std::fmt;
+use std::ops::Range;
 
 use serde::{Deserialize, Serialize};
 
@@ -33,7 +34,8 @@ impl Span {
     }
     /// Returns the substring with this span from a string.
     pub fn of_str(self, s: &str) -> &str {
-        &s[self.start as usize..self.end as usize]
+        let range: Range<usize> = self.into();
+        &s[range]
     }
 }
 impl<T> From<Spanned<T>> for Span {
@@ -57,6 +59,12 @@ impl From<[u32; 2]> for Span {
             start: span[0],
             end: span[1],
         }
+    }
+}
+impl From<Span> for Range<usize> {
+    fn from(val: Span) -> Self {
+        let Span { start, end } = val;
+        start as usize..end as usize
     }
 }
 

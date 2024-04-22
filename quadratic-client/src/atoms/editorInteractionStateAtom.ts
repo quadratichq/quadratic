@@ -1,5 +1,5 @@
 import { Coordinate } from '@/gridGL/types/size';
-import { CodeCellLanguage, SearchOptions } from '@/quadratic-core/types';
+import { CodeCellLanguage, SearchOptions } from '@/quadratic-core-types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { atom } from 'recoil';
 
@@ -24,6 +24,8 @@ export interface EditorInteractionState {
     mode?: CodeCellLanguage;
     showCellTypeMenu: boolean;
   };
+  undo: boolean;
+  redo: boolean;
 }
 
 export const editorInteractionStateDefault: EditorInteractionState = {
@@ -39,6 +41,8 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   selectedCell: { x: 0, y: 0 },
   selectedCellSheet: '',
   mode: undefined,
+  undo: false,
+  redo: false,
 };
 
 export const editorInteractionStateAtom = atom({

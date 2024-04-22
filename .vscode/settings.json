@@ -12,10 +12,16 @@
     "dotenv",
     "endregion",
     "Fuzzysort",
+    "healthcheck",
+    "healthchecks",
     "hljs",
     "htmlescape",
     "indexmap",
+    "indicies",
     "itertools",
+    "jwks",
+    "MDSL",
+    "micropip",
     "msdf",
     "nonblank",
     "Northbridge",
@@ -25,6 +31,7 @@
     "pixi",
     "pixiapp",
     "pulumi",
+    "pyimport",
     "rects",
     "reqwest",
     "shadcn",
@@ -35,6 +42,7 @@
     "thiserror",
     "unspill",
     "vals",
+    "websockets",
     "Westborough"
   ],
   "editor.codeActionsOnSave": {
@@ -47,7 +55,8 @@
     "./Cargo.toml",
     "./quadratic-files/Cargo.toml",
     "./quadratic-core/Cargo.toml",
-    "./quadratic-multiplayer/Cargo.toml"
+    "./quadratic-multiplayer/Cargo.toml",
+    "./quadratic-rust-client/Cargo.toml"
   ],
   "rust-analyzer.checkOnSave": true,
   // "rust-analyzer.checkOnSave.command": "clippy",

@@ -28,17 +28,17 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   const { name: fileName } = useFileContext();
 
   useEffect(() => {
-    const keyDownWindow = (event: KeyboardEvent): void => {
+    const keyDownWindow = async (event: KeyboardEvent) => {
       if (pixiAppSettings.input.show) return;
 
       if (
-        keyboardViewport({
+        (await keyboardViewport({
           event,
           editorInteractionState,
           setEditorInteractionState,
           presentationMode,
           setPresentationMode,
-        }) ||
+        })) ||
         keyboardSearch(event, editorInteractionState, setEditorInteractionState)
       ) {
         event.stopPropagation();
@@ -72,14 +72,11 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       return;
     }
 
-    if (
-      keyboardCell({
-        event,
-        editorInteractionState,
-        setEditorInteractionState,
-      })
-    )
-      return;
+    keyboardCell({
+      event,
+      editorInteractionState,
+      setEditorInteractionState,
+    });
   };
 
   return {

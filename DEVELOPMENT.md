@@ -59,7 +59,7 @@ cp .env.example .env.local
 
 Enter the missing Auth0 values and save.
 
-Now that dependencies are installed, all you need to do is run `node dev` to 
+Now that dependencies are installed, all you need to do is run `node dev` to
 bring up the all services.  Invoke `node run --help` for information on how
 to use this script, as you can use it to watch individual (or groups of)
 services during development. See the [Using node dev](Using-node-dev) section
@@ -283,3 +283,11 @@ Output will be located in the terminal.
 # Prompting user after version change
 
 The current version numbers are stored in `updateAlertVersion.json`. This JSON is ready by both the client and the multiplayer server. When the client has a lower version number then the multiplayer (the version is sent by the multiplayer server with the EnterFileRoom message), then the user is prompted to refresh with slightly different experience based on required vs. recommended changes.
+
+# Install Pyodide
+* Delete the quadratic-client/public/pyodide directory
+* npm i pyodide@latest
+* mkdir quadratic-client/public/pyodide
+* cp -rf node_modules/pyodide quadratic-client/public/
+* download the latest pyodide packages (the largest file available in https://github.com/pyodide/pyodide/releases)
+* unpack the file and copy its contents to quadratic-client/public/

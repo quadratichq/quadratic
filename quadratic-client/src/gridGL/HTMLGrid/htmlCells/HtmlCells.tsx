@@ -12,7 +12,6 @@ export const HtmlCells = () => {
 
   useEffect(() => {
     htmlCellsHandler.init(div);
-    return () => htmlCellsHandler.destroy();
   }, [div]);
 
   return (

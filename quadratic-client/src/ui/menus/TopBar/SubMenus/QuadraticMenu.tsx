@@ -1,3 +1,4 @@
+import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
 import { Check } from '@mui/icons-material';
 import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
@@ -26,7 +27,6 @@ import { authClient } from '../../../../auth';
 import { useGlobalSnackbar } from '../../../../components/GlobalSnackbarProvider';
 import { ROUTES } from '../../../../constants/routes';
 import { copyToClipboard, cutToClipboard, pasteFromClipboard } from '../../../../grid/actions/clipboard/clipboard';
-import { grid } from '../../../../grid/controller/Grid';
 import { pixiApp } from '../../../../gridGL/pixiApp/PixiApp';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { useRootRouteLoaderData } from '../../../../router';
@@ -110,13 +110,13 @@ export const QuadraticMenu = () => {
         )}
         <SubMenu label={<MenuLineItem primary="Edit" />}>
           {undoAction.isAvailable(permissions) && (
-            <MenuItem onClick={() => grid.undo()} disabled={!grid.hasUndo()}>
+            <MenuItem onClick={() => quadraticCore.undo()} disabled={!editorInteractionState.undo}>
               <MenuLineItem primary={undoAction.label} secondary={KeyboardSymbols.Command + 'Z'} />
             </MenuItem>
           )}
           {redoAction.isAvailable(permissions) && (
             <>
-              <MenuItem onClick={() => grid.redo()} disabled={!grid.hasRedo()}>
+              <MenuItem onClick={() => quadraticCore.redo()} disabled={!editorInteractionState.redo}>
                 <MenuLineItem
                   primary={redoAction.label}
                   secondary={

@@ -7,14 +7,10 @@ export const debug = url.has('debug') || import.meta.env.VITE_DEBUG === '1' ? tr
 // Debug footer marks
 // ------------------
 
+export const debugShow = debug && false;
+
 // shows FPS meter & renderer light
 export const debugShowFPS = (debug && true) || url.has('fps');
-
-// add a CACHE render count to the footer
-export const debugShowCacheCount = debug && true;
-
-// add a CACHE flag to the footer to indicate when cache is visible instead of cells
-export const debugShowCacheFlag = debug && true;
 
 // ------------
 // Transactions
@@ -30,9 +26,6 @@ export const debugShowRunComputation = debug && false;
 // shows rendering time
 export const debugShowTime = debug && true;
 
-// show rust time
-export const debugShowRustTime = debug && false;
-
 // counts number of children and which are visible in the viewport
 export const debugShowCountRenderedObjects = debug && false;
 
@@ -46,13 +39,16 @@ export const debugShowWhyRendering = debug && false;
 export const debugShowCellsSheetCulling = debug && false;
 
 // shows CellsHash boxes
-export const debugShowCellsHashBoxes = (debug && false) || url.has('cell-boxes');
+export const debugShowCellsHashBoxes = (debug && false) || url.has('boxes');
 
 // shows CellsHash information
 export const debugShowCellHashesInfo = debug && false;
 
 // reports on rendering
 export const debugShowHashUpdates = debug && false;
+
+// reports on loading/unloading hashes
+export const debugShowLoadingHashes = debug && false;
 
 // --------
 // Misc.
@@ -64,10 +60,16 @@ export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && false;
 
-export const debugDisableProxy = debug && false;
-
 // --------
 // UI
 // --------
 
 export const debugShowUILogs = debug && false;
+
+//-----------
+// WebWorkers
+//-----------
+
+export const debugWebWorkers = debug && false;
+
+export const debugWebWorkersMessages = debug && false;
