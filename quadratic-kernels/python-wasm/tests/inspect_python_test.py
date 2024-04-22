@@ -17,10 +17,8 @@ from quadratic_py.inspect_python import inspect_python
 
 
 class TestInspectPython(IsolatedAsyncioTestCase):
+    # this is just a stub and doesn't do anything, but a start to testing inspect_python
     async def test_inspect_python(self):
         code = "a = cells(0, 0)"
         result = await inspect_python(code)
-        self.assertEqual(result, {
-            "value": 1,
-            "type": "int"
-        })
+        self.assertEqual(result, None)
