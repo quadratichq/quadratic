@@ -61,7 +61,7 @@ function FileLocation() {
   } = useFileRouteLoaderData();
   const linkProps = {
     reloadDocument: true,
-    className: 'underline:none text-inherit',
+    className: 'underline:none text-inherit block max-w-40 truncate',
   };
 
   // Don't show anything if they're not logged in
@@ -74,19 +74,19 @@ function FileLocation() {
   let DashboardLink;
   if (team) {
     DashboardLink = (
-      <Link to={ROUTES.TEAM(team.uuid)} {...linkProps}>
+      <Link to={ROUTES.TEAM(team.uuid)} {...linkProps} title={team.name}>
         {team.name}
       </Link>
     );
   } else if (isFileOwner) {
     DashboardLink = (
-      <Link to={ROUTES.FILES} {...linkProps}>
+      <Link to={ROUTES.FILES} {...linkProps} title="My files">
         My files
       </Link>
     );
   } else if (fileRole) {
     DashboardLink = (
-      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps}>
+      <Link to={ROUTES.FILES_SHARED_WITH_ME} {...linkProps} title="Shared with me">
         Shared with me
       </Link>
     );
