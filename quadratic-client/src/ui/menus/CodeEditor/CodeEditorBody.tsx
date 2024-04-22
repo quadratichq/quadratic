@@ -49,6 +49,8 @@ export const CodeEditorBody = (props: Props) => {
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
 
+  console.log('evaluationResult', evaluationResult);
+
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // useEditorDiagnostics(isValidRef, editorRef, monacoRef, language, diagnostics);
 
@@ -89,12 +91,10 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.registerHoverProvider('Formula', { provideHover });
 
       monaco.languages.register({ id: 'python' });
-
       monaco.languages.registerCompletionItemProvider('python', {
         provideCompletionItems: provideCompletionItemsPython,
         triggerCharacters: ['.', '[', '"', "'"],
       });
-
       monaco.languages.registerSignatureHelpProvider('python', {
         provideSignatureHelp: provideSignatureHelpPython,
         signatureHelpTriggerCharacters: ['(', ','],
