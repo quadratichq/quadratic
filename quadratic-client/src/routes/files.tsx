@@ -1,19 +1,19 @@
-import { Type } from '@/components/Type';
-import { ROUTES } from '@/constants/routes';
-import { DOCUMENTATION_URL } from '@/constants/urls';
-import { Button } from '@/shadcn/ui/button';
-import { cn } from '@/shadcn/utils';
+import { apiClient } from '@/shared/api/apiClient';
+import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
+import { DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon, ExternalLinkIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
-import { Empty } from '../components/Empty';
+import { debugShowUILogs } from '../app/debugFlags';
 import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
+import { Empty } from '../dashboard/components/Empty';
 import { FilesList, FilesListUserFile } from '../dashboard/components/FilesList';
-import { debugShowUILogs } from '../debugFlags';
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListUserFile[]> => {
   const files = await apiClient.files.list();
