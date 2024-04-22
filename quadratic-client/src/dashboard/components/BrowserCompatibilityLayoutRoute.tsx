@@ -1,9 +1,9 @@
+import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { Outlet } from 'react-router-dom';
-import { Empty } from '../../components/Empty';
-import { isWASMSupported } from '../../utils/isWASMSupported';
+import { Empty } from './Empty';
 
 export function BrowserCompatibilityLayoutRoute() {
   if (!isWASMSupported || !isWebGLSupported()) {

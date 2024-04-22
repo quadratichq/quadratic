@@ -1,7 +1,7 @@
-import { ROUTES } from '@/constants/routes';
+import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
 import { ApiTypes, PublicLinkAccess } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirectDocument } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
 
 type Loader = {
   ok: boolean;
