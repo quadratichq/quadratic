@@ -320,7 +320,7 @@ class Core {
     y: number,
     width: number,
     height: number,
-    fillColor: string,
+    fillColor?: string,
     cursor?: string
   ) {
     return new Promise((resolve) => {
