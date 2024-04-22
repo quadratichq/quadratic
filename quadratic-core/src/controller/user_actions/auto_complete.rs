@@ -37,10 +37,10 @@ mod tests {
         array,
         grid::CodeCellLanguage,
         test_util::{
-            assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row, assert_cell_value,
-            assert_cell_value_row, print_table,
+            assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
+            assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        CellValue, CodeCellValue, Pos, SheetPos, SheetRect,
+        CodeCellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
@@ -131,22 +131,26 @@ mod tests {
 
     #[test]
     fn test_expand_code_cell() {
-        let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 });
+        let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 });
         let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
-        let code = CodeCellValue {
+        let code_1 = CodeCellValue {
             language: CodeCellLanguage::Formula,
-            code: "A0 + 1".into(),
+            code: "SUM(A0)".into(),
         };
-        let (mut grid, sheet_id) = test_setup(&selected, &[], &[], &[], &[code.clone()]);
-        let sheet = grid.grid.sheets()[0].clone();
+        let code_2 = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "ABS(A1)".into(),
+        };
+        let (mut grid, sheet_id) =
+            test_setup(&selected, &[], &[], &[], &[code_1.clone(), code_2.clone()]);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
-        let values = sheet.cell_values_in_rect(&selected, true).unwrap();
-        let value = values.into_cell_value().unwrap();
-
-        print_table(&grid, sheet_id, range);
-
-        assert_eq!(value, CellValue::Code(code));
+        assert_code_cell_value(&grid, sheet_id, 0, 0, "SUM(A0)");
+        assert_code_cell_value(&grid, sheet_id, 10, 0, "SUM(K0)");
+        assert_code_cell_value(&grid, sheet_id, 0, 10, "SUM(A10)");
+        assert_code_cell_value(&grid, sheet_id, 0, 1, "ABS(A1)");
+        assert_code_cell_value(&grid, sheet_id, 10, 1, "ABS(K1)");
+        assert_code_cell_value(&grid, sheet_id, 1, 9, "ABS(B9)");
     }
 
     #[test]
@@ -498,9 +502,9 @@ mod tests {
 
         print_table(&grid, sheet_id, range);
 
-        assert_cell_value(&grid, sheet_id, 3, 5, "4");
-        assert_cell_value(&grid, sheet_id, 3, 6, "5");
-        assert_cell_value(&grid, sheet_id, 3, 7, "6");
+        assert_display_cell_value(&grid, sheet_id, 3, 5, "4");
+        assert_display_cell_value(&grid, sheet_id, 3, 6, "5");
+        assert_display_cell_value(&grid, sheet_id, 3, 7, "6");
     }
 
     #[test]

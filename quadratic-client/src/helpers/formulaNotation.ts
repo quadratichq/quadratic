@@ -11,8 +11,8 @@ export function getCoordinatesFromStringId(stringId: StringId): [number, number]
 }
 
 export interface CellPosition {
-  x: { type: 'Relative'; coord: number };
-  y: { type: 'Relative'; coord: number };
+  x: { type: 'Relative' | 'Absolute'; coord: number };
+  y: { type: 'Relative' | 'Absolute'; coord: number };
   sheet?: string;
 }
 

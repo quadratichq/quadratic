@@ -36,6 +36,7 @@ const FUNCTION_CALL_PATTERN: &str = r"[A-Za-z_][A-Za-z_\d]*\(";
 ///      [A-Z]+               letters
 ///                 \d+       digits
 const A1_CELL_REFERENCE_PATTERN: &str = r"\$?n?[A-Z]+\$?n?\d+";
+const INTERNAL_CELL_REFERENCE_PATTERN: &str = r"R([\[|\{]-?\d+[\]|\}])C([\[|\{]-?\d+[\]|\}])";
 
 /// Floating-point or integer number, without leading sign.
 ///
@@ -87,6 +88,8 @@ const TOKEN_PATTERNS: &[&str] = &[
     r#"false|true"#,
     // Reference to a cell.
     A1_CELL_REFERENCE_PATTERN,
+    // Internal cell reference.
+    INTERNAL_CELL_REFERENCE_PATTERN,
     // Whitespace.
     r"\s+",
     // Any other single Unicode character.
@@ -110,6 +113,10 @@ lazy_static! {
     /// Regex that matches a valid A1-style cell reference.
     pub static ref A1_CELL_REFERENCE_REGEX: Regex =
         new_fullmatch_regex(A1_CELL_REFERENCE_PATTERN);
+
+    /// Regex that matches a valid internal cell reference.
+    pub static ref INTERNAL_CELL_REFERENCE_REGEX: Regex =
+        new_fullmatch_regex(INTERNAL_CELL_REFERENCE_PATTERN);
 
     /// Regex that matches all valid numeric literals and some invalid ones.
     pub static ref NUMERIC_LITERAL_REGEX: Regex =
@@ -214,6 +221,8 @@ pub enum Token {
     NumericLiteral,
     #[strum(to_string = "cell reference")]
     CellRef,
+    #[strum(to_string = "internal cell reference")]
+    InternalCellRef,
     #[strum(to_string = "whitespace")]
     Whitespace,
     #[strum(to_string = "unknown symbol")]
@@ -295,6 +304,7 @@ impl Token {
             s if s.eq_ignore_ascii_case("true") => Self::True,
             s if NUMERIC_LITERAL_REGEX.is_match(s) => Self::NumericLiteral,
             s if A1_CELL_REFERENCE_REGEX.is_match(s) => Self::CellRef,
+            s if INTERNAL_CELL_REFERENCE_REGEX.is_match(s) => Self::InternalCellRef,
             s if s.trim().is_empty() => Self::Whitespace,
 
             // Give up.
