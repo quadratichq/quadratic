@@ -1,5 +1,4 @@
-import Box from '@mui/material/Box';
-import LinearProgress from '@mui/material/LinearProgress';
+import { Box, LinearProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { TopBarLoading } from '../components/TopBarLoading';
 

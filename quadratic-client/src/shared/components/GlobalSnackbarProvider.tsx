@@ -1,7 +1,5 @@
 import CloseIcon from '@mui/icons-material/Close';
-import { Alert, AlertColor } from '@mui/material';
-import IconButton from '@mui/material/IconButton';
-import Snackbar from '@mui/material/Snackbar';
+import { Alert, AlertColor, IconButton, Snackbar } from '@mui/material';
 import * as React from 'react';
 import { useSearchParams } from 'react-router-dom';
 
