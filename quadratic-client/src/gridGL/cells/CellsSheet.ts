@@ -3,6 +3,7 @@ import { Container, Rectangle } from 'pixi.js';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
+import { CellsImages } from './CellsImages';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
 import { CellsLabels } from './cellsLabel/CellsLabels';
@@ -11,6 +12,7 @@ export class CellsSheet extends Container {
   private cellsFills: CellsFills;
   private cellsArray: CellsArray;
   private cellsBorders: CellsBorders;
+  private cellsImages: CellsImages;
 
   cellsMarkers: CellsMarkers;
   cellsLabels: CellsLabels;
@@ -29,6 +31,7 @@ export class CellsSheet extends Container {
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
+    this.cellsImages = this.addChild(new CellsImages(this));
     this.visible = false;
   }
 
@@ -44,6 +47,7 @@ export class CellsSheet extends Container {
     this.cellsArray.visible = true;
     this.cellsArray.cheapCull(bounds);
     this.cellsFills.cheapCull(bounds);
+    this.cellsImages.cheapCull(bounds);
   }
 
   hide(): void {

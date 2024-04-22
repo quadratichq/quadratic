@@ -66,6 +66,19 @@ impl Sheet {
                     JsRenderCellSpecial::RunError
                 }),
             };
+        } else if let CellValue::Image(_) = value {
+            return JsRenderCell {
+                x,
+                y,
+                value: "".into(),
+                language,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Chart),
+            };
         }
 
         match column {

@@ -22,7 +22,10 @@ impl GridController {
     pub fn calculation_get_cells(
         &mut self,
         transaction_id: String,
-        rect: Rect,
+        x: i64,
+        y: i64,
+        w: i64,
+        h: Option<i64>,
         sheet_name: Option<String>,
         line_number: Option<u32>,
     ) -> Result<Vec<JsGetCellResponse>, CoreError> {
@@ -77,6 +80,9 @@ impl GridController {
             return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 
+        let h = h.unwrap_or(sheet.find_last_data_row(x, y, w));
+        let rect = Rect::from_numbers(x, y, w, h);
+
         let transaction_type = transaction.transaction_type.clone();
         if transaction_type != TransactionType::User {
             // this should only be called for a user transaction
@@ -104,7 +110,10 @@ mod test {
 
         let result = gc.calculation_get_cells(
             "bad transaction id".to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
+            0,
+            0,
+            1,
+            Some(1),
             None,
             None,
         );
@@ -115,12 +124,8 @@ mod test {
     fn test_calculation_get_cells_no_transaction() {
         let mut gc = GridController::test();
 
-        let result = gc.calculation_get_cells(
-            Uuid::new_v4().to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        );
+        let result =
+            gc.calculation_get_cells(Uuid::new_v4().to_string(), 0, 0, 1, Some(1), None, None);
         assert!(result.is_err());
     }
 
@@ -142,8 +147,7 @@ mod test {
         let transactions = gc.transactions.async_transactions_mut();
         transactions[0].current_sheet_pos = None;
         let transaction_id = transactions[0].id.to_string();
-        let result =
-            gc.calculation_get_cells(transaction_id, Rect::from_numbers(0, 0, 1, 1), None, None);
+        let result = gc.calculation_get_cells(transaction_id, 0, 0, 1, Some(1), None, None);
         assert!(result.is_err());
     }
 
@@ -165,7 +169,10 @@ mod test {
 
         let result = gc.calculation_get_cells(
             transaction_id.to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
+            0,
+            0,
+            1,
+            Some(1),
             Some("bad sheet name".to_string()),
             None,
         );
@@ -209,12 +216,8 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells(
-            transaction_id.to_string(),
-            Rect::from_numbers(0, 1, 1, 1),
-            None,
-            None,
-        );
+        let result =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 1, 1, Some(1), None, None);
         assert!(result.is_ok());
 
         let sheet = gc.sheet(sheet_id);
@@ -258,12 +261,8 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells(
-            transaction_id.to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        );
+        let result =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
         assert_eq!(
             result,
             Ok(vec![JsGetCellResponse {

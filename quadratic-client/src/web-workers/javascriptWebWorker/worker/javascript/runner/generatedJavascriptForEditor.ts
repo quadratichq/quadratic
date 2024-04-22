@@ -14,6 +14,13 @@ declare global {
   function pos(): { x: number; y: number };
   function relCell(deltaX: number, deltaY: number): Promise<number | string | boolean | undefined>;
   function rc(deltaX: number, deltaY: number): Promise<number | string | boolean | undefined>;
+  function getCellsWithHeading(
+    x0: number,
+    y: number,
+    x1: number,
+    y1: number,
+    sheetName?: string
+  ): Promise<Record<string, number | string | boolean | undefined>[]>;
 }
 
 const javascriptSendMessageAwaitingResponse = async (message: {
@@ -47,6 +54,33 @@ export const getCells = async (
   sheetName?: string
 ): Promise<(number | string | boolean | undefined)[][]> => {
   return await javascriptSendMessageAwaitingResponse({ type: 'getCells', x0, y0, x1, y1, sheetName });
+};
+
+/**
+ * Get a range of cells from the sheet and create an array of object based on
+ * the header row.
+ * @param x0 x coordinate of the top-left cell
+ * @param y0 y coordinate of the top-left cell
+ * @param x1 x coordinate of the bottom-right cell
+ * @param y1 y coordinate of the bottom-right cell
+ * @param sheetName optional name of the sheet
+ */
+export const getCellsWithHeadings = async (
+  x0: number,
+  y: number,
+  x1: number,
+  y1: number,
+  sheetName?: string
+): Promise<Record<string, number | string | boolean | undefined>[]> => {
+  const cells = await getCells(x0, y, x1, y1, sheetName);
+  const headers = cells[0];
+  return cells.slice(1).map((row) => {
+    const obj: Record<string, number | string | boolean | undefined> = {};
+    headers.forEach((header, i) => {
+      obj[header as string] = row[i];
+    });
+    return obj;
+  });
 };
 
 /**

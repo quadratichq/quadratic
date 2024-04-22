@@ -38,7 +38,7 @@ export async function javascriptConvertOutputType(
     );
     return null;
   } else if (value instanceof Blob && (value as Blob).type.includes('image')) {
-    const image = await (value as Blob).text();
+    const image = new FileReaderSync().readAsDataURL(value as Blob);
     console.log(image);
     return { output: [image, 'image'], displayType: 'Blob/image' };
   } else if (typeof value === 'string') {

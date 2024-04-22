@@ -283,6 +283,33 @@ impl Sheet {
         }
     }
 
+    /// Finds the height of a rectangle that contains data given an (x, y, w).
+    pub fn find_last_data_row(&self, x: i64, y: i64, w: i64) -> i64 {
+        let bounds = self.bounds(true);
+        match bounds {
+            GridBounds::Empty => 0,
+            GridBounds::NonEmpty(rect) => {
+                let mut h = 0;
+                for y in y..=rect.max.y {
+                    let mut has_data = false;
+                    for x in x..x + w {
+                        if self.display_value(Pos { x, y }).is_some() {
+                            has_data = true;
+                            break;
+                        }
+                    }
+                    if has_data {
+                        h = y;
+                    } else {
+                        // We've reached a column without any data, so we can stop
+                        return h;
+                    }
+                }
+                h
+            }
+        }
+    }
+
     /// Returns the bounds of the sheet.
     ///
     /// Returns `(data_bounds, format_bounds)`.

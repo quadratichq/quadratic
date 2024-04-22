@@ -8,7 +8,7 @@ import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
-interface SpriteBounds extends Sprite {
+export interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
 
