@@ -3,7 +3,6 @@ from unittest import IsolatedAsyncioTestCase
 from unittest.mock import MagicMock, patch
 
 async def CodeRunner(code: str):
-    print("HERE******")
     return True
 
 # mock modules needed to import inspect_python

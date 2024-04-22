@@ -360,7 +360,7 @@ impl Sheet {
             },
             state,
             spill_error,
-            cells_accessed: Some(run.cells_accessed.iter().map(|v| *v).collect()),
+            cells_accessed: Some(run.cells_accessed.iter().copied().collect()),
         })
     }
 
@@ -403,9 +403,7 @@ impl Sheet {
                                 language: code.language,
                                 state,
                                 spill_error,
-                                cells_accessed: Some(
-                                    run.cells_accessed.iter().map(|v| *v).collect(),
-                                ),
+                                cells_accessed: Some(run.cells_accessed.iter().copied().collect()),
                             })
                         }
                         _ => None, // this should not happen. A CodeRun should always have a CellValue::Code.
