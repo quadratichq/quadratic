@@ -463,10 +463,11 @@ mod test {
 
         sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
-            CellValue::Text(String::from("abc")),
+            CellValue::Number(BigDecimal::from_str("11.100000000000000000").unwrap()),
         );
 
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
+        // expect a single decimal place
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(1));
     }
 
     #[test]
