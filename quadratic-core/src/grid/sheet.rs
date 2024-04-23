@@ -1,7 +1,7 @@
 use std::collections::{btree_map, BTreeMap};
 use std::str::FromStr;
 
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, RoundingMode};
 use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -342,15 +342,19 @@ impl Sheet {
         if let Some(value) = self.display_value(pos) {
             match value {
                 CellValue::Number(n) => {
-                    let (_, exponent) = n.as_bigint_and_exponent();
+                    let exponent = n.as_bigint_and_exponent().1;
                     let max_decimals = 9;
-                    let decimals = exponent.min(max_decimals) as i16;
+                    let mut decimals = n
+                        .with_scale_round(exponent.min(max_decimals), RoundingMode::HalfUp)
+                        .normalized()
+                        .as_bigint_and_exponent()
+                        .1 as i16;
 
                     if is_percentage {
-                        Some(decimals - 2)
-                    } else {
-                        Some(decimals)
+                        decimals -= 2;
                     }
+
+                    Some(decimals)
                 }
                 _ => None,
             }
@@ -446,6 +450,18 @@ mod test {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
 
         let _ = sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Text(String::from("abc")),
+        );
+
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
+    }
+
+    #[test]
+    fn test_current_decimal_places_float() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
             CellValue::Text(String::from("abc")),
         );
