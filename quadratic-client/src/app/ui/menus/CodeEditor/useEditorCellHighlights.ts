@@ -153,7 +153,7 @@ export const useEditorCellHighlights = (
     };
 
     onChangeModel();
-    editor.onDidChangeModelContent(onChangeModel);
+    editor.onDidChangeModelContent(() => decorations.current?.clear());
   }, [
     isValidRef,
     editorRef,

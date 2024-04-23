@@ -122,8 +122,6 @@ export const CodeEditor = () => {
           editorInteractionState.selectedCell.y
         ));
 
-      console.log('codeCell', codeCell);
-
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setCellsAccessed(codeCell.cells_accessed);
