@@ -84,20 +84,21 @@ export class Update {
 
     this.updateViewport();
 
-    const rendererDirty =
+    let rendererDirty =
       pixiApp.gridLines.dirty ||
       pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
       pixiApp.multiplayerCursor.dirty ||
-      pixiApp.cursor.dirty;
+      pixiApp.cursor.dirty ||
+      pixiApp.uiImageResize.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
         `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}${
           pixiApp.axesLines.dirty ? 'axesLines ' : ''
         }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}${
-          pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''
+          pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : pixiApp.uiImageResize.dirty ? 'uiImageResize' : ''
         }`
       );
     }
@@ -115,6 +116,8 @@ export class Update {
     debugTimeCheck('[Update] cursor');
     pixiApp.multiplayerCursor.update();
     debugTimeCheck('[Update] multiplayerCursor');
+    pixiApp.uiImageResize.update();
+    debugTimeCheck('[Update] uiImageResize');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

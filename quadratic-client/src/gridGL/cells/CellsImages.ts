@@ -4,12 +4,17 @@ import { Sheet } from '@/grid/sheet/Sheet';
 import { CoreClientImage } from '@/web-workers/quadraticCore/coreClientMessages';
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 import { intersects } from '../helpers/intersects';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../UI/UIImageResize';
 import { CellsSheet } from './CellsSheet';
 
-interface SpriteImage extends Sprite {
-  viewBounds: Rectangle;
+export interface SpriteImage extends Sprite {
+  sheetId: string;
   column: number;
   row: number;
+  viewBounds: Rectangle;
+  viewRight: Rectangle;
+  viewBottom: Rectangle;
 }
 
 export class CellsImages extends Container<SpriteImage> {
@@ -40,6 +45,43 @@ export class CellsImages extends Container<SpriteImage> {
     return sheet;
   }
 
+  resizeImage = (sprite: SpriteImage) => {
+    sprite.viewBounds = new Rectangle(sprite.x, sprite.y, sprite.width, sprite.height);
+    sprite.viewRight = new Rectangle(
+      sprite.x + sprite.width - IMAGE_BORDER_OFFSET,
+      sprite.y,
+      IMAGE_BORDER_WIDTH,
+      sprite.height
+    );
+    sprite.viewBottom = new Rectangle(
+      sprite.x,
+      sprite.y + sprite.height - IMAGE_BORDER_OFFSET,
+      sprite.width,
+      IMAGE_BORDER_WIDTH
+    );
+    if (sprite.sheetId === sheets.current) {
+      pixiApp.setViewportDirty();
+    }
+  };
+
+  private repositionImage(sprite: SpriteImage) {
+    const screen = this.sheet.offsets.getCellOffsets(sprite.column, sprite.row + 1);
+    sprite.position.set(screen.x, screen.y);
+
+    // We need to wait until the baseTexture loads from the string before we can calculate bounds.
+    if (!sprite.texture.baseTexture.valid) {
+      sprite.texture.once('update', () => this.resizeImage(sprite));
+    } else {
+      this.resizeImage(sprite);
+    }
+  }
+
+  private reposition = (sheetId: string) => {
+    if (sheetId === this.cellsSheet.sheetId) {
+      this.children.forEach((sprite) => this.repositionImage(sprite));
+    }
+  };
+
   private updateImage = (message: CoreClientImage) => {
     if (message.sheetId === this.cellsSheet.sheetId) {
       let sprite = this.children.find(
@@ -50,16 +92,16 @@ export class CellsImages extends Container<SpriteImage> {
           sprite.texture = Texture.from(message.image);
         } else {
           this.removeChild(sprite);
+          sprite = undefined;
         }
       } else {
         if (message.image) {
           const justSprite = new Sprite(Texture.from(message.image));
           sprite = justSprite as SpriteImage;
+          sprite.sheetId = message.sheetId;
           sprite.column = message.x;
           sprite.row = message.y;
           this.addChild(sprite);
-          const screen = this.sheet.offsets.getCellOffsets(message.x, message.y + 1);
-          sprite.position.set(screen.x, screen.y);
         }
       }
       if (sprite) {
@@ -69,18 +111,9 @@ export class CellsImages extends Container<SpriteImage> {
           sprite.width = width;
           sprite.height = height;
         }
-        sprite.viewBounds = new Rectangle(sprite.x, sprite.y, sprite.width, sprite.height);
+        this.repositionImage(sprite);
       }
-    }
-  };
-
-  private reposition = (sheetId: string) => {
-    if (sheetId === this.cellsSheet.sheetId) {
-      this.children.forEach((sprite) => {
-        const screen = this.sheet.offsets.getCellOffsets(sprite.column, sprite.row);
-        sprite.position.set(screen.x, screen.y);
-        sprite.viewBounds = new Rectangle(screen.x, screen.y, sprite.width, sprite.height);
-      });
+      pixiApp.setViewportDirty();
     }
   };
 }

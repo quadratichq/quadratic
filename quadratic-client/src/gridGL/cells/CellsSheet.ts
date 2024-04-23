@@ -3,7 +3,7 @@ import { Container, Rectangle } from 'pixi.js';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
-import { CellsImages } from './CellsImages';
+import { CellsImages, SpriteImage } from './CellsImages';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
 import { CellsLabels } from './cellsLabel/CellsLabels';
@@ -12,7 +12,7 @@ export class CellsSheet extends Container {
   private cellsFills: CellsFills;
   private cellsArray: CellsArray;
   private cellsBorders: CellsBorders;
-  private cellsImages: CellsImages;
+  cellsImages: CellsImages;
 
   cellsMarkers: CellsMarkers;
   cellsLabels: CellsLabels;
@@ -74,5 +74,9 @@ export class CellsSheet extends Container {
 
   updateCellsArray() {
     this.cellsArray.updateCellsArray();
+  }
+
+  getCellsImages(): SpriteImage[] {
+    return this.cellsImages.children;
   }
 }

@@ -4,13 +4,15 @@ import { Viewport } from 'pixi-viewport';
 import { InteractionEvent } from 'pixi.js';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PointerAutoComplete } from './PointerAutoComplete';
+import { PointerCursor } from './pointerCursor';
 import { PointerDown } from './PointerDown';
 import { PointerHeading } from './PointerHeading';
 import { PointerHtmlCells } from './PointerHtmlCells';
-import { PointerCursor } from './pointerCursor';
+import { PointerImages } from './PointerImages';
 
 export class Pointer {
   pointerHeading: PointerHeading;
+  pointerImages: PointerImages;
   pointerAutoComplete: PointerAutoComplete;
   pointerHtmlCells: PointerHtmlCells;
   pointerCursor: PointerCursor;
@@ -19,6 +21,7 @@ export class Pointer {
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
     this.pointerAutoComplete = new PointerAutoComplete();
+    this.pointerImages = new PointerImages();
     this.pointerDown = new PointerDown();
     this.pointerCursor = new PointerCursor();
     this.pointerHtmlCells = new PointerHtmlCells();
@@ -75,7 +78,10 @@ export class Pointer {
     if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
     const event = e.data.originalEvent as PointerEvent;
-    this.pointerHtmlCells.pointerDown(e) ||
+    // the pointerImage.resizing check is needed so pointerHtmlCells
+    // do not interfere with pointerImages when its resizing.
+    (!this.pointerImages.resizing && this.pointerHtmlCells.pointerDown(e)) ||
+      this.pointerImages.pointerDown(world) ||
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
@@ -84,7 +90,10 @@ export class Pointer {
   private pointerMove = (e: InteractionEvent): void => {
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
-    this.pointerHtmlCells.pointerMove(e) ||
+    // the pointerImage.resizing check is needed so pointerHtmlCells
+    // do not interfere with pointerImages when its resizing.
+    (!this.pointerImages.resizing && this.pointerHtmlCells.pointerMove(e)) ||
+      this.pointerImages.pointerMove(world) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world) ||
@@ -93,6 +102,7 @@ export class Pointer {
     // change the cursor based on pointer priority
     const cursor =
       pixiApp.pointer.pointerHtmlCells.cursor ??
+      pixiApp.pointer.pointerImages.cursor ??
       pixiApp.pointer.pointerHeading.cursor ??
       pixiApp.pointer.pointerAutoComplete.cursor;
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
@@ -101,6 +111,7 @@ export class Pointer {
   private pointerUp = (e: InteractionEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
     this.pointerHtmlCells.pointerUp() ||
+      this.pointerImages.pointerUp() ||
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
       this.pointerDown.pointerUp();
@@ -117,6 +128,7 @@ export class Pointer {
     }
     return (
       this.pointerHtmlCells.handleEscape() ||
+      this.pointerImages.handleEscape() ||
       this.pointerHeading.handleEscape() ||
       this.pointerAutoComplete.handleEscape()
     );

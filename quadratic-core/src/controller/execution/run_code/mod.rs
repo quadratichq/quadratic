@@ -129,28 +129,9 @@ impl GridController {
         }
 
         if update_image {
-            let image = match &new_code_run {
-                Some(new_code_run) => match &new_code_run.cell_value_at(0, 0) {
-                    Some(CellValue::Image(image)) => Some(image.clone()),
-                    _ => None,
-                },
-                None => None,
-            };
-            let (w, h) = if let Some(size) = sheet.get_formatting_value::<RenderSize>(pos) {
-                (Some(size.w), Some(size.h))
-            } else {
-                (None, None)
-            };
-
-            crate::wasm_bindings::js::jsSendImage(
-                sheet_id.to_string(),
-                pos.x as i32,
-                pos.y as i32,
-                image,
-                w,
-                h,
-            );
+            self.send_image(sheet_pos);
         }
+
         transaction.forward_operations.push(Operation::SetCodeRun {
             sheet_pos,
             code_run: new_code_run,

@@ -49,7 +49,23 @@ impl GridController {
 
             if !transaction.is_server() {
                 match &attr {
-                    CellFmtArray::RenderSize(_) => self.send_html_output_rect(&sheet_rect),
+                    CellFmtArray::RenderSize(_) => {
+                        // RenderSize is always sent as a 1,1 rect. TODO: we need to refactor formats to make it less generic.
+                        if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
+                            if let Some(code_run) =
+                                sheet.code_run((sheet_rect.min.x, sheet_rect.min.y).into())
+                            {
+                                if code_run.is_html() {
+                                    self.send_html_output_rect(&sheet_rect);
+                                } else if code_run.is_image() {
+                                    self.send_image(
+                                        (sheet_rect.min.x, sheet_rect.min.y, sheet_rect.sheet_id)
+                                            .into(),
+                                    );
+                                }
+                            }
+                        }
+                    }
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
