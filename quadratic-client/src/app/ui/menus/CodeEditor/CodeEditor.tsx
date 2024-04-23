@@ -111,7 +111,7 @@ export const CodeEditor = () => {
 
   // ensure codeCell is created w/content and updated when it receives a change request from Rust
   useEffect(() => {
-    const updateCodeCell = async (pushCodeCell?: JsCodeCell, cellsAccessed?: SheetRect[] | null) => {
+    const updateCodeCell = async (pushCodeCell?: JsCodeCell) => {
       // selectedCellSheet may be undefined if code editor was activated from within the CellInput
       if (!editorInteractionState.selectedCellSheet) return;
       const codeCell =
@@ -122,9 +122,11 @@ export const CodeEditor = () => {
           editorInteractionState.selectedCell.y
         ));
 
+      console.log('codeCell', codeCell);
+
       if (codeCell) {
         setCodeString(codeCell.code_string);
-        setCellsAccessed(cellsAccessed);
+        setCellsAccessed(codeCell.cells_accessed);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
 
         if (!pushCodeCell) setEditorContent(codeCell.code_string);
@@ -150,10 +152,12 @@ export const CodeEditor = () => {
       renderCodeCell?: JsRenderCodeCell;
     }) => {
       if (options.sheetId === cellLocation.sheetId && options.x === cellLocation.x && options.y === cellLocation.y) {
-        updateCodeCell(options.codeCell, options.renderCodeCell?.cells_accessed);
+        updateCodeCell(options.codeCell);
       }
     };
+
     events.on('updateCodeCell', update);
+
     return () => {
       events.off('updateCodeCell', update);
     };
