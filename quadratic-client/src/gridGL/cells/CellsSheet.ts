@@ -3,10 +3,11 @@ import { Container, Rectangle } from 'pixi.js';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
-import { CellsImages, SpriteImage } from './CellsImages';
+import { CellsImage } from './cellsImages/CellsImage';
+import { CellsImages } from './cellsImages/CellsImages';
+import { CellsLabels } from './cellsLabel/CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
-import { CellsLabels } from './cellsLabel/CellsLabels';
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
@@ -76,7 +77,7 @@ export class CellsSheet extends Container {
     this.cellsArray.updateCellsArray();
   }
 
-  getCellsImages(): SpriteImage[] {
+  getCellsImages(): CellsImage[] {
     return this.cellsImages.children;
   }
 }

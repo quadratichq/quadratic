@@ -1,5 +1,5 @@
 import { hasPermissionToEditFile } from '@/actions';
-import { SpriteImage } from '@/gridGL/cells/CellsImages';
+import { CellsImage } from '@/gridGL/cells/cellsImages/CellsImage';
 import { intersects } from '@/gridGL/helpers/intersects';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
@@ -9,12 +9,12 @@ import { Point } from 'pixi.js';
 const MIN_SIZE = 100;
 
 export class PointerImages {
-  resizing?: { image: SpriteImage; point: Point; side: 'right' | 'bottom' };
+  resizing?: { image: CellsImage; point: Point; side: 'right' | 'bottom' };
 
   cursor: string | undefined;
 
   // Finds a line that is being hovered.
-  private findLine(point: Point): { image: SpriteImage; side: 'right' | 'bottom' } | undefined {
+  private findImage(point: Point): { image: CellsImage; side?: 'right' | 'bottom' } | undefined {
     const cellsSheet = pixiApp.cellsSheets.current;
     if (!cellsSheet) return;
     const images = cellsSheet.getCellsImages();
@@ -25,6 +25,9 @@ export class PointerImages {
       }
       if (intersects.rectanglePoint(image.viewBottom, point)) {
         return { image, side: 'bottom' };
+      }
+      if (intersects.rectanglePoint(image.viewBounds, point)) {
+        return { image };
       }
     }
   }
@@ -53,20 +56,22 @@ export class PointerImages {
         const aspectRatio = height / this.resizing.image.viewBounds.height;
         width = this.resizing.image.viewBounds.width * aspectRatio;
       }
-      this.resizing.image.width = width;
-      this.resizing.image.height = height;
-      pixiApp.uiImageResize.draw();
+      this.resizing.image.temporaryResize(width, height);
+      pixiApp.cellImages.dirtyResizing = true;
+      pixiApp.cellImages.dirtyBorders = true;
       pixiApp.setViewportDirty();
       return true;
     }
 
-    const line = this.findLine(point);
-    if (line) {
-      pixiApp.uiImageResize.activate(line.image);
-      this.cursor = line.side === 'bottom' ? 'row-resize' : 'col-resize';
+    const search = this.findImage(point);
+    if (search) {
+      if (search.side) {
+        pixiApp.cellImages.activate(search.image);
+        this.cursor = search.side === 'bottom' ? 'ns-resize' : 'ew-resize';
+      }
       return true;
     }
-    pixiApp.uiImageResize.activate();
+    pixiApp.cellImages.activate();
     this.cursor = undefined;
     return false;
   }
@@ -74,10 +79,12 @@ export class PointerImages {
   pointerDown(point: Point): boolean {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
 
-    const line = this.findLine(point);
-    if (line) {
-      this.resizing = { point, image: line.image, side: line.side };
-      pixiApp.uiImageResize.activate(line.image);
+    const search = this.findImage(point);
+    if (search) {
+      if (search.side) {
+        this.resizing = { point, image: search.image, side: search.side };
+        pixiApp.cellImages.activate(search.image);
+      }
       return true;
     }
     return false;
@@ -92,7 +99,7 @@ export class PointerImages {
         this.resizing.image.width,
         this.resizing.image.height
       );
-      pixiApp.cellsSheets.current?.cellsImages.resizeImage(this.resizing.image);
+      this.resizing.image.resizeImage(this.resizing.image.width, this.resizing.image.height);
       this.resizing = undefined;
       return true;
     }
@@ -103,7 +110,8 @@ export class PointerImages {
     if (this.resizing) {
       this.resizing.image.width = this.resizing.image.viewBounds.width;
       this.resizing.image.height = this.resizing.image.viewBounds.height;
-      pixiApp.uiImageResize.draw();
+      pixiApp.cellImages.dirtyResizing = true;
+      pixiApp.cellImages.dirtyBorders = true;
       this.resizing = undefined;
       return true;
     }

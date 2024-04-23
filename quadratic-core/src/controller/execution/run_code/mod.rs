@@ -4,7 +4,7 @@ use crate::controller::active_transactions::pending_transaction::PendingTransact
 use crate::controller::operations::operation::Operation;
 use crate::error_core::{CoreError, Result};
 use crate::grid::js_types::JsHtmlOutput;
-use crate::grid::{CodeRunResult, RenderSize};
+use crate::grid::CodeRunResult;
 use crate::{
     controller::{transaction_types::JsCodeResult, GridController},
     grid::{CodeCellLanguage, CodeRun},

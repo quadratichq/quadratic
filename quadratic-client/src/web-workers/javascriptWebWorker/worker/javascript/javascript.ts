@@ -100,7 +100,12 @@ export class Javascript {
         name: 'javascriptWorker',
       });
       runner.onerror = (e) => {
-        // todo: handle worker errors (although there should not be any)
+        if (this.withLineNumbers) {
+          this.run(message, false);
+          return;
+        }
+        // todo: handle worker errors (although there should not be any as the Worker
+        // should catch all user code errors)
         javascriptErrorResult(message.transactionId, e.message);
         this.state = 'ready';
         setTimeout(this.next, 0);

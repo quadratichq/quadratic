@@ -18,7 +18,7 @@ import { AxesLines } from '../UI/AxesLines';
 import { Cursor } from '../UI/Cursor';
 import { GridLines } from '../UI/GridLines';
 import { HtmlPlaceholders } from '../UI/HtmlPlaceholders';
-import { UIImageResize } from '../UI/UIImageResize';
+import { UICellImages } from '../UI/UICellImages';
 import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
@@ -59,7 +59,7 @@ export class PixiApp {
   pointer!: Pointer;
   viewportContents!: Container;
   htmlPlaceholders!: HtmlPlaceholders;
-  uiImageResize!: UIImageResize;
+  cellImages!: UICellImages;
   renderer!: Renderer;
   stage = new Container();
   loading = true;
@@ -77,6 +77,7 @@ export class PixiApp {
   constructor() {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
+    this.cellImages = new UICellImages();
     this.viewport = new Viewport();
   }
 
@@ -171,7 +172,7 @@ export class PixiApp {
     this.axesLines = this.viewportContents.addChild(new AxesLines());
     this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
-    this.uiImageResize = this.viewportContents.addChild(new UIImageResize());
+    this.cellImages = this.viewportContents.addChild(this.cellImages);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
     this.headings = this.viewportContents.addChild(new GridHeadings());
