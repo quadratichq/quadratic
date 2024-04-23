@@ -1,4 +1,5 @@
 use super::*;
+use std::str::FromStr;
 
 /// Matches a string literal.
 #[derive(Debug, Copy, Clone)]
@@ -89,7 +90,7 @@ impl SyntaxRule for CellReference {
 
     fn prefix_matches(&self, mut p: Parser<'_>) -> bool {
         match p.next() {
-            Some(Token::CellRef | Token::UnquotedSheetReference) => true,
+            Some(Token::CellRef | Token::InternalCellRef | Token::UnquotedSheetReference) => true,
             Some(Token::StringLiteral) => p.peek_next() == Some(Token::SheetRefOp),
             _ => false,
         }
@@ -100,14 +101,20 @@ impl SyntaxRule for CellReference {
         let sheet_name = p.try_parse(SheetRefPrefix).transpose()?;
 
         p.next();
-        let Some(mut cell_ref) = CellRef::parse_a1(p.token_str(), p.pos) else {
-            return Err(RunErrorMsg::BadCellReference.with_span(p.span()));
-        };
-        cell_ref.sheet = sheet_name;
-        Ok(Spanned {
-            span: Span::merge(start_span, p.span()),
-            inner: cell_ref,
-        })
+
+        let cell_ref = CellRef::parse_a1(p.token_str(), p.pos)
+            .or_else(|| CellRef::from_str(p.token_str()).ok());
+
+        cell_ref.map_or_else(
+            || Err(RunErrorMsg::BadCellReference.with_span(p.span())),
+            |mut cell_ref| {
+                cell_ref.sheet = sheet_name;
+                Ok(Spanned {
+                    span: Span::merge(start_span, p.span()),
+                    inner: cell_ref,
+                })
+            },
+        )
     }
 }
 

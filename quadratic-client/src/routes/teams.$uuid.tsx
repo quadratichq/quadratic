@@ -1,14 +1,23 @@
-import { AvatarTeam } from '@/components/AvatarTeam';
-import { ShareTeamDialog } from '@/components/ShareDialog';
-import { ROUTES, ROUTE_LOADER_IDS } from '@/constants/routes';
-import { CONTACT_URL } from '@/constants/urls';
+import { AvatarTeam } from '@/dashboard/components/AvatarTeam';
 import CreateFileButton from '@/dashboard/components/CreateFileButton';
+import { DashboardHeader, DashboardHeaderTitle } from '@/dashboard/components/DashboardHeader';
 import { DialogRenameItem } from '@/dashboard/components/DialogRenameItem';
+import { Empty } from '@/dashboard/components/Empty';
 import { FilesList } from '@/dashboard/components/FilesList';
-import { Button } from '@/shadcn/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
-import { googleAnalyticsAvailable } from '@/utils/analytics';
-import { isJsonObject } from '@/utils/isJsonObject';
+import { QDialogConfirmDelete } from '@/dashboard/components/QDialog';
+import { apiClient } from '@/shared/api/apiClient';
+import { ShareTeamDialog } from '@/shared/components/ShareDialog';
+import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
+import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
+import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { Avatar, AvatarGroup } from '@mui/material';
 import { CaretDownIcon, ExclamationTriangleIcon, FileIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import { ApiTypes, TeamSubscriptionStatus } from 'quadratic-shared/typesAndSchemas';
@@ -24,10 +33,6 @@ import {
   useRouteLoaderData,
   useSearchParams,
 } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
-import { Empty } from '../components/Empty';
-import { QDialogConfirmDelete } from '../components/QDialog';
-import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 
 export const useTeamRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.TEAM) as LoaderData | undefined;
 

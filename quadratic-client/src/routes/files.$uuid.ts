@@ -1,5 +1,5 @@
-import { apiClient } from '@/api/apiClient';
-import { ROUTES } from '@/constants/routes';
+import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
 import { ActionFunctionArgs, redirectDocument } from 'react-router-dom';
 
 export const loader = async () => null;

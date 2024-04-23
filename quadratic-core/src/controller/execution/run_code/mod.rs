@@ -141,12 +141,6 @@ impl GridController {
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                // if let Some(html) = sheet.get_single_html_output(pos) {
-                //     dbgjs!(&html);
-                //     if let Ok(html) = serde_json::to_string(&html) {
-                //         crate::wasm_bindings::js::jsUpdateHtml(html);
-                //     }
-                // }
                 if let (Some(code_cell), Some(render_code_cell)) = (
                     sheet.edit_code_value(sheet_pos.into()),
                     sheet.get_render_code_cell(sheet_pos.into()),
@@ -219,7 +213,7 @@ impl GridController {
     pub(super) fn code_cell_sheet_error(
         &mut self,
         transaction: &mut PendingTransaction,
-        error_msg: String,
+        error_msg: &str,
         line_number: Option<u32>,
     ) -> Result<()> {
         let sheet_pos = match transaction.current_sheet_pos {
@@ -248,7 +242,7 @@ impl GridController {
             return Ok(());
         }
 
-        let msg = RunErrorMsg::PythonError(error_msg.clone().into());
+        let msg = RunErrorMsg::PythonError(error_msg.to_owned().into());
         let span = line_number.map(|line_number| Span {
             start: line_number,
             end: line_number,
@@ -265,7 +259,7 @@ impl GridController {
                     line_number: old_code_run.line_number,
                     output_type: old_code_run.output_type.clone(),
                     std_out: None,
-                    std_err: Some(error_msg),
+                    std_err: Some(error_msg.to_owned()),
                     spill_error: false,
                     last_modified: Utc::now(),
 
@@ -280,7 +274,7 @@ impl GridController {
                 line_number,
                 output_type: None,
                 std_out: None,
-                std_err: Some(error_msg),
+                std_err: Some(error_msg.to_owned()),
                 spill_error: false,
                 last_modified: Utc::now(),
                 cells_accessed: transaction.cells_accessed.clone(),

@@ -13,7 +13,7 @@ use crate::{
         execution::TransactionType, operations::operation::Operation, transaction::Transaction,
     },
     grid::{CodeCellLanguage, SheetId},
-    wasm_bindings, Rect, SheetPos, SheetRect,
+    Rect, SheetPos, SheetRect,
 };
 
 use super::transaction_name::TransactionName;

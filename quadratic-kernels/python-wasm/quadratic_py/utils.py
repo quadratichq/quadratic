@@ -60,7 +60,7 @@ def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | ti
         pass
     
     try:
-        if type(value) == int or type(value) == float:
+        if type(value) == int or type(value) == float or isinstance(value, np.number):
             return (str(value), "number")
         elif type(value) == bool:
             return (str(bool(value)), "logical")

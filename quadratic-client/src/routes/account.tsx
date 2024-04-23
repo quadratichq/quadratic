@@ -1,11 +1,11 @@
-import { Type } from '@/components/Type';
-import { themes, useTheme } from '@/hooks/useTheme';
-import { Button } from '@/shadcn/ui/button';
+import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { useRootRouteLoaderData } from '@/router';
+import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
+import { themes, useTheme } from '@/shared/hooks/useTheme';
+import { Button } from '@/shared/shadcn/ui/button';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
-import { ROUTES } from '../constants/routes';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { useRootRouteLoaderData } from '../router';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();

@@ -134,6 +134,8 @@ impl From<CellValue> for CellValues {
 
 #[cfg(test)]
 mod test {
+    use crate::wasm_bindings::js::clear_js_calls;
+
     use super::*;
 
     #[test]
@@ -223,6 +225,7 @@ mod test {
         }
         let json = serde_json::to_string(&cell_values).unwrap();
         assert!(json.len() > (w * h * 3) as usize);
+        clear_js_calls();
     }
 
     #[test]

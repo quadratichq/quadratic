@@ -42,7 +42,7 @@ impl GridController {
                         // todo: propagate the result
                         let _ = self.code_cell_sheet_error(
                             transaction,
-                            msg,
+                            &msg,
                             // todo: span should be multiline
                             line_number,
                         );
@@ -52,7 +52,7 @@ impl GridController {
             Err(e) => {
                 let msg = e.to_string();
                 // todo: propagate the result
-                let _ = self.code_cell_sheet_error(transaction, msg, None);
+                let _ = self.code_cell_sheet_error(transaction, &msg, None);
             }
         }
     }
