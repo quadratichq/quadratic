@@ -2,7 +2,8 @@ import { usePythonState } from '@/app/atoms/usePythonState';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
-import { JsCodeCell, Pos } from '@/app/quadratic-core-types';
+import { JsCodeCell, JsRenderCodeCell, Pos } from '@/app/quadratic-core-types';
+import { SheetRect } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -63,6 +64,7 @@ export const CodeEditor = () => {
   const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | undefined>(undefined);
   const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
+  const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
 
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
   const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
@@ -122,9 +124,11 @@ export const CodeEditor = () => {
 
       if (codeCell) {
         setCodeString(codeCell.code_string);
+        setCellsAccessed(codeCell.cells_accessed);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
 
         if (!pushCodeCell) setEditorContent(codeCell.code_string);
+
         const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
@@ -138,12 +142,20 @@ export const CodeEditor = () => {
 
     updateCodeCell();
 
-    const update = (options: { sheetId: string; x: number; y: number; codeCell?: JsCodeCell }) => {
+    const update = (options: {
+      sheetId: string;
+      x: number;
+      y: number;
+      codeCell?: JsCodeCell;
+      renderCodeCell?: JsRenderCodeCell;
+    }) => {
       if (options.sheetId === cellLocation.sheetId && options.x === cellLocation.x && options.y === cellLocation.y) {
         updateCodeCell(options.codeCell);
       }
     };
+
     events.on('updateCodeCell', update);
+
     return () => {
       events.off('updateCodeCell', update);
     };
@@ -412,6 +424,7 @@ export const CodeEditor = () => {
             setEditorContent={setEditorContent}
             closeEditor={closeEditor}
             evaluationResult={evaluationResult}
+            cellsAccessed={!unsaved ? cellsAccessed : []}
           />
           {editorInteractionState.mode === 'Python' && (
             <ReturnTypeInspector

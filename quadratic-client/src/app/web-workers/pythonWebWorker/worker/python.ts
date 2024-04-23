@@ -198,11 +198,7 @@ class Python {
       // gracefully recover from deserialization errors
       console.warn(e);
 
-      if (output) {
-        pythonRun = output;
-      } else {
-        pythonRun = {} as PythonError;
-      }
+      pythonRun = output ? output : ({} as PythonError);
 
       pythonRun = {
         ...pythonRun,
@@ -214,9 +210,7 @@ class Python {
       };
     }
 
-    if (pythonRun) {
-      pythonCore.sendPythonResults(message.transactionId, pythonRun);
-    }
+    if (pythonRun) pythonCore.sendPythonResults(message.transactionId, pythonRun);
 
     // destroy the output as it can cause memory leaks
     if (result) result.destroy();
