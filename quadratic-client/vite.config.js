@@ -16,7 +16,7 @@ export default defineConfig(() => {
       },
     }),
   ];
-  if (process.env.SENTRY_AUTH_TOKEN) {
+  if (process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_AUTH_TOKEN !== 'none') {
     plugins.push(
       sentryVitePlugin({
         authToken: process.env.SENTRY_AUTH_TOKEN,
