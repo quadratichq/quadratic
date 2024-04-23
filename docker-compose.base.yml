@@ -50,8 +50,6 @@ services:
 
   aws-cli:
     image: amazon/aws-cli
-    depends_on:
-      - localstack
     environment:
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
