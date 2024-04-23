@@ -32,5 +32,6 @@ pub fn pmt(rate: f64, nper: f64, pv: f64, fv: f64) -> CodeResult<f64> {
         ((1.0 + masked_rate) * (temp - 1.0)) / masked_rate
     };
     let pmt = (-1.0 * (fv + pv * temp) / fact).abs();
-    Ok(pmt)
+    // Round to nearest 2nd decimal
+    Ok((pmt * 100.0).round() / 100.0)
 }

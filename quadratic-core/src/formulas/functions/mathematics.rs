@@ -269,5 +269,39 @@ mod tests {
                 .msg,
         );
     }
-    // TODO: Add tests for RYAN_PMT.
+    #[test]
+    fn test_pmt() {
+        let g = Grid::new();
+        // Happy path
+        crate::util::assert_f64_approx_eq(
+            5153.63,
+            &eval_to_string(&g, &eval_to_string(&g, "RYAN_PMT(0.05, 72, 100000, 0)")),
+        );
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        // Missing argument
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "RYAN_PMT".into(),
+                arg_name: "rate".into(),
+            },
+            parse_formula("RYAN_PMT()", Pos::ORIGIN)
+                .unwrap()
+                .eval(&mut ctx)
+                .unwrap_err()
+                .msg,
+        );
+        let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
+        // Too many arguments
+        assert_eq!(
+            RunErrorMsg::TooManyArguments {
+                func_name: "RYAN_PMT".into(),
+                max_arg_count: 4,
+            },
+            parse_formula("RYAN_PMT(1.0, 2.0, 3.0, 4.0, 5.0)", Pos::ORIGIN)
+                .unwrap()
+                .eval(&mut ctx)
+                .unwrap_err()
+                .msg,
+        );
+    }
 }
