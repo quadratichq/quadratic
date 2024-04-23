@@ -9,7 +9,7 @@
     "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
     "build": "tsc && tsc ../quadratic-shared/*.ts",
-    "fetch-universities-data": "curl -o ./src/data/universities.json https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json",
+    "update-university-domains": "node scripts/updateUniversityDomains.js",
     "lint": "npm run lint:eslint && npm run lint:prettier",
     "lint:eslint": "eslint src/**/*.ts",
     "lint:eslint:write": "eslint src/**/*.ts --fix",

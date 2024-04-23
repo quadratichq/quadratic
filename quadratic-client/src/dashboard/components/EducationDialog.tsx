@@ -12,6 +12,7 @@ export function EducationDialog() {
   const { loggedInUser } = useRootRouteLoaderData();
 
   // TODO: localstorage get when this last fetched so we can throttle every few mins
+  // TODO: if they're enrolled, just don't do this at all
 
   const handleClose = () => {
     onOpenChange(false);
@@ -23,15 +24,19 @@ export function EducationDialog() {
     if (fetcher.state === 'idle' && !fetcher.data) {
       const email = loggedInUser?.email;
       if (typeof email === 'undefined') {
-        // sentry error
+        // TODO: Sentry warning that a user doesn't have an email
         return;
       }
 
       const { data, options } = getUpdateEducationAction({ email });
-      console.log('Fired mount fetch', data, options);
+      fetcher.submit(data, options);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  if (loggedInUser?.email === undefined) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

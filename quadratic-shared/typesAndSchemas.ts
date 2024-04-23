@@ -352,7 +352,7 @@ export const ApiSchemas = {
   }),
   '/v0/education.POST.response': z.object({
     eduStatus: EduStatusSchema,
-    automaticallyEnrolled: z.boolean(),
+    isNewlyEnrolled: z.boolean(),
   }),
 };
 
