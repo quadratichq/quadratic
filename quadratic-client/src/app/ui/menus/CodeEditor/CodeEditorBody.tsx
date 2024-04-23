@@ -1,4 +1,4 @@
-import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { SheetRect, provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import Editor, { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { useCallback, useEffect, useState } from 'react';
@@ -29,6 +29,7 @@ interface Props {
   setEditorContent: (value: string | undefined) => void;
   closeEditor: (skipSaveCheck: boolean) => void;
   evaluationResult?: EvaluationResult;
+  cellsAccessed?: SheetRect[] | null;
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // diagnostics?: Diagnostic[];
 }
@@ -37,7 +38,7 @@ interface Props {
 let registered = false;
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, evaluationResult } = props;
+  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
   const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
@@ -45,7 +46,7 @@ export const CodeEditorBody = (props: Props) => {
   const [isValidRef, setIsValidRef] = useState(false);
   const { editorRef, monacoRef } = useCodeEditor();
 
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language, cellsAccessed);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
 
@@ -89,12 +90,10 @@ export const CodeEditorBody = (props: Props) => {
       monaco.languages.registerHoverProvider('Formula', { provideHover });
 
       monaco.languages.register({ id: 'python' });
-
       monaco.languages.registerCompletionItemProvider('python', {
         provideCompletionItems: provideCompletionItemsPython,
         triggerCharacters: ['.', '[', '"', "'"],
       });
-
       monaco.languages.registerSignatureHelpProvider('python', {
         provideSignatureHelp: provideSignatureHelpPython,
         signatureHelpTriggerCharacters: ['(', ','],
