@@ -274,8 +274,8 @@ mod tests {
         let g = Grid::new();
         // Happy path
         crate::util::assert_f64_approx_eq(
-            5153.63,
-            &eval_to_string(&g, &eval_to_string(&g, "RYAN_PMT(0.05, 72, 100000, 0)")),
+            -544.41,
+            &eval_to_string(&g, &eval_to_string(&g, "RYAN_PMT(0.034/12, 60, 30000, 0)")),
         );
         let mut ctx = Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id));
         // Missing argument
