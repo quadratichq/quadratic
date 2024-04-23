@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: CoolProp
+Version: 6.6.0
+Summary: Open-source thermodynamic and transport properties database
+Home-page: http://www.coolprop.org
+Author: Ian Bell
+Author-email: ian.h.bell@gmail.com
+Classifier: Programming Language :: Python
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Other Environment
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+

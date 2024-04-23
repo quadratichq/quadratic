@@ -1,11 +1,30 @@
-import { Button } from '@/shadcn/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
+import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
+import { validateAndUpgradeGridFile } from '@/app/schemas/validateAndUpgradeGridFile';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { ROUTES } from '@/shared/constants/routes';
+import { Button } from '@/shared/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { CaretDownIcon } from '@radix-ui/react-icons';
+import mixpanel from 'mixpanel-browser';
 import { ChangeEvent, useState } from 'react';
 import { Link, useParams, useSubmit } from 'react-router-dom';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { ROUTES } from '../../constants/routes';
-import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
+
+export type UploadFileType = 'grid' | 'excel' | 'csv' | 'parquet';
+
+const getFileType = (file: File): UploadFileType => {
+  if (isGrid(file)) return 'grid';
+  if (isExcel(file)) return 'excel';
+  if (isCsv(file)) return 'csv';
+  if (isParquet(file)) return 'parquet';
+
+  throw new Error(`Unsupported file type: ${file}`);
+};
 
 // TODO this will need props when it becomes a button that can be used
 // on the team page as well as the user's files page
@@ -18,69 +37,113 @@ export default function CreateFileButton() {
 
   const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
     // If nothing was selected, just exit
-    if (!e.target.files) {
-      return;
+    if (!e.target.files) return;
+
+    try {
+      // Get the file and it's contents
+      const file: File = e.target.files[0];
+      let data: { name: string; version: string; contents: string } | undefined;
+
+      switch (getFileType(file)) {
+        case 'grid':
+          mixpanel.track('[Files].importGrid', { fileName: file.name });
+          const contents = await file.text().catch((e) => null);
+
+          // Ensure it's a valid Quadratic grid file
+          const validFile = await validateAndUpgradeGridFile(contents);
+          if (!validFile) {
+            addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
+            return;
+          }
+
+          data = {
+            name: file.name ? stripExtension(file.name) : 'Untitled',
+            version: validFile.version,
+            contents: validFile.version === '1.3' ? JSON.stringify(validFile) : validFile.contents,
+          };
+          break;
+
+        case 'excel':
+          mixpanel.track('[Files].importExcel', { fileName: file.name });
+          const importedFile = await quadraticCore.importExcel(file);
+
+          if (importedFile?.error) {
+            addGlobalSnackbar(importedFile.error, { severity: 'warning' });
+            return;
+          }
+          if (importedFile?.version && importedFile?.contents) {
+            data = {
+              name: file.name ? stripExtension(file.name) : 'Untitled',
+              version: importedFile.version,
+              contents: importedFile.contents,
+            };
+          }
+          break;
+
+        // TODO(ddimaira): implement these
+        case 'csv':
+        case 'parquet':
+        default:
+          addGlobalSnackbar('Import failed: unsupported file type.', { severity: 'warning' });
+      }
+
+      // Upload it
+      if (data) {
+        submit(data, { method: 'POST', action: actionUrl, encType: 'application/json' });
+      }
+    } catch (e) {
+      if (e instanceof Error) addGlobalSnackbar(e.message, { severity: 'warning' });
     }
-
-    // Get the file and it's contents
-    const file: File = e.target.files[0];
-    const contents = await file.text().catch((e) => null);
-
-    // Ensure it's a valid Quadratic grid file
-    const validFile = await validateAndUpgradeGridFile(contents);
-    if (!validFile) {
-      addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
-      return;
-    }
-
-    // Upload it
-    const data = {
-      name: file.name ? file.name.replace('.grid', '') : 'Untitled',
-      version: validFile.version,
-      contents: validFile.version === '1.3' ? JSON.stringify(validFile) : validFile.contents,
-    };
-    submit(data, { method: 'POST', action: actionUrl, encType: 'application/json' });
 
     // Reset the input so we can add the same file
     e.target.value = '';
   };
 
+  const DropDownButton = (props: { extension: string; name: string }): JSX.Element => {
+    const { name, extension } = props;
+
+    return (
+      <DropdownMenuItem
+        asChild
+        onSelect={(e) => {
+          // We have to prevent this (and handle the `open` state manually)
+          // or the file input's onChange handler won't work properly
+          e.preventDefault();
+        }}
+      >
+        <label className="flex cursor-pointer justify-between gap-4">
+          {name} <span className="mx-1 font-mono text-xs text-muted-foreground">.{extension}</span>
+          <input
+            type="file"
+            name="content"
+            accept={`.${extension}`}
+            onChange={(e) => {
+              onOpenChange(false);
+              handleImport(e);
+            }}
+            hidden
+          />
+        </label>
+      </DropdownMenuItem>
+    );
+  };
+
   return (
-    <div className="flex">
-      <Button asChild className={' rounded-r-none '}>
-        <Link to={actionUrl}>Create file</Link>
-      </Button>
+    <div className="flex gap-2">
       <DropdownMenu open={open} onOpenChange={onOpenChange}>
         <DropdownMenuTrigger asChild>
-          <Button className={'rounded-l-none border-l-0 px-2'}>
-            <CaretDownIcon />
+          <Button variant="outline">
+            Import file <CaretDownIcon />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            asChild
-            onSelect={(e) => {
-              // We have to prevent this (and handle the `open` state manually)
-              // or the file input's onChange handler won't work properly
-              e.preventDefault();
-            }}
-          >
-            <label className="cursor-pointer">
-              Import <span className="mx-1 font-mono">.grid</span> file
-              <input
-                type="file"
-                name="content"
-                accept=".grid"
-                onChange={(e) => {
-                  onOpenChange(false);
-                  handleImport(e);
-                }}
-                hidden
-              />
-            </label>
-          </DropdownMenuItem>
+          <DropDownButton name="Quadratic" extension="grid" />
+          <DropDownButton name="Excel" extension="xlsx" />
         </DropdownMenuContent>
       </DropdownMenu>
+      <Button asChild>
+        <Link to={actionUrl}>Create file</Link>
+      </Button>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 use crate::{
     controller::GridController,
-    grid::{Bold, FillColor, Sheet, SheetId},
+    formulas::replace_internal_cell_references,
+    grid::{Bold, CodeCellLanguage, FillColor, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
 use std::collections::HashMap;
@@ -12,7 +13,7 @@ use tabled::{
 
 /// Run an assertion that a cell value is equal to the given value
 #[cfg(test)]
-pub fn assert_cell_value(
+pub fn assert_display_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,
@@ -22,17 +23,36 @@ pub fn assert_cell_value(
     let sheet = grid_controller.sheet(sheet_id);
     let cell_value = sheet
         .display_value(Pos { x, y })
-        .unwrap_or(CellValue::Blank);
-    let expected = if value.is_empty() {
-        CellValue::Blank
-    } else {
-        CellValue::to_cell_value(value)
-    };
+        .map_or_else(|| CellValue::Blank, |v| CellValue::Text(v.to_string()));
+    let expected_text_or_blank =
+        |v: &CellValue| v == &CellValue::Text(value.into()) || v == &CellValue::Blank;
+
+    assert!(
+        expected_text_or_blank(&cell_value),
+        "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
+        x,
+        y,
+        CellValue::Text(value.into()),
+        cell_value
+    );
+}
+
+/// Run an assertion that a cell value is equal to the given value
+#[cfg(test)]
+pub fn assert_code_cell_value(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x: i64,
+    y: i64,
+    value: &str,
+) {
+    let sheet = grid_controller.sheet(sheet_id);
+    let cell_value = sheet.edit_code_value(Pos { x, y }).unwrap();
 
     assert_eq!(
-        cell_value, expected,
+        value, cell_value.code_string,
         "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-        x, y, expected, cell_value
+        x, y, value, cell_value.code_string
     );
 }
 
@@ -48,7 +68,7 @@ pub fn assert_cell_value_row(
 ) {
     for (index, x) in (x_start..=x_end).enumerate() {
         if let Some(cell_value) = value.get(index) {
-            assert_cell_value(grid_controller, sheet_id, x, y, cell_value);
+            assert_display_cell_value(grid_controller, sheet_id, x, y, cell_value);
         } else {
             println!("No value at position ({},{})", index, y);
         }
@@ -169,12 +189,20 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
                 fill_colors.push((count_y + 1, count_x + 1, fill_color));
             }
 
-            vals.push(
-                sheet
+            let cell_value = match sheet.cell_value(pos) {
+                Some(CellValue::Code(code_cell)) => match code_cell.language {
+                    CodeCellLanguage::Formula => {
+                        replace_internal_cell_references(&code_cell.code.to_string(), pos)
+                    }
+                    CodeCellLanguage::Python => code_cell.code.to_string(),
+                },
+                _ => sheet
                     .display_value(pos)
                     .unwrap_or(CellValue::Blank)
                     .to_string(),
-            );
+            };
+
+            vals.push(cell_value);
             count_x += 1;
         });
         builder.push_record(vals.clone());

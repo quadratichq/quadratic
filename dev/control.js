@@ -12,6 +12,7 @@ export class Control {
     multiplayer;
     files;
     python;
+    rustClient;
     db;
     npm;
     rust;
@@ -23,6 +24,7 @@ export class Control {
         multiplayer: false,
         files: false,
         python: false,
+        rustClient: false,
         types: false,
         db: false,
         npm: false,
@@ -75,6 +77,7 @@ export class Control {
             this.kill("multiplayer"),
             this.kill("files"),
             this.kill("python"),
+            this.kill("rustClient"),
         ]);
         process.exit(0);
     }
@@ -374,10 +377,7 @@ export class Control {
         this.signals.python = new AbortController();
         this.python = spawn("npm", ["run", this.cli.options.python ? "watch:python" : "build:python"], { signal: this.signals.python.signal });
         this.ui.printOutput("python", (data) => this.handleResponse("python", data, {
-            success: [
-                "Built quadratic_py",
-                "clean exit - waiting for changes before restart",
-            ],
+            success: "Python complete",
             error: "Python error!",
             start: "quadratic-kernels/python-wasm/",
         }));
@@ -385,6 +385,28 @@ export class Control {
     async restartPython() {
         this.cli.options.python = !this.cli.options.python;
         this.runPython();
+    }
+    async runRustClient() {
+        if (this.quitting)
+            return;
+        this.status.rustClient = false;
+        await this.kill("rustClient");
+        this.ui.print("rustClient");
+        this.signals.rustClient = new AbortController();
+        this.rustClient = spawn("npm", [
+            "run",
+            this.cli.options.rustClient ? "dev" : "build",
+            "--workspace=quadratic-rust-client",
+        ], { signal: this.signals.rustClient.signal });
+        this.ui.printOutput("rustClient", (data) => this.handleResponse("rustClient", data, {
+            success: "Your wasm pkg is ready to publish",
+            error: "error[",
+            start: "[Running ",
+        }));
+    }
+    async restartRustClient() {
+        this.cli.options.rustClient = !this.cli.options.rustClient;
+        this.runRustClient();
     }
     async runDb() {
         if (this.quitting)
@@ -480,5 +502,6 @@ export class Control {
         this.runRust();
         this.runDb();
         this.runPython();
+        this.runRustClient();
     }
 }

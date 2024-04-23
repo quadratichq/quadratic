@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import numpy as np
 import pandas as pd
 from process_output_test import *
-from quadratic_py.utils import (Blank, attempt_fix_await, to_python_type,
+from quadratic_py.utils import (attempt_fix_await, to_python_type,
                                 to_quadratic_type)
 
 
@@ -37,7 +37,7 @@ class mock_micropip:
 async def mock_fetch_module(source: str):
     return __import__(source)
 
-    
+
 # mock modules needed to import run_python
 sys.modules["pyodide"] = MagicMock()
 sys.modules["pyodide.code"] = MagicMock()
@@ -144,11 +144,11 @@ class TestErrorMessaging(TestCase):
 
     def test_get_return_line(self):
         example_code = r"""import itertools
-        
+
         print("Counting to 0\n\n\n")
         next(itertools.count())
-        
-        
+
+
         """
 
         assert code_trace.get_return_line(example_code) == 4
@@ -156,14 +156,10 @@ class TestErrorMessaging(TestCase):
     def test_error_result(self):
         err = RuntimeError("Test message")
         code = Mock()
-        cells_accessed = Mock()
         sout = Mock(getvalue=Mock())
         line_number = 42
 
-        assert run_python.error_result(err, code, cells_accessed, sout, line_number) == {
-            "output_value": None,
-            "array_output": None,
-            "cells_accessed": cells_accessed,
+        assert run_python.error_result(err, code, sout, line_number) == {
             "std_out": sout.getvalue.return_value,
             "success": False,
             "input_python_stack_trace": "RuntimeError on line 42: Test message",
@@ -190,22 +186,23 @@ class TestUtils(TestCase):
         assert to_quadratic_type(1) == ("1", "number")
         assert to_quadratic_type(1.1) == ("1.1", "number")
         assert to_quadratic_type(-1) == ("-1", "number")
-        assert to_quadratic_type("1") == ("1", "number")
-        assert to_quadratic_type("1.1") == ("1.1", "number")
-        assert to_quadratic_type("-1") == ("-1", "number")
+        assert to_quadratic_type(np.float64("1.1")) == ("1.1", "number")
 
         # logical
         assert to_quadratic_type(True) == ("True", "logical")
         assert to_quadratic_type(False) == ("False", "logical")
-        assert to_quadratic_type("True") == ("True", "logical")
-        assert to_quadratic_type("False") == ("False", "logical")
-        assert to_quadratic_type("true") == ("True", "logical")
-        assert to_quadratic_type("false") == ("False", "logical")
 
         # string
         assert to_quadratic_type("abc") == ("abc", "text")
         assert to_quadratic_type("123abc") == ("123abc", "text")
         assert to_quadratic_type("abc123") == ("abc123", "text")
+        assert to_quadratic_type("1") == ("1", "text")
+        assert to_quadratic_type("1.1") == ("1.1", "text")
+        assert to_quadratic_type("-1") == ("-1", "text")
+        assert to_quadratic_type("True") == ("True", "text")
+        assert to_quadratic_type("False") == ("False", "text")
+        assert to_quadratic_type("true") == ("true", "text")
+        assert to_quadratic_type("false") == ("false", "text")
 
         # instant
         assert to_quadratic_type(pd.Timestamp("2012-11-10")) == ("1352505600", "instant")
@@ -218,11 +215,11 @@ class TestUtils(TestCase):
 
         # TODO(ddimaria): implement when we implement duration in Rust
         # duration
-class TestUtils(TestCase):
+
     def test_to_python_type(self):
         # blank
-        assert to_python_type("", "blank") == 0
-        
+        assert to_python_type("", "blank") is None
+
         # number
         assert to_python_type("1", "number") == 1
         assert to_python_type("1.1", "number") == 1.1
@@ -243,32 +240,6 @@ class TestUtils(TestCase):
         # instant
         assert to_python_type("1352505600", "instant") == pd.Timestamp("2012-11-10 00:00:00+00:00")
         assert to_python_type("1352518200", "instant") == pd.Timestamp("2012-11-10 03:30:00+00:00")
-
-    def test_blank(self):
-        assert Blank() + 1 == 1
-        assert Blank() + 1.1 == 1.1
-        assert Blank() + -1 == -1
-        assert Blank() - 1 == -1
-        assert Blank() * 2 == 0
-        assert Blank() / 2 == 0
-        assert Blank() % 2 == 0
-        assert Blank() ** 2 == 0
-        assert bool(Blank()) == False
-        assert str(Blank()) == ""
-        assert Blank() == Blank()
-        assert Blank() == 0
-        assert Blank() == None
-        assert Blank() == ""
-        assert Blank() == False
-        assert Blank() == 0.0
-        assert Blank() < 1
-        assert Blank() < 1.1
-        assert Blank() > -1
-        assert Blank() > -1.1
-        assert Blank() <= 0
-        assert Blank() <= 1
-        assert Blank() >= 0
-        assert Blank() >= -1
 
 
 

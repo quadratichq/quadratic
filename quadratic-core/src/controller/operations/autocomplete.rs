@@ -7,7 +7,7 @@ use crate::{
         SheetId,
     },
     util::maybe_reverse_range,
-    CellValue, Rect, SheetRect,
+    CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
 use itertools::Itertools;
@@ -94,6 +94,7 @@ impl GridController {
             operations.extend(ops);
             initial_down_range = Some(range);
         }
+
         // expand left
         if should_expand_left {
             let new_range = Rect::new_span(
@@ -143,6 +144,7 @@ impl GridController {
             let ops = self.expand_right(sheet_id, &selection, &new_range, down_range, up_range)?;
             operations.extend(ops);
         }
+
         Ok(operations)
     }
 
@@ -604,7 +606,7 @@ impl GridController {
             cell_values
         } else {
             sheet
-                .cell_values_in_rect(selection)?
+                .cell_values_in_rect(selection, true)?
                 .into_cell_values_vec()
                 .into_iter()
                 .collect::<Vec<CellValue>>()
@@ -616,10 +618,23 @@ impl GridController {
             negative,
         });
 
-        let values = CellValues::from_flat_array(range.width(), range.height(), series.to_owned());
+        // gather ComputeCode operations for any code cells
+        let compute_code_ops = range
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| matches!(series.get(*i), Some(CellValue::Code(_))))
+            .map(|(_, Pos { x, y })| {
+                let sheet_pos = SheetPos::new(sheet_id, x, y);
+                Operation::ComputeCode { sheet_pos }
+            })
+            .collect::<Vec<Operation>>();
 
+        let values = CellValues::from_flat_array(range.width(), range.height(), series.to_owned());
         let sheet_pos = range.min.to_sheet_pos(sheet_id);
-        let ops = vec![Operation::SetCellValues { sheet_pos, values }];
+        let mut ops = vec![Operation::SetCellValues { sheet_pos, values }];
+
+        // the compute code operations need to be applied after the cell values
+        ops.extend(compute_code_ops);
 
         Ok((ops, series))
     }

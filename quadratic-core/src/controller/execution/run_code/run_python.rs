@@ -11,8 +11,8 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
-        if !cfg!(test) {
-            crate::wasm_bindings::js::runPython(
+        if cfg!(target_family = "wasm") && !transaction.is_server() {
+            crate::wasm_bindings::js::jsRunPython(
                 transaction.id.to_string(),
                 sheet_pos.x as i32,
                 sheet_pos.y as i32,
@@ -21,7 +21,6 @@ impl GridController {
             );
         }
         // stop the computation cycle until async returns
-        transaction.summary.transaction_id = Some(transaction.id.to_string());
         transaction.current_sheet_pos = Some(sheet_pos);
         transaction.waiting_for_async = Some(CodeCellLanguage::Python);
         transaction.has_async = true;
@@ -33,8 +32,7 @@ mod tests {
     use super::*;
     use crate::{
         controller::{
-            execution::run_code::get_cells::{GetCellResponse, GetCellsResponse},
-            transaction_types::{JsCodeResult, JsComputeGetCells},
+            execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
         },
         grid::js_types::JsRenderCell,
         ArraySize, CellValue, Pos, Rect,
@@ -58,7 +56,6 @@ mod tests {
         gc.calculation_complete(JsCodeResult::new(
             transaction.id.to_string(),
             true,
-            None,
             None,
             None,
             Some(vec!["test".into(), "text".into()]),
@@ -106,10 +103,9 @@ mod tests {
         // transaction for its id
         let transaction_id = gc.async_transactions()[0].id;
 
-        let summary = gc.calculation_complete(JsCodeResult::new_from_rust(
+        let summary = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
-            None,
             None,
             None,
             Some(vec!["hello world".into(), "text".into()]),
@@ -124,7 +120,6 @@ mod tests {
             sheet.get_code_cell_value(Pos { x: 0, y: 1 }),
             Some(CellValue::Text("hello world".into()))
         );
-        assert_eq!(summary.ok().unwrap().cell_sheets_modified.len(), 1);
     }
 
     #[test]
@@ -159,31 +154,28 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells request from python
-        let cells = gc.calculation_get_cells(JsComputeGetCells::new(
+        let cells = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         assert!(cells.is_ok());
         assert_eq!(
             cells,
-            Ok(GetCellsResponse {
-                response: vec![GetCellResponse {
-                    x: 0,
-                    y: 0,
-                    value: "9".into(),
-                    type_name: "number".into(),
-                }]
-            })
+            Ok(vec![JsGetCellResponse {
+                x: 0,
+                y: 0,
+                value: "9".into(),
+                type_name: "number".into(),
+            }])
         );
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
-                None,
                 None,
                 None,
                 Some(vec!["10".into(), "number".into()]),
@@ -234,17 +226,16 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells to populate dependencies
-        let _ = gc.calculation_get_cells(JsComputeGetCells::new(
+        let _ = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         // mock the calculation_complete
-        let _ = gc.calculation_complete(JsCodeResult::new_from_rust(
+        let _ = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
             true,
-            None,
             None,
             None,
             Some(vec!["10".into(), "number".into()]),
@@ -268,28 +259,25 @@ mod tests {
 
         let transaction_id = gc.async_transactions()[0].id;
 
-        let cells = gc.calculation_get_cells(JsComputeGetCells::new(
+        let cells = gc.calculation_get_cells(
             transaction_id.to_string(),
             Rect::from_numbers(0, 0, 1, 1),
             None,
             None,
-        ));
+        );
         assert_eq!(
             cells,
-            Ok(GetCellsResponse {
-                response: vec![GetCellResponse {
-                    x: 0,
-                    y: 0,
-                    value: "10".into(),
-                    type_name: "number".into(),
-                }]
-            })
+            Ok(vec![JsGetCellResponse {
+                x: 0,
+                y: 0,
+                value: "10".into(),
+                type_name: "number".into(),
+            }])
         );
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
-                None,
                 None,
                 None,
                 Some(vec!["11".into(), "number".into()]),
@@ -337,10 +325,9 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
-                None,
                 None,
                 None,
                 None,
@@ -384,7 +371,6 @@ mod tests {
             true,
             None,
             None,
-            None,
             Some(vec!["".into(), "blank".into()]),
             None,
             None,
@@ -422,10 +408,9 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
-                None,
                 None,
                 None,
                 Some(vec!["original output".into(), "text".into()]),
@@ -464,10 +449,9 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
-                None,
                 None,
                 None,
                 Some(vec!["new output".into(), "text".into()]),
@@ -506,10 +490,9 @@ mod tests {
 
         // mock the python calculation returning the result
         assert!(gc
-            .calculation_complete(JsCodeResult::new_from_rust(
+            .calculation_complete(JsCodeResult::new(
                 transaction_id.to_string(),
                 true,
-                None,
                 None,
                 None,
                 Some(vec!["new output second time".into(), "text".into()]),
@@ -542,7 +525,7 @@ mod tests {
             "1".to_string(),
             None,
         );
-        let summary = gc.set_code_cell(
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 1,
@@ -552,29 +535,30 @@ mod tests {
             "c(0, 0) + 1".into(),
             None,
         );
+        let transaction_id = gc.last_transaction().unwrap().id;
+
         let result = gc
-            .calculation_get_cells(JsComputeGetCells::new(
-                summary.transaction_id.clone().unwrap(),
+            .calculation_get_cells(
+                transaction_id.to_string(),
                 Rect::from_numbers(0, 0, 1, 1),
                 None,
                 None,
-            ))
+            )
             .ok()
             .unwrap();
-        assert_eq!(result.response.len(), 1);
+        assert_eq!(result.len(), 1);
         assert_eq!(
-            result.response[0],
-            GetCellResponse {
+            result[0],
+            JsGetCellResponse {
                 x: 0,
                 y: 0,
                 value: "1".into(),
                 type_name: "number".into(),
             }
         );
-        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
-            summary.transaction_id.unwrap(),
+        let result = gc.calculation_complete(JsCodeResult::new(
+            transaction_id.to_string(),
             true,
-            None,
             None,
             None,
             Some(vec!["2".into(), "number".into()]),
@@ -584,10 +568,11 @@ mod tests {
             None,
         ));
         assert!(result.is_ok());
-        assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
-        assert!(result.ok().unwrap().generate_thumbnail);
 
-        let summary = gc.set_code_cell(
+        // todo...
+        // assert!(result.ok().unwrap().generate_thumbnail);
+
+        gc.set_code_cell(
             SheetPos {
                 x: 0,
                 y: 2,
@@ -597,29 +582,29 @@ mod tests {
             "c(0, 1) + 1".into(),
             None,
         );
+        let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc
-            .calculation_get_cells(JsComputeGetCells::new(
-                summary.transaction_id.clone().unwrap(),
+            .calculation_get_cells(
+                transaction_id.to_string(),
                 Rect::from_numbers(0, 1, 1, 1),
                 None,
                 None,
-            ))
+            )
             .ok()
             .unwrap();
-        assert_eq!(result.response.len(), 1);
+        assert_eq!(result.len(), 1);
         assert_eq!(
-            result.response[0],
-            GetCellResponse {
+            result[0],
+            JsGetCellResponse {
                 x: 0,
                 y: 1,
                 value: "2".into(),
                 type_name: "number".into(),
             }
         );
-        let result = gc.calculation_complete(JsCodeResult::new_from_rust(
-            summary.transaction_id.unwrap(),
+        let result = gc.calculation_complete(JsCodeResult::new(
+            transaction_id.to_string(),
             true,
-            None,
             None,
             None,
             Some(vec!["3".into(), "number".into()]),
@@ -629,8 +614,9 @@ mod tests {
             None,
         ));
         assert!(result.is_ok());
-        assert_eq!(result.clone().ok().unwrap().cell_sheets_modified.len(), 1);
-        assert!(result.ok().unwrap().generate_thumbnail);
+
+        // todo...
+        // assert!(result.ok().unwrap().generate_thumbnail);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

@@ -1,53 +1,49 @@
 use crate::{
-    controller::{transaction_summary::TransactionSummary, GridController},
+    controller::{active_transactions::transaction_name::TransactionName, GridController},
     grid::{CodeCellLanguage, SheetId},
-    SheetPos,
+    Rect, SheetPos,
 };
 
 impl GridController {
     /// Starts a transaction to set a code_cell using user's code_string input
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn set_code_cell(
         &mut self,
         sheet_pos: SheetPos,
         language: CodeCellLanguage,
         code_string: String,
         cursor: Option<String>,
-    ) -> TransactionSummary {
+    ) {
         let ops = self.set_code_cell_operations(sheet_pos, language, code_string);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetCode,
+            Some(sheet_pos.sheet_id),
+            Some(Rect::single_pos(sheet_pos.into())),
+        );
     }
 
     /// Reruns code cells in grid.
-    ///
-    /// Returns a [`TransactionSummary`].
-    pub fn rerun_all_code_cells(&mut self, cursor: Option<String>) -> TransactionSummary {
+    pub fn rerun_all_code_cells(&mut self, cursor: Option<String>) {
         let ops = self.rerun_all_code_cells_operations();
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(ops, cursor, TransactionName::RunCode, None, None);
     }
 
     /// Reruns code cells in a sheet.
-    ///
-    /// Returns a [`TransactionSummary`].
-    pub fn rerun_sheet_code_cells(
-        &mut self,
-        sheet_id: SheetId,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
+    pub fn rerun_sheet_code_cells(&mut self, sheet_id: SheetId, cursor: Option<String>) {
         let ops = self.rerun_sheet_code_cells_operations(sheet_id);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(ops, cursor, TransactionName::RunCode, Some(sheet_id), None);
     }
 
     /// Reruns one code cell
-    ///
-    /// Returns a [`TransactionSummary`].
-    pub fn rerun_code_cell(
-        &mut self,
-        sheet_pos: SheetPos,
-        cursor: Option<String>,
-    ) -> TransactionSummary {
+    pub fn rerun_code_cell(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
         let ops = self.rerun_code_cell_operations(sheet_pos);
-        self.start_user_transaction(ops, cursor)
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::RunCode,
+            Some(sheet_pos.sheet_id),
+            Some(Rect::single_pos(sheet_pos.into())),
+        );
     }
 }

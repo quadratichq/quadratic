@@ -1,4 +1,5 @@
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::GridController;
 use crate::{grid::SheetId, Rect};
 use anyhow::Result;
 
@@ -16,9 +17,16 @@ impl GridController {
         selection: Rect,
         range: Rect,
         cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let ops = self.autocomplete_operations(sheet_id, selection, range)?;
-        Ok(self.start_user_transaction(ops, cursor))
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::Autocomplete,
+            Some(sheet_id),
+            Some(range),
+        );
+        Ok(())
     }
 }
 
@@ -27,18 +35,19 @@ mod tests {
     use super::*;
     use crate::{
         array,
+        grid::CodeCellLanguage,
         test_util::{
-            assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row, assert_cell_value,
-            assert_cell_value_row, print_table,
+            assert_cell_format_bold_row, assert_cell_format_cell_fill_color_row,
+            assert_cell_value_row, assert_code_cell_value, assert_display_cell_value, print_table,
         },
-        Pos, SheetPos, SheetRect,
+        CodeCellValue, Pos, SheetPos, SheetRect,
     };
 
     fn test_setup_rect(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["a", "h", "x", "g", "f", "z", "r", "b"];
         let bolds = vec![true, false, false, true, false, true, true, false];
 
-        test_setup(selection, &vals, &bolds, &[])
+        test_setup(selection, &vals, &bolds, &[], &[])
     }
 
     fn test_setup_rect_horiz_series(selection: &Rect) -> (GridController, SheetId) {
@@ -48,14 +57,14 @@ mod tests {
         ];
         let bolds = vec![];
 
-        test_setup(selection, &vals, &bolds, &[])
+        test_setup(selection, &vals, &bolds, &[], &[])
     }
 
     fn test_setup_rect_vert_series(selection: &Rect) -> (GridController, SheetId) {
         let vals = vec!["1", "2", "3"];
         let bolds = vec![];
 
-        test_setup(selection, &vals, &bolds, &[])
+        test_setup(selection, &vals, &bolds, &[], &[])
     }
 
     fn test_setup(
@@ -63,6 +72,7 @@ mod tests {
         vals: &[&str],
         bolds: &[bool],
         fill_colors: &[&str],
+        code_cells: &[CodeCellValue],
     ) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
@@ -71,7 +81,9 @@ mod tests {
         for y in selection.y_range() {
             for x in selection.x_range() {
                 let sheet_pos = SheetPos { x, y, sheet_id };
-                grid_controller.set_cell_value(sheet_pos, vals[count].to_string(), None);
+                if let Some(cell_value) = vals.get(count) {
+                    grid_controller.set_cell_value(sheet_pos, cell_value.to_string(), None);
+                }
 
                 if let Some(is_bold) = bolds.get(count) {
                     if *is_bold {
@@ -83,6 +95,15 @@ mod tests {
                     grid_controller.set_cell_fill_color(
                         SheetRect::single_sheet_pos(sheet_pos),
                         Some(fill_color.to_lowercase()),
+                        None,
+                    );
+                }
+
+                if let Some(code_cell) = code_cells.get(count) {
+                    grid_controller.set_code_cell(
+                        sheet_pos,
+                        code_cell.language,
+                        code_cell.code.clone(),
                         None,
                     );
                 }
@@ -99,13 +120,37 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 2, y: 1 });
         let (grid_controller, sheet_id) = test_setup_rect(&selected);
         let sheet = grid_controller.sheet(sheet_id);
-        let result = sheet.cell_values_in_rect(&selected).unwrap();
+        let result = sheet.cell_values_in_rect(&selected, false).unwrap();
         let expected = array![
             "a", "h", "x", "g";
             "f", "z", "r", "b";
         ];
 
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_expand_code_cell() {
+        let selected: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 1 });
+        let range: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 10, y: 10 });
+        let code_1 = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "SUM(A0)".into(),
+        };
+        let code_2 = CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "ABS(A1)".into(),
+        };
+        let (mut grid, sheet_id) =
+            test_setup(&selected, &[], &[], &[], &[code_1.clone(), code_2.clone()]);
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
+
+        assert_code_cell_value(&grid, sheet_id, 0, 0, "SUM(A0)");
+        assert_code_cell_value(&grid, sheet_id, 10, 0, "SUM(K0)");
+        assert_code_cell_value(&grid, sheet_id, 0, 10, "SUM(A10)");
+        assert_code_cell_value(&grid, sheet_id, 0, 1, "ABS(A1)");
+        assert_code_cell_value(&grid, sheet_id, 10, 1, "ABS(K1)");
+        assert_code_cell_value(&grid, sheet_id, 1, 9, "ABS(B9)");
     }
 
     #[test]
@@ -137,8 +182,7 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
-        let summary = grid.autocomplete(sheet_id, selected, range, None).unwrap();
-        println!("{:?}", summary);
+        grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(&grid, sheet_id, range);
 
@@ -236,7 +280,7 @@ mod tests {
         ];
 
         // down + right
-        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(selected.min, Pos { x: 7, y: 6 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 9, y: 8 });
@@ -250,7 +294,7 @@ mod tests {
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, 6, expected);
 
         // up + right
-        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 2, y: -1 }, Pos { x: 7, y: 3 });
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: 0, y: -3 }, Pos { x: 9, y: 5 });
@@ -264,7 +308,7 @@ mod tests {
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 2, 7, -1, expected);
 
         // down + left
-        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 1, y: 6 }, selected.max);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: -1, y: 0 }, Pos { x: 7, y: 8 });
@@ -278,7 +322,7 @@ mod tests {
         assert_cell_format_cell_fill_color_row(&grid, sheet_id, 1, 5, 6, expected);
 
         // up + left
-        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors);
+        let (mut grid, sheet_id) = test_setup(&selected, &vals, &[], &fill_colors, &[]);
         let range: Rect = Rect::new_span(Pos { x: 1, y: -1 }, selected.max);
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
         let range_over: Rect = Rect::new_span(Pos { x: -1, y: -3 }, Pos { x: 7, y: 5 });
@@ -458,9 +502,9 @@ mod tests {
 
         print_table(&grid, sheet_id, range);
 
-        assert_cell_value(&grid, sheet_id, 3, 5, "4");
-        assert_cell_value(&grid, sheet_id, 3, 6, "5");
-        assert_cell_value(&grid, sheet_id, 3, 7, "6");
+        assert_display_cell_value(&grid, sheet_id, 3, 5, "4");
+        assert_display_cell_value(&grid, sheet_id, 3, 6, "5");
+        assert_display_cell_value(&grid, sheet_id, 3, 7, "6");
     }
 
     #[test]

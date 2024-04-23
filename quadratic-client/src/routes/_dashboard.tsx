@@ -1,21 +1,21 @@
-import { apiClient } from '@/api/apiClient';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { AvatarTeam } from '@/components/AvatarTeam';
-import { Type } from '@/components/Type';
-import { TYPE } from '@/constants/appConstants';
-import { DOCUMENTATION_URL } from '@/constants/urls';
+import { AvatarTeam } from '@/dashboard/components/AvatarTeam';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
 import { QuadraticLogoType } from '@/dashboard/components/QuadraticLogoType';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { useTheme } from '@/hooks/useTheme';
-import { useUpdateQueryStringValueWithoutNavigation } from '@/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
-import { Avatar, AvatarFallback } from '@/shadcn/ui/avatar';
-import { Button } from '@/shadcn/ui/button';
-import { Separator } from '@/shadcn/ui/separator';
-import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
-import { cn } from '@/shadcn/utils';
+import { apiClient } from '@/shared/api/apiClient';
+import { Type } from '@/shared/components/Type';
+import { TYPE } from '@/shared/constants/appConstants';
+import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { DOCUMENTATION_URL } from '@/shared/constants/urls';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { useTheme } from '@/shared/hooks/useTheme';
+import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
+import { Avatar, AvatarFallback } from '@/shared/shadcn/ui/avatar';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
+import { cn } from '@/shared/shadcn/utils';
 import { LiveChatWidget } from '@livechat/widget-react';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import {
@@ -26,6 +26,7 @@ import {
   MagicWandIcon,
   MixIcon,
   PlusIcon,
+  ReaderIcon,
   ReloadIcon,
   Share2Icon,
 } from '@radix-ui/react-icons';
@@ -44,7 +45,6 @@ import {
   useSearchParams,
   useSubmit,
 } from 'react-router-dom';
-import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
 import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
 import { useRootRouteLoaderData } from '../router';
 
@@ -80,7 +80,7 @@ export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
   useTheme(); // Trigger the theme in the root of the app
 
-  const isLoading = revalidator.state !== 'idle' || navigation.state === 'loading';
+  const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
   const navbar = <Navbar isLoading={isLoading} />;
 
   // When the location changes, close the menu (if it's already open) and reset scroll
@@ -194,10 +194,6 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             <Share2Icon className={classNameIcons} />
             Shared with me
           </SidebarNavLink>
-          <SidebarNavLink to={ROUTES.EXAMPLES}>
-            <MixIcon className={classNameIcons} />
-            Examples
-          </SidebarNavLink>
         </div>
 
         <Type
@@ -277,13 +273,27 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             </SidebarNavLink>
           )}
         </div>
+        <Type
+          as="h3"
+          className={`${TYPE.overline} mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
+        >
+          Resources
+        </Type>
+        <div className="grid gap-0.5">
+          <SidebarNavLink to={ROUTES.EXAMPLES}>
+            <MixIcon className={classNameIcons} />
+            Examples
+          </SidebarNavLink>
+          <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className="group">
+            <ReaderIcon className={classNameIcons} />
+            Docs
+            <ExternalLinkIcon
+              className={cn(classNameIcons, `ml-auto text-muted-foreground opacity-50 group-hover:opacity-100`)}
+            />
+          </SidebarNavLink>
+        </div>
       </div>
       <div>
-        <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className={`text-muted-foreground`}>
-          <ExternalLinkIcon className={cn(classNameIcons, `text-inherit opacity-50`)} />
-          Docs
-        </SidebarNavLink>
-        <Separator className="my-2" />
         <SidebarNavLink to={ROUTES.ACCOUNT}>
           <Avatar className="h-6 w-6 bg-muted text-muted-foreground">
             <AvatarImage src={user?.picture} />

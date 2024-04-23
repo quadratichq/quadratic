@@ -1,13 +1,11 @@
+import { authClient } from '@/auth';
+import { apiClient } from '@/shared/api/apiClient';
+import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
+import { ROUTES } from '@/shared/constants/routes';
+import { initMixpanelAnalytics } from '@/shared/utils/analytics';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect, redirectDocument } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
-import { authClient } from '../auth';
-import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../components/GlobalSnackbarProvider';
-import { EXAMPLE_FILES, ExampleFileNames } from '../constants/appConstants';
-import { ROUTES } from '../constants/routes';
-import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
-import { initMixpanelAnalytics } from '../utils/analytics';
 
 const getFailUrl = (path: string = ROUTES.FILES) => {
   let params = new URLSearchParams();
@@ -29,54 +27,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // 1.
   // Clone an example file by passing the file id, e.g.
-  // /files/create?example=:id
-  const exampleId = url.searchParams.get('example');
-  if (exampleId) {
-    if (!EXAMPLE_FILES.hasOwnProperty(exampleId)) {
-      // If we get here, something's wrong
-      Sentry.captureEvent({
-        message: 'Client tried to load an invalid example file.',
-        level: 'warning',
-        extra: {
-          exampleId,
-        },
-      });
-      return redirect(getFailUrl(ROUTES.EXAMPLES));
-    }
-
-    // Above we've ensured it's a file name we know about
-    const fileNameKey = exampleId as ExampleFileNames;
-    const { name } = EXAMPLE_FILES[fileNameKey];
-    mixpanel.track('[Files].newExampleFile', { fileName: name });
-
+  // /files/create?example=:publicFileUrlInProduction
+  const exampleUrl = url.searchParams.get('example');
+  if (exampleUrl) {
     try {
-      // Get example file's contents
-      const res = await fetch(`/examples/${fileNameKey}`);
-      const contents = await res.text();
-
-      // Validate and upgrade file
-      const file = await validateAndUpgradeGridFile(contents);
-      if (!file) {
-        Sentry.captureEvent({
-          message: `Failed to validate and upgrade example file from an upload. It will likely have to be fixed manually. File name ${name}`,
-          level: 'error',
-        });
-        throw new Error(`Failed to create a new file because the example file is corrupt: ${file}`);
-      }
-
-      // Create a new file from that example file
-      const {
-        file: { uuid },
-      } = await apiClient.files.create({ name, contents: file.contents, version: file.version });
-
-      // Navigate to it
+      const { uuid, name } = await apiClient.examples.duplicate(exampleUrl);
+      mixpanel.track('[Files].newExampleFile', { fileName: name });
       return redirectDocument(ROUTES.FILE(uuid));
     } catch (error) {
       Sentry.captureEvent({
         message: 'Client failed to load the selected example file.',
         level: 'warning',
         extra: {
-          fileNameKey,
+          publicFileUrlInProduction: exampleUrl,
         },
       });
       return redirect(getFailUrl(ROUTES.EXAMPLES));

@@ -68,8 +68,12 @@ mod test {
     use crate::{
         cell_values::CellValues,
         controller::{
-            active_transactions::pending_transaction::PendingTransaction,
-            operations::operation::Operation, transaction_types::JsCodeResult, GridController,
+            active_transactions::{
+                pending_transaction::PendingTransaction, transaction_name::TransactionName,
+            },
+            operations::operation::Operation,
+            transaction_types::JsCodeResult,
+            GridController,
         },
         grid::{CodeCellLanguage, CodeRun, CodeRunResult},
         Array, ArraySize, CellValue, CodeCellValue, Pos, SheetPos, Value,
@@ -100,6 +104,9 @@ mod test {
                 },
                 Operation::ComputeCode { sheet_pos },
             ],
+            None,
+            TransactionName::Unknown,
+            None,
             None,
         );
 
@@ -230,10 +237,9 @@ mod test {
     fn test_js_code_result_to_code_cell_value_single() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let result = JsCodeResult::new_from_rust(
+        let result = JsCodeResult::new(
             Uuid::new_v4().into(),
             true,
-            None,
             None,
             None,
             Some(vec!["$12".into(), "number".into()]),
@@ -283,10 +289,9 @@ mod test {
             ],
         ];
         let mut transaction = PendingTransaction::default();
-        let result = JsCodeResult::new_from_rust(
+        let result = JsCodeResult::new(
             transaction.id.to_string(),
             true,
-            None,
             None,
             None,
             None,

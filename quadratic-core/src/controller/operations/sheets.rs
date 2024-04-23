@@ -37,9 +37,9 @@ impl GridController {
         util::unused_name("Sheet", sheet_names)
     }
 
-    pub fn add_sheet_operations(&mut self) -> Vec<Operation> {
+    pub fn add_sheet_operations(&mut self, name: Option<String>) -> Vec<Operation> {
         let id = SheetId::new();
-        let name = self.get_next_sheet_name();
+        let name = name.unwrap_or_else(|| self.get_next_sheet_name());
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
         vec![Operation::AddSheet { sheet }]
@@ -134,13 +134,22 @@ mod test {
     }
 
     #[test]
-    fn test_get_sheet_next_name() {
+    fn get_sheet_next_name() {
+        // Sheet 1
         let mut gc = GridController::test();
-        assert_eq!(gc.get_next_sheet_name(), "Sheet 2");
         gc.add_sheet(None);
-        assert_eq!(gc.get_next_sheet_name(), "Sheet 3");
+        // Sheet 1 | Sheet 2
+        assert_eq!(gc.sheet_index(1).name, "Sheet 2");
         gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet 2 modified".to_string();
-        assert_eq!(gc.get_next_sheet_name(), "Sheet 2");
+        // Sheet 1 | Sheet 2 modified
+        gc.add_sheet(None);
+        // Sheet 1 | Sheet 2 modified | Sheet 2
+        assert_eq!(gc.sheet_index(2).name, "Sheet 2");
+        gc.delete_sheet(gc.sheet_ids()[0], None);
+        // Sheet 2 modified | Sheet 2
+        gc.add_sheet(None);
+        // Sheet 2 modified | Sheet 2 | Sheet 3
+        assert_eq!(gc.sheet_index(2).name, "Sheet 3");
     }
 
     #[test]

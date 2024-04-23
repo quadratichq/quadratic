@@ -1,5 +1,5 @@
+import { TYPE } from '@/shared/constants/appConstants';
 import { ReactNode, useEffect } from 'react';
-import { TYPE } from '../../constants/appConstants';
 
 export function DashboardHeader({
   title,
@@ -33,6 +33,6 @@ export function DashboardHeader({
   );
 }
 
-export function DashboardHeaderTitle({ children }: { children: string }) {
+export function DashboardHeaderTitle({ children }: { children: ReactNode }) {
   return <h1 className={`${TYPE.h4} p-0 text-left leading-5`}>{children}</h1>;
 }

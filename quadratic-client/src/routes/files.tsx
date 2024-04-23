@@ -1,24 +1,32 @@
-import { Type } from '@/components/Type';
-import { ROUTES } from '@/constants/routes';
-import { DOCUMENTATION_URL } from '@/constants/urls';
-import { Button } from '@/shadcn/ui/button';
-import { cn } from '@/shadcn/utils';
+import { apiClient } from '@/shared/api/apiClient';
+import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
+import { DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon, ExternalLinkIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
-import { Empty } from '../components/Empty';
+import { debugShowUILogs } from '../app/debugFlags';
 import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { FilesList, FilesListFile } from '../dashboard/components/FilesList';
-import { debugShowUILogs } from '../debugFlags';
+import { Empty } from '../dashboard/components/Empty';
+import { FilesList, FilesListUserFile } from '../dashboard/components/FilesList';
 
-export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListFile[]> => {
+export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListUserFile[]> => {
   const files = await apiClient.files.list();
   const permissions = ['FILE_VIEW', 'FILE_EDIT', 'FILE_DELETE'] as FilePermission[];
-  const filesWithPermissions = files.map((file) => ({ ...file, permissions }));
+  const filesWithPermissions = files.map(({ name, uuid, createdDate, updatedDate, publicLinkAccess, thumbnail }) => ({
+    name,
+    thumbnail,
+    createdDate,
+    updatedDate,
+    uuid,
+    publicLinkAccess,
+    permissions,
+  }));
   return filesWithPermissions;
 };
 
@@ -44,7 +52,9 @@ export const Component = () => {
                     description: 'With an instructional walk-through',
                     link: (
                       <Link
-                        to={ROUTES.CREATE_FILE_EXAMPLE('default.grid')}
+                        to={ROUTES.CREATE_FILE_EXAMPLE(
+                          'https://app.quadratichq.com/file/abb7cb2f-2cc7-46bb-9c83-a86f0c8d4834'
+                        )}
                         reloadDocument
                         onClick={() => {
                           mixpanel.track('[FilesEmptyState].clickOpenStarterFile');

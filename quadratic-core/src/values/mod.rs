@@ -5,8 +5,9 @@ use smallvec::{smallvec, SmallVec};
 
 mod array;
 mod array_size;
+mod arrow;
 pub mod cell_values;
-mod cellvalue;
+pub mod cellvalue;
 mod convert;
 mod isblank;
 mod time;

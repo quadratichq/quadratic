@@ -5,7 +5,7 @@ use crate::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
         js_types::{
-            JsHtmlOutput, JsRenderBorder, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
+            JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
             JsRenderCodeCellState, JsRenderFill,
         },
         CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
@@ -247,6 +247,27 @@ impl Sheet {
         render_cells
     }
 
+    pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
+        let run = self.code_runs.get(&pos)?;
+        if !run.is_html() {
+            return None;
+        }
+        let (w, h) = if let Some(render_size) = self.render_size(pos) {
+            (Some(render_size.w), Some(render_size.h))
+        } else {
+            (None, None)
+        };
+        let output = run.cell_value_at(0, 0)?;
+        Some(JsHtmlOutput {
+            sheet_id: self.id.to_string(),
+            x: pos.x,
+            y: pos.y,
+            html: Some(output.to_display(None, None, None)),
+            w,
+            h,
+        })
+    }
+
     pub fn get_html_output(&self) -> Vec<JsHtmlOutput> {
         self.code_runs
             .iter()
@@ -264,7 +285,7 @@ impl Sheet {
                     sheet_id: self.id.to_string(),
                     x: pos.x,
                     y: pos.y,
-                    html: output.to_display(None, None, None),
+                    html: Some(output.to_display(None, None, None)),
                     w,
                     h,
                 })
@@ -303,6 +324,43 @@ impl Sheet {
             }
         }
         ret
+    }
+
+    pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
+        let run = self.code_runs.get(&pos)?;
+        let code = self.cell_value(pos)?;
+        let output_size = run.output_size();
+        let (state, w, h, spill_error) = if run.spill_error {
+            let reasons = self.find_spill_error_reasons(&run.output_rect(pos, true), pos);
+            (
+                JsRenderCodeCellState::SpillError,
+                output_size.w.get(),
+                output_size.h.get(),
+                Some(reasons),
+            )
+        } else {
+            match run.result {
+                CodeRunResult::Ok(_) => (
+                    JsRenderCodeCellState::Success,
+                    output_size.w.get(),
+                    output_size.h.get(),
+                    None,
+                ),
+                CodeRunResult::Err(_) => (JsRenderCodeCellState::RunError, 1, 1, None),
+            }
+        };
+        Some(JsRenderCodeCell {
+            x: pos.x as i32,
+            y: pos.y as i32,
+            w,
+            h,
+            language: match code {
+                CellValue::Code(code) => code.language,
+                _ => return None,
+            },
+            state,
+            spill_error,
+        })
     }
 
     /// Returns data for all rendering code cells
@@ -355,14 +413,12 @@ impl Sheet {
             .collect()
     }
 
-    /// Returns data for rendering horizontal borders.
-    pub fn get_render_horizontal_borders(&self) -> Vec<JsRenderBorder> {
-        get_render_horizontal_borders(self)
-    }
-
-    /// Returns data for rendering vertical borders.
-    pub fn get_render_vertical_borders(&self) -> Vec<JsRenderBorder> {
-        get_render_vertical_borders(self)
+    /// Returns borders to render in a sheet.
+    pub fn render_borders(&self) -> JsRenderBorders {
+        JsRenderBorders {
+            horizontal: get_render_horizontal_borders(self),
+            vertical: get_render_vertical_borders(self),
+        }
     }
 }
 
@@ -375,7 +431,7 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial},
+            js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell},
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
@@ -582,7 +638,6 @@ mod tests {
             true,
             None,
             None,
-            None,
             Some(vec!["<html></html>".into(), "text".into()]),
             None,
             None,
@@ -599,7 +654,7 @@ mod tests {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 2,
-                html: "<html></html>".to_string(),
+                html: Some("<html></html>".to_string()),
                 w: None,
                 h: None,
             }
@@ -626,7 +681,7 @@ mod tests {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 2,
-                html: "<html></html>".to_string(),
+                html: Some("<html></html>".to_string()),
                 w: Some("1".into()),
                 h: Some("2".into()),
             }
@@ -750,5 +805,44 @@ mod tests {
                 assert_eq!(rendering.special, Some(JsRenderCellSpecial::False));
             }
         }
+    }
+
+    #[test]
+    fn render_code_cell() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let pos = (0, 0).into();
+        let code = CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Python,
+            code: "1 + 1".to_string(),
+        });
+        let run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Number(2.into()))),
+            return_type: Some("number".into()),
+            spill_error: false,
+            line_number: None,
+            output_type: None,
+        };
+        sheet.set_code_run(pos, Some(run));
+        sheet.set_cell_value(pos, code);
+        let rendering = sheet.get_render_code_cell(pos);
+        assert_eq!(
+            rendering,
+            Some(JsRenderCodeCell {
+                x: 0,
+                y: 0,
+                w: 1,
+                h: 1,
+                language: CodeCellLanguage::Python,
+                state: crate::grid::js_types::JsRenderCodeCellState::Success,
+                spill_error: None,
+            })
+        );
     }
 }

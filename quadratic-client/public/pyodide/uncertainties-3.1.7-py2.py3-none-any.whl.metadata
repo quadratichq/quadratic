@@ -41,9 +41,9 @@ Classifier: Topic :: Utilities
 License-File: LICENSE.txt
 Requires-Dist: future
 Provides-Extra: all
-Requires-Dist: sphinx ; extra == 'all'
-Requires-Dist: numpy ; extra == 'all'
 Requires-Dist: nose ; extra == 'all'
+Requires-Dist: numpy ; extra == 'all'
+Requires-Dist: sphinx ; extra == 'all'
 Provides-Extra: docs
 Requires-Dist: sphinx ; extra == 'docs'
 Provides-Extra: optional
