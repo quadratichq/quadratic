@@ -1,11 +1,11 @@
+import { authClient } from '@/auth';
+import { apiClient } from '@/shared/api/apiClient';
+import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
+import { ROUTES } from '@/shared/constants/routes';
+import { initMixpanelAnalytics } from '@/shared/utils/analytics';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { ActionFunctionArgs, LoaderFunctionArgs, redirect, redirectDocument } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
-import { authClient } from '../auth';
-import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '../components/GlobalSnackbarProvider';
-import { ROUTES } from '../constants/routes';
-import { initMixpanelAnalytics } from '../utils/analytics';
 
 const getFailUrl = (path: string = ROUTES.FILES) => {
   let params = new URLSearchParams();

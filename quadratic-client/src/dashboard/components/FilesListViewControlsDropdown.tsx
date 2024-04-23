@@ -1,4 +1,4 @@
-import { Button } from '@/shadcn/ui/button';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,8 +7,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shadcn/ui/dropdown-menu';
-import { cn } from '@/shadcn/utils';
+} from '@/shared/shadcn/ui/dropdown-menu';
+import { cn } from '@/shared/shadcn/utils';
 import { ChevronDownIcon, DashboardIcon, DropdownMenuIcon, ListBulletIcon } from '@radix-ui/react-icons';
 import { Dispatch, SetStateAction } from 'react';
 
