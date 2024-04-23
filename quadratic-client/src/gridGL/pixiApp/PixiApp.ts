@@ -23,6 +23,7 @@ import { UIMultiPlayerCursor } from '../UI/UIMultiplayerCursor';
 import { BoxCells } from '../UI/boxCells';
 import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
+import { CellsImages } from '../cells/cellsImages/CellsImages';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
@@ -59,6 +60,7 @@ export class PixiApp {
   pointer!: Pointer;
   viewportContents!: Container;
   htmlPlaceholders!: HtmlPlaceholders;
+  imagePlaceholders!: Container;
   cellImages!: UICellImages;
   renderer!: Renderer;
   stage = new Container();
@@ -170,11 +172,12 @@ export class PixiApp {
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
-    this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
+    this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
+    this.imagePlaceholders = this.viewportContents.addChild(new Container());
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
     this.reset();
@@ -389,6 +392,14 @@ export class PixiApp {
       pixiApp.headings.dirty = true;
       this.multiplayerCursor.dirty = true;
     }
+  }
+
+  // this shows the CellImages of the current sheet, removing any old ones. This
+  // is needed to ensure the proper z-index for the images (ie, so it shows over
+  // the grid lines).
+  changeCellImages(cellsImages: CellsImages) {
+    this.imagePlaceholders.removeChildren();
+    this.imagePlaceholders.addChild(cellsImages);
   }
 }
 

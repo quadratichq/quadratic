@@ -8,6 +8,7 @@ import { CellsImages } from './cellsImages/CellsImages';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
+import { pixiApp } from '../pixiApp/PixiApp';
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
@@ -32,7 +33,7 @@ export class CellsSheet extends Container {
     this.cellsArray = this.addChild(new CellsArray(this));
     this.cellsBorders = this.addChild(new CellsBorders(this));
     this.cellsMarkers = this.addChild(new CellsMarkers());
-    this.cellsImages = this.addChild(new CellsImages(this));
+    this.cellsImages = new CellsImages(this);
     this.visible = false;
   }
 
@@ -49,6 +50,7 @@ export class CellsSheet extends Container {
     this.cellsArray.cheapCull(bounds);
     this.cellsFills.cheapCull(bounds);
     this.cellsImages.cheapCull(bounds);
+    pixiApp.changeCellImages(this.cellsImages);
   }
 
   hide(): void {

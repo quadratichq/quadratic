@@ -89,7 +89,7 @@ export class CellsImage extends Container {
     }
 
     this.background.clear();
-    this.background.beginFill(0xffffff, 0);
+    this.background.beginFill(0xffffff);
     this.background.drawRect(0, 0, this.sprite.width, this.sprite.height);
 
     this.viewBounds = new Rectangle(this.x, this.y, this.sprite.width, this.sprite.height);

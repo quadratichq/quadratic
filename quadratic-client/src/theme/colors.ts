@@ -38,6 +38,10 @@ export const colors = {
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
   languageJavascript: '#ca8a04',
+
+  // todo: this can be change for dark background
+  backgroundColor: 0xffffff,
+
   error: '#f25f5c',
   cellHighlightColor: [
     muiColors.orange['900'],

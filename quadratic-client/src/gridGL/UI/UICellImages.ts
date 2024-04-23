@@ -1,3 +1,4 @@
+import { events } from '@/events/events';
 import { convertColorStringToTint } from '@/helpers/convertColor';
 import { colors } from '@/theme/colors';
 import { Container, Graphics } from 'pixi.js';
@@ -26,7 +27,14 @@ export class UICellImages extends Container {
     super();
     this.borders = this.addChild(new Graphics());
     this.resizing = this.addChild(new Graphics());
+    events.on('changeSheet', this.changeSheet);
   }
+
+  private changeSheet = () => {
+    this.active = undefined;
+    this.dirtyBorders = true;
+    this.dirtyResizing = true;
+  };
 
   activate(sprite?: CellsImage) {
     if (!sprite && this.active) {
