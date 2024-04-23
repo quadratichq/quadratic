@@ -1,7 +1,7 @@
-import { ROUTES } from '@/constants/routes';
+import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ActionFunctionArgs, LoaderFunctionArgs, SubmitOptions } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   return null;

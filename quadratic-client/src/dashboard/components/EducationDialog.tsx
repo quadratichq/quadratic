@@ -1,7 +1,14 @@
 import { useRootRouteLoaderData } from '@/router';
 import { getUpdateEducationAction } from '@/routes/education';
-import { Button } from '@/shadcn/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+import { Button } from '@/shared/shadcn/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/shadcn/ui/dialog';
 import { SchoolOutlined } from '@mui/icons-material';
 import { useEffect, useState } from 'react';
 import { useFetcher } from 'react-router-dom';
