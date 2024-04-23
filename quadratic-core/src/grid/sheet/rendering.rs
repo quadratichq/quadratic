@@ -844,7 +844,7 @@ mod tests {
                 language: CodeCellLanguage::Python,
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
-                cells_accessed: None,
+                cells_accessed: Some(vec![]),
             })
         );
     }
