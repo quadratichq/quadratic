@@ -118,8 +118,6 @@ export const router = createBrowserRouter(
             </Route>
           </Route>
 
-          <Route path={ROUTES.EDUCATION} lazy={() => import('./routes/education')} />
-
           <Route
             path="/cloud-migration"
             element={<CloudFilesMigration.Component />}

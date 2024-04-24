@@ -2,31 +2,22 @@ import { Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { sanityClient } from 'quadratic-shared/sanityClient';
-import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { z } from 'zod';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { getUsersFromAuth0 } from '../../auth0/profile';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
-import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 const universityDomains: string[] = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '../../data/universityDomains.json')).toString()
 );
 
-const schema = z.object({
-  body: ApiSchemas['/v0/education.POST.request'],
-});
-
 export default [validateAccessToken, userMiddleware, handler];
 
-async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/education.POST.response']>) {
+async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/education.GET.response']>) {
   const {
-    user: { id, eduStatus },
+    user: { auth0Id, id, eduStatus },
   } = req;
-  const {
-    body: { email },
-  } = parseRequest(req, schema);
-  console.log('Checking for email', email);
 
   // If they’re enrolled, just return their status
   if (eduStatus === 'ENROLLED') {
@@ -36,29 +27,34 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
   // If the eduStatus hasn’t been set yet, or they're ineligible, we'll check
   // whether they’re eligible and save that state to the DB
 
-  // First let's check out giant list of exisiting universities
-  const universityDomainMatches = universityDomains.filter((domain) => email.endsWith(domain));
-  console.log('Do they match anything in the universities file?', email, universityDomainMatches);
-  if (universityDomainMatches.length > 0) {
+  const userById = await getUsersFromAuth0([{ id, auth0Id }]);
+  const email = userById[id].email;
+
+  const enrollUser = async () => {
     const newEduStatus = 'ENROLLED';
     await dbClient.user.update({
       where: { id },
       data: { eduStatus: 'ENROLLED' },
     });
-    return res.status(200).send({ eduStatus: newEduStatus, isNewlyEnrolled: true });
+    const responseData: ApiTypes['/v0/education.GET.response'] = { eduStatus: newEduStatus, isNewlyEnrolled: true };
+    return responseData;
+  };
+
+  // First let's check out giant list of exisiting universities
+  const universityDomainMatches = universityDomains.filter((domain) => email.endsWith(domain));
+  console.log('Do they match anything in the universities file?', universityDomainMatches.length > 0 ? 'Yes' : 'No');
+  if (universityDomainMatches.length > 0) {
+    const responseData = await enrollUser();
+    return res.status(200).send(responseData);
   }
 
   // Second let's check the list we have in sanity
   const { educationDomainWhitelist } = await sanityClient.appSettings.get();
   const sanityDomainMatches = educationDomainWhitelist.filter((str) => email.endsWith(str));
-  console.log('Do they match anything in the sanity list?', email, sanityDomainMatches, educationDomainWhitelist);
+  console.log('Do they match anything in the sanity list?', sanityDomainMatches.length > 0 ? 'Yes' : 'No');
   if (sanityDomainMatches.length > 0) {
-    const newEduStatus = 'ENROLLED';
-    await dbClient.user.update({
-      where: { id },
-      data: { eduStatus: 'ENROLLED' },
-    });
-    return res.status(200).send({ eduStatus: newEduStatus, isNewlyEnrolled: true });
+    const responseData = await enrollUser();
+    return res.status(200).send(responseData);
   }
 
   // If none of those check out, they’re INELIGIBLE

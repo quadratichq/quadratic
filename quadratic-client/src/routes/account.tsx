@@ -6,7 +6,6 @@ import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, QUADRATIC_FOR_EDUCATION } from '@/shared/constants/urls';
 import { themes, useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
-import { cn } from '@/shared/shadcn/utils';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
 
@@ -59,30 +58,27 @@ export const Component = () => {
         )}
 
         <EducationDialog>
-          {({ fetcher }) => {
-            const eduStatus = fetcher.data?.eduStatus;
-            const isEnrolled = eduStatus === 'ENROLLED';
-
+          {({ isEnrolled }) => {
             return (
               <Row>
                 <Type variant="body2" className="font-bold">
                   Education
                 </Type>
 
-                <div className={cn(fetcher.state !== 'idle' && 'blur-sm', 'transition-all')}>
+                <div>
                   <Type variant="body2">{isEnrolled ? 'Enrolled' : 'Not enrolled'}</Type>
 
                   <Type variant="caption">
-                    Based on your email, you’re {!isEnrolled && 'not'} eligible for{' '}
-                    <a href={QUADRATIC_FOR_EDUCATION} className="underline hover:text-primary">
-                      Quadratic for education
-                    </a>
-                    .
-                    {!isEnrolled && (
+                    {isEnrolled ? (
                       <>
+                        Based on your email, you’re eligible for <EduLink>Quadratic for education</EduLink>.
+                      </>
+                    ) : (
+                      <>
+                        Based on your email, you’re not eligible for <EduLink>Quadratic for education</EduLink>.
                         <br />
                         If you believe you should be,{' '}
-                        <a href={CONTACT_URL} className="underline hover:text-primary">
+                        <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
                           contact us
                         </a>
                         .
@@ -95,9 +91,6 @@ export const Component = () => {
           }}
         </EducationDialog>
 
-        <Type variant="body2" className="text-muted-foreground">
-          Additional account management coming in the future.
-        </Type>
         <Form method="post" action={ROUTES.LOGOUT}>
           <Button variant="outline" type="submit">
             Log out
@@ -113,5 +106,13 @@ function Row(props: { children: ReactNode }) {
     <div className={`grid max-w-xl items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
       {props.children}
     </div>
+  );
+}
+
+function EduLink({ children }: { children: string }) {
+  return (
+    <a href={QUADRATIC_FOR_EDUCATION} className="underline hover:text-primary" target="_blank" rel="noreferrer">
+      {children}
+    </a>
   );
 }
