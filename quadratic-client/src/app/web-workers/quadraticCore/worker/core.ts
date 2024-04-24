@@ -782,7 +782,15 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(results));
   }
 
-  getCells(transactionId: string, x0: number, y0: number, x1: number, y1: number, sheet?: string, lineNumber?: number) {
+  getCells(
+    transactionId: string,
+    x0: number,
+    y0: number,
+    x1: number,
+    y1?: number,
+    sheet?: string,
+    lineNumber?: number
+  ) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
       const cellsStringified = this.gridController.calculationGetCells(

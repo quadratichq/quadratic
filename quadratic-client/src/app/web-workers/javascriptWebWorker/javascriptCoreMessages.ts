@@ -22,7 +22,7 @@ export interface JavascriptCoreGetCells {
   x: number;
   y: number;
   w: number;
-  h: number;
+  h?: number;
   sheet?: string;
   lineNumber?: number;
 }
