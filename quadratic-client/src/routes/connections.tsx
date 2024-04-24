@@ -1,12 +1,12 @@
-import { apiClient } from '@/api/apiClient';
+import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { Empty } from '@/dashboard/components/Empty';
+import { ConnectionsListComponent } from '@/dashboard/connections/components/ConnectionsListComponent';
+import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES } from '@/shared/constants/routes';
 import { AddOutlined } from '@mui/icons-material';
 import { Button, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
-import { Empty } from '../components/Empty';
-import { ROUTES } from '../constants/routes';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { ConnectionsListComponent } from '../dashboard/connections/components/ConnectionsListComponent';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return await apiClient.getConnections();

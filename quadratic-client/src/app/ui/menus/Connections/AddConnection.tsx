@@ -1,16 +1,23 @@
-import { Button } from '@/shadcn/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
+import { Button } from '@/shared/shadcn/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/shadcn/ui/dialog';
 import { useEffect, useRef, useState } from 'react';
 // quadratic-api/src/routes/connections/types/Base
-import { Type } from '@/components/Type';
-import { Input } from '@/shadcn/ui/input';
-import { Label } from '@/shadcn/ui/label';
-import { cn } from '@/shadcn/utils';
+import { apiClient } from '@/shared/api/apiClient';
+import { Type } from '@/shared/components/Type';
+import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
+import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import { CheckCircledIcon, ExclamationTriangleIcon, InfoCircledIcon, PlayIcon } from '@radix-ui/react-icons';
 import { useSearchParams } from 'react-router-dom';
-import { ConnectionConfiguration } from '../../../../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
-import { apiClient } from '../../../api/apiClient';
+import { ConnectionConfiguration } from '../../../../../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 

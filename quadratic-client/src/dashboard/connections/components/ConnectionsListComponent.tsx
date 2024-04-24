@@ -1,6 +1,6 @@
 import { Biotech, DeviceHubOutlined } from '@mui/icons-material';
 import { Avatar, IconButton, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
-import { ApiTypes } from '../../../api/types';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
 export const ConnectionsListComponent = (props: { connections: ApiTypes['/v0/connections.GET.response'] }) => {
   return (

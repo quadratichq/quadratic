@@ -1,11 +1,11 @@
+import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { Empty } from '@/dashboard/components/Empty';
+import { apiClient } from '@/shared/api/apiClient';
 import { Biotech, DeviceHubOutlined } from '@mui/icons-material';
 import { Avatar, Button, IconButton, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { Link, LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
-import { ApiTypes } from '../api/types';
-import { Empty } from '../components/Empty';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   return await apiClient.getSupportedConnections();

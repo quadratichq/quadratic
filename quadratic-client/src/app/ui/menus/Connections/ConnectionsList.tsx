@@ -1,13 +1,13 @@
-import { Type } from '@/components/Type';
-import { Button } from '@/shadcn/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
-import { Input } from '@/shadcn/ui/input';
-import { Skeleton } from '@/shadcn/ui/skeleton';
+import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { Input } from '@/shared/shadcn/ui/input';
+import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
 import { useFetcher, useSearchParams } from 'react-router-dom';
-import { ApiTypes } from '../../../api/types';
-import { ROUTES } from '../../../constants/routes';
 import { connections as connectionsById } from './AddConnection';
 
 export const ConnectionsList = () => {
