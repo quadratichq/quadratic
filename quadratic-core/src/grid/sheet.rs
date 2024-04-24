@@ -1,12 +1,11 @@
 use std::collections::{btree_map, BTreeMap};
 use std::str::FromStr;
 
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, RoundingMode};
 use indexmap::IndexMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-use self::sheet_offsets::SheetOffsets;
 use super::bounds::GridBounds;
 use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
@@ -14,6 +13,7 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, FormattingSummary};
 use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
+use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
@@ -23,7 +23,6 @@ pub mod code;
 pub mod formatting;
 pub mod rendering;
 pub mod search;
-pub mod sheet_offsets;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -41,7 +40,10 @@ pub struct Sheet {
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
 
+    // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
+
+    // bounds for the gird with only formatting
     pub(super) format_bounds: GridBounds,
 }
 impl Sheet {
@@ -340,15 +342,19 @@ impl Sheet {
         if let Some(value) = self.display_value(pos) {
             match value {
                 CellValue::Number(n) => {
-                    let (_, exponent) = n.as_bigint_and_exponent();
+                    let exponent = n.as_bigint_and_exponent().1;
                     let max_decimals = 9;
-                    let decimals = exponent.min(max_decimals) as i16;
+                    let mut decimals = n
+                        .with_scale_round(exponent.min(max_decimals), RoundingMode::HalfUp)
+                        .normalized()
+                        .as_bigint_and_exponent()
+                        .1 as i16;
 
                     if is_percentage {
-                        Some(decimals - 2)
-                    } else {
-                        Some(decimals)
+                        decimals -= 2;
                     }
+
+                    Some(decimals)
                 }
                 _ => None,
             }
@@ -452,6 +458,19 @@ mod test {
     }
 
     #[test]
+    fn test_current_decimal_places_float() {
+        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+
+        sheet.set_cell_value(
+            crate::Pos { x: 1, y: 2 },
+            CellValue::Number(BigDecimal::from_str("11.100000000000000000").unwrap()),
+        );
+
+        // expect a single decimal place
+        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(1));
+    }
+
+    #[test]
     fn test_cell_numeric_format_kind() {
         let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
         let column = sheet.get_or_create_column(0);
@@ -473,7 +492,7 @@ mod test {
     fn test_set_cell_values() {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 4, y: 1 });
         let vals = vec!["a", "1", "$1.11"];
-        let expected = vec![
+        let expected = [
             CellValue::Text("a".into()),
             CellValue::Number(BigDecimal::from_str("1").unwrap()),
             CellValue::Number(BigDecimal::from_str("1.11").unwrap()),
@@ -483,7 +502,7 @@ mod test {
         print_table(&grid, sheet_id, selected);
 
         let sheet = grid.sheet(sheet_id);
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
@@ -500,7 +519,7 @@ mod test {
 
         print_table(&grid, sheet_id, selected);
 
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()
@@ -535,7 +554,7 @@ mod test {
 
         print_table(&grid, sheet_id, view_rect);
 
-        let values = sheet.cell_values_in_rect(&selected).unwrap();
+        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
         values
             .into_cell_values_vec()
             .into_iter()

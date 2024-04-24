@@ -4,8 +4,8 @@ use super::*;
 impl GridController {
     /// Adds an empty sheet to the grid. Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "addSheet")]
-    pub fn js_add_sheet(&mut self, cursor: Option<String>) -> Result<JsValue, JsValue> {
-        Ok(serde_wasm_bindgen::to_value(&self.add_sheet(cursor))?)
+    pub fn js_add_sheet(&mut self, cursor: Option<String>) {
+        self.add_sheet(cursor);
     }
     /// Gets a list of ordered sheet ids
     #[wasm_bindgen(js_name = "getSheetIds")]
@@ -68,15 +68,6 @@ impl GridController {
         let sheet_id = SheetId::from_str(&id).unwrap();
         self.grid().sheet_id_to_index(sheet_id)
     }
-    /// Returns the index of the sheet with the given ID.
-    #[wasm_bindgen(js_name = "sheetIndexToId")]
-    pub fn js_sheet_index_to_id(&self, index: usize) -> Result<String, JsValue> {
-        let sheet_id = self.grid().sheet_index_to_id(index);
-        match sheet_id {
-            Some(sheet_id) => Ok(sheet_id.to_string()),
-            None => Err(JsValue::UNDEFINED),
-        }
-    }
 
     #[wasm_bindgen(js_name = "getSheetName")]
     pub fn js_sheet_name(&self, sheet_id: String) -> String {
@@ -96,21 +87,13 @@ impl GridController {
         sheet.color.clone().unwrap_or_default()
     }
 
-    /// Returns a code cell as a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setSheetName")]
-    pub fn js_set_sheet_name(
-        &mut self,
-        sheet_id: String,
-        name: String,
-        cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.set_sheet_name(sheet_id, name, cursor),
-        )?)
+    pub fn js_set_sheet_name(&mut self, sheet_id: String, name: String, cursor: Option<String>) {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            self.set_sheet_name(sheet_id, name, cursor);
+        }
     }
 
-    /// Returns a code cell as a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "setSheetColor")]
     pub fn js_set_sheet_color(
         &mut self,

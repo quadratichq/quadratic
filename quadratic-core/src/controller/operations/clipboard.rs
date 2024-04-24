@@ -2,7 +2,11 @@ use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::{user_actions::clipboard::PasteSpecial, GridController},
-    grid::{formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders},
+    formulas::replace_internal_cell_references,
+    grid::{
+        formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders,
+        CodeCellLanguage,
+    },
     CellValue, Pos, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
@@ -220,32 +224,47 @@ impl GridController {
     // todo: parse table structure to provide better pasting experience from other spreadsheets
     pub fn paste_html_operations(
         &mut self,
-        sheet_pos: SheetPos,
+        dest_pos: SheetPos,
         html: String,
         special: PasteSpecial,
     ) -> Result<Vec<Operation>> {
+        let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
+
         // use regex to find data-quadratic
         match Regex::new(r#"data-quadratic="(.*)"><tbody"#) {
-            Err(_) => Err(Error::msg("Regex creation error")),
+            Err(e) => Err(error(e.to_string(), "Regex creation error")),
             Ok(re) => {
-                let Some(data) = re.captures(&html) else {
-                    return Err(Error::msg("Regex capture error"));
-                };
+                let data = re
+                    .captures(&html)
+                    .ok_or_else(|| error("".into(), "Regex capture error"))?;
                 let result = &data.get(1).map_or("", |m| m.as_str());
 
                 // decode html in attribute
-                let unencoded = htmlescape::decode_html(result);
-                if unencoded.is_err() {
-                    return Err(Error::msg("Html decode error"));
-                }
+                let decoded = htmlescape::decode_html(result)
+                    .map_err(|_| error("".into(), "Html decode error"))?;
 
                 // parse into Clipboard
-                let parsed = serde_json::from_str::<Clipboard>(&unencoded.unwrap());
-                if parsed.is_err() {
-                    return Err(Error::msg("Clipboard parse error"));
+                let mut clipboard = serde_json::from_str::<Clipboard>(&decoded)
+                    .map_err(|e| error(e.to_string(), "Serialization error"))?;
+
+                // loop through the clipboard and replace cell references in formulas
+                for col in clipboard.cells.columns.iter_mut() {
+                    for (_y, cell) in col.iter_mut() {
+                        match cell {
+                            CellValue::Code(code_cell) => {
+                                if matches!(code_cell.language, CodeCellLanguage::Formula) {
+                                    code_cell.code = replace_internal_cell_references(
+                                        &code_cell.code,
+                                        dest_pos.into(),
+                                    );
+                                }
+                            }
+                            _ => { /* noop */ }
+                        };
+                    }
                 }
-                let clipboard = parsed.unwrap();
-                Ok(self.set_clipboard_cells(sheet_pos, clipboard, special))
+
+                Ok(self.set_clipboard_cells(dest_pos, clipboard, special))
             }
         }
     }

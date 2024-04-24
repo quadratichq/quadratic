@@ -14,7 +14,7 @@ impl GridController {
             return Ok("".to_string());
         };
         let values = sheet
-            .cell_values_in_rect(selection)?
+            .cell_values_in_rect(selection, false)?
             .into_cell_values_vec()
             .iter()
             .map(|record| record.to_string())

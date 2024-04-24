@@ -21,7 +21,7 @@ name = "export_types"
 path = "src/bin/export_types.rs"
 
 [features]
-default = ["console_error_panic_hook", "js", "file-io"]
+default = ["console_error_panic_hook", "js"]
 # "js" feature is disabled for testing (particularly WASI benchmarks)
 js = [
     "js-sys",
@@ -31,7 +31,6 @@ js = [
     "wasm-bindgen-futures",
 ]
 show-operations = []
-file-io = []
 multiplayer = []
 files = []
 
@@ -40,7 +39,6 @@ anyhow = "1.0"
 async-trait = "0.1.63"
 futures = "0.3.25"
 itertools = "0.10.5"
-lazy_static = "1.4"
 rand = "0.8.5"
 getrandom = { version = "*", features = ["js"] }
 regex = "1.7"
@@ -76,10 +74,20 @@ bigdecimal = { version = "0.4.1", features = ["serde"] }
 csv = "1.2.2"
 indexmap = { version = "2.0.2", features = ["serde"] }
 thiserror = "1.0.52"
+lazy_static = "1.4.0"
+parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"] }
+bytes = "1.5.0"
+arrow-array = "51.0.0"
+arrow-schema = "51.0.0"
+arrow-buffer = "51.0.0"
+arrow-data = "51.0.0"
+half = "2.4.0"
+calamine =  { version = "0.24.0", features = ["dates"] }
 
 [dev-dependencies]
 criterion = { version = "0.4", default-features = false }
 tokio-test = "0.4.3"
+serial_test = "3.0.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 proptest = "1.2.0"

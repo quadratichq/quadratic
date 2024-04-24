@@ -31,7 +31,6 @@ pub mod file;
 pub mod formatting;
 mod ids;
 pub mod js_types;
-mod offsets;
 pub mod search;
 pub mod series;
 pub mod sheet;
@@ -49,9 +48,12 @@ impl Default for Grid {
 }
 impl Grid {
     pub fn new() -> Self {
-        let mut ret = Grid { sheets: vec![] };
+        let mut ret = Grid::new_blank();
         ret.add_sheet(None);
         ret
+    }
+    pub fn new_blank() -> Self {
+        Grid { sheets: vec![] }
     }
 
     #[cfg(test)]

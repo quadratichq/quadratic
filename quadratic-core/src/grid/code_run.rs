@@ -12,7 +12,9 @@ use strum_macros::{Display, EnumString};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CodeRun {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub formatted_code_string: Option<String>,
+
     pub std_out: Option<String>,
     pub std_err: Option<String>,
     pub cells_accessed: HashSet<SheetRect>,

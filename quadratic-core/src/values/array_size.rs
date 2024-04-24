@@ -50,6 +50,8 @@ impl TryFrom<(u32, u32)> for ArraySize {
     }
 }
 
+// TODO(ddimaria):`[][0]` is now being detected by clippy, fix this
+#[allow(clippy::out_of_bounds_indexing)]
 impl ArraySize {
     #[allow(unconditional_panic)]
     pub const _1X1: Self = match NonZeroU32::new(1) {

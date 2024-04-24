@@ -1,7 +1,7 @@
-import { cn } from '@/shadcn/utils';
-import { Link1Icon } from '@radix-ui/react-icons';
+import { TYPE } from '@/shared/constants/appConstants';
+import { cn } from '@/shared/shadcn/utils';
+import { GlobeIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
-import { TYPE } from '../../constants/appConstants';
 import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItemCore({
@@ -38,7 +38,7 @@ export function FilesListItemCore({
           <ul className={`flex items-center ${TYPE.caption}`}>
             {isShared && (
               <li className={`after:mr-1 after:pl-1 after:content-['·']`}>
-                <Link1Icon className="relative -top-[1px] inline h-3 w-3" /> Public
+                <GlobeIcon className="relative -top-[1px] inline h-3 w-3" /> Public
               </li>
             )}
             <li>{description}</li>

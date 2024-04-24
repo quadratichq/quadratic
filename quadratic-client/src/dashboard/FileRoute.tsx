@@ -1,10 +1,17 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { debugShowFileIO, debugShowMultiplayer } from '@/app/debugFlags';
+import { loadAssets } from '@/app/gridGL/loadAssets';
+import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
+import { isEmbed } from '@/app/helpers/isEmbed';
+import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
+import QuadraticApp from '@/app/ui/QuadraticApp';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { CONTACT_URL } from '@/constants/urls';
-import { debugShowMultiplayer } from '@/debugFlags';
-import { isEmbed } from '@/helpers/isEmbed';
-import { firstRustFileVersion } from '@/schemas/validateAndUpgradeLegacyGridFile';
-import { versionGTE } from '@/schemas/versioning';
-import { Button } from '@/shadcn/ui/button';
+import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -18,15 +25,7 @@ import {
   useRouteLoaderData,
 } from 'react-router-dom';
 import { MutableSnapshot, RecoilRoot } from 'recoil';
-import { apiClient } from '../api/apiClient';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { Empty } from '../components/Empty';
-import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
-import { grid } from '../grid/controller/Grid';
-import init, { hello } from '../quadratic-core/quadratic_core';
-import { VersionComparisonResult, compareVersions } from '../schemas/compareVersions';
-import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
-import QuadraticApp from '../ui/QuadraticApp';
+import { Empty } from './components/Empty';
 
 export type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
@@ -44,53 +43,44 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     }
     throw new Response('Failed to load file from server.', { status: error.status });
   }
-  if (debugShowMultiplayer)
-    console.log(`[File API] Received file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`);
+  if (debugShowMultiplayer || debugShowFileIO)
+    console.log(
+      `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
+    );
 
-  // Get file contents from S3
-  const res = await fetch(data.file.lastCheckpointDataUrl);
+  // initialize: Rust metadata and PIXI assets
+  await Promise.all([initRustClient(), loadAssets()]);
 
-  let checkpointContents = await res.text();
-  let version = data.file.lastCheckpointVersion;
-
-  // only need to upgrade the file if file version is < 1.4
-  if (!versionGTE(data.file.lastCheckpointVersion, firstRustFileVersion)) {
-    // Validate and upgrade file to the latest version in TS (up to 1.4)
-    const file = await validateAndUpgradeGridFile(checkpointContents);
-    if (!file) {
+  // initialize Core web worker
+  const result = await quadraticCore.load(
+    data.file.lastCheckpointDataUrl,
+    data.file.lastCheckpointVersion,
+    data.file.lastCheckpointSequenceNumber
+  );
+  if (result.error) {
+    Sentry.captureEvent({
+      message: `Failed to deserialize file ${uuid} from server.`,
+      extra: {
+        error: result.error,
+      },
+    });
+    throw new Response('Failed to deserialize file from server.', { statusText: result.error });
+  } else if (result.version) {
+    // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
+    if (compareVersions(result.version, data.file.lastCheckpointVersion) === VersionComparisonResult.LessThan) {
       Sentry.captureEvent({
-        message: `Failed to validate and upgrade user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-        level: 'error',
+        message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
+        level: 'log',
       });
-      throw new Response('File validation failed.', { status: 200 });
+      // @ts-expect-error hard reload via `true` only works in some browsers
+      window.location.reload(true);
     }
-    checkpointContents = file.contents;
-    version = file.version;
+    if (!data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT')) {
+      thumbnail.generateThumbnail();
+    }
+  } else {
+    throw new Error('Expected quadraticCore.load to return either a version or an error');
   }
-
-  // load WASM
-  await init();
-  hello();
-  if (!grid.openFromContents(checkpointContents, data.file.lastCheckpointSequenceNumber)) {
-    Sentry.captureEvent({
-      message: `Failed to open a user file from database. It will likely have to be fixed manually. File UUID: ${uuid}`,
-      level: 'error',
-    });
-    throw new Response('File validation failed.', { status: 200 });
-  }
-  grid.thumbnailDirty = !data.file.thumbnail && data.userMakingRequest.filePermissions.includes('FILE_EDIT');
-
-  // If the file is newer than the app, do a (hard) reload.
-  const gridVersion = grid.getVersion();
-  if (compareVersions(version, gridVersion) === VersionComparisonResult.GreaterThan) {
-    Sentry.captureEvent({
-      message: `User opened a file at version ${version} but the app is at version ${gridVersion}. The app will automatically reload.`,
-      level: 'log',
-    });
-    // @ts-expect-error hard reload via `true` only works in some browsers
-    window.location.reload(true);
-  }
-
   return data;
 };
 

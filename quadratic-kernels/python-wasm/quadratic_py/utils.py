@@ -11,63 +11,6 @@ import pandas as pd
 import pytz
 
 
-class Blank:
-    def __str__(self):
-        return str("")
-
-    def __repr__(self):
-        return str("")
-
-    def __int__(self):
-        return int(0)
-
-    def __float__(self):
-        return float(0)
-
-    def __bool__(self):
-        return False
-    
-    def generic_overload(self, other, op):
-        if isinstance(other, type(None)):
-            return op(None, other)
-        elif isinstance(other, str):
-            return op("", other)
-        else:
-            return op(0, other)
-
-    def __add__(self, other):
-        return self.generic_overload(other, operator.add)
-
-    def __sub__(self, other):
-        return self.generic_overload(other, operator.sub)
-
-    def __mul__(self, other):
-        return self.generic_overload(other, operator.mul)
-
-    def __truediv__(self, other):
-        return self.generic_overload(other, operator.truediv)
-
-    def __mod__(self, other):
-        return self.generic_overload(other, operator.mod)
-
-    def __pow__(self, other):
-        return self.generic_overload(other, operator.pow)
-
-    def __eq__(self, other):
-        return self.generic_overload(other, operator.eq)
-
-    def __lt__(self, other):
-        return self.generic_overload(other, operator.lt)
-
-    def __le__(self, other):
-        return self.generic_overload(other, operator.le)
-
-    def __gt__(self, other):
-        return self.generic_overload(other, operator.gt)
-
-    def __ge__(self, other):
-        return self.generic_overload(other, operator.ge)
-    
 def attempt_fix_await(code: str) -> str:
     # Insert a "await" keyword between known async functions to improve the UX
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
@@ -104,20 +47,20 @@ def normalize_bool(value: str) -> bool:
 
 # Convert from python types to quadratic types
 def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | time | datetime | pd.Period | timedelta | None) -> Tuple[str, str]:
+    
     try:    
         if value == None or value == "":
             return ("", "blank")
         
-        # TODO(ddimaria): this is brittle, refactor
         if type(value) == str:
-            value = normalize_bool(value)
+            return (str(value), "text")
             
         value = ast.literal_eval(value)
     except:
         pass
     
     try:
-        if type(value) == int or type(value) == float:
+        if type(value) == int or type(value) == float or isinstance(value, np.number):
             return (str(value), "number")
         elif type(value) == bool:
             return (str(bool(value)), "logical")
@@ -138,7 +81,7 @@ def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | ti
 def to_python_type(value: str, value_type: str) -> int | float | str | bool:
     try:
         if value_type == "blank":
-            return Blank()
+            return None
         elif value_type == "number":
             return number_type(value)
         elif value_type == "text":

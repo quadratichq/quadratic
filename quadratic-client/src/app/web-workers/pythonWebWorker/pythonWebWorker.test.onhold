@@ -1,0 +1,123 @@
+/*
+
+After much debugging, the @vitest/web-worker does not support
+`worker.postMessage(…, [MessagePort])`. When running the test, the `MessagePort`
+is not received by the worker (the message has `ports: []`). Regrettably, that’s
+how I coordinate the workers’ communication (e.g., the main thread connects the
+core worker with the python worker via a `MessageChannel` and passing the
+`MessageChannel.port1/2` to the two workers).
+
+If we want to test the communication between multiple workers via vitest, we’ll
+need to open an issue or more probably submit a PR to ensure that the
+MessagePorts are passed when calling worker.postMessage.
+
+*/
+
+import { events } from '@/app/events/events';
+import '@vitest/web-worker';
+import 'fake-indexeddb/auto';
+import { beforeAll, describe, expect, test, vi } from 'vitest';
+import { PythonStateType } from './pythonClientMessages';
+import { CorePythonRun } from './pythonCoreMessages';
+import { pythonWebWorker } from './pythonWebWorker';
+
+let pythonResults: { transactionId: string; pythonRun: any } | undefined;
+
+let pythonState: PythonStateType = 'loading';
+
+let corePort: MessagePort | undefined;
+
+vi.mock('../quadraticCore/quadraticCore.ts', () => {
+  return {
+    quadraticCore: {
+      sendPythonInit: (port: MessagePort) => {
+        corePort = port;
+        corePort.onmessage = (e) => {
+          if (e.data.type === 'pythonCoreResults') {
+            pythonResults = { transactionId: e.data.transactionId, pythonRun: e.data.results };
+          } else {
+            console.error('unexpected message', e.data);
+          }
+        };
+      },
+    },
+  };
+});
+
+async function loadPythonWorker() {
+  if (pythonState === 'ready') {
+    return;
+  }
+  return new Promise((resolve) => {
+    events.on('pythonState', (state) => {
+      if (state === 'ready') {
+        resolve(undefined);
+      }
+    });
+    pythonWebWorker.init();
+  });
+}
+
+async function runPython(code: string): Promise<any> {
+  if (!corePort) {
+    throw new Error('coreChannel not initialized');
+  }
+  pythonResults = undefined;
+  const message: CorePythonRun = {
+    type: 'corePythonRun',
+    transactionId: 'test',
+    sheetId: 'test',
+    x: 0,
+    y: 0,
+    code,
+  };
+  corePort.postMessage(message);
+
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      if (pythonResults) {
+        console.log('*** RECEIVED RESULTS');
+        clearInterval(interval);
+        resolve(pythonResults.pythonRun);
+      }
+    }, 100);
+  });
+}
+
+beforeAll(async () => {
+  await loadPythonWorker();
+});
+
+describe('Python/Pyodide', () => {
+  test(
+    'can perform a simple calculation',
+    async () => {
+      let code = `
+      5 + 3
+`;
+
+      const results = await runPython(code);
+      console.log('results', results);
+
+      expect(results).toEqual({
+        output: ['8', 'number'],
+        array_output: undefined,
+        output_type: 'int',
+        output_size: undefined,
+        cells_accessed: [],
+        std_out: '',
+        std_err: '',
+        success: true,
+        input_python_stack_trace: undefined,
+        code: '\n      5 + 3\n',
+        col_offset: 0,
+        end_col_offset: 5,
+        end_lineno: 2,
+        lineno: 2,
+        value_type: 'BinOp',
+        formatted_code: '\n      5 + 3\n',
+      });
+    },
+    30 * 1000
+  );
+});

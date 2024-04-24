@@ -12,6 +12,7 @@ use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 pub mod pending_transaction;
+pub mod transaction_name;
 pub mod unsaved_transactions;
 
 #[derive(Debug, Default, Clone, PartialEq)]
@@ -79,7 +80,6 @@ impl ActiveTransactions {
     }
 
     /// Returns the async_transactions for testing purposes
-    #[cfg(test)]
     pub fn async_transactions(&self) -> &[PendingTransaction] {
         &self.async_transactions
     }

@@ -63,11 +63,22 @@ pub enum Operation {
         sheet_id: SheetId,
         column: i64,
         new_size: f64,
+
+        // `client_resized`` is used to indicate whether the client needs to be
+        // notified of the resize. For manual resizing, the original client is
+        // updated as the user drags the column/row so they don't need to be
+        // notified again.
+        #[serde(skip_serializing_if = "std::ops::Not::not")]
+        client_resized: bool,
     },
     ResizeRow {
         sheet_id: SheetId,
         row: i64,
         new_size: f64,
+
+        // See note in ResizeColumn.
+        #[serde(skip_serializing_if = "std::ops::Not::not")]
+        client_resized: bool,
     },
 
     // used for User transactions to set cursor (eg, Paste)
@@ -120,19 +131,21 @@ impl fmt::Display for Operation {
                 sheet_id,
                 column,
                 new_size,
+                client_resized,
             } => write!(
                 fmt,
-                "ResizeColumn {{ sheet_id: {}, column: {}, new_size: {} }}",
-                sheet_id, column, new_size
+                "ResizeColumn {{ sheet_id: {}, column: {}, new_size: {}, client_resized: {} }}",
+                sheet_id, column, new_size, client_resized
             ),
             Operation::ResizeRow {
                 sheet_id,
                 row,
                 new_size,
+                client_resized,
             } => write!(
                 fmt,
-                "ResizeRow {{ sheet_id: {}, row: {}, new_size: {} }}",
-                sheet_id, row, new_size
+                "ResizeRow {{ sheet_id: {}, row: {}, new_size: {}, client_resized: {} }}",
+                sheet_id, row, new_size, client_resized
             ),
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
             Operation::SetCursor { sheet_rect } => {

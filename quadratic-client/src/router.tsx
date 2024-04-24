@@ -1,4 +1,14 @@
-import { Button } from '@/shadcn/ui/button';
+import * as CloudFilesMigration from '@/dashboard/CloudFilesMigrationRoute';
+import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
+import { Empty } from '@/dashboard/components/Empty';
+import * as Create from '@/routes/files.create';
+import { apiClient } from '@/shared/api/apiClient';
+import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
+import { Theme } from '@/shared/components/Theme';
+import { SUPPORT_EMAIL } from '@/shared/constants/appConstants';
+import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { Button } from '@/shared/shadcn/ui/button';
+import { initializeAnalytics } from '@/shared/utils/analytics';
 import { User } from '@auth0/auth0-spa-js';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
@@ -15,17 +25,7 @@ import {
   useRouteError,
   useRouteLoaderData,
 } from 'react-router-dom';
-import { apiClient } from './api/apiClient';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
-import { Empty } from './components/Empty';
-import { GlobalSnackbarProvider } from './components/GlobalSnackbarProvider';
-import { Theme } from './components/Theme';
-import { SUPPORT_EMAIL } from './constants/appConstants';
-import { ROUTES, ROUTE_LOADER_IDS } from './constants/routes';
-import * as CloudFilesMigration from './dashboard/CloudFilesMigrationRoute';
-import { BrowserCompatibilityLayoutRoute } from './dashboard/components/BrowserCompatibilityLayoutRoute';
-import * as Create from './routes/files.create';
-import { initializeAnalytics } from './utils/analytics';
 
 // @ts-expect-error - for testing purposes
 window.lf = localforage;

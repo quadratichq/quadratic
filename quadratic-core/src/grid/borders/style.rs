@@ -1,12 +1,10 @@
+#[cfg(feature = "js")]
+use crate::color::Rgba;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
-#[cfg(feature = "js")]
-use wasm_bindgen::prelude::*;
-
-use crate::color::Rgba;
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
 pub enum BorderSelection {
     All,
@@ -35,9 +33,9 @@ pub enum BorderSelection {
     Display,
     EnumString,
 )]
-#[wasm_bindgen]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CellBorderLine {
     Line1,
     Line2,
@@ -71,16 +69,8 @@ pub enum CellBorderLine {
 // }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct BorderStyle {
     pub color: Rgba,
     pub line: CellBorderLine,
-}
-
-#[cfg_attr(feature = "js", wasm_bindgen)]
-impl BorderStyle {
-    #[cfg_attr(feature = "js", wasm_bindgen(constructor))]
-    pub fn new(color: Rgba, line: CellBorderLine) -> Self {
-        Self { color, line }
-    }
 }

@@ -1,28 +1,15 @@
 {
+  "extends": "./tsconfig.generic.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "esModuleInterop": false,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "lib": ["dom", "dom.Iterable", "ESNext", "WebWorker"],
-    "allowJs": false,
-    "allowSyntheticDefaultImports": true,
-    "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "Node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "downlevelIteration": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "types": ["vitest/importMeta"]
+    "lib": ["dom", "dom.Iterable", "webworker"],
+    "types": ["vite/client"]
   },
   "include": ["src", "public/pyright.worker.js"],
-  "exclude": ["node_modules/*", "src/grid/controller/runners/*", "quadratic-core/*", "quadratic-api/*"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "exclude": [
+    "node_modules/*",
+    "src/grid/controller/runners/*",
+    "quadratic-core/*",
+    "quadratic-api/*",
+    "quadratic-rust-client/*"
+  ]
 }

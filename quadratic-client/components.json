@@ -5,12 +5,12 @@
   "tsx": true,
   "tailwind": {
     "config": "tailwind.config.js",
-    "css": "src/shadcn/styles.css",
+    "css": "src/shared/shadcn/styles.css",
     "baseColor": "gray",
     "cssVariables": true
   },
   "aliases": {
-    "components": "@/shadcn",
-    "utils": "@/shadcn/utils"
+    "components": "@/shared/shadcn",
+    "utils": "@/shared/shadcn/utils"
   }
 }
