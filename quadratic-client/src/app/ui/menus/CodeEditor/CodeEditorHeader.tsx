@@ -117,7 +117,7 @@ export const CodeEditorHeader = (props: Props) => {
         ) : (
           <Subject />
         )}
-        <span className="flex items-center  gap-1 font-medium">
+        <span className="flex items-center gap-1 font-medium">
           Cell ({cellLocation.x}, {cellLocation.y})
           {unsaved && (
             <TooltipHint title="Your changes haven’t been saved or run" placement="bottom">
