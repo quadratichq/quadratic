@@ -1,16 +1,19 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { useRootRouteLoaderData } from '@/router';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, QUADRATIC_FOR_EDUCATION } from '@/shared/constants/urls';
 import { themes, useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
+import { ReloadIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
+  const { teams } = useDashboardRouteLoaderData();
   const [theme, setTheme] = useTheme();
 
   return (
@@ -58,26 +61,41 @@ export const Component = () => {
         )}
 
         <EducationDialog>
-          {({ isEnrolled }) => {
+          {({ isEnrolled, isLoading, checkStatus }) => {
+            let plan = 'Free';
+            if (teams.length > 0) {
+              plan = 'Team';
+            } else if (isEnrolled) {
+              plan = 'Education';
+            }
+
             return (
               <Row>
                 <Type variant="body2" className="font-bold">
-                  Education
+                  Plan
                 </Type>
 
                 <div>
-                  <Type variant="body2">{isEnrolled ? 'Enrolled' : 'Not enrolled'}</Type>
+                  <Type variant="body2" className="flex items-center gap-2">
+                    {plan}
+                    <ReloadIcon
+                      className={`animate-spin text-primary transition-opacity ${isLoading ? '' : ' opacity-0'}`}
+                    />
+                  </Type>
 
                   <Type variant="caption">
-                    {isEnrolled ? (
+                    {plan === 'Education' ? (
                       <>
-                        Based on your email, you’re eligible for <EduLink>Quadratic for education</EduLink>.
+                        Based on you’re email, you’re eligible for <EduLink>Quadratic for education</EduLink>.
                       </>
                     ) : (
                       <>
-                        Based on your email, you’re not eligible for <EduLink>Quadratic for education</EduLink>.
+                        With a school email, you may be eligible for <EduLink>Quadratic for education</EduLink>.
                         <br />
-                        If you believe you should be,{' '}
+                        <button onClick={checkStatus} className="underline ">
+                          Check your status
+                        </button>{' '}
+                        or, if that doesn’t work you can{' '}
                         <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
                           contact us
                         </a>
@@ -103,7 +121,7 @@ export const Component = () => {
 
 function Row(props: { children: ReactNode }) {
   return (
-    <div className={`grid max-w-xl items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
+    <div className={`grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
       {props.children}
     </div>
   );

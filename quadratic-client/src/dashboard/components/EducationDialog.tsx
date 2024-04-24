@@ -20,7 +20,11 @@ type CustomRequest = {
   data?: ApiTypes['/v0/education.GET.response'];
 };
 
-export function EducationDialog({ children }: { children?: (params: { isEnrolled: boolean }) => void }) {
+export function EducationDialog({
+  children,
+}: {
+  children?: (params: { isEnrolled: boolean; isLoading: boolean; checkStatus: () => void }) => void;
+}) {
   // We'll store state in localstorage so we throttle checking this data
   const [request, setRequest] = useLocalStorage<CustomRequest>('educationDialogRequest', {
     state: 'idle',
@@ -29,39 +33,46 @@ export function EducationDialog({ children }: { children?: (params: { isEnrolled
   });
   const [open, onOpenChange] = useState<boolean>(false);
 
+  const checkStatus = () => {
+    setRequest((prev) => ({ ...prev, state: 'loading' }));
+    apiClient.education
+      .get()
+      .then((data) => {
+        setRequest({ state: 'idle', data, lastFetched: Date.now() });
+
+        // If this is the first time the server says they're newly enrolled, open the dialog
+        if (data.isNewlyEnrolled) {
+          onOpenChange(true);
+        }
+      })
+      .catch((err) => {
+        setRequest((prev) => ({ ...prev, state: 'error' }));
+      });
+  };
+
   const needsToFetchData =
     // If they've never fetched the data, they need to go get it
     request.lastFetched === undefined
       ? true
-      : // If they’re already enrolled, don't check for a while
-      request.data?.eduStatus === 'ENROLLED'
-      ? (Date.now() - request.lastFetched) / 1000 > 3600 // 1 hour
-      : // Otherwise check a little more frequently
-        (Date.now() - request.lastFetched) / 1000 > 60; // 1 min
+      : // Otherwise we'll only check for it once and a while
+        (Date.now() - request.lastFetched) / 1000 > 300; // 5 min
 
   // When the component mounts, check to see if we need to fetch data
   useEffect(() => {
     if (needsToFetchData) {
-      setRequest((prev) => ({ ...prev, state: 'loading' }));
-      apiClient.education
-        .get()
-        .then((data) => {
-          setRequest({ state: 'idle', data, lastFetched: Date.now() });
-
-          // If this is the first time the server says they're newly enrolled, open the dialog
-          if (data.isNewlyEnrolled) {
-            onOpenChange(true);
-          }
-        })
-        .catch((err) => {
-          setRequest((prev) => ({ ...prev, state: 'error' }));
-        });
+      checkStatus();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const content =
-    typeof children === 'function' ? children({ isEnrolled: request.data?.eduStatus === 'ENROLLED' }) : null;
+    typeof children === 'function'
+      ? children({
+          isEnrolled: request.data?.eduStatus === 'ENROLLED',
+          isLoading: request.state === 'loading',
+          checkStatus,
+        })
+      : null;
   const handleClose = () => {
     onOpenChange(false);
   };
