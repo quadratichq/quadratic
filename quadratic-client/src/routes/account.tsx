@@ -2,6 +2,7 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { useRootRouteLoaderData } from '@/router';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
+import { CONTACT_URL, QUADRATIC_FOR_EDUCATION } from '@/shared/constants/urls';
 import { themes, useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ReactNode } from 'react';
@@ -26,14 +27,6 @@ export const Component = () => {
             Email
           </Type>
           <Type variant="body2">{user?.email}</Type>
-        </Row>
-
-        <Row>
-          <Type variant="body2" className="font-bold">
-            Education plan
-          </Type>
-
-          <Type variant="body2">Enrolled</Type>
         </Row>
 
         {theme !== null && (
@@ -63,6 +56,27 @@ export const Component = () => {
           </Row>
         )}
 
+        <Row>
+          <Type variant="body2" className="font-bold">
+            Quadratic for education
+          </Type>
+
+          <div>
+            <Type variant="body2">Not enrolled</Type>
+            <Type variant="caption">
+              Based on your email, you’re not eligible for{' '}
+              <a href={QUADRATIC_FOR_EDUCATION} className="underline hover:text-primary">
+                Quadratic for education
+              </a>
+              . If you think you should be,{' '}
+              <a href={CONTACT_URL} className="underline hover:text-primary">
+                contact us
+              </a>
+              .
+            </Type>
+          </div>
+        </Row>
+
         <Type variant="body2" className="text-muted-foreground">
           Additional account management coming in the future.
         </Type>
@@ -78,7 +92,7 @@ export const Component = () => {
 
 function Row(props: { children: ReactNode }) {
   return (
-    <div className={`grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
+    <div className={`grid max-w-xl items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
       {props.children}
     </div>
   );
