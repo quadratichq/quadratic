@@ -39,7 +39,11 @@ export async function javascriptResults(
     std_out: (consoleOutput ? consoleOutput : '') + (message.length ? message.join('\n') : ''),
     std_err: null,
     output_array: outputArray ? outputArray.output : null,
-    line_number: lineNumber !== undefined ? lineNumber : null,
+
+    // lineNumber is tricky because of the hacky way we count it. A return on line 0
+    // will never increment the line number, which is why we have to increment it.
+    line_number: lineNumber !== undefined ? (lineNumber === 0 ? 1 : lineNumber) : null,
+
     output_display_type: outputType?.displayType || outputArray?.displayType || null,
     cancel_compute: false,
   };
