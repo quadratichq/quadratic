@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { InlineEditor } from '@/app/gridGL/HTMLGrid/inlineEditor/InlineEditor';
 import { MultiplayerCursors } from '@/app/gridGL/HTMLGrid/multiplayerCursor/MulitplayerCursors';
 import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { pixiApp } from '../pixiApp/PixiApp';
@@ -99,6 +100,7 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
             {showInput && <CellInput />}
             {!showInput && <CodeHint />}
             <MultiplayerCellEdits />
+            <InlineEditor />
             <HtmlCells />
             <CodeRunning />
             <HoverCell />
