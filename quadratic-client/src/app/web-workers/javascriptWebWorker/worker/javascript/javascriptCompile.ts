@@ -88,9 +88,10 @@ export function prepareJavascriptCode(
     (withLineNumbers ? `let ${LINE_NUMBER_VAR} = 1;` : '') +
     javascriptLibrary.replace('{x:0,y:0}', `{x:${x},y:${y}}`) + // replace the pos() with the correct x,y coordinates
     '(async() => {try{' +
-    'const results = await (async () => {' +
+    'let results = await (async () => {' +
     code +
     '\n })();' +
+    'if (results instanceof OffscreenCanvas) results = await results.convertToBlob();' +
     `self.postMessage({ type: "results", results, console: javascriptConsole.output()${
       withLineNumbers ? `, lineNumber: ${LINE_NUMBER_VAR} - 1` : ''
     } });` +
