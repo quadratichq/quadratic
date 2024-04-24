@@ -171,18 +171,14 @@ impl GridController {
     pub fn send_image(&self, sheet_pos: SheetPos) {
         if cfg!(target_family = "wasm") || cfg!(test) {
             if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                let image = sheet
-                    .code_run(sheet_pos.into())
-                    .map(|code_run| {
-                        code_run
-                            .cell_value_at(0, 0)
-                            .map(|cell_value| match cell_value {
-                                CellValue::Image(image) => Some(image.clone()),
-                                _ => None,
-                            })
-                            .flatten()
-                    })
-                    .flatten();
+                let image = sheet.code_run(sheet_pos.into()).and_then(|code_run| {
+                    code_run
+                        .cell_value_at(0, 0)
+                        .and_then(|cell_value| match cell_value {
+                            CellValue::Image(image) => Some(image.clone()),
+                            _ => None,
+                        })
+                });
                 let (w, h) = if let Some(size) =
                     sheet.get_formatting_value::<RenderSize>(sheet_pos.into())
                 {

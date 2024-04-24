@@ -445,27 +445,22 @@ impl Sheet {
         }
 
         self.code_runs.iter().for_each(|(pos, run)| {
-            if let Some(output) = run.cell_value_at(0, 0) {
-                match output {
-                    CellValue::Image(image) => {
-                        let (w, h) = if let Some(render_size) = self.render_size(*pos) {
-                            (Some(render_size.w), Some(render_size.h))
-                        } else {
-                            (None, None)
-                        };
-                        crate::wasm_bindings::js::jsSendImage(
-                            self.id.to_string(),
-                            pos.x as i32,
-                            pos.y as i32,
-                            Some(image),
-                            w,
-                            h,
-                        );
-                    }
-                    _ => {}
-                }
+            if let Some(CellValue::Image(image)) = run.cell_value_at(0, 0) {
+                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
+                    (Some(render_size.w), Some(render_size.h))
+                } else {
+                    (None, None)
+                };
+                crate::wasm_bindings::js::jsSendImage(
+                    self.id.to_string(),
+                    pos.x as i32,
+                    pos.y as i32,
+                    Some(image),
+                    w,
+                    h,
+                );
             }
-        })
+        });
     }
 }
 
@@ -928,12 +923,7 @@ mod tests {
             "jsSendImage",
             format!(
                 "{},{},{},{:?},{:?},{:?}",
-                sheet_id.to_string(),
-                pos.x as u32,
-                pos.y as u32,
-                true,
-                None::<String>,
-                None::<String>
+                sheet_id, pos.x as u32, pos.y as u32, true, None::<String>, None::<String>
             ),
             true,
         );

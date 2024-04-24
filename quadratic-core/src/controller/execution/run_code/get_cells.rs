@@ -19,6 +19,7 @@ pub struct JsGetCellResponse {
 impl GridController {
     /// This is used to get cells during an async calculation.
     #[allow(clippy::result_large_err)]
+    #[allow(clippy::too_many_arguments)]
     pub fn calculation_get_cells(
         &mut self,
         transaction_id: String,
