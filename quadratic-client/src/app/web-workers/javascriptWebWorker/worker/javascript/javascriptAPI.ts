@@ -58,7 +58,6 @@ export class JavascriptAPI {
       results.forEach((r) => (largestY = Math.max(Number(r.y), largestY)));
       y1 = largestY === -Infinity ? y0 : largestY;
     }
-    console.log(y1);
     for (let y = y0; y <= y1; y++) {
       const row: any[] = [];
       for (let x = x0; x <= x1; x++) {
