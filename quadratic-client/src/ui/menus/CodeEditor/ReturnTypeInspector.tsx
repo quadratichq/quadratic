@@ -35,8 +35,8 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
           Returned{' '}
           <span className="rounded-md px-1 py-0.5" style={{ backgroundColor: theme.palette.grey[100] }}>
             {evaluationResult.output_type}
-          </span>{' '}
-          on line {evaluationResult.line_number}
+          </span>
+          {evaluationResult.line_number !== undefined ? ` on line ${evaluationResult.line_number}` : ''}.
         </>
       );
     } else {
