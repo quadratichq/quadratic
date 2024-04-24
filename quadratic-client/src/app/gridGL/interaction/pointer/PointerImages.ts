@@ -9,23 +9,22 @@ import { Point } from 'pixi.js';
 const MIN_SIZE = 100;
 
 export class PointerImages {
-  resizing?: { image: CellsImage; point: Point; side: 'right' | 'bottom' };
+  resizing?: { image: CellsImage; point: Point; side: 'right' | 'bottom' | 'corner' };
 
   cursor: string | undefined;
 
   // Finds a line that is being hovered.
-  private findImage(point: Point): { image: CellsImage; side?: 'right' | 'bottom' } | undefined {
+  private findImage(point: Point): { image: CellsImage; side?: 'right' | 'bottom' | 'corner' } | undefined {
     const cellsSheet = pixiApp.cellsSheets.current;
     if (!cellsSheet) return;
     const images = cellsSheet.getCellsImages();
     if (!images?.length) return;
     for (const image of images) {
-      if (intersects.rectanglePoint(image.viewRight, point)) {
-        return { image, side: 'right' };
-      }
-      if (intersects.rectanglePoint(image.viewBottom, point)) {
-        return { image, side: 'bottom' };
-      }
+      let right = intersects.rectanglePoint(image.viewRight, point);
+      let bottom = intersects.rectanglePoint(image.viewBottom, point);
+      if (right && bottom) return { image, side: 'corner' };
+      if (right) return { image, side: 'right' };
+      if (bottom) return { image, side: 'bottom' };
       if (intersects.rectanglePoint(image.viewBounds, point)) {
         return { image };
       }
@@ -37,12 +36,21 @@ export class PointerImages {
 
     if (this.resizing) {
       let width: number, height: number;
-      if (this.resizing.side === 'right') {
-        width = point.x - (this.resizing.image.viewBounds.right - this.resizing.point.x);
+      const rightLarger =
+        Math.abs(point.x - this.resizing.image.viewBounds.right) >
+        Math.abs(point.y - this.resizing.image.viewBounds.bottom);
+      if (this.resizing.side === 'right' || (this.resizing.side === 'corner' && rightLarger)) {
+        width =
+          this.resizing.image.viewBounds.right +
+          (point.x - this.resizing.point.x) -
+          this.resizing.image.viewBounds.left;
         const aspectRatio = width / this.resizing.image.viewBounds.width;
         height = this.resizing.image.viewBounds.height * aspectRatio;
       } else {
-        height = point.y - (this.resizing.image.viewBounds.bottom - this.resizing.point.y);
+        height =
+          this.resizing.image.viewBounds.bottom +
+          (point.y - this.resizing.point.y) -
+          this.resizing.image.viewBounds.top;
         const aspectRatio = height / this.resizing.image.viewBounds.height;
         width = this.resizing.image.viewBounds.width * aspectRatio;
       }
@@ -67,7 +75,17 @@ export class PointerImages {
     if (search) {
       if (search.side) {
         pixiApp.cellImages.activate(search.image);
-        this.cursor = search.side === 'bottom' ? 'ns-resize' : 'ew-resize';
+        switch (search.side) {
+          case 'bottom':
+            this.cursor = 'ns-resize';
+            break;
+          case 'right':
+            this.cursor = 'ew-resize';
+            break;
+          case 'corner':
+            this.cursor = 'nwse-resize';
+            break;
+        }
       }
       return true;
     }

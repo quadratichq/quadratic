@@ -65,6 +65,13 @@ export class CellsImage extends Container {
   temporaryResize(width: number, height: number) {
     this.sprite.width = width;
     this.sprite.height = height;
+    this.redrawBackground();
+  }
+
+  private redrawBackground() {
+    this.background.clear();
+    this.background.beginFill(0xffffff);
+    this.background.drawRect(0, 0, this.sprite.width, this.sprite.height);
   }
 
   resizeImage = (width?: number, height?: number) => {
@@ -88,9 +95,7 @@ export class CellsImage extends Container {
       this.sprite.height = this.sprite.texture.height;
     }
 
-    this.background.clear();
-    this.background.beginFill(0xffffff);
-    this.background.drawRect(0, 0, this.sprite.width, this.sprite.height);
+    this.redrawBackground();
 
     this.viewBounds = new Rectangle(this.x, this.y, this.sprite.width, this.sprite.height);
     this.viewRight = new Rectangle(
