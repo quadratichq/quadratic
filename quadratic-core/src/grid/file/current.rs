@@ -1,13 +1,15 @@
 use crate::color::Rgba;
-use crate::grid::file::v1_5::schema::{self as current};
 use crate::grid::{
-    block::SameValue, formatting::RenderSize, generate_borders, set_rect_borders, BorderSelection,
-    BorderStyle, CellAlign, CellBorderLine, CellWrap, CodeRun, Column, ColumnData, Grid,
-    GridBounds, NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
+    block::SameValue,
+    file::v1_5::schema::{self as current},
+    formatting::RenderSize,
+    generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
+    CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
+    NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
-use crate::grid::{CodeCellLanguage, CodeRunResult};
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
+
 use anyhow::Result;
 use bigdecimal::BigDecimal;
 use chrono::Utc;
@@ -236,6 +238,11 @@ fn import_code_cell_output(type_field: &str, value: &str) -> CellValue {
         "number" => CellValue::Number(BigDecimal::from_str(value).unwrap_or_default()),
         "html" => CellValue::Html(value.to_owned()),
         "image" => CellValue::Image(value.to_owned()),
+        "logical" => match value.to_ascii_uppercase().as_str() {
+            "TRUE" => CellValue::Logical(true),
+            "FALSE" => CellValue::Logical(false),
+            _ => CellValue::Logical(false),
+        },
         _ => CellValue::Blank,
     }
 }

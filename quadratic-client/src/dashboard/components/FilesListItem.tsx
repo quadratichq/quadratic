@@ -1,23 +1,23 @@
+import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '@/app/actions';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { useTeamRouteLoaderData } from '@/routes/teams.$uuid';
-import { Button as Btn } from '@/shadcn/ui/button';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { ROUTES } from '@/shared/constants/routes';
+import { Button as Btn } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/shadcn/ui/dropdown-menu';
-import { Separator } from '@/shadcn/ui/separator';
-import { cn } from '@/shadcn/utils';
+} from '@/shared/shadcn/ui/dropdown-menu';
+import { Separator } from '@/shared/shadcn/ui/separator';
+import { cn } from '@/shared/shadcn/utils';
 import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
 import { Link, SubmitOptions, useFetcher, useLocation, useSubmit } from 'react-router-dom';
-import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '../../actions';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { ROUTES } from '../../constants/routes';
 import { DialogRenameItem } from './DialogRenameItem';
 import { FilesListExampleFile, FilesListUserFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';

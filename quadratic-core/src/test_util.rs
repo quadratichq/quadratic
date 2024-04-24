@@ -1,5 +1,6 @@
 use crate::{
     controller::GridController,
+    formulas::replace_internal_cell_references,
     grid::{Bold, CodeCellLanguage, FillColor, Sheet, SheetId},
     CellValue, Pos, Rect,
 };
@@ -12,7 +13,7 @@ use tabled::{
 
 /// Run an assertion that a cell value is equal to the given value
 #[cfg(test)]
-pub fn assert_cell_value(
+pub fn assert_display_cell_value(
     grid_controller: &GridController,
     sheet_id: SheetId,
     x: i64,
@@ -36,6 +37,25 @@ pub fn assert_cell_value(
     );
 }
 
+/// Run an assertion that a cell value is equal to the given value
+#[cfg(test)]
+pub fn assert_code_cell_value(
+    grid_controller: &GridController,
+    sheet_id: SheetId,
+    x: i64,
+    y: i64,
+    value: &str,
+) {
+    let sheet = grid_controller.sheet(sheet_id);
+    let cell_value = sheet.edit_code_value(Pos { x, y }).unwrap();
+
+    assert_eq!(
+        value, cell_value.code_string,
+        "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
+        x, y, value, cell_value.code_string
+    );
+}
+
 /// Run an assertion that cell values in a given row are equal to the given value
 #[cfg(test)]
 pub fn assert_cell_value_row(
@@ -48,7 +68,7 @@ pub fn assert_cell_value_row(
 ) {
     for (index, x) in (x_start..=x_end).enumerate() {
         if let Some(cell_value) = value.get(index) {
-            assert_cell_value(grid_controller, sheet_id, x, y, cell_value);
+            assert_display_cell_value(grid_controller, sheet_id, x, y, cell_value);
         } else {
             println!("No value at position ({},{})", index, y);
         }
@@ -171,7 +191,9 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
 
             let cell_value = match sheet.cell_value(pos) {
                 Some(CellValue::Code(code_cell)) => match code_cell.language {
-                    CodeCellLanguage::Formula => code_cell.code.to_string(),
+                    CodeCellLanguage::Formula => {
+                        replace_internal_cell_references(&code_cell.code.to_string(), pos)
+                    }
                     CodeCellLanguage::Python => code_cell.code.to_string(),
                     CodeCellLanguage::Javascript => code_cell.code.to_string(),
                 },

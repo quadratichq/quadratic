@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import numpy as np
 import pandas as pd
 from process_output_test import *
+from inspect_python_test import *
 from quadratic_py.utils import (attempt_fix_await, to_python_type,
                                 to_quadratic_type)
 
@@ -191,6 +192,7 @@ class TestUtils(TestCase):
         assert to_quadratic_type(1) == ("1", "number")
         assert to_quadratic_type(1.1) == ("1.1", "number")
         assert to_quadratic_type(-1) == ("-1", "number")
+        assert to_quadratic_type(np.float64("1.1")) == ("1.1", "number")
 
         # logical
         assert to_quadratic_type(True) == ("True", "logical")

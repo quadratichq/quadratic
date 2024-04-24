@@ -62,7 +62,10 @@ class TestProcessOutput(TestCase):
         assert_pov(self, [["", " "], ["", " "]], [[('', 'blank'), (' ', 'text')], [('', 'blank'), (' ', 'text')]], [["", " "], ["", " "]], (2, 2), None, 'list')
         assert_pov(self, [[datetime(2021, 1, 1), datetime(2021, 1, 2)], [datetime(2021, 1, 3), datetime(2021, 1, 4)]], [[('1609459200', 'instant'), ('1609545600', 'instant')], [('1609632000', 'instant'), ('1609718400', 'instant')]], [[datetime(2021, 1, 1), datetime(2021, 1, 2)], [datetime(2021, 1, 3), datetime(2021, 1, 4)]], (2, 2), None, 'list')
 
-
+    def test_empty_list(self):
+        assert_pov(self, [], None, None, None, ('', 'blank'), 'list')
+        assert_pov(self, [[]], None, None, None, ('', 'blank'), 'list')
+        
     def test_pandas(self):
         
         assert_pov(self, pd.Series([1, 2, 3]), [('1', 'number'), ('2', 'number'), ('3', 'number')], [1, 2, 3], (1, 3), None, 'Series')

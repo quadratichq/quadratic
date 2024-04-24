@@ -16,7 +16,7 @@ extern "C" {
 
 #[cfg(not(test))]
 #[wasm_bindgen(
-    module = "/../quadratic-client/src/web-workers/quadraticCore/worker/rustCallbacks.ts"
+    module = "/../quadratic-client/src/app/web-workers/quadraticCore/worker/rustCallbacks.ts"
 )]
 extern "C" {
     pub fn jsTime(name: String);
