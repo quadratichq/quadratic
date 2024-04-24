@@ -117,15 +117,11 @@ export const CodeEditorHeader = (props: Props) => {
         ) : (
           <Subject />
         )}
-        <span className="font-medium">
+        <span className="flex items-center  gap-1 font-medium">
           Cell ({cellLocation.x}, {cellLocation.y})
           {unsaved && (
             <TooltipHint title="Your changes haven’t been saved or run" placement="bottom">
-              <FiberManualRecord
-                fontSize="small"
-                color="warning"
-                sx={{ fontSize: '.75rem', position: 'relative', top: '-1px', left: '6px' }}
-              />
+              <FiberManualRecord fontSize="small" color="warning" sx={{ fontSize: '0.625rem' }} />
             </TooltipHint>
           )}
         </span>
