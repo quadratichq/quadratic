@@ -23,9 +23,9 @@ model User {
 
 enum EduStatus {
     INELIGIBLE
-    ELIGIBLE
+    // ELIGIBLE
     ENROLLED
-    NOT_ENROLLED
+    // NOT_ENROLLED
 }
 
 enum LinkPermission {
