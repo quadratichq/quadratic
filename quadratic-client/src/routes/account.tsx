@@ -1,10 +1,12 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { useRootRouteLoaderData } from '@/router';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, QUADRATIC_FOR_EDUCATION } from '@/shared/constants/urls';
 import { themes, useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
 
@@ -56,26 +58,42 @@ export const Component = () => {
           </Row>
         )}
 
-        <Row>
-          <Type variant="body2" className="font-bold">
-            Quadratic for education
-          </Type>
+        <EducationDialog>
+          {({ fetcher }) => {
+            const eduStatus = fetcher.data?.eduStatus;
+            const isEnrolled = eduStatus === 'ENROLLED';
 
-          <div>
-            <Type variant="body2">Not enrolled</Type>
-            <Type variant="caption">
-              Based on your email, you’re not eligible for{' '}
-              <a href={QUADRATIC_FOR_EDUCATION} className="underline hover:text-primary">
-                Quadratic for education
-              </a>
-              . If you think you should be,{' '}
-              <a href={CONTACT_URL} className="underline hover:text-primary">
-                contact us
-              </a>
-              .
-            </Type>
-          </div>
-        </Row>
+            return (
+              <Row>
+                <Type variant="body2" className="font-bold">
+                  Education
+                </Type>
+
+                <div className={cn(fetcher.state !== 'idle' && 'blur-sm', 'transition-all')}>
+                  <Type variant="body2">{isEnrolled ? 'Enrolled' : 'Not enrolled'}</Type>
+
+                  <Type variant="caption">
+                    Based on your email, you’re {!isEnrolled && 'not'} eligible for{' '}
+                    <a href={QUADRATIC_FOR_EDUCATION} className="underline hover:text-primary">
+                      Quadratic for education
+                    </a>
+                    .
+                    {!isEnrolled && (
+                      <>
+                        <br />
+                        If you believe you should be,{' '}
+                        <a href={CONTACT_URL} className="underline hover:text-primary">
+                          contact us
+                        </a>
+                        .
+                      </>
+                    )}
+                  </Type>
+                </div>
+              </Row>
+            );
+          }}
+        </EducationDialog>
 
         <Type variant="body2" className="text-muted-foreground">
           Additional account management coming in the future.

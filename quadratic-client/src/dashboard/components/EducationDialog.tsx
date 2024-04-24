@@ -10,12 +10,17 @@ import {
   DialogTitle,
 } from '@/shared/shadcn/ui/dialog';
 import { SchoolOutlined } from '@mui/icons-material';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
-import { useFetcher } from 'react-router-dom';
+import { FetcherWithComponents, useFetcher } from 'react-router-dom';
 
-export function EducationDialog() {
+export function EducationDialog({
+  children,
+}: {
+  children?: ({ fetcher }: { fetcher: FetcherWithComponents<ApiTypes['/v0/education.POST.response']> }) => void;
+}) {
   const [open, onOpenChange] = useState<boolean>(false);
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<ApiTypes['/v0/education.POST.response']>();
   const { loggedInUser } = useRootRouteLoaderData();
 
   // TODO: localstorage get when this last fetched so we can throttle every few mins
@@ -45,26 +50,31 @@ export function EducationDialog() {
     return null;
   }
 
+  const content = typeof children === 'function' ? children({ fetcher }) : null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader className="text-center sm:text-center">
-          <div className="flex flex-col items-center py-4">
-            <SchoolOutlined sx={{ fontSize: '64px' }} className="text-primary" />
-          </div>
-          <DialogTitle>Enrolled in Quadratic for Education</DialogTitle>
-          <DialogDescription>
-            You have an educational email address which qualifies you for{' '}
-            <a href="TODO:" target="_blank" rel="noreferrer" className="underline hover:text-primary">
-              the education plan
-            </a>{' '}
-            where students, teachers, and researchers get free access.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="justify-center text-center sm:justify-center">
-          <Button onClick={handleClose}>Ok, thanks</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="text-center sm:text-center">
+            <div className="flex flex-col items-center py-4">
+              <SchoolOutlined sx={{ fontSize: '64px' }} className="text-primary" />
+            </div>
+            <DialogTitle>Enrolled in Quadratic for Education</DialogTitle>
+            <DialogDescription>
+              You have an educational email address which qualifies you for{' '}
+              <a href="TODO:" target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                the education plan
+              </a>{' '}
+              where students, teachers, and researchers get free access.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="justify-center text-center sm:justify-center">
+            <Button onClick={handleClose}>Ok, thanks</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {content}
+    </>
   );
 }
