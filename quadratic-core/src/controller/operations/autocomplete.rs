@@ -94,6 +94,7 @@ impl GridController {
             operations.extend(ops);
             initial_down_range = Some(range);
         }
+
         // expand left
         if should_expand_left {
             let new_range = Rect::new_span(
@@ -143,6 +144,7 @@ impl GridController {
             let ops = self.expand_right(sheet_id, &selection, &new_range, down_range, up_range)?;
             operations.extend(ops);
         }
+
         Ok(operations)
     }
 

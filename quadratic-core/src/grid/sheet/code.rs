@@ -2,9 +2,10 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
+    formulas::replace_internal_cell_references,
     grid::{
         js_types::{JsCodeCell, JsReturnInfo},
-        CodeRun, RenderSize,
+        CodeCellLanguage, CodeRun, RenderSize,
     },
     CellValue, Pos, Rect,
 };
@@ -142,7 +143,13 @@ impl Sheet {
         let code_cell = code_cell?;
 
         match code_cell {
-            CellValue::Code(code_cell) => {
+            CellValue::Code(mut code_cell) => {
+                // replace internal cell references with a1 notation
+                if matches!(code_cell.language, CodeCellLanguage::Formula) {
+                    let replaced = replace_internal_cell_references(&code_cell.code, code_pos);
+                    code_cell.code = replaced;
+                }
+
                 if let Some(code_run) = self.code_run(code_pos) {
                     let evaluation_result =
                         serde_json::to_string(&code_run.result).unwrap_or("".into());
@@ -167,6 +174,7 @@ impl Sheet {
                             line_number: code_run.line_number,
                             output_type: code_run.output_type.clone(),
                         }),
+                        cells_accessed: Some(code_run.cells_accessed.iter().copied().collect()),
                     })
                 } else {
                     Some(JsCodeCell {
@@ -179,6 +187,7 @@ impl Sheet {
                         evaluation_result: None,
                         spill_error: None,
                         return_info: None,
+                        cells_accessed: None,
                     })
                 }
             }
@@ -317,6 +326,7 @@ mod test {
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
+                cells_accessed: Some(vec![])
             })
         );
         assert_eq!(
@@ -331,6 +341,7 @@ mod test {
                 evaluation_result: Some("{\"size\":{\"w\":3,\"h\":1},\"values\":[{\"type\":\"text\",\"value\":\"1\"},{\"type\":\"text\",\"value\":\"2\"},{\"type\":\"text\",\"value\":\"3\"}]}".to_string()),
                 spill_error: None,
                 return_info: Some(JsReturnInfo { line_number: None, output_type: None }),
+                cells_accessed: Some(vec![])
             })
         );
         assert_eq!(sheet.edit_code_value(Pos { x: 2, y: 2 }), None);

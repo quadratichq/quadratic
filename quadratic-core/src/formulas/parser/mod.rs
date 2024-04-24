@@ -1,5 +1,7 @@
 //! Parser that turns a flat list of tokens directly into an AST.
 
+use std::ops::Range;
+
 use itertools::Itertools;
 
 #[macro_use]
@@ -41,6 +43,57 @@ pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
     }
 
     ret
+}
+
+/// Replace internal cell references in a formula with A1 notation.
+///
+/// # Example
+/// ```rust
+/// use quadratic_core::{formulas::replace_internal_cell_references, Pos};
+///
+/// let pos = Pos { x: 0, y: 0 };
+/// let replaced = replace_internal_cell_references("SUM(R[0]C[-1])", pos);
+/// assert_eq!(replaced, "SUM(nA0)");
+/// ```
+pub fn replace_internal_cell_references(source: &str, pos: Pos) -> String {
+    let replace_fn = |cell_ref: RangeRef| cell_ref.a1_string(pos);
+    replace_cell_references(source, pos, &replace_fn)
+}
+
+/// Replace A1 notation in a formula with internal cell references.
+///
+/// # Example
+/// ```rust
+/// use quadratic_core::{formulas::replace_a1_notation, Pos};
+///
+/// let pos = Pos { x: 0, y: 0 };
+/// let replaced = replace_a1_notation("SUM(nA0)", pos);
+/// assert_eq!(replaced, "SUM(R[0]C[-1])");
+/// ```
+pub fn replace_a1_notation(source: &str, pos: Pos) -> String {
+    let replace_fn = |cell_ref: RangeRef| cell_ref.to_string();
+    replace_cell_references(source, pos, &replace_fn)
+}
+
+fn replace_cell_references(
+    source: &str,
+    pos: Pos,
+    replace_fn: &dyn Fn(RangeRef) -> String,
+) -> String {
+    let spans = find_cell_references(source, pos);
+    let mut replaced = source.to_string();
+
+    // replace in reverse order to preserve previous span references
+    spans
+        .into_iter()
+        .rev()
+        .for_each(|spanned: Spanned<RangeRef>| {
+            let Spanned { span, inner } = spanned;
+            let cell = replace_fn(inner);
+            replaced.replace_range::<Range<usize>>(span.into(), &cell);
+        });
+
+    replaced
 }
 
 /// Token parser used to assemble an AST.
@@ -210,5 +263,32 @@ impl<'a> Parser<'a> {
             got: None,
         }
         .with_span(self.span())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_replace_internal_cell_references() {
+        let src = "SUM(R[0]C[-1]) 
+        + SUM(R[-1]C[0])";
+        let expected = "SUM(nA0) 
+        + SUM(An1)";
+
+        let replaced = replace_internal_cell_references(src, (0, 0).into());
+        assert_eq!(replaced, expected);
+    }
+
+    #[test]
+    fn test_replace_a1_notation() {
+        let src = "SUM(nA0) 
+        + SUM(An1)";
+        let expected = "SUM(R[0]C[-1]) 
+        + SUM(R[-1]C[0])";
+
+        let replaced = replace_a1_notation(src, (0, 0).into());
+        assert_eq!(replaced, expected);
     }
 }
