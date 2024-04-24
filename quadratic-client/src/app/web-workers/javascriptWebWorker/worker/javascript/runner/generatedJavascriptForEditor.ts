@@ -6,7 +6,7 @@ declare global {
     x0: number,
     y0: number,
     x1: number,
-    y1: number,
+    y1?: number,
     sheetName?: string
   ): Promise<(number | string | boolean | undefined)[][]>;
   function getCell(x: number, y: number, sheetName?: string): Promise<number | string | boolean | undefined>;
@@ -14,11 +14,11 @@ declare global {
   function pos(): { x: number; y: number };
   function relCell(deltaX: number, deltaY: number): Promise<number | string | boolean | undefined>;
   function rc(deltaX: number, deltaY: number): Promise<number | string | boolean | undefined>;
-  function getCellsWithHeading(
+  function getCellsWithHeadings(
     x0: number,
     y: number,
     x1: number,
-    y1: number,
+    y1?: number,
     sheetName?: string
   ): Promise<Record<string, number | string | boolean | undefined>[]>;
 }
@@ -28,7 +28,7 @@ const javascriptSendMessageAwaitingResponse = async (message: {
   x0: number;
   y0: number;
   x1: number;
-  y1: number;
+  y1?: number;
   sheetName?: string;
 }): Promise<(number | string | boolean | undefined)[][]> => {
   return new Promise((resolve) => {
@@ -50,7 +50,7 @@ export const getCells = async (
   x0: number,
   y0: number,
   x1: number,
-  y1: number,
+  y1?: number,
   sheetName?: string
 ): Promise<(number | string | boolean | undefined)[][]> => {
   return await javascriptSendMessageAwaitingResponse({ type: 'getCells', x0, y0, x1, y1, sheetName });
@@ -69,7 +69,7 @@ export const getCellsWithHeadings = async (
   x0: number,
   y: number,
   x1: number,
-  y1: number,
+  y1?: number,
   sheetName?: string
 ): Promise<Record<string, number | string | boolean | undefined>[]> => {
   const cells = await getCells(x0, y, x1, y1, sheetName);
