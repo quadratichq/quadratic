@@ -1,13 +1,17 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { debugShowFileIO, debugShowMultiplayer } from '@/app/debugFlags';
+import { loadAssets } from '@/app/gridGL/loadAssets';
+import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
+import { isEmbed } from '@/app/helpers/isEmbed';
+import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
+import QuadraticApp from '@/app/ui/QuadraticApp';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { CONTACT_URL } from '@/constants/urls';
-import { debugShowFileIO, debugShowMultiplayer } from '@/debugFlags';
-import { loadAssets } from '@/gridGL/loadAssets';
-import { thumbnail } from '@/gridGL/pixiApp/thumbnail';
-import { isEmbed } from '@/helpers/isEmbed';
-import initRustClient from '@/quadratic-rust-client/quadratic_rust_client';
-import { VersionComparisonResult, compareVersions } from '@/schemas/compareVersions';
-import { Button } from '@/shadcn/ui/button';
-import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
+import { apiClient } from '@/shared/api/apiClient';
+import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { CONTACT_URL } from '@/shared/constants/urls';
+import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -21,11 +25,7 @@ import {
   useRouteLoaderData,
 } from 'react-router-dom';
 import { MutableSnapshot, RecoilRoot } from 'recoil';
-import { apiClient } from '../api/apiClient';
-import { editorInteractionStateAtom } from '../atoms/editorInteractionStateAtom';
-import { Empty } from '../components/Empty';
-import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
-import QuadraticApp from '../ui/QuadraticApp';
+import { Empty } from './components/Empty';
 
 export type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 

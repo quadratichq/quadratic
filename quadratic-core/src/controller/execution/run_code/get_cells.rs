@@ -26,24 +26,20 @@ impl GridController {
         sheet_name: Option<String>,
         line_number: Option<u32>,
     ) -> Result<Vec<JsGetCellResponse>, CoreError> {
-        let Ok(transaction_id) = Uuid::parse_str(&transaction_id) else {
-            return Err(CoreError::TransactionNotFound(
-                "Transaction Id is invalid".into(),
-            ));
-        };
-        let Ok(mut transaction) = self.transactions.remove_awaiting_async(transaction_id) else {
-            return Err(CoreError::TransactionNotFound(
-                "Transaction Id not found".into(),
-            ));
-        };
+        let transaction_id = Uuid::parse_str(&transaction_id)
+            .map_err(|_| CoreError::TransactionNotFound("Transaction Id is invalid".into()))?;
 
-        let current_sheet = if let Some(current_sheet_pos) = transaction.current_sheet_pos {
-            current_sheet_pos.sheet_id
-        } else {
-            return Err(CoreError::TransactionNotFound(
-                "Transaction's position not found".to_string(),
-            ));
-        };
+        let mut transaction = self
+            .transactions
+            .remove_awaiting_async(transaction_id)
+            .map_err(|_| CoreError::TransactionNotFound("Transaction Id not found".into()))?;
+
+        let current_sheet = transaction
+            .current_sheet_pos
+            .ok_or(CoreError::TransactionNotFound(
+                "Transaction's position not found".into(),
+            ))?
+            .sheet_id;
 
         // if sheet_name is None, use the sheet_id from the pos
         let sheet = if let Some(sheet_name) = sheet_name {
@@ -51,23 +47,21 @@ impl GridController {
                 sheet
             } else {
                 // unable to find sheet by name, generate error
-                let msg = if let Some(line_number) = line_number {
-                    format!("Sheet '{}' not found at line {}", sheet_name, line_number)
-                } else {
-                    format!("Sheet '{}' not found", sheet_name)
-                };
-                match self.code_cell_sheet_error(&mut transaction, msg.clone(), line_number) {
-                    Ok(_) => {
-                        self.start_transaction(&mut transaction);
-                        self.finalize_transaction(&mut transaction);
-                        return Err(CoreError::CodeCellSheetError(msg));
-                    }
-                    Err(err) => {
-                        self.start_transaction(&mut transaction);
-                        self.finalize_transaction(&mut transaction);
-                        return Err(err);
-                    }
+                let mut msg = format!("Sheet '{}' not found", sheet_name);
+
+                if let Some(line_number) = line_number {
+                    msg = format!("{} at line {}", msg, line_number);
                 }
+
+                let error = match self.code_cell_sheet_error(&mut transaction, &msg, line_number) {
+                    Ok(_) => CoreError::CodeCellSheetError(msg.to_owned()),
+                    Err(err) => err,
+                };
+
+                self.start_transaction(&mut transaction);
+                self.finalize_transaction(&mut transaction);
+
+                return Err(error);
             }
         } else if let Some(sheet) = self.try_sheet(current_sheet) {
             sheet
@@ -77,18 +71,21 @@ impl GridController {
             return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 
-        let transaction_type = transaction.transaction_type.clone();
-        if transaction_type != TransactionType::User {
+        if transaction.transaction_type != TransactionType::User {
             // this should only be called for a user transaction
             return Err(CoreError::TransactionNotFound(
                 "getCells can only be called for non-user transaction".to_string(),
             ));
         }
+
         let response = sheet.get_cells_response(rect);
+
         transaction
             .cells_accessed
             .insert(rect.to_sheet_rect(sheet.id));
+
         self.transactions.add_async_transaction(&transaction);
+
         Ok(response)
     }
 }

@@ -8,8 +8,3 @@ frontend:
     baseDirectory: build
     files:
       - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
-      - quadratic-client/node_modules/**/*
-      - quadratic-core/target/**/*

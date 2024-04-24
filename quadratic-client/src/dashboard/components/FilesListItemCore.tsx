@@ -1,7 +1,7 @@
-import { cn } from '@/shadcn/utils';
+import { TYPE } from '@/shared/constants/appConstants';
+import { cn } from '@/shared/shadcn/utils';
 import { GlobeIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
-import { TYPE } from '../../constants/appConstants';
 import { Layout, ViewPreferences } from './FilesListViewControlsDropdown';
 
 export function FilesListItemCore({

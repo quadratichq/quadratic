@@ -490,6 +490,11 @@ export class Control {
     );
   }
 
+  async restartRustClient() {
+    this.cli.options.rustClient = !this.cli.options.rustClient;
+    this.runRustClient();
+  }
+
   async runDb() {
     if (this.quitting) return;
     this.ui.print("db", "checking migration...");
@@ -576,7 +581,7 @@ export class Control {
   }
 
   async start(ui: UI) {
-    exec("rm -rf quadratic-client/src/quadratic-core");
+    exec("rm -rf quadratic-client/src/app/quadratic-core");
     this.ui = ui;
     this.runRust();
     this.runDb();

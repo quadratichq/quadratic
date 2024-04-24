@@ -1,3 +1,6 @@
+import { validateAndUpgradeGridFile } from '@/app/schemas/validateAndUpgradeGridFile';
+import { apiClient } from '@/shared/api/apiClient';
+import { SUPPORT_EMAIL } from '@/shared/constants/appConstants';
 import { CheckCircleOutlineOutlined, ErrorOutline } from '@mui/icons-material';
 import { Box, Button, Chip, CircularProgress, Stack, Typography, useTheme } from '@mui/material';
 import * as Sentry from '@sentry/react';
@@ -5,9 +8,6 @@ import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
 import { redirect, useLoaderData, useNavigate } from 'react-router-dom';
-import { apiClient } from '../api/apiClient';
-import { SUPPORT_EMAIL } from '../constants/appConstants';
-import { validateAndUpgradeGridFile } from '../schemas/validateAndUpgradeGridFile';
 import QuadraticLogo from './components/quadratic-logo.svg';
 const LOCAL_FILES_KEY = 'file-list';
 

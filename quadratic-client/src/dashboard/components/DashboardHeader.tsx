@@ -1,5 +1,5 @@
+import { TYPE } from '@/shared/constants/appConstants';
 import { ReactNode, useEffect } from 'react';
-import { TYPE } from '../../constants/appConstants';
 
 export function DashboardHeader({
   title,
