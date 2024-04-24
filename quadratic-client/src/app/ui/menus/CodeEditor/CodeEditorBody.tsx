@@ -20,9 +20,9 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
+import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
-import { javascriptLibraryForEditor } from '@/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
 import { useEditorReturn } from './useEditorReturn';
 

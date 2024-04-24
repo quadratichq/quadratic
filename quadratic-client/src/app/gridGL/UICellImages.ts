@@ -2,8 +2,8 @@ import { events } from '@/events/events';
 import { convertColorStringToTint } from '@/helpers/convertColor';
 import { colors } from '@/theme/colors';
 import { Container, Graphics } from 'pixi.js';
-import { CellsImage } from '../cells/cellsImages/CellsImage';
 import { pixiApp } from '../pixiApp/PixiApp';
+import { CellsImage } from './cells/cellsImages/CellsImage';
 
 // These should be consistent with ResizeControl.tsx
 export const IMAGE_BORDER_WIDTH = 5;

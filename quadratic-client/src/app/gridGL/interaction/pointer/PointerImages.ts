@@ -1,5 +1,5 @@
 import { hasPermissionToEditFile } from '@/actions';
-import { CellsImage } from '@/gridGL/cells/cellsImages/CellsImage';
+import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import { intersects } from '@/gridGL/helpers/intersects';
 import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';

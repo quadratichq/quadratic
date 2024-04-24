@@ -20,8 +20,8 @@ import {
   SearchOptions,
   SheetPos,
 } from '@/app/quadratic-core-types';
+import initCore, { GridController, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import initCore, { GridController, Pos, Rect } from '@/quadratic-core/quadratic_core';
 import * as Sentry from '@sentry/react';
 import {
   ClientCoreFindNextColumn,
@@ -34,7 +34,6 @@ import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
 import { pointsToRect, rectangleToRect } from './rustConversions';
-} from '@/app/quadratic-core-types';
 
 class Core {
   gridController?: GridController;

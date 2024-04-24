@@ -1,5 +1,5 @@
+import { CodeRun, LanguageState } from '@/app/web-workers/languageTypes';
 import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { CodeRun, LanguageState } from '@/web-workers/languageTypes';
 import type { ClientJavascriptMessage, JavascriptClientMessage } from '../javascriptClientMessages';
 import { javascriptCore } from './javascriptCore';
 

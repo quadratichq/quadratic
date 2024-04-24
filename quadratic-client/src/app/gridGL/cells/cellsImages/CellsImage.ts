@@ -2,8 +2,8 @@ import { sheets } from '@/grid/controller/Sheets';
 import { Sheet } from '@/grid/sheet/Sheet';
 import { CoreClientImage } from '@/web-workers/quadraticCore/coreClientMessages';
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
+import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../../UICellImages';
 import { pixiApp } from '../../pixiApp/PixiApp';
-import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../../UI/UICellImages';
 import { CellsSheet } from '../CellsSheet';
 
 export class CellsImage extends Container {

@@ -1,5 +1,5 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { JsCodeResult, JsGetCellResponse } from '@/quadratic-core-types';
+import { JsCodeResult, JsGetCellResponse } from '@/app/quadratic-core-types';
 import { CorePythonMessage, PythonCoreMessage } from '../../pythonWebWorker/pythonCoreMessages';
 import { core } from './core';
 

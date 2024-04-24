@@ -10,6 +10,7 @@ import {
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
@@ -19,7 +20,6 @@ import {
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import { LanguageState } from '@/web-workers/languageTypes';
 import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
