@@ -1,9 +1,9 @@
-import { hasPermissionToEditFile } from '@/actions';
+import { hasPermissionToEditFile } from '@/app/actions';
 import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
-import { intersects } from '@/gridGL/helpers/intersects';
-import { pixiApp } from '@/gridGL/pixiApp/PixiApp';
-import { pixiAppSettings } from '@/gridGL/pixiApp/PixiAppSettings';
-import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
+import { intersects } from '@/app/gridGL/helpers/intersects';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point } from 'pixi.js';
 
 const MIN_SIZE = 100;

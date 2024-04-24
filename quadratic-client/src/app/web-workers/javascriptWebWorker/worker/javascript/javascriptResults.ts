@@ -1,6 +1,6 @@
 // Converts
 
-import { JsCodeResult } from '@/quadratic-core-types';
+import { JsCodeResult } from '@/app/quadratic-core-types';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { javascriptConvertOutputArray, javascriptConvertOutputType } from './javascriptOutput';

@@ -1,4 +1,4 @@
-import { events } from '@/events/events';
+import { events } from '@/app/events/events';
 import mixpanel from 'mixpanel-browser';
 import { LanguageState } from '../languageTypes';
 import { quadraticCore } from '../quadraticCore/quadraticCore';

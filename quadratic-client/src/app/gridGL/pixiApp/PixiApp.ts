@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { UICellImages } from '@/app/gridGL/UICellImages';
+import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';

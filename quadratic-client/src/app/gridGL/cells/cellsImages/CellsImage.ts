@@ -1,8 +1,8 @@
-import { sheets } from '@/grid/controller/Sheets';
-import { Sheet } from '@/grid/sheet/Sheet';
-import { CoreClientImage } from '@/web-workers/quadraticCore/coreClientMessages';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { Sheet } from '@/app/grid/sheet/Sheet';
+import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
-import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../../UICellImages';
+import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '../../UI/UICellImages';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { CellsSheet } from '../CellsSheet';
 

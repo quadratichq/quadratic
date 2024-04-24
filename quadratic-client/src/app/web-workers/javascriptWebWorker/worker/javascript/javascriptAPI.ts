@@ -3,7 +3,7 @@
 // (x,y) position with the code, so `pos()` and `relCell()` can be calculated
 // within the worker using getCells.
 
-import { JsGetCellResponse } from '@/quadratic-core-types';
+import { JsGetCellResponse } from '@/app/quadratic-core-types';
 import { javascriptClient } from '../javascriptClient';
 import { javascriptCore } from '../javascriptCore';
 import { Javascript } from './javascript';

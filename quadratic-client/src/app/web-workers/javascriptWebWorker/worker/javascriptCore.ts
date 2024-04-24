@@ -1,5 +1,5 @@
-import { debugWebWorkers, debugWebWorkersMessages } from '@/debugFlags';
-import { JsCodeResult, JsGetCellResponse } from '@/quadratic-core-types';
+import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { JsCodeResult, JsGetCellResponse } from '@/app/quadratic-core-types';
 import type { CoreJavascriptGetCells, CoreJavascriptMessage, JavascriptCoreMessage } from '../javascriptCoreMessages';
 import { javascript } from './javascript/javascript';
 

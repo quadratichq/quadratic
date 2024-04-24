@@ -1,5 +1,5 @@
-import { events } from '@/events/events';
-import { CoreClientImage } from '@/web-workers/quadraticCore/coreClientMessages';
+import { events } from '@/app/events/events';
+import { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { Container, Rectangle } from 'pixi.js';
 import { intersects } from '../../helpers/intersects';
 import { pixiApp } from '../../pixiApp/PixiApp';

@@ -1,4 +1,4 @@
-import { SheetPosTS } from '@/gridGL/types/size';
+import { SheetPosTS } from '@/app/gridGL/types/size';
 
 export type LanguageState = 'loading' | 'ready' | 'error' | 'running';
 
