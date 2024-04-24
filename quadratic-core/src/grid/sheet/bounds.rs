@@ -299,7 +299,7 @@ impl Sheet {
                         }
                     }
                     if has_data {
-                        h = y;
+                        h += 1;
                     } else {
                         // We've reached a column without any data, so we can stop
                         return h;
@@ -716,5 +716,26 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(0, true), Some((0, 3)));
         assert_eq!(sheet.row_bounds(0, false), Some((0, 3)));
+    }
+
+    #[test]
+    fn find_last_data_row() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((0, 1, sheet_id).into(), "b".to_string(), None);
+        gc.set_cell_value((0, 2, sheet_id).into(), "c".to_string(), None);
+        gc.set_cell_value((0, 4, sheet_id).into(), "e".to_string(), None);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // height should be 3 (0,0 - 0.2)
+        assert_eq!(sheet.find_last_data_row(0, 0, 1), 3);
+
+        // height should be 1 (0,4)
+        assert_eq!(sheet.find_last_data_row(0, 4, 1), 1);
+
+        // height should be 0 since there is no data
+        assert_eq!(sheet.find_last_data_row(0, 10, 1), 0);
     }
 }

@@ -271,4 +271,86 @@ mod test {
             }])
         );
     }
+
+    #[test]
+    fn calculation_get_cells_with_no_y1() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "test1".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            "test2".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 2,
+                sheet_id,
+            },
+            "test3".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 4,
+                sheet_id,
+            },
+            "test4".to_string(),
+            None,
+        );
+
+        // create a code cell so we can get a transaction_id
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+
+        let transaction_id = gc.last_transaction().unwrap().id;
+        let result =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, None, None, None);
+        assert_eq!(
+            result,
+            Ok(vec![
+                JsGetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "test1".into(),
+                    type_name: "text".into()
+                },
+                JsGetCellResponse {
+                    x: 0,
+                    y: 1,
+                    value: "test2".into(),
+                    type_name: "text".into()
+                },
+                JsGetCellResponse {
+                    x: 0,
+                    y: 2,
+                    value: "test3".into(),
+                    type_name: "text".into()
+                }
+            ])
+        );
+    }
 }
