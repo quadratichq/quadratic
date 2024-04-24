@@ -204,8 +204,11 @@ impl GridController {
 mod test {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
-        grid::{js_types::JsHtmlOutput, RenderSize, SheetId},
-        wasm_bindings::js::expect_js_call,
+        grid::{
+            js_types::{JsHtmlOutput, JsRenderCell},
+            RenderSize, SheetId,
+        },
+        wasm_bindings::js::{expect_js_call, hash_test},
     };
     use serial_test::serial;
 
@@ -217,28 +220,42 @@ mod test {
         gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
 
         gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
+        let result = vec![JsRenderCell {
+            x: 0,
+            y: 0,
+            language: None,
+            value: "test 1".to_string(),
+            special: None,
+            align: None,
+            wrap: None,
+            bold: None,
+            italic: None,
+            text_color: None,
+        }];
+        let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
             "jsRenderCellSheets",
-            format!(
-                "{},{},{}",
-                sheet_id,
-                0,
-                0,
-                //r#"[{"x":0,"y":0,"value":"test 1","special":null}]"#
-            ),
+            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&result)),
             true,
         );
 
         gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
+        let result = vec![JsRenderCell {
+            x: 100,
+            y: 100,
+            language: None,
+            value: "test 2".to_string(),
+            special: None,
+            align: None,
+            wrap: None,
+            bold: None,
+            italic: None,
+            text_color: None,
+        }];
+        let result = serde_json::to_string(&result).unwrap();
         expect_js_call(
             "jsRenderCellSheets",
-            format!(
-                "{},{},{}",
-                sheet_id,
-                6,
-                3,
-                //r#"[{"x":100,"y":100,"value":"test 2","special":null}]"#
-            ),
+            format!("{},{},{},{}", sheet_id, 6, 3, hash_test(&result)),
             true,
         );
     }

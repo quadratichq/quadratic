@@ -228,17 +228,25 @@ pub fn jsRunJavascript(
 }
 
 #[cfg(test)]
+pub fn hash_test<T: std::hash::Hash>(value: &T) -> u64 {
+    use std::hash::{DefaultHasher, Hasher};
+    let mut hasher = DefaultHasher::new();
+    value.hash(&mut hasher);
+    hasher.finish()
+}
+
+#[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsRenderCellSheets(
     sheet_id: String,
     hash_x: i64,
     hash_y: i64,
-    _cells: String, /*Vec<JsRenderCell>*/
+    cells: String, /*Vec<JsRenderCell>*/
 ) {
-    // cells gets too large to store in the test array
+    // we use a hash of cells to avoid storing too large test data
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRenderCellSheets",
-        format!("{},{},{}", sheet_id, hash_x, hash_y),
+        format!("{},{},{},{}", sheet_id, hash_x, hash_y, hash_test(&cells)),
     ));
 }
 
