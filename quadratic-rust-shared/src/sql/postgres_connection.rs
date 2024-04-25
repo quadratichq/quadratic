@@ -1,6 +1,10 @@
 use std::{env, fs::File, sync::Arc};
 
-use arrow::{array::RecordBatch, datatypes::*};
+use arrow::{
+    array::{Array, ArrayData, ArrayRef, RecordBatch, StringArray},
+    datatypes::*,
+};
+use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use parquet::arrow::ArrowWriter;
 use sqlx::{
@@ -89,47 +93,40 @@ impl<'a> Connection for PostgresConnection<'a> {
         }
     }
 
-    fn to_parquet(data: Vec<Self::Row>) {
+    fn to_parquet(data: Vec<Self::Row>) -> Bytes {
         let fields = data[0]
             .columns()
             .iter()
             .map(|col| Field::new(col.name().to_string(), DataType::Utf8, true))
             .collect::<Vec<Field>>();
 
+        // let row_count = data.len();
+        let col_count = fields.len();
         let schema = Schema::new(fields);
 
-        let batch = data
-            .iter()
-            .map(|row| {
-                let values = row
-                    .columns()
-                    .iter()
-                    .map(|col| PostgresConnection::to_arrow(row, col, 0).unwrap())
-                    .collect::<Vec<String>>();
+        // transpose columns to rows, converting to Arrow types
+        let mut transposed = vec![vec![]; col_count];
 
-                RecordBatch::try_new(Arc::new(schema.clone()), vec![Arc::new(values)])
-            })
-            .collect::<Result<Vec<RecordBatch>, _>>()
+        for row in data.iter() {
+            for (col_index, col) in row.columns().iter().enumerate() {
+                let value = PostgresConnection::to_arrow(row, col, col_index).unwrap_or("".into());
+                transposed[col_index].push(value);
+            }
+        }
+
+        let file = Vec::new();
+        let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None).unwrap();
+
+        let cols = transposed
+            .into_iter()
+            .map(|col| Arc::new(StringArray::from_iter_values(col)) as ArrayRef)
+            .collect::<Vec<ArrayRef>>();
+
+        writer
+            .write(&RecordBatch::try_new(Arc::new(schema.clone()), cols).unwrap())
             .unwrap();
 
-        let path = env::temp_dir().join("arrow_writer.temp");
-        let file = File::create(path).unwrap();
-        let mut writer = ArrowWriter::try_new(file, Arc::new(schema), props).unwrap();
-
-        writer.write(batch).unwrap();
-        writer.close().unwrap();
-
-        // for row in data {
-        //     for (index, col) in row.columns().into_iter().enumerate() {
-        //         let value = PostgresConnection::to_arrow(&row, col, index);
-        //         println!(
-        //             "{} ({}) = {:?}",
-        //             col.name().to_string(),
-        //             col.type_info().name(),
-        //             value
-        //         );
-        //     }
-        // }
+        writer.into_inner().unwrap().into()
     }
 }
 
@@ -162,16 +159,18 @@ mod tests {
             .await
             .unwrap();
 
-        for row in rows {
-            for (index, col) in row.columns().into_iter().enumerate() {
-                let value = PostgresConnection::to_arrow(&row, col, index);
-                println!(
-                    "{} ({}) = {:?}",
-                    col.name().to_string(),
-                    col.type_info().name(),
-                    value
-                );
-            }
-        }
+        let _ = PostgresConnection::to_parquet(rows);
+
+        // for row in rows {
+        //     for (index, col) in row.columns().into_iter().enumerate() {
+        //         let value = PostgresConnection::to_arrow(&row, col, index);
+        //         println!(
+        //             "{} ({}) = {:?}",
+        //             col.name().to_string(),
+        //             col.type_info().name(),
+        //             value
+        //         );
+        //     }
+        // }
     }
 }

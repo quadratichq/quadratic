@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use futures_util::Future;
 
 pub mod postgres_connection;
@@ -15,5 +16,5 @@ pub trait Connection {
         sql: &str,
     ) -> impl Future<Output = Result<Vec<Self::Row>, sqlx::Error>>;
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> Option<String>;
-    fn to_parquet(data: Vec<Self::Row>);
+    fn to_parquet(data: Vec<Self::Row>) -> Bytes;
 }
