@@ -1,14 +1,19 @@
-import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/helpers/files';
-import { Button } from '@/shadcn/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
+import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
+import { validateAndUpgradeGridFile } from '@/app/schemas/validateAndUpgradeGridFile';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { ROUTES } from '@/shared/constants/routes';
+import { Button } from '@/shared/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { ChangeEvent, useState } from 'react';
 import { Link, useParams, useSubmit } from 'react-router-dom';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { ROUTES } from '../../constants/routes';
-import { importExcel } from '../../grid/controller/Grid';
-import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 
 export type UploadFileType = 'grid' | 'excel' | 'csv' | 'parquet';
 
@@ -37,7 +42,7 @@ export default function CreateFileButton() {
     try {
       // Get the file and it's contents
       const file: File = e.target.files[0];
-      let data;
+      let data: { name: string; version: string; contents: string } | undefined;
 
       switch (getFileType(file)) {
         case 'grid':
@@ -60,9 +65,13 @@ export default function CreateFileButton() {
 
         case 'excel':
           mixpanel.track('[Files].importExcel', { fileName: file.name });
-          const importedFile = await importExcel(file, addGlobalSnackbar);
+          const importedFile = await quadraticCore.importExcel(file);
 
-          if (importedFile) {
+          if (importedFile?.error) {
+            addGlobalSnackbar(importedFile.error, { severity: 'warning' });
+            return;
+          }
+          if (importedFile?.version && importedFile?.contents) {
             data = {
               name: file.name ? stripExtension(file.name) : 'Untitled',
               version: importedFile.version,

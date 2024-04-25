@@ -1,12 +1,17 @@
 use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
+
+use crate::{
+    cell_values::CellValues, controller::GridController, grid::SheetId, CellValue, Pos, SheetPos,
+};
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::operation::Operation;
-use crate::{cell_values::CellValues, controller::GridController, grid::SheetId, CellValue, Pos};
+
+const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
 impl GridController {
     /// Imports a CSV file into the grid.
@@ -33,6 +38,12 @@ impl GridController {
             }
         };
 
+        // first get the total number of lines so we can provide progress
+        let mut reader = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .from_reader(file);
+        let height = reader.records().count() as u32;
+
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .flexible(true)
@@ -43,32 +54,66 @@ impl GridController {
             bail!("empty files cannot be processed");
         }
 
+        // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
-
-        let cell_values = reader
-            .records()
-            .enumerate()
-            .flat_map(|(row, record)| {
-                // convert the record into a vector of Operations
-                record
-                    .map_err(|e| error(format!("line {}: {}", row + 1, e)))?
-                    .iter()
-                    .enumerate()
-                    .map(|(col, value)| {
+        let mut cell_values = CellValues::new(width, height);
+        let mut current_y = 0;
+        let mut y: u32 = 0;
+        for entry in reader.records() {
+            match entry {
+                Err(e) => return Err(error(format!("line {}: {}", current_y + y + 1, e))),
+                Ok(record) => {
+                    for (x, value) in record.iter().enumerate() {
                         let (operations, cell_value) = self.string_to_cell_value(
-                            (insert_at.x + col as i64, insert_at.y + row as i64, sheet_id).into(),
+                            SheetPos {
+                                x: insert_at.x + x as i64,
+                                y: insert_at.y + current_y as i64 + y as i64,
+                                sheet_id,
+                            },
                             value,
                         );
                         ops.extend(operations);
-                        Ok(cell_value)
-                    })
-                    .collect::<Result<Vec<CellValue>>>()
-            })
-            .collect::<Vec<Vec<CellValue>>>();
+                        cell_values.set(x as u32, y, cell_value);
+                    }
+                }
+            }
+            y += 1;
+            if y >= IMPORT_LINES_PER_OPERATION {
+                ops.push(Operation::SetCellValues {
+                    sheet_pos: SheetPos {
+                        x: insert_at.x,
+                        y: insert_at.y + current_y as i64,
+                        sheet_id,
+                    },
+                    values: cell_values,
+                });
+                current_y += y;
+                y = 0;
+                let h = (height - current_y).min(IMPORT_LINES_PER_OPERATION);
+                cell_values = CellValues::new(width, h);
 
-        let cell_values = CellValues::from(cell_values);
+                // update the progress bar every time there's a new operation
+                if cfg!(target_family = "wasm") {
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_y,
+                        height,
+                        insert_at.x,
+                        insert_at.y,
+                        width,
+                        height,
+                    );
+                }
+            }
+        }
+
+        // finally add the final operation
         ops.push(Operation::SetCellValues {
-            sheet_pos: insert_at.to_sheet_pos(sheet_id),
+            sheet_pos: SheetPos {
+                x: insert_at.x,
+                y: insert_at.y + current_y as i64,
+                sheet_id,
+            },
             values: cell_values,
         });
         Ok(ops)
@@ -161,7 +206,7 @@ impl GridController {
         &mut self,
         sheet_id: SheetId,
         file: Vec<u8>,
-        _file_name: &str,
+        file_name: &str,
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
@@ -172,8 +217,11 @@ impl GridController {
 
         // headers
         let metadata = builder.metadata();
+        let total_size = metadata.file_metadata().num_rows() as u32;
         let fields = metadata.file_metadata().schema().get_fields();
         let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
+        let mut width = headers.len() as u32;
+
         ops.push(Operation::SetCellValues {
             sheet_pos: (insert_at.x, insert_at.y, sheet_id).into(),
             values: CellValues::from_flat_array(headers.len() as u32, 1, headers),
@@ -181,10 +229,16 @@ impl GridController {
 
         let reader = builder.build()?;
 
+        let mut height = 0;
+        let mut current_size = 0;
         for (row_index, batch) in reader.enumerate() {
             let batch = batch?;
             let num_rows = batch.num_rows();
             let num_cols = batch.num_columns();
+
+            current_size += num_rows;
+            width = width.max(num_cols as u32);
+            height = height.max(num_rows as u32);
 
             for col_index in 0..num_cols {
                 let col = batch.column(col_index);
@@ -200,6 +254,19 @@ impl GridController {
                     values,
                 };
                 ops.push(operations);
+
+                // update the progress bar every time there's a new operation
+                if cfg!(target_family = "wasm") {
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_size as u32,
+                        total_size,
+                        insert_at.x,
+                        insert_at.y,
+                        width,
+                        height,
+                    );
+                }
             }
         }
 
@@ -234,6 +301,9 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 #[cfg(test)]
 mod test {
     use super::read_utf16;
+    use crate::CellValue;
+    use super::*;
+
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
 
@@ -241,5 +311,76 @@ mod test {
     fn transmute_u8_to_u16() {
         let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
         assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
+    }
+
+    #[test]
+    fn imports_a_simple_csv() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = Pos { x: 0, y: 0 };
+
+        const SIMPLE_CSV: &str =
+            "city,region,country,population\nSouthborough,MA,United States,a lot of people";
+
+        let ops = gc.import_csv_operations(sheet_id, SIMPLE_CSV.as_bytes(), "smallpop.csv", pos);
+        assert_eq!(ops.as_ref().unwrap().len(), 1);
+        assert_eq!(
+            ops.unwrap()[0],
+            Operation::SetCellValues {
+                sheet_pos: SheetPos {
+                    x: 0,
+                    y: 0,
+                    sheet_id
+                },
+                values: CellValues::from(vec![
+                    vec!["city", "Southborough"],
+                    vec!["region", "MA"],
+                    vec!["country", "United States"],
+                    vec!["population", "a lot of people"]
+                ]),
+            }
+        );
+    }
+
+    #[test]
+    fn imports_a_long_csv() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = Pos { x: 1, y: 2 };
+
+        let mut csv = String::new();
+        for i in 0..IMPORT_LINES_PER_OPERATION * 2 + 150 {
+            csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
+        }
+
+        let ops = gc.import_csv_operations(sheet_id, csv.as_bytes(), "long.csv", pos);
+        assert_eq!(ops.as_ref().unwrap().len(), 3);
+        let first_pos = match ops.as_ref().unwrap()[0] {
+            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
+            _ => panic!("Expected SetCellValues operation"),
+        };
+        let second_pos = match ops.as_ref().unwrap()[1] {
+            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
+            _ => panic!("Expected SetCellValues operation"),
+        };
+        let third_pos = match ops.as_ref().unwrap()[2] {
+            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
+            _ => panic!("Expected SetCellValues operation"),
+        };
+        assert_eq!(first_pos.x, 1);
+        assert_eq!(second_pos.x, 1);
+        assert_eq!(third_pos.x, 1);
+        assert_eq!(first_pos.y, 2);
+        assert_eq!(second_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64);
+        assert_eq!(third_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64 * 2);
+
+        let first_values = match ops.as_ref().unwrap()[0] {
+            Operation::SetCellValues { ref values, .. } => values,
+            _ => panic!("Expected SetCellValues operation"),
+        };
+        assert_eq!(
+            first_values.get(0, 0),
+            Some(&CellValue::Text("city0".into()))
+        );
     }
 }

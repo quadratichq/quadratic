@@ -1,11 +1,11 @@
-import { apiClient } from '@/api/apiClient';
 import { FilesList, FilesListUserFile } from '@/dashboard/components/FilesList';
+import { apiClient } from '@/shared/api/apiClient';
 import { ExclamationTriangleIcon, FileIcon } from '@radix-ui/react-icons';
 import { LoaderFunctionArgs, useLoaderData, useRouteError } from 'react-router-dom';
-import { Empty } from '../components/Empty';
+import { debugShowUILogs } from '../app/debugFlags';
 import CreateFileButton from '../dashboard/components/CreateFileButton';
 import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { debugShowUILogs } from '../debugFlags';
+import { Empty } from '../dashboard/components/Empty';
 
 export const loader = async ({ request }: LoaderFunctionArgs): Promise<FilesListUserFile[]> => {
   const files = await apiClient.files.list({ shared: 'with-me' });

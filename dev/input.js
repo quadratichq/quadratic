@@ -58,6 +58,9 @@ export class Input {
             case "r": // toggle client
                 this.control.restartClient();
                 break;
+            case "e": // toggle Rust Client
+                this.control.restartRustClient();
+                break;
             case "l": // watch all
                 if (this.cli.options.api != true) {
                     this.cli.options.api = true;
@@ -103,6 +106,9 @@ export class Input {
                 break;
             case "d": // toggle dark theme
                 this.cli.options.dark = !this.cli.options.dark;
+                break;
+            case "E": // toggle showing RustClient
+                this.cli.options.hideRustClient = !this.cli.options.hideRustClient;
                 break;
             case "r": // restart React
                 this.control.runClient();

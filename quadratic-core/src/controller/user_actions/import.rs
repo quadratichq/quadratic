@@ -1,11 +1,11 @@
-use crate::controller::{transaction_summary::TransactionSummary, GridController};
+use crate::controller::active_transactions::transaction_name::TransactionName;
+use crate::controller::GridController;
+use crate::Rect;
 use crate::{grid::SheetId, Pos};
 use anyhow::Result;
 
 impl GridController {
     /// Imports a CSV file into the grid.
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
@@ -13,9 +13,16 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let ops = self.import_csv_operations(sheet_id, file, file_name, insert_at)?;
-        Ok(self.start_user_transaction(ops, cursor))
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::Import,
+            Some(sheet_id),
+            Some(Rect::single_pos(insert_at)),
+        );
+        Ok(())
     }
 
     /// Imports an Excel file into the grid.
@@ -28,8 +35,6 @@ impl GridController {
     }
 
     /// Imports a Parquet file into the grid.
-    ///
-    /// Returns a [`TransactionSummary`].
     pub fn import_parquet(
         &mut self,
         sheet_id: SheetId,
@@ -37,9 +42,16 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
-    ) -> Result<TransactionSummary> {
+    ) -> Result<()> {
         let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
-        Ok(self.start_user_transaction(ops, cursor))
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::Import,
+            Some(sheet_id),
+            Some(Rect::single_pos(insert_at)),
+        );
+        Ok(())
     }
 }
 
@@ -51,6 +63,7 @@ mod tests {
 
     use crate::{
         test_util::{assert_cell_value_row, print_table},
+        wasm_bindings::js::clear_js_calls,
         Rect,
     };
 
@@ -65,7 +78,7 @@ mod tests {
     const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/basic.xlsx";
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/financial_sample.xlsx";
     const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
-    const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
+    // const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
     // const LARGE_PARQUET_FILE: &str =
     // "../quadratic-rust-shared/data/parquet/flights_1m.parquet";
 
@@ -131,8 +144,8 @@ mod tests {
             Pos { x: 0, y: 0 },
             None,
         );
-        print!("{}", &result.unwrap().operations.unwrap().len());
-        // assert!(result.is_ok())
+        assert!(result.is_ok());
+        clear_js_calls();
     }
 
     #[test]
@@ -295,24 +308,28 @@ mod tests {
         );
     }
 
-    #[test]
-    fn imports_a_medium_parquet() {
-        let mut grid_controller = GridController::test();
-        let sheet_id = grid_controller.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
-        let mut file = File::open(MEDIUM_PARQUET_FILE).unwrap();
-        let metadata = std::fs::metadata(MEDIUM_PARQUET_FILE).expect("unable to read metadata");
-        let mut buffer = vec![0; metadata.len() as usize];
-        file.read_exact(&mut buffer).expect("buffer overflow");
+    // The following tests run too slowly to be included in the test suite:
 
-        let _ = grid_controller.import_parquet(sheet_id, buffer, "lineitem.parquet", pos, None);
+    // #[test]
+    // fn imports_a_medium_parquet() {
+    //     let mut grid_controller = GridController::test();
+    //     let sheet_id = grid_controller.grid.sheets()[0].id;
+    //     let pos = Pos { x: 0, y: 0 };
+    //     let mut file = File::open(MEDIUM_PARQUET_FILE).unwrap();
+    //     let metadata = std::fs::metadata(MEDIUM_PARQUET_FILE).expect("unable to read metadata");
+    //     let mut buffer = vec![0; metadata.len() as usize];
+    //     file.read_exact(&mut buffer).expect("buffer overflow");
 
-        print_table(
-            &grid_controller,
-            sheet_id,
-            Rect::new_span(Pos { x: 8, y: 0 }, Pos { x: 15, y: 10 }),
-        );
-    }
+    //     let _ = grid_controller.import_parquet(sheet_id, buffer, "lineitem.parquet", pos, None);
+
+    //      print_table(
+    //          &grid_controller,
+    //          sheet_id,
+    //          Rect::new_span(Pos { x: 8, y: 0 }, Pos { x: 15, y: 10 }),
+    //      );
+
+    //     expect_js_call_count("jsRenderCellSheets", 33026, true);
+    // }
 
     #[test]
     fn should_import_with_title_header() {

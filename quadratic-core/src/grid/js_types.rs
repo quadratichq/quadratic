@@ -1,13 +1,11 @@
 use std::ops::{BitOr, BitOrAssign};
 
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::formatting::{BoolSummary, CellAlign, CellWrap};
 use super::CodeCellLanguage;
-use crate::controller::transaction_summary::TransactionSummary;
 use crate::grid::BorderStyle;
-use crate::Pos;
+use crate::{Pos, SheetRect};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -92,13 +90,11 @@ pub struct JsRenderFill {
     pub color: String,
 }
 
-#[derive(Debug, PartialEq)]
-#[wasm_bindgen]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderBorders {
-    horizontal: Vec<JsRenderBorder>,
-    vertical: Vec<JsRenderBorder>,
-    index_horizontal: u32,
-    index_vertical: u32,
+    pub horizontal: Vec<JsRenderBorder>,
+    pub vertical: Vec<JsRenderBorder>,
 }
 
 impl JsRenderBorders {
@@ -106,40 +102,12 @@ impl JsRenderBorders {
         JsRenderBorders {
             horizontal,
             vertical,
-            index_horizontal: 0,
-            index_vertical: 0,
         }
-    }
-    pub fn get_horizontal(&self) -> &[JsRenderBorder] {
-        &self.horizontal
-    }
-    pub fn get_vertical(&self) -> &[JsRenderBorder] {
-        &self.vertical
-    }
-}
-#[wasm_bindgen]
-impl JsRenderBorders {
-    #[wasm_bindgen]
-    pub fn horizontal_next(&mut self) -> Option<JsRenderBorder> {
-        let ret = self.horizontal.get(self.index_horizontal as usize).cloned();
-        self.index_horizontal += 1;
-        ret
-    }
-    #[wasm_bindgen]
-    pub fn vertical_next(&mut self) -> Option<JsRenderBorder> {
-        let ret = self.vertical.get(self.index_vertical as usize).cloned();
-        self.index_vertical += 1;
-        ret
-    }
-    #[wasm_bindgen]
-    pub fn reset(&mut self) {
-        self.index_horizontal = 0;
-        self.index_vertical = 0;
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq, Hash)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderBorder {
     pub x: i64,
     pub y: i64,
@@ -207,9 +175,10 @@ pub struct JsCodeCell {
     pub evaluation_result: Option<String>,
     pub spill_error: Option<Vec<Pos>>,
     pub return_info: Option<JsReturnInfo>,
+    pub cells_accessed: Option<Vec<SheetRect>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderCodeCell {
     pub x: i32,
@@ -227,7 +196,7 @@ pub struct JsHtmlOutput {
     pub sheet_id: String,
     pub x: i64,
     pub y: i64,
-    pub html: String,
+    pub html: Option<String>,
     pub w: Option<String>,
     pub h: Option<String>,
 }
@@ -245,7 +214,6 @@ pub enum JsRenderCodeCellState {
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsClipboard {
-    pub summary: Option<TransactionSummary>,
     pub plain_text: String,
     pub html: String,
 }

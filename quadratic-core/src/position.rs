@@ -223,6 +223,15 @@ impl Rect {
     }
 }
 
+impl From<SheetRect> for Rect {
+    fn from(sheet_rect: SheetRect) -> Self {
+        Rect {
+            min: sheet_rect.min,
+            max: sheet_rect.max,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -256,6 +265,8 @@ impl From<(i64, i64, SheetId)> for SheetPos {
 
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetRect {
     /// Upper-left corner.
     pub min: Pos,
@@ -431,13 +442,15 @@ impl From<SheetRect> for SheetPos {
     }
 }
 
-// cannot go from Rect to SheetRect; need to use Rect.to_sheet_rect(sheet_id)
-#[allow(clippy::from_over_into)]
-impl Into<Rect> for SheetRect {
-    fn into(self) -> Rect {
-        Rect {
-            min: self.min,
-            max: self.max,
+impl From<(i64, i64, i64, i64, SheetId)> for SheetRect {
+    fn from((x, y, w, h, sheet_id): (i64, i64, i64, i64, SheetId)) -> Self {
+        SheetRect {
+            min: Pos { x, y },
+            max: Pos {
+                x: x + w - 1,
+                y: y + h - 1,
+            },
+            sheet_id,
         }
     }
 }
