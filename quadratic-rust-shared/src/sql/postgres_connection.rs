@@ -1,7 +1,7 @@
-use std::{env, fs::File, sync::Arc};
+use std::sync::Arc;
 
 use arrow::{
-    array::{Array, ArrayData, ArrayRef, RecordBatch, StringArray},
+    array::{ArrayRef, RecordBatch, StringArray},
     datatypes::*,
 };
 use bytes::Bytes;
@@ -15,11 +15,6 @@ use uuid::Uuid;
 
 use crate::convert_pg_type;
 use crate::sql::Connection;
-
-pub enum SqlConnection<'a> {
-    Postgres(PostgresConnection<'a>),
-    Mysql(MysqlConnection),
-}
 
 pub struct PostgresConnection<'a> {
     pub user: &'a str,
@@ -92,42 +87,6 @@ impl<'a> Connection for PostgresConnection<'a> {
             _ => None,
         }
     }
-
-    fn to_parquet(data: Vec<Self::Row>) -> Bytes {
-        let fields = data[0]
-            .columns()
-            .iter()
-            .map(|col| Field::new(col.name().to_string(), DataType::Utf8, true))
-            .collect::<Vec<Field>>();
-
-        // let row_count = data.len();
-        let col_count = fields.len();
-        let schema = Schema::new(fields);
-
-        // transpose columns to rows, converting to Arrow types
-        let mut transposed = vec![vec![]; col_count];
-
-        for row in data.iter() {
-            for (col_index, col) in row.columns().iter().enumerate() {
-                let value = PostgresConnection::to_arrow(row, col, col_index).unwrap_or("".into());
-                transposed[col_index].push(value);
-            }
-        }
-
-        let file = Vec::new();
-        let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None).unwrap();
-
-        let cols = transposed
-            .into_iter()
-            .map(|col| Arc::new(StringArray::from_iter_values(col)) as ArrayRef)
-            .collect::<Vec<ArrayRef>>();
-
-        writer
-            .write(&RecordBatch::try_new(Arc::new(schema.clone()), cols).unwrap())
-            .unwrap();
-
-        writer.into_inner().unwrap().into()
-    }
 }
 
 #[macro_export]
@@ -138,8 +97,6 @@ macro_rules! convert_pg_type {
             .map(|v| v.to_string())
     };
 }
-
-pub struct MysqlConnection {}
 
 #[cfg(test)]
 mod tests {
@@ -159,7 +116,7 @@ mod tests {
             .await
             .unwrap();
 
-        let _ = PostgresConnection::to_parquet(rows);
+        let _data = PostgresConnection::to_parquet(rows);
 
         // for row in rows {
         //     for (index, col) in row.columns().into_iter().enumerate() {
