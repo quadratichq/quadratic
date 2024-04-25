@@ -39,3 +39,13 @@ export function convertTintToArray(color: number): [number, number, number, numb
     1,
   ];
 }
+
+export function convertColorStringToHex(color: string): string {
+  try {
+    return Color(color).hex();
+  } catch (e: any) {
+    console.error('Error converting color string to hex', e);
+    Sentry.captureException(e, { data: color });
+    return 'gray';
+  }
+}
