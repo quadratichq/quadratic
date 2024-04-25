@@ -99,7 +99,6 @@ export const useEditorCellHighlights = (
           editorInteractionState.selectedCell.x,
           editorInteractionState.selectedCell.y
         )) as ParseFormulaReturnType;
-        console.log(parsed);
       }
 
       if (parsed) {
