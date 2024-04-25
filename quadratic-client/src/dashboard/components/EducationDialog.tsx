@@ -40,7 +40,7 @@ export function EducationDialog({
       .then(({ eduStatus }) => {
         setRequest({ state: 'idle', eduStatus, lastFetched: Date.now() });
 
-        // If this is the first time the server says they're newly enrolled, open the dialog
+        // If they're eligible, show the dialog
         if (eduStatus === 'ELIGIBLE') {
           onOpenChange(true);
         }
@@ -71,9 +71,10 @@ export function EducationDialog({
           checkStatus,
         })
       : null;
-  const handleClose = () => {
-    onOpenChange(false);
 
+  const handleClose = () => {
+    // Optimistically close the dialog
+    onOpenChange(false);
     apiClient.education
       .update({ eduStatus: 'ENROLLED' })
       .then((res) => {
@@ -81,7 +82,7 @@ export function EducationDialog({
       })
       .catch((err) => {
         console.error(err);
-        onOpenChange(false);
+        onOpenChange(true);
       });
   };
 
