@@ -42,7 +42,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
 
   // First let's check out giant list of exisiting universities
   const universityDomainMatches = universityDomains.filter((domain) => email.endsWith(domain));
-  console.log('Do they match anything in the universities file?', universityDomainMatches.length > 0 ? 'Yes' : 'No');
   if (universityDomainMatches.length > 0) {
     const responseData = await markUserAsEligible();
     return res.status(200).send(responseData);
@@ -51,7 +50,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
   // Second let's check the list we have in sanity
   const { educationDomainWhitelist } = await sanityClient.appSettings.get();
   const sanityDomainMatches = educationDomainWhitelist.filter((str) => email.endsWith(str));
-  console.log('Do they match anything in the sanity list?', sanityDomainMatches.length > 0 ? 'Yes' : 'No');
   if (sanityDomainMatches.length > 0) {
     const responseData = await markUserAsEligible();
     return res.status(200).send(responseData);
@@ -62,13 +60,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
 
   // If their status was null, set it to INELIGIBLE
   if (eduStatus === null) {
-    console.log('They were null, set to ineligible');
     await dbClient.user.update({
       where: { id },
       data: { eduStatus: newEduStatus },
     });
   }
 
-  console.log('They’re ineligible');
   return res.status(200).send({ eduStatus: newEduStatus });
 }
