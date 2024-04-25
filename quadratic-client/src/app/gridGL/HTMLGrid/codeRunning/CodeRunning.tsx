@@ -109,16 +109,30 @@ export const CodeRunning = () => {
     };
   }, [playerCode?.length]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setTrigger] = useState(0);
+  useEffect(() => {
+    const updateSheet = () => setTrigger((prev) => prev + 1);
+    events.on('changeSheet', updateSheet);
+    return () => {
+      events.off('changeSheet', updateSheet);
+    };
+  }, []);
+
   return (
     <div className="code-running-container">
-      {[...playerCode, ...multiplayerCode].map((code, index) => (
-        <CircularProgress
-          color={code.color === 'black' ? 'primary' : undefined}
-          size={`${CIRCULAR_PROGRESS_SIZE}px`}
-          key={index}
-          sx={{ position: 'absolute', left: code.left, top: code, color: code.color }}
-        />
-      ))}
+      {[...playerCode, ...multiplayerCode]
+        .filter((code) => {
+          return code.sheetId === sheets.sheet.id;
+        })
+        .map((code, index) => (
+          <CircularProgress
+            color={code.color === 'black' ? 'primary' : undefined}
+            size={`${CIRCULAR_PROGRESS_SIZE}px`}
+            key={index}
+            sx={{ position: 'absolute', left: code.left, top: code, color: code.color }}
+          />
+        ))}
     </div>
   );
 };
