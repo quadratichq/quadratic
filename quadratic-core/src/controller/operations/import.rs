@@ -275,7 +275,7 @@ impl GridController {
 }
 
 fn read_utf16(bytes: &[u8]) -> Option<String> {
-    if bytes.len() == 0 && bytes.len() % 2 == 0 {
+    if bytes.is_empty() && bytes.len() % 2 == 0 {
         return None;
     }
 
@@ -285,7 +285,7 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
         let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
             return None;
         };
-        utf16vec.push(u16::from_ne_bytes(vec2))
+        utf16vec.push(u16::from_ne_bytes(vec2));
     }
 
     // convert to string
@@ -295,7 +295,8 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 
     // strip invalid characters
     let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
-    return Some(result);
+    
+    Some(result)
 }
 
 #[cfg(test)]
