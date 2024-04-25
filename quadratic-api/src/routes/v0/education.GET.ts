@@ -1,16 +1,12 @@
 import { Response } from 'express';
-import fs from 'fs';
-import path from 'path';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { getUsersFromAuth0 } from '../../auth0/profile';
+import universityDomains from '../../data/universityDomains';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { RequestWithUser } from '../../types/Request';
-const universityDomains: string[] = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '../../data/universityDomains.json')).toString()
-);
 
 export default [validateAccessToken, userMiddleware, handler];
 
