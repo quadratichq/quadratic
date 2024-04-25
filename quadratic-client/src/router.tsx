@@ -45,7 +45,7 @@ export const router = createBrowserRouter(
         loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
           // All other routes get the same data
           const isAuthenticated = await authClient.isAuthenticated();
-          const auth0User = await authClient.user();
+          const user = await authClient.user();
 
           // This is where we determine whether we need to run a migration
           // This redirect should trigger for every route _except_ the migration
@@ -57,12 +57,9 @@ export const router = createBrowserRouter(
             }
           }
 
-          initializeAnalytics(auth0User);
+          initializeAnalytics(user);
 
-          return {
-            isAuthenticated,
-            loggedInUser: auth0User,
-          };
+          return { isAuthenticated, loggedInUser: user };
         }}
         element={<Root />}
         errorElement={<RootError />}
