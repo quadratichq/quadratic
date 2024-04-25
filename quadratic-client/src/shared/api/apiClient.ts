@@ -289,6 +289,13 @@ export const apiClient = {
     async get() {
       return fetchFromApi(`/v0/education`, { method: 'GET' }, ApiSchemas['/v0/education.GET.response']);
     },
+    async update(body: ApiTypes['/v0/education.POST.request']) {
+      return fetchFromApi(
+        `/v0/education`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/education.POST.response']
+      );
+    },
   },
 
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {

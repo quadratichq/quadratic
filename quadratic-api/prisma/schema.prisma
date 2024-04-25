@@ -23,7 +23,7 @@ model User {
 
 enum EduStatus {
     INELIGIBLE
-    // ELIGIBLE
+    ELIGIBLE
     ENROLLED
     // NOT_ENROLLED
 }

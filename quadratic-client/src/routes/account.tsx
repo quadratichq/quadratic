@@ -1,19 +1,17 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { useRootRouteLoaderData } from '@/router';
-import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL, QUADRATIC_FOR_EDUCATION } from '@/shared/constants/urls';
 import { themes, useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ReloadIcon } from '@radix-ui/react-icons';
+import { ExternalLinkIcon, ReloadIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const { teams } = useDashboardRouteLoaderData();
   const [theme, setTheme] = useTheme();
 
   return (
@@ -62,44 +60,39 @@ export const Component = () => {
 
         <EducationDialog>
           {({ isEnrolled, isLoading, checkStatus }) => {
-            let plan = 'Free';
-            if (teams.length > 0) {
-              plan = 'Team';
-            } else if (isEnrolled) {
-              plan = 'Education';
-            }
-
             return (
               <Row>
-                <Type variant="body2" className="font-bold">
-                  Plan
-                </Type>
+                <a
+                  href={QUADRATIC_FOR_EDUCATION}
+                  className="hover:text-primary hover:underline"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <Type variant="body2" className="flex items-center gap-1 font-bold">
+                    Education plan <ExternalLinkIcon className="text-muted-foreground" />
+                  </Type>
+                </a>
 
                 <div>
                   <Type variant="body2" className="flex items-center gap-2">
-                    {plan}
+                    {isEnrolled ? 'Enrolled' : 'Ineligible'}
                     <ReloadIcon
                       className={`animate-spin text-primary transition-opacity ${isLoading ? '' : ' opacity-0'}`}
                     />
                   </Type>
 
                   <Type variant="caption">
-                    {plan === 'Education' ? (
+                    Available for accounts with a school email.{' '}
+                    {!isEnrolled && (
                       <>
-                        Based on you’re email, you’re eligible for <EduLink>Quadratic for education</EduLink>.
-                      </>
-                    ) : (
-                      <>
-                        With a school email, you may be eligible for <EduLink>Quadratic for education</EduLink>.
-                        <br />
                         <button onClick={checkStatus} className="underline ">
                           Check your status
                         </button>{' '}
-                        or, if that doesn’t work you can{' '}
+                        or{' '}
                         <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
                           contact us
-                        </a>
-                        .
+                        </a>{' '}
+                        if you think you qualify.
                       </>
                     )}
                   </Type>
@@ -109,7 +102,7 @@ export const Component = () => {
           }}
         </EducationDialog>
 
-        <Form method="post" action={ROUTES.LOGOUT}>
+        <Form method="post" action={ROUTES.LOGOUT} className="mt-4">
           <Button variant="outline" type="submit">
             Log out
           </Button>
@@ -121,16 +114,8 @@ export const Component = () => {
 
 function Row(props: { children: ReactNode }) {
   return (
-    <div className={`grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
+    <div className={`grid max-w-lg items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
       {props.children}
     </div>
-  );
-}
-
-function EduLink({ children }: { children: string }) {
-  return (
-    <a href={QUADRATIC_FOR_EDUCATION} className="underline hover:text-primary" target="_blank" rel="noreferrer">
-      {children}
-    </a>
   );
 }

@@ -70,7 +70,7 @@ const PublicLinkAccessSchema = z.enum(['EDIT', 'READONLY', 'NOT_SHARED']);
 export type PublicLinkAccess = z.infer<typeof PublicLinkAccessSchema>;
 const EduStatusSchema = z.enum([
   'INELIGIBLE',
-  // 'ELIGIBLE',
+  'ELIGIBLE',
   'ENROLLED',
   // 'NOT_ENROLLED'
 ]);
@@ -347,9 +347,14 @@ export const ApiSchemas = {
    * Education
    *
    */
+  '/v0/education.POST.request': z.object({
+    eduStatus: EduStatusSchema,
+  }),
+  '/v0/education.POST.response': z.object({
+    eduStatus: EduStatusSchema,
+  }),
   '/v0/education.GET.response': z.object({
     eduStatus: EduStatusSchema,
-    isNewlyEnrolled: z.boolean(),
   }),
 };
 

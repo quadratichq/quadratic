@@ -1,4 +1,4 @@
-export const QUADRATIC_FOR_EDUCATION = 'https://example.com/TODO';
+export const QUADRATIC_FOR_EDUCATION = 'https://www.quadratichq.com/education';
 export const DOCUMENTATION_URL = 'https://docs.quadratichq.com';
 export const DOCUMENTATION_PYTHON_URL = `${DOCUMENTATION_URL}/writing-python/getting-started`;
 export const DOCUMENTATION_FORMULAS_URL = `${DOCUMENTATION_URL}/writing-formulas/getting-started`;

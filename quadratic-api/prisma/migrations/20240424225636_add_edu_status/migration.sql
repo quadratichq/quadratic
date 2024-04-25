@@ -5,7 +5,7 @@
 
 */
 -- CreateEnum
-CREATE TYPE "EduStatus" AS ENUM ('INELIGIBLE', 'ENROLLED');
+CREATE TYPE "EduStatus" AS ENUM ('INELIGIBLE', 'ELIGIBLE', 'ENROLLED');
 
 -- AlterTable
 ALTER TABLE "User" ADD COLUMN     "edu_status" "EduStatus";

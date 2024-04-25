@@ -19,24 +19,24 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
     user: { auth0Id, id, eduStatus },
   } = req;
 
-  // If they’re enrolled, just return their status
-  if (eduStatus === 'ENROLLED') {
-    return res.status(200).send({ eduStatus, isNewlyEnrolled: false });
+  // If the eduStatus hasn’t been set yet, or they're ineligible, we'll check
+  // whether they’re eligible and save that state to the DB. Otherwise we just
+  // return the current status;
+  if (!(eduStatus === 'INELIGIBLE' || eduStatus === null)) {
+    return res.status(200).send({ eduStatus });
   }
 
-  // If the eduStatus hasn’t been set yet, or they're ineligible, we'll check
-  // whether they’re eligible and save that state to the DB
-
+  // Get info about the user
   const userById = await getUsersFromAuth0([{ id, auth0Id }]);
   const email = userById[id].email;
 
-  const enrollUser = async () => {
-    const newEduStatus = 'ENROLLED';
+  const markUserAsEligible = async () => {
+    const newEduStatus = 'ELIGIBLE';
     await dbClient.user.update({
       where: { id },
-      data: { eduStatus: 'ENROLLED' },
+      data: { eduStatus: 'ELIGIBLE' },
     });
-    const responseData: ApiTypes['/v0/education.GET.response'] = { eduStatus: newEduStatus, isNewlyEnrolled: true };
+    const responseData: ApiTypes['/v0/education.GET.response'] = { eduStatus: newEduStatus };
     return responseData;
   };
 
@@ -44,7 +44,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
   const universityDomainMatches = universityDomains.filter((domain) => email.endsWith(domain));
   console.log('Do they match anything in the universities file?', universityDomainMatches.length > 0 ? 'Yes' : 'No');
   if (universityDomainMatches.length > 0) {
-    const responseData = await enrollUser();
+    const responseData = await markUserAsEligible();
     return res.status(200).send(responseData);
   }
 
@@ -53,7 +53,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
   const sanityDomainMatches = educationDomainWhitelist.filter((str) => email.endsWith(str));
   console.log('Do they match anything in the sanity list?', sanityDomainMatches.length > 0 ? 'Yes' : 'No');
   if (sanityDomainMatches.length > 0) {
-    const responseData = await enrollUser();
+    const responseData = await markUserAsEligible();
     return res.status(200).send(responseData);
   }
 
@@ -70,5 +70,5 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
   }
 
   console.log('They’re ineligible');
-  return res.status(200).send({ eduStatus: newEduStatus, isNewlyEnrolled: false });
+  return res.status(200).send({ eduStatus: newEduStatus });
 }
