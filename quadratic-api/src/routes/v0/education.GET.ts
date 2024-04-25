@@ -48,8 +48,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
   }
 
   // Second let's check the list we have in sanity
-  const { educationDomainWhitelist } = await sanityClient.appSettings.get();
-  const sanityDomainMatches = educationDomainWhitelist.filter((str) => email.endsWith(str));
+  const whitelist = await sanityClient.educationWhitelist.get();
+  const sanityDomainMatches = whitelist.filter(({ emailSuffix }) => email.endsWith(emailSuffix));
   if (sanityDomainMatches.length > 0) {
     const responseData = await markUserAsEligible();
     return res.status(200).send(responseData);

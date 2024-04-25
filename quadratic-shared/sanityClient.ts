@@ -28,9 +28,9 @@ export const sanityClient = {
     list: async (): Promise<Example[]> => sanityFetch(`*[_type == "gallery"] | order(priority asc) ${fields}`),
     get: async (slug: string): Promise<Example> => sanityFetch(`*[slug == "${slug}"][0] ${fields}`),
   },
-  appSettings: {
+  educationWhitelist: {
     // TODO: turn "production" into env name at some point when we want to test this better
-    get: async (): Promise<Settings> => sanityFetch(`*[_type == "appSettings" && name == "production"][0]`),
+    get: async (): Promise<EducationWhitelist> => sanityFetch(`*[_type == "educationWhitelist"]`),
   },
 };
 
@@ -46,6 +46,6 @@ type Example = {
   _updatedAt: string;
 };
 
-type Settings = {
-  educationDomainWhitelist: string[];
-};
+type EducationWhitelist = {
+  emailSuffix: string;
+}[];
