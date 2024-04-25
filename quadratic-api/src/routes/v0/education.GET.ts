@@ -19,7 +19,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
     user: { auth0Id, id, eduStatus },
   } = req;
 
-  // If the eduStatus hasn’t been set yet, or they're ineligible, we'll check
+  // If `eduStatus` hasn’t been set yet, or they're ineligible, we'll check
   // whether they’re eligible and save that state to the DB. Otherwise we just
   // return the current status;
   if (!(eduStatus === 'INELIGIBLE' || eduStatus === null)) {
