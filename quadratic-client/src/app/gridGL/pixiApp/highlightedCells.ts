@@ -33,36 +33,40 @@ export class HighlightedCells {
     return (cellSheet ? sheets.getSheetByName(cellSheet)?.id : sheetId) ?? sheetId;
   }
 
+  public evalCoord(cell: { type: 'Relative' | 'Absolute'; coord: number }, origin: number) {
+    const isRelative = cell.type === 'Relative';
+    const getOrigin = isRelative ? origin : 0;
+
+    return getOrigin + cell.coord;
+  }
+
   private fromCellRange(
     cellRange: { type: 'CellRange'; start: CellPosition; end: CellPosition },
-    cell: Coordinate,
+    origin: Coordinate,
     sheet: string,
     span: Span,
     index: number
   ) {
+    const startX = this.evalCoord(cellRange.start.x, origin.x);
+    const startY = this.evalCoord(cellRange.start.y, origin.y);
+    const endX = this.evalCoord(cellRange.end.x, origin.x);
+    const endY = this.evalCoord(cellRange.end.y, origin.y);
+
     this.highlightedCells.add({
-      column: this.evalCoord(cellRange.start.x, cell.x) + cellRange.start.x.coord,
-      row: this.evalCoord(cellRange.start.y, cell.y) + cellRange.start.y.coord,
-      width: cellRange.end.x.coord - cellRange.start.x.coord,
-      height: cellRange.end.y.coord - cellRange.start.y.coord,
+      column: startX,
+      row: startY,
+      width: endX - startX,
+      height: endY - startY,
       sheet: this.getSheet(cellRange.start.sheet, sheet),
       span,
       index,
     });
   }
 
-  private isRelative(cell: { type: 'Relative' | 'Absolute'; coord: number }) {
-    return cell.type === 'Relative';
-  }
-
-  public evalCoord(cell: { type: 'Relative' | 'Absolute'; coord: number }, origin: number) {
-    return this.isRelative(cell) ? origin : 0;
-  }
-
   private fromCell(cell: CellPosition, origin: Coordinate, sheet: string, span: Span, index: number) {
     this.highlightedCells.add({
-      column: cell.x.coord + this.evalCoord(cell.x, origin.x),
-      row: cell.y.coord + this.evalCoord(cell.y, origin.y),
+      column: this.evalCoord(cell.x, origin.x),
+      row: this.evalCoord(cell.y, origin.y),
       width: 0,
       height: 0,
       sheet: this.getSheet(cell.sheet, sheet),
