@@ -23,11 +23,20 @@ impl GridController {
         insert_at: Pos,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
-        let width = csv::ReaderBuilder::new().from_reader(file).headers()?.len() as u32;
-
-        if width == 0 {
-            bail!("Empty CSV files cannot be processed");
-        }
+        let file = match String::from_utf8_lossy(file) {
+            std::borrow::Cow::Borrowed(_) => file,
+            std::borrow::Cow::Owned(_) => {
+                if let Some(utf) = read_utf16(file) {
+                    return self.import_csv_operations(
+                        sheet_id,
+                        utf.as_bytes(),
+                        file_name,
+                        insert_at,
+                    );
+                }
+                file
+            }
+        };
 
         // first get the total number of lines so we can provide progress
         let mut reader = csv::ReaderBuilder::new()
@@ -37,7 +46,13 @@ impl GridController {
 
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
+            .flexible(true)
             .from_reader(file);
+
+        let width = reader.headers()?.len() as u32;
+        if width == 0 {
+            bail!("empty files cannot be processed");
+        }
 
         // then create operations using MAXIMUM_IMPORT_LINES to break up the SetCellValues operations
         let mut ops = vec![] as Vec<Operation>;
@@ -259,11 +274,45 @@ impl GridController {
     }
 }
 
+fn read_utf16(bytes: &[u8]) -> Option<String> {
+    if bytes.is_empty() && bytes.len() % 2 == 0 {
+        return None;
+    }
+
+    // convert u8 to u16
+    let mut utf16vec: Vec<u16> = Vec::with_capacity(bytes.len() / 2);
+    for chunk in bytes.to_owned().chunks_exact(2) {
+        let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
+            return None;
+        };
+        utf16vec.push(u16::from_ne_bytes(vec2));
+    }
+
+    // convert to string
+    let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
+        return None;
+    };
+
+    // strip invalid characters
+    let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
+    
+    Some(result)
+}
+
 #[cfg(test)]
 mod test {
+    use super::read_utf16;
     use crate::CellValue;
-
     use super::*;
+
+    const INVALID_ENCODING_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
+
+    #[test]
+    fn transmute_u8_to_u16() {
+        let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
+        assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
+    }
 
     #[test]
     fn imports_a_simple_csv() {
