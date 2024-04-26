@@ -1,12 +1,4 @@
-use std::sync::Arc;
-
-use arrow::{
-    array::{ArrayRef, RecordBatch, StringArray},
-    datatypes::*,
-};
-use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
-use parquet::arrow::ArrowWriter;
 use sqlx::{
     postgres::{PgColumn, PgPool, PgRow},
     Column, Row, TypeInfo,

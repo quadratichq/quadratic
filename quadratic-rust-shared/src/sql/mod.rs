@@ -8,10 +8,7 @@ use parquet::arrow::ArrowWriter;
 use std::sync::Arc;
 
 use self::{mysql_connection::MysqlConnection, postgres_connection::PostgresConnection};
-use sqlx::{
-    postgres::{PgColumn, PgPool, PgRow},
-    Column, Row, TypeInfo,
-};
+use sqlx::{Column, Row};
 
 pub mod mysql_connection;
 pub mod postgres_connection;
@@ -26,22 +23,28 @@ pub trait Connection {
     type Row: Row;
     type Column: Column;
 
-    fn connect(&self) -> impl Future<Output = Result<Self::Pool, sqlx::Error>>;
-
+    /// Create a connection string from the connection parameters
     fn connection_string(&self) -> String;
 
+    fn connect(&self) -> impl Future<Output = Result<Self::Pool, sqlx::Error>>;
+
+    /// Generically query a database
     fn query(
         &self,
         pool: Self::Pool,
         sql: &str,
     ) -> impl Future<Output = Result<Vec<Self::Row>, sqlx::Error>>;
 
+    /// Convert a database-specific column to an Arrow type
     fn to_arrow(
         row: &Self::Row,
         column: &<<Self::Row as sqlx::Row>::Database as sqlx::Database>::Column,
         index: usize,
     ) -> Option<String>;
 
+    /// Default implementation of converting a vec of rows to a Parquet byte array
+    ///
+    /// This should work over any row/colmn SQLx vec
     fn to_parquet(data: Vec<Self::Row>) -> Bytes
     where
         Self::Row: Row,
