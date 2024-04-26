@@ -33,8 +33,8 @@ export const ConnectionsList = () => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Data connections</DialogTitle>
-          <DialogDescription>Manage all database and other data connections.</DialogDescription>
+          <DialogTitle>Connections</DialogTitle>
+          <DialogDescription>Manage your connections to outside data sources</DialogDescription>
         </DialogHeader>
         <div className="grid gap-6">
           <div className="grid grid-cols-2 gap-6">

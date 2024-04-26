@@ -4,8 +4,7 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { DataIcon } from '@/app/ui/icons';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
-import { AddCircleOutline, StorageOutlined } from '@mui/icons-material';
-import { Menu, MenuDivider, MenuHeader, MenuItem } from '@szhsin/react-menu';
+import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
 import { useSearchParams } from 'react-router-dom';
 import { MenuLineItem } from '../MenuLineItem';
@@ -50,10 +49,7 @@ export const DataMenu = () => {
             secondary={KeyboardSymbols.Command + KeyboardSymbols.Shift + 'E'}
           />
         </MenuItem>
-        <MenuHeader>Connections</MenuHeader>
-        <MenuItem disabled>
-          <MenuLineItem primary="Add Connection" Icon={AddCircleOutline} />
-        </MenuItem>
+        <MenuDivider />
         <MenuItem
           onClick={() =>
             setSearchParams((prev) => {
@@ -62,11 +58,7 @@ export const DataMenu = () => {
             })
           }
         >
-          <MenuLineItem primary="Manage Connections" Icon={StorageOutlined} />
-        </MenuItem>
-        <MenuDivider />
-        <MenuItem disabled>
-          <MenuLineItem primary="Connect database (coming soon)" />
+          <MenuLineItem primary="Manage connections" />
         </MenuItem>
       </Menu>
     </>
