@@ -9,6 +9,8 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
+import mixpanel from 'mixpanel-browser';
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
@@ -46,6 +48,7 @@ class InlineEditorHandler {
   private cellOffsets?: Rectangle;
   private width = 0;
   private height = 0;
+  private open = false;
 
   private temporaryBold = false;
   private temporaryItalic = false;
@@ -55,15 +58,27 @@ class InlineEditorHandler {
   // this is used to calculate the width of the editor
   private sizingDiv: HTMLDivElement;
 
+  // this is used to display the formula expand button
+  private formulaExpandDiv?: HTMLDivElement;
+
   constructor() {
     events.on('changeInput', this.changeInput);
     this.sizingDiv = document.createElement('div');
-    // this.sizingDiv.style.visibility = 'hidden';
+    this.sizingDiv.style.visibility = 'hidden';
     this.sizingDiv.style.width = 'fit-content';
     this.sizingDiv.style.fontSize = '14px';
     this.sizingDiv.style.fontFamily = 'OpenSans';
     this.sizingDiv.style.paddingLeft = CURSOR_THICKNESS + 'px';
     this.sizingDiv.style.whiteSpace = 'nowrap';
+  }
+
+  private reset() {
+    this.formula = false;
+    this.temporaryBold = false;
+    this.temporaryItalic = false;
+    this.width = 0;
+    this.height = 0;
+    this.open = false;
   }
 
   // viewport should try to keep the cursor in view
@@ -100,28 +115,36 @@ class InlineEditorHandler {
     }
   };
 
-  private changeInput = async (input: boolean) => {
+  private changeInput = async (input: boolean, initialValue?: string) => {
     if (!this.div || !this.editor) {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
     }
 
     if (input) {
-      this.div.style.display = 'block';
+      this.open = true;
+      this.div.style.display = 'flex';
       const sheet = sheets.sheet;
       this.location = {
         sheetId: sheet.id,
         x: sheet.cursor.originPosition.x,
         y: sheet.cursor.originPosition.y,
       };
-      const formula = await quadraticCore.getCodeCell(sheets.sheet.id, this.location.x, this.location.y);
       let value: string;
-      if (formula?.language === 'Formula') {
-        this.formula = true;
-        value = '=' + formula.code_string;
+      if (initialValue) {
+        value = initialValue;
       } else {
-        value = (await quadraticCore.getEditCell(sheets.sheet.id, this.location.x, this.location.y)) || '';
+        const formula = await quadraticCore.getCodeCell(sheets.sheet.id, this.location.x, this.location.y);
+        if (formula?.language === 'Formula') {
+          this.formula = true;
+          value = '=' + formula.code_string;
+        } else {
+          value = (await quadraticCore.getEditCell(sheets.sheet.id, this.location.x, this.location.y)) || '';
+        }
       }
       this.editor.setValue(value);
+      if (initialValue) {
+        this.editor.setPosition({ lineNumber: 1, column: initialValue.length + 1 });
+      }
       const format = await quadraticCore.getCellFormatSummary(sheets.sheet.id, this.location.x, this.location.y);
       theme.colors['editor.background'] = format.fillColor ? convertColorStringToHex(format.fillColor) : '#ffffff';
       monaco.editor.defineTheme('inline-editor', theme);
@@ -129,11 +152,17 @@ class InlineEditorHandler {
       this.div.style.left = this.cellOffsets.x + CURSOR_THICKNESS + 'px';
       this.div.style.top = this.cellOffsets.y + 2 + 'px';
       this.height = this.cellOffsets.height - 4;
+      if (!this.formulaExpandDiv) {
+        throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
+      }
+      this.formulaExpandDiv.style.height = this.height + 'px';
+      this.formulaExpandDiv.style.lineHeight = this.height + 'px';
       this.updateCursorPosition();
       this.keepCursorVisible();
       this.editor.focus();
     } else {
       this.div.style.display = 'none';
+      this.reset();
     }
   };
 
@@ -160,6 +189,9 @@ class InlineEditorHandler {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in InlineEditorHandler');
     }
+    if (!this.formulaExpandDiv) {
+      throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
+    }
     this.formula = formula;
     const model = this.editor.getModel();
     if (!model) {
@@ -167,16 +199,22 @@ class InlineEditorHandler {
     }
     if (formula) {
       editor.setModelLanguage(model, 'Formula');
+
+      // need to show the change to A1 notation
+      pixiApp.headings.dirty = true;
     } else {
       editor.setModelLanguage(model, 'plaintext');
     }
+    this.formulaExpandDiv.style.display = formula ? 'block' : 'none';
   };
 
   private keyDown = (e: monaco.IKeyboardEvent) => {
     if (e.code === 'Escape') {
       this.close(0, 0, true);
+      e.stopPropagation();
     } else if (e.code === 'Enter') {
       this.close(0, 1, false);
+      e.stopPropagation();
     }
   };
 
@@ -188,10 +226,35 @@ class InlineEditorHandler {
     const value = this.editor.getValue();
 
     if (!cancel && value.trim()) {
-      quadraticCore.setCellValue(sheets.sheet.id, this.location.x, this.location.y, value, sheets.getCursorPosition());
-      // setTemporaryBold(undefined);
-      // setTemporaryItalic(undefined);
-      // textInput.innerText = '';
+      if (this.formula) {
+        quadraticCore.setCodeCellValue({
+          sheetId: sheets.sheet.id,
+          x: this.location.x,
+          y: this.location.y,
+          language: 'Formula',
+          codeString: value.slice(1),
+          cursor: sheets.getCursorPosition(),
+        });
+        mixpanel.track('[CodeEditor].cellRun', {
+          type: 'Formula',
+          inline: true,
+        });
+        // Google Ads Conversion for running a cell
+        if (googleAnalyticsAvailable()) {
+          //@ts-expect-error
+          gtag('event', 'conversion', {
+            send_to: 'AW-11007319783/C-yfCJOe6JkZEOe92YAp',
+          });
+        }
+      } else {
+        quadraticCore.setCellValue(
+          sheets.sheet.id,
+          this.location.x,
+          this.location.y,
+          value,
+          sheets.getCursorPosition()
+        );
+      }
     }
 
     // Update Grid Interaction state, reset input value state
@@ -203,10 +266,17 @@ class InlineEditorHandler {
       },
     });
 
+    this.reset();
     pixiAppSettings.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();
+  };
+
+  private openCodeEditor = (e: MouseEvent) => {
+    e.stopPropagation();
+
+    // todo: open in code editor
   };
 
   attach(div: HTMLDivElement) {
@@ -222,7 +292,7 @@ class InlineEditorHandler {
     });
     monaco.languages.registerHoverProvider('Formula', { provideHover });
 
-    this.editor = editor.create(div, {
+    this.editor = editor.create(div.childNodes[0] as HTMLDivElement, {
       automaticLayout: false,
       readOnly: false,
       renderLineHighlight: 'none',
@@ -269,10 +339,16 @@ class InlineEditorHandler {
     });
 
     document.body.appendChild(this.sizingDiv);
+    this.formulaExpandDiv = div.childNodes[1]! as HTMLDivElement;
+    this.formulaExpandDiv.addEventListener('click', this.openCodeEditor);
 
     this.editor.onDidChangeCursorPosition(this.updateCursorPosition);
     this.editor.onKeyDown(this.keyDown);
     this.editor.onDidChangeCursorPosition(this.keepCursorVisible);
+  }
+
+  isEditingFormula() {
+    return this.open && this.formula;
   }
 }
 
