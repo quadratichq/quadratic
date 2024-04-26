@@ -1,9 +1,18 @@
-import { useGlobalSnackbar } from '@/components/GlobalSnackbarProvider';
 import { useDashboardContext } from '@/routes/_dashboard';
-import { Button } from '@/shadcn/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shadcn/ui/dialog';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shadcn/ui/form';
-import { Input } from '@/shadcn/ui/input';
+import { apiClient } from '@/shared/api/apiClient';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/shared/shadcn/ui/form';
+import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckIcon, PersonIcon, ReloadIcon } from '@radix-ui/react-icons';
 import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
@@ -11,7 +20,6 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ActionFunctionArgs, redirect } from 'react-router-dom';
 import z from 'zod';
-import { apiClient } from '../../api/apiClient';
 
 type ActionData = {
   name: string;

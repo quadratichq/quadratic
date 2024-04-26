@@ -75,6 +75,25 @@ impl Sheet {
                 } else {
                     None
                 };
+                if matches!(value, CellValue::Logical(_)) {
+                    let special = match value {
+                        CellValue::Logical(true) => Some(JsRenderCellSpecial::True),
+                        CellValue::Logical(false) => Some(JsRenderCellSpecial::False),
+                        _ => None,
+                    };
+                    return JsRenderCell {
+                        x,
+                        y,
+                        value: "".to_string(),
+                        language,
+                        align,
+                        wrap: None,
+                        bold: None,
+                        italic: None,
+                        text_color: None,
+                        special,
+                    };
+                }
                 JsRenderCell {
                     x,
                     y,
@@ -434,6 +453,7 @@ mod tests {
             js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell},
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
+        wasm_bindings::js::{expect_js_call, hash_test},
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
@@ -843,6 +863,63 @@ mod tests {
                 state: crate::grid::js_types::JsRenderCodeCellState::Success,
                 spill_error: None,
             })
+        );
+    }
+
+    #[test]
+    fn render_bool_on_code_run() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_code_cell(
+            (0, 0, sheet_id).into(),
+            CodeCellLanguage::Formula,
+            "{TRUE(), FALSE(), TRUE()}".into(),
+            None,
+        );
+        let cells = vec![
+            JsRenderCell {
+                x: 0,
+                y: 0,
+                value: "".to_string(),
+                language: Some(CodeCellLanguage::Formula),
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::True),
+            },
+            JsRenderCell {
+                x: 1,
+                y: 0,
+                value: "".to_string(),
+                language: None,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::False),
+            },
+            JsRenderCell {
+                x: 2,
+                y: 0,
+                value: "".to_string(),
+                language: None,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::True),
+            },
+        ];
+        let cells_string = serde_json::to_string(&cells).unwrap();
+        expect_js_call(
+            "jsRenderCellSheets",
+            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
+            true,
         );
     }
 }

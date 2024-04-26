@@ -12,6 +12,9 @@
     "dotenv",
     "endregion",
     "Fuzzysort",
+    "gramm",
+    "grammarly",
+    "Hasher",
     "healthcheck",
     "healthchecks",
     "hljs",
@@ -63,5 +66,6 @@
   "files.associations": {
     "*.grid": "json"
   },
-  "jest.rootPath": "quadratic-client"
+  "jest.rootPath": "quadratic-client",
+  "typescript.preferences.importModuleSpecifier": "non-relative"
 }

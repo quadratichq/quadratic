@@ -581,7 +581,7 @@ export class Control {
   }
 
   async start(ui: UI) {
-    exec("rm -rf quadratic-client/src/quadratic-core");
+    exec("rm -rf quadratic-client/src/app/quadratic-core");
     this.ui = ui;
     this.runRust();
     this.runDb();

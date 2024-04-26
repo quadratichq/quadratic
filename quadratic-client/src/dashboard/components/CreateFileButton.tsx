@@ -1,14 +1,19 @@
-import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/helpers/files';
-import { Button } from '@/shadcn/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shadcn/ui/dropdown-menu';
-import { quadraticCore } from '@/web-workers/quadraticCore/quadraticCore';
+import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
+import { validateAndUpgradeGridFile } from '@/app/schemas/validateAndUpgradeGridFile';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { ROUTES } from '@/shared/constants/routes';
+import { Button } from '@/shared/shadcn/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { ChangeEvent, useState } from 'react';
 import { Link, useParams, useSubmit } from 'react-router-dom';
-import { useGlobalSnackbar } from '../../components/GlobalSnackbarProvider';
-import { ROUTES } from '../../constants/routes';
-import { validateAndUpgradeGridFile } from '../../schemas/validateAndUpgradeGridFile';
 
 export type UploadFileType = 'grid' | 'excel' | 'csv' | 'parquet';
 
