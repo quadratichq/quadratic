@@ -6,6 +6,8 @@ import { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
@@ -19,14 +21,14 @@ window.MonacoEnvironment = {
 };
 
 // Pixels needed when growing width to avoid monaco from scrolling the text
-// (determined by experimentation)
-const PADDED_FOR_GROWING_HORIZONTALLY = 20;
+// (determined by experimentation).
+const PADDING_FOR_GROWING_HORIZONTALLY = 20;
 
 // Pixels needed when for minWidth to avoid monaco from scrolling the text
-// (determined by experimentation)
+// (determined by experimentation).
 const PADDING_FOR_MIN_WIDTH = 30;
 
-// Minimum amount to scroll viewport when cursor is near the edge
+// Minimum amount to scroll viewport when cursor is near the edge.
 const MINIMUM_MOVE_VIEWPORT = 50;
 
 const theme: editor.IStandaloneThemeData = {
@@ -44,6 +46,11 @@ class InlineEditorHandler {
   private cellOffsets?: Rectangle;
   private width = 0;
   private height = 0;
+
+  private temporaryBold = false;
+  private temporaryItalic = false;
+
+  private formula = false;
 
   // this is used to calculate the width of the editor
   private sizingDiv: HTMLDivElement;
@@ -106,8 +113,15 @@ class InlineEditorHandler {
         x: sheet.cursor.originPosition.x,
         y: sheet.cursor.originPosition.y,
       };
-      const value = await quadraticCore.getEditCell(sheets.sheet.id, this.location.x, this.location.y);
-      this.editor.setValue(value || '');
+      const formula = await quadraticCore.getCodeCell(sheets.sheet.id, this.location.x, this.location.y);
+      let value: string;
+      if (formula?.language === 'Formula') {
+        this.formula = true;
+        value = '=' + formula.code_string;
+      } else {
+        value = (await quadraticCore.getEditCell(sheets.sheet.id, this.location.x, this.location.y)) || '';
+      }
+      this.editor.setValue(value);
       const format = await quadraticCore.getCellFormatSummary(sheets.sheet.id, this.location.x, this.location.y);
       theme.colors['editor.background'] = format.fillColor ? convertColorStringToHex(format.fillColor) : '#ffffff';
       monaco.editor.defineTheme('inline-editor', theme);
@@ -115,7 +129,7 @@ class InlineEditorHandler {
       this.div.style.left = this.cellOffsets.x + CURSOR_THICKNESS + 'px';
       this.div.style.top = this.cellOffsets.y + 2 + 'px';
       this.height = this.cellOffsets.height - 4;
-      this.updateSize();
+      this.updateCursorPosition();
       this.keepCursorVisible();
       this.editor.focus();
     } else {
@@ -123,16 +137,39 @@ class InlineEditorHandler {
     }
   };
 
-  private updateSize = () => {
+  private updateCursorPosition = () => {
     // this will get called upon opening (before variables are set), and after every cursor movement
     if (!this.div || !this.editor || !this.cellOffsets) return;
 
-    this.sizingDiv.innerHTML = ' ' + this.editor.getValue();
+    const value = this.editor.getValue();
+    if (value[0] === '=') {
+      this.changeToFormula(true);
+    } else if (this.formula && value[0] !== '=') {
+      this.changeToFormula(false);
+    }
+    this.sizingDiv.innerHTML = ' ' + value;
     this.width =
       Math.max(this.cellOffsets.width - PADDING_FOR_MIN_WIDTH, this.sizingDiv.offsetWidth) +
-      PADDED_FOR_GROWING_HORIZONTALLY;
+      PADDING_FOR_GROWING_HORIZONTALLY;
     this.editor.layout({ width: this.width, height: this.height });
     pixiApp.cursor.dirty = true;
+  };
+
+  private changeToFormula = (formula: boolean) => {
+    if (this.formula === formula) return;
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in InlineEditorHandler');
+    }
+    this.formula = formula;
+    const model = this.editor.getModel();
+    if (!model) {
+      throw new Error('Expected model to be defined in changeToFormula');
+    }
+    if (formula) {
+      editor.setModelLanguage(model, 'Formula');
+    } else {
+      editor.setModelLanguage(model, 'plaintext');
+    }
   };
 
   private keyDown = (e: monaco.IKeyboardEvent) => {
@@ -177,16 +214,23 @@ class InlineEditorHandler {
     div.style.display = 'none';
     this.div = div;
 
+    monaco.languages.register({ id: 'Formula' });
+    monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
+    monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
+    monaco.languages.registerCompletionItemProvider('Formula', {
+      provideCompletionItems,
+    });
+    monaco.languages.registerHoverProvider('Formula', { provideHover });
+
     this.editor = editor.create(div, {
       automaticLayout: false,
-      value: 'This should be the text that in the cell.',
       readOnly: false,
       renderLineHighlight: 'none',
-      quickSuggestions: false,
+      // quickSuggestions: false,
       glyphMargin: false,
       lineDecorationsWidth: 0,
       folding: false,
-      fixedOverflowWidgets: true,
+      fixedOverflowWidgets: false,
       revealHorizontalRightPadding: 0,
       disableMonospaceOptimizations: true,
       roundedSelection: false,
@@ -221,12 +265,12 @@ class InlineEditorHandler {
       },
       theme: 'inline-editor',
       stickyScroll: { enabled: false },
-      // language: 'javascript',
+      language: this.formula ? 'formula' : undefined,
     });
 
     document.body.appendChild(this.sizingDiv);
 
-    this.editor.onDidChangeCursorPosition(this.updateSize);
+    this.editor.onDidChangeCursorPosition(this.updateCursorPosition);
     this.editor.onKeyDown(this.keyDown);
     this.editor.onDidChangeCursorPosition(this.keepCursorVisible);
   }
