@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
@@ -17,13 +18,22 @@ window.MonacoEnvironment = {
   },
 };
 
+// Pixels needed when growing width to avoid monaco from scrolling the text
+// (determined by experimentation)
+const PADDED_FOR_GROWING_HORIZONTALLY = 20;
+
+// Pixels needed when for minWidth to avoid monaco from scrolling the text
+// (determined by experimentation)
+const PADDING_FOR_MIN_WIDTH = 30;
+
+// Minimum amount to scroll viewport when cursor is near the edge
+const MINIMUM_MOVE_VIEWPORT = 50;
+
 const theme: editor.IStandaloneThemeData = {
   base: 'vs',
   inherit: true,
   rules: [],
-  colors: {
-    'editor.background': '#ff0000',
-  },
+  colors: {},
 };
 monaco.editor.defineTheme('inline-editor', theme);
 
@@ -47,15 +57,41 @@ class InlineEditorHandler {
     this.sizingDiv.style.fontFamily = 'OpenSans';
     this.sizingDiv.style.paddingLeft = CURSOR_THICKNESS + 'px';
     this.sizingDiv.style.whiteSpace = 'nowrap';
-
-    // debug options
-    this.sizingDiv.style.position = 'absolute';
-    this.sizingDiv.style.top = '0';
-    this.sizingDiv.style.left = '0';
-    this.sizingDiv.style.backgroundColor = 'red';
-    this.sizingDiv.style.zIndex = '100000';
-    this.sizingDiv.style.color = 'white';
   }
+
+  // viewport should try to keep the cursor in view
+  private keepCursorVisible = () => {
+    if (!this.editor) return;
+    const editorPosition = this.editor.getPosition();
+    if (!editorPosition) return;
+    const position = this.editor.getScrolledVisiblePosition(editorPosition);
+    if (!position) return;
+    const domNode = this.editor.getDomNode();
+    if (!domNode) return;
+    const bounds = domNode.getBoundingClientRect();
+    const canvas = pixiApp.canvas.getBoundingClientRect();
+    const cursor = position.left + bounds.left;
+    const worldCursorTop = pixiApp.viewport.toWorld(cursor, bounds.top - canvas.top);
+    const worldCursorBottom = pixiApp.viewport.toWorld(cursor, bounds.bottom - canvas.top);
+    const viewportBounds = pixiApp.viewport.getVisibleBounds();
+    let x = 0,
+      y = 0;
+    if (worldCursorTop.x > viewportBounds.right) {
+      x = viewportBounds.right - (worldCursorTop.x + MINIMUM_MOVE_VIEWPORT);
+    } else if (worldCursorTop.x < viewportBounds.left) {
+      x = viewportBounds.left + MINIMUM_MOVE_VIEWPORT - worldCursorTop.x;
+    }
+    if (worldCursorBottom.y > viewportBounds.bottom) {
+      y = viewportBounds.bottom - (worldCursorBottom.y + MINIMUM_MOVE_VIEWPORT);
+    } else if (worldCursorTop.y < viewportBounds.top) {
+      y = viewportBounds.top + MINIMUM_MOVE_VIEWPORT - worldCursorTop.y;
+    }
+    if (x || y) {
+      pixiApp.viewport.x += x;
+      pixiApp.viewport.y += y;
+      pixiApp.setViewportDirty();
+    }
+  };
 
   private changeInput = async (input: boolean) => {
     if (!this.div || !this.editor) {
@@ -77,10 +113,10 @@ class InlineEditorHandler {
       monaco.editor.defineTheme('inline-editor', theme);
       this.cellOffsets = sheet.getCellOffsets(this.location.x, this.location.y);
       this.div.style.left = this.cellOffsets.x + CURSOR_THICKNESS + 'px';
-      this.div.style.top = this.cellOffsets.y + CURSOR_THICKNESS + 'px';
-      this.editor.updateOptions({ lineHeight: this.cellOffsets.height - CURSOR_THICKNESS * 2 });
-      this.height = this.cellOffsets.height - CURSOR_THICKNESS * 2;
+      this.div.style.top = this.cellOffsets.y + 2 + 'px';
+      this.height = this.cellOffsets.height - 4;
       this.updateSize();
+      this.keepCursorVisible();
       this.editor.focus();
     } else {
       this.div.style.display = 'none';
@@ -93,8 +129,10 @@ class InlineEditorHandler {
 
     this.sizingDiv.innerHTML = ' ' + this.editor.getValue();
     this.width =
-      Math.max(this.cellOffsets.width - CURSOR_THICKNESS * 4, this.sizingDiv.offsetWidth) + CURSOR_THICKNESS * 2;
+      Math.max(this.cellOffsets.width - PADDING_FOR_MIN_WIDTH, this.sizingDiv.offsetWidth) +
+      PADDED_FOR_GROWING_HORIZONTALLY;
     this.editor.layout({ width: this.width, height: this.height });
+    pixiApp.cursor.dirty = true;
   };
 
   private keyDown = (e: monaco.IKeyboardEvent) => {
@@ -149,12 +187,15 @@ class InlineEditorHandler {
       lineDecorationsWidth: 0,
       folding: false,
       fixedOverflowWidgets: true,
+      revealHorizontalRightPadding: 0,
       disableMonospaceOptimizations: true,
       roundedSelection: false,
       contextmenu: false,
       links: false,
       minimap: { enabled: false },
       overviewRulerLanes: 0,
+      cursorWidth: CURSOR_THICKNESS,
+      padding: { top: 0, bottom: 0 },
       hideCursorInOverviewRuler: true,
       overviewRulerBorder: false,
       wordWrap: 'off',
@@ -166,6 +207,7 @@ class InlineEditorHandler {
         seedSearchStringFromSelection: 'never',
       },
       fontSize: 14,
+      lineHeight: 15,
       fontFamily: 'OpenSans',
       fontWeight: 'normal',
       lineNumbers: 'off',
@@ -186,6 +228,7 @@ class InlineEditorHandler {
 
     this.editor.onDidChangeCursorPosition(this.updateSize);
     this.editor.onKeyDown(this.keyDown);
+    this.editor.onDidChangeCursorPosition(this.keepCursorVisible);
   }
 }
 
