@@ -1,3 +1,4 @@
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Graphics, Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
@@ -145,9 +146,10 @@ export class Cursor extends Graphics {
       // have cursor color match code editor mode
       let color = colors.cursorCell;
       if (
-        editorInteractionState.showCodeEditor &&
-        editor_selected_cell.x === cell.x &&
-        editor_selected_cell.y === cell.y
+        inlineEditorHandler.getShowing(cell.x, cell.y) ||
+        (editorInteractionState.showCodeEditor &&
+          editor_selected_cell.x === cell.x &&
+          editor_selected_cell.y === cell.y)
       )
         color =
           editorInteractionState.mode === 'Python'
@@ -160,22 +162,32 @@ export class Cursor extends Graphics {
   }
 
   private drawCodeCursor(): void {
-    const { editorInteractionState } = pixiAppSettings;
-    if (!editorInteractionState.showCodeEditor || sheets.sheet.id !== editorInteractionState.selectedCellSheet) return;
-    const cell = editorInteractionState.selectedCell;
-    const { x, y, width, height } = sheets.sheet.getCellOffsets(cell.x, cell.y);
-    const color =
-      editorInteractionState.mode === 'Python'
-        ? colors.cellColorUserPython
-        : editorInteractionState.mode === 'Formula'
-        ? colors.cellColorUserFormula
-        : colors.independence;
+    let color: number | undefined, offsets: { x: number; y: number; width: number; height: number } | undefined;
+    const inlineShowing = inlineEditorHandler.getShowing();
+    if (inlineEditorHandler.formula && inlineShowing && sheets.sheet.id === inlineShowing.sheetId) {
+      color = colors.cellColorUserFormula;
+      offsets = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
+      offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS * 2;
+    } else {
+      const { editorInteractionState } = pixiAppSettings;
+      const cell = editorInteractionState.selectedCell;
+      if (!editorInteractionState.showCodeEditor || sheets.sheet.id !== editorInteractionState.selectedCellSheet)
+        return;
+      offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
+      color =
+        editorInteractionState.mode === 'Python'
+          ? colors.cellColorUserPython
+          : editorInteractionState.mode === 'Formula'
+          ? colors.cellColorUserFormula
+          : colors.independence;
+    }
+    if (!color || !offsets) return;
     this.lineStyle({
       width: CURSOR_THICKNESS * 1.5,
       color,
       alignment: 0.5,
     });
-    this.drawRect(x, y, width, height);
+    this.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
   }
 
   private drawEditorHighlightedCells(): void {

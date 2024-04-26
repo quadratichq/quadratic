@@ -95,7 +95,7 @@ export async function keyboardCell(options: {
     event.preventDefault();
   }
 
-  if (event.key === '/' || event.key === '=') {
+  if (event.key === '/') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
     const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);

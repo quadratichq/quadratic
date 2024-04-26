@@ -28,7 +28,7 @@ const PADDING_FOR_GROWING_HORIZONTALLY = 20;
 
 // Pixels needed when for minWidth to avoid monaco from scrolling the text
 // (determined by experimentation).
-const PADDING_FOR_MIN_WIDTH = 30;
+// const PADDING_FOR_MIN_WIDTH = 30;
 
 // Minimum amount to scroll viewport when cursor is near the edge.
 const MINIMUM_MOVE_VIEWPORT = 50;
@@ -44,16 +44,16 @@ monaco.editor.defineTheme('inline-editor', theme);
 class InlineEditorHandler {
   private div?: HTMLDivElement;
   private editor?: editor.IStandaloneCodeEditor;
-  private location?: SheetPosTS;
   private cellOffsets?: Rectangle;
-  private width = 0;
   private height = 0;
   private open = false;
 
+  width = 0;
+  location?: SheetPosTS;
+  formula = false;
+
   private temporaryBold = false;
   private temporaryItalic = false;
-
-  private formula = false;
 
   // this is used to calculate the width of the editor
   private sizingDiv: HTMLDivElement;
@@ -73,7 +73,7 @@ class InlineEditorHandler {
   }
 
   private reset() {
-    this.formula = false;
+    this.changeToFormula(false);
     this.temporaryBold = false;
     this.temporaryItalic = false;
     this.width = 0;
@@ -177,9 +177,10 @@ class InlineEditorHandler {
       this.changeToFormula(false);
     }
     this.sizingDiv.innerHTML = ' ' + value;
-    this.width =
-      Math.max(this.cellOffsets.width - PADDING_FOR_MIN_WIDTH, this.sizingDiv.offsetWidth) +
-      PADDING_FOR_GROWING_HORIZONTALLY;
+    this.width = Math.max(
+      this.cellOffsets.width - CURSOR_THICKNESS * 2,
+      this.sizingDiv.offsetWidth + PADDING_FOR_GROWING_HORIZONTALLY
+    );
     this.editor.layout({ width: this.width, height: this.height });
     pixiApp.cursor.dirty = true;
   };
@@ -222,7 +223,6 @@ class InlineEditorHandler {
     if (!this.editor || !this.location) {
       throw new Error('Expected editor and location to be defined in InlineEditorHandler');
     }
-
     const value = this.editor.getValue();
 
     if (!cancel && value.trim()) {
@@ -349,6 +349,13 @@ class InlineEditorHandler {
 
   isEditingFormula() {
     return this.open && this.formula;
+  }
+
+  // This checks whether the inline editor is showing (or showing at a given location)
+  getShowing(x?: number, y?: number): SheetPosTS | undefined {
+    if (this.open && (x === undefined || y === undefined || (this.location?.x === x && this.location.y === y))) {
+      return this.location;
+    }
   }
 }
 
