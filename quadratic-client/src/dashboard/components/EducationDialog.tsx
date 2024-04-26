@@ -9,10 +9,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/shared/shadcn/ui/alert-dialog';
-import { Button } from '@/shared/shadcn/ui/button';
+import { Button, buttonVariants } from '@/shared/shadcn/ui/button';
 import { SchoolOutlined } from '@mui/icons-material';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 type CustomRequest = {
   state: 'idle' | 'loading' | 'error';
@@ -96,19 +97,13 @@ export function EducationDialog({
             </div>
             <AlertDialogTitle>Enrolled in Quadratic for Education</AlertDialogTitle>
             <AlertDialogDescription>
-              Your account uses a school email which qualifies you for{' '}
-              <a
-                href={QUADRATIC_FOR_EDUCATION}
-                target="_blank"
-                rel="noreferrer"
-                className="underline hover:text-primary"
-              >
-                the education plan
-              </a>{' '}
-              where students, teachers, and researchers get free access.
+              You’re using a school email. Students, teachers, and researchers get free access to Quadratic.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="justify-center text-center sm:justify-center">
+            <Link to={QUADRATIC_FOR_EDUCATION} target="_blank" className={buttonVariants({ variant: 'outline' })}>
+              Learn more
+            </Link>
             <Button onClick={handleClose}>Ok, thanks</Button>
           </AlertDialogFooter>
         </AlertDialogContent>
