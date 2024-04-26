@@ -70,7 +70,7 @@ export default function QuadraticUI() {
           <QuadraticGrid />
           {!presentationMode && <SheetBar />}
         </FileUploadWrapper>
-        {editorInteractionState.showCodeEditor && !editorInteractionState.inlineEditor && <CodeEditor />}
+        {editorInteractionState.showCodeEditor && <CodeEditor />}
         <Following follow={follow} />
         <div
           style={{

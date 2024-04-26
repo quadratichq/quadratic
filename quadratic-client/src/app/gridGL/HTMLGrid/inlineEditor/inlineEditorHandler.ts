@@ -61,7 +61,7 @@ class InlineEditorHandler {
   private sizingDiv: HTMLDivElement;
 
   // this is used to display the formula expand button
-  private formulaExpandDiv?: HTMLDivElement;
+  private formulaExpandButton?: HTMLDivElement;
 
   constructor() {
     events.on('changeInput', this.changeInput);
@@ -139,7 +139,6 @@ class InlineEditorHandler {
       } else {
         const formula = await quadraticCore.getCodeCell(sheets.sheet.id, this.location.x, this.location.y);
         if (formula?.language === 'Formula') {
-          this.formula = true;
           value = '=' + formula.code_string;
           const model = this.editor.getModel();
           if (!model) {
@@ -161,11 +160,11 @@ class InlineEditorHandler {
       this.div.style.left = this.cellOffsets.x + CURSOR_THICKNESS + 'px';
       this.div.style.top = this.cellOffsets.y + 2 + 'px';
       this.height = this.cellOffsets.height - 4;
-      if (!this.formulaExpandDiv) {
+      if (!this.formulaExpandButton) {
         throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
       }
-      this.formulaExpandDiv.style.height = this.height + 'px';
-      this.formulaExpandDiv.style.lineHeight = this.height + 'px';
+      this.formulaExpandButton.style.height = this.height + 'px';
+      this.formulaExpandButton.style.lineHeight = this.height + 'px';
       this.editor.setPosition({ lineNumber: 1, column: value.length + 1 });
       this.keepCursorVisible();
       this.editor.focus();
@@ -207,7 +206,7 @@ class InlineEditorHandler {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in InlineEditorHandler');
     }
-    if (!this.formulaExpandDiv) {
+    if (!this.formulaExpandButton) {
       throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
     }
     this.formula = formula;
@@ -223,7 +222,7 @@ class InlineEditorHandler {
     } else {
       editor.setModelLanguage(model, 'plaintext');
     }
-    this.formulaExpandDiv.style.display = formula ? 'block' : 'none';
+    this.formulaExpandButton.style.display = formula ? 'block' : 'none';
     if (!this.location) {
       throw new Error('Expected model to be defined in changeToFormula');
     }
@@ -296,6 +295,20 @@ class InlineEditorHandler {
   };
 
   private openCodeEditor = (e: MouseEvent) => {
+    if (!pixiAppSettings.setEditorInteractionState) {
+      throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
+    }
+    if (!this.location) {
+      throw new Error('Expected location to be defined in openCodeEditor');
+    }
+    pixiAppSettings.setEditorInteractionState({
+      ...pixiAppSettings.editorInteractionState,
+      mode: 'Formula',
+      selectedCell: { x: this.location.x, y: this.location.y },
+      selectedCellSheet: this.location.sheetId,
+      showCodeEditor: true,
+    });
+    this.close(0, 0, true);
     e.stopPropagation();
 
     // todo: open in code editor
@@ -361,8 +374,8 @@ class InlineEditorHandler {
     });
 
     document.body.appendChild(this.sizingDiv);
-    this.formulaExpandDiv = div.childNodes[1]! as HTMLDivElement;
-    this.formulaExpandDiv.addEventListener('click', this.openCodeEditor);
+    this.formulaExpandButton = div.childNodes[1]! as HTMLDivElement;
+    this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
 
     this.editor.onDidChangeCursorPosition(this.updateCursorPosition);
     this.editor.onKeyDown(this.keyDown);

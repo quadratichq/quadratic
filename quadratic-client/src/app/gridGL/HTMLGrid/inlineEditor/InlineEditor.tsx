@@ -14,7 +14,7 @@ export const InlineEditor = () => {
       <div id="cell-edit"></div>
       <Button
         style={{
-          marginLeft: '10px',
+          marginLeft: '8px',
           padding: '0 3px',
           display: 'none',
         }}

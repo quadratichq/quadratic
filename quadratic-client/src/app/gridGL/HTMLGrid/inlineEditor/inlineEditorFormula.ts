@@ -17,7 +17,6 @@ class InlineEditorFormula {
     inlineEditor: editor.IStandaloneCodeEditor
   ) {
     const parsed = (await parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
-
     if (parsed) {
       pixiApp.highlightedCells.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
 
@@ -64,6 +63,9 @@ class InlineEditorFormula {
       } else {
         this.decorations = inlineEditor.createDecorationsCollection(newDecorations);
       }
+    } else {
+      this.decorations?.clear();
+      pixiApp.highlightedCells.clear();
     }
   }
 

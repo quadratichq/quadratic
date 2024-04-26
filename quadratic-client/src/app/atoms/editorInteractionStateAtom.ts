@@ -6,7 +6,6 @@ import { atom } from 'recoil';
 export interface EditorInteractionState {
   showCellTypeMenu: boolean;
   showCodeEditor: boolean;
-  inlineEditor: boolean;
   showCommandPalette: boolean;
   showGoToMenu: boolean;
   showFeedbackMenu: boolean;
@@ -33,7 +32,6 @@ export interface EditorInteractionState {
 export const editorInteractionStateDefault: EditorInteractionState = {
   showCellTypeMenu: false,
   showCodeEditor: false,
-  inlineEditor: false,
   showCommandPalette: false,
   showGoToMenu: false,
   showFeedbackMenu: false,
