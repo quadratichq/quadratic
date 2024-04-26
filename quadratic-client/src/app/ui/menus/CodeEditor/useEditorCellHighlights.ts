@@ -11,7 +11,7 @@ import { ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
 import { StringId, getKey } from '../../../helpers/getKey';
 import { colors } from '../../../theme/colors';
 
-function extractCellsFromParseFormula(
+export function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType,
   cell: Coordinate,
   sheet: string
@@ -41,6 +41,22 @@ function extractCellsFromParseFormula(
 export type CellRefId = StringId | `${StringId}:${StringId}`;
 export type CellMatch = Map<CellRefId, monaco.Range>;
 
+export const createFormulaStyleHighlights = () => {
+  const id = 'useEditorCellHighlights';
+
+  if (!document.querySelector(id)) {
+    const style = document.createElement('style');
+    document.head.appendChild(style);
+    style.id = id;
+    style.type = 'text/css';
+    style.appendChild(
+      document.createTextNode(
+        colors.cellHighlightColor.map((color, i) => `.cell-reference-${i} { color: ${color} !important }`).join('')
+      )
+    );
+  }
+};
+
 export const useEditorCellHighlights = (
   isValidRef: boolean,
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>,
@@ -55,20 +71,7 @@ export const useEditorCellHighlights = (
   // the colors from the same colors used in pixi and stick them in the DOM
   useEffect(() => {
     if (language !== 'Formula') return;
-
-    const id = 'useEditorCellHighlights';
-
-    if (!document.querySelector(id)) {
-      const style = document.createElement('style');
-      document.head.appendChild(style);
-      style.id = id;
-      style.type = 'text/css';
-      style.appendChild(
-        document.createTextNode(
-          colors.cellHighlightColor.map((color, i) => `.cell-reference-${i} { color: ${color} !important }`).join('')
-        )
-      );
-    }
+    createFormulaStyleHighlights();
   }, [language]);
 
   useEffect(() => {

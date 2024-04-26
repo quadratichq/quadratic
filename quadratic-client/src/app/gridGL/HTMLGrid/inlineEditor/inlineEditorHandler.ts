@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
@@ -8,6 +9,7 @@ import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
+import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
@@ -70,6 +72,8 @@ class InlineEditorHandler {
     this.sizingDiv.style.fontFamily = 'OpenSans';
     this.sizingDiv.style.paddingLeft = CURSOR_THICKNESS + 'px';
     this.sizingDiv.style.whiteSpace = 'nowrap';
+
+    createFormulaStyleHighlights();
   }
 
   private reset() {
@@ -137,6 +141,11 @@ class InlineEditorHandler {
         if (formula?.language === 'Formula') {
           this.formula = true;
           value = '=' + formula.code_string;
+          const model = this.editor.getModel();
+          if (!model) {
+            throw new Error('Expected model to be defined in changeInput');
+          }
+          this.changeToFormula(true);
         } else {
           value = (await quadraticCore.getEditCell(sheets.sheet.id, this.location.x, this.location.y)) || '';
         }
@@ -157,7 +166,7 @@ class InlineEditorHandler {
       }
       this.formulaExpandDiv.style.height = this.height + 'px';
       this.formulaExpandDiv.style.lineHeight = this.height + 'px';
-      this.updateCursorPosition();
+      this.editor.setPosition({ lineNumber: 1, column: value.length + 1 });
       this.keepCursorVisible();
       this.editor.focus();
     } else {
@@ -168,7 +177,7 @@ class InlineEditorHandler {
 
   private updateCursorPosition = () => {
     // this will get called upon opening (before variables are set), and after every cursor movement
-    if (!this.div || !this.editor || !this.cellOffsets) return;
+    if (!this.div || !this.editor || !this.cellOffsets || !this.location) return;
 
     const value = this.editor.getValue();
     if (value[0] === '=') {
@@ -183,6 +192,14 @@ class InlineEditorHandler {
     );
     this.editor.layout({ width: this.width, height: this.height });
     pixiApp.cursor.dirty = true;
+
+    if (this.formula) {
+      const model = this.editor.getModel();
+      if (!model) {
+        throw new Error('Expected model to be defined in updateCursorPosition');
+      }
+      inlineEditorFormula.cellHighlights(this.location, value.slice(1), model, this.editor);
+    }
   };
 
   private changeToFormula = (formula: boolean) => {
@@ -207,6 +224,10 @@ class InlineEditorHandler {
       editor.setModelLanguage(model, 'plaintext');
     }
     this.formulaExpandDiv.style.display = formula ? 'block' : 'none';
+    if (!this.location) {
+      throw new Error('Expected model to be defined in changeToFormula');
+    }
+    inlineEditorFormula.cellHighlights(this.location, this.editor.getValue().slice(1), model, this.editor);
   };
 
   private keyDown = (e: monaco.IKeyboardEvent) => {
@@ -217,6 +238,7 @@ class InlineEditorHandler {
       this.close(0, 1, false);
       e.stopPropagation();
     }
+    inlineEditorFormula.clear();
   };
 
   private close = (deltaX = 0, deltaY = 0, cancel: boolean) => {

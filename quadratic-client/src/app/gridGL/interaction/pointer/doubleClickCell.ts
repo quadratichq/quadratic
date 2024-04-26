@@ -20,6 +20,12 @@ export function doubleClickCell(options: {
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
 
   if (mode) {
+    if (mode === 'Formula') {
+      if (hasPermission) {
+        settings.changeInput(true, cell);
+      }
+      return;
+    }
     if (settings.editorInteractionState.showCodeEditor) {
       settings.setEditorInteractionState({
         ...settings.editorInteractionState,
