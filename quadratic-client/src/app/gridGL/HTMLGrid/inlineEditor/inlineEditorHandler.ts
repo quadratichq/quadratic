@@ -181,6 +181,7 @@ class InlineEditorHandler {
       this.formulaExpandButton.style.height = this.height + 'px';
       this.formulaExpandButton.style.lineHeight = this.height + 'px';
       this.editor.setPosition({ lineNumber: 1, column: value.length + 1 });
+      this.updateCursorPosition();
       this.keepCursorVisible();
       this.editor.focus();
     } else {
@@ -199,7 +200,9 @@ class InlineEditorHandler {
     } else if (this.formula && value[0] !== '=') {
       this.changeToFormula(false);
     }
-    this.sizingDiv.innerHTML = ' ' + value;
+
+    // the `X` is important so we get the right height given an empty string
+    this.sizingDiv.innerHTML = 'X' + value;
     this.width = Math.max(
       this.cellOffsets.width - CURSOR_THICKNESS * 2,
       this.sizingDiv.offsetWidth + PADDING_FOR_GROWING_HORIZONTALLY
