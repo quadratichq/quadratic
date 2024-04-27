@@ -51,6 +51,8 @@ class InlineEditorHandler {
   location?: SheetPosTS;
   formula = false;
 
+  cursorIsMoving = false;
+
   private temporaryBold = false;
   private temporaryItalic = false;
 
@@ -80,6 +82,7 @@ class InlineEditorHandler {
     this.width = 0;
     this.height = 0;
     this.open = false;
+    this.cursorIsMoving = false;
   }
 
   getLastColumn(): number {

@@ -1,8 +1,9 @@
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
-export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boolean {
+export function keyboardPosition(event: KeyboardEvent): boolean {
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
 
@@ -272,7 +273,9 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
           },
           keyboardMovePosition: newMovePosition,
         });
-        pixiAppSettings.changeInput(false);
+        if (!inlineEditorHandler.cursorIsMoving) {
+          pixiAppSettings.changeInput(false);
+        }
       }
       // we are creating a new multiCursor
       else {
@@ -289,7 +292,9 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
           },
           keyboardMovePosition: newMovePosition,
         });
-        pixiAppSettings.changeInput(false);
+        if (!inlineEditorHandler.cursorIsMoving) {
+          pixiAppSettings.changeInput(false);
+        }
       }
     }
     // move arrow normally

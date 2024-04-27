@@ -2,6 +2,7 @@ import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '@/app/act
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { copySelectionToPNG, fullClipboardSupport, pasteFromClipboard } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -122,6 +123,9 @@ export const FloatingContextMenu = (props: Props) => {
     if (cursor.boxCells) {
       visibility = 'hidden';
     }
+
+    // hide if inline Formula editor is keyboard selecting cells
+    if (inlineEditorHandler.cursorIsMoving) visibility = 'hidden';
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
     if (!(cursor.multiCursor || showContextMenu)) visibility = 'hidden';
