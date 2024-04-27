@@ -292,6 +292,9 @@ class InlineEditorHandler {
       }
     }
 
+    pixiAppSettings.changeInput(false);
+    this.reset();
+
     // Update Grid Interaction state, reset input value state
     const position = sheets.sheet.cursor.cursorPosition;
     sheets.sheet.cursor.changePosition({
@@ -300,9 +303,6 @@ class InlineEditorHandler {
         y: position.y + deltaY,
       },
     });
-
-    this.reset();
-    pixiAppSettings.changeInput(false);
 
     // Set focus back to Grid
     focusGrid();

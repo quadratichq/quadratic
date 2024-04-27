@@ -369,8 +369,6 @@ export class PixiApp {
       this.cellsSheets.updateCellsArray();
     }
     if (options.ensureVisible) ensureVisible();
-
-    // triggers useGetBorderMenu clearSelection()
     events.emit('cursorPosition');
   }
 

@@ -101,6 +101,10 @@ class InlineEditorFormula {
     this.insertingCells = { value, position: column };
   }
 
+  addInsertingCells(position: number) {
+    this.insertingCells = { value: '', position };
+  }
+
   private cursorMoved = () => {
     if (inlineEditorHandler.isEditingFormula()) {
       const cursor = sheets.sheet.cursor;
