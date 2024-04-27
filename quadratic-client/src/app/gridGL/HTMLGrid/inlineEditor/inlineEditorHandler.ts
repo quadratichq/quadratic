@@ -28,10 +28,6 @@ window.MonacoEnvironment = {
 // (determined by experimentation).
 const PADDING_FOR_GROWING_HORIZONTALLY = 20;
 
-// Pixels needed when for minWidth to avoid monaco from scrolling the text
-// (determined by experimentation).
-// const PADDING_FOR_MIN_WIDTH = 30;
-
 // Minimum amount to scroll viewport when cursor is near the edge.
 const MINIMUM_MOVE_VIEWPORT = 50;
 
