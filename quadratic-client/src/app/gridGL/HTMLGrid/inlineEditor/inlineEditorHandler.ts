@@ -83,6 +83,8 @@ class InlineEditorHandler {
     this.height = 0;
     this.open = false;
     this.cursorIsMoving = false;
+    inlineEditorKeyboard.resetKeyboardPosition();
+    inlineEditorFormula.clearDecorations();
   }
 
   getLastColumn(): number {
@@ -247,7 +249,9 @@ class InlineEditorHandler {
     if (!this.location) {
       throw new Error('Expected model to be defined in changeToFormula');
     }
-    inlineEditorFormula.cellHighlights(this.location, this.editor.getValue().slice(1), model, this.editor);
+    if (formula) {
+      inlineEditorFormula.cellHighlights(this.location, this.editor.getValue().slice(1), model, this.editor);
+    }
   };
 
   close = (deltaX = 0, deltaY = 0, cancel: boolean) => {

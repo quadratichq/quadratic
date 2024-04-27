@@ -14,7 +14,10 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
     });
   };
 
-  // todo: these checks should be a single call within Rust instead of having TS handle the logic (this will reduce the number of calls into quadraticCore)
+  // todo: these checks should be a single call within Rust instead of having TS
+  // handle the logic (this will reduce the number of calls into quadraticCore)
+  // todo: clean up this function by breaking it up into separate
+  // functions!
   const moveCursor = async (deltaX: number, deltaY: number) => {
     // movePosition is either originPosition or terminalPosition (whichever !== cursorPosition)
     const downPosition = cursor.cursorPosition;

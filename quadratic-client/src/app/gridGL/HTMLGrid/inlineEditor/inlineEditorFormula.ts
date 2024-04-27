@@ -83,7 +83,7 @@ class InlineEditorFormula {
     pixiApp.highlightedCells.clear();
   }
 
-  private removeInsertingCells() {
+  removeInsertingCells() {
     if (!this.insertingCells) return;
     const { value, position } = this.insertingCells;
     const model = inlineEditorHandler.getModel();

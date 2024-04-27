@@ -1,3 +1,5 @@
+import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import * as monaco from 'monaco-editor';
@@ -5,7 +7,13 @@ import * as monaco from 'monaco-editor';
 class InlineEditorKeyboard {
   keyDown = (e: monaco.IKeyboardEvent) => {
     if (e.code === 'Escape') {
-      inlineEditorHandler.close(0, 0, true);
+      if (inlineEditorHandler.cursorIsMoving) {
+        inlineEditorHandler.cursorIsMoving = false;
+        inlineEditorFormula.removeInsertingCells();
+        this.resetKeyboardPosition();
+      } else {
+        inlineEditorHandler.close(0, 0, true);
+      }
       e.stopPropagation();
     } else if (e.code === 'Enter') {
       inlineEditorHandler.close(0, 1, false);
@@ -46,6 +54,24 @@ class InlineEditorKeyboard {
       e.stopPropagation();
     }
   };
+
+  resetKeyboardPosition() {
+    const location = inlineEditorHandler.location;
+    if (!location) return;
+
+    inlineEditorHandler.cursorIsMoving = false;
+    const sheetId = location.sheetId;
+    const position = { x: location.x, y: location.y };
+    if (sheets.sheet.id !== sheetId) {
+      sheets.current = sheetId;
+    }
+    sheets.sheet.cursor.changePosition({
+      cursorPosition: position,
+      multiCursor: undefined,
+      keyboardMovePosition: position,
+      ensureVisible: true,
+    });
+  }
 }
 
 export const inlineEditorKeyboard = new InlineEditorKeyboard();
