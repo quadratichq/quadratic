@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
+import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
@@ -79,6 +80,24 @@ class InlineEditorHandler {
     this.width = 0;
     this.height = 0;
     this.open = false;
+  }
+
+  getLastColumn(): number {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getLastColumn');
+    }
+    return this.editor.getValue().length + 1;
+  }
+
+  getCursorColumn(): number {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getCursorColumn');
+    }
+    const editorPosition = this.editor.getPosition();
+    if (!editorPosition) {
+      throw new Error('Expected editorPosition to be defined in getCursorColumn');
+    }
+    return editorPosition.column;
   }
 
   // viewport should try to keep the cursor in view
@@ -225,18 +244,7 @@ class InlineEditorHandler {
     inlineEditorFormula.cellHighlights(this.location, this.editor.getValue().slice(1), model, this.editor);
   };
 
-  private keyDown = (e: monaco.IKeyboardEvent) => {
-    if (e.code === 'Escape') {
-      this.close(0, 0, true);
-      e.stopPropagation();
-    } else if (e.code === 'Enter') {
-      this.close(0, 1, false);
-      e.stopPropagation();
-    }
-    inlineEditorFormula.clear();
-  };
-
-  private close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
+  close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
     if (!this.editor || !this.location) {
       throw new Error('Expected editor and location to be defined in InlineEditorHandler');
     }
@@ -374,7 +382,7 @@ class InlineEditorHandler {
     this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
 
     this.editor.onDidChangeCursorPosition(this.updateCursorPosition);
-    this.editor.onKeyDown(this.keyDown);
+    this.editor.onKeyDown(inlineEditorKeyboard.keyDown);
     this.editor.onDidChangeCursorPosition(this.keepCursorVisible);
   }
 
@@ -387,6 +395,14 @@ class InlineEditorHandler {
     if (this.open && (x === undefined || y === undefined || (this.location?.x === x && this.location.y === y))) {
       return this.location;
     }
+  }
+
+  getModel(): editor.ITextModel {
+    const model = this.editor?.getModel();
+    if (!model) {
+      throw new Error('Expected model to be defined in getModel');
+    }
+    return model;
   }
 }
 

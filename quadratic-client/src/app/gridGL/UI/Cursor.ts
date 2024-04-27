@@ -241,7 +241,9 @@ export class Cursor extends Graphics {
     if (this.dirty) {
       this.dirty = false;
       this.clear();
-      this.drawCursor();
+      if (!inlineEditorHandler.isEditingFormula()) {
+        this.drawCursor();
+      }
       this.drawCodeCursor();
       this.drawEditorHighlightedCells();
 
