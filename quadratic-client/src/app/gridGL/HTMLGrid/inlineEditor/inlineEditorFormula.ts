@@ -89,6 +89,7 @@ class InlineEditorFormula {
     const model = inlineEditorHandler.getModel();
     const range = new monaco.Range(1, position, 1, position + value.length);
     model.applyEdits([{ range, text: '' }]);
+    this.insertingCells = undefined;
   }
 
   private insertInsertingCells(a1Notation: string) {
@@ -99,14 +100,19 @@ class InlineEditorFormula {
     const range = new monaco.Range(1, column, 1, column);
     model.applyEdits([{ range, text: value }]);
     this.insertingCells = { value, position: column };
+    inlineEditorHandler.setColumn(column + value.length);
   }
 
   addInsertingCells(position: number) {
     this.insertingCells = { value: '', position };
   }
 
+  endInsertingCells() {
+    this.insertingCells = undefined;
+  }
+
   private cursorMoved = () => {
-    if (inlineEditorHandler.isEditingFormula()) {
+    if (inlineEditorHandler.isEditingFormula() && inlineEditorHandler.cursorIsMoving) {
       const cursor = sheets.sheet.cursor;
       if (cursor.multiCursor) {
         const startLocation = cursor.multiCursor.originPosition;

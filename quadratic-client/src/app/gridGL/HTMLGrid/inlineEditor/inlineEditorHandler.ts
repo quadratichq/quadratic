@@ -139,6 +139,14 @@ class InlineEditorHandler {
     }
   };
 
+  // Changes the column of the cursor in the inline editor
+  setColumn(column: number) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setColumn');
+    }
+    this.editor.setPosition({ lineNumber: 1, column });
+  }
+
   private changeInput = async (input: boolean, initialValue?: string) => {
     if (!this.div || !this.editor) {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
@@ -171,7 +179,7 @@ class InlineEditorHandler {
       }
       this.editor.setValue(value);
       if (initialValue) {
-        this.editor.setPosition({ lineNumber: 1, column: initialValue.length + 1 });
+        this.setColumn(initialValue.length + 1);
       }
       const format = await quadraticCore.getCellFormatSummary(sheets.sheet.id, this.location.x, this.location.y);
       theme.colors['editor.background'] = format.fillColor ? convertColorStringToHex(format.fillColor) : '#ffffff';
@@ -185,7 +193,7 @@ class InlineEditorHandler {
       }
       this.formulaExpandButton.style.height = this.height + 'px';
       this.formulaExpandButton.style.lineHeight = this.height + 'px';
-      this.editor.setPosition({ lineNumber: 1, column: value.length + 1 });
+      this.setColumn(value.length + 1);
       this.updateCursorPosition();
       this.keepCursorVisible();
       this.editor.focus();

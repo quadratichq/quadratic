@@ -1,3 +1,6 @@
+// This handles the keyboard events for the inline editor. In particular, it
+// handles when the cursorIsMoving outside of the inline formula edit box.
+
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
@@ -5,7 +8,9 @@ import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosi
 import * as monaco from 'monaco-editor';
 
 class InlineEditorKeyboard {
+  // Keyboard event for inline editor
   keyDown = (e: monaco.IKeyboardEvent) => {
+    // Escape key
     if (e.code === 'Escape') {
       if (inlineEditorHandler.cursorIsMoving) {
         inlineEditorHandler.cursorIsMoving = false;
@@ -15,16 +20,25 @@ class InlineEditorKeyboard {
         inlineEditorHandler.close(0, 0, true);
       }
       e.stopPropagation();
-    } else if (e.code === 'Enter') {
+    }
+
+    // Enter key
+    else if (e.code === 'Enter') {
       inlineEditorHandler.close(0, 1, false);
       e.stopPropagation();
-    } else if (e.code === 'ArrowRight') {
+    }
+
+    // Horizontal arrow keys
+    else if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
+      const isRight = e.code === 'ArrowRight';
+      const target = isRight ? inlineEditorHandler.getLastColumn() : 1;
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
           keyboardPosition(e.browserEvent);
+          e.stopPropagation();
         } else {
           const column = inlineEditorHandler.getCursorColumn();
-          if (column === inlineEditorHandler.getLastColumn()) {
+          if (column === target) {
             inlineEditorHandler.cursorIsMoving = true;
             inlineEditorFormula.addInsertingCells(column);
             keyboardPosition(e.browserEvent);
@@ -33,32 +47,33 @@ class InlineEditorKeyboard {
         }
       } else {
         const column = inlineEditorHandler.getCursorColumn();
-        if (column === inlineEditorHandler.getLastColumn()) {
-          inlineEditorHandler.close(1, 0, false);
+        if (column === target) {
+          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
           e.stopPropagation();
         }
       }
-    } else if (e.code === 'ArrowLeft') {
-      if (inlineEditorHandler.isEditingFormula()) {
-        if (inlineEditorHandler.cursorIsMoving) {
-          keyboardPosition(e.browserEvent);
-        } else {
-          const column = inlineEditorHandler.getCursorColumn();
-          if (column === 0) {
-            inlineEditorHandler.cursorIsMoving = true;
-            inlineEditorFormula.addInsertingCells(0);
-            keyboardPosition(e.browserEvent);
-            e.stopPropagation();
-          }
-        }
-      } else {
-        const column = inlineEditorHandler.getCursorColumn();
-        if (column === 0) {
-          inlineEditorHandler.close(-1, 0, false);
-          e.stopPropagation();
-        }
+    }
+
+    // handle ShiftKey when cursorIsMoving (do nothing or it adds additional references)
+    else if (e.code.includes('Shift')) {
+      if (inlineEditorHandler.cursorIsMoving) {
+        e.stopPropagation();
       }
-    } else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
+    }
+
+    // Backspace key cancels cursorIsMoving and removes any inserted cells.
+    else if (e.code === 'Backspace') {
+      if (inlineEditorHandler.cursorIsMoving) {
+        inlineEditorFormula.removeInsertingCells();
+        inlineEditorFormula.endInsertingCells();
+        this.resetKeyboardPosition();
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    }
+
+    // Vertical arrow keys
+    else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
           keyboardPosition(e.browserEvent);
@@ -79,8 +94,18 @@ class InlineEditorKeyboard {
         e.stopPropagation();
       }
     }
+
+    // Fallback for all other keys (used to end cursorIsMoving and return
+    // control to the formula box)
+    else {
+      if (inlineEditorHandler.cursorIsMoving) {
+        inlineEditorFormula.endInsertingCells();
+        this.resetKeyboardPosition();
+      }
+    }
   };
 
+  // Resets the keyboard position after cursorIsMoving has ended.
   resetKeyboardPosition() {
     const location = inlineEditorHandler.location;
     if (!location) return;
