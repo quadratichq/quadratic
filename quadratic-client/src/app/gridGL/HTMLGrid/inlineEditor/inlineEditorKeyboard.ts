@@ -4,6 +4,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import * as monaco from 'monaco-editor';
 
@@ -31,13 +32,13 @@ class InlineEditorKeyboard {
     // Horizontal arrow keys
     else if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
       const isRight = e.code === 'ArrowRight';
-      const target = isRight ? inlineEditorHandler.getLastColumn() : 1;
+      const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
           keyboardPosition(e.browserEvent);
           e.stopPropagation();
         } else {
-          const column = inlineEditorHandler.getCursorColumn();
+          const column = inlineEditorMonaco.getCursorColumn();
           if (column === target) {
             inlineEditorHandler.cursorIsMoving = true;
             inlineEditorFormula.addInsertingCells(column);
@@ -46,7 +47,7 @@ class InlineEditorKeyboard {
           }
         }
       } else {
-        const column = inlineEditorHandler.getCursorColumn();
+        const column = inlineEditorMonaco.getCursorColumn();
         if (column === target) {
           inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
           e.stopPropagation();
@@ -83,7 +84,7 @@ class InlineEditorKeyboard {
           if (!location) {
             throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');
           }
-          const column = inlineEditorHandler.getCursorColumn();
+          const column = inlineEditorMonaco.getCursorColumn();
           inlineEditorFormula.addInsertingCells(column);
           inlineEditorHandler.cursorIsMoving = true;
           keyboardPosition(e.browserEvent);

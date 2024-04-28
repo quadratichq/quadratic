@@ -1,6 +1,10 @@
+// This handles the cell highlighting and inserting of cells when editing a
+// formula in the inline editor.
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
@@ -19,12 +23,7 @@ class InlineEditorFormula {
     events.on('cursorPosition', this.cursorMoved);
   }
 
-  async cellHighlights(
-    location: SheetPosTS,
-    formula: string,
-    model: editor.ITextModel,
-    inlineEditor: editor.IStandaloneCodeEditor
-  ) {
+  async cellHighlights(location: SheetPosTS, formula: string) {
     const parsed = (await parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
     if (parsed) {
       pixiApp.highlightedCells.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
@@ -35,7 +34,7 @@ class InlineEditorFormula {
 
       extractedCells.forEach((value, index) => {
         const { cellId, span } = value;
-        const startPosition = model.getPositionAt(span.start);
+        const startPosition = inlineEditorMonaco.getSpanPosition(span.start);
 
         const cellColor =
           cellColorReferences.get(cellId) ?? cellColorReferences.size % colors.cellHighlightColor.length;
@@ -58,7 +57,7 @@ class InlineEditorFormula {
           },
         });
 
-        const editorCursorPosition = inlineEditor.getPosition();
+        const editorCursorPosition = inlineEditorMonaco.getPosition();
 
         if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
           pixiApp.highlightedCells.setHighlightedCell(index);
@@ -70,7 +69,7 @@ class InlineEditorFormula {
         this.decorations.clear();
         this.decorations.set(newDecorations);
       } else {
-        this.decorations = inlineEditor.createDecorationsCollection(newDecorations);
+        this.decorations = inlineEditorMonaco.createDecorationsCollection(newDecorations);
       }
     } else {
       this.decorations?.clear();
@@ -86,21 +85,14 @@ class InlineEditorFormula {
   removeInsertingCells() {
     if (!this.insertingCells) return;
     const { value, position } = this.insertingCells;
-    const model = inlineEditorHandler.getModel();
-    const range = new monaco.Range(1, position, 1, position + value.length);
-    model.applyEdits([{ range, text: '' }]);
+    inlineEditorMonaco.deleteText(position, value.length);
     this.insertingCells = undefined;
   }
 
   private insertInsertingCells(a1Notation: string) {
     this.removeInsertingCells();
-    const model = inlineEditorHandler.getModel();
-    const column = inlineEditorHandler.getCursorColumn();
-    const value = a1Notation;
-    const range = new monaco.Range(1, column, 1, column);
-    model.applyEdits([{ range, text: value }]);
-    this.insertingCells = { value, position: column };
-    inlineEditorHandler.setColumn(column + value.length);
+    const position = inlineEditorMonaco.insertTextAtCursor(a1Notation);
+    this.insertingCells = { value: a1Notation, position };
   }
 
   addInsertingCells(position: number) {
