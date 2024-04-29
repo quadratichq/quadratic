@@ -64,7 +64,6 @@ export class PointerDown {
           const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
           doubleClickCell({ column, row, cell });
         }
-
         this.active = false;
         event.preventDefault();
         return;

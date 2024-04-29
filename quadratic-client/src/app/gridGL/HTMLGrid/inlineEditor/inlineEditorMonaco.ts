@@ -1,4 +1,4 @@
-// This is an abstraction of the Monaco Editor for use with the inline editor.
+//! This is an abstraction of the Monaco Editor for use with the inline editor.
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
@@ -17,6 +17,8 @@ const theme: editor.IStandaloneThemeData = {
 };
 monaco.editor.defineTheme('inline-editor', theme);
 
+// We are only defining the worker for the editor itself. We may need other
+// types down the road, however.
 window.MonacoEnvironment = {
   getWorker(_, label) {
     return new editorWorker();
@@ -25,6 +27,19 @@ window.MonacoEnvironment = {
 
 class InlineEditorMonaco {
   private editor?: editor.IStandaloneCodeEditor;
+
+  // Helper function to get the model without having to check if editor or model
+  // is defined.
+  private getModel(): editor.ITextModel {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in getModel');
+    }
+    const model = this.editor.getModel();
+    if (!model) {
+      throw new Error('Expected model to be defined in getModel');
+    }
+    return model;
+  }
 
   // Gets the value of the inline editor.
   get(): string {
@@ -79,17 +94,6 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in setColumn');
     }
     this.editor.setPosition({ lineNumber: 1, column });
-  }
-
-  private getModel(): editor.ITextModel {
-    if (!this.editor) {
-      throw new Error('Expected editor to be defined in getModel');
-    }
-    const model = this.editor.getModel();
-    if (!model) {
-      throw new Error('Expected model to be defined in getModel');
-    }
-    return model;
   }
 
   // Inserts text at cursor location and returns inserting position.

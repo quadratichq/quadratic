@@ -1,3 +1,7 @@
+//! This is the React component that holds the inline editor and the (optional)
+//! button that opens the full-sized code editor. All functionality is defined
+//! in inlineEditorHandler.ts.
+
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
@@ -8,8 +12,6 @@ export const InlineEditor = () => {
   const ref = useCallback((div: HTMLDivElement) => {
     inlineEditorHandler.attach(div);
   }, []);
-
-  // Note: <Button>'s event handler is defined in inlineEditorHandler.
 
   return (
     <div ref={ref} style={{ position: 'absolute', display: 'flex', pointerEvents: 'auto', alignItems: 'center' }}>

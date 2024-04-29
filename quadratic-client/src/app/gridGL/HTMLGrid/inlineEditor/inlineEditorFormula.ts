@@ -1,5 +1,5 @@
-// This handles the cell highlighting and inserting of cells when editing a
-// formula in the inline editor.
+//! This handles the cell highlighting and inserting of cells when editing a
+//! formula in the inline editor.
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';

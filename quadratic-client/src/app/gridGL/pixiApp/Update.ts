@@ -90,7 +90,8 @@ export class Update {
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
       pixiApp.multiplayerCursor.dirty ||
-      pixiApp.cursor.dirty;
+      pixiApp.cursor.dirty ||
+      pixiApp.cellHighlights.isDirty();
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
@@ -113,6 +114,8 @@ export class Update {
     debugTimeCheck('[Update] boxCells');
     pixiApp.cursor.update();
     debugTimeCheck('[Update] cursor');
+    pixiApp.cellHighlights.update();
+    debugTimeCheck('[Update] cellHighlights');
     pixiApp.multiplayerCursor.update();
     debugTimeCheck('[Update] multiplayerCursor');
 

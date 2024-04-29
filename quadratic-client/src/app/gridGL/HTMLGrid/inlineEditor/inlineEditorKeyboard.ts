@@ -1,5 +1,5 @@
-// This handles the keyboard events for the inline editor. In particular, it
-// handles when the cursorIsMoving outside of the inline formula edit box.
+//! This handles the keyboard events for the inline editor. In particular, it
+//! handles when the cursorIsMoving outside of the inline formula edit box.
 
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';

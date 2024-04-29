@@ -1,6 +1,6 @@
-// This replaces CellInput.tsx as the inline cell editor for the grid. It uses
-// Monaco Editor to enable proper Formula editor with syntax highlighting and
-// completion.
+//! This replaces CellInput.tsx as the inline cell editor for the grid. It uses
+//! Monaco Editor to enable proper Formula editor with syntax highlighting and
+//! completion.
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -61,6 +61,7 @@ class InlineEditorHandler {
     createFormulaStyleHighlights();
   }
 
+  // Resets state after editing is complete.
   private reset() {
     this.changeToFormula(false);
     this.temporaryBold = false;
@@ -100,6 +101,7 @@ class InlineEditorHandler {
     }
   };
 
+  // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string) => {
     if (!this.div) {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
@@ -175,9 +177,11 @@ class InlineEditorHandler {
 
     if (this.formula) {
       inlineEditorFormula.cellHighlights(this.location, value.slice(1));
+      pixiApp.cellHighlights.dirty = true;
     }
   };
 
+  // Toggle between normal editor and formula editor.
   private changeToFormula = (formula: boolean) => {
     if (this.formula === formula) return;
     if (!this.formulaExpandButton) {
@@ -201,6 +205,8 @@ class InlineEditorHandler {
     }
   };
 
+  // Close editor. It saves the value if cancel = false. It also moves the
+  // cursor by (deltaX, deltaY).
   close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
@@ -255,6 +261,7 @@ class InlineEditorHandler {
     focusGrid();
   };
 
+  // Handler for the click for the expand code editor button.
   private openCodeEditor = (e: MouseEvent) => {
     if (!pixiAppSettings.setEditorInteractionState) {
       throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
@@ -275,6 +282,7 @@ class InlineEditorHandler {
     // todo: open in code editor
   };
 
+  // Attaches the inline editor to a div created by React in InlineEditor.tsx
   attach(div: HTMLDivElement) {
     if (this.div) throw new Error('Inline editor already attached');
     div.style.display = 'none';
@@ -287,6 +295,7 @@ class InlineEditorHandler {
     this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
   }
 
+  // Returns whether we are editing a formula.
   isEditingFormula() {
     return this.open && this.formula;
   }

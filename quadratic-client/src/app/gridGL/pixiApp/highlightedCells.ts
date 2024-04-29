@@ -26,7 +26,7 @@ export class HighlightedCells {
   clear() {
     this.highlightedCells.clear();
     this.highlightedCellIndex = undefined;
-    pixiApp.cursor.dirty = true;
+    pixiApp.cellHighlights.dirty = true;
   }
 
   private getSheet(cellSheet: string | undefined, sheetId: string): string {
@@ -92,15 +92,21 @@ export class HighlightedCells {
           throw new Error('Unsupported cell-ref in fromFormula');
       }
     });
-    pixiApp.cursor.dirty = true;
+    pixiApp.cellHighlights.dirty = true;
   }
 
   setHighlightedCell(index: number) {
     this.highlightedCellIndex = this.getHighlightedCells().findIndex((cell) => cell.index === index);
-    pixiApp.cursor.dirty = true;
+    pixiApp.cellHighlights.dirty = true;
   }
 
   getHighlightedCells(): HighlightedCellRange[] {
     return Array.from(this.highlightedCells.values()).filter((cell) => cell.sheet === sheets.sheet.id);
+  }
+
+  getSelectedHighlightedCell(): { cell: HighlightedCellRange; index: number } | undefined {
+    if (!this.highlightedCellIndex) return undefined;
+
+    return { cell: this.getHighlightedCells()[this.highlightedCellIndex], index: this.highlightedCellIndex };
   }
 }

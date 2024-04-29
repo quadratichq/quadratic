@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { CellHighlights } from '@/app/gridGL/UI/CellHighlights';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -44,12 +45,16 @@ export class PixiApp {
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
 
+  // this holds the data for CellHighlights (todo: might want to rethink this
+  // approach since it's confusing)
   highlightedCells = new HighlightedCells();
+
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
   gridLines!: GridLines;
   axesLines!: AxesLines;
   cursor!: Cursor;
+  cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
   headings!: GridHeadings;
   boxCells!: BoxCells;
@@ -170,6 +175,7 @@ export class PixiApp {
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
+    this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
     this.reset();
@@ -204,6 +210,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
     sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
     multiplayer.sendViewport(this.saveMultiplayerViewport());
@@ -240,6 +247,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
   };
 
   // called before and after a render
@@ -247,6 +255,7 @@ export class PixiApp {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
+    this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
     this.headings.visible = false;
     this.boxCells.visible = false;
@@ -262,6 +271,7 @@ export class PixiApp {
     this.gridLines.visible = true;
     this.axesLines.visible = true;
     this.cursor.visible = true;
+    this.cellHighlights.visible = true;
     this.multiplayerCursor.visible = true;
     this.headings.visible = true;
     this.boxCells.visible = true;
@@ -298,6 +308,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.multiplayerCursor.dirty = true;
     this.boxCells.reset();
     this.paused = false;
@@ -364,6 +375,7 @@ export class PixiApp {
     }
   ): void {
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.headings.dirty = true;
     if (!pixiAppSettings.showCellTypeOutlines) {
       this.cellsSheets.updateCellsArray();
@@ -379,6 +391,7 @@ export class PixiApp {
     if (sheets.sheet.id === options.sheetId) {
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
+      this.cellHighlights.dirty = true;
       pixiApp.headings.dirty = true;
       this.multiplayerCursor.dirty = true;
     }

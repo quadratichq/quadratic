@@ -2,21 +2,20 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { Graphics, Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
-import { convertColorStringToTint } from '../../helpers/convertColor';
 import { colors } from '../../theme/colors';
-import { dashedTextures } from '../dashedTextures';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 
 export const CURSOR_THICKNESS = 2;
-const FILL_ALPHA = 0.1;
+export const FILL_ALPHA = 0.1;
+
 const INDICATOR_SIZE = 8;
 const INDICATOR_PADDING = 1;
 const HIDE_INDICATORS_BELOW_SCALE = 0.1;
-const NUM_OF_CELL_REF_COLORS = colors.cellHighlightColor.length;
 
 export type CursorCell = { x: number; y: number; width: number; height: number };
 const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 };
+
 // adds a bit of padding when editing a cell w/CellInput
 export const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
 
@@ -190,53 +189,6 @@ export class Cursor extends Graphics {
     this.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
   }
 
-  private drawEditorHighlightedCells(): void {
-    const highlightedCells = pixiApp.highlightedCells.getHighlightedCells();
-    const highlightedCellIndex = pixiApp.highlightedCells.highlightedCellIndex;
-    if (!highlightedCells.length) return;
-    highlightedCells.forEach((cell, index) => {
-      const colorNumber = convertColorStringToTint(colors.cellHighlightColor[cell.index % NUM_OF_CELL_REF_COLORS]);
-      const cursorCell = sheets.sheet.getScreenRectangle(cell.column, cell.row, cell.width, cell.height);
-      this.drawDashedRectangle(colorNumber, highlightedCellIndex === index, cursorCell);
-    });
-  }
-
-  private drawDashedRectangle(color: number, isSelected: boolean, startCell: CursorCell, endCell?: CursorCell) {
-    const minX = Math.min(startCell.x, endCell?.x ?? Infinity);
-    const minY = Math.min(startCell.y, endCell?.y ?? Infinity);
-    const maxX = Math.max(startCell.width + startCell.x, endCell ? endCell.x + endCell.width : -Infinity);
-    const maxY = Math.max(startCell.y + startCell.height, endCell ? endCell.y + endCell.height : -Infinity);
-
-    const path = [
-      [maxX, minY],
-      [maxX, maxY],
-      [minX, maxY],
-      [minX, minY],
-    ];
-
-    // have to fill a rect because setting multiple line styles makes it unable to be filled
-    if (isSelected) {
-      this.lineStyle({
-        alignment: 0,
-      });
-      this.moveTo(minX, minY);
-      this.beginFill(color, FILL_ALPHA);
-      this.drawRect(minX, minY, maxX - minX, maxY - minY);
-      this.endFill();
-    }
-
-    this.moveTo(minX, minY);
-    for (let i = 0; i < path.length; i++) {
-      this.lineStyle({
-        width: CURSOR_THICKNESS,
-        color,
-        alignment: 0,
-        texture: i % 2 === 0 ? dashedTextures.dashedHorizontal : dashedTextures.dashedVertical,
-      });
-      this.lineTo(path[i][0], path[i][1]);
-    }
-  }
-
   update() {
     if (this.dirty) {
       this.dirty = false;
@@ -245,7 +197,6 @@ export class Cursor extends Graphics {
         this.drawCursor();
       }
       this.drawCodeCursor();
-      this.drawEditorHighlightedCells();
 
       if (!pixiAppSettings.input.show) {
         this.drawMultiCursor();
