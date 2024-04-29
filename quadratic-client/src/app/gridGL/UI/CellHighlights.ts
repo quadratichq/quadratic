@@ -26,6 +26,7 @@ export class CellHighlights extends Container {
   }
 
   private draw() {
+    this.highlights.clear();
     const highlightedCells = pixiApp.highlightedCells.getHighlightedCells();
     const highlightedCellIndex = pixiApp.highlightedCells.highlightedCellIndex;
     if (!highlightedCells.length) return;
@@ -36,6 +37,7 @@ export class CellHighlights extends Container {
       // We do not draw the dashed rectangle if the inline Formula editor's cell
       // cursor is moving (it's handled by updateMarchingHighlights instead).
       if (highlightedCellIndex === undefined || highlightedCellIndex !== index || !inlineEditorHandler.cursorIsMoving) {
+        console.log('drawing', index);
         this.drawDashedRectangle(colorNumber, highlightedCellIndex === index, cursorCell);
       }
     });
@@ -147,7 +149,6 @@ export class CellHighlights extends Container {
     ];
 
     const g = this.highlights;
-    g.clear();
 
     // have to fill a rect because setting multiple line styles makes it unable to be filled
     if (isSelected) {
@@ -177,8 +178,7 @@ export class CellHighlights extends Container {
     if (this.dirty) {
       this.dirty = false;
       this.draw();
-      // this.marchingHighlight.clear();
-      // this.marchLastTime = 0;
+      this.marchingHighlight.clear();
     }
 
     if (inlineEditorHandler.cursorIsMoving) {

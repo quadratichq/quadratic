@@ -202,6 +202,8 @@ class InlineEditorHandler {
     }
     if (formula) {
       inlineEditorFormula.cellHighlights(this.location, inlineEditorMonaco.get().slice(1));
+    } else {
+      inlineEditorFormula.clearDecorations();
     }
   };
 
@@ -245,8 +247,8 @@ class InlineEditorHandler {
       }
     }
 
-    pixiAppSettings.changeInput(false);
     this.reset();
+    pixiAppSettings.changeInput(false);
 
     // Update Grid Interaction state, reset input value state
     const position = sheets.sheet.cursor.cursorPosition;

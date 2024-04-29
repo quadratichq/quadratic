@@ -80,6 +80,7 @@ class InlineEditorFormula {
   clearDecorations() {
     this.decorations?.clear();
     pixiApp.highlightedCells.clear();
+    pixiApp.cellHighlights.dirty = true;
   }
 
   removeInsertingCells() {
