@@ -1,4 +1,4 @@
-import { downloadSelectionAsCsvAction } from '@/app/actions';
+import { downloadSelectionAsCsvAction, importSql } from '@/app/actions';
 import { copySelectionToPNG, fullClipboardSupport } from '@/app/grid/actions/clipboard/clipboard';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 
@@ -20,6 +20,14 @@ export function keyboardClipboard(props: {
   // Command + Shift + E
   if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'e') {
     downloadSelectionAsCsvAction.run({ fileName });
+    event.preventDefault();
+    event.stopPropagation();
+    return true;
+  }
+
+  // Command + Shift + S
+  if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 's') {
+    importSql.run({ query: '', addGlobalSnackbar });
     event.preventDefault();
     event.stopPropagation();
     return true;

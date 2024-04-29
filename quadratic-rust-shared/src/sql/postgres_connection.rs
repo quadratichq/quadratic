@@ -94,21 +94,26 @@ macro_rules! convert_pg_type {
 mod tests {
 
     use super::*;
+    use std::io::Read;
+    use tracing_test::traced_test;
 
     fn new_postgres_connection() -> PostgresConnection<'static> {
         PostgresConnection::new("postgres", "postgres", "0.0.0.0", "5432", "postgres")
     }
 
     #[tokio::test]
+    #[traced_test]
     async fn test_postgres_connection() {
         let connection = new_postgres_connection();
         let pool = connection.connect().await.unwrap();
         let rows = connection
-            .query(pool, "select * from \"FileCheckpoint\" limit 1")
+            .query(pool, "select * from \"employees\" limit 1000000")
             .await
             .unwrap();
 
         let _data = PostgresConnection::to_parquet(rows);
+
+        // println!("{:?}", _data);
 
         // for row in rows {
         //     for (index, col) in row.columns().into_iter().enumerate() {

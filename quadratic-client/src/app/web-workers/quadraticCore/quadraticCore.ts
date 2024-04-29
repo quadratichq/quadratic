@@ -394,6 +394,31 @@ class QuadraticCore {
     });
   }
 
+  // Imports SQL data
+  async importSql(
+    sheetId: string,
+    arrayBuffer: ArrayBuffer,
+    name: string,
+    location: Coordinate
+  ): Promise<string | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientImportParquet) => resolve(message.error);
+      this.send(
+        {
+          type: 'clientCoreImportParquet',
+          sheetId,
+          x: location.x,
+          y: location.y,
+          id,
+          file: arrayBuffer,
+          fileName: name,
+        },
+        arrayBuffer
+      );
+    });
+  }
+
   initMultiplayer(port: MessagePort) {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
   }

@@ -5,10 +5,12 @@ use arrow::{
 use bytes::Bytes;
 use futures_util::Future;
 use parquet::arrow::ArrowWriter;
+use rayon::prelude::*;
+use sqlx::{Column, Row};
 use std::sync::Arc;
+use tokio::time::Instant;
 
 use self::{mysql_connection::MysqlConnection, postgres_connection::PostgresConnection};
-use sqlx::{Column, Row};
 
 pub mod mysql_connection;
 pub mod postgres_connection;
@@ -50,6 +52,7 @@ pub trait Connection {
         Self::Row: Row,
         Self::Column: Column,
     {
+        let start = Instant::now();
         let fields = data[0]
             .columns()
             .iter()
@@ -59,15 +62,26 @@ pub trait Connection {
         let col_count = fields.len();
         let schema = Schema::new(fields);
 
+        let duration = start.elapsed();
+        tracing::info!("Setup: {:?}", duration);
+        let start = Instant::now();
+
         // transpose columns to rows, converting to Arrow types
         let mut transposed = vec![vec![]; col_count];
 
-        for row in data.iter() {
-            for (col_index, col) in row.columns().iter().enumerate() {
-                let value = Self::to_arrow(row, col, col_index).unwrap_or("".into());
-                transposed[col_index].push(value);
-            }
-        }
+        data.iter().for_each(|row| {
+            row.columns()
+                .iter()
+                .enumerate()
+                .for_each(|(col_index, col)| {
+                    let value = Self::to_arrow(row, col, col_index).unwrap_or("".into());
+                    transposed[col_index].push(value);
+                });
+        });
+
+        let duration = start.elapsed();
+        tracing::info!("Transposing: {:?}", duration);
+        let start = Instant::now();
 
         let file = Vec::new();
         let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None).unwrap();
@@ -77,9 +91,16 @@ pub trait Connection {
             .map(|col| Arc::new(StringArray::from_iter_values(col)) as ArrayRef)
             .collect::<Vec<ArrayRef>>();
 
+        let duration = start.elapsed();
+        tracing::info!("Collecting: {:?}", duration);
+        let start = Instant::now();
+
         writer
             .write(&RecordBatch::try_new(Arc::new(schema.clone()), cols).unwrap())
             .unwrap();
+
+        let duration = start.elapsed();
+        tracing::info!("Writing bytes: {:?}", duration);
 
         writer.into_inner().unwrap().into()
     }
