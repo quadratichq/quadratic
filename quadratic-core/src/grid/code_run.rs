@@ -97,6 +97,7 @@ impl CodeRun {
 pub enum CodeCellLanguage {
     Python,
     Formula,
+    Connector,
     // JavaScript,
     // Sql,
 }

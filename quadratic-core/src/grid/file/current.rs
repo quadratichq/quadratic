@@ -172,6 +172,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                         language: match code_cell.language {
                             current::CodeCellLanguage::Python => CodeCellLanguage::Python,
                             current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
+                            current::CodeCellLanguage::Connector => CodeCellLanguage::Connector,
                         },
                     }),
                     current::CellValue::Logical(logical) => CellValue::Logical(*logical),
@@ -504,6 +505,9 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                                 }
                                                 CodeCellLanguage::Formula => {
                                                     current::CodeCellLanguage::Formula
+                                                }
+                                                CodeCellLanguage::Connector => {
+                                                    current::CodeCellLanguage::Connector
                                                 }
                                             },
                                         })

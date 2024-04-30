@@ -1,5 +1,4 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { FileContextType } from '@/app/ui/components/FileProvider';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -185,27 +184,4 @@ export const findInSheet = {
 };
 export const findInSheets = {
   label: 'Find in all sheets',
-};
-
-export const importSql = {
-  label: 'Import SQL',
-  async run({ query, addGlobalSnackbar }: { query: string; addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar'] }) {
-    let { x, y } = sheets.sheet.cursor.cursorPosition;
-    let statement = await quadraticCore.getEditCell(sheets.sheet.id, x, y);
-
-    const start = Date.now();
-
-    // const statement = 'select * from "FileCheckpoint" limit 5';
-    const url = `http://localhost:3003/query_sql?statement=${encodeURIComponent(statement || '')}`;
-
-    addGlobalSnackbar(`Downloading SQL: ${statement}`);
-
-    const response = await fetch(url);
-
-    let buffer = await response.arrayBuffer();
-
-    addGlobalSnackbar(`Completed in ${Date.now() - start} ms`);
-
-    await quadraticCore.importSql(sheets.sheet.id, buffer, 'sql', { x, y: y + 1 });
-  },
 };

@@ -70,6 +70,6 @@ export const debugShowUILogs = debug && false;
 // WebWorkers
 //-----------
 
-export const debugWebWorkers = debug && false;
+export const debugWebWorkers = debug && true;
 
-export const debugWebWorkersMessages = debug && false;
+export const debugWebWorkersMessages = debug && true;

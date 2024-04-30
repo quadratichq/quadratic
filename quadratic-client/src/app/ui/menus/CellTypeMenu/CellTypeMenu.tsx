@@ -60,10 +60,10 @@ let CELL_TYPE_OPTIONS = [
   // todo: create CodeCellLanguage for these types in Rust (when ready to implement)
   {
     name: 'SQL Query',
-    mode: '',
+    mode: 'Connector',
     icon: <Sql color="disabled" />,
     description: 'Import your data with queries.',
-    disabled: true,
+    disabled: false,
   },
   {
     name: 'JavaScript',

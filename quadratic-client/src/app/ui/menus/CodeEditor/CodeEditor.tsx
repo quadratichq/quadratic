@@ -216,6 +216,7 @@ export const CodeEditor = () => {
 
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
+
     quadraticCore.setCodeCellValue({
       sheetId: cellLocation.sheetId,
       x: cellLocation.x,

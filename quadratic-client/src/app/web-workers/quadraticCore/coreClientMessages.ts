@@ -798,6 +798,11 @@ export interface CoreClientUndoRedo {
   redo: boolean;
 }
 
+export interface CoreClientConnector {
+  type: 'coreClientConnector';
+  query: string;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -898,4 +903,5 @@ export type CoreClientMessage =
   | CoreClientImportExcel
   | CoreClientMultiplayerState
   | CoreClientOfflineTransactions
-  | CoreClientUndoRedo;
+  | CoreClientUndoRedo
+  | CoreClientConnector;
