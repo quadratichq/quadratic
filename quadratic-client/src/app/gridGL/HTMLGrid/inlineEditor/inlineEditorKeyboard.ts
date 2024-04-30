@@ -101,12 +101,9 @@ class InlineEditorKeyboard {
     // control to the formula box)
     else {
       if (inlineEditorHandler.cursorIsMoving) {
-        inlineEditorFormula.endInsertingCells();
-        console.log(JSON.stringify(e.key));
-        console.log(JSON.stringify(inlineEditorMonaco.get()));
-        inlineEditorMonaco.insertTextAtCursor(e.key);
-        console.log(JSON.stringify(inlineEditorMonaco.get()));
+        inlineEditorHandler.cursorIsMoving = false;
         this.resetKeyboardPosition();
+        inlineEditorMonaco.insertTextAtCursor(e.key);
       }
     }
   };

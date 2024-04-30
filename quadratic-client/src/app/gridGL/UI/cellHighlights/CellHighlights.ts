@@ -120,7 +120,9 @@ export class CellHighlights extends Container {
     if (this.dirty) {
       this.dirty = false;
       this.draw();
-      this.marchingHighlight.clear();
+      if (!inlineEditorHandler.cursorIsMoving) {
+        this.marchingHighlight.clear();
+      }
     }
 
     if (inlineEditorHandler.cursorIsMoving) {
