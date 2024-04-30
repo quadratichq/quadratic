@@ -101,6 +101,7 @@ export class Javascript {
       });
       runner.onerror = (e) => {
         if (this.withLineNumbers) {
+          runner.terminate();
           this.run(message, false);
           return;
         }
