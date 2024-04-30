@@ -29,7 +29,6 @@ export const sanityClient = {
     get: async (slug: string): Promise<Example> => sanityFetch(`*[slug == "${slug}"][0] ${fields}`),
   },
   educationWhitelist: {
-    // TODO: turn "production" into env name at some point when we want to test this better
     get: async (): Promise<EducationWhitelist> => sanityFetch(`*[_type == "educationWhitelist"]`),
   },
 };
