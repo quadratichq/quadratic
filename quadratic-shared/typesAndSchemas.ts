@@ -347,9 +347,6 @@ export const ApiSchemas = {
    * Education
    *
    */
-  '/v0/education.POST.request': z.object({
-    refresh: z.boolean().optional(),
-  }),
   '/v0/education.POST.response': z.object({
     eduStatus: EduStatusSchema,
   }),
