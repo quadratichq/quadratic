@@ -26,7 +26,7 @@ class InlineEditorFormula {
   async cellHighlights(location: SheetPosTS, formula: string) {
     const parsed = (await parseFormula(formula, location.x, location.y)) as ParseFormulaReturnType;
     if (parsed) {
-      pixiApp.highlightedCells.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
+      pixiApp.cellHighlights.fromFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
 
       const extractedCells = extractCellsFromParseFormula(parsed, { x: location.x, y: location.y }, location.sheetId);
       const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
@@ -60,7 +60,7 @@ class InlineEditorFormula {
         const editorCursorPosition = inlineEditorMonaco.getPosition();
 
         if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-          pixiApp.highlightedCells.setHighlightedCell(index);
+          pixiApp.cellHighlights.setHighlightedCell(index);
         }
       });
 
@@ -73,13 +73,13 @@ class InlineEditorFormula {
       }
     } else {
       this.decorations?.clear();
-      pixiApp.highlightedCells.clear();
+      pixiApp.cellHighlights.clear();
     }
   }
 
   clearDecorations() {
     this.decorations?.clear();
-    pixiApp.highlightedCells.clear();
+    pixiApp.cellHighlights.clear();
     pixiApp.cellHighlights.dirty = true;
   }
 
@@ -105,8 +105,25 @@ class InlineEditorFormula {
   }
 
   private cursorMoved = () => {
-    if (inlineEditorHandler.isEditingFormula() && inlineEditorHandler.cursorIsMoving) {
+    if (inlineEditorHandler.isEditingFormula()) {
       const cursor = sheets.sheet.cursor;
+
+      // We start the cursorIsMoving unless we've returned to the home cell (eg,
+      // after a Backspace or Escape).
+      const location = inlineEditorHandler.location;
+      if (!location) {
+        throw new Error('Expected inlineEditorHandler.location to be defined in cursorMoved');
+      }
+      if (
+        !cursor.multiCursor &&
+        cursor.originPosition.x === location.x &&
+        cursor.originPosition.y === location.y &&
+        location.sheetId === sheets.sheet.id
+      ) {
+        return;
+      }
+      inlineEditorHandler.cursorIsMoving = true;
+      inlineEditorMonaco.removeSelection();
       if (cursor.multiCursor) {
         const startLocation = cursor.multiCursor.originPosition;
         const start = getA1Notation(startLocation.x, startLocation.y);
@@ -118,6 +135,7 @@ class InlineEditorFormula {
         const a1Notation = getA1Notation(location.x, location.y);
         this.insertInsertingCells(a1Notation);
       }
+      inlineEditorMonaco.focus();
     }
   };
 }

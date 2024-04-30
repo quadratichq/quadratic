@@ -1,3 +1,4 @@
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
@@ -152,7 +153,9 @@ export class PointerDown {
         originPosition: new Point(this.position.x, this.position.y),
         terminalPosition: new Point(this.position.x, this.position.y),
       };
-      pixiAppSettings.changeInput(false);
+      if (!inlineEditorHandler.isEditingFormula()) {
+        pixiAppSettings.changeInput(false);
+      }
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -182,7 +185,9 @@ export class PointerDown {
             terminalPosition: { x: termX, y: termY },
           },
         });
-        pixiAppSettings.changeInput(false);
+        if (!inlineEditorHandler.isEditingFormula()) {
+          pixiAppSettings.changeInput(false);
+        }
 
         // update previousPosition
         this.previousPosition = {

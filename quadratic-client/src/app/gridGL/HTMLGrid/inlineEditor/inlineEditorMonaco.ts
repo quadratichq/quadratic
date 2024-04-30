@@ -83,6 +83,18 @@ class InlineEditorMonaco {
     this.editor.layout({ width, height });
   }
 
+  removeSelection() {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in removeSelection');
+    }
+    const selection = this.editor.getSelection();
+    if (selection) {
+      const range = new monaco.Range(1, selection.getStartPosition().column, 1, selection.getEndPosition().column);
+      const model = this.getModel();
+      model.applyEdits([{ range, text: '' }]);
+    }
+  }
+
   setBackgroundColor(color: string) {
     theme.colors['editor.background'] = color;
     monaco.editor.defineTheme('inline-editor', theme);
@@ -230,7 +242,7 @@ class InlineEditorMonaco {
       language: inlineEditorHandler.formula ? 'formula' : undefined,
     });
 
-    this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateCursorPosition);
+    this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
     this.editor.onKeyDown(inlineEditorKeyboard.keyDown);
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
   }

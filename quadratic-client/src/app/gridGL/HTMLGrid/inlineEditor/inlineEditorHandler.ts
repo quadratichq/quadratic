@@ -103,10 +103,11 @@ class InlineEditorHandler {
 
   // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string) => {
+    if (!input && !this.open) return;
+
     if (!this.div) {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
     }
-
     if (input) {
       this.open = true;
       this.div.style.display = 'flex';
@@ -144,7 +145,7 @@ class InlineEditorHandler {
       this.formulaExpandButton.style.height = this.height + 'px';
       this.formulaExpandButton.style.lineHeight = this.height + 'px';
       inlineEditorMonaco.setColumn(value.length + 1);
-      this.updateCursorPosition();
+      this.updateMonacoCursorPosition();
       this.keepCursorVisible();
       inlineEditorMonaco.focus();
     } else {
@@ -154,7 +155,7 @@ class InlineEditorHandler {
   };
 
   // Handles updates to the Monaco editor cursor position
-  updateCursorPosition = () => {
+  updateMonacoCursorPosition = () => {
     // this will get called upon opening (before variables are set), and after every cursor movement
     if (!this.div || !this.cellOffsets || !this.location) return;
 
@@ -177,7 +178,6 @@ class InlineEditorHandler {
 
     if (this.formula) {
       inlineEditorFormula.cellHighlights(this.location, value.slice(1));
-      pixiApp.cellHighlights.dirty = true;
     }
   };
 
@@ -247,8 +247,8 @@ class InlineEditorHandler {
       }
     }
 
-    this.reset();
     pixiAppSettings.changeInput(false);
+    this.reset();
 
     // Update Grid Interaction state, reset input value state
     const position = sheets.sheet.cursor.cursorPosition;

@@ -192,7 +192,7 @@ export const CodeEditor = () => {
           editorEscapePressed: false,
           showCodeEditor: false,
         }));
-        pixiApp.highlightedCells.clear();
+        pixiApp.cellHighlights.clear();
         focusGrid();
         multiplayer.sendEndCellEdit();
       }

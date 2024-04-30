@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { CellHighlights } from '@/app/gridGL/UI/CellHighlights';
+import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -28,7 +28,6 @@ import { ensureVisible } from '../interaction/viewportHelper';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
-import { HighlightedCells } from './highlightedCells';
 import './pixiApp.css';
 
 // todo: move viewport stuff to a viewport.ts file
@@ -44,10 +43,6 @@ export class PixiApp {
   // after init is called, depending on timing).
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
-
-  // this holds the data for CellHighlights (todo: might want to rethink this
-  // approach since it's confusing)
-  highlightedCells = new HighlightedCells();
 
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
