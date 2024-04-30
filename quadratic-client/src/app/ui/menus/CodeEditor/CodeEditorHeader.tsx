@@ -3,7 +3,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
-import { Close, FiberManualRecord, PlayArrow, Stop, Subject } from '@mui/icons-material';
+import { cn } from '@/shared/shadcn/utils';
+import { Close, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -27,9 +28,21 @@ interface Props {
 export const CodeEditorHeader = (props: Props) => {
   const { cellLocation, unsaved, saveAndRunCell, cancelPython, closeEditor } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
-
   const language = editorInteractionState.mode;
+
+  // Keep track of the current sheet ID so we know whether to show the sheet name or not
+  const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
+  const currentSheetNameOfActiveCodeEditorCell = sheets.getById(editorInteractionState.selectedCellSheet)?.name;
+  useEffect(() => {
+    const updateSheetName = () => setCurrentSheetId(sheets.sheet.id);
+    events.on('changeSheet', updateSheetName);
+    return () => {
+      events.off('changeSheet', updateSheetName);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // show when this cell is already in the execution queue
   const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
@@ -101,32 +114,34 @@ export const CodeEditorHeader = (props: Props) => {
   if (!cellLocation) return null;
 
   return (
-    <div className="flex justify-between px-3 py-1 text-sm">
+    <div className="flex items-center px-3 py-1">
       <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: '.5rem',
-        }}
-      >
-        {language === 'Python' ? (
-          <Python sx={{ color: colors.languagePython }} fontSize="small" />
-        ) : language === 'Formula' ? (
-          <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
-        ) : (
-          <Subject />
+        className={cn(
+          `relative`,
+          unsaved &&
+            `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-warning after:content-['']`
         )}
-        <span className="flex items-center gap-1 font-medium">
-          Cell ({cellLocation.x}, {cellLocation.y})
-          {unsaved && (
-            <TooltipHint title="Your changes haven’t been saved or run" placement="bottom">
-              <FiberManualRecord fontSize="small" color="warning" sx={{ fontSize: '0.625rem' }} />
-            </TooltipHint>
-          )}
-        </span>
+      >
+        <TooltipHint title={`${language}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
+          <div className="flex items-center">
+            {language === 'Python' ? (
+              <Python sx={{ color: colors.languagePython }} fontSize="small" />
+            ) : language === 'Formula' ? (
+              <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
+            ) : (
+              <Subject fontSize="small" />
+            )}
+          </div>
+        </TooltipHint>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+      <div className="mx-2 flex truncate text-sm font-medium">
+        Cell ({cellLocation.x}, {cellLocation.y})
+        {currentCodeEditorCellIsNotInActiveSheet && (
+          <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+        )}
+      </div>
+
+      <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
           <TooltipHint title={'Python executing…'} placement="bottom">
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
