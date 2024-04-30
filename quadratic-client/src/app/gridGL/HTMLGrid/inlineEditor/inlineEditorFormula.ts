@@ -104,7 +104,8 @@ class InlineEditorFormula {
     this.insertingCells = undefined;
   }
 
-  private cursorMoved = () => {
+  // Handle the cursorPosition event (and changeSheet via inlineEditorHandler.changeSheet).
+  cursorMoved = () => {
     if (inlineEditorHandler.isEditingFormula()) {
       const cursor = sheets.sheet.cursor;
 
@@ -125,16 +126,20 @@ class InlineEditorFormula {
       }
       inlineEditorHandler.cursorIsMoving = true;
       inlineEditorMonaco.removeSelection();
+      let sheet = '';
+      if (location.sheetId !== sheets.sheet.id) {
+        sheet = `'${sheets.sheet.name}'!`;
+      }
       if (cursor.multiCursor) {
         const startLocation = cursor.multiCursor.originPosition;
         const start = getA1Notation(startLocation.x, startLocation.y);
         const endLocation = cursor.multiCursor.terminalPosition;
         const end = getA1Notation(endLocation.x, endLocation.y);
-        this.insertInsertingCells(`${start}:${end}`);
+        this.insertInsertingCells(`${sheet}${start}:${end}`);
       } else {
         const location = cursor.originPosition;
         const a1Notation = getA1Notation(location.x, location.y);
-        this.insertInsertingCells(a1Notation);
+        this.insertInsertingCells(`${sheet}${a1Notation}`);
       }
 
       // We need the timeout to ensure the pointerDown event does not change the

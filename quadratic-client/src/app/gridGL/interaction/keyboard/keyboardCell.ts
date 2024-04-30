@@ -1,4 +1,5 @@
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -63,16 +64,18 @@ export async function keyboardCell(options: {
   }
 
   if (event.key === 'Enter') {
-    const column = cursorPosition.x;
-    const row = cursorPosition.y;
-    const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
-    if (code) {
-      doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
-    } else {
-      const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
-      doubleClickCell({ column, row, cell });
+    if (!inlineEditorHandler.isEditingFormula()) {
+      const column = cursorPosition.x;
+      const row = cursorPosition.y;
+      const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
+      if (code) {
+        doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
+      } else {
+        const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
+        doubleClickCell({ column, row, cell });
+      }
+      event.preventDefault();
     }
-    event.preventDefault();
   }
 
   // Don't allow actions beyond here for certain users

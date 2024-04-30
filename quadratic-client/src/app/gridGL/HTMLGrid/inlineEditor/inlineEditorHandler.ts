@@ -50,6 +50,7 @@ class InlineEditorHandler {
 
   constructor() {
     events.on('changeInput', this.changeInput);
+    events.on('changeSheet', this.changeSheet);
     this.sizingDiv = document.createElement('div');
     this.sizingDiv.style.visibility = 'hidden';
     this.sizingDiv.style.width = 'fit-content';
@@ -72,10 +73,14 @@ class InlineEditorHandler {
     this.cursorIsMoving = false;
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
+    window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
   }
 
+  // todo: this needs improvements
   // Keeps the cursor visible in the viewport.
   keepCursorVisible = () => {
+    if (sheets.sheet.id !== this.location?.sheetId) return;
+
     const { position, bounds } = inlineEditorMonaco.getEditorSizing();
     const canvas = pixiApp.canvas.getBoundingClientRect();
     const cursor = position.left + bounds.left;
@@ -101,6 +106,22 @@ class InlineEditorHandler {
     }
   };
 
+  private changeSheet = () => {
+    if (!this.div || !this.location || !this.open) return;
+    if (this.formula) {
+      if (sheets.sheet.id !== this.location.sheetId) {
+        this.div.style.display = 'none';
+        window.addEventListener('keydown', inlineEditorKeyboard.keyDown);
+      } else {
+        this.div.style.display = 'flex';
+        window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
+      }
+      inlineEditorFormula.cursorMoved();
+    } else {
+      this.close(0, 0, false);
+    }
+  };
+
   // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string) => {
     if (!input && !this.open) return;
@@ -121,19 +142,19 @@ class InlineEditorHandler {
       if (initialValue) {
         value = initialValue;
       } else {
-        const formula = await quadraticCore.getCodeCell(sheets.sheet.id, this.location.x, this.location.y);
+        const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
         if (formula?.language === 'Formula') {
           value = '=' + formula.code_string;
           this.changeToFormula(true);
         } else {
-          value = (await quadraticCore.getEditCell(sheets.sheet.id, this.location.x, this.location.y)) || '';
+          value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
         }
       }
       inlineEditorMonaco.set(value);
       if (initialValue) {
         inlineEditorMonaco.setColumn(initialValue.length + 1);
       }
-      const format = await quadraticCore.getCellFormatSummary(sheets.sheet.id, this.location.x, this.location.y);
+      const format = await quadraticCore.getCellFormatSummary(this.location.sheetId, this.location.x, this.location.y);
       inlineEditorMonaco.setBackgroundColor(format.fillColor ? convertColorStringToHex(format.fillColor) : '#ffffff');
       this.cellOffsets = sheet.getCellOffsets(this.location.x, this.location.y);
       this.div.style.left = this.cellOffsets.x + CURSOR_THICKNESS + 'px';
@@ -215,10 +236,13 @@ class InlineEditorHandler {
     }
     const value = inlineEditorMonaco.get();
 
+    // Ensure we're on the right sheet so we can show the change
+    sheets.current = this.location.sheetId;
+
     if (!cancel) {
       if (this.formula) {
         quadraticCore.setCodeCellValue({
-          sheetId: sheets.sheet.id,
+          sheetId: this.location.sheetId,
           x: this.location.x,
           y: this.location.y,
           language: 'Formula',
@@ -238,7 +262,7 @@ class InlineEditorHandler {
         }
       } else {
         quadraticCore.setCellValue(
-          sheets.sheet.id,
+          this.location.sheetId,
           this.location.x,
           this.location.y,
           value.trim(),

@@ -243,7 +243,7 @@ class InlineEditorMonaco {
     });
 
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);
-    this.editor.onKeyDown(inlineEditorKeyboard.keyDown);
+    this.editor.onKeyDown((e) => inlineEditorKeyboard.keyDown(e.browserEvent));
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
   }
 }

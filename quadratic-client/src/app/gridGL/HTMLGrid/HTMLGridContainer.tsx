@@ -96,7 +96,6 @@ export const HTMLGridContainer = (props: Props): ReactNode | null => {
           }}
         >
           <div style={{ position: 'relative' }}>
-            {/* {showInput && <CellInput />} */}
             {!showInput && <CodeHint />}
             <MultiplayerCellEdits />
             <InlineEditor />

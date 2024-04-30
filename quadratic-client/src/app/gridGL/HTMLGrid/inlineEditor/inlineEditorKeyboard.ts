@@ -7,11 +7,11 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import * as monaco from 'monaco-editor';
 
 class InlineEditorKeyboard {
-  // Keyboard event for inline editor
-  keyDown = (e: monaco.IKeyboardEvent) => {
+  // Keyboard event for inline editor (via either Monaco's keyDown event or,
+  // when on a different sheet, via window's keyDown listener).
+  keyDown = (e: KeyboardEvent) => {
     // Escape key
     if (e.code === 'Escape') {
       if (inlineEditorHandler.cursorIsMoving) {
@@ -36,14 +36,14 @@ class InlineEditorKeyboard {
       const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
-          keyboardPosition(e.browserEvent);
+          keyboardPosition(e);
           e.stopPropagation();
         } else {
           const column = inlineEditorMonaco.getCursorColumn();
           if (column === target) {
             inlineEditorHandler.cursorIsMoving = true;
             inlineEditorFormula.addInsertingCells(column);
-            keyboardPosition(e.browserEvent);
+            keyboardPosition(e);
             e.stopPropagation();
           }
         }
@@ -78,7 +78,7 @@ class InlineEditorKeyboard {
     else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
-          keyboardPosition(e.browserEvent);
+          keyboardPosition(e);
           e.stopPropagation();
         } else {
           const location = inlineEditorHandler.location;
@@ -88,7 +88,7 @@ class InlineEditorKeyboard {
           const column = inlineEditorMonaco.getCursorColumn();
           inlineEditorFormula.addInsertingCells(column);
           inlineEditorHandler.cursorIsMoving = true;
-          keyboardPosition(e.browserEvent);
+          keyboardPosition(e);
           e.stopPropagation();
         }
       } else {
@@ -114,10 +114,9 @@ class InlineEditorKeyboard {
 
     inlineEditorHandler.cursorIsMoving = false;
     pixiApp.cellHighlights.clearHighlightedCell();
-    const sheetId = location.sheetId;
     const position = { x: location.x, y: location.y };
-    if (sheets.sheet.id !== sheetId) {
-      sheets.current = sheetId;
+    if (sheets.sheet.id !== location.sheetId) {
+      sheets.current = location.sheetId;
     }
     sheets.sheet.cursor.changePosition({
       cursorPosition: position,

@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -43,6 +44,7 @@ export class CellHighlights extends Container {
     super();
     this.highlights = this.addChild(new Graphics());
     this.marchingHighlight = this.addChild(new Graphics());
+    events.on('changeSheet', () => (this.dirty = true));
   }
 
   clear() {
@@ -56,7 +58,7 @@ export class CellHighlights extends Container {
 
   private draw() {
     this.highlights.clear();
-    const highlightedCells = [...this.highlightedCells];
+    const highlightedCells = [...this.highlightedCells].filter((cell) => cell.sheet === sheets.sheet.id);
     const highlightedCellIndex = this.highlightedCellIndex;
     if (!highlightedCells.length) return;
     highlightedCells.forEach((cell, index) => {
