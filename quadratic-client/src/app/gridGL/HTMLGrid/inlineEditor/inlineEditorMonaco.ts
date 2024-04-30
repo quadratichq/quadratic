@@ -240,6 +240,7 @@ class InlineEditorMonaco {
       theme: 'inline-editor',
       stickyScroll: { enabled: false },
       language: inlineEditorHandler.formula ? 'formula' : undefined,
+      trimAutoWhitespace: false,
     });
 
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.updateMonacoCursorPosition);

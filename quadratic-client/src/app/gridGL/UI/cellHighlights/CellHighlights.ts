@@ -86,6 +86,10 @@ export class CellHighlights extends Container {
   // Draws the marching highlights by using an offset dashed line to create the
   // marching effect.
   private updateMarchingHighlight() {
+    if (!inlineEditorHandler.cursorIsMoving) {
+      this.highlightedCellIndex = undefined;
+      return;
+    }
     if (this.marchLastTime === 0) {
       this.marchLastTime = Date.now();
     } else if (Date.now() - this.marchLastTime < MARCH_ANIMATE_TIME_MS) {
@@ -116,6 +120,7 @@ export class CellHighlights extends Container {
     if (this.dirty) {
       this.dirty = false;
       this.draw();
+      this.marchingHighlight.clear();
     }
 
     if (inlineEditorHandler.cursorIsMoving) {

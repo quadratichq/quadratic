@@ -102,6 +102,10 @@ class InlineEditorKeyboard {
     else {
       if (inlineEditorHandler.cursorIsMoving) {
         inlineEditorFormula.endInsertingCells();
+        console.log(JSON.stringify(e.key));
+        console.log(JSON.stringify(inlineEditorMonaco.get()));
+        inlineEditorMonaco.insertTextAtCursor(e.key);
+        console.log(JSON.stringify(inlineEditorMonaco.get()));
         this.resetKeyboardPosition();
       }
     }
@@ -114,16 +118,27 @@ class InlineEditorKeyboard {
 
     inlineEditorHandler.cursorIsMoving = false;
     pixiApp.cellHighlights.clearHighlightedCell();
-    const position = { x: location.x, y: location.y };
-    if (sheets.sheet.id !== location.sheetId) {
-      sheets.current = location.sheetId;
+    const editingSheet = sheets.getById(location.sheetId);
+    if (!editingSheet) {
+      throw new Error('Expected editingSheet to be defined in resetKeyboardPosition');
     }
-    sheets.sheet.cursor.changePosition({
+    const position = { x: location.x, y: location.y };
+    editingSheet.cursor.changePosition({
       cursorPosition: position,
       multiCursor: undefined,
       keyboardMovePosition: position,
-      ensureVisible: true,
     });
+    if (sheets.sheet.id !== location.sheetId) {
+      sheets.current = location.sheetId;
+
+      // We need the timeout to wait for the sheet to change (and all events to
+      // handle) before we can focus on the inline editor and set cursorIsMoving
+      // to false.
+      setTimeout(() => {
+        inlineEditorMonaco.focus();
+        inlineEditorHandler.cursorIsMoving = false;
+      }, 0);
+    }
   }
 }
 

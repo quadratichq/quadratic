@@ -111,7 +111,6 @@ class InlineEditorHandler {
     if (this.formula) {
       if (sheets.sheet.id !== this.location.sheetId) {
         this.div.style.display = 'none';
-        console.log('key down event');
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         window.addEventListener('keydown', inlineEditorKeyboard.keyDown);
       } else {
