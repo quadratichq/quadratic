@@ -34,7 +34,7 @@ export const CodeEditorHeader = (props: Props) => {
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
-  const currentSheetName = sheets.getById(currentSheetId)?.name;
+  const currentSheetNameOfActiveCodeEditorCell = sheets.getById(editorInteractionState.selectedCellSheet)?.name;
   useEffect(() => {
     const updateSheetName = () => setCurrentSheetId(sheets.sheet.id);
     events.on('changeSheet', updateSheetName);
@@ -136,7 +136,9 @@ export const CodeEditorHeader = (props: Props) => {
       </div>
       <div className="mx-2 flex truncate text-sm font-medium">
         Cell ({cellLocation.x}, {cellLocation.y})
-        {currentCodeEditorCellIsNotInActiveSheet && <span className="ml-1 min-w-0 truncate">- {currentSheetName}</span>}
+        {currentCodeEditorCellIsNotInActiveSheet && (
+          <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+        )}
       </div>
 
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
