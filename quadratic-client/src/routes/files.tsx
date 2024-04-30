@@ -1,4 +1,3 @@
-import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -137,7 +136,6 @@ export const Component = () => {
           />
         }
       />
-      <EducationDialog />
     </>
   );
 };

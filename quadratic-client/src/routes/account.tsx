@@ -1,12 +1,9 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { useRootRouteLoaderData } from '@/router';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
-import { CONTACT_URL, QUADRATIC_FOR_EDUCATION } from '@/shared/constants/urls';
 import { themes, useTheme } from '@/shared/hooks/useTheme';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ExternalLinkIcon, ReloadIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
 
@@ -57,50 +54,6 @@ export const Component = () => {
             </div>
           </Row>
         )}
-
-        <EducationDialog>
-          {({ isEnrolled, isLoading, checkStatus }) => {
-            return (
-              <Row>
-                <a
-                  href={QUADRATIC_FOR_EDUCATION}
-                  className="hover:text-primary hover:underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Type variant="body2" className="flex items-center gap-1 font-bold">
-                    Education plan <ExternalLinkIcon className="text-muted-foreground" />
-                  </Type>
-                </a>
-
-                <div>
-                  <Type variant="body2" className="flex items-center gap-2">
-                    {isEnrolled ? 'Enrolled' : 'Ineligible'}
-                    <ReloadIcon
-                      className={`animate-spin text-primary transition-opacity ${isLoading ? '' : ' opacity-0'}`}
-                    />
-                  </Type>
-
-                  <Type variant="caption">
-                    Available for accounts with a school email.{' '}
-                    {!isEnrolled && (
-                      <>
-                        <button onClick={checkStatus} className="underline ">
-                          Check your status
-                        </button>{' '}
-                        or{' '}
-                        <a href={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
-                          contact us
-                        </a>{' '}
-                        if you think you qualify.
-                      </>
-                    )}
-                  </Type>
-                </div>
-              </Row>
-            );
-          }}
-        </EducationDialog>
 
         <Form method="post" action={ROUTES.LOGOUT} className="mt-4">
           <Button variant="outline" type="submit">

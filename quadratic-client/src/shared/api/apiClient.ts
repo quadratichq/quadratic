@@ -289,10 +289,17 @@ export const apiClient = {
     async get() {
       return fetchFromApi(`/v0/education`, { method: 'GET' }, ApiSchemas['/v0/education.GET.response']);
     },
-    async update(body: ApiTypes['/v0/education.POST.request']) {
+    async update(eduStatus: Exclude<ApiTypes['/v0/education.POST.request']['eduStatus'], undefined>) {
       return fetchFromApi(
         `/v0/education`,
-        { method: 'POST', body: JSON.stringify(body) },
+        { method: 'POST', body: JSON.stringify({ eduStatus }) },
+        ApiSchemas['/v0/education.POST.response']
+      );
+    },
+    async refresh() {
+      return fetchFromApi(
+        `/v0/education`,
+        { method: 'POST', body: JSON.stringify({ refresh: true }) },
         ApiSchemas['/v0/education.POST.response']
       );
     },

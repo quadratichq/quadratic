@@ -6,7 +6,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { Theme } from '@/shared/components/Theme';
 import { SUPPORT_EMAIL } from '@/shared/constants/appConstants';
-import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { User } from '@auth0/auth0-spa-js';
@@ -18,6 +18,7 @@ import {
   Navigate,
   Outlet,
   Route,
+  ShouldRevalidateFunctionArgs,
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
@@ -36,6 +37,16 @@ export type RootLoaderData = {
 };
 
 export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
+
+const dontRevalidateDialogs = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
+  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
+  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
+
+  if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
+    return false;
+  }
+  return true;
+};
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -96,22 +107,51 @@ export const router = createBrowserRouter(
             action={Create.action}
             shouldRevalidate={() => false}
           />
+          <Route
+            path="/education"
+            loader={async () => {
+              // Check their status, then send them to the dashboard with the education dialog
+              await apiClient.education.refresh();
+              return redirect(`${ROUTES.FILES}?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
+            }}
+          />
 
-          <Route id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
+          <Route
+            id={ROUTE_LOADER_IDS.DASHBOARD}
+            lazy={() => import('./routes/_dashboard')}
+            shouldRevalidate={dontRevalidateDialogs}
+          >
             <Route path={ROUTES.FILES}>
-              <Route index lazy={() => import('./routes/files')} />
+              <Route index lazy={() => import('./routes/files')} shouldRevalidate={dontRevalidateDialogs} />
 
               {/* Resource routes */}
               <Route path=":uuid" lazy={() => import('./routes/files.$uuid')} />
               <Route path=":uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
             </Route>
-            <Route path={ROUTES.FILES_SHARED_WITH_ME} lazy={() => import('./routes/files.shared-with-me')} />
-            <Route path={ROUTES.EXAMPLES} lazy={() => import('./routes/examples')} />
-            <Route path={ROUTES.ACCOUNT} lazy={() => import('./routes/account')} />
+            <Route
+              path={ROUTES.FILES_SHARED_WITH_ME}
+              lazy={() => import('./routes/files.shared-with-me')}
+              shouldRevalidate={dontRevalidateDialogs}
+            />
+            <Route
+              path={ROUTES.EXAMPLES}
+              lazy={() => import('./routes/examples')}
+              shouldRevalidate={dontRevalidateDialogs}
+            />
+            <Route
+              path={ROUTES.ACCOUNT}
+              lazy={() => import('./routes/account')}
+              shouldRevalidate={dontRevalidateDialogs}
+            />
 
             <Route path={ROUTES.TEAMS}>
               <Route index element={<Navigate to={ROUTES.FILES} replace />} />
-              <Route path=":uuid" id={ROUTE_LOADER_IDS.TEAM} lazy={() => import('./routes/teams.$uuid')} />
+              <Route
+                path=":uuid"
+                id={ROUTE_LOADER_IDS.TEAM}
+                lazy={() => import('./routes/teams.$uuid')}
+                shouldRevalidate={dontRevalidateDialogs}
+              />
             </Route>
           </Route>
 
