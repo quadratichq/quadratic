@@ -108,12 +108,13 @@ class InlineEditorFormula {
     if (inlineEditorHandler.isEditingFormula()) {
       const cursor = sheets.sheet.cursor;
 
-      // We start the cursorIsMoving unless we've returned to the home cell (eg,
-      // after a Backspace or Escape).
       const location = inlineEditorHandler.location;
       if (!location) {
         throw new Error('Expected inlineEditorHandler.location to be defined in cursorMoved');
       }
+
+      // We start the cursorIsMoving unless we've returned to the home cell (viz.,
+      // after a Backspace or Escape).
       if (
         !cursor.multiCursor &&
         cursor.originPosition.x === location.x &&

@@ -6,6 +6,7 @@ import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import * as monaco from 'monaco-editor';
 
 class InlineEditorKeyboard {
@@ -112,6 +113,7 @@ class InlineEditorKeyboard {
     if (!location) return;
 
     inlineEditorHandler.cursorIsMoving = false;
+    pixiApp.cellHighlights.clearHighlightedCell();
     const sheetId = location.sheetId;
     const position = { x: location.x, y: location.y };
     if (sheets.sheet.id !== sheetId) {

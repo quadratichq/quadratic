@@ -112,7 +112,6 @@ export class CellHighlights extends Container {
     if (this.dirty) {
       this.dirty = false;
       this.draw();
-      this.marchingHighlight.clear();
     }
 
     if (inlineEditorHandler.cursorIsMoving) {
@@ -192,16 +191,14 @@ export class CellHighlights extends Container {
 
   setHighlightedCell(index: number) {
     this.highlightedCellIndex = this.getHighlightedCells().findIndex((cell) => cell.index === index);
-    pixiApp.cellHighlights.dirty = true;
+  }
+
+  clearHighlightedCell() {
+    this.highlightedCellIndex = undefined;
+    this.marchingHighlight.clear();
   }
 
   getHighlightedCells(): HighlightedCellRange[] {
     return Array.from(this.highlightedCells.values()).filter((cell) => cell.sheet === sheets.sheet.id);
-  }
-
-  getSelectedHighlightedCell(): { cell: HighlightedCellRange; index: number } | undefined {
-    if (!this.highlightedCellIndex) return undefined;
-
-    return { cell: this.getHighlightedCells()[this.highlightedCellIndex], index: this.highlightedCellIndex };
   }
 }
