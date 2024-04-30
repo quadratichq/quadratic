@@ -108,7 +108,7 @@ export const router = createBrowserRouter(
             shouldRevalidate={() => false}
           />
           <Route
-            path="/education"
+            path={ROUTES.EDUCATION_ENROLL}
             loader={async () => {
               // Check their status, then send them to the dashboard with the education dialog
               await apiClient.education.refresh();

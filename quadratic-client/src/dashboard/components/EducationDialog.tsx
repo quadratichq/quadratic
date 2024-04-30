@@ -65,7 +65,7 @@ export function EducationDialog() {
             Learn more
           </Link>
           <Button onClick={handleClose} autoFocus>
-            Close
+            Understood
           </Button>
         </DialogFooter>
       </DialogContent>
