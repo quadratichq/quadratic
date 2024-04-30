@@ -58,10 +58,12 @@ export class CellHighlights extends Container {
 
   private draw() {
     this.highlights.clear();
-    const highlightedCells = [...this.highlightedCells].filter((cell) => cell.sheet === sheets.sheet.id);
+    const highlightedCells = [...this.highlightedCells];
     const highlightedCellIndex = this.highlightedCellIndex;
     if (!highlightedCells.length) return;
     highlightedCells.forEach((cell, index) => {
+      if (cell.sheet !== sheets.sheet.id) return;
+
       const colorNumber = convertColorStringToTint(colors.cellHighlightColor[cell.index % NUM_OF_CELL_REF_COLORS]);
       const cursorCell = sheets.sheet.getScreenRectangle(cell.column, cell.row, cell.width, cell.height);
 

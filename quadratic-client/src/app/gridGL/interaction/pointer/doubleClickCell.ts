@@ -3,6 +3,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 
 export function doubleClickCell(options: {
   column: number;
@@ -10,6 +11,8 @@ export function doubleClickCell(options: {
   mode?: CodeCellLanguage;
   cell?: string;
 }): void {
+  if (inlineEditorHandler.isEditingFormula()) return;
+
   const { mode, cell, column, row } = options;
   const settings = pixiAppSettings;
 
