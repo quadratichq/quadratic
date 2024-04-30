@@ -140,18 +140,20 @@ export class Javascript {
           let errorMessage = e.data.error;
           if (e.data.stack) {
             const stack = e.data.stack;
-            const errorSplit = stack.split('\n')[1].split(':');
-            if (errorSplit.length >= 2) {
-              errorLine = parseInt(errorSplit[errorSplit.length - 2]);
-              errorColumn = parseInt(errorSplit[errorSplit.length - 1]);
-              if (isNaN(errorLine)) {
-                errorLine = undefined;
-              } else {
-                errorLine -= javascriptLibraryLines - 1;
-                if (errorLine < 0) {
+            if (Array.isArray(stack)) {
+              const errorSplit = stack.split('\n')[1].split(':');
+              if (errorSplit.length >= 2) {
+                errorLine = parseInt(errorSplit[errorSplit.length - 2]);
+                errorColumn = parseInt(errorSplit[errorSplit.length - 1]);
+                if (isNaN(errorLine)) {
                   errorLine = undefined;
                 } else {
-                  errorMessage += ` at line ${errorLine}:${errorColumn}`;
+                  errorLine -= javascriptLibraryLines - 1;
+                  if (errorLine < 0) {
+                    errorLine = undefined;
+                  } else {
+                    errorMessage += ` at line ${errorLine}:${errorColumn}`;
+                  }
                 }
               }
             }
