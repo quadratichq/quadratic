@@ -21,7 +21,7 @@ import { Rectangle } from 'pixi.js';
 
 // Pixels needed when growing width to avoid monaco from scrolling the text
 // (determined by experimentation).
-const PADDING_FOR_GROWING_HORIZONTALLY = 20;
+const PADDING_FOR_GROWING_HORIZONTALLY = 8;
 
 // Minimum amount to scroll viewport when cursor is near the edge.
 const MINIMUM_MOVE_VIEWPORT = 50;
@@ -166,8 +166,8 @@ class InlineEditorHandler {
       this.changeToFormula(false);
     }
 
-    // the `X` is important so we get the right height given an empty string
-    this.sizingDiv.innerHTML = 'X' + value;
+    // the `|` is important so we get the right height given an empty string
+    this.sizingDiv.innerHTML = '|' + value;
     this.width = Math.max(
       this.cellOffsets.width - CURSOR_THICKNESS * 2,
       this.sizingDiv.offsetWidth + PADDING_FOR_GROWING_HORIZONTALLY
@@ -215,7 +215,7 @@ class InlineEditorHandler {
     }
     const value = inlineEditorMonaco.get();
 
-    if (!cancel && value.trim()) {
+    if (!cancel) {
       if (this.formula) {
         quadraticCore.setCodeCellValue({
           sheetId: sheets.sheet.id,
@@ -241,7 +241,7 @@ class InlineEditorHandler {
           sheets.sheet.id,
           this.location.x,
           this.location.y,
-          value,
+          value.trim(),
           sheets.getCursorPosition()
         );
       }
