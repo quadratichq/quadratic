@@ -111,6 +111,8 @@ class InlineEditorHandler {
     if (this.formula) {
       if (sheets.sheet.id !== this.location.sheetId) {
         this.div.style.display = 'none';
+        console.log('key down event');
+        window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         window.addEventListener('keydown', inlineEditorKeyboard.keyDown);
       } else {
         this.div.style.display = 'flex';
@@ -332,6 +334,10 @@ class InlineEditorHandler {
     if (this.open && (x === undefined || y === undefined || (this.location?.x === x && this.location.y === y))) {
       return this.location;
     }
+  }
+
+  isOpen(): boolean {
+    return this.open;
   }
 }
 

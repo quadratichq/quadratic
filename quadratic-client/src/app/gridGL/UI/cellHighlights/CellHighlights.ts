@@ -194,15 +194,15 @@ export class CellHighlights extends Container {
   }
 
   setHighlightedCell(index: number) {
-    this.highlightedCellIndex = this.getHighlightedCells().findIndex((cell) => cell.index === index);
+    this.highlightedCellIndex = this.highlightedCells.findIndex((cell) => cell.index === index);
+  }
+
+  getHighlightedCells() {
+    return this.highlightedCells;
   }
 
   clearHighlightedCell() {
     this.highlightedCellIndex = undefined;
     this.marchingHighlight.clear();
-  }
-
-  getHighlightedCells(): HighlightedCellRange[] {
-    return Array.from(this.highlightedCells.values()).filter((cell) => cell.sheet === sheets.sheet.id);
   }
 }

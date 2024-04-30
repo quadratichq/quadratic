@@ -30,7 +30,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
 
   useEffect(() => {
     const keyDownWindow = async (event: KeyboardEvent) => {
-      if (pixiAppSettings.input.show) return;
+      if (pixiAppSettings.input.show || inlineEditorHandler.isOpen()) return;
 
       if (
         (await keyboardViewport({
@@ -52,7 +52,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (pixiAppSettings.input.show && !inlineEditorHandler.cursorIsMoving) return;
+    if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
       keyboardClipboard({
         event,
