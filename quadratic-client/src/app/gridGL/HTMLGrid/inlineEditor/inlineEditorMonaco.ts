@@ -69,12 +69,12 @@ class InlineEditorMonaco {
     model.applyEdits([{ range, text: '' }]);
   }
 
-  focus() {
+  focus = () => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in focus');
     }
     this.editor.focus();
-  }
+  };
 
   resize(width: number, height: number) {
     if (!this.editor) {

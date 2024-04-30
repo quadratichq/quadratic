@@ -136,7 +136,10 @@ class InlineEditorFormula {
         const a1Notation = getA1Notation(location.x, location.y);
         this.insertInsertingCells(a1Notation);
       }
-      inlineEditorMonaco.focus();
+
+      // We need the timeout to ensure the pointerDown event does not change the
+      // focus again.
+      setTimeout(inlineEditorMonaco.focus, 0);
     }
   };
 }

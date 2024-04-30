@@ -122,19 +122,19 @@ export const CodeEditor = () => {
           editorInteractionState.selectedCell.y
         ));
 
+      const initialCode = editorInteractionState.initialCode;
+
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setCellsAccessed(codeCell.cells_accessed);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
-
-        if (!pushCodeCell) setEditorContent(codeCell.code_string);
-
+        if (!pushCodeCell) setEditorContent(initialCode ?? codeCell.code_string);
         const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
-        if (!pushCodeCell) setEditorContent('');
+        if (!pushCodeCell) setEditorContent(initialCode ?? '');
         setEvaluationResult(undefined);
         setOut(undefined);
       }
@@ -163,6 +163,7 @@ export const CodeEditor = () => {
     cellLocation.sheetId,
     cellLocation.x,
     cellLocation.y,
+    editorInteractionState.initialCode,
     editorInteractionState.selectedCell.x,
     editorInteractionState.selectedCell.y,
     editorInteractionState.selectedCellSheet,

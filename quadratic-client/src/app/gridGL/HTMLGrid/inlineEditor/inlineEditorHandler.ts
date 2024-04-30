@@ -276,6 +276,7 @@ class InlineEditorHandler {
       mode: 'Formula',
       selectedCell: { x: this.location.x, y: this.location.y },
       selectedCellSheet: this.location.sheetId,
+      initialCode: inlineEditorMonaco.get().slice(1),
       showCodeEditor: true,
     });
     this.close(0, 0, true);
