@@ -52,6 +52,14 @@ macro_rules! jsexpr {
     // Property access
     ($recv:ident[$($property_name_tok:tt)*] $($rest:tt)*) => {{
         let property_name = jsexpr!($($property_name_tok)*);
+
+        // this happens when you hover over a colon
+        // triggered this error in the console: `Uncaught Error: Reflect.get called on non-object`
+        // just return null in this case
+        if $recv == JsValue::NULL {
+            return Ok(JsValue::NULL);
+        }
+
         let result = js_sys::Reflect::get(&$recv, &property_name)?;
         jsexpr!(result $($rest)*)
     }};
