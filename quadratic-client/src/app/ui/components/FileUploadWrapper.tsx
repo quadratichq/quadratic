@@ -68,9 +68,15 @@ export const FileUploadWrapper = (props: PropsWithChildren) => {
         const insertAtCellLocation = { x: column, y: row } as Coordinate;
 
         if (fileType === 'csv') {
-          await quadraticCore.importCsv(sheets.sheet.id, file, insertAtCellLocation);
+          const error = await quadraticCore.importCsv(sheets.sheet.id, file, insertAtCellLocation);
+          if (error) {
+            addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
+          }
         } else if (fileType === 'parquet') {
-          await quadraticCore.importParquet(sheets.sheet.id, file, insertAtCellLocation);
+          const error = await quadraticCore.importParquet(sheets.sheet.id, file, insertAtCellLocation);
+          if (error) {
+            addGlobalSnackbar(`Error loading ${file.name}: ${error}`, { severity: 'warning' });
+          }
         } else {
           addGlobalSnackbar('Unsupported file type', { severity: 'warning' });
         }

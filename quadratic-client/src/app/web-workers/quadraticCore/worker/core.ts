@@ -412,7 +412,6 @@ class Core {
         } catch (error) {
           // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
           // type in the UI.
-          console.error(error);
           reportError(error);
           Sentry.captureException(error);
           resolve(error as string);
