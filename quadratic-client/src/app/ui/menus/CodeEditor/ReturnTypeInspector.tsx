@@ -1,6 +1,6 @@
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { codeEditorBaseStyles } from './styles';
@@ -43,12 +43,7 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
       message = (
         <>
           Use `return` to output value(s) to the sheet.{' '}
-          <Link
-            to={DOCUMENTATION_URL + '/writing-javascript/return-data-to-the-sheet'}
-            target="_blank"
-            rel="nofollow"
-            className="underline"
-          >
+          <Link to={DOCUMENTATION_JAVASCRIPT_RETURN_DATA} target="_blank" rel="nofollow" className="underline">
             Learn more.
           </Link>{' '}
         </>
