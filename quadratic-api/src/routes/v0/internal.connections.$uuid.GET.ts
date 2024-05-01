@@ -30,5 +30,5 @@ async function handler(req: RequestWithUser, res: Response) {
     // TODO: fix types, don't send sensitive info
     database: connection.database,
   };
-  return res.status(400).json(data);
+  return res.status(200).json(data);
 }
