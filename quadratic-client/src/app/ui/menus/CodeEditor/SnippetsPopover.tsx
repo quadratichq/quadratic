@@ -1,3 +1,4 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { ExternalLinkIcon } from '@/app/ui/icons';
 import {
@@ -19,11 +20,14 @@ import { IntegrationInstructionsOutlined } from '@mui/icons-material';
 import { IconButton, useTheme } from '@mui/material';
 import mixpanel from 'mixpanel-browser';
 import { ReactNode, useEffect } from 'react';
+import { useRecoilValue } from 'recoil';
 import { useCodeEditor } from './CodeEditorContext';
-import snippets from './snippets';
+import snippetsPython from './snippets';
+import snippetsJavascript from './snippetsJavascript';
 
 export function SnippetsPopover() {
   const { editorRef } = useCodeEditor();
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const { showSnippetsPopover, setShowSnippetsPopover } = useCodeEditor();
   const theme = useTheme();
 
@@ -32,6 +36,8 @@ export function SnippetsPopover() {
       mixpanel.track('[Snippets].opened');
     }
   }, [showSnippetsPopover]);
+
+  const snippets = editorInteractionState.mode === 'Javascript' ? snippetsJavascript : snippetsPython;
 
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>
