@@ -142,6 +142,8 @@ class InlineEditorFormula {
         this.insertInsertingCells(`${sheet}${a1Notation}`);
       }
 
+      inlineEditorHandler.sendMultiplayerUpdate();
+
       // We need the timeout to ensure the pointerDown event does not change the
       // focus again.
       setTimeout(inlineEditorMonaco.focus, 0);

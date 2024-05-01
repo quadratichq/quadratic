@@ -61,6 +61,7 @@ class InlineEditorHandler {
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
+    multiplayer.sendEndCellEdit();
   }
 
   // todo: this needs improvements
@@ -173,10 +174,11 @@ class InlineEditorHandler {
     }
   };
 
-  private sendMultiplayerUpdate() {
+  // Sends CellEdit updates to the multiplayer server.
+  sendMultiplayerUpdate() {
     multiplayer.sendCellEdit({
       text: inlineEditorMonaco.get(),
-      cursor: inlineEditorMonaco.getCursorColumn(),
+      cursor: inlineEditorMonaco.getCursorColumn() - 1,
       codeEditor: false,
       inlineCodeEditor: this.formula,
       bold: this.temporaryBold,
@@ -185,13 +187,23 @@ class InlineEditorHandler {
   }
 
   toggleItalics() {
-    this.temporaryItalic = !this.temporaryItalic;
+    if (this.temporaryItalic === undefined) {
+      this.temporaryItalic = !this.formatSummary?.italic;
+    } else {
+      this.temporaryItalic = !this.temporaryItalic;
+    }
     this.updateFont();
+    this.sendMultiplayerUpdate();
   }
 
   toggleBold() {
-    this.temporaryBold = !this.temporaryBold;
+    if (this.temporaryBold === undefined) {
+      this.temporaryBold = !this.formatSummary?.bold;
+    } else {
+      this.temporaryBold = !this.temporaryBold;
+    }
     this.updateFont();
+    this.sendMultiplayerUpdate();
   }
 
   private updateFont() {
@@ -199,7 +211,6 @@ class InlineEditorHandler {
     if (!this.formula) {
       const italic = this.temporaryItalic === undefined ? this.formatSummary?.italic : this.temporaryItalic;
       const bold = this.temporaryBold === undefined ? this.formatSummary?.bold : this.temporaryBold;
-      console.log({ italic, bold, summary: this.formatSummary });
       if (italic && bold) {
         fontFamily = 'OpenSans-BoldItalic';
       } else if (italic) {
@@ -229,6 +240,7 @@ class InlineEditorHandler {
     if (this.formula) {
       inlineEditorFormula.cellHighlights(this.location, value.slice(1));
     }
+    this.sendMultiplayerUpdate();
   };
 
   // Toggle between normal editor and formula editor.
@@ -335,8 +347,6 @@ class InlineEditorHandler {
     });
     this.close(0, 0, true);
     e.stopPropagation();
-
-    // todo: open in code editor
   };
 
   // Attaches the inline editor to a div created by React in InlineEditor.tsx
