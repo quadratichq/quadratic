@@ -19,6 +19,7 @@ export const ROUTES = {
   EDIT_TEAM: (uuid: string) => `/teams/${uuid}/edit`,
   EXAMPLES: '/examples',
   ACCOUNT: '/account',
+  EDUCATION_ENROLL: '/education/enroll',
 };
 
 export const ROUTE_LOADER_IDS = {
@@ -26,4 +27,10 @@ export const ROUTE_LOADER_IDS = {
   FILE: 'file',
   TEAM: 'team',
   DASHBOARD: 'dashboard',
+};
+
+export const SEARCH_PARAMS = {
+  DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education', CREATE_TEAM: 'create-team' } },
+  SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
+  SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
 };
