@@ -97,6 +97,20 @@ class InlineEditorKeyboard {
       }
     }
 
+    // toggle italics
+    else if (e.code === 'KeyI' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      inlineEditorHandler.toggleItalics();
+    }
+
+    // toggle bold
+    else if (e.code === 'KeyB' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      inlineEditorHandler.toggleBold();
+    }
+
     // Fallback for all other keys (used to end cursorIsMoving and return
     // control to the formula box)
     else {

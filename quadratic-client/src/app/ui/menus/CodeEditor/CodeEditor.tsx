@@ -180,7 +180,7 @@ export const CodeEditor = () => {
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
-    multiplayer.sendCellEdit('', 0, true);
+    multiplayer.sendCellEdit({ text: '', cursor: 0, codeEditor: true, inlineCodeEditor: false });
   }, [editorMode]);
 
   const closeEditor = useCallback(

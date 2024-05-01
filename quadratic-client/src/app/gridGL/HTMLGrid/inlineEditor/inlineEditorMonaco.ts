@@ -25,6 +25,10 @@ window.MonacoEnvironment = {
   },
 };
 
+// Pixels needed when growing width to avoid monaco from scrolling the text
+// (determined by experimentation).
+const PADDING_FOR_GROWING_HORIZONTALLY = 20;
+
 class InlineEditorMonaco {
   private editor?: editor.IStandaloneCodeEditor;
 
@@ -76,11 +80,19 @@ class InlineEditorMonaco {
     this.editor.focus();
   };
 
-  resize(width: number, height: number) {
+  resize(minWidth: number, height: number) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
     }
-    this.editor.layout({ width, height });
+    const domNode = this.editor.getDomNode();
+    if (!domNode) {
+      throw new Error('Expected domNode to be defined in layout');
+    }
+    const textarea = domNode.querySelector('textarea');
+    if (!textarea) {
+      throw new Error('Expected textarea to be defined in layout');
+    }
+    this.editor.layout({ width: Math.max(textarea.scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, minWidth), height });
   }
 
   removeSelection() {
@@ -98,6 +110,13 @@ class InlineEditorMonaco {
   setBackgroundColor(color: string) {
     theme.colors['editor.background'] = color;
     monaco.editor.defineTheme('inline-editor', theme);
+  }
+
+  setFontFamily(fontFamily: string) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in setFontFamily');
+    }
+    this.editor.updateOptions({ fontFamily });
   }
 
   // Changes the column of the cursor in the inline editor

@@ -13,15 +13,13 @@ import { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import { CellFormatSummary } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
-
-// Pixels needed when growing width to avoid monaco from scrolling the text
-// (determined by experimentation).
-const PADDING_FOR_GROWING_HORIZONTALLY = 8;
 
 // Minimum amount to scroll viewport when cursor is near the edge.
 const MINIMUM_MOVE_VIEWPORT = 50;
@@ -39,11 +37,9 @@ class InlineEditorHandler {
 
   cursorIsMoving = false;
 
-  private temporaryBold = false;
-  private temporaryItalic = false;
-
-  // this is used to calculate the width of the editor
-  private sizingDiv: HTMLDivElement;
+  private formatSummary?: CellFormatSummary;
+  private temporaryBold: boolean | undefined;
+  private temporaryItalic: boolean | undefined;
 
   // this is used to display the formula expand button
   private formulaExpandButton?: HTMLDivElement;
@@ -51,14 +47,6 @@ class InlineEditorHandler {
   constructor() {
     events.on('changeInput', this.changeInput);
     events.on('changeSheet', this.changeSheet);
-    this.sizingDiv = document.createElement('div');
-    this.sizingDiv.style.visibility = 'hidden';
-    this.sizingDiv.style.width = 'fit-content';
-    this.sizingDiv.style.fontSize = '14px';
-    this.sizingDiv.style.fontFamily = 'OpenSans';
-    this.sizingDiv.style.paddingLeft = CURSOR_THICKNESS + 'px';
-    this.sizingDiv.style.whiteSpace = 'nowrap';
-
     createFormulaStyleHighlights();
   }
 
@@ -67,7 +55,6 @@ class InlineEditorHandler {
     this.changeToFormula(false);
     this.temporaryBold = false;
     this.temporaryItalic = false;
-    this.width = 0;
     this.height = 0;
     this.open = false;
     this.cursorIsMoving = false;
@@ -155,8 +142,18 @@ class InlineEditorHandler {
       if (initialValue) {
         inlineEditorMonaco.setColumn(initialValue.length + 1);
       }
-      const format = await quadraticCore.getCellFormatSummary(this.location.sheetId, this.location.x, this.location.y);
-      inlineEditorMonaco.setBackgroundColor(format.fillColor ? convertColorStringToHex(format.fillColor) : '#ffffff');
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
+        this.location.sheetId,
+        this.location.x,
+        this.location.y
+      );
+      inlineEditorMonaco.setBackgroundColor(
+        this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
+      );
+      this.updateFont();
+
+      this.sendMultiplayerUpdate();
+
       this.cellOffsets = sheet.getCellOffsets(this.location.x, this.location.y);
       this.div.style.left = this.cellOffsets.x + CURSOR_THICKNESS + 'px';
       this.div.style.top = this.cellOffsets.y + 2 + 'px';
@@ -176,6 +173,44 @@ class InlineEditorHandler {
     }
   };
 
+  private sendMultiplayerUpdate() {
+    multiplayer.sendCellEdit({
+      text: inlineEditorMonaco.get(),
+      cursor: inlineEditorMonaco.getCursorColumn(),
+      codeEditor: false,
+      inlineCodeEditor: this.formula,
+      bold: this.temporaryBold,
+      italic: this.temporaryItalic,
+    });
+  }
+
+  toggleItalics() {
+    this.temporaryItalic = !this.temporaryItalic;
+    this.updateFont();
+  }
+
+  toggleBold() {
+    this.temporaryBold = !this.temporaryBold;
+    this.updateFont();
+  }
+
+  private updateFont() {
+    let fontFamily = 'OpenSans';
+    if (!this.formula) {
+      const italic = this.temporaryItalic === undefined ? this.formatSummary?.italic : this.temporaryItalic;
+      const bold = this.temporaryBold === undefined ? this.formatSummary?.bold : this.temporaryBold;
+      console.log({ italic, bold, summary: this.formatSummary });
+      if (italic && bold) {
+        fontFamily = 'OpenSans-BoldItalic';
+      } else if (italic) {
+        fontFamily = 'OpenSans-Italic';
+      } else if (bold) {
+        fontFamily = 'OpenSans-Bold';
+      }
+    }
+    inlineEditorMonaco.setFontFamily(fontFamily);
+  }
+
   // Handles updates to the Monaco editor cursor position
   updateMonacoCursorPosition = () => {
     // this will get called upon opening (before variables are set), and after every cursor movement
@@ -188,14 +223,7 @@ class InlineEditorHandler {
       this.changeToFormula(false);
     }
 
-    // the `|` is important so we get the right height given an empty string
-    this.sizingDiv.innerHTML = '|' + value;
-    this.width = Math.max(
-      this.cellOffsets.width - CURSOR_THICKNESS * 2,
-      this.sizingDiv.offsetWidth + PADDING_FOR_GROWING_HORIZONTALLY
-    );
-
-    inlineEditorMonaco.resize(this.width, this.height);
+    inlineEditorMonaco.resize(this.cellOffsets.width - CURSOR_THICKNESS * 2, this.height);
     pixiApp.cursor.dirty = true;
 
     if (this.formula) {
@@ -227,6 +255,7 @@ class InlineEditorHandler {
     } else {
       inlineEditorFormula.clearDecorations();
     }
+    this.updateFont();
   };
 
   // Close editor. It saves the value if cancel = false. It also moves the
@@ -318,7 +347,6 @@ class InlineEditorHandler {
 
     inlineEditorMonaco.attach(div);
 
-    document.body.appendChild(this.sizingDiv);
     this.formulaExpandButton = div.childNodes[1]! as HTMLDivElement;
     this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
   }
