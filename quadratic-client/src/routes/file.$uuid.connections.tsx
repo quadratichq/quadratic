@@ -1,44 +1,37 @@
 import { Type } from '@/shared/components/Type';
-import { FILE_SEARCH_PARAMS } from '@/shared/constants/routes';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
-export const connectionsById = {
+const connectionsById = {
   postgres: {
     name: 'Postgres',
     logoFullUrl: '/images/connections-logo-postgresql.png',
-    searchParamKey: FILE_SEARCH_PARAMS.DIALOG.KEY,
-    searchParamValue: FILE_SEARCH_PARAMS.DIALOG.VALUE.CONNECTIONS_CREATE_POSTGRESS,
+    id: 'postgres',
     // logoIconUrl: ''
     // Component: ConnectionFormFieldsPostgres,
   },
   mysql: {
     name: 'MySQL',
     logoFullUrl: '/images/connections-logo-mysql.png',
-    searchParamKey: FILE_SEARCH_PARAMS.DIALOG.KEY,
-    searchParamValue: FILE_SEARCH_PARAMS.DIALOG.VALUE.CONNECTIONS_CREATE_MYSQL,
+    id: 'mysql',
     // logoIconUrl: ''
     // Component: () => {},
   },
 };
 
-export const ConnectionsList = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+export const Component = () => {
+  const { uuid } = useParams() as { uuid: string };
+  const navigate = useNavigate();
   const [filterQuery, setFilterQuery] = useState<string>('');
 
   const onClose = () => {
-    setSearchParams(
-      (prev) => {
-        prev.delete(FILE_SEARCH_PARAMS.DIALOG.KEY);
-        return searchParams;
-      },
-      { replace: true }
-    );
+    navigate(ROUTES.FILE(uuid));
   };
 
   return (
@@ -56,10 +49,11 @@ export const ConnectionsList = () => {
                 variant="outline"
                 className="group relative h-auto"
                 onClick={() => {
-                  setSearchParams((prev) => {
-                    prev.set(connection.searchParamKey, connection.searchParamValue);
-                    return searchParams;
-                  });
+                  // setSearchParams((prev) => {
+                  //   prev.set(connection.searchParamKey, connection.searchParamValue);
+                  //   return searchParams;
+                  // });
+                  navigate(ROUTES.FILE_CONNECTIONS_CREATE(uuid, connection.id));
                 }}
               >
                 <PlusIcon className="absolute right-2 top-2 opacity-30 group-hover:opacity-100" />
@@ -104,3 +98,5 @@ export const ConnectionsList = () => {
     </Dialog>
   );
 };
+
+// TODO: (connections) make some nice error boundary routes for the dialog

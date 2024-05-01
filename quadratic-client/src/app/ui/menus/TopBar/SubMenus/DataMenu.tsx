@@ -4,16 +4,18 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import { DataIcon } from '@/app/ui/icons';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
+import { ROUTES } from '@/shared/constants/routes';
 import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import '@szhsin/react-menu/dist/index.css';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { MenuLineItem } from '../MenuLineItem';
 import { TopBarMenuItem } from '../TopBarMenuItem';
 
 export const DataMenu = () => {
+  const { uuid } = useParams() as { uuid: string };
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const { name: fileName } = useFileContext();
-  const [, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   return (
     <>
@@ -50,14 +52,7 @@ export const DataMenu = () => {
           />
         </MenuItem>
         <MenuDivider />
-        <MenuItem
-          onClick={() =>
-            setSearchParams((prev) => {
-              prev.set('connections', 'list');
-              return prev;
-            })
-          }
-        >
+        <MenuItem onClick={() => navigate(ROUTES.FILE_CONNECTIONS(uuid))}>
           <MenuLineItem primary="Manage connections" />
         </MenuItem>
       </Menu>

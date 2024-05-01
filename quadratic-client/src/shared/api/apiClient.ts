@@ -286,6 +286,12 @@ export const apiClient = {
     },
   },
 
+  connections: {
+    async list() {
+      return fetchFromApi(`/v0/connections`, { method: 'GET' }, ApiSchemas['/v0/connections.GET.response']);
+    },
+  },
+
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {
     return fetchFromApi(
       `/v0/feedback`,

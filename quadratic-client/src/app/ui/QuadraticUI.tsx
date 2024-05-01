@@ -18,8 +18,6 @@ import PresentationModeHint from './components/PresentationModeHint';
 import BottomBar from './menus/BottomBar';
 import CellTypeMenu from './menus/CellTypeMenu';
 import CommandPalette from './menus/CommandPalette';
-import { AddConnection } from './menus/Connections/AddConnection';
-import { ConnectionsList } from './menus/Connections/ConnectionsList';
 import FeedbackMenu from './menus/FeedbackMenu';
 import GoTo from './menus/GoTo';
 import SheetBar from './menus/SheetBar';
@@ -108,8 +106,6 @@ export default function QuadraticUI() {
       <PermissionOverlay />
       {!isEmbed && <PermissionOverlay />}
       <UpdateAlertVersion />
-      <ConnectionsList />
-      <AddConnection />
     </div>
   );
 }

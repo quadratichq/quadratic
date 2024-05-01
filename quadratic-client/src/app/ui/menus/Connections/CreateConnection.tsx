@@ -9,7 +9,6 @@ import {
 } from '@/shared/shadcn/ui/dialog';
 import { useEffect, useRef, useState } from 'react';
 // quadratic-api/src/routes/connections/types/Base
-import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
@@ -17,35 +16,18 @@ import { cn } from '@/shared/shadcn/utils';
 import { CircularProgress } from '@mui/material';
 import { CheckCircledIcon, ExclamationTriangleIcon, InfoCircledIcon, PlayIcon } from '@radix-ui/react-icons';
 import { useSearchParams } from 'react-router-dom';
-import { ConnectionConfiguration } from '../../../../../../quadratic-api/src/routes/connections/types/Base'; // TODO: fix this path
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
-
-export const connections = {
-  postgres: {
-    name: 'Postgres',
-    logoFullUrl: '/images/connections-logo-postgresql.png',
-    // logoIconUrl: ''
-    Component: ConnectionFormFieldsPostgres,
-  },
-  mysql: {
-    name: 'MySQL',
-    logoFullUrl: '/images/connections-logo-mysql.png',
-    // logoIconUrl: ''
-    Component: () => {},
-  },
-};
 
 // TODO: render different component based on the type
 export const AddConnection = () => {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
-  const [connectionSchema, setConnectionSchema] = useState<undefined | ConnectionConfiguration>(undefined);
+
   const formRef = useRef<HTMLFormElement>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const connections = searchParams.get('connections');
+
   const isManage = searchParams.get('manage');
-  const open = connections === 'add-postgres' || connections === 'add-mysql';
 
   const onBack = () => {
     setSearchParams((prev) => {
@@ -60,22 +42,13 @@ export const AddConnection = () => {
     });
   };
 
-  useEffect(() => {
-    apiClient.getSupportedConnections().then((result) => {
-      console.log('supported connections:', result);
-      setConnectionSchema(result[0]);
-    });
-  }, []);
-
   // Reset modal state when it closes
   useEffect(() => {
     setConnectionState('idle');
   }, [searchParams]);
 
-  console.log('connectionSchema:', connectionSchema);
-
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className=" max-w-lg">
         <DialogHeader>
           <DialogTitle>{isManage ? 'Manage' : 'Create'} Postgres connection</DialogTitle>
@@ -94,11 +67,13 @@ export const AddConnection = () => {
           onSubmit={(form) => {
             form.preventDefault();
 
+            //
+
             console.log(form);
           }}
           className="grid gap-4"
         >
-          <ConnectionFormFieldsPostgres />
+          <PostgresBody />
           <div
             className={cn(
               'flex items-center rounded border-2 px-2 py-2 pl-3',
@@ -172,13 +147,13 @@ export const AddConnection = () => {
         </form>
         <DialogFooter>
           <Button onClick={onBack} variant="link" className="mr-auto px-0">
-            Back to connections
+            Back
           </Button>
           <Button onClick={onClose} variant="outline">
             Cancel
           </Button>
           <Button onClick={onClose} disabled={connectionState !== 'success'}>
-            Add connection
+            Create connection
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -186,11 +161,7 @@ export const AddConnection = () => {
   );
 };
 
-export function InputWithLabel({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('grid w-full  items-center gap-1.5', className)}>{children}</div>;
-}
-
-function ConnectionFormFieldsPostgres() {
+function PostgresBody() {
   return (
     <>
       <InputWithLabel>
@@ -251,4 +222,8 @@ function ConnectionFormFieldsPostgres() {
       </div>
     </>
   );
+}
+
+export function InputWithLabel({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn('grid w-full  items-center gap-1.5', className)}>{children}</div>;
 }

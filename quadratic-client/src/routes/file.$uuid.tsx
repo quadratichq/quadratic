@@ -18,6 +18,7 @@ import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import {
   Link,
   LoaderFunctionArgs,
+  Outlet,
   isRouteErrorResponse,
   redirect,
   useLoaderData,
@@ -25,9 +26,9 @@ import {
   useRouteLoaderData,
 } from 'react-router-dom';
 import { MutableSnapshot, RecoilRoot } from 'recoil';
-import { Empty } from './components/Empty';
+import { Empty } from '../dashboard/components/Empty';
 
-export type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
+type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   const { uuid } = params as { uuid: string };
@@ -109,6 +110,7 @@ export const Component = () => {
   return (
     <RecoilRoot initializeState={initializeState}>
       <QuadraticApp />
+      <Outlet />
     </RecoilRoot>
   );
 };

@@ -72,13 +72,29 @@ export const router = createBrowserRouter(
             <Route
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
-              lazy={() => import('./dashboard/FileRoute')}
+              lazy={() => import('./routes/file.$uuid')}
               shouldRevalidate={({ currentUrl }) => {
                 // We don't want to revalidate anythin in the app
                 // because we don't have any 2-way data flow setup for the app
                 return false;
               }}
-            />
+            >
+              <Route
+                index
+                id={ROUTE_LOADER_IDS.FILE_METADATA}
+                loader={async () => {
+                  // TODO: get this working and split from /file/:uuid for revalidation
+                  const connections = await apiClient.connections.list();
+                  console.log('ran index route loader', { connections });
+                  return { connections };
+                }}
+              />
+              <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')} />
+              <Route
+                path="connections/create/:type"
+                lazy={() => import('./routes/file.$uuid.connections.create.$type')}
+              />
+            </Route>
           </Route>
         </Route>
 
@@ -96,18 +112,6 @@ export const router = createBrowserRouter(
             action={Create.action}
             shouldRevalidate={() => false}
           />
-          {/* <Route path={ROUTES.CONNECTIONS} lazy={() => import('./dashboard/connections/ConnectionsRoute')} /> */}
-          {/* <Route
-              path={ROUTES.CONNECTIONS_CREATE}
-              lazy={() => import('./dashboard/connections/SupportedConnectionsRoute')}
-            />
-            <Route
-              path={ROUTES.CONNECTIONS_CREATE_TYPE}
-              lazy={() => import('./dashboard/connections/SupportedConnectionsRoute')}
-            /> */}
-
-          <Route path={ROUTES.CONNECTIONS} lazy={() => import('./routes/connections')} />
-          <Route path={ROUTES.CONNECTIONS_CREATE} lazy={() => import('./routes/connections.create')} />
 
           <Route id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route path={ROUTES.FILES}>

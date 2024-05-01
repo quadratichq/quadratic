@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { JsonSchema } from './jsonSchema';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -82,6 +83,7 @@ const FileSchema = z.object({
 });
 
 const ConnectionNameSchema = z.string().min(1).max(80); // TODO: right length?
+const ConnectionTypeSchema = z.enum(['POSTGRES']);
 
 const connection = z.object({
   uuid: z.string(),
@@ -372,15 +374,15 @@ export const ApiSchemas = {
    * Connections
    * ===========================================================================
    */
-  '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ),
+  '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ), // TODO: remove
   '/v0/connections.GET.response': z.array(
     z.object({
       uuid: z.string().uuid(),
       name: ConnectionNameSchema,
-      created_date: z.string().datetime(),
-      updated_date: z.string().datetime(),
-      type: z.enum(['POSTGRES']),
-      database: z.string(),
+      createdDate: z.string().datetime(),
+      updatedDate: z.string().datetime(),
+      type: z.string(), // TODO: narrow types? will have to in prisma schema ConnectionTypeSchema,
+      database: JsonSchema,
     })
   ),
   '/v0/connections.POST.request': connection.omit({ uuid: true }),
@@ -390,12 +392,12 @@ export const ApiSchemas = {
 
   // Connection types
   '/v0/connections/create/postgres.POST.request': z.object({
-    name: z.string().min(1).max(80), // TODO:
+    name: z.string().min(1).max(80), // TODO: is this the right size?
     host: z.string(),
     port: z.number().min(0).max(65535),
-    database: z.string().optional(),
+    database: z.string(),
     username: z.string(),
-    password: z.string().optional(),
+    password: z.string(),
   }),
   '/v0/connections/create/postgres.POST.response': z.object({ message: z.string() }),
   '/v0/connections/create/mysql.POST.request': z.object({}),

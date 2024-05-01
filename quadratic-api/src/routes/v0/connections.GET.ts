@@ -12,6 +12,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     user: { id: userId },
   } = req;
 
+  // get connections belonging to a user
   const list = await dbClient.connection.findMany({
     where: {
       UserConnectionRole: {
@@ -20,17 +21,20 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
         },
       },
     },
+    orderBy: {
+      createdDate: 'desc',
+    },
   });
 
-  const resData = list.map(({ uuid, name, type, created_date, updated_date, database }) => ({
+  const data = list.map(({ uuid, name, type, createdDate, updatedDate, database }) => ({
     uuid,
     name,
     type,
-    created_date,
-    updated_date,
+    createdDate: createdDate.toISOString(),
+    updatedDate: updatedDate.toISOString(),
     database,
   }));
 
-  // @ts-ignore Fix error here with `type` that expects an enumerated string
-  return res.status(200).json(resData);
+  // @ts-expect-error fix JSON type for database
+  return res.status(200).json(data);
 }

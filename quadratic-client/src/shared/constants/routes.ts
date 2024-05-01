@@ -8,6 +8,9 @@ export const ROUTES = {
   FILES: '/files',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: (uuid: string) => `/file/${uuid}`,
+  FILE_CONNECTIONS: (uuid: string) => `/file/${uuid}/connections`,
+  FILE_CONNECTIONS_CREATE: (uuid: string, type: string) => `/file/${uuid}/connections/create/${type}`,
+  FILE_CONNECTION: (fileUuid: string, connectionUuid: string) => `/file/${fileUuid}/connections/${connectionUuid}`,
   CONNECTIONS: '/connections',
   CONNECTIONS_CREATE: '/connections/create',
   CONNECTIONS_CREATE_TYPE: (type: 'postgres' | 'etc') => `/connections/create/${type}`, // TODO: Pull types from backend
@@ -31,6 +34,18 @@ export const ROUTES = {
 export const ROUTE_LOADER_IDS = {
   ROOT: 'root',
   FILE: 'file',
+  FILE_METADATA: 'file-metadata',
   TEAM: 'team',
   DASHBOARD: 'dashboard',
+};
+
+export const FILE_SEARCH_PARAMS = {
+  DIALOG: {
+    KEY: 'dialog',
+    VALUE: {
+      CONNECTIONS_LIST: 'connections',
+      CONNECTIONS_CREATE_POSTGRESS: 'create-postgres-connection',
+      CONNECTIONS_CREATE_MYSQL: 'create-mysql-connection',
+    },
+  },
 };

@@ -8,7 +8,6 @@ import helmet from 'helmet';
 import path from 'path';
 import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
 import ai_chat_router from './routes/ai_chat';
-import connections_route from './routes/connections';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 
@@ -71,7 +70,6 @@ app.get('/', (req, res) => {
 // App routes
 // TODO: eventually move all of these into the `v0` directory and register them dynamically
 app.use('/ai', ai_chat_router);
-app.use('/v0/connections', connections_route);
 // Internal routes
 app.use('/v0/internal', internal_router);
 

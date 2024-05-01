@@ -127,18 +127,17 @@ enum ConnectionRole {
 }
 
 model Connection {
-    id                  Int                   @id @default(autoincrement())
-    uuid                String                @unique @default(uuid()) // used in URLs
-    name                String
-    created_date        DateTime              @default(now())
-    updated_date        DateTime              @default(now())
-    archived            DateTime?
+    id                 Int                  @id @default(autoincrement())
+    uuid               String               @unique @default(uuid()) // used in URLs
+    name               String
+    createdDate        DateTime             @default(now()) @map("created_date")
+    updatedDate        DateTime             @default(now()) @map("updated_date")
+    archived           DateTime?
     // Details
-    type                String
-    database            Json
-    secretArn           String // AWS Secret Manager ARN
-    UserConnectionRole  UserConnectionRole[]
-    ConnectionRunResult ConnectionRunResult[]
+    type               String
+    database           Json
+    // secretArn          String // AWS Secret Manager ARN
+    UserConnectionRole UserConnectionRole[]
 }
 
 model UserConnectionRole {
@@ -148,22 +147,9 @@ model UserConnectionRole {
     user         User           @relation(fields: [userId], references: [id])
     connection   Connection     @relation(fields: [connectionId], references: [id])
     role         ConnectionRole
-    created_date DateTime       @default(now())
+    createdDate  DateTime       @default(now()) @map("created_date")
 
     @@unique([userId, connectionId])
-}
-
-model ConnectionRunResult {
-    id               Int        @id @default(autoincrement())
-    uuid             String     @unique @default(uuid()) // used in URLs
-    connectionId     Int
-    connection       Connection @relation(fields: [connectionId], references: [id])
-    success          Boolean
-    std_out          String?
-    std_err          String?
-    result_meta_data Json?
-    time_start       DateTime   @default(now())
-    time_end         DateTime?
 }
 
 model UserTeamRole {
