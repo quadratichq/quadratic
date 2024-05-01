@@ -1,6 +1,15 @@
 declare var self: WorkerGlobalScope & typeof globalThis;
 
 declare global {
+  /**
+   * Get a range of cells from the sheet
+   * @param x0 x coordinate of the top-left cell
+   * @param y0 y coordinate of the top-left cell
+   * @param x1 x coordinate of the bottom-right cell
+   * @param y1 y coordinate of the bottom-right cell
+   * @param [sheetName] optional name of the sheet
+   * @returns 2D array [y][x] of the cells
+   */
   function getCells(
     x0: number,
     y0: number,
@@ -8,11 +17,56 @@ declare global {
     y1?: number,
     sheetName?: string
   ): Promise<(number | string | boolean | undefined)[][]>;
+
+  /**
+   * Get a single cell from the sheet
+   * @param x x coordinate of the cell
+   * @param y y coordinate of the cell
+   * @param sheetName optional name of the sheet to get the cell
+   * @returns value of the cell
+   */
   function getCell(x: number, y: number, sheetName?: string): Promise<number | string | boolean | undefined>;
+
+  /**
+   * Alias for getCell - Get a single cell from the sheet
+   * @param x x coordinate of the cell
+   * @param y y coordinate of the cell
+   * @param sheetName The optional name of the sheet to get the cell
+   * @returns value of the cell
+   */
   function c(x: number, y: number, sheetName?: string): Promise<number | string | boolean | undefined>;
+
+  /**
+   * Gets the position of the code cell
+   * @returns { x: number, y: number }
+   */
   function pos(): { x: number; y: number };
+
+  /**
+   * Gets a cell relative to the current cell
+   * @param {number} deltaX Change in x relative to the code cell
+   * @param {number} deltaY Change in y relative to the code cell
+   * @returns value of the cell
+   */
   function relCell(deltaX: number, deltaY: number): Promise<number | string | boolean | undefined>;
+
+  /**
+   * Alias for relCell - Gets a cell relative to the current cell
+   * @param {number} deltaX Change in x relative to code cell
+   * @param {number} deltaY Change in y relative to code cell
+   * @returns value of the cell
+   */
   function rc(deltaX: number, deltaY: number): Promise<number | string | boolean | undefined>;
+
+  /**
+   * Get a range of cells from the sheet and create an array of object based on
+   * the header row.
+   * @param x0 x coordinate of the top-left cell
+   * @param y0 y coordinate of the top-left cell
+   * @param x1 x coordinate of the bottom-right cell
+   * @param y1 y coordinate of the bottom-right cell
+   * @param sheetName optional name of the sheet
+   */
   function getCellsWithHeadings(
     x0: number,
     y: number,
@@ -36,15 +90,6 @@ const javascriptSendMessageAwaitingResponse = async (message: {
   });
 };
 
-/**
- * Get a range of cells from the sheet
- * @param x0 x coordinate of the top-left cell
- * @param y0 y coordinate of the top-left cell
- * @param x1 x coordinate of the bottom-right cell
- * @param y1 y coordinate of the bottom-right cell
- * @param [sheetName] optional name of the sheet
- * @returns 2D array [y][x] of the cells
- */
 export const getCells = async (
   x0: number,
   y0: number,
@@ -55,15 +100,6 @@ export const getCells = async (
   return await javascriptSendMessageAwaitingResponse({ type: 'getCells', x0, y0, x1, y1, sheetName });
 };
 
-/**
- * Get a range of cells from the sheet and create an array of object based on
- * the header row.
- * @param x0 x coordinate of the top-left cell
- * @param y0 y coordinate of the top-left cell
- * @param x1 x coordinate of the bottom-right cell
- * @param y1 y coordinate of the bottom-right cell
- * @param sheetName optional name of the sheet
- */
 export const getCellsWithHeadings = async (
   x0: number,
   y: number,
@@ -82,13 +118,6 @@ export const getCellsWithHeadings = async (
   });
 };
 
-/**
- * Get a single cell from the sheet
- * @param x x coordinate of the cell
- * @param y y coordinate of the cell
- * @param sheetName optional name of the sheet to get the cell
- * @returns value of the cell
- */
 export const getCell = async (
   x: number,
   y: number,
@@ -98,38 +127,15 @@ export const getCell = async (
   return results?.[0]?.[0];
 };
 
-/**
- * Alias for getCell - Get a single cell from the sheet
- * @param x x coordinate of the cell
- * @param y y coordinate of the cell
- * @param sheetName The optional name of the sheet to get the cell
- * @returns value of the cell
- */
 export const c = getCell;
 
-/**
- * Gets the position of the code cell
- * @returns { x: number, y: number }
- */
 export const pos = (): { x: number; y: number } => {
   return { x: 0, y: 0 };
 };
 
-/**
- * Gets a cell relative to the current cell
- * @param {number} deltaX Change in x relative to the code cell
- * @param {number} deltaY Change in y relative to the code cell
- * @returns value of the cell
- */
 export const relCell = async (deltaX: number, deltaY: number) => {
   const p = pos();
   return await getCell(deltaX + p.x, deltaY + p.y);
 };
 
-/**
- * Alias for relCell - Gets a cell relative to the current cell
- * @param {number} deltaX Change in x relative to code cell
- * @param {number} deltaY Change in y relative to code cell
- * @returns value of the cell
- */
 export const rc = relCell;
