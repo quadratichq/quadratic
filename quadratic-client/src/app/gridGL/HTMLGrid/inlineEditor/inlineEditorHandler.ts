@@ -52,6 +52,7 @@ class InlineEditorHandler {
 
   // Resets state after editing is complete.
   private reset() {
+    this.location = undefined;
     this.changeToFormula(false);
     this.temporaryBold = false;
     this.temporaryItalic = false;
@@ -173,7 +174,7 @@ class InlineEditorHandler {
       this.keepCursorVisible();
       inlineEditorMonaco.focus();
     } else {
-      this.reset();
+      this.close(0, 0, false);
     }
   };
 
@@ -262,10 +263,7 @@ class InlineEditorHandler {
       inlineEditorMonaco.setLanguage('plaintext');
     }
     this.formulaExpandButton.style.display = formula ? 'block' : 'none';
-    if (!this.location) {
-      throw new Error('Expected model to be defined in changeToFormula');
-    }
-    if (formula) {
+    if (formula && this.location) {
       inlineEditorFormula.cellHighlights(this.location, inlineEditorMonaco.get().slice(1));
     } else {
       inlineEditorFormula.clearDecorations();
@@ -316,17 +314,19 @@ class InlineEditorHandler {
       }
     }
 
-    pixiAppSettings.changeInput(false);
     this.reset();
+    pixiAppSettings.changeInput(false);
 
     // Update Grid Interaction state, reset input value state
-    const position = sheets.sheet.cursor.cursorPosition;
-    sheets.sheet.cursor.changePosition({
-      cursorPosition: {
-        x: position.x + deltaX,
-        y: position.y + deltaY,
-      },
-    });
+    if (deltaX || deltaY) {
+      const position = sheets.sheet.cursor.cursorPosition;
+      sheets.sheet.cursor.changePosition({
+        cursorPosition: {
+          x: position.x + deltaX,
+          y: position.y + deltaY,
+        },
+      });
+    }
 
     // Set focus back to Grid
     focusGrid();
@@ -392,6 +392,14 @@ class InlineEditorHandler {
       throw new Error('Expected div to be defined in hideDiv');
     }
     this.div.style.display = 'none';
+  }
+
+  // Called when manually changing cell position via clicking on a new cell
+  // (except when editing formula).
+  changingPosition() {
+    if (this.open && !this.formula) {
+      this.close(0, 0, false);
+    }
   }
 }
 
