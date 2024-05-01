@@ -113,7 +113,7 @@ export const connectionConfigurationZ = z.object({
 });
 
 // Zod schemas for API endpoints
-export const ApiSchemas = {
+export const ApiSchemas: { [key: string]: z.ZodType<any> } = {
   /**
    * ===========================================================================
    * Files
@@ -366,33 +366,62 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/users.acknowledge.GET.response': z.object({ message: z.string() }),
-
-  /**
-   * ===========================================================================
-   * Connections
-   * ===========================================================================
-   */
-  '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ), // TODO: remove
-  '/v0/connections.GET.response': z.array(ConnectionSchema),
-  '/v0/connections.POST.request': ConnectionSchema.omit({ uuid: true }),
-  '/v0/connections.POST.response': z.any(), // TODO:
-  '/v0/connections/:uuid.GET.response': ConnectionSchema,
-  '/v0/connections/:uuid/run.POST.request': z.object({}), // TODO:
-  '/v0/connections/:uuid/run.POST.response': z.any(), // TODO:
-
-  // Connection types
-  '/v0/connections/create/postgres.POST.request': z.object({
-    name: z.string().min(1).max(80), // TODO: is this the right size?
-    host: z.string(),
-    port: z.number().min(0).max(65535),
-    database: z.string(),
-    username: z.string(),
-    password: z.string(),
-  }),
-  '/v0/connections/create/postgres.POST.response': z.object({ message: z.string() }),
-  '/v0/connections/create/mysql.POST.request': z.object({}),
 };
 
+/**
+ * ===========================================================================
+ * Connections
+ * ===========================================================================
+ */
+
+const ConnectionSchemaBase = z.object({
+  uuid: z.string().uuid(),
+  name: z.string(),
+  createdDate: z.string().datetime(),
+  updatedDate: z.string().datetime(),
+});
+
+const ConnectionTypeSchemaPostgres = z.object({
+  type: z.literal('POSTGRES'),
+  database: z.object({
+    host: z.string(),
+    port: z.number(),
+    username: z.string(),
+    password: z.string(),
+    database: z.string(),
+  }),
+});
+
+const ConnectionTypeSchemaCoreMysql = z.object({
+  type: z.literal('MYSQL'),
+  database: z.object({
+    foo: z.string(),
+  }),
+});
+
+const AnyConnectionSchema = z.union([
+  ConnectionSchemaBase.merge(ConnectionTypeSchemaPostgres),
+  ConnectionSchemaBase.merge(ConnectionTypeSchemaCoreMysql),
+]);
+
+ApiSchemas['/v0/connections.GET.response'] = z.array(AnyConnectionSchema);
+ApiSchemas['/v0/connections.POST.request'] = z.union([
+  ConnectionTypeSchemaPostgres.merge(ConnectionSchemaBase.pick({ name: true })),
+  ConnectionTypeSchemaCoreMysql.merge(ConnectionSchemaBase.pick({ name: true })),
+]);
+ApiSchemas['/v0/connections.POST.response'] = z.object({ uuid: ConnectionSchemaBase.shape.uuid });
+
+ApiSchemas['/v0/connections/:uuid.GET.response'] = AnyConnectionSchema;
+ApiSchemas['/v0/connections/:uuid/run.POST.request'] = z.object({}); // TODO:
+ApiSchemas['/v0/connections/:uuid/run.POST.response'] = z.any(); // TODO:
+
+ApiSchemas['/v0/connections/supported.GET.response'] = z.array(connectionConfigurationZ); // TODO: remove
+
+/**
+ * ===========================================================================
+ * Dynamically export the types
+ * ===========================================================================
+ */
 type ApiKeys = keyof typeof ApiSchemas;
 export type ApiTypes = {
   [key in ApiKeys]: z.infer<(typeof ApiSchemas)[key]>;
