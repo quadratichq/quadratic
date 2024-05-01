@@ -2,6 +2,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { ExternalLinkIcon } from '@/app/ui/icons';
 import {
+  DOCUMENTATION_JAVASCRIPT_URL,
   DOCUMENTATION_PYTHON_URL,
   WEBSITE_CHANGELOG,
   WEBSITE_CONNECTIONS,
@@ -38,7 +39,8 @@ export function SnippetsPopover() {
   }, [showSnippetsPopover]);
 
   const snippets = editorInteractionState.mode === 'Javascript' ? snippetsJavascript : snippetsPython;
-
+  const documentationLink =
+    editorInteractionState.mode === 'Javascript' ? DOCUMENTATION_JAVASCRIPT_URL : DOCUMENTATION_PYTHON_URL;
   return (
     <Popover open={showSnippetsPopover} onOpenChange={setShowSnippetsPopover}>
       <PopoverTrigger asChild>
@@ -139,7 +141,7 @@ export function SnippetsPopover() {
           </CommandList>
         </Command>
         <ExternalLink
-          href={DOCUMENTATION_PYTHON_URL}
+          href={documentationLink}
           onClick={() => {
             mixpanel.track('[Snippets].clickDocs');
           }}
