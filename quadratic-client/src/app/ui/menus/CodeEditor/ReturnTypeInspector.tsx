@@ -40,7 +40,19 @@ export function ReturnTypeInspector({ evaluationResult, show, language }: Return
         </>
       );
     } else {
-      message = <>Use `return` to output value(s) to the sheet.</>;
+      message = (
+        <>
+          Use `return` to output value(s) to the sheet.{' '}
+          <Link
+            to={DOCUMENTATION_URL + '/writing-javascript/return-data-to-the-sheet'}
+            target="_blank"
+            rel="nofollow"
+            className="underline"
+          >
+            Learn more.
+          </Link>{' '}
+        </>
+      );
     }
   } else {
     message = <></>;
