@@ -83,6 +83,8 @@ export function initMixpanelAnalytics(user: User) {
 
   mixpanel.init(import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY, {
     api_host: 'https://mixpanel-proxy.quadratichq.com',
+    cross_subdomain_cookie: true,
+    cookie_domain: '.quadratichq.com',
   });
 
   mixpanel.register({
