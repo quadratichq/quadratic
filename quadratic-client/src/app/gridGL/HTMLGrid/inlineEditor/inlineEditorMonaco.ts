@@ -268,6 +268,15 @@ class InlineEditorMonaco {
     this.editor.onKeyDown((e) => inlineEditorKeyboard.keyDown(e.browserEvent));
     this.editor.onDidChangeCursorPosition(inlineEditorHandler.keepCursorVisible);
   }
+
+  // Sends a keyboard event to the editor (used when returning
+  // to the original sheet after adding cells from another sheet)
+  sendKeyboardEvent(e: KeyboardEvent) {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in sendKeyboardEvent');
+    }
+    this.editor.trigger('keyboard', 'type', e);
+  }
 }
 
 export const inlineEditorMonaco = new InlineEditorMonaco();

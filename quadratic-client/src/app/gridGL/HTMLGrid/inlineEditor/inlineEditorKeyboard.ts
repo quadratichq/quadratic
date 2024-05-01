@@ -117,7 +117,10 @@ class InlineEditorKeyboard {
       if (inlineEditorHandler.cursorIsMoving) {
         inlineEditorHandler.cursorIsMoving = false;
         this.resetKeyboardPosition();
-        inlineEditorHandler.sendMultiplayerUpdate();
+        if (sheets.sheet.id !== inlineEditorHandler.location?.sheetId) {
+          inlineEditorMonaco.sendKeyboardEvent(e);
+          inlineEditorHandler.sendMultiplayerUpdate();
+        }
       }
     }
   };

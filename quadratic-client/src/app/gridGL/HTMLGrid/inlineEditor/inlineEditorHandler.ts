@@ -62,6 +62,7 @@ class InlineEditorHandler {
     inlineEditorFormula.clearDecorations();
     window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
     multiplayer.sendEndCellEdit();
+    this.hideDiv();
   }
 
   // todo: this needs improvements
@@ -98,12 +99,15 @@ class InlineEditorHandler {
     if (!this.div || !this.location || !this.open) return;
     if (this.formula) {
       if (sheets.sheet.id !== this.location.sheetId) {
-        this.div.style.display = 'none';
+        this.hideDiv();
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         window.addEventListener('keydown', inlineEditorKeyboard.keyDown);
       } else {
-        this.div.style.display = 'flex';
+        this.showDiv();
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
+        this.updateMonacoCursorPosition();
+        this.keepCursorVisible();
+        inlineEditorMonaco.focus();
       }
       inlineEditorFormula.cursorMoved();
     } else {
@@ -120,7 +124,7 @@ class InlineEditorHandler {
     }
     if (input) {
       this.open = true;
-      this.div.style.display = 'flex';
+      this.showDiv();
       const sheet = sheets.sheet;
       this.location = {
         sheetId: sheet.id,
@@ -169,7 +173,6 @@ class InlineEditorHandler {
       this.keepCursorVisible();
       inlineEditorMonaco.focus();
     } else {
-      this.div.style.display = 'none';
       this.reset();
     }
   };
@@ -375,6 +378,20 @@ class InlineEditorHandler {
 
   isOpen(): boolean {
     return this.open;
+  }
+
+  showDiv() {
+    if (!this.div) {
+      throw new Error('Expected div to be defined in showDiv');
+    }
+    this.div.style.display = 'flex';
+  }
+
+  hideDiv() {
+    if (!this.div) {
+      throw new Error('Expected div to be defined in hideDiv');
+    }
+    this.div.style.display = 'none';
   }
 }
 
