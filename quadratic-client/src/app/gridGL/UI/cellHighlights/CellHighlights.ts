@@ -90,6 +90,8 @@ export class CellHighlights extends Container {
       this.highlightedCellIndex = undefined;
       return;
     }
+    // Index may not have been set yet.
+    if (this.highlightedCellIndex === undefined) return;
     if (this.marchLastTime === 0) {
       this.marchLastTime = Date.now();
     } else if (Date.now() - this.marchLastTime < MARCH_ANIMATE_TIME_MS) {
@@ -97,11 +99,7 @@ export class CellHighlights extends Container {
     } else {
       this.marchLastTime = Date.now();
     }
-    const highlightedCell =
-      this.highlightedCellIndex === undefined ? undefined : this.highlightedCells[this.highlightedCellIndex];
-    if (!highlightedCell) {
-      throw new Error('Expected highlightedCell to be defined in updateMarchingHighlight');
-    }
+    const highlightedCell = this.highlightedCells[this.highlightedCellIndex];
     const colorNumber = convertColorStringToTint(
       colors.cellHighlightColor[highlightedCell.index % NUM_OF_CELL_REF_COLORS]
     );
