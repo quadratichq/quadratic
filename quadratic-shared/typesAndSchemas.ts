@@ -82,17 +82,15 @@ const FileSchema = z.object({
   thumbnail: z.string().url().nullable(),
 });
 
-const ConnectionNameSchema = z.string().min(1).max(80); // TODO: right length?
 const ConnectionTypeSchema = z.enum(['POSTGRES']);
 
-const connection = z.object({
-  uuid: z.string(),
-  name: z.string(),
-  host: z.string(),
-  port: z.string(),
-  database: z.string(),
-  username: z.string(),
-  password: z.string().optional(),
+const ConnectionSchema = z.object({
+  uuid: z.string().uuid(),
+  name: z.string().min(1).max(80), // TODO: right length?,
+  createdDate: z.string().datetime(),
+  updatedDate: z.string().datetime(),
+  type: z.string(), // TODO: narrow types? will have to in prisma schema ConnectionTypeSchema,
+  database: JsonSchema,
 });
 
 // TODO: duplicated with API
@@ -375,18 +373,10 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ), // TODO: remove
-  '/v0/connections.GET.response': z.array(
-    z.object({
-      uuid: z.string().uuid(),
-      name: ConnectionNameSchema,
-      createdDate: z.string().datetime(),
-      updatedDate: z.string().datetime(),
-      type: z.string(), // TODO: narrow types? will have to in prisma schema ConnectionTypeSchema,
-      database: JsonSchema,
-    })
-  ),
-  '/v0/connections.POST.request': connection.omit({ uuid: true }),
+  '/v0/connections.GET.response': z.array(ConnectionSchema),
+  '/v0/connections.POST.request': ConnectionSchema.omit({ uuid: true }),
   '/v0/connections.POST.response': z.any(), // TODO:
+  '/v0/connections/:uuid.GET.response': ConnectionSchema,
   '/v0/connections/:uuid/run.POST.request': z.object({}), // TODO:
   '/v0/connections/:uuid/run.POST.response': z.any(), // TODO:
 
