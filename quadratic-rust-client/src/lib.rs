@@ -20,7 +20,7 @@ impl SheetOffsetsWasm {
     }
 
     #[wasm_bindgen(js_name = "empty")]
-    pub fn new() -> SheetOffsets {
+    pub fn new_sheet_offsets() -> SheetOffsets {
         SheetOffsets::default()
     }
 }
