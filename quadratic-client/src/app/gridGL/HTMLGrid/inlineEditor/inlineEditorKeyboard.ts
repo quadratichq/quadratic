@@ -117,7 +117,7 @@ class InlineEditorKeyboard {
       if (inlineEditorHandler.cursorIsMoving) {
         inlineEditorHandler.cursorIsMoving = false;
         this.resetKeyboardPosition();
-        inlineEditorMonaco.insertTextAtCursor(e.key);
+        inlineEditorHandler.sendMultiplayerUpdate();
       }
     }
   };

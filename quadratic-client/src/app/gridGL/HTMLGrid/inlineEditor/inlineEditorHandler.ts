@@ -234,7 +234,7 @@ class InlineEditorHandler {
       this.changeToFormula(false);
     }
 
-    inlineEditorMonaco.resize(this.cellOffsets.width - CURSOR_THICKNESS * 2, this.height);
+    this.width = inlineEditorMonaco.resize(this.cellOffsets.width - CURSOR_THICKNESS * 2, this.height);
     pixiApp.cursor.dirty = true;
 
     if (this.formula) {

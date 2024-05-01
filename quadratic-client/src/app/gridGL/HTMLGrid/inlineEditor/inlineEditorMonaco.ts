@@ -80,7 +80,8 @@ class InlineEditorMonaco {
     this.editor.focus();
   };
 
-  resize(minWidth: number, height: number) {
+  // Resizes the Monaco editor and returns the width.
+  resize(minWidth: number, height: number): number {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
     }
@@ -92,7 +93,9 @@ class InlineEditorMonaco {
     if (!textarea) {
       throw new Error('Expected textarea to be defined in layout');
     }
-    this.editor.layout({ width: Math.max(textarea.scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, minWidth), height });
+    const width = Math.max(textarea.scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, minWidth);
+    this.editor.layout({ width, height });
+    return width;
   }
 
   removeSelection() {
