@@ -30,6 +30,13 @@ export async function javascriptConvertOutputType(
       return null;
     }
     return { output: [value.toString(), 'number'], displayType: 'number' };
+  } else if (value.includes('[object Promise]')) {
+    message.push(
+      'WARNING: Unsupported output type: `Promise`' +
+        (x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : '') +
+        '. Likely you are missing `await` before a call that returns a Promise, e.g., `await getCells(...)`'
+    );
+    return null;
   } else if (value === 'function') {
     message.push(
       `WARNING: Unsupported output type: 'function' ${
