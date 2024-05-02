@@ -61,7 +61,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/files/:uuid/sha
   const dbUsers = dbFile.UserFileRole;
 
   // Lookup extra user info in Auth0
-  const usersToSearchFor = dbUsers.map(({ user }) => user);
+  const usersToSearchFor: { id: number; auth0Id: string }[] = dbUsers.map(({ user }) => user);
   if (dbFile.ownerUser) {
     usersToSearchFor.push({ id: dbFile.ownerUser.id, auth0Id: dbFile.ownerUser.auth0Id });
   }

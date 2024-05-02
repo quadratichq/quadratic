@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { infer as ZodInfer, ZodObject, ZodTypeAny } from 'zod';
+import { NODE_ENV } from '../env-vars';
 import { ResponseError } from '../types/Response';
 import { ApiError } from '../utils/ApiError';
 
@@ -71,6 +72,7 @@ export const parseRequest = <S extends RequestSchema>(req: Request, schema: S): 
 
     return data;
   } catch (error) {
+    if (NODE_ENV === 'development') console.error(error);
     throw new ApiError(400, 'Bad request. Schema validation failed', error);
   }
 };

@@ -1,6 +1,6 @@
-import { useDashboardContext } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import {
@@ -16,9 +16,9 @@ import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckIcon, PersonIcon, ReloadIcon } from '@radix-ui/react-icons';
 import { TeamSchema } from 'quadratic-shared/typesAndSchemas';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { ActionFunctionArgs, redirect } from 'react-router-dom';
+import { ActionFunctionArgs, redirect, useSearchParams } from 'react-router-dom';
 import z from 'zod';
 
 type ActionData = {
@@ -38,7 +38,7 @@ const FormSchema = z.object({
 });
 
 export const CreateTeamDialog = () => {
-  const [, setDashboardState] = useDashboardContext();
+  const [, setSearchParams] = useSearchParams();
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [showPlans, setShowPlans] = useState(true);
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'error'>('idle');
@@ -70,7 +70,13 @@ export const CreateTeamDialog = () => {
   };
   const onClose = () => {
     setShowPlans(true);
-    setDashboardState((prev) => ({ ...prev, showCreateTeamDialog: false }));
+    setSearchParams(
+      (prev) => {
+        prev.delete(SEARCH_PARAMS.DIALOG.KEY);
+        return prev;
+      },
+      { replace: true }
+    );
   };
   const plans = [
     {
@@ -97,8 +103,8 @@ export const CreateTeamDialog = () => {
           {showPlans ? (
             <div className="flex flex-col sm:flex-row">
               {plans.map(({ title, price, features }, i) => (
-                <>
-                  <div key={i} className={`${title === 'Team' ? 'flex-grow' : ''}`}>
+                <Fragment key={i}>
+                  <div className={`${title === 'Team' ? 'flex-grow' : ''}`}>
                     <div className="flex items-center">
                       <div className="flex w-10 items-center justify-center">
                         <PersonIcon />
@@ -132,7 +138,7 @@ export const CreateTeamDialog = () => {
                     )}
                   </div>
                   {i === 0 && <div className="my-4 h-[1px] w-full bg-border sm:mx-6 sm:my-0 sm:h-auto sm:w-[1px]" />}
-                </>
+                </Fragment>
               ))}
             </div>
           ) : (
