@@ -22,6 +22,23 @@ declare global {
   ): Promise<(number | string | boolean | undefined)[][]>;
 
   /**
+   * Alias for getCells: Get a range of cells from the sheet
+   * @param x0 x coordinate of the top-left cell
+   * @param y0 y coordinate of the top-left cell
+   * @param x1 x coordinate of the bottom-right cell
+   * @param y1 y coordinate of the bottom-right cell
+   * @param [sheetName] optional name of the sheet
+   * @returns 2D array [y][x] of the cells
+   */
+  function cells(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1?: number,
+    sheetName?: string
+  ): Promise<(number | string | boolean | undefined)[][]>;
+
+  /**
    * Get a single cell from the sheet
    * @param x x coordinate of the cell
    * @param y y coordinate of the cell
@@ -38,6 +55,15 @@ declare global {
    * @returns value of the cell
    */
   function c(x: number, y: number, sheetName?: string): Promise<number | string | boolean | undefined>;
+
+  /**
+   * Alias for getCell - Get a single cell from the sheet
+   * @param x x coordinate of the cell
+   * @param y y coordinate of the cell
+   * @param sheetName The optional name of the sheet to get the cell
+   * @returns value of the cell
+   */
+  function cell(x: number, y: number, sheetName?: string): Promise<number | string | boolean | undefined>;
 
   /**
    * Gets the position of the code cell
@@ -121,6 +147,8 @@ export const getCells = async (
   return await javascriptSendMessageAwaitingResponse({ type: 'getCells', x0, y0, x1, y1, sheetName });
 };
 
+export const cells = getCells;
+
 export const getCellsWithHeadings = async (
   x0: number,
   y0: number,
@@ -173,6 +201,8 @@ export const getCell = async (
 };
 
 export const c = getCell;
+
+export const cell = getCell;
 
 export const pos = (): { x: number; y: number } => {
   return { x: 0, y: 0 };
