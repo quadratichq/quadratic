@@ -381,7 +381,7 @@ export const CodeEditor = () => {
       <div
         ref={containerRef}
         className={cn(
-          'absolute bottom-0 right-0 top-0 z-[2] hidden bg-background lg:flex',
+          'absolute bottom-0 right-0 top-0 z-[2] flex bg-background',
           panelPosition === 'left' ? '' : 'flex-col'
         )}
         style={{ width: `${editorWidth + (panelPosition === 'left' ? panelWidth : 0)}px` }}
