@@ -124,15 +124,22 @@ export async function javascriptConvertOutputArray(
 
   // 2D array of values
   else {
+    const longest = Math.max(...value.map((v) => v.length));
     for (const [y, v] of value.entries()) {
       output.push([]);
-      for (const [x, v2] of v.entries()) {
-        const outputValue = await javascriptConvertOutputType(message, v2, column, row, x, y);
-        if (outputValue) {
-          types.add(outputValue.displayType);
-          output[y].push(outputValue.output);
-        } else {
+      for (let i = 0; i < longest; i++) {
+        if (v.length <= i) {
           output[y].push(['', 'blank']);
+          types.add('undefined');
+        } else {
+          const v2 = v[i];
+          const outputValue = await javascriptConvertOutputType(message, v2, column, row, i, y);
+          if (outputValue) {
+            types.add(outputValue.displayType);
+            output[y].push(outputValue.output);
+          } else {
+            output[y].push(['', 'blank']);
+          }
         }
       }
     }
