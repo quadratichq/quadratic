@@ -68,7 +68,7 @@ class JavascriptConsole {
       }
       return s + this.tab(level) + '}\\n';
     } else if (typeof a === 'string') {
-      return "'" + a + "'\\n";
+      return a + '\\n';
     } else if (a === undefined) {
       return 'undefined\\n';
     } else {

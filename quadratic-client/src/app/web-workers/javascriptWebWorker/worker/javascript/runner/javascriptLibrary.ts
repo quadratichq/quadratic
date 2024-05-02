@@ -1,6 +1,8 @@
 declare var self: WorkerGlobalScope & typeof globalThis;
 
 declare global {
+  let ___line_number___: number;
+
   /**
    * Get a range of cells from the sheet
    * @param x0 x coordinate of the top-left cell
@@ -76,14 +78,18 @@ declare global {
   ): Promise<Record<string, number | string | boolean | undefined>[]>;
 }
 
-const javascriptSendMessageAwaitingResponse = async (message: {
-  type: 'getCells';
-  x0: number;
-  y0: number;
-  x1: number;
-  y1?: number;
-  sheetName?: string;
-}): Promise<(number | string | boolean | undefined)[][]> => {
+const javascriptSendMessageAwaitingResponse = async (
+  message:
+    | {
+        type: 'getCells';
+        x0: number;
+        y0: number;
+        x1: number;
+        y1?: number;
+        sheetName?: string;
+      }
+    | { type: 'getCellsError'; error: string }
+): Promise<(number | string | boolean | undefined)[][]> => {
   return new Promise((resolve) => {
     self.onmessage = (event) => resolve(event.data);
     self.postMessage(message);
@@ -97,17 +103,45 @@ export const getCells = async (
   y1?: number,
   sheetName?: string
 ): Promise<(number | string | boolean | undefined)[][]> => {
+  if (isNaN(x0) || isNaN(y0) || isNaN(x1)) {
+    throw new Error(
+      'getCells requires at least 3 arguments, received getCells(' +
+        x0 +
+        ', ' +
+        y0 +
+        ', ' +
+        x1 +
+        ', ' +
+        y1 +
+        ')' +
+        (___line_number___ !== undefined ? ' at line ' + ___line_number___ : '')
+    );
+  }
   return await javascriptSendMessageAwaitingResponse({ type: 'getCells', x0, y0, x1, y1, sheetName });
 };
 
 export const getCellsWithHeadings = async (
   x0: number,
-  y: number,
+  y0: number,
   x1: number,
   y1?: number,
   sheetName?: string
 ): Promise<Record<string, number | string | boolean | undefined>[]> => {
-  const cells = await getCells(x0, y, x1, y1, sheetName);
+  if (isNaN(x0) || isNaN(y0) || isNaN(x1)) {
+    throw new Error(
+      'getCellsWithHeadings requires at least 3 arguments, received getCellsWithHeadings(' +
+        x0 +
+        ', ' +
+        y0 +
+        ', ' +
+        x1 +
+        ', ' +
+        y1 +
+        ')' +
+        (___line_number___ !== undefined ? ' at line ' + ___line_number___ : '')
+    );
+  }
+  const cells = await getCells(x0, y0, x1, y1, sheetName);
   const headers = cells[0];
   return cells.slice(1).map((row) => {
     const obj: Record<string, number | string | boolean | undefined> = {};
@@ -123,6 +157,16 @@ export const getCell = async (
   y: number,
   sheetName?: string
 ): Promise<number | string | boolean | undefined> => {
+  if (isNaN(x) || isNaN(y)) {
+    throw new Error(
+      'getCell requires at least 2 arguments, received getCell(' +
+        x +
+        ', ' +
+        y +
+        ')' +
+        (___line_number___ !== undefined ? ' at line ' + ___line_number___ : '')
+    );
+  }
   const results = await getCells(x, y, x, y, sheetName);
   return results?.[0]?.[0];
 };
@@ -135,6 +179,17 @@ export const pos = (): { x: number; y: number } => {
 
 export const relCell = async (deltaX: number, deltaY: number) => {
   const p = pos();
+  if (isNaN(deltaX) || isNaN(deltaY)) {
+    throw new Error(
+      'relCell requires at least 2 arguments, received relCell(' +
+        deltaX +
+        ', ' +
+        deltaY +
+        ')' +
+        (___line_number___ !== undefined ? ' at line ' + ___line_number___ : '')
+    );
+  }
+
   return await getCell(deltaX + p.x, deltaY + p.y);
 };
 

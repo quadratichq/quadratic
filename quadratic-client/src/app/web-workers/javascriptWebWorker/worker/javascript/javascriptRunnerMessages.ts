@@ -14,6 +14,11 @@ export interface RunnerJavascriptGetCell {
   sheetName?: string;
 }
 
+export interface RunnerJavascriptGetCellError {
+  type: 'getCellsError';
+  error: string;
+}
+
 export interface RunnerJavascriptResults {
   type: 'results';
   results: any;
