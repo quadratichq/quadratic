@@ -37,7 +37,7 @@ export async function javascriptConvertOutputType(
         '. Likely you are missing `await` before a call that returns a Promise, e.g., `await getCells(...)`.'
     );
     return null;
-  } else if (value === 'function') {
+  } else if (typeof value === 'function') {
     message.push(
       `WARNING: Unsupported output type: 'function' ${
         x !== undefined && y !== undefined ? `at cell(${column + x}, ${row + y})` : ''
@@ -63,6 +63,10 @@ export async function javascriptConvertOutputType(
   }
 }
 
+function isUnexpectedObjectType(a: any) {
+  return typeof a !== 'function' && !(a instanceof Blob);
+}
+
 // Formats the display type for an array based on a Set of types.
 export function javascriptFormatDisplayType(types: Set<string>, twoDimensional: boolean): string {
   if (types.size === 1) {
@@ -84,7 +88,28 @@ export async function javascriptConvertOutputArray(
   }
   const types: Set<string> = new Set();
   const output: [string, string][][] = [];
-  if (!Array.isArray(value[0])) {
+
+  // It may be an array of objects, where the object name is the heading row.
+  if (!Array.isArray(value[0]) && isUnexpectedObjectType(value[0])) {
+    const keys = Object.keys(value[0]);
+    output.push(keys.map((key) => [key, 'text']));
+    for (const [y, v] of value.entries()) {
+      const rowEntry: any[] = [];
+      output.push(rowEntry);
+      for (const key of keys) {
+        const outputValue = await javascriptConvertOutputType(message, v[key], column, row, 0, y);
+        if (outputValue) {
+          types.add(outputValue.displayType);
+          rowEntry.push(outputValue.output);
+        } else {
+          rowEntry.push(['', 'blank']);
+        }
+      }
+    }
+  }
+
+  // Otherwise, it's probably a 1D array of values
+  else if (!Array.isArray(value[0])) {
     for (const [y, v] of value.entries()) {
       const outputValue = await javascriptConvertOutputType(message, v, column, row, 0, y);
       types.add(outputValue?.displayType || 'text');
@@ -95,7 +120,10 @@ export async function javascriptConvertOutputArray(
         output.push([['', 'blank']]);
       }
     }
-  } else {
+  }
+
+  // 2D array of values
+  else {
     for (const [y, v] of value.entries()) {
       output.push([]);
       for (const [x, v2] of v.entries()) {
