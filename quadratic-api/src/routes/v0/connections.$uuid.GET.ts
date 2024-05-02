@@ -25,6 +25,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   return res.status(200).json({
     uuid: connection.uuid,
     name: connection.name,
+    // @ts-expect-error TODO: fix types
     type: connection.type,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
