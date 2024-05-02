@@ -35,7 +35,7 @@ class JavascriptConsole {
 
   output() {
     if (this.logs.length) {
-      return this.logs.join('\\n');
+      return this.logs.join('');
     }
     return null;
   }
