@@ -27,7 +27,7 @@ import { Update } from './Update';
 import { Viewport } from './Viewport';
 import { HighlightedCells } from './highlightedCells';
 import './pixiApp.css';
-import { urlParams } from './urlParams';
+import { urlParams } from './urlParams/urlParams';
 
 utils.skipHello();
 
