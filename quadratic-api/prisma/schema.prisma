@@ -11,6 +11,7 @@ datasource db {
 model User {
     id           Int            @id @default(autoincrement())
     auth0Id      String         @unique @map("auth0_id")
+    eduStatus    EduStatus?     @map("edu_status")
     ownedFiles   File[]         @relation(name: "OwnerRelation")
     createdFiles File[]         @relation(name: "CreatorRelation")
     QFeedback    QFeedback[]
@@ -18,6 +19,13 @@ model User {
     UserFileRole UserFileRole[]
 
     @@index([auth0Id])
+}
+
+enum EduStatus {
+    INELIGIBLE
+    // ELIGIBLE
+    ENROLLED
+    // NOT_ENROLLED
 }
 
 enum LinkPermission {
