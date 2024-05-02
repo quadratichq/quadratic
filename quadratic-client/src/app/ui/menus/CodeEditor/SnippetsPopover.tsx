@@ -39,6 +39,7 @@ export function SnippetsPopover() {
         <div>
           <TooltipHint title="Snippets" placement="bottom">
             <IconButton
+              size="small"
               style={{
                 ...(showSnippetsPopover
                   ? {
