@@ -1,29 +1,32 @@
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
+use serde::{Deserialize, Serialize};
 use sqlx::{
-    postgres::{PgColumn, PgPool, PgRow},
-    Column, Row, TypeInfo,
+    postgres::{PgColumn, PgConnectOptions, PgRow},
+    Column, ConnectOptions, PgConnection, Row, TypeInfo,
 };
 use uuid::Uuid;
 
 use crate::convert_pg_type;
+use crate::error::{Result, SharedError, Sql};
 use crate::sql::Connection;
 
-pub struct PostgresConnection<'a> {
-    pub user: &'a str,
-    pub password: &'a str,
-    pub host: &'a str,
-    pub port: &'a str,
-    pub database: &'a str,
+#[derive(Serialize, Deserialize)]
+pub struct PostgresConnection {
+    pub user: Option<String>,
+    pub password: Option<String>,
+    pub host: String,
+    pub port: Option<String>,
+    pub database: Option<String>,
 }
 
-impl PostgresConnection<'_> {
-    pub fn new<'a>(
-        user: &'a str,
-        password: &'a str,
-        host: &'a str,
-        port: &'a str,
-        database: &'a str,
-    ) -> PostgresConnection<'a> {
+impl PostgresConnection {
+    pub fn new(
+        user: Option<String>,
+        password: Option<String>,
+        host: String,
+        port: Option<String>,
+        database: Option<String>,
+    ) -> PostgresConnection {
         PostgresConnection {
             user,
             password,
@@ -34,27 +37,45 @@ impl PostgresConnection<'_> {
     }
 }
 
-impl<'a> Connection for PostgresConnection<'a> {
-    type Pool = PgPool;
+impl Connection for PostgresConnection {
+    type Conn = PgConnection;
     type Row = PgRow;
     type Column = PgColumn;
 
-    async fn connect(&self) -> Result<Self::Pool, sqlx::Error> {
-        let connection = self.connection_string();
-        let pool = PgPool::connect(&connection).await?;
+    async fn connect(&self) -> Result<Self::Conn> {
+        let mut options = PgConnectOptions::new();
+
+        if let Some(ref user) = self.user {
+            options = options.username(&user);
+        }
+
+        if let Some(ref password) = self.password {
+            options = options.password(&password);
+        }
+
+        if let Some(ref port) = self.port {
+            options = options.port(port.parse::<u16>().map_err(|e| {
+                SharedError::Sql(Sql::Connect(format!("{:?}: {e}", self.database)))
+            })?);
+        }
+
+        if let Some(ref database) = self.database {
+            options = options.database(&database);
+        }
+
+        let pool = options
+            .connect()
+            .await
+            .map_err(|e| SharedError::Sql(Sql::Connect(format!("{:?}: {e}", self.database))))?;
 
         Ok(pool)
     }
 
-    fn connection_string(&self) -> String {
-        format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.user, self.password, self.host, self.port, self.database
-        )
-    }
-
-    async fn query(&self, pool: Self::Pool, sql: &str) -> Result<Vec<Self::Row>, sqlx::Error> {
-        let row = sqlx::query(sql).fetch_all(&pool).await?;
+    async fn query(&self, mut pool: Self::Conn, sql: &str) -> Result<Vec<Self::Row>> {
+        let row = sqlx::query(sql)
+            .fetch_all(&mut pool)
+            .await
+            .map_err(|e| SharedError::Sql(Sql::Query(format!("{sql}: {e}"))))?;
 
         Ok(row)
     }
@@ -94,11 +115,17 @@ macro_rules! convert_pg_type {
 mod tests {
 
     use super::*;
-    use std::io::Read;
+    // use std::io::Read;
     use tracing_test::traced_test;
 
-    fn new_postgres_connection() -> PostgresConnection<'static> {
-        PostgresConnection::new("postgres", "postgres", "0.0.0.0", "5432", "postgres")
+    fn new_postgres_connection() -> PostgresConnection {
+        PostgresConnection::new(
+            Some("postgres".into()),
+            Some("postgres".into()),
+            "0.0.0.0".into(),
+            Some("5432".into()),
+            Some("postgres".into()),
+        )
     }
 
     #[tokio::test]
@@ -107,7 +134,7 @@ mod tests {
         let connection = new_postgres_connection();
         let pool = connection.connect().await.unwrap();
         let rows = connection
-            .query(pool, "select * from \"employees\" limit 1000000")
+            .query(pool, "select * from \"FileCheckpoint\" limit 10")
             .await
             .unwrap();
 

@@ -427,12 +427,13 @@ export const CodeEditor = () => {
             evaluationResult={evaluationResult}
             cellsAccessed={!unsaved ? cellsAccessed : []}
           />
-          {editorInteractionState.mode === 'Python' && (
-            <ReturnTypeInspector
-              evaluationResult={evaluationResult}
-              show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
-            />
-          )}
+          {editorInteractionState.mode === 'Python' ||
+            (editorInteractionState.mode === 'Connector' && (
+              <ReturnTypeInspector
+                evaluationResult={evaluationResult}
+                show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+              />
+            ))}
 
           {/* Console Wrapper */}
         </div>

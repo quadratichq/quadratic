@@ -13,6 +13,6 @@ import { coreClient } from './coreClient';
 import { coreConnector } from './coreConnector';
 
 coreClient.start();
-coreConnector.init();
+coreConnector.start();
 
 if (debugWebWorkers) console.log('[core.worker] created');

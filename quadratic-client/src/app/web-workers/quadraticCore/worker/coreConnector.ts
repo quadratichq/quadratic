@@ -1,29 +1,28 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { events } from '@/app/events/events';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 
-// declare var self: WorkerGlobalScope & typeof globalThis;
+declare var self: WorkerGlobalScope &
+  typeof globalThis & {
+    sendConnector: (transactionId: string, query: string) => void;
+  };
 
 class CoreConnector {
-  init() {
-    if (debugWebWorkers) console.log('[coreConnector] initialized');
+  start() {
+    self.sendConnector = this.sendConnector;
 
-    events.on('connector', async (data: any) => {
-      console.log('data', data);
-      await this.processQuery(data.query);
-    });
+    if (debugWebWorkers) console.log('[coreConnector] initialized.');
   }
 
-  async processQuery(query: string): Promise<ArrayBuffer> {
-    // const base = import.meta.env.VITE_QUADRATIC_CONNECTOR_URL;
-    const base = 'http://localhost:3003';
-    const url = `${base}/query_sql?statement=${encodeURIComponent(query)}`;
-
+  sendConnector = async (transactionId: string, query: string) => {
+    const base = coreClient.env.VITE_QUADRATIC_CONNECTOR_URL;
+    const url = `${base}/postgres/query?statement=${encodeURIComponent(query)}`;
     const response = await fetch(url);
+    const buffer = await response.arrayBuffer();
 
-    return response.arrayBuffer();
-
-    // await quadraticCore.importSql(sheets.sheet.id, buffer, 'sql', { x, y: y + 1 });
-  }
+    // send the parquet bytes to core
+    core.connectorComplete(transactionId, buffer);
+  };
 }
 
 export const coreConnector = new CoreConnector();

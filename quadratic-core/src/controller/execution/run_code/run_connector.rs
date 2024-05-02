@@ -1,10 +1,6 @@
-use std::collections::HashSet;
-
-use chrono::Utc;
-
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::{CodeRun, CodeRunResult},
+    grid::CodeCellLanguage,
     SheetPos,
 };
 
@@ -15,25 +11,20 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
+        // send the request to get the sql data via the connector to the host
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsConnector(code);
+            crate::wasm_bindings::js::jsConnector(
+                transaction.id.to_string(),
+                sheet_pos.x as i32,
+                sheet_pos.y as i32,
+                sheet_pos.sheet_id.to_string(),
+                code,
+            );
         }
 
+        // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        let value = crate::Value::Single(crate::CellValue::Text("hello".to_string()));
-
-        let new_code_run = CodeRun {
-            std_out: None,
-            std_err: None,
-            formatted_code_string: None,
-            spill_error: false,
-            last_modified: Utc::now(),
-            cells_accessed: HashSet::new(),
-            result: CodeRunResult::Ok(value),
-            return_type: None,
-            line_number: None,
-            output_type: None,
-        };
-        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
+        transaction.waiting_for_async = Some(CodeCellLanguage::Connector);
+        transaction.has_async = true;
     }
 }

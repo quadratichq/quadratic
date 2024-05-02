@@ -38,6 +38,8 @@ class PythonWebWorker {
     this.worker = new Worker(new URL('./worker/python.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
 
+    quadraticCore.sendInit();
+
     const pythonCoreChannel = new MessageChannel();
     this.send({ type: 'clientPythonCoreChannel' }, pythonCoreChannel.port1);
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);

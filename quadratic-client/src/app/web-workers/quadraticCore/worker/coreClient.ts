@@ -71,10 +71,12 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
-    sendConnector: (query: string) => void;
+    sendConnector: (transactionId: string, query: string) => void;
   };
 
 class CoreClient {
+  env: any;
+
   start() {
     self.onmessage = this.handleMessage;
     self.sendImportProgress = coreClient.sendImportProgress;
@@ -95,7 +97,6 @@ class CoreClient {
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
-    self.sendConnector = coreClient.sendConnector;
 
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
@@ -472,6 +473,10 @@ class CoreClient {
         await core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
         break;
 
+      case 'clientCoreInit':
+        this.env = e.data.env;
+        break;
+
       case 'clientCoreInitPython':
         corePython.init(e.ports[0]);
         break;
@@ -650,11 +655,6 @@ class CoreClient {
 
   sendUndoRedo = (undo: boolean, redo: boolean) => {
     this.send({ type: 'coreClientUndoRedo', undo, redo });
-  };
-
-  sendConnector = (query: string) => {
-    console.log('sendConnector');
-    this.send({ type: 'coreClientConnector', query });
   };
 }
 

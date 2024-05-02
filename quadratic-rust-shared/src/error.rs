@@ -17,6 +17,18 @@ pub enum Aws {
 }
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub enum Sql {
+    #[error("Error connecting to database: {0}")]
+    Connect(String),
+
+    #[error("Error converting results to Parquet: {0}")]
+    ParquetConversion(String),
+
+    #[error("Error executing query: {0}")]
+    Query(String),
+}
+
+#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum SharedError {
     #[error("Error communicating with AWS: {0}")]
     Aws(Aws),
@@ -32,6 +44,9 @@ pub enum SharedError {
 
     #[error("Error serializing or deserializing: {0}")]
     Serialization(String),
+
+    #[error("Error with SQL connector: {0}")]
+    Sql(Sql),
 
     #[error("Error with Uuid: {0}")]
     Uuid(String),

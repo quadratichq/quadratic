@@ -79,6 +79,7 @@ interface EventTypes {
   offlineTransactions: (transactions: number, operations: number) => void;
 
   connector: (query: string) => void;
+  connectorResponse: (buffer: ArrayBuffer) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

@@ -41,3 +41,15 @@ impl JsCodeResult {
         }
     }
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsConnectorResult {
+    pub transaction_id: String,
+    // pub success: bool,
+    // pub error_msg: Option<String>,
+    // pub input_python_std_out: Option<String>,
+    pub data: Vec<u8>,
+    // pub line_number: Option<u32>,
+    // pub output_type: Option<String>,
+}

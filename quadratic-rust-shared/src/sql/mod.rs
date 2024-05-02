@@ -5,37 +5,30 @@ use arrow::{
 use bytes::Bytes;
 use futures_util::Future;
 use parquet::arrow::ArrowWriter;
-use rayon::prelude::*;
 use sqlx::{Column, Row};
 use std::sync::Arc;
-use tokio::time::Instant;
 
 use self::{mysql_connection::MysqlConnection, postgres_connection::PostgresConnection};
+use crate::error::Result;
 
 pub mod mysql_connection;
 pub mod postgres_connection;
 
-pub enum SqlConnection<'a> {
-    Postgres(PostgresConnection<'a>),
+pub enum SqlConnection {
+    Postgres(PostgresConnection),
     Mysql(MysqlConnection),
 }
 
 pub trait Connection {
-    type Pool;
+    type Conn;
     type Row: Row;
     type Column: Column;
 
-    /// Create a connection string from the connection parameters
-    fn connection_string(&self) -> String;
-
-    fn connect(&self) -> impl Future<Output = Result<Self::Pool, sqlx::Error>>;
+    // Connect to a database
+    fn connect(&self) -> impl Future<Output = Result<Self::Conn>>;
 
     /// Generically query a database
-    fn query(
-        &self,
-        pool: Self::Pool,
-        sql: &str,
-    ) -> impl Future<Output = Result<Vec<Self::Row>, sqlx::Error>>;
+    fn query(&self, pool: Self::Conn, sql: &str) -> impl Future<Output = Result<Vec<Self::Row>>>;
 
     /// Convert a database-specific column to an Arrow type
     fn to_arrow(
@@ -52,7 +45,6 @@ pub trait Connection {
         Self::Row: Row,
         Self::Column: Column,
     {
-        let start = Instant::now();
         let fields = data[0]
             .columns()
             .iter()
@@ -61,10 +53,6 @@ pub trait Connection {
 
         let col_count = fields.len();
         let schema = Schema::new(fields);
-
-        let duration = start.elapsed();
-        tracing::info!("Setup: {:?}", duration);
-        let start = Instant::now();
 
         // transpose columns to rows, converting to Arrow types
         let mut transposed = vec![vec![]; col_count];
@@ -79,10 +67,6 @@ pub trait Connection {
                 });
         });
 
-        let duration = start.elapsed();
-        tracing::info!("Transposing: {:?}", duration);
-        let start = Instant::now();
-
         let file = Vec::new();
         let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None).unwrap();
 
@@ -91,16 +75,9 @@ pub trait Connection {
             .map(|col| Arc::new(StringArray::from_iter_values(col)) as ArrayRef)
             .collect::<Vec<ArrayRef>>();
 
-        let duration = start.elapsed();
-        tracing::info!("Collecting: {:?}", duration);
-        let start = Instant::now();
-
         writer
             .write(&RecordBatch::try_new(Arc::new(schema.clone()), cols).unwrap())
             .unwrap();
-
-        let duration = start.elapsed();
-        tracing::info!("Writing bytes: {:?}", duration);
 
         writer.into_inner().unwrap().into()
     }

@@ -3,11 +3,11 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use axum::extract::Query;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
+use axum::Json;
 use axum::{routing::get, Extension, Router};
-use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
+use quadratic_rust_shared::sql::Connection;
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
@@ -17,7 +17,7 @@ use tower_http::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::sql;
+use crate::sql::postgres::{query as query_postgres, test as test_postgres};
 use crate::{
     config::config,
     error::{ConnectorError, Result},
@@ -26,9 +26,9 @@ use crate::{
 
 const HEALTHCHECK_INTERVAL_S: u64 = 5;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub(crate) struct SqlQuery {
     pub(crate) statement: String,
 }
@@ -36,6 +36,18 @@ pub(crate) struct SqlQuery {
 impl SqlQuery {
     pub(crate) fn new(statement: String) -> Self {
         SqlQuery { statement }
+    }
+}
+
+#[derive(Serialize)]
+pub(crate) struct TestResponse {
+    connected: bool,
+    message: Option<String>,
+}
+
+impl TestResponse {
+    pub(crate) fn new(connected: bool, message: Option<String>) -> Self {
+        TestResponse { connected, message }
     }
 }
 
@@ -49,7 +61,8 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
         // routes
         .route("/health", get(healthcheck))
-        .route("/query_sql", get(query_sql))
+        .route("/postgres/test", get(test_postgres))
+        .route("/postgres/query", get(query_postgres))
         // state
         .layer(Extension(state))
         // cors
@@ -124,9 +137,13 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
     StatusCode::OK
 }
 
-pub(crate) async fn query_sql(query: Query<SqlQuery>) -> impl IntoResponse {
-    let connection = PostgresConnection::new("postgres", "postgres", "0.0.0.0", "5432", "postgres");
-    sql::query_postgres(connection, query.0).await.unwrap()
+pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestResponse> {
+    let message = match connection.connect().await {
+        Ok(_) => None,
+        Err(e) => Some(e.to_string()),
+    };
+
+    TestResponse::new(message.is_none(), message).into()
 }
 
 #[cfg(test)]

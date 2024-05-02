@@ -134,10 +134,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
       return;
-    } else if (e.data.type === 'coreClientConnector') {
-      console.log('connector', e.data.query);
-      events.emit('connector', e.data.query);
-      return;
     }
 
     if (e.data.id !== undefined) {
@@ -914,6 +910,10 @@ class QuadraticCore {
   //#endregion
 
   //#region Calculation
+
+  sendInit() {
+    this.send({ type: 'clientCoreInit', env: import.meta.env });
+  }
 
   sendPythonInit(port: MessagePort) {
     this.send({ type: 'clientCoreInitPython' }, port);

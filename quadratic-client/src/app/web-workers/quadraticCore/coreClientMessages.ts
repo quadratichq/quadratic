@@ -50,6 +50,11 @@ export interface CoreClientUpgradeFile {
   id: number;
 }
 
+export interface ClientCoreInit {
+  type: 'clientCoreInit';
+  env: ImportMetaEnv;
+}
+
 export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
 }
@@ -798,11 +803,6 @@ export interface CoreClientUndoRedo {
   redo: boolean;
 }
 
-export interface CoreClientConnector {
-  type: 'coreClientConnector';
-  query: string;
-}
-
 //#endregion
 
 export type ClientCoreMessage =
@@ -857,6 +857,7 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
+  | ClientCoreInit
   | ClientCoreInitPython
   | ClientCoreImportExcel
   | ClientCoreCancelExecution;
@@ -903,5 +904,4 @@ export type CoreClientMessage =
   | CoreClientImportExcel
   | CoreClientMultiplayerState
   | CoreClientOfflineTransactions
-  | CoreClientUndoRedo
-  | CoreClientConnector;
+  | CoreClientUndoRedo;
