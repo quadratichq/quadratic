@@ -33,12 +33,6 @@ pub(crate) struct SqlQuery {
     pub(crate) statement: String,
 }
 
-impl SqlQuery {
-    pub(crate) fn new(statement: String) -> Self {
-        SqlQuery { statement }
-    }
-}
-
 #[derive(Serialize)]
 pub(crate) struct TestResponse {
     connected: bool,

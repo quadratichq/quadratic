@@ -38,6 +38,7 @@ pub(crate) enum ConnectorError {
 
 impl From<SharedError> for ConnectorError {
     fn from(error: SharedError) -> Self {
+        #[allow(clippy::match_single_binding)]
         match error {
             _ => ConnectorError::Unknown(format!("Unknown Quadratic API error: {error}")),
         }

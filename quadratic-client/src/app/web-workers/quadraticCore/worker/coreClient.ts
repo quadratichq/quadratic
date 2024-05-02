@@ -75,7 +75,7 @@ declare var self: WorkerGlobalScope &
   };
 
 class CoreClient {
-  env: any;
+  env: Record<string, string> = {};
 
   start() {
     self.onmessage = this.handleMessage;

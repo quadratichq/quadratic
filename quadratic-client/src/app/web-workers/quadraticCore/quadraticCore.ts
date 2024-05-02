@@ -59,6 +59,8 @@ class QuadraticCore {
     this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
+
+    this.sendInit();
   }
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
@@ -388,31 +390,6 @@ class QuadraticCore {
           id,
           file: arrayBuffer,
           fileName: file.name,
-        },
-        arrayBuffer
-      );
-    });
-  }
-
-  // Imports SQL data
-  async importSql(
-    sheetId: string,
-    arrayBuffer: ArrayBuffer,
-    name: string,
-    location: Coordinate
-  ): Promise<string | undefined> {
-    return new Promise((resolve) => {
-      const id = this.id++;
-      this.waitingForResponse[id] = (message: CoreClientImportParquet) => resolve(message.error);
-      this.send(
-        {
-          type: 'clientCoreImportParquet',
-          sheetId,
-          x: location.x,
-          y: location.y,
-          id,
-          file: arrayBuffer,
-          fileName: name,
         },
         arrayBuffer
       );

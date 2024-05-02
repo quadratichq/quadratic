@@ -3122,7 +3122,6 @@ dependencies = [
  "futures-util",
  "jsonwebtoken",
  "parquet",
- "rayon",
  "redis",
  "reqwest",
  "serde",

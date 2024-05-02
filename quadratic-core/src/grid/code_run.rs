@@ -99,7 +99,6 @@ pub enum CodeCellLanguage {
     Formula,
     Connector,
     // JavaScript,
-    // Sql,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

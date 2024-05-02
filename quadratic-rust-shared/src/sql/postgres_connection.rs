@@ -46,11 +46,11 @@ impl Connection for PostgresConnection {
         let mut options = PgConnectOptions::new();
 
         if let Some(ref user) = self.user {
-            options = options.username(&user);
+            options = options.username(user);
         }
 
         if let Some(ref password) = self.password {
-            options = options.password(&password);
+            options = options.password(password);
         }
 
         if let Some(ref port) = self.port {
@@ -60,7 +60,7 @@ impl Connection for PostgresConnection {
         }
 
         if let Some(ref database) = self.database {
-            options = options.database(&database);
+            options = options.database(database);
         }
 
         let pool = options

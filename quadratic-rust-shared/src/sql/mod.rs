@@ -9,7 +9,7 @@ use sqlx::{Column, Row};
 use std::sync::Arc;
 
 use self::{mysql_connection::MysqlConnection, postgres_connection::PostgresConnection};
-use crate::error::Result;
+use crate::{error::Result, SharedError, Sql};
 
 pub mod mysql_connection;
 pub mod postgres_connection;
@@ -40,7 +40,7 @@ pub trait Connection {
     /// Default implementation of converting a vec of rows to a Parquet byte array
     ///
     /// This should work over any row/colmn SQLx vec
-    fn to_parquet(data: Vec<Self::Row>) -> Bytes
+    fn to_parquet(data: Vec<Self::Row>) -> Result<Bytes>
     where
         Self::Row: Row,
         Self::Column: Column,
@@ -68,7 +68,8 @@ pub trait Connection {
         });
 
         let file = Vec::new();
-        let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None).unwrap();
+        let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)
+            .map_err(|e| SharedError::Sql(Sql::ParquetConversion(e.to_string())))?;
 
         let cols = transposed
             .into_iter()
@@ -77,8 +78,12 @@ pub trait Connection {
 
         writer
             .write(&RecordBatch::try_new(Arc::new(schema.clone()), cols).unwrap())
-            .unwrap();
+            .map_err(|e| SharedError::Sql(Sql::ParquetConversion(e.to_string())))?;
 
-        writer.into_inner().unwrap().into()
+        let parquet = writer
+            .into_inner()
+            .map_err(|e| SharedError::Sql(Sql::ParquetConversion(e.to_string())))?;
+
+        Ok(parquet.into())
     }
 }

@@ -15,14 +15,14 @@ use self::stats::Stats;
 
 #[derive(Debug)]
 pub(crate) struct State {
-    pub(crate) settings: Settings,
+    pub(crate) _settings: Settings,
     pub(crate) stats: Mutex<Stats>,
 }
 
 impl State {
     pub(crate) fn new(config: &Config) -> Self {
         State {
-            settings: Settings::new(config),
+            _settings: Settings::new(config),
             stats: Mutex::new(Stats::new()),
         }
     }

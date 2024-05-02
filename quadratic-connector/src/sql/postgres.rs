@@ -28,7 +28,7 @@ pub(crate) async fn query(
     let connection = new_postgres_connection();
     let pool = connection.connect().await?;
     let rows = connection.query(pool, &query.0.statement).await?;
-    let parquet = PostgresConnection::to_parquet(rows);
+    let parquet = PostgresConnection::to_parquet(rows)?;
 
     state.stats.lock().await.last_query_time = Some(Instant::now());
 
@@ -55,7 +55,9 @@ mod tests {
     #[tokio::test]
     #[traced_test]
     async fn test_postgres_connection() {
-        let statement = SqlQuery::new("select * from \"FileCheckpoint\" limit 2".into());
+        let statement = SqlQuery {
+            statement: "select * from \"FileCheckpoint\" limit 2".into(),
+        };
         let state = Extension(new_arc_state().await);
         let data = query(state, Query(statement)).await.unwrap();
 

@@ -150,35 +150,34 @@ impl GridController {
     pub fn connection_complete(&mut self, transaction_id: String, data: Vec<u8>) -> Result<()> {
         let transaction_id = Uuid::parse_str(&transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-        // let sheet_id = transaction.sheet_id.unwrap();
-        let current_sheet_pos = transaction.current_sheet_pos.unwrap();
-        // let pos: Pos = current_sheet_pos.into();
 
-        let array = parquet_to_vec(data).unwrap();
-        let return_type = if array.is_empty() {
-            "Empty Array".to_string()
-        } else {
-            format!("{} x {} Array", array[0].len(), array.len())
-        };
-        let result = CodeRunResult::Ok(Value::Array(array.into()));
+        if let Some(current_sheet_pos) = transaction.current_sheet_pos {
+            let array = parquet_to_vec(data)?;
+            let return_type = if array.is_empty() {
+                "Empty Array".to_string()
+            } else {
+                format!("{} x {} Array", array[0].len(), array.len())
+            };
+            let result = CodeRunResult::Ok(Value::Array(array.into()));
 
-        let code_run = CodeRun {
-            formatted_code_string: None,
-            result,
-            return_type: Some(return_type.clone()),
-            line_number: Some(1),
-            output_type: Some(return_type),
-            std_out: None,
-            std_err: None,
-            spill_error: false,
-            last_modified: Utc::now(),
-            cells_accessed: transaction.cells_accessed.clone(),
-        };
+            let code_run = CodeRun {
+                formatted_code_string: None,
+                result,
+                return_type: Some(return_type.clone()),
+                line_number: None,
+                output_type: Some(return_type),
+                std_out: None,
+                std_err: None,
+                spill_error: false,
+                last_modified: Utc::now(),
+                cells_accessed: transaction.cells_accessed.clone(),
+            };
 
-        self.start_transaction(&mut transaction);
-        self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
-        transaction.waiting_for_async = None;
-        self.finalize_transaction(&mut transaction);
+            self.start_transaction(&mut transaction);
+            self.finalize_code_run(&mut transaction, current_sheet_pos, Some(code_run), None);
+            transaction.waiting_for_async = None;
+            self.finalize_transaction(&mut transaction);
+        }
 
         Ok(())
     }
