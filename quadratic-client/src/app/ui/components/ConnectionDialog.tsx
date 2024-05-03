@@ -83,9 +83,11 @@ export const ConnectionDialog = ({
           {/* <Button onClick={onBack} variant="link" className="mr-auto px-0" disabled={isSubmitting}>
             Back
           </Button> */}
-          <Button onClick={onDelete} variant="destructive" disabled={isSubmitting} className="mr-auto">
-            Delete
-          </Button>
+          {isEdit && (
+            <Button onClick={onDelete} variant="destructive" disabled={isSubmitting} className="mr-auto">
+              Delete
+            </Button>
+          )}
           {isSubmitting && <CircularProgress style={{ width: '18px', height: '18px', marginRight: '.25rem' }} />}
           <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
             Cancel
