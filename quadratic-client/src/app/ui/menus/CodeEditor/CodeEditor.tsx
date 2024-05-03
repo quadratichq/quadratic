@@ -167,6 +167,7 @@ export const CodeEditor = () => {
     editorInteractionState.selectedCell.x,
     editorInteractionState.selectedCell.y,
     editorInteractionState.selectedCellSheet,
+    setEditorInteractionState,
   ]);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
@@ -192,6 +193,7 @@ export const CodeEditor = () => {
           ...oldState,
           editorEscapePressed: false,
           showCodeEditor: false,
+          initialCode: undefined,
         }));
         pixiApp.cellHighlights.clear();
         focusGrid();
