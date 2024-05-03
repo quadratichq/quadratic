@@ -63,8 +63,8 @@ export async function javascriptConvertOutputType(
   }
 }
 
-function isUnexpectedObjectType(a: any) {
-  return typeof a !== 'function' && !(a instanceof Blob);
+function isExpectedObjectType(a: any) {
+  return typeof a === 'function' || a instanceof Blob;
 }
 
 // Formats the display type for an array based on a Set of types.
@@ -90,7 +90,7 @@ export async function javascriptConvertOutputArray(
   const output: [string, string][][] = [];
 
   // It may be an array of objects, where the object name is the heading row.
-  if (!Array.isArray(value[0]) && isUnexpectedObjectType(value[0])) {
+  if (!Array.isArray(value[0]) && typeof value[0] === 'object' && !isExpectedObjectType(value[0])) {
     const keys = Object.keys(value[0]);
     output.push(keys.map((key) => [key, 'text']));
     for (const [y, v] of value.entries()) {
