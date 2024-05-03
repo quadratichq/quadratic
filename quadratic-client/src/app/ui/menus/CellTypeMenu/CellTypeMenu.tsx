@@ -57,7 +57,7 @@ let CELL_TYPE_OPTIONS = [
     ),
   },
   {
-    name: 'Javascript',
+    name: 'JavaScript',
     mode: 'Javascript',
     icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
     description: 'The world’s most popular programming language.',
