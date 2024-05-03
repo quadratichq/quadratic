@@ -138,6 +138,13 @@ export const CodeEditor = () => {
         setEvaluationResult(undefined);
         setOut(undefined);
       }
+
+      if (initialCode) {
+        setEditorInteractionState((oldState) => ({
+          ...oldState,
+          initialCode: undefined,
+        }));
+      }
     };
 
     updateCodeCell();
