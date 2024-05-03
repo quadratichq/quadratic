@@ -15,16 +15,15 @@ class UrlParams {
   private urlParamsDev?: UrlParamsDev;
   private urlParamsUser?: UrlParamsUser;
 
-  init() {
+  init() {}
+
+  show() {
     const params = new URLSearchParams(window.location.search);
     if (debugSaveURLState) {
       this.urlParamsDev = new UrlParamsDev(params);
     } else {
       this.urlParamsUser = new UrlParamsUser(params);
     }
-  }
-
-  show() {
     setInterval(this.update, UPDATE_INTERVAL);
   }
 

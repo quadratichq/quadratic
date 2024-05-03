@@ -53,6 +53,8 @@ export class UrlParamsUser {
           ...pixiAppSettings.editorInteractionState,
           showCodeEditor: true,
           mode: language,
+          selectedCellSheet: sheets.sheet.id,
+          selectedCell: { x: sheets.sheet.cursor.cursorPosition.x, y: sheets.sheet.cursor.cursorPosition.y },
         });
       }
     }
