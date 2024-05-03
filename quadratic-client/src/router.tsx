@@ -86,7 +86,6 @@ export const router = createBrowserRouter(
                 loader={async () => {
                   // TODO: get this working and split from /file/:uuid for revalidation
                   const connections = await apiClient.connections.list();
-                  console.log('ran index route loader', { connections });
                   return { connections };
                 }}
               >

@@ -2,7 +2,7 @@ import { ConnectionDialog } from '@/app/ui/components/ConnectionDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, redirect, useParams } from 'react-router-dom';
+import { ActionFunctionArgs, redirect } from 'react-router-dom';
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const data: ApiTypes['/v0/connections.POST.request'] = await request.json();
@@ -14,8 +14,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 };
 
 export const Component = () => {
-  const { typeId } = useParams() as { uuid: string; typeId: string };
-  console.log('typeId', typeId);
+  // const { typeId } = useParams() as { uuid: string; typeId: string };
 
   return <ConnectionDialog typeId={'postgres'} />;
 };

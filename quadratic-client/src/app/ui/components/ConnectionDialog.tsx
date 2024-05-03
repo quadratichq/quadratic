@@ -117,6 +117,8 @@ function PostgresBody({
     password: initialData?.database.password ?? '',
   };
   const submit = useSubmit();
+
+  // TODO: cleanup how this submits empty strings rather than undefined
   const form = useForm<z.infer<typeof ConnectionFormPostgresSchema>>({
     resolver: zodResolver(ConnectionFormPostgresSchema),
     defaultValues,
@@ -173,7 +175,17 @@ function PostgresBody({
               <FormItem>
                 <FormLabel>Port</FormLabel>
                 <FormControl>
-                  <Input placeholder="5432" autoComplete="off" {...field} />
+                  <Input
+                    placeholder="5432"
+                    autoComplete="off"
+                    {...field}
+                    onChange={(e) => {
+                      // Don't allow non-digits and convert it to a number so it
+                      // matches the zod schema
+                      const value = e.target.value.replace(/\D/g, '');
+                      field.onChange(value === '' ? undefined : Number(value));
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

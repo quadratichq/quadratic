@@ -17,7 +17,7 @@ export const ConnectionFormPostgresSchema = z.object({
   name: ConnectionNameSchema,
 
   host: z.string().min(1, { message: 'Required' }).max(255),
-  port: z.number().min(1).max(65535).optional(),
+  port: z.number().min(0).max(65535).optional(),
   username: z.string().optional(),
   password: z.string().optional(),
   database: z.string().optional(),
