@@ -273,17 +273,19 @@ class InlineEditorHandler {
 
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
-  close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
+  close = async (deltaX = 0, deltaY = 0, cancel: boolean) => {
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
     }
-    const value = inlineEditorMonaco.get();
+    let value = inlineEditorMonaco.get();
 
     // Ensure we're on the right sheet so we can show the change
     sheets.current = this.location.sheetId;
 
     if (!cancel) {
       if (this.formula) {
+        const updatedValue = await inlineEditorFormula.closeParentheses();
+        if (updatedValue) value = updatedValue;
         quadraticCore.setCodeCellValue({
           sheetId: this.location.sheetId,
           x: this.location.x,

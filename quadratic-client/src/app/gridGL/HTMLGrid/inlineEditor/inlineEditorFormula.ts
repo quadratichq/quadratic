@@ -153,16 +153,40 @@ class InlineEditorFormula {
   // Returns whether we are editing a formula only if it is valid (used for
   // PointerDown checks to differentiate between selecting a cell and closing
   // the inline formula editor).
-  async isFormulaValid(): Promise<boolean> {
+  async isFormulaValid(testFormula?: string): Promise<boolean> {
     const location = inlineEditorHandler.location;
     if (!location) return false;
-    const formula = inlineEditorMonaco.get().slice(1);
+    const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
     const results = await parseFormula(formula, location.x, location.y);
     if (results.parse_error_msg) {
-      return false;
+      return !!(await this.closeParentheses());
     } else {
       return true;
     }
+  }
+
+  async closeParentheses(): Promise<string | undefined> {
+    let formula = inlineEditorMonaco.get();
+    let count = 0;
+    for (let i = 0; i < formula.length; i++) {
+      if (formula[i] === '(') {
+        count++;
+      } else if (formula[i] === ')') {
+        count--;
+      }
+    }
+    if (count) {
+      for (let i = 0; i < count; i++) {
+        formula += ')';
+      }
+      if (await this.isFormulaValid(formula)) {
+        inlineEditorMonaco.set(formula);
+        return formula;
+      } else {
+        return undefined;
+      }
+    }
+    return formula;
   }
 }
 
