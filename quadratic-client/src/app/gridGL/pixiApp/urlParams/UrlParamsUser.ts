@@ -18,7 +18,7 @@ export class UrlParamsUser {
   private loadSheet(params: URLSearchParams) {
     const sheetName = params.get('sheet');
     if (sheetName) {
-      const sheetId = sheets.getSheetByName(sheetName, true)?.id;
+      const sheetId = sheets.getSheetByName(decodeURI(sheetName), true)?.id;
       if (sheetId) {
         sheets.current = sheetId;
         return;
@@ -84,7 +84,7 @@ export class UrlParamsUser {
           if (!sheetName) {
             throw new Error('Expected to find sheet in urlParams.updateParams');
           }
-          url.set('sheet', sheetName);
+          url.set('sheet', encodeURI(sheetName));
         } else {
           url.delete('sheet');
         }
@@ -96,7 +96,7 @@ export class UrlParamsUser {
         url.set('x', cursor.x.toString());
         url.set('y', cursor.y.toString());
         if (sheets.sheet !== sheets.getFirst()) {
-          url.set('sheet', sheets.sheet.name);
+          url.set('sheet', encodeURI(sheets.sheet.name));
         } else {
           url.delete('sheet');
         }

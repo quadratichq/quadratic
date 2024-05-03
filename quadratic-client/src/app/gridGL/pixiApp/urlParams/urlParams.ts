@@ -5,7 +5,6 @@
 //! save the entire state of the app. User-focused ones are limited to x, y,
 //! sheet, and code editor only.
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { debugSaveURLState } from '@/app/debugFlags';
 import { UrlParamsDev } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
 import { UrlParamsUser } from '@/app/gridGL/pixiApp/urlParams/UrlParamsUser';
