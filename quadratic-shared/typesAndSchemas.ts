@@ -69,6 +69,12 @@ export const TeamSchema = z.object({
 // Shared types
 const PublicLinkAccessSchema = z.enum(['EDIT', 'READONLY', 'NOT_SHARED']);
 export type PublicLinkAccess = z.infer<typeof PublicLinkAccessSchema>;
+const EduStatusSchema = z.enum([
+  'INELIGIBLE',
+  // 'ELIGIBLE',
+  'ENROLLED',
+  // 'NOT_ENROLLED'
+]);
 
 const FileSchema = z.object({
   uuid: z.string().uuid(),
@@ -377,7 +383,7 @@ export const ApiSchemas = {
    * Users
    * ===========================================================================
    */
-  '/v0/users.acknowledge.GET.response': z.object({ message: z.string() }),
+  '/v0/users/acknowledge.GET.response': z.object({ message: z.string() }),
 
   /**
    * ===========================================================================
@@ -399,6 +405,18 @@ export const ApiSchemas = {
   '/v0/connections/:uuid/run.POST.request': z.any(), // TODO:
   '/v0/connections/:uuid/run.POST.response': z.any(), // TODO:
   '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ), // TODO: remove
+
+  /**
+   *
+   * Education
+   *
+   */
+  '/v0/education.POST.response': z.object({
+    eduStatus: EduStatusSchema,
+  }),
+  '/v0/education.GET.response': z.object({
+    eduStatus: EduStatusSchema.optional(),
+  }),
 };
 
 /**
