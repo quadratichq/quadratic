@@ -181,8 +181,6 @@ export const HoverCell = () => {
     };
   }, [cell]);
 
-  if (!text) return null;
-
   return (
     <div
       ref={ref}
