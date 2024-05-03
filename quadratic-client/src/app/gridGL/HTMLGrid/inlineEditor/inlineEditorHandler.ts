@@ -396,8 +396,8 @@ class InlineEditorHandler {
 
   // Called when manually changing cell position via clicking on a new cell
   // (except when editing formula).
-  changingPosition() {
-    if (this.open && !this.formula) {
+  async changingPosition() {
+    if (this.open && (!this.formula || (await inlineEditorFormula.isFormulaValid()))) {
       this.close(0, 0, false);
     }
   }

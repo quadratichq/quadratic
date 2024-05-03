@@ -7,6 +7,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 
 class InlineEditorKeyboard {
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
@@ -111,6 +112,16 @@ class InlineEditorKeyboard {
       inlineEditorHandler.toggleBold();
     }
 
+    // trigger cell type menu
+    else if (e.code === 'SlashKey' && inlineEditorMonaco.get().length === 0) {
+      pixiAppSettings.changeInput(false);
+      pixiAppSettings.setEditorInteractionState?.({
+        ...pixiAppSettings.editorInteractionState,
+        showCellTypeMenu: true,
+      });
+      e.preventDefault();
+      e.stopPropagation();
+    }
     // Fallback for all other keys (used to end cursorIsMoving and return
     // control to the formula box)
     else {

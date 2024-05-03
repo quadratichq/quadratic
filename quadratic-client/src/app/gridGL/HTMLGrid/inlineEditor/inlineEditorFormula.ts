@@ -149,6 +149,21 @@ class InlineEditorFormula {
       setTimeout(inlineEditorMonaco.focus, 0);
     }
   };
+
+  // Returns whether we are editing a formula only if it is valid (used for
+  // PointerDown checks to differentiate between selecting a cell and closing
+  // the inline formula editor).
+  async isFormulaValid(): Promise<boolean> {
+    const location = inlineEditorHandler.location;
+    if (!location) return false;
+    const formula = inlineEditorMonaco.get().slice(1);
+    const results = await parseFormula(formula, location.x, location.y);
+    if (results.parse_error_msg) {
+      return false;
+    } else {
+      return true;
+    }
+  }
 }
 
 export const inlineEditorFormula = new InlineEditorFormula();
