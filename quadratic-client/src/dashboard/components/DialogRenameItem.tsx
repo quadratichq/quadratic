@@ -1,4 +1,4 @@
-import { Button } from '@/shadcn/ui/button';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   Dialog,
   DialogClose,
@@ -7,8 +7,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shadcn/ui/dialog';
-import { Input } from '@/shadcn/ui/input';
+} from '@/shared/shadcn/ui/dialog';
+import { Input } from '@/shared/shadcn/ui/input';
 import { useState } from 'react';
 
 export function DialogRenameItem({

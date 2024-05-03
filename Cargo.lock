@@ -554,7 +554,7 @@ dependencies = [
  "aws-smithy-types",
  "bytes",
  "fastrand",
- "h2 0.3.22",
+ "h2 0.3.26",
  "http 0.2.11",
  "http-body 0.4.6",
  "hyper 0.14.27",
@@ -1559,9 +1559,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.22"
+version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d6250322ef6e60f93f9a2162799302cd6f68f79f6e5d85c8c16f14d1d958178"
+checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
 dependencies = [
  "bytes",
  "fnv",
@@ -1774,7 +1774,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
- "h2 0.3.22",
+ "h2 0.3.26",
  "http 0.2.11",
  "http-body 0.4.6",
  "httparse",
@@ -2955,7 +2955,7 @@ dependencies = [
  "encoding_rs",
  "futures-core",
  "futures-util",
- "h2 0.3.22",
+ "h2 0.3.26",
  "http 0.2.11",
  "http-body 0.4.6",
  "hyper 0.14.27",
@@ -3037,9 +3037,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.21.10"
+version = "0.21.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9d5a6813c0759e4609cd494e8e725babae6a2ca7b62a5536a13daaec6fcb7ba"
+checksum = "7fecbfb7b1444f477b345853b1fce097a2c6fb637b2bfb87e6bc5db0f043fae4"
 dependencies = [
  "log",
  "ring",

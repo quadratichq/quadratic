@@ -1,21 +1,24 @@
-import { apiClient } from '@/api/apiClient';
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { AvatarTeam } from '@/components/AvatarTeam';
-import { Type } from '@/components/Type';
-import { TYPE } from '@/constants/appConstants';
-import { DOCUMENTATION_URL } from '@/constants/urls';
+import { AvatarTeam } from '@/dashboard/components/AvatarTeam';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
+import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { QuadraticLogoType } from '@/dashboard/components/QuadraticLogoType';
-import useLocalStorage from '@/hooks/useLocalStorage';
-import { useTheme } from '@/hooks/useTheme';
-import { useUpdateQueryStringValueWithoutNavigation } from '@/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Action as FileAction } from '@/routes/files.$uuid';
 import { TeamAction } from '@/routes/teams.$uuid';
-import { Avatar, AvatarFallback } from '@/shadcn/ui/avatar';
-import { Button } from '@/shadcn/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/shadcn/ui/sheet';
-import { cn } from '@/shadcn/utils';
+import { apiClient } from '@/shared/api/apiClient';
+import { Type } from '@/shared/components/Type';
+import { TYPE } from '@/shared/constants/appConstants';
+import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { DOCUMENTATION_URL } from '@/shared/constants/urls';
+import useLocalStorage from '@/shared/hooks/useLocalStorage';
+import { useTheme } from '@/shared/hooks/useTheme';
+import { Avatar, AvatarFallback } from '@/shared/shadcn/ui/avatar';
+import { Badge } from '@/shared/shadcn/ui/badge';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
+import { cn } from '@/shared/shadcn/utils';
 import { LiveChatWidget } from '@livechat/widget-react';
+import { SchoolOutlined } from '@mui/icons-material';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import {
   Cross2Icon,
@@ -29,7 +32,6 @@ import {
   ReloadIcon,
   Share2Icon,
 } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { Dispatch, ReactNode, SetStateAction, createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   NavLink,
@@ -44,34 +46,38 @@ import {
   useSearchParams,
   useSubmit,
 } from 'react-router-dom';
-import { ROUTES, ROUTE_LOADER_IDS } from '../constants/routes';
 import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
 import { useRootRouteLoaderData } from '../router';
 
 const DRAWER_WIDTH = 264;
 
-type DashboardState = {
-  showCreateTeamDialog: boolean;
-};
-const initialDashboardState: DashboardState = { showCreateTeamDialog: false };
+/**
+ * Dashboard state & context
+ */
+type DashboardState = {};
+const initialDashboardState: DashboardState = {};
 const DashboardContext = createContext([initialDashboardState, () => {}] as [
   DashboardState,
   Dispatch<SetStateAction<DashboardState>>
 ]);
 export const useDashboardContext = () => useContext(DashboardContext);
 
-type LoaderData = ApiTypes['/v0/teams.GET.response'];
-export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
-export const loader = async (): Promise<LoaderData> => {
-  const data = await apiClient.teams.list();
-  return data;
+/**
+ * Loader
+ */
+type LoaderData = Awaited<ReturnType<typeof loader>>;
+export const loader = async () => {
+  const [teamsData, { eduStatus }] = await Promise.all([apiClient.teams.list(), apiClient.education.get()]);
+  return { ...teamsData, eduStatus };
 };
+export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
 
+/**
+ * Component
+ */
 export const Component = () => {
   const [searchParams] = useSearchParams();
-  const [dashboardState, setDashboardState] = useState<DashboardState>({
-    showCreateTeamDialog: searchParams.get('dialog') === 'create-team',
-  });
+  const [dashboardState, setDashboardState] = useState<DashboardState>(initialDashboardState);
   const navigation = useNavigation();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -91,9 +97,6 @@ export const Component = () => {
 
   // Ensure long-running browser sessions still have a token
   useCheckForAuthorizationTokenOnWindowFocus();
-
-  // Query string for showing the create team dialog without revalidating loaders
-  useUpdateQueryStringValueWithoutNavigation('dialog', dashboardState.showCreateTeamDialog ? 'create-team' : null);
 
   return (
     <DashboardContext.Provider value={[dashboardState, setDashboardState]}>
@@ -127,18 +130,24 @@ export const Component = () => {
         >
           {navbar}
         </div>
-        {dashboardState.showCreateTeamDialog && <CreateTeamDialog />}
+        {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM && <CreateTeamDialog />}
+        {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
     </DashboardContext.Provider>
   );
 };
 
+/**
+ * Dashboard Navbar
+ */
 function Navbar({ isLoading }: { isLoading: boolean }) {
+  const [, setSearchParams] = useSearchParams();
   const [, setDashboardState] = useDashboardContext();
   const {
     teams,
     userMakingRequest: { id: ownerUserId },
-  } = useLoaderData() as ApiTypes['/v0/teams.GET.response'];
+    eduStatus,
+  } = useLoaderData() as LoaderData;
   const { loggedInUser: user } = useRootRouteLoaderData();
   const fetchers = useFetchers();
   const revalidator = useRevalidator();
@@ -262,10 +271,16 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             </div>
           ) : (
             <SidebarNavLink
-              to="./?dialog=create-team"
+              to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM}`}
               onClick={(e) => {
                 e.preventDefault();
-                setDashboardState((prev) => ({ ...prev, showCreateTeamDialog: true }));
+                setSearchParams(
+                  (prev) => {
+                    prev.set(SEARCH_PARAMS.DIALOG.KEY, SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM);
+                    return prev;
+                  },
+                  { replace: true }
+                );
               }}
             >
               <PlusIcon className={classNameIcons} />
@@ -293,7 +308,28 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         </div>
       </div>
-      <div>
+      <div className="flex flex-col gap-1">
+        {eduStatus === 'ENROLLED' && (
+          <SidebarNavLink
+            to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
+            onClick={(e) => {
+              e.preventDefault();
+              setSearchParams(
+                (prev) => {
+                  prev.set(SEARCH_PARAMS.DIALOG.KEY, SEARCH_PARAMS.DIALOG.VALUES.EDUCATION);
+                  return prev;
+                },
+                { replace: true }
+              );
+            }}
+          >
+            <SchoolOutlined sx={{ fontSize: '16px' }} className={classNameIcons} />
+            Education
+            <Badge variant="secondary" className="ml-auto">
+              Enrolled
+            </Badge>
+          </SidebarNavLink>
+        )}
         <SidebarNavLink to={ROUTES.ACCOUNT}>
           <Avatar className="h-6 w-6 bg-muted text-muted-foreground">
             <AvatarImage src={user?.picture} />

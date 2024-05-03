@@ -1,11 +1,11 @@
-import { Type } from '@/components/Type';
-import { themes, useTheme } from '@/hooks/useTheme';
-import { Button } from '@/shadcn/ui/button';
+import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
+import { useRootRouteLoaderData } from '@/router';
+import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
+import { themes, useTheme } from '@/shared/hooks/useTheme';
+import { Button } from '@/shared/shadcn/ui/button';
 import { ReactNode } from 'react';
 import { Form } from 'react-router-dom';
-import { ROUTES } from '../constants/routes';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { useRootRouteLoaderData } from '../router';
 
 export const Component = () => {
   const { loggedInUser: user } = useRootRouteLoaderData();
@@ -55,10 +55,7 @@ export const Component = () => {
           </Row>
         )}
 
-        <Type variant="body2" className="text-muted-foreground">
-          Additional account management coming in the future.
-        </Type>
-        <Form method="post" action={ROUTES.LOGOUT}>
+        <Form method="post" action={ROUTES.LOGOUT} className="mt-4">
           <Button variant="outline" type="submit">
             Log out
           </Button>
@@ -70,7 +67,7 @@ export const Component = () => {
 
 function Row(props: { children: ReactNode }) {
   return (
-    <div className={`grid items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
+    <div className={`grid max-w-lg items-center`} style={{ gridTemplateColumns: '160px 1fr' }}>
       {props.children}
     </div>
   );

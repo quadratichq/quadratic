@@ -1,11 +1,11 @@
-import { sanityClient } from '@/api/sanityClient';
-import { ROUTES } from '@/constants/routes';
 import { ExampleFilesList, FilesListExampleFile } from '@/dashboard/components/FilesList';
+import { ROUTES } from '@/shared/constants/routes';
+import { sanityClient } from 'quadratic-shared/sanityClient';
 import { useLoaderData } from 'react-router-dom';
 import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 
 export const loader = async () => {
-  const examples = await sanityClient.getExamples();
+  const examples = await sanityClient.examples.list();
   const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
     description,
     href: ROUTES.CREATE_FILE_EXAMPLE(url),
