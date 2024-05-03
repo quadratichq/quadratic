@@ -72,15 +72,13 @@ class InlineEditorFormula {
         this.decorations = inlineEditorMonaco.createDecorationsCollection(newDecorations);
       }
     } else {
-      this.decorations?.clear();
-      pixiApp.cellHighlights.clear();
+      this.clearDecorations();
     }
   }
 
   clearDecorations() {
     this.decorations?.clear();
     pixiApp.cellHighlights.clear();
-    pixiApp.cellHighlights.dirty = true;
   }
 
   removeInsertingCells() {
