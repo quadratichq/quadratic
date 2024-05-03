@@ -13,6 +13,7 @@ class InlineEditorKeyboard {
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
   keyDown = (e: KeyboardEvent) => {
+    console.log(e.code);
     // Escape key
     if (e.code === 'Escape') {
       if (inlineEditorHandler.cursorIsMoving) {
@@ -113,7 +114,7 @@ class InlineEditorKeyboard {
     }
 
     // trigger cell type menu
-    else if (e.code === 'SlashKey' && inlineEditorMonaco.get().length === 0) {
+    else if (e.code === 'Slash' && inlineEditorMonaco.get().length === 0) {
       pixiAppSettings.changeInput(false);
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
