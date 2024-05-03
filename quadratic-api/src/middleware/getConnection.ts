@@ -10,7 +10,7 @@ export async function getConnection({ uuid, userId }: { uuid: string; userId: nu
       UserConnectionRole: true,
     },
   });
-  if (!connection) {
+  if (!connection || connection.archived !== null) {
     throw new ApiError(404, 'Connection not found');
   }
   if (connection.UserConnectionRole.some((u) => u.userId !== userId)) {

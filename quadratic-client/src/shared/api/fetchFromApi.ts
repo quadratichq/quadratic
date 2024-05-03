@@ -62,7 +62,7 @@ export async function fetchFromApi<T>(
   // Compare the response to the expected schema
   const result = schema.safeParse(json);
   if (!result.success) {
-    console.log('Schema validation failed.');
+    console.log('Schema validation failed.', path);
     console.log(result.error);
     const details = JSON.stringify(result.error);
     throw new ApiError('Unexpected response schema', response.status, init.method, details);

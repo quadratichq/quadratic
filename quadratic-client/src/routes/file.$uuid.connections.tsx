@@ -1,12 +1,17 @@
+import { colors } from '@/app/theme/colors';
+import { PostgresIcon } from '@/app/ui/icons';
 import { Type } from '@/shared/components/Type';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
+import { cn } from '@/shared/shadcn/utils';
+import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
+import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router-dom';
 
 const connectionsById = {
   postgres: {
@@ -29,10 +34,19 @@ export const Component = () => {
   const { uuid } = useParams() as { uuid: string };
   const navigate = useNavigate();
   const [filterQuery, setFilterQuery] = useState<string>('');
+  // TODO: cleanup types
+  const { connections } = useRouteLoaderData(ROUTE_LOADER_IDS.FILE_METADATA) as {
+    connections: ApiTypes['/v0/connections.GET.response'];
+  };
 
   const onClose = () => {
     navigate(ROUTES.FILE(uuid));
   };
+
+  const filteredConnections =
+    filterQuery.length > 0
+      ? connections.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
+      : connections;
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -46,13 +60,10 @@ export const Component = () => {
             {Object.entries(connectionsById).map(([id, connection]) => (
               <Button
                 key={id}
+                disabled={id !== 'postgres'}
                 variant="outline"
-                className="group relative h-auto"
+                className="group relative h-auto w-full"
                 onClick={() => {
-                  // setSearchParams((prev) => {
-                  //   prev.set(connection.searchParamKey, connection.searchParamValue);
-                  //   return searchParams;
-                  // });
                   navigate(ROUTES.FILE_CONNECTIONS_CREATE(uuid, connection.id));
                 }}
               >
@@ -66,32 +77,55 @@ export const Component = () => {
             ))}
           </div>
 
-          <form className="grid gap-4">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search connections"
-                className="pl-8"
-                value={filterQuery}
-                onChange={(e) => setFilterQuery(e.target.value)}
-              />
-              {filterQuery.length > 0 && (
-                <Button
-                  variant="link"
-                  aria-label="Clear"
-                  onClick={() => setFilterQuery('')}
-                  className="group absolute right-0 top-0"
-                >
-                  <Cross2Icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
-                </Button>
+          {connections.length > 0 && (
+            <>
+              <form className="grid gap-4">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search connections"
+                    className="pl-8"
+                    value={filterQuery}
+                    onChange={(e) => setFilterQuery(e.target.value)}
+                  />
+                  {filterQuery.length > 0 && (
+                    <Button
+                      variant="link"
+                      aria-label="Clear"
+                      onClick={() => setFilterQuery('')}
+                      className="group absolute right-0 top-0"
+                    >
+                      <Cross2Icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                    </Button>
+                  )}
+                </div>
+                {false && <Skeleton className="h-4 w-full" />}
+              </form>
+              {filteredConnections.length > 0 ? (
+                <div className="-mt-4">
+                  {filteredConnections.map(({ uuid: connectionUuid, name, type, updatedDate }, i) => (
+                    <Link
+                      to={ROUTES.FILE_CONNECTION(uuid, connectionUuid)}
+                      key={connectionUuid}
+                      className={cn(
+                        `flex items-center gap-4 px-1 py-2 hover:bg-accent`,
+                        i < filteredConnections.length - 1 && 'border-b border-border'
+                      )}
+                    >
+                      <PostgresIcon style={{ color: colors.languagePostgres }} />
+                      <div className="flex flex-grow items-center justify-between">
+                        <span className="text-sm">{name}</span>
+                        <time dateTime={updatedDate} className="text-xs text-muted-foreground">
+                          Updated {timeAgo(updatedDate)}
+                        </time>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <Type className="py-4 text-center">No matches.</Type>
               )}
-            </div>
-            {false && <Skeleton className="h-4 w-full" />}
-          </form>
-          {filterQuery.length > 0 ? (
-            <Type className="py-4 text-center">No matches.</Type>
-          ) : (
-            <Type className="py-4 text-center">You don’t have any connections yet. Add one above.</Type>
+            </>
           )}
         </div>
       </DialogContent>

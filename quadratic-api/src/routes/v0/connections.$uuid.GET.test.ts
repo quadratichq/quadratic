@@ -46,6 +46,7 @@ afterAll(async () => {
 
 describe('GET /v0/connections/:uuid', () => {
   // TODO: move some of these tests into the connection middleware
+  // TODO: archived connection
   describe('bad request', () => {
     it('responds with a 400 for an invalid uuid', async () => {
       await request(app)

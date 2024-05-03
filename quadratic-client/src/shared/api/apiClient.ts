@@ -290,6 +290,34 @@ export const apiClient = {
     async list() {
       return fetchFromApi(`/v0/connections`, { method: 'GET' }, ApiSchemas['/v0/connections.GET.response']);
     },
+    async get(uuid: string) {
+      return fetchFromApi(
+        `/v0/connections/${uuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/connections/:uuid.GET.response']
+      );
+    },
+    async create(body: ApiTypes['/v0/connections.POST.request']) {
+      return fetchFromApi(
+        `/v0/connections`,
+        { method: 'POST', body: JSON.stringify(body) },
+        ApiSchemas['/v0/connections.POST.response']
+      );
+    },
+    async update(uuid: string, body: ApiTypes['/v0/connections/:uuid.PUT.request']) {
+      return fetchFromApi(
+        `/v0/connections/${uuid}`,
+        { method: 'PUT', body: JSON.stringify(body) },
+        ApiSchemas['/v0/connections/:uuid.PUT.response']
+      );
+    },
+    async delete(uuid: string) {
+      return fetchFromApi(
+        `/v0/connections/${uuid}`,
+        { method: 'DELETE' },
+        ApiSchemas['/v0/connections/:uuid.DELETE.response']
+      );
+    },
   },
 
   async postFeedback(body: ApiTypes['/v0/feedback.POST.request']) {

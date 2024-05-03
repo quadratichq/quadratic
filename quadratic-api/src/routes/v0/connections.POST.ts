@@ -25,7 +25,7 @@ async function handler(req: RequestWithUser, res: Response<ResponseError | ApiTy
   } = req;
   const { body: connection } = parseRequest(req, schema);
 
-  const { name, type, ...database } = connection;
+  const { name, type, database } = connection;
   const result = await dbClient.connection.create({
     data: {
       name,

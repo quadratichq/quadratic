@@ -1,4 +1,5 @@
 import * as z from 'zod';
+import { ApiSchemasConnections } from './typesAndSchemasConnections';
 
 export const UserFileRoleSchema = z.enum(['EDITOR', 'VIEWER']);
 export type UserFileRole = z.infer<typeof UserFileRoleSchema>;
@@ -88,30 +89,21 @@ const ConnectionSchemaBase = z.object({
   updatedDate: z.string().datetime(),
 });
 
-const ConnectionTypeSchemaPostgres = z.object({
+// TODO: validate our string min/max here
+export const ConnectionTypePostgresSchema = z.object({
   type: z.literal('POSTGRES'),
-  database: z.object({
-    host: z.string(),
-    port: z.number(),
-    username: z.string(),
-    password: z.string(),
-    database: z.string(),
-  }),
+  name: z.string().min(1, { message: 'Required' }).max(80),
+  host: z.string().min(1, { message: 'Required' }).max(255),
+  port: z.number().min(1).max(65535).optional(),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  database: z.any(), // TODO: fix
 });
-
-const ConnectionTypeSchemaCoreMysql = z.object({
+export const ConnectionTypeMysqlSchema = z.object({
   type: z.literal('MYSQL'),
-  database: z.object({
-    foo: z.string(),
-  }),
+  name: z.string(),
+  // color
 });
-
-const AnyConnectionSchema = z.union([
-  ConnectionSchemaBase.merge(ConnectionTypeSchemaPostgres),
-  ConnectionSchemaBase.merge(ConnectionTypeSchemaCoreMysql),
-]);
-
-const ConnectionTypeSchema = z.enum(['POSTGRES']);
 
 // TODO: duplicated with API
 export const connectionFieldZ = z.object({
@@ -392,13 +384,17 @@ export const ApiSchemas = {
    * Connections
    * ===========================================================================
    */
-  '/v0/connections.GET.response': z.array(AnyConnectionSchema),
-  '/v0/connections.POST.request': z.union([
-    ConnectionTypeSchemaPostgres.merge(ConnectionSchemaBase.pick({ name: true })),
-    ConnectionTypeSchemaCoreMysql.merge(ConnectionSchemaBase.pick({ name: true })),
-  ]),
-  '/v0/connections.POST.response': z.object({ uuid: ConnectionSchemaBase.shape.uuid }),
-  '/v0/connections/:uuid.GET.response': AnyConnectionSchema,
+  ...ApiSchemasConnections,
+
+  // '/v0/connections.GET.response': z.array(
+  //   z.union([
+  //     ConnectionSchemaBase.merge(ConnectionTypePostgresSchema.pick({ type: true, name: true })),
+  //     ConnectionSchemaBase.merge(ConnectionTypeMysqlSchema.pick({ type: true, name: true })),
+  //   ])
+  // ),
+  // '/v0/connections.POST.request': z.union([ConnectionTypePostgresSchema, ConnectionTypeMysqlSchema]),
+  // '/v0/connections.POST.response': z.object({ uuid: z.string().uuid() }),
+  // '/v0/connections/:uuid.GET.response': z.any(),
 
   '/v0/connections/:uuid/run.POST.request': z.any(), // TODO:
   '/v0/connections/:uuid/run.POST.response': z.any(), // TODO:

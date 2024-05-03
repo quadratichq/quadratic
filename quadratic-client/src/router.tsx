@@ -73,14 +73,15 @@ export const router = createBrowserRouter(
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
               lazy={() => import('./routes/file.$uuid')}
-              shouldRevalidate={({ currentUrl }) => {
-                // We don't want to revalidate anythin in the app
-                // because we don't have any 2-way data flow setup for the app
-                return false;
-              }}
+              shouldRevalidate={
+                // We don't want to revalidate the initial file route because
+                // we don't have any 2-way data flow setup for the file contents
+                // But file metadata is handled in the pathless route below
+                () => false
+              }
             >
               <Route
-                index
+                path=""
                 id={ROUTE_LOADER_IDS.FILE_METADATA}
                 loader={async () => {
                   // TODO: get this working and split from /file/:uuid for revalidation
@@ -88,12 +89,17 @@ export const router = createBrowserRouter(
                   console.log('ran index route loader', { connections });
                   return { connections };
                 }}
-              />
-              <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')} />
-              <Route
-                path="connections/create/:type"
-                lazy={() => import('./routes/file.$uuid.connections.create.$type')}
-              />
+              >
+                <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')} />
+                <Route
+                  path="connections/:connectionUuid"
+                  lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
+                />
+                <Route
+                  path="connections/create/:type"
+                  lazy={() => import('./routes/file.$uuid.connections.create.$typeId')}
+                />
+              </Route>
             </Route>
           </Route>
         </Route>

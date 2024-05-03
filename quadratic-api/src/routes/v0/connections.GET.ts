@@ -15,6 +15,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   // get connections belonging to a user
   const list = await dbClient.connection.findMany({
     where: {
+      archived: null,
       UserConnectionRole: {
         some: {
           userId,
@@ -22,19 +23,19 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
       },
     },
     orderBy: {
-      createdDate: 'desc',
+      updatedDate: 'desc',
     },
   });
 
-  const data = list.map(({ uuid, name, type, createdDate, updatedDate, database }) => ({
+  const data = list.map(({ uuid, name, type, createdDate, updatedDate }) => ({
     uuid,
     name,
     type,
     createdDate: createdDate.toISOString(),
     updatedDate: updatedDate.toISOString(),
-    database,
   }));
 
-  // @ts-expect-error fix JSON type for database
+  // @ts-expect-error TODO: fix types for `type`
+  // There's a mismatch between the type in the db schema and the type in the API
   return res.status(200).json(data);
 }
