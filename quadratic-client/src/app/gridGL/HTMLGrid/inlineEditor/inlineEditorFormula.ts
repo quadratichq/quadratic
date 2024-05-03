@@ -152,6 +152,7 @@ class InlineEditorFormula {
   // PointerDown checks to differentiate between selecting a cell and closing
   // the inline formula editor).
   async isFormulaValid(testFormula?: string): Promise<boolean> {
+    if (inlineEditorHandler.cursorIsMoving) return false;
     const location = inlineEditorHandler.location;
     if (!location) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
