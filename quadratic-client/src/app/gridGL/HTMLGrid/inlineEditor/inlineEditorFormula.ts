@@ -157,7 +157,13 @@ class InlineEditorFormula {
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
     const results = await parseFormula(formula, location.x, location.y);
     if (results.parse_error_msg) {
-      return !!(await this.closeParentheses());
+      const value = await this.closeParentheses();
+      if (value !== testFormula) {
+        const results = await parseFormula(formula, location.x, location.y);
+        return !results.parse_error_msg;
+      } else {
+        return false;
+      }
     } else {
       return true;
     }

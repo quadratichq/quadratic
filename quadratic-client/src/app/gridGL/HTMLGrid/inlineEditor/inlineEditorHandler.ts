@@ -284,6 +284,7 @@ class InlineEditorHandler {
 
     if (!cancel) {
       if (this.formula) {
+        console.log(value);
         const updatedValue = await inlineEditorFormula.closeParentheses();
         if (updatedValue) value = updatedValue;
         quadraticCore.setCodeCellValue({
