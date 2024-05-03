@@ -3,25 +3,25 @@ const snippets = [
     label: 'Read data from the sheet',
     keywords: 'reference cells',
     code: `// Reference a single value from the sheet; replace x,y with coordinates
-const data = await cell(x, y);
+let data = await cell(x, y);
 
 // Or reference a range of cells (returns an array), replace x's and y's with coordinates
-const data = await cells((x1, y1), (x2, y2))
+let data = await cells((x1, y1), (x2, y2))
 
 // Reference cell or range of cells in another sheet
-const data = await cells((x1, y1), (x2, y2), sheet_name)`,
+let data = await cells((x1, y1), (x2, y2), sheet_name)`,
   },
   {
     label: 'Return data to the sheet',
     keywords: 'return value',
     code: `// displays vertically - 1x4
-const x = [1,2,3,4]
+let x = [1,2,3,4]
 
 // displays horizontally - 4x1
-const y = [[1,2,3,4]]
+let y = [[1,2,3,4]]
 
 // 4x2
-const z = [[1,2,3,4],[1,2,3,4]]
+let z = [[1,2,3,4],[1,2,3,4]]
 
 return x;`,
   },
@@ -34,7 +34,7 @@ let json = await res.json();
 
 console.log(json);
 
-var as = [Object.keys(json), Object.values(json)]
+let as = [Object.keys(json), Object.values(json)]
 
 return as;`,
   },
@@ -44,9 +44,9 @@ return as;`,
     code: `// c is the cell one cell to the left of the current cell, use either rel_cell or rc
 d = rc(-1, 0);
 
-# above for one cell to the left is equivalent to the following
-const cellPos = await pos();
-const data = getCell(cellPos['x'] - 1, cellPos['y']);
+// above for one cell to the left is equivalent to the following
+let cellPos = await pos();
+let data = getCell(cellPos['x'] - 1, cellPos['y']);
 
 // one cell left
 d = rc(-1, 0);
@@ -66,11 +66,11 @@ return d;`,
     keywords: 'chart',
     code: `import Chart from 'https://esm.run/chart.js/auto';
 
-const canvas = new OffscreenCanvas(800, 450);
-const context = canvas.getContext('2d');
+let canvas = new OffscreenCanvas(800, 450);
+let context = canvas.getContext('2d');
 
 // create data
-const data = [['1999', '2000', '2001', '2002', '2003'],[2478, 5267, 734, 784, 433]]
+let data = [['1999', '2000', '2001', '2002', '2003'],[2478, 5267, 734, 784, 433]]
 
 // print data to console
 console.log(data)
@@ -105,11 +105,11 @@ return canvas;`,
     keywords: 'bar chart',
     code: `import Chart from 'https://esm.run/chart.js/auto';
 
-const canvas = new OffscreenCanvas(800, 450);
-const context = canvas.getContext('2d');
+let canvas = new OffscreenCanvas(800, 450);
+let context = canvas.getContext('2d');
 
 // create data
-const data = [['Africa', 'Asia', 'Europe', 'Latin America', 'North America'],[2478, 5267, 734, 784, 433]]
+let data = [['Africa', 'Asia', 'Europe', 'Latin America', 'North America'],[2478, 5267, 734, 784, 433]]
 
 // print data to console
 console.log(data)
