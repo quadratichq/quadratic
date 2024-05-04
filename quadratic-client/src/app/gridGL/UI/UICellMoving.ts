@@ -3,7 +3,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { colors } from '@/app/theme/colors';
 import { BitmapText, Container, Graphics } from 'pixi.js';
 
-const MOVING_THICKNESS = 2;
+const MOVING_THICKNESS = 3;
 
 export class UICellMoving extends Container {
   private graphics: Graphics;
@@ -26,7 +26,6 @@ export class UICellMoving extends Container {
     this.visible = true;
     this.graphics.clear();
     this.graphics.lineStyle(1, colors.movingCells, MOVING_THICKNESS);
-    console.log('drawing...');
     const offsets = sheets.sheet.offsets;
     const start = offsets.getCellOffsets(moving.toColumn, moving.toRow);
     const end = offsets.getCellOffsets(moving.toColumn + moving.width, moving.toRow + moving.height);
