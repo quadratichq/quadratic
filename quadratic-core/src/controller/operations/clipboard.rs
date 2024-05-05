@@ -268,4 +268,8 @@ impl GridController {
             }
         }
     }
+
+    pub fn move_cells_operations(&mut self, source: SheetRect, dest: SheetPos) -> Vec<Operation> {
+        vec![Operation::MoveCells { source, dest }]
+    }
 }

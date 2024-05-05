@@ -2,6 +2,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
@@ -48,11 +49,19 @@ export class PointerCellMoving {
 
   // Completes the move
   private completeMove() {
-    if (this.state !== 'move') {
+    if (this.state !== 'move' || !this.moving) {
       throw new Error('Expected moving to be defined in completeMove');
     }
-    // move the cells
-
+    quadraticCore.moveCells(
+      this.moving.column,
+      this.moving.row,
+      this.moving.width,
+      this.moving.height,
+      sheets.sheet.id,
+      this.moving.toColumn,
+      this.moving.toRow,
+      sheets.sheet.id
+    );
     this.reset();
   }
 
