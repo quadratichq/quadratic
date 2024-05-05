@@ -87,6 +87,23 @@ impl Sheet {
         })
     }
 
+    /// Removes code_runs in a rect and returns them without cloning
+    pub fn remove_code_runs_in_rect(&mut self, rect: Rect) -> Vec<(Pos, CodeRun)> {
+        self.code_runs
+            .iter_mut().
+                if rect.contains(*pos) {
+                    if let Some(code_run) = self.code_runs.shift_remove(pos) {
+                        Some((*pos, code_run))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+    }
+
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &CodeRun)> {
         self.code_runs
             .iter()
