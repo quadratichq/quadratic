@@ -78,8 +78,6 @@ export class PointerCellMoving {
     if (this.state === 'move') {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
-      debugger;
-      console.log(pixiApp.viewport.plugins);
       pixiApp.viewport.plugins.remove('mouse-edges');
       this.state = undefined;
     }
