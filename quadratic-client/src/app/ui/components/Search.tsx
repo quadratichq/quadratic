@@ -145,10 +145,10 @@ export function Search() {
 
   return (
     <Popover open={!!editorInteractionState.showSearch}>
-      <PopoverAnchor className="m-2" />
+      <PopoverAnchor />
       <PopoverContent
         align="end"
-        className="flex w-[100vw] flex-col items-center gap-1 p-2 min-[400px]:w-[400px] min-[400px]:flex-row min-[400px]:p-3"
+        className="m-2 flex w-[100vw] flex-col items-center gap-1 p-2 min-[400px]:w-[400px] min-[400px]:flex-row min-[400px]:p-3"
         onKeyDown={(e) => {
           // close search
           if (e.key === 'Escape') {
