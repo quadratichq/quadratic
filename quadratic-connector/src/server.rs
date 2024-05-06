@@ -6,7 +6,11 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use axum::{routing::{get, post}, Extension, Router};
+use axum::{
+    http::{header::CONTENT_TYPE, Method},
+    routing::{get, post},
+    Extension, Router,
+};
 use quadratic_rust_shared::sql::Connection;
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
@@ -50,7 +54,9 @@ impl TestResponse {
 pub(crate) fn app(state: Arc<State>) -> Router {
     let cors = CorsLayer::new()
         // allow requests from any origin
-        .allow_origin(Any);
+        .allow_methods([Method::GET, Method::POST])
+        .allow_origin(Any)
+        .allow_headers([CONTENT_TYPE]);
 
     Router::new()
         // routes
