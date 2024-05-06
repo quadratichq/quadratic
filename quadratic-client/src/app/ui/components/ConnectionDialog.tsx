@@ -1,3 +1,4 @@
+import { ConnectionTest } from '@/app/ui/components/ConnectionTest';
 import { getDeleteConnectionAction, getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -16,17 +17,16 @@ import { CircularProgress } from '@mui/material';
 import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import { ApiTypes, ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useNavigation, useParams, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
-
-type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 
 const FORM_COMPONENTS_BY_TYPE_ID = {
   postgres: PostgresBody,
   mysql: () => <div>TODO: mysql form here</div>,
 };
+
+const FORM_ID = 'create-connection';
 
 export const ConnectionDialog = ({
   typeId,
@@ -39,7 +39,7 @@ export const ConnectionDialog = ({
   const submit = useSubmit();
   const navigate = useNavigate();
   const navigation = useNavigation();
-  const [connectionState] = useState<ConnectionState>('success');
+
   const isEdit = Boolean(initialData);
 
   const onBack = () => {
@@ -92,8 +92,9 @@ export const ConnectionDialog = ({
           <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button disabled={isSubmitting || connectionState !== 'success'} form="create-connection" type="submit">
-            {isEdit ? 'Save' : 'Create'} connection
+
+          <Button disabled={isSubmitting} form={FORM_ID} type="submit">
+            {isEdit ? 'Save changes' : 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -140,103 +141,109 @@ function PostgresBody({
     }
   };
 
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} id="create-connection" className="space-y-2">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="My database" autoComplete="off" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="host"
-            render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel>Host</FormLabel>
-                <FormControl>
-                  <Input placeholder="0.0.0.0" autoComplete="off" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="port"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Port</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="5432"
-                    autoComplete="off"
-                    {...field}
-                    onChange={(e) => {
-                      // Don't allow non-digits and convert it to a number so it
-                      // matches the zod schema
-                      const value = e.target.value.replace(/\D/g, '');
-                      field.onChange(value === '' ? undefined : Number(value));
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="database"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Database</FormLabel>
-              <FormControl>
-                <Input placeholder="my_database" autoComplete="off" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+  const formValues = form.watch();
+  console.log(formValues);
 
-        <div className="grid grid-cols-2 gap-4">
+  return (
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} id={FORM_ID} className="space-y-2">
           <FormField
             control={form.control}
-            name="username"
+            name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="root" autoComplete="off" {...field} />
+                  <Input placeholder="My database" autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+          <div className="grid grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="host"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Host</FormLabel>
+                  <FormControl>
+                    <Input placeholder="0.0.0.0" autoComplete="off" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="port"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Port</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="5432"
+                      autoComplete="off"
+                      {...field}
+                      onChange={(e) => {
+                        // Don't allow non-digits and convert it to a number so it
+                        // matches the zod schema
+                        const value = e.target.value.replace(/\D/g, '');
+                        field.onChange(value === '' ? undefined : Number(value));
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={form.control}
-            name="password"
+            name="database"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>Database</FormLabel>
                 <FormControl>
-                  <Input placeholder="********" autoComplete="off" {...field} />
+                  <Input placeholder="my_database" autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
-      </form>
-    </Form>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="root" autoComplete="off" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input placeholder="********" autoComplete="off" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </form>
+      </Form>
+      <ConnectionTest type="postgres" data={formValues} />
+    </>
   );
 }
