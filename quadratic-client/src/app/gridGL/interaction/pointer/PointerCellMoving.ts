@@ -9,6 +9,10 @@ import { isMobile } from 'react-device-detect';
 // Distance from top left corner to trigger a cell move.
 const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 100;
 
+// Speed when turning on the mouseEdges plugin for pixi-viewport
+const MOUSE_EDGES_SPEED = 8;
+const MOUSE_EDGES_DISTANCE = 20;
+
 interface MoveCells {
   column: number;
   row: number;
@@ -42,6 +46,11 @@ export class PointerCellMoving {
     if (this.state === 'hover') {
       this.state = 'move';
       events.emit('cellMoving', true);
+      pixiApp.viewport.mouseEdges({
+        distance: MOUSE_EDGES_DISTANCE,
+        allowButtons: true,
+        speed: MOUSE_EDGES_SPEED / pixiApp.viewport.scale.x,
+      });
       return true;
     }
     return false;
@@ -70,6 +79,7 @@ export class PointerCellMoving {
     if (this.state === 'move') {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
+      pixiApp.viewport.plugins.remove('mouseEdges');
     }
     this.state = undefined;
   }
