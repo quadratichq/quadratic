@@ -4,25 +4,27 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
-import { Formula, JavaScript, Python, Sql } from '@/app/ui/icons';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '@/shared/constants/urls';
-import focusInput from '@/shared/utils/focusInput';
-import {
-  Chip,
-  Dialog,
-  Divider,
-  InputBase,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Paper,
-} from '@mui/material';
+import { Formula, JavaScript, PostgresIcon, Python, Sql } from '@/app/ui/icons';
+import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import '../../styles/floating-dialog.css';
+
+import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
+import { ROUTES } from '@/shared/constants/routes';
+import { Badge } from '@/shared/shadcn/ui/badge';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/shared/shadcn/ui/command';
+import { Add } from '@mui/icons-material';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export interface CellTypeOption {
   name: string;
@@ -58,30 +60,30 @@ let CELL_TYPE_OPTIONS = [
   },
 
   // todo: create CodeCellLanguage for these types in Rust (when ready to implement)
-  {
-    name: 'SQL Query',
-    mode: 'Connector',
-    icon: <Sql color="disabled" />,
-    description: 'Import your data with queries.',
-    disabled: false,
-  },
+  // {
+  //   name: 'SQL Query',
+  //   mode: 'Connector',
+  //   icon: <Sql sx={{ color: colors.languageAI }} />,
+  //   description: 'Import your data with queries.',
+  //   disabled: false,
+  // },
   {
     name: 'JavaScript',
     mode: '',
-    icon: <JavaScript color="disabled" />,
+    icon: <JavaScript className="text-gray-700" />,
     description: 'The world’s most popular programming language.',
     disabled: true,
+    experimental: true,
   },
 ] as CellTypeOption[];
 
 export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const [value, setValue] = React.useState<string>('');
-  const [selectedIndex, setSelectedIndex] = React.useState<number>(0);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
+  const { connections } = useFileMetaRouteLoaderData();
+  const navigate = useNavigate();
+  const { uuid } = useParams() as { uuid: string };
   const searchlabel = 'Choose a cell type…';
-
-  const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
@@ -110,91 +112,88 @@ export default function CellTypeMenu() {
   );
 
   return (
-    <Dialog open={true} onClose={close} fullWidth maxWidth={'xs'} BackdropProps={{ invisible: true }}>
-      <Paper
-        id="CellTypeMenuID"
-        component="form"
-        elevation={12}
-        onKeyUp={(e: React.KeyboardEvent) => {
-          // Don't bother if there's nothing to key up/down through
-          if (options.length <= 1) {
-            return;
-          }
+    <CommandDialog dialogProps={{ open: true, onOpenChange: close }} commandProps={{}}>
+      <CommandInput placeholder={searchlabel} id="CellTypeMenuInputID" />
+      <CommandList id="CellTypeMenuID">
+        <CommandEmpty>No results found.</CommandEmpty>
+        <CommandGroup heading="Languages">
+          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, description, mode }, i) => (
+            <CommandItemWrapper
+              key={name}
+              disabled={disabled}
+              icon={icon}
+              name={name}
+              experimental={experimental}
+              description={description}
+              onSelect={() => openEditor(mode)}
+            />
+          ))}
+        </CommandGroup>
 
-          if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            e.stopPropagation();
-            let newIndex = selectedIndex;
-            while (newIndex === selectedIndex || options[newIndex]?.disabled) {
-              newIndex = newIndex < options.length - 1 ? newIndex + 1 : 0;
+        <CommandSeparator />
+        <CommandGroup heading="Connections">
+          {connections.map(({ name, type, uuid }) => (
+            <CommandItemWrapper
+              key={uuid}
+              name={name}
+              description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
+              icon={type === 'POSTGRES' ? <PostgresIcon sx={{ color: colors.languagePostgres }} /> : <Sql />}
+              onSelect={() => openEditor('Connector')}
+            />
+          ))}
+          <CommandItemWrapper
+            name="Create or manage connections"
+            // TODO: correct URL here
+            description={
+              <>
+                Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
+              </>
             }
-            setSelectedIndex(newIndex);
-          } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            e.stopPropagation();
-            let newIndex = selectedIndex;
-            while (newIndex === selectedIndex || options[newIndex]?.disabled) {
-              newIndex = newIndex === 0 ? options.length - 1 : newIndex - 1;
-            }
-            setSelectedIndex(newIndex);
-          }
-        }}
-        onSubmit={(e: React.FormEvent) => {
-          e.preventDefault();
-          if (!options[selectedIndex]?.disabled) {
-            openEditor(options[selectedIndex].mode);
-          }
-        }}
-      >
-        <InputBase
-          id="CellTypeMenuInputID"
-          sx={{ width: '100%', padding: '8px 16px' }}
-          placeholder={searchlabel}
-          inputProps={{ 'aria-label': searchlabel }}
-          inputRef={focusInput}
-          autoComplete="off"
-          value={value}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setSelectedIndex(0);
-            setValue(event.target.value);
-          }}
-        />
+            icon={<Add />}
+            onSelect={() => {
+              setEditorInteractionState({
+                ...editorInteractionState,
+                showCellTypeMenu: false,
+              });
+              navigate(ROUTES.FILE_CONNECTIONS(uuid));
+            }}
+          />
+        </CommandGroup>
+      </CommandList>
+    </CommandDialog>
+  );
+}
 
-        <Divider />
-
-        <List dense={true} disablePadding>
-          {options.length ? (
-            options.map(({ name, disabled, description, mode, icon, experimental }, i) => (
-              <ListItemButton
-                key={i}
-                disabled={disabled}
-                onClick={() => {
-                  openEditor(mode);
-                }}
-                selected={selectedIndex === i && !disabled}
-              >
-                <ListItemIcon>{icon}</ListItemIcon>
-                <ListItemText
-                  primary={
-                    <>
-                      {name} {disabled && <Chip label="Coming soon" size="small" />}{' '}
-                      {experimental && <Chip label="Experimental" size="small" color="warning" variant="outlined" />}
-                    </>
-                  }
-                  secondary={description}
-                />
-              </ListItemButton>
-            ))
-          ) : (
-            <ListItem disablePadding>
-              <ListItemButton disabled>
-                <ListItemText primary="No matches" />
-              </ListItemButton>
-            </ListItem>
+function CommandItemWrapper({
+  disabled,
+  icon,
+  name,
+  experimental,
+  description,
+  onSelect,
+}: {
+  disabled?: boolean;
+  icon: React.ReactNode;
+  name: string;
+  experimental?: boolean;
+  description: string | JSX.Element;
+  onSelect: () => void;
+}) {
+  return (
+    <CommandItem disabled={disabled} onSelect={onSelect}>
+      <div className="mr-4">{icon}</div>
+      <div className="flex flex-col">
+        <span className="flex">
+          {name}{' '}
+          {experimental && (
+            <Badge variant="outline" className="ml-2">
+              Experimental
+            </Badge>
           )}
-        </List>
-      </Paper>
-    </Dialog>
+        </span>
+        <span className="text-xs text-muted-foreground">{description}</span>
+      </div>
+    </CommandItem>
   );
 }
 

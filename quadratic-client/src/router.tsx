@@ -1,6 +1,7 @@
 import * as CloudFilesMigration from '@/dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import { Empty } from '@/dashboard/components/Empty';
+import * as FileMeta from '@/routes/_file.$uuid';
 import * as Create from '@/routes/files.create';
 import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
@@ -91,15 +92,7 @@ export const router = createBrowserRouter(
                 () => false
               }
             >
-              <Route
-                path=""
-                id={ROUTE_LOADER_IDS.FILE_METADATA}
-                loader={async () => {
-                  // TODO: get this working and split from /file/:uuid for revalidation
-                  const connections = await apiClient.connections.list();
-                  return { connections };
-                }}
-              >
+              <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader}>
                 <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')} />
                 <Route
                   path="connections/:connectionUuid"
