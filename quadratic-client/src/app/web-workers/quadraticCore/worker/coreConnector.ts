@@ -17,8 +17,14 @@ class CoreConnector {
   sendConnector = async (transactionId: string, query: string) => {
     const base = coreClient.env.VITE_QUADRATIC_CONNECTOR_URL;
     const url = `${base}/postgres/query?statement=${encodeURIComponent(query)}`;
+
     try {
-      const response = await fetch(url, { method: 'POST', mode: 'no-cors' });
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const buffer = await response.arrayBuffer();
 
       // send the parquet bytes to core
