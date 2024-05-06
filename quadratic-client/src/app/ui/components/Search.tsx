@@ -143,15 +143,9 @@ export function Search() {
     }
   }, [editorInteractionState.showSearch]);
 
-  useEffect(() => {
-    if (editorInteractionState.showSearch && editorInteractionState.showCodeEditor) {
-      setEditorInteractionState((prev) => ({ ...prev, showSearch: false }));
-    }
-  }, [editorInteractionState.showSearch, editorInteractionState.showCodeEditor, setEditorInteractionState]);
-
   return (
     <Popover open={!!editorInteractionState.showSearch}>
-      <PopoverAnchor className="absolute right-[.5rem] top-[100%] min-[400px]:top-[calc(100%+.5rem)]" />
+      <PopoverAnchor className="m-2" />
       <PopoverContent
         align="end"
         className="flex w-[100vw] flex-col items-center gap-1 p-2 min-[400px]:w-[400px] min-[400px]:flex-row min-[400px]:p-3"
