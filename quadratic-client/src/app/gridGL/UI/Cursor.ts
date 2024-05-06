@@ -29,6 +29,9 @@ export class Cursor extends Graphics {
   startCell: CursorCell;
   endCell: CursorCell;
 
+  // cursor rectangle for normal cells
+  cursorRectangle?: Rectangle;
+
   constructor() {
     super();
     this.indicator = new Rectangle();
@@ -78,8 +81,14 @@ export class Cursor extends Graphics {
     }
 
     // hide cursor if code editor is open and CodeCursor is in the same cell
-    if (editorInteractionState.showCodeEditor && editor_selected_cell.x === cell.x && editor_selected_cell.y === cell.y)
+    if (
+      editorInteractionState.showCodeEditor &&
+      editor_selected_cell.x === cell.x &&
+      editor_selected_cell.y === cell.y
+    ) {
+      this.cursorRectangle = undefined;
       return;
+    }
 
     // draw cursor
     this.lineStyle({
@@ -102,6 +111,9 @@ export class Cursor extends Graphics {
         alignment: 1,
       });
       this.drawRect(x, y, width, height);
+      this.cursorRectangle = undefined;
+    } else {
+      this.cursorRectangle = new Rectangle(x, y, x + width, y + height);
     }
   }
 

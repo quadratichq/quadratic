@@ -7,7 +7,7 @@ import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 // Distance from top left corner to trigger a cell move.
-const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 100;
+const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 50;
 
 // Speed when turning on the mouseEdges plugin for pixi-viewport
 const MOUSE_EDGES_SPEED = 8;
@@ -98,23 +98,14 @@ export class PointerCellMoving {
 
   private pointerMoveHover(world: Point): boolean {
     const sheet = sheets.sheet;
-    const offsets = sheet.offsets;
-    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
-
     const origin = sheet.cursor.originPosition;
+    const column = origin.x;
+    const row = origin.y;
 
-    // if not hovering over current selection, then there's nothing to move
-    if (column !== origin.x || row !== origin.y) {
-      this.reset();
-      return false;
-    }
-
-    // Check if we overlap the hit-box: (1) x and y are greater than the corner; (2) distance to the corner is less than the threshold
-    const position = offsets.getCellOffsets(column, row);
+    const cursor = pixiApp.cursor.cursorRectangle;
     if (
-      world.x >= position.x &&
-      world.y >= position.y &&
-      Math.pow(position.x - world.x, 2) + Math.pow(position.y - world.y, 2) <= TOP_LEFT_CORNER_THRESHOLD_SQUARED
+      cursor &&
+      Math.pow(cursor.x - world.x, 2) + Math.pow(cursor.y - world.y, 2) <= TOP_LEFT_CORNER_THRESHOLD_SQUARED
     ) {
       this.state = 'hover';
       const rectangle = sheet.cursor.getRectangle();
