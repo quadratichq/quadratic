@@ -71,7 +71,6 @@ export class PointerCellMoving {
       this.moving.toRow,
       sheets.sheet.id
     );
-    this.reset();
   }
 
   private reset() {
@@ -79,9 +78,11 @@ export class PointerCellMoving {
     if (this.state === 'move') {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
-      pixiApp.viewport.plugins.remove('mouseEdges');
+      debugger;
+      console.log(pixiApp.viewport.plugins);
+      pixiApp.viewport.plugins.remove('mouse-edges');
+      this.state = undefined;
     }
-    this.state = undefined;
   }
 
   private pointerMoveMoving(world: Point) {
@@ -140,6 +141,7 @@ export class PointerCellMoving {
   pointerUp(): boolean {
     if (this.state === 'move') {
       this.completeMove();
+      this.reset();
       return true;
     }
     return false;
