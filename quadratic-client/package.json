@@ -69,7 +69,6 @@
     "semver": "^7.5.4",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.4.4",
     "ua-parser-js": "^1.0.37",
     "uuid": "^9.0.0",
     "vscode": "npm:@codingame/monaco-vscode-api@>=2.0.0 <2.1.0",
