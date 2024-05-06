@@ -3,6 +3,7 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
+use axum::http::header::{ACCEPT, AUTHORIZATION, ORIGIN};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
@@ -56,7 +57,7 @@ pub(crate) fn app(state: Arc<State>) -> Router {
         // allow requests from any origin
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any)
-        .allow_headers([CONTENT_TYPE]);
+        .allow_headers([CONTENT_TYPE, AUTHORIZATION, ACCEPT, ORIGIN]);
 
     Router::new()
         // routes
