@@ -62,7 +62,7 @@ export class CellsMarkers extends Container {
         child.texture = Texture.from('/images/formula-fx-icon.png');
         child.tint = isError ? 0xffffff : colors.cellColorUserFormula;
       } else if (codeCell.language === 'Javascript') {
-        child.texture = Texture.from('/images/JavaScript-logo.png');
+        child.texture = Texture.from('/images/javascript-icon.png');
         child.tint = isError ? colors.cellColorError : colors.cellColorUserJavascript;
       }
     }

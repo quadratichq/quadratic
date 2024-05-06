@@ -6,7 +6,11 @@ import { colors } from '@/app/theme/colors';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
 import { Formula, JavaScript, Python, Sql } from '@/app/ui/icons';
 import { Badge } from '@/shadcn/ui/badge';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '@/shared/constants/urls';
+import {
+  DOCUMENTATION_FORMULAS_URL,
+  DOCUMENTATION_JAVASCRIPT_URL,
+  DOCUMENTATION_PYTHON_URL,
+} from '@/shared/constants/urls';
 import focusInput from '@/shared/utils/focusInput';
 import {
   Dialog,
@@ -60,7 +64,12 @@ let CELL_TYPE_OPTIONS = [
     name: 'JavaScript',
     mode: 'Javascript',
     icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
-    description: 'The world’s most popular programming language.',
+    description: (
+      <>
+        Script with modern ES modules{' '}
+        <LinkNewTabWrapper href={DOCUMENTATION_JAVASCRIPT_URL}>and more</LinkNewTabWrapper>.
+      </>
+    ),
     experimental: true,
   },
   {
