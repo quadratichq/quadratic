@@ -26,7 +26,11 @@ impl Display for Stats {
             files_to_process_in_pubsub: self.files_to_process_in_pubsub,
         };
 
-        write!(f, "{}", serde_json::to_string(&stats).unwrap())
+        write!(
+            f,
+            "{}",
+            serde_json::to_string(&stats).map_err(|_| std::fmt::Error)?
+        )
     }
 }
 

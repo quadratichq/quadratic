@@ -805,6 +805,12 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
 
+  connectorComplete(transactionId: string, data: ArrayBuffer) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+
+    this.gridController.connectionComplete(transactionId, data as Uint8Array);
+  }
+
   getCells(
     id: number,
     transactionId: string,

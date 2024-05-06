@@ -46,6 +46,12 @@ export class Input {
                 }
                 this.control.restartFiles();
                 break;
+            case "n": // toggle connector
+                if (this.control.status.connector === "killed") {
+                    this.control.status.connector = false;
+                }
+                this.control.restartConnector();
+                break;
             case "y": // toggle Python
                 this.control.restartPython();
                 break;
@@ -78,6 +84,10 @@ export class Input {
                     this.cli.options.files = true;
                     this.control.restartFiles();
                 }
+                if (this.cli.options.connector != true) {
+                    this.cli.options.connector = true;
+                    this.control.restartConnector();
+                }
                 if (this.cli.options.python != true) {
                     this.cli.options.python = true;
                     this.control.restartPython();
@@ -94,6 +104,9 @@ export class Input {
                 break;
             case "F": // toggle showing Files
                 this.cli.options.hideFiles = !this.cli.options.hideFiles;
+                break;
+            case "N": // toggle showing Connector
+                this.cli.options.hideConnector = !this.cli.options.hideConnector;
                 break;
             case "Y": // toggle showing Python
                 this.cli.options.hidePython = !this.cli.options.hidePython;
@@ -115,6 +128,9 @@ export class Input {
                 break;
             case "\u0006": // ctrl + f
                 this.control.killFiles();
+                break;
+            case "\u0014": // ctrl + n
+                this.control.killConnector();
                 break;
             case "\r": // ctrl + m
                 this.control.killMultiplayer();

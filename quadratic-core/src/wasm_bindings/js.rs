@@ -88,6 +88,8 @@ extern "C" {
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
 
     pub fn jsUndoRedo(undo: bool, redo: bool);
+
+    pub fn jsConnector(transactionId: String, x: i32, y: i32, sheet_id: String, query: String);
 }
 
 #[cfg(test)]
@@ -460,4 +462,20 @@ pub fn jsUndoRedo(undo: bool, redo: bool) {
         "jsUndoRedo",
         format!("{},{}", undo, redo),
     ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsConnector(
+    transactionId: String,
+    x: i32,
+    y: i32,
+    sheet_id: String,
+    query: String,
+) -> JsValue {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsConnector",
+        format!("{},{},{},{},{}", transactionId, x, y, sheet_id, query),
+    ));
+    JsValue::NULL
 }

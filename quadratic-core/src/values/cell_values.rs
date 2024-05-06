@@ -77,6 +77,13 @@ impl CellValues {
                 .map(move |(y, value)| (x as u32, *y as u32, value))
         })
     }
+
+    pub fn into_owned_iter(self) -> impl Iterator<Item = (u32, u32, CellValue)> {
+        self.columns.into_iter().enumerate().flat_map(|(x, col)| {
+            col.into_iter()
+                .map(move |(y, value)| (x as u32, y as u32, value))
+        })
+    }
 }
 
 /// Converts a 2D array of CellValue into CellValues

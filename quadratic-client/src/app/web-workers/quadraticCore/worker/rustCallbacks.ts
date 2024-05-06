@@ -74,6 +74,7 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
+    sendConnector: (transactionId: string, query: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -218,4 +219,8 @@ export const jsUpdateCodeCell = (
 
 export const jsUndoRedo = (undo: string, redo: string) => {
   self.sendUndoRedo(undo, redo);
+};
+
+export const jsConnector = (transactionId: string, x: number, y: number, sheetId: string, query: string) => {
+  self.sendConnector(transactionId, query);
 };

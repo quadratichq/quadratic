@@ -97,8 +97,8 @@ impl CodeRun {
 pub enum CodeCellLanguage {
     Python,
     Formula,
+    Connector,
     // JavaScript,
-    // Sql,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]

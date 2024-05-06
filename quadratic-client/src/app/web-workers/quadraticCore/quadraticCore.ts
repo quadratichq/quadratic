@@ -59,6 +59,8 @@ class QuadraticCore {
     this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
+
+    this.sendInit();
   }
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
@@ -885,6 +887,10 @@ class QuadraticCore {
   //#endregion
 
   //#region Calculation
+
+  sendInit() {
+    this.send({ type: 'clientCoreInit', env: import.meta.env });
+  }
 
   sendPythonInit(port: MessagePort) {
     this.send({ type: 'clientCoreInitPython' }, port);

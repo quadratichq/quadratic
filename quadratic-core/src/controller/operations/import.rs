@@ -295,15 +295,15 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 
     // strip invalid characters
     let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
-    
+
     Some(result)
 }
 
 #[cfg(test)]
 mod test {
     use super::read_utf16;
-    use crate::CellValue;
     use super::*;
+    use crate::CellValue;
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");

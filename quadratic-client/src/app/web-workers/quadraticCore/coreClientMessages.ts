@@ -50,6 +50,11 @@ export interface CoreClientUpgradeFile {
   id: number;
 }
 
+export interface ClientCoreInit {
+  type: 'clientCoreInit';
+  env: ImportMetaEnv;
+}
+
 export interface ClientCoreInitMultiplayer {
   type: 'clientCoreInitMultiplayer';
 }
@@ -852,6 +857,7 @@ export type ClientCoreMessage =
   | ClientCoreFindNextRow
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
+  | ClientCoreInit
   | ClientCoreInitPython
   | ClientCoreImportExcel
   | ClientCoreCancelExecution;

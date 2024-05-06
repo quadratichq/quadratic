@@ -216,6 +216,7 @@ export const CodeEditor = () => {
 
     if (language === undefined)
       throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
+
     quadraticCore.setCodeCellValue({
       sheetId: cellLocation.sheetId,
       x: cellLocation.x,
@@ -426,12 +427,13 @@ export const CodeEditor = () => {
             evaluationResult={evaluationResult}
             cellsAccessed={!unsaved ? cellsAccessed : []}
           />
-          {editorInteractionState.mode === 'Python' && (
-            <ReturnTypeInspector
-              evaluationResult={evaluationResult}
-              show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
-            />
-          )}
+          {editorInteractionState.mode === 'Python' ||
+            (editorInteractionState.mode === 'Connector' && (
+              <ReturnTypeInspector
+                evaluationResult={evaluationResult}
+                show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+              />
+            ))}
 
           {/* Console Wrapper */}
         </div>
