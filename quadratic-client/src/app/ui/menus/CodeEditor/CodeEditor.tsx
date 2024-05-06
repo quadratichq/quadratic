@@ -388,9 +388,6 @@ export const CodeEditor = () => {
             // todo: handle multiplayer code editor here
             multiplayer.sendMouseMove();
           }}
-          onPointerMove={(e) => {
-            e.stopPropagation();
-          }}
         >
           {showSaveChangesAlert && (
             <SaveChangesAlert
