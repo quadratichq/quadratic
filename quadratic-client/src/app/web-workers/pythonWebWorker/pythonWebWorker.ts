@@ -1,10 +1,11 @@
 import { events } from '@/app/events/events';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import mixpanel from 'mixpanel-browser';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
-import { ClientPythonMessage, PythonClientMessage, PythonStateType } from './pythonClientMessages';
+import { ClientPythonMessage, PythonClientMessage } from './pythonClientMessages';
 
 class PythonWebWorker {
-  state: PythonStateType = 'loading';
+  state: LanguageState = 'loading';
 
   private worker?: Worker;
 

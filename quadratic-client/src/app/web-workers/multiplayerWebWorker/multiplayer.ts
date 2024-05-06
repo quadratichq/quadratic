@@ -6,13 +6,14 @@ import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGr
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { authClient, parseDomain } from '@/auth';
 import { displayName } from '@/shared/utils/userUtil';
 import { User } from '@auth0/auth0-spa-js';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
 import updateAlertVersion from '../../../../../updateAlertVersion.json';
-import { CodeRun, PythonStateType } from '../pythonWebWorker/pythonClientMessages';
+import { CodeRun } from '../pythonWebWorker/pythonClientMessages';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
 import {
   ClientMultiplayerMessage,
@@ -78,7 +79,7 @@ export class Multiplayer {
     });
   }
 
-  private pythonState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+  private pythonState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
     const codeRunning: SheetPosTS[] = [];
     if (current) {
       codeRunning.push(current.sheetPos);

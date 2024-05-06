@@ -495,6 +495,8 @@ class CoreClient {
       case 'clientCoreCancelExecution':
         if (e.data.language === 'Python') {
           corePython.cancelExecution();
+        } else if (e.data.language === 'Javascript') {
+          coreJavascript.cancelExecution();
         } else {
           console.warn("Unhandled language in 'clientCoreCancelExecution'", e.data.language);
         }

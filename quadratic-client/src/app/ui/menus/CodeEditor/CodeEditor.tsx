@@ -12,6 +12,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { useJavascriptState } from '@/app/atoms/useJavascriptState';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
@@ -44,6 +46,8 @@ export const CodeEditor = () => {
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
 
   const { pythonState } = usePythonState();
+  const javascriptState = useJavascriptState();
+
   const [editorWidth, setEditorWidth] = useLocalStorage<number>(
     'codeEditorWidth',
     window.innerWidth * 0.35 // default to 35% of the window width
@@ -238,10 +242,16 @@ export const CodeEditor = () => {
     }
   };
 
-  const cancelPython = () => {
-    if (pythonState !== 'running') return;
-
-    pythonWebWorker.cancelExecution();
+  const cancelRun = () => {
+    if (editorInteractionState.mode === 'Python') {
+      if (pythonState === 'running') {
+        pythonWebWorker.cancelExecution();
+      }
+    } else if (editorInteractionState.mode === 'Javascript') {
+      if (javascriptState === 'running') {
+        javascriptWebWorker.cancelExecution();
+      }
+    }
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -267,7 +277,7 @@ export const CodeEditor = () => {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
-      cancelPython();
+      cancelRun();
     }
 
     // Command + Plus
@@ -415,7 +425,7 @@ export const CodeEditor = () => {
             cellLocation={cellLocation}
             unsaved={unsaved}
             saveAndRunCell={saveAndRunCell}
-            cancelPython={cancelPython}
+            cancelRun={cancelRun}
             closeEditor={() => closeEditor(false)}
           />
           <CodeEditorBody

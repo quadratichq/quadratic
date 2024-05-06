@@ -13,7 +13,7 @@ import {
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import {
   CoreClientImage,
   CoreClientImportProgress,
@@ -55,7 +55,7 @@ interface EventTypes {
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
 
   pythonInit: (version: string) => void;
-  pythonState: (state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
   javascriptInit: (version: string) => void;
   javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
 

@@ -51,7 +51,7 @@ class JavascriptWebWorker {
     this.worker.terminate();
     quadraticCore.sendCancelExecution('Javascript');
     this.init();
-    events.emit('javascriptState', 'loading');
+    events.emit('javascriptState', 'ready');
   }
 }
 

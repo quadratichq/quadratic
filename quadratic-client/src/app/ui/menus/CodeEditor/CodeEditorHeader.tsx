@@ -1,8 +1,9 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop, Subject } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
@@ -21,12 +22,12 @@ interface Props {
   unsaved: boolean;
 
   saveAndRunCell: () => void;
-  cancelPython: () => void;
+  cancelRun: () => void;
   closeEditor: () => void;
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, saveAndRunCell, cancelPython, closeEditor } = props;
+  const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
@@ -48,7 +49,7 @@ export const CodeEditorHeader = (props: Props) => {
   const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
   useEffect(() => {
     // update running computation for player
-    const playerState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const playerState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       if (!cellLocation) return;
       if (
         current &&
@@ -155,7 +156,7 @@ export const CodeEditorHeader = (props: Props) => {
         {hasPermission && (
           <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
             <span>
-              <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
+              <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
                 <Stop />
               </IconButton>
             </span>

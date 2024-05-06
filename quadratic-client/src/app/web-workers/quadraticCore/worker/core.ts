@@ -850,7 +850,7 @@ class Core {
     const codeResult: JsCodeResult = {
       transaction_id: transactionId,
       success: false,
-      std_err: 'Python execution cancelled by user',
+      std_err: 'Execution cancelled by user',
       std_out: null,
       output_value: null,
       output_array: null,
