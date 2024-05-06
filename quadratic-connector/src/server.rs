@@ -6,7 +6,7 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
-use axum::{routing::get, Extension, Router};
+use axum::{routing::{get, post}, Extension, Router};
 use quadratic_rust_shared::sql::Connection;
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
@@ -55,8 +55,8 @@ pub(crate) fn app(state: Arc<State>) -> Router {
     Router::new()
         // routes
         .route("/health", get(healthcheck))
-        .route("/postgres/test", get(test_postgres))
-        .route("/postgres/query", get(query_postgres))
+        .route("/postgres/test", post(test_postgres))
+        .route("/postgres/query", post(query_postgres))
         // state
         .layer(Extension(state))
         // cors

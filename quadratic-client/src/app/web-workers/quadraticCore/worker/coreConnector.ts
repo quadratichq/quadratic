@@ -17,11 +17,15 @@ class CoreConnector {
   sendConnector = async (transactionId: string, query: string) => {
     const base = coreClient.env.VITE_QUADRATIC_CONNECTOR_URL;
     const url = `${base}/postgres/query?statement=${encodeURIComponent(query)}`;
-    const response = await fetch(url);
-    const buffer = await response.arrayBuffer();
+    try {
+      const response = await fetch(url, { method: 'POST', mode: 'no-cors' });
+      const buffer = await response.arrayBuffer();
 
-    // send the parquet bytes to core
-    core.connectorComplete(transactionId, buffer);
+      // send the parquet bytes to core
+      core.connectorComplete(transactionId, buffer);
+    } catch (e) {
+      console.error(`Error fetching ${url}`, e);
+    }
   };
 }
 

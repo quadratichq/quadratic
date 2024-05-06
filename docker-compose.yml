@@ -27,6 +27,8 @@ services:
     extends:
       file: docker-compose.base.yml
       service: aws-cli
+    depends_on:
+      - localstack
     volumes:
       - ./docker/localstack/cli:/aws
 
