@@ -63,7 +63,7 @@ export const Component = () => {
                         Open starter file
                       </Link>
                     ),
-                    className: 'border border-primary bg-yellow-5000',
+                    className: 'border border-primary',
                   },
                   {
                     title: 'Get started',
@@ -79,7 +79,7 @@ export const Component = () => {
                         Create blank file
                       </Link>
                     ),
-                    className: 'border-b border-border',
+                    className: 'border-l border-l-transparent border-r border-r-transparent border-b border-b-border',
                   },
                   {
                     title: 'See what’s possible',
@@ -94,7 +94,7 @@ export const Component = () => {
                         Explore examples
                       </Link>
                     ),
-                    className: 'border-b border-border',
+                    className: 'border-l border-l-transparent border-r border-r-transparent border-b border-b-border',
                   },
                   {
                     title: 'Deep dive',
@@ -111,6 +111,7 @@ export const Component = () => {
                         <ExternalLinkIcon className="ml-2" />
                       </Link>
                     ),
+                    className: 'border-l border-l-transparent border-r border-r-transparent',
                   },
                 ].map(({ title, description, link, className }, i) => (
                   <div
