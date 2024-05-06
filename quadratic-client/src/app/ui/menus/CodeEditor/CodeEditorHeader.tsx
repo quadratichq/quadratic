@@ -104,9 +104,11 @@ export const CodeEditorHeader = (props: Props) => {
     };
 
     events.on('pythonState', playerState);
+    events.on('javascriptState', playerState);
     events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
       events.off('pythonState', playerState);
+      events.off('javascriptState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [cellLocation]);

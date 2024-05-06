@@ -10,7 +10,7 @@ export function javascriptErrorResult(transactionId: string, message: string, li
     transaction_id: transactionId,
     success: false,
     output_value: null,
-    std_err: message,
+    std_err: message ?? 'An error occurred running the code in the cell.',
     std_out: '',
     output_array: null,
     line_number: lineNumber ?? null,

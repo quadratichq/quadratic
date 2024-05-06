@@ -23,7 +23,7 @@ export const CodeRunning = () => {
 
   // update player's code runs
   useEffect(() => {
-    const updatePythonState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const updateRunningState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       const code: Code[] = [];
       if (current) {
         const rectangle = sheets.sheet.getCellOffsets(current.sheetPos.x, current.sheetPos.y);
@@ -47,7 +47,8 @@ export const CodeRunning = () => {
       });
       setPlayerCode(code);
     };
-    events.on('pythonState', updatePythonState);
+    events.on('pythonState', updateRunningState);
+    events.on('javascriptState', updateRunningState);
   }, []);
 
   // update multiplayer's code runs
