@@ -43,7 +43,7 @@ export class PointerCellMoving {
   pointerDown(event: PointerEvent): boolean {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return false;
 
-    if (this.state === 'hover') {
+    if (this.state === 'hover' && this.moving) {
       this.state = 'move';
       events.emit('cellMoving', true);
       pixiApp.viewport.mouseEdges({
@@ -79,8 +79,8 @@ export class PointerCellMoving {
       pixiApp.cellMoving.dirty = true;
       events.emit('cellMoving', false);
       pixiApp.viewport.plugins.remove('mouse-edges');
-      this.state = undefined;
     }
+    this.state = undefined;
   }
 
   private pointerMoveMoving(world: Point) {
