@@ -84,6 +84,7 @@ pub async fn get_file_checkpoint(
     file_id: &Uuid,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
+    println!("url: {:?}", url);
     let response = if jwt.is_empty() {
         reqwest::Client::new().get(url).send()
     } else {

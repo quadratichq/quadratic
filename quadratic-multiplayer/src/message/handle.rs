@@ -13,7 +13,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use crate::error::{MpError, Result};
+use crate::error::{ErrorLevel, MpError, Result};
 use crate::get_mut_room;
 use crate::message::{
     broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
@@ -216,9 +216,32 @@ pub(crate) async fn handle_message(
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
+            let sequence_num = state.get_sequence_num(&file_id).await?;
+            let expected_num_transactions = sequence_num
+                .checked_sub(min_sequence_num)
+                .unwrap_or_default();
+            tracing::warn!("min_sequence_num: {}", min_sequence_num);
+            tracing::warn!("sequence_num: {}", sequence_num);
+            tracing::warn!("expected_num_transactions: {}", expected_num_transactions);
+
             let transactions = state
                 .get_messages_from_pubsub(&file_id, min_sequence_num)
                 .await?;
+
+            tracing::warn!("got: {}", transactions.len());
+
+            // we don't have the expected number of transactions
+            // send an error to the client so they can reload
+            if transactions.len() < expected_num_transactions as usize {
+                tracing::error!("should reload");
+                // return Ok(Some(MessageResponse::Error {
+                //     error: MpError::MissingTransactions(
+                //         expected_num_transactions.to_string(),
+                //         transactions.len().to_string(),
+                //     ),
+                //     error_level: ErrorLevel::Error,
+                // }));
+            }
 
             let response = MessageResponse::Transactions {
                 transactions: serde_json::to_string(&transactions)?,
@@ -287,7 +310,7 @@ pub(crate) mod tests {
         user_1: User,
         request: MessageRequest,
         response: Option<MessageResponse>,
-        broadcast_response: MessageResponse,
+        broadcast_response: Option<MessageResponse>,
     ) {
         let stream = state
             ._get_user_in_room(&file_id, &user_1.session_id)
@@ -301,8 +324,10 @@ pub(crate) mod tests {
             .unwrap();
         assert_eq!(handled, response);
 
-        let received = integration_test_receive(&socket, 2).await.unwrap();
-        assert_eq!(received, broadcast_response);
+        if let Some(broadcast_response) = broadcast_response {
+            let received = integration_test_receive(&socket, 2).await.unwrap();
+            assert_eq!(received, broadcast_response);
+        }
     }
 
     #[tokio::test]
@@ -334,7 +359,16 @@ pub(crate) mod tests {
             update,
         };
 
-        test_handle(socket, state, file_id, user_1, request, None, response).await;
+        test_handle(
+            socket,
+            state,
+            file_id,
+            user_1,
+            request,
+            None,
+            Some(response),
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -372,7 +406,7 @@ pub(crate) mod tests {
             user_1,
             request,
             None,
-            response,
+            Some(response),
         )
         .await;
 
@@ -405,7 +439,7 @@ pub(crate) mod tests {
             user_1,
             request,
             None,
-            response,
+            Some(response),
         )
         .await;
 
@@ -438,6 +472,65 @@ pub(crate) mod tests {
             sequence_num: 1,
         };
 
-        test_handle(socket, state, file_id, user_1, request, None, response).await;
+        test_handle(
+            socket,
+            state,
+            file_id,
+            user_1,
+            request,
+            None,
+            Some(response),
+        )
+        .await;
+    }
+
+    #[tokio::test]
+    async fn handle_get_transaction() {
+        let (socket, state, _, file_id, user_1, _) = setup().await;
+        let session_id = user_1.session_id;
+
+        let request = MessageRequest::GetTransactions {
+            file_id,
+            session_id,
+            min_sequence_num: 0,
+        };
+
+        let response = MessageResponse::Transactions {
+            transactions: "[]".to_string(),
+        };
+
+        // expect an empty array since there are no transactions
+        test_handle(
+            socket.clone(),
+            state.clone(),
+            file_id,
+            user_1.clone(),
+            request.clone(),
+            Some(response),
+            None,
+        )
+        .await;
+
+        // increment the sequence_num
+        get_mut_room!(state, file_id)
+            .unwrap()
+            .increment_sequence_num();
+
+        let response = MessageResponse::Error {
+            error: MpError::MissingTransactions("1".into(), "0".into()),
+            error_level: ErrorLevel::Error,
+        };
+
+        // expect an error since there are no transactions
+        test_handle(
+            socket,
+            state,
+            file_id,
+            user_1,
+            request,
+            Some(response),
+            None,
+        )
+        .await;
     }
 }

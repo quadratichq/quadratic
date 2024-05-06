@@ -21,7 +21,7 @@ import {
 import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
-  needRefresh: (state: 'required' | 'recommended') => void;
+  needRefresh: (state: 'required' | 'recommended' | 'force') => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell) => void;

@@ -63,6 +63,9 @@ pub(crate) enum MpError {
     #[error("Error reading MinVersion file: {0}")]
     MinVersion(String),
 
+    #[error("Requeste {0} transactions but only found {1}")]
+    MissingTransactions(String, String),
+
     #[error("PubSub error: {0}")]
     PubSub(String),
 
