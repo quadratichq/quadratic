@@ -371,7 +371,10 @@ export const CodeEditor = () => {
       <div
         ref={containerRef}
         className={cn('relative flex bg-background', panelPosition === 'left' ? '' : 'flex-col')}
-        style={{ width: `${editorWidth + (panelPosition === 'left' ? panelWidth : 0)}px` }}
+        style={{
+          width: `${editorWidth + (panelPosition === 'left' ? panelWidth : 0)}px`,
+          borderLeft: '1px solid black',
+        }}
       >
         <div
           id="QuadraticCodeEditorID"
