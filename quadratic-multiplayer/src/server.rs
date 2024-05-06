@@ -20,11 +20,11 @@ use futures_util::SinkExt;
 use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
+use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
-    auth::{authorize, get_jwks},
     background_worker,
     config::config,
     error::{ErrorLevel, MpError, Result},

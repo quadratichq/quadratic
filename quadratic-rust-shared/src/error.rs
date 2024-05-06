@@ -11,6 +11,12 @@ use thiserror::Error;
 pub type Result<T> = std::result::Result<T, SharedError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub enum Auth {
+    #[error("JWT error: {0}")]
+    Jwt(String),
+}
+
+#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Aws {
     #[error("Error communicating with AWS: {0}")]
     S3(String),
@@ -30,6 +36,9 @@ pub enum Sql {
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum SharedError {
+    #[error("Error with auth: {0}")]
+    Auth(Auth),
+
     #[error("Error communicating with AWS: {0}")]
     Aws(Aws),
 
@@ -73,5 +82,11 @@ impl From<serde_json::Error> for SharedError {
 impl From<uuid::Error> for SharedError {
     fn from(error: uuid::Error) -> Self {
         SharedError::Uuid(error.to_string())
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for SharedError {
+    fn from(error: jsonwebtoken::errors::Error) -> Self {
+        SharedError::Auth(Auth::Jwt(error.to_string()))
     }
 }

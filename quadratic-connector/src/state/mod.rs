@@ -6,6 +6,7 @@
 pub mod settings;
 pub mod stats;
 
+use jsonwebtoken::jwk::JwkSet;
 use tokio::sync::Mutex;
 
 use crate::config::Config;
@@ -20,9 +21,9 @@ pub(crate) struct State {
 }
 
 impl State {
-    pub(crate) fn new(config: &Config) -> Self {
+    pub(crate) fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
         State {
-            _settings: Settings::new(config),
+            _settings: Settings::new(config, jwks),
             stats: Mutex::new(Stats::new()),
         }
     }

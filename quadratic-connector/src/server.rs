@@ -12,6 +12,7 @@ use axum::{
     routing::{get, post},
     Extension, Router,
 };
+use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::sql::Connection;
 use std::time::Duration;
 use std::{net::SocketAddr, sync::Arc};
@@ -87,7 +88,8 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let state = Arc::new(State::new(&config));
+    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+    let state = Arc::new(State::new(&config, Some(jwks)));
     let app = app(Arc::clone(&state));
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))

@@ -12,7 +12,7 @@ use crate::state::State;
 
 pub(crate) async fn new_state() -> State {
     let config = config().unwrap();
-    State::new(&config)
+    State::new(&config, None)
 }
 
 pub(crate) async fn new_arc_state() -> Arc<State> {
