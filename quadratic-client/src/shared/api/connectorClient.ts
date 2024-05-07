@@ -1,6 +1,6 @@
 import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
-const API_URL = process.env.VITE_QUADRATIC_CONNECTOR_URL;
+const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTOR_URL;
 
 // Postgres
 //
