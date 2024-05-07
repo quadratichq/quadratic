@@ -1,4 +1,3 @@
-import { getShareUrlParams } from '@/app/gridGL/interaction/viewportHelper';
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
@@ -370,6 +369,8 @@ function CopyLinkButton({
 
   return (
     <>
+      {/*
+      // leaving this code here in case we decide to bring it back
       <Button
         variant={disabled ? 'ghost' : 'link'}
         disabled={disabled}
@@ -387,7 +388,7 @@ function CopyLinkButton({
         }}
       >
         Copy link with position
-      </Button>
+      </Button> */}
       <Button
         variant={disabled ? 'ghost' : 'link'}
         disabled={disabled}
