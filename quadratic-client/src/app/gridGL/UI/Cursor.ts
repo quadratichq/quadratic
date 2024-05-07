@@ -126,12 +126,13 @@ export class Cursor extends Graphics {
       this.beginFill(colors.cursorCell, FILL_ALPHA);
       this.startCell = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.terminalPosition.x, cursor.terminalPosition.y);
-      this.drawRect(
+      this.cursorRectangle = new Rectangle(
         this.startCell.x,
         this.startCell.y,
         this.endCell.x + this.endCell.width - this.startCell.x,
         this.endCell.y + this.endCell.height - this.startCell.y
       );
+      this.drawShape(this.cursorRectangle);
     } else {
       this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);

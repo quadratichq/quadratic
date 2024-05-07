@@ -1,13 +1,15 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 // Distance from top left corner to trigger a cell move.
 const TOP_LEFT_CORNER_THRESHOLD_SQUARED = 50;
+const BORDER_THRESHOLD = 8;
 
 // Speed when turning on the mouseEdges plugin for pixi-viewport
 const MOUSE_EDGES_SPEED = 8;
@@ -96,17 +98,65 @@ export class PointerCellMoving {
     }
   }
 
+  private moveOverlaps(world: Point): boolean {
+    const cursorRectangle = pixiApp.cursor.cursorRectangle;
+    if (!cursorRectangle) return false;
+
+    // top-left corner + threshold
+    if (
+      Math.pow(cursorRectangle.x - world.x, 2) + Math.pow(cursorRectangle.y - world.y, 2) <=
+      TOP_LEFT_CORNER_THRESHOLD_SQUARED
+    ) {
+      return true;
+    }
+
+    // if overlap indicator (autocomplete), then return false
+    const indicator = pixiApp.cursor.indicator;
+    if (intersects.rectanglePoint(indicator, world)) {
+      return false;
+    }
+
+    // if overlaps any of the borders (with threshold), then return true
+    const left = new Rectangle(
+      cursorRectangle.x - BORDER_THRESHOLD / 2,
+      cursorRectangle.y,
+      BORDER_THRESHOLD,
+      cursorRectangle.height
+    );
+    const right = new Rectangle(
+      cursorRectangle.x + cursorRectangle.width - BORDER_THRESHOLD / 2,
+      cursorRectangle.y,
+      BORDER_THRESHOLD,
+      cursorRectangle.height
+    );
+    const top = new Rectangle(
+      cursorRectangle.x,
+      cursorRectangle.y - BORDER_THRESHOLD / 2,
+      cursorRectangle.width,
+      BORDER_THRESHOLD
+    );
+    const bottom = new Rectangle(
+      cursorRectangle.x,
+      cursorRectangle.y + cursorRectangle.height - BORDER_THRESHOLD / 2,
+      cursorRectangle.width,
+      BORDER_THRESHOLD
+    );
+
+    return (
+      intersects.rectanglePoint(left, world) ||
+      intersects.rectanglePoint(right, world) ||
+      intersects.rectanglePoint(top, world) ||
+      intersects.rectanglePoint(bottom, world)
+    );
+  }
+
   private pointerMoveHover(world: Point): boolean {
     const sheet = sheets.sheet;
     const origin = sheet.cursor.originPosition;
     const column = origin.x;
     const row = origin.y;
 
-    const cursor = pixiApp.cursor.cursorRectangle;
-    if (
-      cursor &&
-      Math.pow(cursor.x - world.x, 2) + Math.pow(cursor.y - world.y, 2) <= TOP_LEFT_CORNER_THRESHOLD_SQUARED
-    ) {
+    if (this.moveOverlaps(world)) {
       this.state = 'hover';
       const rectangle = sheet.cursor.getRectangle();
       this.moving = { column, row, width: rectangle.width, height: rectangle.height, toColumn: column, toRow: row };
