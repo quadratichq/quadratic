@@ -150,6 +150,8 @@ export function Search() {
         align="end"
         className="m-2 flex w-[100vw] flex-col items-center gap-1 p-2 min-[400px]:w-[400px] min-[400px]:flex-row min-[400px]:p-3"
         onKeyDown={(e) => {
+          e.stopPropagation();
+
           // close search
           if (e.key === 'Escape') {
             setEditorInteractionState((prev) => ({ ...prev, showSearch: false }));
