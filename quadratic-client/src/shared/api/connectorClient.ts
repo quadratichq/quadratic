@@ -1,8 +1,11 @@
 import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
-const API_URL = 'http://localhost:3003';
+const API_URL = process.env.VITE_QUADRATIC_CONNECTOR_URL;
 
 // Postgres
+//
+// TODO: these should come from the connector service definition for these endpoints
+// but for now, they are defined here
 type TestConnectionResponse = {
   connected: boolean;
   message: string | null;
