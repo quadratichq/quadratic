@@ -207,6 +207,17 @@ export interface CoreClientHasRenderCells {
   hasRenderCells: boolean;
 }
 
+export interface CoreClientGetJwt {
+  type: 'coreClientGetJwt';
+  id: string;
+}
+
+export interface ClientCoreJwt {
+  type: 'clientCoreJwt';
+  id: string;
+  payload: { jwt: string };
+}
+
 //#endregion
 
 //#region Render
@@ -860,7 +871,8 @@ export type ClientCoreMessage =
   | ClientCoreInit
   | ClientCoreInitPython
   | ClientCoreImportExcel
-  | ClientCoreCancelExecution;
+  | ClientCoreCancelExecution
+  | ClientCoreJwt;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -904,4 +916,5 @@ export type CoreClientMessage =
   | CoreClientImportExcel
   | CoreClientMultiplayerState
   | CoreClientOfflineTransactions
-  | CoreClientUndoRedo;
+  | CoreClientUndoRedo
+  | CoreClientGetJwt;

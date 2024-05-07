@@ -16,6 +16,7 @@ import {
   SheetInfo,
   TransactionName,
 } from '@/app/quadratic-core-types';
+import { coreConnector } from '@/app/web-workers/quadraticCore/worker/coreConnector';
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
@@ -71,7 +72,6 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
-    sendConnector: (transactionId: string, query: string) => void;
   };
 
 class CoreClient {
@@ -522,6 +522,10 @@ class CoreClient {
 
       case 'clientCoreRemoveCellNumericFormat':
         core.removeCellNumericFormat(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        break;
+
+      case 'clientCoreJwt':
+        await coreConnector.receive(e.data);
         break;
 
       default:

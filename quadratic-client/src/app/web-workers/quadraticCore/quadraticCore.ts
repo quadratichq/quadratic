@@ -21,6 +21,7 @@ import {
   SearchOptions,
   SheetPos,
 } from '@/app/quadratic-core-types';
+import { authClient } from '@/auth';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
@@ -135,6 +136,11 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
+      return;
+    } else if (e.data.type === 'coreClientGetJwt') {
+      authClient.getTokenOrRedirect().then((jwt: string) => {
+        this.send({ type: 'clientCoreJwt', id: (e.data as any).id, payload: { jwt } });
+      });
       return;
     }
 
