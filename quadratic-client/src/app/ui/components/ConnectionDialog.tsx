@@ -114,7 +114,7 @@ function PostgresBody({
     name: initialData?.name ?? '',
     type: 'POSTGRES',
     host: initialData?.database?.host ?? '',
-    port: initialData?.database?.port ?? undefined,
+    port: initialData?.database?.port ?? '',
     database: initialData?.database.database ?? '',
     username: initialData?.database.username ?? '',
     password: initialData?.database.password ?? '',
@@ -155,7 +155,7 @@ function PostgresBody({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="My database" autoComplete="off" {...field} />
+                  <Input placeholder="My database (production)" autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -169,7 +169,7 @@ function PostgresBody({
                 <FormItem className="col-span-2">
                   <FormLabel>Host</FormLabel>
                   <FormControl>
-                    <Input placeholder="0.0.0.0" autoComplete="off" {...field} />
+                    <Input placeholder="127.0.0.1" autoComplete="off" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,17 +182,7 @@ function PostgresBody({
                 <FormItem>
                   <FormLabel>Port</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="5432"
-                      autoComplete="off"
-                      {...field}
-                      onChange={(e) => {
-                        // Don't allow non-digits and convert it to a number so it
-                        // matches the zod schema
-                        const value = e.target.value.replace(/\D/g, '');
-                        field.onChange(value === '' ? undefined : Number(value));
-                      }}
-                    />
+                    <Input placeholder="5432" autoComplete="off" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
