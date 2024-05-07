@@ -31,7 +31,11 @@ import { SaveChangesAlert } from './SaveChangesAlert';
 
 const MIN_WIDTH_EDITOR = 350;
 const MIN_WIDTH_PANEL = 300;
-const MIN_WIDTH_VISIBLE_GRID = 150;
+
+// this is computed based on the minimum size of the sheet bar with `Sheet 1` as
+// the only visible sheet. TODO: this should be computed dynamically so we can
+// take into account browser font sizes and other factors
+const MIN_WIDTH_VISIBLE_GRID = 215;
 
 export type PanelPosition = 'bottom' | 'left';
 
