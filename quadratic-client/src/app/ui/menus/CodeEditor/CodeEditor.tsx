@@ -502,13 +502,10 @@ export const CodeEditor = () => {
               setState={(mouseEvent) => {
                 const offsetFromRight = window.innerWidth - mouseEvent.x;
                 const totalWidth = editorWidth + panelWidth;
-                const newEditorWidth = offsetFromRight;
-                const newPanelWidth = totalWidth - offsetFromRight;
-
-                if (newEditorWidth > MIN_WIDTH_EDITOR && newPanelWidth > MIN_WIDTH_PANEL) {
-                  setEditorWidth(newEditorWidth);
-                  setPanelWidth(newPanelWidth);
-                }
+                const newEditorWidth = Math.max(offsetFromRight, MIN_WIDTH_EDITOR);
+                const newPanelWidth = Math.max(totalWidth - newEditorWidth, MIN_WIDTH_PANEL);
+                setEditorWidth(newEditorWidth);
+                setPanelWidth(newPanelWidth);
               }}
               position="VERTICAL"
             />
