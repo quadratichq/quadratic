@@ -92,7 +92,7 @@ impl Sheet {
     pub fn remove_code_runs_in_rect(&mut self, rect: Rect) -> Vec<(usize, Pos, CodeRun)> {
         let pos: Vec<_> = self
             .code_runs
-            .iter_mut()
+            .iter()
             .enumerate()
             .flat_map(|(index, (pos, _))| {
                 if rect.contains(*pos) {
