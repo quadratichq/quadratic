@@ -3,8 +3,10 @@
 //! in inlineEditorHandler.ts.
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { colors } from '@/app/theme/colors';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider } from '@/shared/shadcn/ui/tooltip';
+import { SubtitlesOutlined } from '@mui/icons-material';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import { useCallback } from 'react';
 
@@ -20,16 +22,24 @@ export const InlineEditor = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              variant="ghost"
               style={{
-                marginLeft: '8px',
-                padding: '0 3px',
-                display: 'none',
+                position: 'absolute',
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: '0',
+                padding: '0',
+                width: '23px',
+                // TODO: davidf: something is resetting the height when this renders
+                height: '23px',
+                right: '-23px',
+                backgroundColor: colors.languageFormula,
               }}
             >
-              &#9654;
+              <SubtitlesOutlined sx={{ width: '18px', height: '18px', color: 'white' }} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Open Formula in full-sized code editor</TooltipContent>
+          <TooltipContent>Open Formula in multi-line code editor</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>
