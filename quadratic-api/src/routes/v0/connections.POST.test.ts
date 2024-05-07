@@ -48,10 +48,10 @@ describe('POST /v0/connections', () => {
         .send({
           name: 'First connection',
           type: 'POSTGRES',
-          database: {
+          typeDetails: {
             host: 'localhost',
             port: 5432,
-            database: 'postgres',
+            typeDetails: 'postgres',
             username: 'root',
             password: 'password',
           },

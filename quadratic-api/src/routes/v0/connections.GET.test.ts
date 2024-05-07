@@ -18,7 +18,7 @@ beforeAll(async () => {
     data: {
       name: 'First connection',
       type: 'POSTGRES',
-      database: JSON.stringify({
+      typeDetails: JSON.stringify({
         host: 'localhost',
         port: '5432',
         database: 'postgres',
@@ -37,7 +37,7 @@ beforeAll(async () => {
     data: {
       name: 'Second connection',
       type: 'POSTGRES',
-      database: JSON.stringify({
+      typeDetails: JSON.stringify({
         host: 'localhost',
         port: '5432',
         database: 'postgres',
@@ -76,7 +76,7 @@ describe('GET /v0/connections', () => {
           expect(res.body[0].createdDate).toBeDefined();
           expect(res.body[0].updatedDate).toBeDefined();
           expect(res.body[0].type).toBeDefined();
-          expect(res.body[0].database).toBeDefined();
+          expect(res.body[0].typeDetails).not.toBeDefined();
 
           expect(res.body[0].name).toBe('Second connection');
           expect(res.body[1].name).toBe('First connection');

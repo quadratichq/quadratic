@@ -31,13 +31,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   // TODO: ensure they have write access...?
   await getConnection({ uuid, userId });
 
-  const { name, database } = newConnection;
+  const { name, typeDetails } = newConnection;
   const updatedConnection = await dbClient.connection.update({
     where: { uuid },
     data: {
       name,
       updatedDate: new Date(),
-      database: JSON.stringify(database),
+      typeDetails: JSON.stringify(typeDetails),
     },
   });
 
@@ -46,9 +46,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     uuid: updatedConnection.uuid,
     createdDate: updatedConnection.createdDate.toISOString(),
     updatedDate: updatedConnection.updatedDate.toISOString(),
-    // @ts-expect-error TODO: fix types here because it IS a string
     type: updatedConnection.type,
     // @ts-expect-error TODO: fix types
-    database: JSON.parse(updatedConnection.database),
+    typeDetails: JSON.parse(updatedConnection.typeDetails),
   });
 }

@@ -16,7 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CircularProgress } from '@mui/material';
 import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import { ApiTypes, ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionNameSchema, ConnectionTypeDetailsPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useNavigation, useParams, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
@@ -102,23 +102,40 @@ export const ConnectionDialog = ({
   );
 };
 
+const ConnectionFormPostgresSchema = z.object({
+  name: ConnectionNameSchema,
+  type: ConnectionTypePostgresSchema.shape.type,
+  ...ConnectionTypeDetailsPostgresSchema.shape,
+});
+
 function PostgresBody({
   initialData,
   connectionUuid,
 }: {
   connectionUuid: string;
-  initialData?: any /*ApiTypes['/v0/connections/:uuid.GET.response']*/;
+  // TODO: note this is a very specific kind of get for postgres only, update the type
+  initialData?: any; // z.infer<typeof ConnectionPostgresSchema>;
 }) {
-  // TODO: fix these types. May want to consider a more generic form for the data over the wire
-  const defaultValues: z.infer<typeof ConnectionFormPostgresSchema> = {
-    name: initialData?.name ?? '',
-    type: 'POSTGRES',
-    host: initialData?.database?.host ?? '',
-    port: initialData?.database?.port ?? '',
-    database: initialData?.database.database ?? '',
-    username: initialData?.database.username ?? '',
-    password: initialData?.database.password ?? '',
-  };
+  const defaultValues: z.infer<typeof ConnectionFormPostgresSchema> =
+    initialData && initialData.type === 'POSTGRES' && initialData.typeDetails
+      ? {
+          name: initialData.name,
+          type: initialData.type,
+          host: initialData.typeDetails.host,
+          port: initialData.typeDetails.port,
+          database: initialData.typeDetails.database,
+          username: initialData.typeDetails.username,
+          password: initialData.typeDetails.password,
+        }
+      : {
+          name: '',
+          type: 'POSTGRES',
+          host: '',
+          port: '',
+          database: '',
+          username: '',
+          password: '',
+        };
   const submit = useSubmit();
 
   // TODO: cleanup how this submits empty strings rather than undefined
@@ -128,21 +145,20 @@ function PostgresBody({
   });
 
   const onSubmit = (values: z.infer<typeof ConnectionTypePostgresSchema>) => {
-    const { name, type, ...database } = values;
+    const { name, type, ...typeDetails } = values;
 
     // Update
     if (initialData) {
-      const data = getUpdateConnectionAction(connectionUuid, { name, database });
+      const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
       submit(data, { method: 'POST', encType: 'application/json' });
       // Create
     } else {
-      const data: ApiTypes['/v0/connections.POST.request'] = { name, type, database };
+      const data: ApiTypes['/v0/connections.POST.request'] = { name, type, typeDetails };
       submit(data, { method: 'POST', encType: 'application/json' });
     }
   };
 
   const formValues = form.watch();
-  console.log(formValues);
 
   return (
     <>
@@ -233,7 +249,7 @@ function PostgresBody({
           </div>
         </form>
       </Form>
-      <ConnectionTest type="postgres" data={formValues} />
+      <ConnectionTest type="postgres" data={formValues} form={form} />
     </>
   );
 }

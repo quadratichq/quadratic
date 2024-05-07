@@ -35,7 +35,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     updatedDate: updatedDate.toISOString(),
   }));
 
-  // @ts-expect-error TODO: fix types for `type`
   // There's a mismatch between the type in the db schema and the type in the API
   return res.status(200).json(data);
 }

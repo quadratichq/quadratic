@@ -38,7 +38,8 @@ async function handler(req: Request, res: Response) {
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
     // TODO: fix types, don't send sensitive info
-    database: connection.database,
+    // @ts-expect-error
+    typeDetails: JSON.parse(connection.typeDetails),
   };
   return res.status(200).json(data);
 }

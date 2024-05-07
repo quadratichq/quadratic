@@ -8,36 +8,35 @@ import { useEffect, useState } from 'react';
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 
-export function ConnectionTest({ type, data }: any) {
+export function ConnectionTest({ type, data, form }: any) {
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
 
   useEffect(() => {
     // When the data changes, reset the connection state
     setConnectionState('idle');
-    console.log('data changed');
+    // console.log('data changed');
   }, [data]);
 
   return (
     <form
       id="test-connection"
       method="POST"
-      onSubmit={async (e) => {
+      onSubmit={form.handleSubmit((values: any, e: any) => {
         e.preventDefault();
 
+        // TODO: remove sending extra data
+        console.log('Testing connection: ', type, values);
         setConnectionState('loading');
 
-        // TODO: remove sending extra data
-        console.log('Testing connection: ', type, data);
-
         // @ts-expect-error fix types
-        const { connected, message } = await connectorClient.test[type](data);
+        connectorClient.test[type](values).then(({ connected, message }) => {
+          if (!connected) {
+            console.error(message);
+          }
 
-        if (!connected) {
-          console.error(message);
-        }
-
-        setConnectionState(connected ? 'success' : 'error');
-      }}
+          setConnectionState(connected ? 'success' : 'error');
+        });
+      })}
       className="grid gap-4"
     >
       <div
