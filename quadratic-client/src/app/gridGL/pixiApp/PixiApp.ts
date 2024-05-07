@@ -325,8 +325,6 @@ export class PixiApp {
         scaleX: this.viewport.scale.x,
         scaleY: this.viewport.scale.y,
       };
-    } else {
-      console.error('Sheet not found in urlViewportLoad');
     }
   }
 }

@@ -5,6 +5,9 @@ import { isMobile } from 'react-device-detect';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
+const MINIMUM_VIEWPORT_SCALE = 0.01;
+const MAXIMUM_VIEWPORT_SCALE = 10;
+const WHEEL_ZOOM_PERCENT = 1.5;
 
 export class Viewport extends PixiViewport {
   constructor() {
@@ -17,15 +20,15 @@ export class Viewport extends PixiViewport {
       .decelerate()
       .pinch()
       .clampZoom({
-        minScale: 0.01,
-        maxScale: 10,
+        minScale: MINIMUM_VIEWPORT_SCALE,
+        maxScale: MAXIMUM_VIEWPORT_SCALE,
       });
     this.plugins.add(
       'wheel',
       new Wheel(this, {
         trackpadPinch: true,
         wheelZoom: true,
-        percent: 1.5,
+        percent: WHEEL_ZOOM_PERCENT,
         keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
       })
     );
