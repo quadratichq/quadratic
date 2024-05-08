@@ -43,7 +43,6 @@ const HEALTHCHECK_INTERVAL_S: u64 = 5;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     sub: String,
-    // company: String,
     exp: usize,
 }
 
@@ -173,10 +172,6 @@ where
             .map_err(|e| ConnectorError::InvalidToken(e.to_string()))?;
 
         let token_data = authorize(jwks, bearer.token(), false, true)?;
-
-        // // Decode the user data
-        // let token_data = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
-        //     .map_err(|e| ConnectorError::InvalidToken(e.to_string()))?;
 
         Ok(token_data.claims)
     }

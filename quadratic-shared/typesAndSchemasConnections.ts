@@ -5,9 +5,13 @@ import z from 'zod';
  * Shared
  * =============================================================================
  */
+
+export const ConnectionTypesSchema = z.enum(['POSTGRES', 'MYSQL']);
+export type ConnectionType = z.infer<typeof ConnectionTypesSchema>;
+
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' }).max(80);
 
-export const ConnectionTypePostgresSchema = z.literal('POSTGRES');
+export const ConnectionTypePostgresSchema = z.literal(ConnectionTypesSchema.enum.POSTGRES);
 export const ConnectionTypeDetailsPostgresSchema = z.object({
   host: z.string().min(1, { message: 'Required' }).max(255),
   port: z.coerce.number({ invalid_type_error: 'Must be a number' }).int().positive().min(0).max(65535).optional(),
@@ -16,7 +20,7 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
   database: z.string().optional(),
 });
 
-const ConnectionTypeMysqlSchema = z.literal('MYSQL');
+const ConnectionTypeMysqlSchema = z.literal(ConnectionTypesSchema.enum.MYSQL);
 const ConnectionTypeDetailsMysqlSchema = z.object({
   // TODO: add mysql fields
   foo: z.string().min(1, { message: 'Required' }).max(255),

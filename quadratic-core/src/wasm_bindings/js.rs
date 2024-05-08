@@ -96,6 +96,7 @@ extern "C" {
         sheet_id: String,
         query: String,
         connector_type: ConnectorKind,
+        connection_id: String,
     );
 }
 
@@ -480,12 +481,13 @@ pub fn jsConnector(
     sheet_id: String,
     query: String,
     connector_type: ConnectorKind,
+    connection_id: String,
 ) -> JsValue {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsConnector",
         format!(
-            "{},{},{},{},{},{}",
-            transactionId, x, y, sheet_id, query, connector_type
+            "{},{},{},{},{},{},{}",
+            transactionId, x, y, sheet_id, query, connector_type, connection_id
         ),
     ));
     JsValue::NULL

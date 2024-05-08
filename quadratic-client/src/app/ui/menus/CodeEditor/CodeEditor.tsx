@@ -41,7 +41,8 @@ export const dispatchEditorAction = (name: string) => {
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { showCodeEditor, mode: editorMode } = editorInteractionState;
+  const { showCodeEditor, mode: editorMode, connection_type, connection_id } = editorInteractionState;
+  console.log('CodeEditor', connection_type, connection_id);
 
   const { pythonState } = usePythonState();
   const [editorWidth, setEditorWidth] = useLocalStorage<number>(
