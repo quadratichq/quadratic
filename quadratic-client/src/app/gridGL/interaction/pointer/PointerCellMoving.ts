@@ -153,7 +153,7 @@ export class PointerCellMoving {
       cursorRectangle.width,
       BORDER_THRESHOLD
     );
-    console.log(cursorRectangle.y, cursorRectangle.height, bottom, world);
+
     if (intersects.rectanglePoint(bottom, world)) {
       return 'bottom';
     }
