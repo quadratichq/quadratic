@@ -1,7 +1,9 @@
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { colors } from '@/app/theme/colors';
 import { PostgresIcon } from '@/app/ui/icons';
+import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { Type } from '@/shared/components/Type';
-import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -9,9 +11,8 @@ import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useState } from 'react';
-import { Link, useNavigate, useParams, useRouteLoaderData } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 const connectionsById = {
   postgres: {
@@ -34,13 +35,10 @@ export const Component = () => {
   const { uuid } = useParams() as { uuid: string };
   const navigate = useNavigate();
   const [filterQuery, setFilterQuery] = useState<string>('');
-  // TODO: cleanup types
-  const { connections } = useRouteLoaderData(ROUTE_LOADER_IDS.FILE_METADATA) as {
-    connections: ApiTypes['/v0/connections.GET.response'];
-  };
+  const { connections } = useFileMetaRouteLoaderData();
 
   const onClose = () => {
-    navigate(ROUTES.FILE(uuid));
+    navigate(ROUTES.FILE(uuid), { replace: true });
   };
 
   const filteredConnections =
@@ -50,7 +48,7 @@ export const Component = () => {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent onCloseAutoFocus={focusGrid}>
         <DialogHeader>
           <DialogTitle>Connections</DialogTitle>
           <DialogDescription>Manage your connections to outside data sources</DialogDescription>
@@ -133,4 +131,5 @@ export const Component = () => {
   );
 };
 
-// TODO: (connections) make some nice error boundary routes for the dialog
+// TODO: (connections) make some nice error boundary routes for the dialog.
+// If the data failed to load, show something useful.

@@ -1,3 +1,4 @@
+import { focusGrid } from '@/app/helpers/focusGrid';
 import { ConnectionTest } from '@/app/ui/components/ConnectionTest';
 import { getDeleteConnectionAction, getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
 import { ROUTES } from '@/shared/constants/routes';
@@ -61,7 +62,7 @@ export const ConnectionDialog = ({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" onCloseAutoFocus={focusGrid}>
         <DialogHeader>
           <div>
             <button onClick={onBack} className="flex items-center gap-2 text-xs text-primary">
