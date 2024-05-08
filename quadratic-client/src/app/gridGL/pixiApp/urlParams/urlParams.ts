@@ -31,7 +31,8 @@ class UrlParams {
     if (debugSaveURLState && this.urlParamsDev) {
       this.urlParamsDev.updateParams();
     } else if (!debugSaveURLState && this.urlParamsUser) {
-      this.urlParamsUser.updateParams();
+      // Removed by design. Uncomment this to start including user-focused URL params.
+      // this.urlParamsUser.updateParams();
     }
   };
 }
