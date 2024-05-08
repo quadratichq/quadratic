@@ -70,7 +70,7 @@ export class PointerHeading {
     if (headingResize) {
       pixiApp.setViewportDirty();
       if (this.clicked && headingResize.column !== undefined) {
-        this.onDoubleClickColumn(headingResize.column);
+        this.autoResizeColumn(headingResize.column);
         event.preventDefault();
         return true;
       } else if (this.clicked && headingResize.row !== undefined) {
@@ -255,7 +255,7 @@ export class PointerHeading {
     return false;
   }
 
-  private async onDoubleClickColumn(column: number) {
+  async autoResizeColumn(column: number) {
     const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
     const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
     const size = Math.max(contentSizePlusMargin, CELL_WIDTH);

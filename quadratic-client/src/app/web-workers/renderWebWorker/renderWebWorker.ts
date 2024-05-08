@@ -40,30 +40,41 @@ class RenderWebWorker {
       this.preloadQueue.push(e);
       return;
     }
+
     switch (e.data.type) {
       case 'renderClientCellsTextHashClear':
         pixiApp.cellsSheets.cellsTextHashClear(e.data);
-        break;
+        return;
 
       case 'renderClientLabelMeshEntry':
         pixiApp.cellsSheets.labelMeshEntry(e.data);
-        break;
+        return;
 
       case 'renderClientFinalizeCellsTextHash':
         pixiApp.cellsSheets.finalizeCellsTextHash(e.data);
-        break;
+        return;
 
       case 'renderClientFirstRenderComplete':
         pixiApp.firstRenderComplete();
-        break;
+        return;
 
       case 'renderClientUnload':
         pixiApp.cellsSheets.unload(e.data);
-        break;
-
-      default:
-        console.warn('Unhandled message type', e.data);
+        return;
     }
+
+    if (e.data.id !== undefined) {
+      const callback = this.waitingForResponse[e.data.id];
+      if (callback) {
+        callback(e.data);
+        delete this.waitingForResponse[e.data.id];
+        return;
+      } else {
+        console.warn('No callback for id in renderWebWorker', e.data.id);
+      }
+    }
+
+    console.warn('Unhandled message type', e.data);
   };
 
   private send(message: ClientRenderMessage) {

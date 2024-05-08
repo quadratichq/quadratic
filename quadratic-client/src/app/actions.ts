@@ -185,3 +185,8 @@ export const findInSheet = {
 export const findInSheets = {
   label: 'Find in all sheets',
 };
+
+export const resizeColumnAction = {
+  label: 'Automatically resize current column',
+  isAvailable: hasPermissionToEditFile,
+};
