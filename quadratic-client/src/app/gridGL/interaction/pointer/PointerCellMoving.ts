@@ -22,6 +22,7 @@ interface MoveCells {
   height: number;
   toColumn: number;
   toRow: number;
+  offset: { x: number; y: number };
 }
 
 export class PointerCellMoving {
@@ -90,7 +91,12 @@ export class PointerCellMoving {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
     const offsets = sheets.sheet.offsets;
-    const position = offsets.getColumnRowFromScreen(world.x, world.y);
+    const position = offsets.getColumnRowFromScreen(world.x + this.moving.offset.x, world.y + this.moving.offset.y);
+    pixiApp.debug
+      .clear()
+      .beginFill(0xff0000)
+      .drawCircle(world.x + this.moving.offset.x, world.y + this.moving.offset.y, 5)
+      .endFill();
     if (this.moving.toColumn !== position.column || this.moving.toRow !== position.row) {
       this.moving.toColumn = position.column;
       this.moving.toRow = position.row;
@@ -98,7 +104,7 @@ export class PointerCellMoving {
     }
   }
 
-  private moveOverlaps(world: Point): boolean {
+  private moveOverlaps(world: Point): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' {
     const cursorRectangle = pixiApp.cursor.cursorRectangle;
     if (!cursorRectangle) return false;
 
@@ -107,7 +113,7 @@ export class PointerCellMoving {
       Math.pow(cursorRectangle.x - world.x, 2) + Math.pow(cursorRectangle.y - world.y, 2) <=
       TOP_LEFT_CORNER_THRESHOLD_SQUARED
     ) {
-      return true;
+      return 'corner';
     }
 
     // if overlap indicator (autocomplete), then return false
@@ -123,31 +129,41 @@ export class PointerCellMoving {
       BORDER_THRESHOLD,
       cursorRectangle.height
     );
+    if (intersects.rectanglePoint(left, world)) {
+      return 'left';
+    }
+
     const right = new Rectangle(
       cursorRectangle.x + cursorRectangle.width - BORDER_THRESHOLD / 2,
       cursorRectangle.y,
       BORDER_THRESHOLD,
       cursorRectangle.height
     );
+    if (intersects.rectanglePoint(right, world)) {
+      return 'right';
+    }
+
     const top = new Rectangle(
       cursorRectangle.x,
       cursorRectangle.y - BORDER_THRESHOLD / 2,
       cursorRectangle.width,
       BORDER_THRESHOLD
     );
+    if (intersects.rectanglePoint(top, world)) {
+      return 'top';
+    }
+
     const bottom = new Rectangle(
       cursorRectangle.x,
       cursorRectangle.y + cursorRectangle.height - BORDER_THRESHOLD / 2,
       cursorRectangle.width,
       BORDER_THRESHOLD
     );
+    if (intersects.rectanglePoint(bottom, world)) {
+      return 'bottom';
+    }
 
-    return (
-      intersects.rectanglePoint(left, world) ||
-      intersects.rectanglePoint(right, world) ||
-      intersects.rectanglePoint(top, world) ||
-      intersects.rectanglePoint(bottom, world)
-    );
+    return false;
   }
 
   private pointerMoveHover(world: Point): boolean {
@@ -156,10 +172,31 @@ export class PointerCellMoving {
     const column = origin.x;
     const row = origin.y;
 
-    if (this.moveOverlaps(world)) {
+    const overlap = this.moveOverlaps(world);
+    if (overlap) {
       this.state = 'hover';
       const rectangle = sheet.cursor.getRectangle();
-      this.moving = { column, row, width: rectangle.width, height: rectangle.height, toColumn: column, toRow: row };
+      const screenRectangle = pixiApp.cursor.cursorRectangle;
+      if (!screenRectangle) return false;
+      let adjustX = 0,
+        adjustY = 0;
+      if (overlap === 'right') {
+        adjustX = sheets.sheet.offsets.getColumnWidth(rectangle.right);
+      } else if (overlap === 'bottom') {
+        adjustY = sheets.sheet.offsets.getRowHeight(rectangle.bottom);
+      }
+      this.moving = {
+        column,
+        row,
+        width: rectangle.width,
+        height: rectangle.height,
+        toColumn: column,
+        toRow: row,
+        offset: {
+          x: screenRectangle.x - world.x + adjustX,
+          y: screenRectangle.y - world.y + adjustY,
+        },
+      };
       return true;
     }
     this.reset();
