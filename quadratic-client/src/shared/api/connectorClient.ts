@@ -1,3 +1,4 @@
+import { authClient } from '@/auth';
 import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
 const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTOR_URL;
@@ -17,9 +18,10 @@ export const connectorClient = {
   test: {
     postgres: async (body: TestPostgresBody) => {
       try {
+        let jwt = await authClient.getTokenOrRedirect();
         const res = fetch(`${API_URL}/postgres/test`, {
           method: 'POST',
-          headers: new Headers({ 'content-type': 'application/json' }),
+          headers: new Headers({ 'content-type': 'application/json', authorization: `Bearer ${jwt}` }),
           body: JSON.stringify(body),
         });
         const json: TestConnectionResponse = await res.then((res) => res.json());
