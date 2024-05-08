@@ -87,30 +87,6 @@ impl Sheet {
         })
     }
 
-    /// Removes code_runs in a rect and returns them without cloning
-    /// Returned usize is the index within the original CodeRun vec
-    pub fn remove_code_runs_in_rect(&mut self, rect: Rect) -> Vec<(usize, Pos, CodeRun)> {
-        let pos: Vec<_> = self
-            .code_runs
-            .iter()
-            .enumerate()
-            .flat_map(|(index, (pos, _))| {
-                if rect.contains(*pos) {
-                    Some((index, *pos))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        pos.iter()
-            .flat_map(|(index, pos)| {
-                self.code_runs
-                    .shift_remove(pos)
-                    .map(|code_run| (*index, *pos, code_run))
-            })
-            .collect()
-    }
-
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &CodeRun)> {
         self.code_runs
             .iter()

@@ -273,3 +273,19 @@ impl GridController {
         vec![Operation::MoveCells { source, dest }]
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::controller::{operations::operation::Operation, GridController};
+
+    #[test]
+    fn move_cell_operations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let source = (0, 0, 2, 2, sheet_id).into();
+        let dest = (2, 2, sheet_id).into();
+        let operations = gc.move_cells_operations(source, dest);
+        assert_eq!(operations.len(), 1);
+        assert_eq!(operations[0], Operation::MoveCells { source, dest });
+    }
+}
