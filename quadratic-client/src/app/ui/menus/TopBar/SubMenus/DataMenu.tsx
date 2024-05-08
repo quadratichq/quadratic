@@ -52,7 +52,7 @@ export const DataMenu = () => {
           />
         </MenuItem>
         <MenuDivider />
-        <MenuItem onClick={() => navigate(ROUTES.FILE_CONNECTIONS(uuid))}>
+        <MenuItem onClick={() => navigate(ROUTES.FILE_CONNECTIONS(uuid), { replace: true })}>
           <MenuLineItem primary="Manage connections" />
         </MenuItem>
       </Menu>

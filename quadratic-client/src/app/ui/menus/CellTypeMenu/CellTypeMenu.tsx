@@ -155,7 +155,7 @@ export default function CellTypeMenu() {
                 ...editorInteractionState,
                 showCellTypeMenu: false,
               });
-              navigate(ROUTES.FILE_CONNECTIONS(uuid));
+              navigate(ROUTES.FILE_CONNECTIONS(uuid), { replace: true });
             }}
           />
         </CommandGroup>
