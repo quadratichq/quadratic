@@ -1,6 +1,6 @@
 use crate::{
     controller::{active_transactions::pending_transaction::PendingTransaction, GridController},
-    grid::CodeCellLanguage,
+    grid::{CodeCellLanguage, ConnectorKind},
     SheetPos,
 };
 
@@ -10,6 +10,8 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
+        kind: ConnectorKind,
+        id: String,
     ) {
         // send the request to get the sql data via the connector to the host
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
@@ -19,12 +21,13 @@ impl GridController {
                 sheet_pos.y as i32,
                 sheet_pos.sheet_id.to_string(),
                 code,
+                kind,
             );
         }
 
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
-        transaction.waiting_for_async = Some(CodeCellLanguage::Connector);
+        transaction.waiting_for_async = Some(CodeCellLanguage::Connector { kind, id });
         transaction.has_async = true;
     }
 }

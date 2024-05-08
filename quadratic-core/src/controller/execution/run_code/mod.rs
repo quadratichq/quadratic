@@ -179,7 +179,7 @@ impl GridController {
                 ))
             }
         };
-        match transaction.waiting_for_async {
+        match &transaction.waiting_for_async {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }

@@ -89,7 +89,14 @@ extern "C" {
 
     pub fn jsUndoRedo(undo: bool, redo: bool);
 
-    pub fn jsConnector(transactionId: String, x: i32, y: i32, sheet_id: String, query: String);
+    pub fn jsConnector(
+        transactionId: String,
+        x: i32,
+        y: i32,
+        sheet_id: String,
+        query: String,
+        connector_type: ConnectorKind,
+    );
 }
 
 #[cfg(test)]
@@ -472,10 +479,14 @@ pub fn jsConnector(
     y: i32,
     sheet_id: String,
     query: String,
+    connector_type: ConnectorKind,
 ) -> JsValue {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsConnector",
-        format!("{},{},{},{},{}", transactionId, x, y, sheet_id, query),
+        format!(
+            "{},{},{},{},{},{}",
+            transactionId, x, y, sheet_id, query, connector_type
+        ),
     ));
     JsValue::NULL
 }

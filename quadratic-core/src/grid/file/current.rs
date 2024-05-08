@@ -4,8 +4,8 @@ use crate::grid::{
     file::v1_5::schema::{self as current},
     formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
-    CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
-    NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
+    CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData, ConnectorKind, Grid,
+    GridBounds, NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
@@ -172,7 +172,15 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
                         language: match code_cell.language {
                             current::CodeCellLanguage::Python => CodeCellLanguage::Python,
                             current::CodeCellLanguage::Formula => CodeCellLanguage::Formula,
-                            current::CodeCellLanguage::Connector => CodeCellLanguage::Connector,
+                            current::CodeCellLanguage::Connector { ref kind, ref id } => {
+                                CodeCellLanguage::Connector {
+                                    kind: match kind {
+                                        current::ConnectorKind::Postgres => ConnectorKind::Postgres,
+                                        current::ConnectorKind::Mysql => ConnectorKind::Mysql,
+                                    },
+                                    id: id.clone(),
+                                }
+                            }
                         },
                     }),
                     current::CellValue::Logical(logical) => CellValue::Logical(*logical),
@@ -506,8 +514,18 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                                                 CodeCellLanguage::Formula => {
                                                     current::CodeCellLanguage::Formula
                                                 }
-                                                CodeCellLanguage::Connector => {
-                                                    current::CodeCellLanguage::Connector
+                                                CodeCellLanguage::Connector { kind, ref id } => {
+                                                    current::CodeCellLanguage::Connector {
+                                                        kind: match kind {
+                                                            ConnectorKind::Postgres => {
+                                                                current::ConnectorKind::Postgres
+                                                            }
+                                                            ConnectorKind::Mysql => {
+                                                                current::ConnectorKind::Mysql
+                                                            }
+                                                        },
+                                                        id: id.clone(),
+                                                    }
                                                 }
                                             },
                                         })
