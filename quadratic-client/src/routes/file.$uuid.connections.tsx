@@ -34,7 +34,7 @@ const connectionsById = {
 export const Breadcrumb = () => {
   const { uuid, typeId, connectionUuid } = useParams();
   return (
-    <nav className="flex items-center gap-2 text-xs">
+    <nav className="mb-0.5 flex items-center gap-2 text-xs">
       <NavLink
         to={ROUTES.FILE_CONNECTIONS(uuid ?? '')}
         end
