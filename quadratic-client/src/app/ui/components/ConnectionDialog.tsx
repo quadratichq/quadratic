@@ -1,21 +1,13 @@
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { ConnectionTest } from '@/app/ui/components/ConnectionTest';
+import { Breadcrumb } from '@/routes/file.$uuid.connections';
 import { getDeleteConnectionAction, getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/shadcn/ui/dialog';
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircularProgress } from '@mui/material';
-import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import { ApiTypes, ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionNameSchema, ConnectionTypeDetailsPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
@@ -44,10 +36,6 @@ export const ConnectionDialog = ({
 
   const isEdit = Boolean(initialData);
 
-  const onBack = () => {
-    navigate(ROUTES.FILE_CONNECTIONS(uuid));
-  };
-
   const onClose = () => {
     navigate(ROUTES.FILE(uuid));
   };
@@ -61,46 +49,39 @@ export const ConnectionDialog = ({
   const FormComponent = FORM_COMPONENTS_BY_TYPE_ID[typeId];
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg" onCloseAutoFocus={focusGrid}>
-        <DialogHeader>
-          <div>
-            <button onClick={onBack} className="flex items-center gap-2 text-xs text-primary">
-              <ArrowLeftIcon />
-              Connections
-            </button>
-          </div>
-          <DialogTitle>{isEdit ? 'Edit' : 'Create'} Postgres connection</DialogTitle>
-          <DialogDescription>
-            For more information on setting up Postgres,{' '}
-            <a href="#TODO:" className="underline">
-              read our docs
-            </a>
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <DialogHeader>
+        <Breadcrumb />
+        <DialogTitle>Postgres connection</DialogTitle>
+        <DialogDescription>
+          For more information on Postgres connections,{' '}
+          <a href="#TODO:" className="underline">
+            read our docs
+          </a>
+        </DialogDescription>
+      </DialogHeader>
 
-        <FormComponent initialData={initialData} connectionUuid={connectionUuid} />
+      <FormComponent initialData={initialData} connectionUuid={connectionUuid} />
 
-        <DialogFooter className="flex items-center">
-          {/* <Button onClick={onBack} variant="link" className="mr-auto px-0" disabled={isSubmitting}>
+      <DialogFooter className="flex items-center">
+        {/* <Button onClick={onBack} variant="link" className="mr-auto px-0" disabled={isSubmitting}>
             Back
           </Button> */}
-          {isEdit && (
-            <Button onClick={onDelete} variant="destructive" disabled={isSubmitting} className="mr-auto">
-              Delete
-            </Button>
-          )}
-          {isSubmitting && <CircularProgress style={{ width: '18px', height: '18px', marginRight: '.25rem' }} />}
-          <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
-            Cancel
+        {isEdit && (
+          <Button onClick={onDelete} variant="destructive" disabled={isSubmitting} className="mr-auto">
+            Delete
           </Button>
+        )}
+        {isSubmitting && <CircularProgress style={{ width: '18px', height: '18px', marginRight: '.25rem' }} />}
+        <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
+          Cancel
+        </Button>
 
-          <Button disabled={isSubmitting} form={FORM_ID} type="submit">
-            {isEdit ? 'Save changes' : 'Create'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <Button disabled={isSubmitting} form={FORM_ID} type="submit">
+          {isEdit ? 'Save changes' : 'Create'}
+        </Button>
+      </DialogFooter>
+    </>
   );
 };
 
@@ -173,7 +154,7 @@ function PostgresBody({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="My database (production)" autoComplete="off" {...field} />
+                  <Input placeholder="My database (production)" autoComplete="off" {...field} autoFocus />
                 </FormControl>
                 <FormMessage />
               </FormItem>

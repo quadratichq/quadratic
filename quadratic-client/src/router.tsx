@@ -92,16 +92,22 @@ export const router = createBrowserRouter(
                 () => false
               }
             >
+              {/* TODO: we need to figure out what to do here when it's a publicly viewable file */}
               <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader}>
-                <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')} />
-                <Route
-                  path="connections/:connectionUuid"
-                  lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
-                />
-                <Route
-                  path="connections/create/:typeId"
-                  lazy={() => import('./routes/file.$uuid.connections.create.$typeId')}
-                />
+                <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')}>
+                  <Route
+                    index
+                    lazy={async () => {
+                      const { Index } = await import('./routes/file.$uuid.connections');
+                      return { Component: Index };
+                    }}
+                  />
+                  <Route
+                    path=":connectionUuid"
+                    lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
+                  />
+                  <Route path="create/:typeId" lazy={() => import('./routes/file.$uuid.connections.create.$typeId')} />
+                </Route>
               </Route>
             </Route>
           </Route>

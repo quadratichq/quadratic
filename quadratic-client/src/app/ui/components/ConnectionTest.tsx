@@ -2,9 +2,7 @@ import { connectorClient } from '@/shared/api/connectorClient';
 import { Type } from '@/shared/components/Type';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import { SettingsEthernet } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
-import { CheckCircledIcon, ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 
@@ -64,28 +62,10 @@ export function ConnectionTest({ form }: { form: UseFormReturn<any> }) {
               connectionState === 'error' && 'text-destructive'
             )}
           >
-            {connectionState === 'idle' && (
-              <>
-                <SettingsEthernet fontSize="small" className="opacity-80" />
-              </>
-            )}
-            {connectionState === 'loading' && (
-              <>
-                <CircularProgress style={{ width: 15, height: 15 }} />
-              </>
-            )}
-            {connectionState === 'success' && (
-              <>
-                <CheckCircledIcon />
-                <Type>Ok</Type>
-              </>
-            )}
-            {connectionState === 'error' && (
-              <>
-                <ExclamationTriangleIcon />
-                <Type>Failed</Type>
-              </>
-            )}
+            {connectionState === 'idle' && <Type>Untested</Type>}
+            {connectionState === 'loading' && <CircularProgress style={{ width: 15, height: 15 }} />}
+            {connectionState === 'success' && <Type>Ok</Type>}
+            {connectionState === 'error' && <Type>Failed</Type>}
           </div>
         </div>
         {connectionState === 'error' && (
