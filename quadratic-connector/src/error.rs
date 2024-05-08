@@ -16,7 +16,7 @@ use thiserror::Error;
 pub(crate) type Result<T> = std::result::Result<T, ConnectorError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub(crate) enum ConnectorError {
+pub enum ConnectorError {
     #[error("Authentication error: {0}")]
     Authentication(String),
 
@@ -25,6 +25,9 @@ pub(crate) enum ConnectorError {
 
     #[error("Internal server error: {0}")]
     InternalServer(String),
+
+    #[error("Internal token: {0}")]
+    InvalidToken(String),
 
     #[error("Error requesting data: {0}")]
     Request(String),
@@ -72,6 +75,7 @@ impl From<jsonwebtoken::errors::Error> for ConnectorError {
 // convert ConnectorErrors into readable responses with appropriate status codes
 impl IntoResponse for ConnectorError {
     fn into_response(self) -> Response {
+        tracing::error!("Error: {:?}", self);
         let (status, error) = match self {
             ConnectorError::InternalServer(error) => (StatusCode::INTERNAL_SERVER_ERROR, error),
             ConnectorError::Authentication(error) => (StatusCode::UNAUTHORIZED, error),

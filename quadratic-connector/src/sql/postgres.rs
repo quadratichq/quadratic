@@ -1,7 +1,4 @@
-use std::sync::Arc;
-
 use axum::{extract::Query, response::IntoResponse, Extension, Json};
-
 use quadratic_rust_shared::{
     // quadratic_api::{get_file_checkpoint, set_file_checkpoint},
     sql::{postgres_connection::PostgresConnection, Connection},
@@ -22,7 +19,7 @@ pub(crate) async fn test(Json(connection): Json<TestRequest>) -> Json<TestRespon
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
-    state: Extension<Arc<State>>,
+    state: Extension<State>,
     query: Query<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let connection = new_postgres_connection();
@@ -49,7 +46,7 @@ fn new_postgres_connection() -> PostgresConnection {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::new_arc_state;
+    use crate::test_util::new_state;
     use tracing_test::traced_test;
 
     #[tokio::test]
@@ -58,7 +55,7 @@ mod tests {
         let statement = SqlQuery {
             statement: "select * from \"FileCheckpoint\" limit 2".into(),
         };
-        let state = Extension(new_arc_state().await);
+        let state = Extension(new_state().await);
         let data = query(state, Query(statement)).await.unwrap();
 
         assert_eq!(data.into_response().status(), 200);

@@ -3,19 +3,27 @@
 //! Handle bootstrapping and starting the HTTP server.  Adds global state
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
-use axum::http::header::{ACCEPT, AUTHORIZATION, ORIGIN};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::Json;
 use axum::{
-    http::{header::CONTENT_TYPE, Method},
+    async_trait,
+    extract::{FromRef, FromRequestParts},
+    http::{
+        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, ORIGIN},
+        request::Parts,
+        Method, StatusCode,
+    },
+    middleware,
+    response::IntoResponse,
     routing::{get, post},
-    Extension, Router,
+    Extension, Json, RequestPartsExt, Router,
 };
-use quadratic_rust_shared::auth::jwt::get_jwks;
+use axum_extra::{
+    headers::{authorization::Bearer, Authorization},
+    TypedHeader,
+};
+use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use quadratic_rust_shared::sql::Connection;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -32,7 +40,12 @@ use crate::{
 
 const HEALTHCHECK_INTERVAL_S: u64 = 5;
 
-use serde::{Deserialize, Serialize};
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    sub: String,
+    // company: String,
+    exp: usize,
+}
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SqlQuery {
@@ -53,20 +66,24 @@ impl TestResponse {
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
-pub(crate) fn app(state: Arc<State>) -> Router {
+pub(crate) fn app(state: State) -> Router {
     let cors = CorsLayer::new()
         // allow requests from any origin
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any)
         .allow_headers([CONTENT_TYPE, AUTHORIZATION, ACCEPT, ORIGIN]);
 
+    let auth = middleware::from_extractor_with_state::<Claims, State>(state.clone());
+
     Router::new()
-        // routes
-        .route("/health", get(healthcheck))
+        // protected routes
         .route("/postgres/test", post(test_postgres))
         .route("/postgres/query", post(query_postgres))
+        .layer(auth)
         // state
         .layer(Extension(state))
+        // unprotected routes
+        .route("/health", get(healthcheck))
         // cors
         .layer(cors)
         // logger
@@ -89,8 +106,8 @@ pub(crate) async fn serve() -> Result<()> {
 
     let config = config()?;
     let jwks = get_jwks(&config.auth0_jwks_uri).await?;
-    let state = Arc::new(State::new(&config, Some(jwks)));
-    let app = app(Arc::clone(&state));
+    let state = State::new(&config, Some(jwks));
+    let app = app(state.clone());
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
         .await
@@ -123,17 +140,46 @@ pub(crate) async fn serve() -> Result<()> {
         }
     });
 
-    axum::serve(
-        listener,
-        app.into_make_service_with_connect_info::<SocketAddr>(),
-    )
-    .await
-    .map_err(|e| {
+    axum::serve(listener, app).await.map_err(|e| {
         tracing::warn!("{e}");
         ConnectorError::InternalServer(e.to_string())
     })?;
 
     Ok(())
+}
+
+#[async_trait]
+impl<S> FromRequestParts<S> for Claims
+where
+    State: FromRef<S>,
+    S: Send + Sync,
+{
+    type Rejection = ConnectorError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self> {
+        let state = State::from_ref(state);
+        let jwks = state
+            .settings
+            .jwks
+            .as_ref()
+            .ok_or(ConnectorError::InternalServer(
+                "JWKS not found in state".to_string(),
+            ))?;
+
+        // Extract the token from the authorization header
+        let TypedHeader(Authorization(bearer)) = parts
+            .extract::<TypedHeader<Authorization<Bearer>>>()
+            .await
+            .map_err(|e| ConnectorError::InvalidToken(e.to_string()))?;
+
+        let token_data = authorize(jwks, bearer.token(), false, true)?;
+
+        // // Decode the user data
+        // let token_data = decode::<Claims>(bearer.token(), &KEYS.decoding, &Validation::default())
+        //     .map_err(|e| ConnectorError::InvalidToken(e.to_string()))?;
+
+        Ok(token_data.claims)
+    }
 }
 
 pub(crate) async fn healthcheck() -> impl IntoResponse {
@@ -151,7 +197,7 @@ pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestRes
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::test_util::new_arc_state;
+    use crate::test_util::new_state;
     use axum::{
         body::Body,
         http::{self, Request},
@@ -162,7 +208,7 @@ pub(crate) mod tests {
 
     #[tokio::test]
     async fn responds_with_a_200_ok_for_a_healthcheck() {
-        let state = new_arc_state().await;
+        let state = new_state().await;
         let app = app(state);
 
         let response = app

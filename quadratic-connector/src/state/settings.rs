@@ -2,7 +2,7 @@ use jsonwebtoken::jwk::JwkSet;
 
 use crate::config::Config;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Settings {
     pub(crate) _quadratic_api_uri: String,
     pub(crate) _m2m_auth_token: String,

@@ -209,13 +209,13 @@ export interface CoreClientHasRenderCells {
 
 export interface CoreClientGetJwt {
   type: 'coreClientGetJwt';
-  id: string;
+  id: number;
 }
 
-export interface ClientCoreJwt {
-  type: 'clientCoreJwt';
-  id: string;
-  payload: { jwt: string };
+export interface ClientCoreGetJwt {
+  type: 'clientCoreGetJwt';
+  id: number;
+  jwt: string;
 }
 
 //#endregion
@@ -872,7 +872,7 @@ export type ClientCoreMessage =
   | ClientCoreInitPython
   | ClientCoreImportExcel
   | ClientCoreCancelExecution
-  | ClientCoreJwt;
+  | ClientCoreGetJwt;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

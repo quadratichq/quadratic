@@ -39,6 +39,7 @@ import {
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
   CoreClientGetEditCell,
+  CoreClientGetJwt,
   CoreClientGetRenderCell,
   CoreClientGetRowsBounds,
   CoreClientHasRenderCells,
@@ -64,7 +65,7 @@ class QuadraticCore {
     this.sendInit();
   }
 
-  private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
+  private handleMessage = async (e: MessageEvent<CoreClientMessage>) => {
     if (debugWebWorkersMessages) console.log(`[quadraticCore] message: ${e.data.type}`);
 
     // quadratic-core initiated messages
@@ -138,9 +139,9 @@ class QuadraticCore {
       events.emit('undoRedo', e.data.undo, e.data.redo);
       return;
     } else if (e.data.type === 'coreClientGetJwt') {
-      authClient.getTokenOrRedirect().then((jwt: string) => {
-        this.send({ type: 'clientCoreJwt', id: (e.data as any).id, payload: { jwt } });
-      });
+      const jwt = await authClient.getTokenOrRedirect();
+      const data = e.data as CoreClientGetJwt;
+      this.send({ type: 'clientCoreGetJwt', id: data.id, jwt });
       return;
     }
 
