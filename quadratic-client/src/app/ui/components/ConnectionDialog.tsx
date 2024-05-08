@@ -17,6 +17,7 @@ import { CircularProgress } from '@mui/material';
 import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import { ApiTypes, ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionNameSchema, ConnectionTypeDetailsPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useNavigation, useParams, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
@@ -116,6 +117,8 @@ function PostgresBody({
   // TODO: note this is a very specific kind of get for postgres only, update the type
   initialData?: any; // z.infer<typeof ConnectionPostgresSchema>;
 }) {
+  const [hidePassword, setHidePassword] = useState(true);
+
   const defaultValues: z.infer<typeof ConnectionFormPostgresSchema> =
     initialData && initialData.type === 'POSTGRES' && initialData.typeDetails
       ? {
@@ -157,8 +160,6 @@ function PostgresBody({
       submit(data, { method: 'POST', encType: 'application/json' });
     }
   };
-
-  const formValues = form.watch();
 
   return (
     <>
@@ -240,7 +241,23 @@ function PostgresBody({
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="********" autoComplete="off" {...field} />
+                    <div className="relative">
+                      <Input
+                        autoComplete="off"
+                        {...field}
+                        type={hidePassword ? 'password' : 'text'}
+                        className="pr-14"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0.5 top-0.5 text-muted-foreground hover:bg-transparent"
+                        type="button"
+                        onClick={() => setHidePassword((prev) => !prev)}
+                      >
+                        {hidePassword ? 'Show' : 'Hide'}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -249,7 +266,7 @@ function PostgresBody({
           </div>
         </form>
       </Form>
-      <ConnectionTest type="postgres" data={formValues} form={form} />
+      <ConnectionTest form={form} />
     </>
   );
 }
