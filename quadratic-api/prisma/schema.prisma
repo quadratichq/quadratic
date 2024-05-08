@@ -134,18 +134,25 @@ enum ConnectionRole {
     VIEWER
 }
 
+enum ConnectionType {
+    POSTGRES
+    MYSQL
+}
+
 model Connection {
+    // Generic details
     id                 Int                  @id @default(autoincrement())
     uuid               String               @unique @default(uuid()) // used in URLs
-    name               String
     createdDate        DateTime             @default(now()) @map("created_date")
     updatedDate        DateTime             @default(now()) @map("updated_date")
     archived           DateTime?
-    // Details
-    type               String
-    database           Json
-    // secretArn          String // AWS Secret Manager ARN
+    name               String
     UserConnectionRole UserConnectionRole[]
+    // secretArn       String // AWS Secret Manager ARN
+
+    // Type-specific details
+    type        ConnectionType
+    typeDetails Json
 }
 
 model UserConnectionRole {

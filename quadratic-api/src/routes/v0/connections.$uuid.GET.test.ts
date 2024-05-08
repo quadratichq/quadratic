@@ -19,7 +19,7 @@ beforeAll(async () => {
       uuid: '00000000-0000-0000-0000-000000000000',
       name: 'First connection',
       type: 'POSTGRES',
-      database: JSON.stringify({
+      typeDetails: JSON.stringify({
         host: 'localhost',
         port: '5432',
         database: 'postgres',
@@ -73,7 +73,7 @@ describe('GET /v0/connections/:uuid', () => {
           expect(body.createdDate).toBeDefined();
           expect(body.updatedDate).toBeDefined();
           expect(body.type).toBeDefined();
-          expect(body.database).toBeDefined();
+          expect(body.typeDetails).toBeDefined();
         });
     });
   });

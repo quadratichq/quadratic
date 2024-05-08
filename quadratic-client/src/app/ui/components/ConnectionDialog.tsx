@@ -1,3 +1,4 @@
+import { ConnectionTest } from '@/app/ui/components/ConnectionTest';
 import { getDeleteConnectionAction, getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -15,18 +16,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CircularProgress } from '@mui/material';
 import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import { ApiTypes, ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
+import { ConnectionNameSchema, ConnectionTypeDetailsPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useNavigation, useParams, useSubmit } from 'react-router-dom';
 import { z } from 'zod';
-
-type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
 
 const FORM_COMPONENTS_BY_TYPE_ID = {
   postgres: PostgresBody,
   mysql: () => <div>TODO: mysql form here</div>,
 };
+
+const FORM_ID = 'create-connection';
 
 export const ConnectionDialog = ({
   typeId,
@@ -39,7 +39,7 @@ export const ConnectionDialog = ({
   const submit = useSubmit();
   const navigate = useNavigate();
   const navigation = useNavigation();
-  const [connectionState] = useState<ConnectionState>('success');
+
   const isEdit = Boolean(initialData);
 
   const onBack = () => {
@@ -92,8 +92,9 @@ export const ConnectionDialog = ({
           <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button disabled={isSubmitting || connectionState !== 'success'} form="create-connection" type="submit">
-            {isEdit ? 'Save' : 'Create'} connection
+
+          <Button disabled={isSubmitting} form={FORM_ID} type="submit">
+            {isEdit ? 'Save changes' : 'Create'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -101,23 +102,40 @@ export const ConnectionDialog = ({
   );
 };
 
+const ConnectionFormPostgresSchema = z.object({
+  name: ConnectionNameSchema,
+  type: ConnectionTypePostgresSchema.shape.type,
+  ...ConnectionTypeDetailsPostgresSchema.shape,
+});
+
 function PostgresBody({
   initialData,
   connectionUuid,
 }: {
   connectionUuid: string;
-  initialData?: any /*ApiTypes['/v0/connections/:uuid.GET.response']*/;
+  // TODO: note this is a very specific kind of get for postgres only, update the type
+  initialData?: any; // z.infer<typeof ConnectionPostgresSchema>;
 }) {
-  // TODO: fix these types. May want to consider a more generic form for the data over the wire
-  const defaultValues: z.infer<typeof ConnectionFormPostgresSchema> = {
-    name: initialData?.name ?? '',
-    type: 'POSTGRES',
-    host: initialData?.database?.host ?? '',
-    port: initialData?.database?.port ?? undefined,
-    database: initialData?.database.database ?? '',
-    username: initialData?.database.username ?? '',
-    password: initialData?.database.password ?? '',
-  };
+  const defaultValues: z.infer<typeof ConnectionFormPostgresSchema> =
+    initialData && initialData.type === 'POSTGRES' && initialData.typeDetails
+      ? {
+          name: initialData.name,
+          type: initialData.type,
+          host: initialData.typeDetails.host,
+          port: initialData.typeDetails.port,
+          database: initialData.typeDetails.database,
+          username: initialData.typeDetails.username,
+          password: initialData.typeDetails.password,
+        }
+      : {
+          name: '',
+          type: 'POSTGRES',
+          host: '',
+          port: '',
+          database: '',
+          username: '',
+          password: '',
+        };
   const submit = useSubmit();
 
   // TODO: cleanup how this submits empty strings rather than undefined
@@ -127,116 +145,111 @@ function PostgresBody({
   });
 
   const onSubmit = (values: z.infer<typeof ConnectionTypePostgresSchema>) => {
-    const { name, type, ...database } = values;
+    const { name, type, ...typeDetails } = values;
 
     // Update
     if (initialData) {
-      const data = getUpdateConnectionAction(connectionUuid, { name, database });
+      const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
       submit(data, { method: 'POST', encType: 'application/json' });
       // Create
     } else {
-      const data: ApiTypes['/v0/connections.POST.request'] = { name, type, database };
+      const data: ApiTypes['/v0/connections.POST.request'] = { name, type, typeDetails };
       submit(data, { method: 'POST', encType: 'application/json' });
     }
   };
 
-  return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} id="create-connection" className="space-y-2">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="My database" autoComplete="off" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="host"
-            render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel>Host</FormLabel>
-                <FormControl>
-                  <Input placeholder="0.0.0.0" autoComplete="off" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="port"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Port</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="5432"
-                    autoComplete="off"
-                    {...field}
-                    onChange={(e) => {
-                      // Don't allow non-digits and convert it to a number so it
-                      // matches the zod schema
-                      const value = e.target.value.replace(/\D/g, '');
-                      field.onChange(value === '' ? undefined : Number(value));
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="database"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Database</FormLabel>
-              <FormControl>
-                <Input placeholder="my_database" autoComplete="off" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+  const formValues = form.watch();
 
-        <div className="grid grid-cols-2 gap-4">
+  return (
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} id={FORM_ID} className="space-y-2">
           <FormField
             control={form.control}
-            name="username"
+            name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="root" autoComplete="off" {...field} />
+                  <Input placeholder="My database (production)" autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+          <div className="grid grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="host"
+              render={({ field }) => (
+                <FormItem className="col-span-2">
+                  <FormLabel>Host</FormLabel>
+                  <FormControl>
+                    <Input placeholder="127.0.0.1" autoComplete="off" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="port"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Port</FormLabel>
+                  <FormControl>
+                    <Input placeholder="5432" autoComplete="off" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={form.control}
-            name="password"
+            name="database"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Password</FormLabel>
+                <FormLabel>Database</FormLabel>
                 <FormControl>
-                  <Input placeholder="********" autoComplete="off" {...field} />
+                  <Input placeholder="my_database" autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
-      </form>
-    </Form>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input placeholder="root" autoComplete="off" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input placeholder="********" autoComplete="off" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </form>
+      </Form>
+      <ConnectionTest type="postgres" data={formValues} form={form} />
+    </>
   );
 }

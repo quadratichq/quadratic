@@ -1,0 +1,83 @@
+import { connectorClient } from '@/shared/api/connectorClient';
+import { Type } from '@/shared/components/Type';
+import { Button } from '@/shared/shadcn/ui/button';
+import { cn } from '@/shared/shadcn/utils';
+import { CircularProgress } from '@mui/material';
+import { CheckCircledIcon, ExclamationTriangleIcon, InfoCircledIcon, PlayIcon } from '@radix-ui/react-icons';
+import { useEffect, useState } from 'react';
+
+type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
+
+export function ConnectionTest({ type, data, form }: any) {
+  const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
+
+  useEffect(() => {
+    // When the data changes, reset the connection state
+    setConnectionState('idle');
+    // console.log('data changed');
+  }, [data]);
+
+  return (
+    <form
+      id="test-connection"
+      method="POST"
+      onSubmit={form.handleSubmit((values: any, e: any) => {
+        e.preventDefault();
+
+        // TODO: remove sending extra data
+        console.log('Testing connection: ', type, values);
+        setConnectionState('loading');
+
+        // @ts-expect-error fix types
+        connectorClient.test[type](values).then(({ connected, message }) => {
+          if (!connected) {
+            console.error(message);
+          }
+
+          setConnectionState(connected ? 'success' : 'error');
+        });
+      })}
+      className="grid gap-4"
+    >
+      <div
+        className={cn(
+          'flex items-center rounded border px-2 py-2 pl-3',
+          connectionState === 'idle' && 'border-border',
+          connectionState === 'success' && 'border-success',
+          connectionState === 'error' && 'border-destructive'
+        )}
+      >
+        <div className="flex items-center gap-2">
+          {connectionState === 'idle' && (
+            <>
+              <InfoCircledIcon className="text-muted-foreground" />
+              <Type>Ensure your connection works</Type>
+            </>
+          )}
+          {connectionState === 'loading' && (
+            <>
+              <CircularProgress style={{ width: 15, height: 15 }} />
+              <Type>Testing…</Type>
+            </>
+          )}
+          {connectionState === 'success' && (
+            <>
+              <CheckCircledIcon className="text-success" />
+              <Type>Connection ok!</Type>
+            </>
+          )}
+          {connectionState === 'error' && (
+            <>
+              <ExclamationTriangleIcon className="text-destructive" />
+              <Type>Connection failed. Adjust details and try again.</Type>
+            </>
+          )}
+        </div>
+
+        <Button type="submit" className="ml-auto" variant="secondary" disabled={false}>
+          <PlayIcon className="mr-1" /> Test
+        </Button>
+      </div>
+    </form>
+  );
+}

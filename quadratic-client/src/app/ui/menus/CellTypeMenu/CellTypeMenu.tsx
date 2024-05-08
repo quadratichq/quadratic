@@ -183,7 +183,7 @@ function CommandItemWrapper({
     <CommandItem disabled={disabled} onSelect={onSelect}>
       <div className="mr-4">{icon}</div>
       <div className="flex flex-col">
-        <span className="flex">
+        <span className="flex items-center">
           {name}{' '}
           {experimental && (
             <Badge variant="outline" className="ml-2">
@@ -191,7 +191,7 @@ function CommandItemWrapper({
             </Badge>
           )}
         </span>
-        <span className="text-xs text-muted-foreground">{description}</span>
+        {/* <span className="text-xs text-muted-foreground">{description}</span> */}
       </div>
     </CommandItem>
   );

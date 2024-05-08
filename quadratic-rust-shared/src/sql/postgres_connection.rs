@@ -15,7 +15,7 @@ pub struct PostgresConnection {
     pub user: Option<String>,
     pub password: Option<String>,
     pub host: String,
-    pub port: Option<String>,
+    pub port: Option<u16>,
     pub database: Option<String>,
 }
 
@@ -24,7 +24,7 @@ impl PostgresConnection {
         user: Option<String>,
         password: Option<String>,
         host: String,
-        port: Option<String>,
+        port: Option<u16>,
         database: Option<String>,
     ) -> PostgresConnection {
         PostgresConnection {
@@ -54,9 +54,7 @@ impl Connection for PostgresConnection {
         }
 
         if let Some(ref port) = self.port {
-            options = options.port(port.parse::<u16>().map_err(|e| {
-                SharedError::Sql(Sql::Connect(format!("{:?}: {e}", self.database)))
-            })?);
+            options = options.port(*port);
         }
 
         if let Some(ref database) = self.database {
@@ -123,7 +121,7 @@ mod tests {
             Some("postgres".into()),
             Some("postgres".into()),
             "0.0.0.0".into(),
-            Some("5432".into()),
+            Some(5432),
             Some("postgres".into()),
         )
     }
