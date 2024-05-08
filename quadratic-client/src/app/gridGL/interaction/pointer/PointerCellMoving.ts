@@ -92,11 +92,6 @@ export class PointerCellMoving {
     }
     const offsets = sheets.sheet.offsets;
     const position = offsets.getColumnRowFromScreen(world.x + this.moving.offset.x, world.y + this.moving.offset.y);
-    pixiApp.debug
-      .clear()
-      .beginFill(0xff0000)
-      .drawCircle(world.x + this.moving.offset.x, world.y + this.moving.offset.y, 5)
-      .endFill();
     if (this.moving.toColumn !== position.column || this.moving.toRow !== position.row) {
       this.moving.toColumn = position.column;
       this.moving.toRow = position.row;
@@ -152,13 +147,13 @@ export class PointerCellMoving {
     if (intersects.rectanglePoint(top, world)) {
       return 'top';
     }
-
     const bottom = new Rectangle(
       cursorRectangle.x,
       cursorRectangle.y + cursorRectangle.height - BORDER_THRESHOLD / 2,
       cursorRectangle.width,
       BORDER_THRESHOLD
     );
+    console.log(cursorRectangle.y, cursorRectangle.height, bottom, world);
     if (intersects.rectanglePoint(bottom, world)) {
       return 'bottom';
     }

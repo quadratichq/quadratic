@@ -113,7 +113,7 @@ export class Cursor extends Graphics {
       this.drawRect(x, y, width, height);
       this.cursorRectangle = undefined;
     } else {
-      this.cursorRectangle = new Rectangle(x, y, x + width, y + height);
+      this.cursorRectangle = new Rectangle(x, y, width, height);
     }
   }
 
