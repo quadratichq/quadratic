@@ -1,7 +1,7 @@
 import { useUndo } from '@/app/events/useUndo';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/index';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useRecoilValue } from 'recoil';

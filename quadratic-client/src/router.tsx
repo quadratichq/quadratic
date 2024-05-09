@@ -4,40 +4,26 @@ import { Empty } from '@/dashboard/components/Empty';
 import * as FileMeta from '@/routes/_file.$uuid';
 import * as Create from '@/routes/files.create';
 import { apiClient } from '@/shared/api/apiClient';
-import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
-import { Theme } from '@/shared/components/Theme';
 import { SUPPORT_EMAIL } from '@/shared/constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import { initializeAnalytics } from '@/shared/utils/analytics';
-import { User } from '@auth0/auth0-spa-js';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
 import {
   Link,
   Navigate,
-  Outlet,
   Route,
   ShouldRevalidateFunctionArgs,
   createBrowserRouter,
   createRoutesFromElements,
   redirect,
   useLocation,
-  useRouteError,
-  useRouteLoaderData,
 } from 'react-router-dom';
 import { authClient, protectedRouteLoaderWrapper } from './auth';
+import * as IndexRoute from './routes/index';
 
 // @ts-expect-error - for testing purposes
 window.lf = localforage;
-
-export type RootLoaderData = {
-  isAuthenticated: boolean;
-  loggedInUser?: User;
-};
-
-export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
 
 const dontRevalidateDialogs = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
   const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
@@ -54,28 +40,10 @@ export const router = createBrowserRouter(
     <>
       <Route
         path="/"
-        loader={async ({ request, params }): Promise<RootLoaderData | Response> => {
-          // All other routes get the same data
-          const isAuthenticated = await authClient.isAuthenticated();
-          const user = await authClient.user();
-
-          // This is where we determine whether we need to run a migration
-          // This redirect should trigger for every route _except_ the migration
-          // route (this prevents an infinite loop of redirects).
-          const url = new URL(request.url);
-          if (isAuthenticated && !url.pathname.startsWith('/cloud-migration')) {
-            if (await CloudFilesMigration.needsMigration()) {
-              return redirect('/cloud-migration');
-            }
-          }
-
-          initializeAnalytics(user);
-
-          return { isAuthenticated, loggedInUser: user };
-        }}
-        element={<Root />}
-        errorElement={<RootError />}
-        id="root"
+        id={ROUTE_LOADER_IDS.ROOT}
+        loader={IndexRoute.loader}
+        Component={IndexRoute.Component}
+        ErrorBoundary={IndexRoute.ErrorBoundary}
       >
         <Route path="file">
           {/* Check that the browser is supported _before_ we try to load anything from the API */}
@@ -92,16 +60,25 @@ export const router = createBrowserRouter(
                 () => false
               }
             >
+              {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
               <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader}>
-                <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')} />
-                <Route
-                  path="connections/:connectionUuid"
-                  lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
-                />
-                <Route
-                  path="connections/create/:typeId"
-                  lazy={() => import('./routes/file.$uuid.connections.create.$typeId')}
-                />
+                <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')}>
+                  <Route
+                    index
+                    lazy={async () => {
+                      const { Index } = await import('./routes/file.$uuid.connections');
+                      return { Component: Index };
+                    }}
+                  />
+                  <Route
+                    path=":connectionUuid"
+                    lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
+                  />
+                  <Route
+                    path="create/:connectionType"
+                    lazy={() => import('./routes/file.$uuid.connections.create.$connectionType')}
+                  />
+                </Route>
               </Route>
             </Route>
           </Route>
@@ -257,30 +234,3 @@ export const router = createBrowserRouter(
     </>
   )
 );
-
-function Root() {
-  return (
-    <Theme>
-      <GlobalSnackbarProvider>
-        <Outlet />
-      </GlobalSnackbarProvider>
-    </Theme>
-  );
-}
-
-function RootError() {
-  let error = useRouteError();
-  console.error(error);
-
-  Sentry.captureException({
-    message: `RootRoute error element triggered. ${error}`,
-  });
-
-  return (
-    <Empty
-      title="Something went wrong"
-      description="An unexpected error occurred. Try reloading the page or contact us if the error continues."
-      Icon={ExclamationTriangleIcon}
-    />
-  );
-}

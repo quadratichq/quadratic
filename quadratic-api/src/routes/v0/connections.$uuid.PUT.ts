@@ -28,7 +28,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   } = parseRequest(req, schema);
 
   // get connection from DB, this ensures the user has access to it
-  // TODO: ensure they have write access...?
+  // TODO: (connections) ensure they have write access...?
   await getConnection({ uuid, userId });
 
   const { name, typeDetails } = newConnection;
@@ -47,7 +47,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     createdDate: updatedConnection.createdDate.toISOString(),
     updatedDate: updatedConnection.updatedDate.toISOString(),
     type: updatedConnection.type,
-    // @ts-expect-error TODO: fix types
+    // @ts-expect-error TODO: (connections) fix types
     typeDetails: JSON.parse(updatedConnection.typeDetails),
   });
 }

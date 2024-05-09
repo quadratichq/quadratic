@@ -1,5 +1,5 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/index';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { themes, useTheme } from '@/shared/hooks/useTheme';

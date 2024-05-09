@@ -59,7 +59,7 @@ let CELL_TYPE_OPTIONS = [
     ),
   },
 
-  // todo: create CodeCellLanguage for these types in Rust (when ready to implement)
+  // todo: (connections) create CodeCellLanguage for these types in Rust (when ready to implement)
   // {
   //   name: 'SQL Query',
   //   mode: 'Connector',
@@ -143,7 +143,7 @@ export default function CellTypeMenu() {
           ))}
           <CommandItemWrapper
             name="Create or manage connections"
-            // TODO: correct URL here
+            // TODO: (connections) correct URL here
             description={
               <>
                 Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>

@@ -1,4 +1,4 @@
-import { ConnectionDialog } from '@/app/ui/components/ConnectionDialog';
+import { ConnectionDialogBody } from '@/app/ui/connections/ConnectionDialogBody';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -20,7 +20,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (data._intent === 'update-connection') {
     const { _intent, ...body } = data;
-    // TODO: fix type issue
+    // TODO: (connections) fix type issue
     await apiClient.connections.update(connectionUuid, body as ApiTypes['/v0/connections/:uuid.PUT.request']);
     return redirect(ROUTES.FILE_CONNECTIONS(uuid));
   }
@@ -51,7 +51,7 @@ export const getDeleteConnectionAction = (uuid: string) => {
 export const Component = () => {
   const initialData = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   console.log('/connections/:uuid', initialData);
-  return <ConnectionDialog typeId={'postgres'} initialData={initialData} />;
+  return <ConnectionDialogBody connectionType={'POSTGRES'} initialData={initialData} />;
 };
 
 // TODO: (connections) make some nice error boundary routes for the dialog

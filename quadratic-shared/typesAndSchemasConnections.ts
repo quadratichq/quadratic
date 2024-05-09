@@ -10,6 +10,8 @@ export const ConnectionTypesSchema = z.enum(['POSTGRES', 'MYSQL']);
 export type ConnectionType = z.infer<typeof ConnectionTypesSchema>;
 
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' }).max(80);
+export const ConnectionTypesSchema = z.enum(['POSTGRES', 'MYSQL']);
+export type ConnectionType = z.infer<typeof ConnectionTypesSchema>;
 
 export const ConnectionTypePostgresSchema = z.literal(ConnectionTypesSchema.enum.POSTGRES);
 export const ConnectionTypeDetailsPostgresSchema = z.object({
@@ -22,7 +24,7 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
 
 const ConnectionTypeMysqlSchema = z.literal(ConnectionTypesSchema.enum.MYSQL);
 const ConnectionTypeDetailsMysqlSchema = z.object({
-  // TODO: add mysql fields
+  // TODO: (connections) add mysql fields
   foo: z.string().min(1, { message: 'Required' }).max(255),
 });
 

@@ -23,11 +23,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   } = parseRequest(req, schema);
 
   // get connection from DB, this ensures the user has access to it
-  // TODO: ensure they have delete access...?
+  // TODO: (connections) ensure they have delete access...?
   await getConnection({ uuid, userId });
 
   // Delete the connetion and any associated user roles
-  // TODO: do we want to do that? Or just mark it as archived
+  // TODO: (connections) do we want to do that? Or just mark it as archived
 
   await dbClient.connection.update({
     where: { uuid },

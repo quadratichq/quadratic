@@ -1,5 +1,5 @@
-import { useRootRouteLoaderData } from '@/router';
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
+import { useRootRouteLoaderData } from '@/routes/index';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';

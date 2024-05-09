@@ -1,107 +1,16 @@
-import { ConnectionTest } from '@/app/ui/components/ConnectionTest';
-import { getDeleteConnectionAction, getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
-import { ROUTES } from '@/shared/constants/routes';
+import { CONNECTION_FORM_ID } from '@/app/ui/connections/ConnectionDialogBody';
+import { ConnectionTest } from '@/app/ui/connections/ConnectionTest';
+import { getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
 import { Button } from '@/shared/shadcn/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/shadcn/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CircularProgress } from '@mui/material';
-import { ArrowLeftIcon } from '@radix-ui/react-icons';
 import { ApiTypes, ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionNameSchema, ConnectionTypeDetailsPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useNavigation, useParams, useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router-dom';
 import { z } from 'zod';
-
-const FORM_COMPONENTS_BY_TYPE_ID = {
-  postgres: PostgresBody,
-  mysql: () => <div>TODO: mysql form here</div>,
-};
-
-const FORM_ID = 'create-connection';
-
-export const ConnectionDialog = ({
-  typeId,
-  initialData,
-}: {
-  typeId: keyof typeof FORM_COMPONENTS_BY_TYPE_ID;
-  initialData?: ApiTypes['/v0/connections/:uuid.GET.response'];
-}) => {
-  const { uuid, connectionUuid } = useParams() as { uuid: string; connectionUuid: string };
-  const submit = useSubmit();
-  const navigate = useNavigate();
-  const navigation = useNavigation();
-
-  const isEdit = Boolean(initialData);
-
-  const onBack = () => {
-    navigate(ROUTES.FILE_CONNECTIONS(uuid));
-  };
-
-  const onClose = () => {
-    navigate(ROUTES.FILE(uuid));
-  };
-  const onDelete = () => {
-    const data = getDeleteConnectionAction(connectionUuid);
-    submit(data, { method: 'POST', encType: 'application/json' });
-  };
-
-  const isSubmitting = navigation.state !== 'idle';
-
-  const FormComponent = FORM_COMPONENTS_BY_TYPE_ID[typeId];
-
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <div>
-            <button onClick={onBack} className="flex items-center gap-2 text-xs text-primary">
-              <ArrowLeftIcon />
-              Connections
-            </button>
-          </div>
-          <DialogTitle>{isEdit ? 'Edit' : 'Create'} Postgres connection</DialogTitle>
-          <DialogDescription>
-            For more information on setting up Postgres,{' '}
-            <a href="#TODO:" className="underline">
-              read our docs
-            </a>
-          </DialogDescription>
-        </DialogHeader>
-
-        <FormComponent initialData={initialData} connectionUuid={connectionUuid} />
-
-        <DialogFooter className="flex items-center">
-          {/* <Button onClick={onBack} variant="link" className="mr-auto px-0" disabled={isSubmitting}>
-            Back
-          </Button> */}
-          {isEdit && (
-            <Button onClick={onDelete} variant="destructive" disabled={isSubmitting} className="mr-auto">
-              Delete
-            </Button>
-          )}
-          {isSubmitting && <CircularProgress style={{ width: '18px', height: '18px', marginRight: '.25rem' }} />}
-          <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
-            Cancel
-          </Button>
-
-          <Button disabled={isSubmitting} form={FORM_ID} type="submit">
-            {isEdit ? 'Save changes' : 'Create'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 const ConnectionFormPostgresSchema = z.object({
   name: ConnectionNameSchema,
@@ -109,12 +18,12 @@ const ConnectionFormPostgresSchema = z.object({
   ...ConnectionTypeDetailsPostgresSchema.shape,
 });
 
-function PostgresBody({
+export function ConnectionFormPostgres({
   initialData,
   connectionUuid,
 }: {
   connectionUuid: string;
-  // TODO: note this is a very specific kind of get for postgres only, update the type
+  // TODO: (connections) note this is a very specific kind of get for postgres only, update the type
   initialData?: any; // z.infer<typeof ConnectionPostgresSchema>;
 }) {
   const [hidePassword, setHidePassword] = useState(true);
@@ -141,7 +50,7 @@ function PostgresBody({
         };
   const submit = useSubmit();
 
-  // TODO: cleanup how this submits empty strings rather than undefined
+  // TODO: (connections) cleanup how this submits empty strings rather than undefined
   const form = useForm<z.infer<typeof ConnectionFormPostgresSchema>>({
     resolver: zodResolver(ConnectionFormPostgresSchema),
     defaultValues,
@@ -164,7 +73,7 @@ function PostgresBody({
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} id={FORM_ID} className="space-y-2">
+        <form onSubmit={form.handleSubmit(onSubmit)} id={CONNECTION_FORM_ID} className="space-y-2">
           <FormField
             control={form.control}
             name="name"
@@ -172,7 +81,7 @@ function PostgresBody({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="My database (production)" autoComplete="off" {...field} />
+                  <Input placeholder="My database (production)" autoComplete="off" {...field} autoFocus />
                 </FormControl>
                 <FormMessage />
               </FormItem>
