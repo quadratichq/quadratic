@@ -9,12 +9,12 @@ import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
-import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
+import { CircularProgress } from '@mui/material';
 import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
-import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useNavigation, useParams } from 'react-router-dom';
 
 export const Component = () => {
   const { uuid } = useParams() as { uuid: string };
@@ -36,6 +36,7 @@ export const Component = () => {
 export const Index = () => {
   const { uuid } = useParams() as { uuid: string };
   const navigate = useNavigate();
+  const navigation = useNavigation();
   const [filterQuery, setFilterQuery] = useState<string>('');
   const { connections } = useFileMetaRouteLoaderData();
 
@@ -70,7 +71,12 @@ export const Index = () => {
 
         {connections.length > 0 && (
           <>
-            <form className="grid gap-4">
+            <form
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+            >
               <div className="relative">
                 <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -82,6 +88,7 @@ export const Index = () => {
                 />
                 {filterQuery.length > 0 && (
                   <Button
+                    type="button"
                     variant="link"
                     aria-label="Clear"
                     onClick={() => setFilterQuery('')}
@@ -91,7 +98,6 @@ export const Index = () => {
                   </Button>
                 )}
               </div>
-              {false && <Skeleton className="h-4 w-full" />}
             </form>
             {filteredConnections.length > 0 ? (
               <div className="-mt-4">
@@ -100,11 +106,17 @@ export const Index = () => {
                     to={ROUTES.FILE_CONNECTION(uuid, connectionUuid)}
                     key={connectionUuid}
                     className={cn(
-                      `flex items-center gap-4 px-1 py-2 hover:bg-accent`,
+                      `flex items-center gap-2 px-1 py-2 hover:bg-accent`,
                       i < filteredConnections.length - 1 && 'border-b border-border'
                     )}
                   >
-                    <PostgresIcon style={{ color: colors.languagePostgres }} fontSize="small" />
+                    <div className="flex h-6 w-6 items-center justify-center">
+                      {navigation.state === 'loading' && navigation.location.pathname.includes(connectionUuid) ? (
+                        <CircularProgress style={{ width: '15px', height: '15px' }} />
+                      ) : (
+                        <PostgresIcon style={{ color: colors.languagePostgres }} fontSize="small" />
+                      )}
+                    </div>
                     <div className="flex flex-grow items-center justify-between">
                       <span className="text-sm">{name}</span>
                       <time dateTime={updatedDate} className="text-xs text-muted-foreground">
@@ -115,7 +127,7 @@ export const Index = () => {
                 ))}
               </div>
             ) : (
-              <Type className="py-4 text-center">No matches.</Type>
+              <Type className="py-2 text-center">No matches.</Type>
             )}
           </>
         )}
