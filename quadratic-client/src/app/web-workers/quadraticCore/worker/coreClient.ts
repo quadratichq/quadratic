@@ -462,11 +462,11 @@ class CoreClient {
         break;
 
       case 'clientCoreCommitTransientResize':
-        await core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
+        core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
         break;
 
       case 'clientCoreCommitSingleResize':
-        await core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
+        core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
         break;
 
       case 'clientCoreInitPython':

@@ -47,7 +47,7 @@ class RenderClient {
         return;
 
       case 'clientRenderSheetOffsetsTransient':
-        renderText.sheetOffsets(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
+        renderText.sheetOffsetsDelta(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
         return;
 
       case 'clientRenderShowLabel':

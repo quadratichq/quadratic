@@ -35,7 +35,6 @@ class RenderWebWorker {
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
     if (debugWebWorkersMessages) console.log(`[RenderWebWorker] message: ${e.data.type}`);
-
     if (!pixiApp.cellsSheets) {
       this.preloadQueue.push(e);
       return;
