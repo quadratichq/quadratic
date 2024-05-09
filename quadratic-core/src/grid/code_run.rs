@@ -112,7 +112,7 @@ pub enum ConnectionKind {
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {
     fn describe() {
-        JsValue::describe()
+        JsValue::describe();
     }
 }
 
