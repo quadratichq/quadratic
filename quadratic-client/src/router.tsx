@@ -74,7 +74,10 @@ export const router = createBrowserRouter(
                     path=":connectionUuid"
                     lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
                   />
-                  <Route path="create/:typeId" lazy={() => import('./routes/file.$uuid.connections.create.$typeId')} />
+                  <Route
+                    path="create/:connectionType"
+                    lazy={() => import('./routes/file.$uuid.connections.create.$connectionType')}
+                  />
                 </Route>
               </Route>
             </Route>

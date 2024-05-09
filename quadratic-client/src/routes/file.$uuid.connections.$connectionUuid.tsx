@@ -51,7 +51,7 @@ export const getDeleteConnectionAction = (uuid: string) => {
 export const Component = () => {
   const initialData = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   console.log('/connections/:uuid', initialData);
-  return <ConnectionDialogBody typeId={'POSTGRES'} initialData={initialData} />;
+  return <ConnectionDialogBody connectionType={'POSTGRES'} initialData={initialData} />;
 };
 
 // TODO: (connections) make some nice error boundary routes for the dialog

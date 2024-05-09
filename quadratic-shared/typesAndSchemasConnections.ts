@@ -6,8 +6,8 @@ import z from 'zod';
  * =============================================================================
  */
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' }).max(80);
-export const ConnectionTypes = z.enum(['POSTGRES', 'MYSQL']);
-export type ConnectionType = z.infer<typeof ConnectionTypes>;
+export const ConnectionTypesSchema = z.enum(['POSTGRES', 'MYSQL']);
+export type ConnectionType = z.infer<typeof ConnectionTypesSchema>;
 
 export const ConnectionTypePostgresSchema = z.literal('POSTGRES');
 export const ConnectionTypeDetailsPostgresSchema = z.object({

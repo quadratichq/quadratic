@@ -1,5 +1,6 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { colors } from '@/app/theme/colors';
+import { ConnectionsBreadcrumb } from '@/app/ui/connections/ConnectionsBreadcrumb';
 import { connectionsByType } from '@/app/ui/connections/data';
 import { PostgresIcon } from '@/app/ui/icons';
 import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
@@ -13,43 +14,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
-
-export const Breadcrumb = () => {
-  const { uuid, typeId, connectionUuid } = useParams();
-  return (
-    <nav className="mb-0.5 flex items-center gap-2 text-xs">
-      <NavLink
-        to={ROUTES.FILE_CONNECTIONS(uuid ?? '')}
-        end
-        replace
-        className={({ isActive }) =>
-          isActive ? 'pointer-events-none text-muted-foreground opacity-50' : 'text-primary hover:underline'
-        }
-      >
-        Connections
-      </NavLink>
-
-      <NavLink
-        to={ROUTES.FILE_CONNECTIONS_CREATE(uuid ?? '', typeId ?? '')}
-        end
-        replace
-        className={({ isActive }) => (isActive ? 'before:mr-2 before:content-["›"]' : 'hidden')}
-      >
-        Create
-      </NavLink>
-
-      <NavLink
-        to={ROUTES.FILE_CONNECTION(uuid ?? '', connectionUuid ?? 'foo')}
-        end
-        replace
-        className={({ isActive }) => (isActive ? 'before:mr-2 before:content-["›"]' : 'hidden')}
-      >
-        Edit
-      </NavLink>
-    </nav>
-  );
-};
+import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
 
 export const Component = () => {
   const { uuid } = useParams() as { uuid: string };
@@ -82,7 +47,7 @@ export const Index = () => {
   return (
     <>
       <DialogHeader>
-        <Breadcrumb />
+        <ConnectionsBreadcrumb />
         <DialogTitle>My connections</DialogTitle>
         <DialogDescription>Connetions let you pull outside data into your spreadsheets</DialogDescription>
       </DialogHeader>

@@ -1,5 +1,5 @@
+import { ConnectionsBreadcrumb } from '@/app/ui/connections/ConnectionsBreadcrumb';
 import { connectionsByType } from '@/app/ui/connections/data';
-import { Breadcrumb } from '@/routes/file.$uuid.connections';
 import { getDeleteConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -12,10 +12,10 @@ import { useNavigate, useNavigation, useParams, useSubmit } from 'react-router-d
 export const CONNECTION_FORM_ID = 'create-or-edit-connection';
 
 export const ConnectionDialogBody = ({
-  typeId,
+  connectionType,
   initialData,
 }: {
-  typeId: ConnectionType;
+  connectionType: ConnectionType;
   initialData?: ApiTypes['/v0/connections/:uuid.GET.response'];
 }) => {
   const { uuid, connectionUuid } = useParams() as { uuid: string; connectionUuid: string };
@@ -25,9 +25,9 @@ export const ConnectionDialogBody = ({
 
   const isEdit = Boolean(initialData);
   const isSubmitting = navigation.state !== 'idle';
-  const FormComponent = connectionsByType[typeId].Form;
-  const connectionName = connectionsByType[typeId].name;
-  const connectionDocsLink = connectionsByType[typeId].docsLink;
+  const FormComponent = connectionsByType[connectionType].Form;
+  const connectionName = connectionsByType[connectionType].name;
+  const connectionDocsLink = connectionsByType[connectionType].docsLink;
 
   const onClose = () => {
     navigate(ROUTES.FILE(uuid));
@@ -40,7 +40,7 @@ export const ConnectionDialogBody = ({
   return (
     <>
       <DialogHeader>
-        <Breadcrumb />
+        <ConnectionsBreadcrumb />
         <DialogTitle>{connectionName} connection</DialogTitle>
         <DialogDescription>
           For more information on {connectionName} connections,{' '}
