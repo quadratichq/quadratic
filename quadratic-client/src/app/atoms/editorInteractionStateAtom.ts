@@ -1,7 +1,6 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { CodeCellLanguage, SearchOptions } from '@/app/quadratic-core-types';
 import { FilePermission } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { atom } from 'recoil';
 
 export interface EditorInteractionState {
@@ -28,8 +27,6 @@ export interface EditorInteractionState {
   };
   undo: boolean;
   redo: boolean;
-  connection_type?: ConnectionType;
-  connection_id?: string;
 }
 
 // TODO: rename to appState?

@@ -24,7 +24,6 @@ import {
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import { Add } from '@mui/icons-material';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export interface CellTypeOption {
@@ -101,14 +100,12 @@ export default function CellTypeMenu() {
   }, [editorInteractionState, setEditorInteractionState]);
 
   const openEditor = useCallback(
-    (mode: CodeCellLanguage, connection_type?: ConnectionType, connection_id?: string) => {
+    (mode: CodeCellLanguage) => {
       setEditorInteractionState({
         ...editorInteractionState,
         showCodeEditor: true,
         showCellTypeMenu: false,
         mode,
-        connection_type,
-        connection_id,
       });
     },
     [editorInteractionState, setEditorInteractionState]
@@ -141,7 +138,7 @@ export default function CellTypeMenu() {
               name={name}
               description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
               icon={type === 'POSTGRES' ? <PostgresIcon sx={{ color: colors.languagePostgres }} /> : <Sql />}
-              onSelect={() => openEditor('Connector', type, uuid)}
+              onSelect={() => openEditor({ Connector: { kind: type, id: uuid } })}
             />
           ))}
           <CommandItemWrapper

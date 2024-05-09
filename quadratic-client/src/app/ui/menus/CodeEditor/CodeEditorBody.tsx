@@ -19,6 +19,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
@@ -138,7 +139,7 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={language === 'Python' ? 'python' : language}
+        language={getLanguage(language)}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}

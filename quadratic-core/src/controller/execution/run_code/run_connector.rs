@@ -22,6 +22,7 @@ impl GridController {
                 sheet_pos.sheet_id.to_string(),
                 code,
                 kind,
+                id.to_owned(),
             );
         }
 

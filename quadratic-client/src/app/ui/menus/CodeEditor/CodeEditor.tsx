@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
@@ -41,8 +42,8 @@ export const dispatchEditorAction = (name: string) => {
 
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
-  const { showCodeEditor, mode: editorMode, connection_type, connection_id } = editorInteractionState;
-  console.log('CodeEditor', connection_type, connection_id);
+  const { showCodeEditor, mode: editorMode } = editorInteractionState;
+  const mode = getLanguage(editorMode);
 
   const { pythonState } = usePythonState();
   const [editorWidth, setEditorWidth] = useLocalStorage<number>(
@@ -179,9 +180,9 @@ export const CodeEditor = () => {
   // }, [updateCodeCell]);
 
   useEffect(() => {
-    mixpanel.track('[CodeEditor].opened', { type: editorMode });
+    mixpanel.track('[CodeEditor].opened', { type: mode });
     multiplayer.sendCellEdit('', 0, true);
-  }, [editorMode]);
+  }, [mode]);
 
   const closeEditor = useCallback(
     (skipSaveCheck: boolean) => {
@@ -213,24 +214,21 @@ export const CodeEditor = () => {
   }, [closeEditor, editorInteractionState.editorEscapePressed, unsaved]);
 
   const saveAndRunCell = async () => {
-    const language = editorInteractionState.mode;
-
-    if (language === undefined)
-      throw new Error(`Language ${editorInteractionState.mode} not supported in CodeEditor#saveAndRunCell`);
+    if (editorMode === undefined) throw new Error(`Language ${editorMode} not supported in CodeEditor#saveAndRunCell`);
 
     quadraticCore.setCodeCellValue({
       sheetId: cellLocation.sheetId,
       x: cellLocation.x,
       y: cellLocation.y,
       codeString: editorContent ?? '',
-      language,
+      language: editorMode,
       cursor: sheets.getCursorPosition(),
     });
 
     setCodeString(editorContent ?? '');
 
     mixpanel.track('[CodeEditor].cellRun', {
-      type: editorMode,
+      type: mode,
     });
     // Google Ads Conversion for running a cell
     if (googleAnalyticsAvailable()) {
@@ -428,8 +426,8 @@ export const CodeEditor = () => {
             evaluationResult={evaluationResult}
             cellsAccessed={!unsaved ? cellsAccessed : []}
           />
-          {editorInteractionState.mode === 'Python' ||
-            (editorInteractionState.mode === 'Connector' && (
+          {mode === 'Python' ||
+            (mode === 'Connector' && (
               <ReturnTypeInspector
                 evaluationResult={evaluationResult}
                 show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
