@@ -36,7 +36,7 @@ venv/*
 
 # Generated Rust files
 /target
-quadratic-connector/target/
+quadratic-connection/target/
 quadratic-core/target/
 quadratic-core/tmp.txt
 quadratic-files/target/
@@ -50,7 +50,7 @@ quadratic-api/.env.local
 quadratic-api/dist
 
 # Code Coverage
-quadratic-connector/coverage
+quadratic-connection/coverage
 quadratic-core/coverage
 quadratic-files/coverage
 quadratic-multiplayer/coverage
