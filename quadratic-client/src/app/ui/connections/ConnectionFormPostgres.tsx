@@ -1,89 +1,16 @@
+import { CONNECTION_FORM_ID } from '@/app/ui/connections/ConnectionDialogBody';
 import { ConnectionTest } from '@/app/ui/connections/ConnectionTest';
-import { Breadcrumb } from '@/routes/file.$uuid.connections';
-import { getDeleteConnectionAction, getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
-import { ROUTES } from '@/shared/constants/routes';
+import { getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
 import { Button } from '@/shared/shadcn/ui/button';
-import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CircularProgress } from '@mui/material';
 import { ApiTypes, ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionNameSchema, ConnectionTypeDetailsPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate, useNavigation, useParams, useSubmit } from 'react-router-dom';
+import { useSubmit } from 'react-router-dom';
 import { z } from 'zod';
-
-const FORM_COMPONENTS_BY_TYPE_ID = {
-  postgres: PostgresBody,
-  mysql: () => <div>TODO: (connections) mysql form here</div>,
-};
-
-const FORM_ID = 'create-connection';
-
-export const ConnectionDialog = ({
-  typeId,
-  initialData,
-}: {
-  typeId: keyof typeof FORM_COMPONENTS_BY_TYPE_ID;
-  initialData?: ApiTypes['/v0/connections/:uuid.GET.response'];
-}) => {
-  const { uuid, connectionUuid } = useParams() as { uuid: string; connectionUuid: string };
-  const submit = useSubmit();
-  const navigate = useNavigate();
-  const navigation = useNavigation();
-
-  const isEdit = Boolean(initialData);
-
-  const onClose = () => {
-    navigate(ROUTES.FILE(uuid));
-  };
-  const onDelete = () => {
-    const data = getDeleteConnectionAction(connectionUuid);
-    submit(data, { method: 'POST', encType: 'application/json' });
-  };
-
-  const isSubmitting = navigation.state !== 'idle';
-
-  const FormComponent = FORM_COMPONENTS_BY_TYPE_ID[typeId];
-
-  return (
-    <>
-      <DialogHeader>
-        <Breadcrumb />
-        <DialogTitle>Postgres connection</DialogTitle>
-        <DialogDescription>
-          For more information on Postgres connections,{' '}
-          <a href="#TODO: (connections) " className="underline">
-            read our docs
-          </a>
-        </DialogDescription>
-      </DialogHeader>
-
-      <FormComponent initialData={initialData} connectionUuid={connectionUuid} />
-
-      <DialogFooter className="flex items-center">
-        {/* <Button onClick={onBack} variant="link" className="mr-auto px-0" disabled={isSubmitting}>
-            Back
-          </Button> */}
-        {isEdit && (
-          <Button onClick={onDelete} variant="destructive" disabled={isSubmitting} className="mr-auto">
-            Delete
-          </Button>
-        )}
-        {isSubmitting && <CircularProgress style={{ width: '18px', height: '18px', marginRight: '.25rem' }} />}
-        <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
-          Cancel
-        </Button>
-
-        <Button disabled={isSubmitting} form={FORM_ID} type="submit">
-          {isEdit ? 'Save changes' : 'Create'}
-        </Button>
-      </DialogFooter>
-    </>
-  );
-};
 
 const ConnectionFormPostgresSchema = z.object({
   name: ConnectionNameSchema,
@@ -91,7 +18,7 @@ const ConnectionFormPostgresSchema = z.object({
   ...ConnectionTypeDetailsPostgresSchema.shape,
 });
 
-function PostgresBody({
+export function ConnectionFormPostgres({
   initialData,
   connectionUuid,
 }: {
@@ -146,7 +73,7 @@ function PostgresBody({
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} id={FORM_ID} className="space-y-2">
+        <form onSubmit={form.handleSubmit(onSubmit)} id={CONNECTION_FORM_ID} className="space-y-2">
           <FormField
             control={form.control}
             name="name"

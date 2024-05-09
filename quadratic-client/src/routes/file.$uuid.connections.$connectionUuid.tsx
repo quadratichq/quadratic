@@ -1,4 +1,4 @@
-import { ConnectionDialog } from '@/app/ui/connections/ConnectionDialog';
+import { ConnectionDialogBody } from '@/app/ui/connections/ConnectionDialogBody';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -51,7 +51,7 @@ export const getDeleteConnectionAction = (uuid: string) => {
 export const Component = () => {
   const initialData = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   console.log('/connections/:uuid', initialData);
-  return <ConnectionDialog typeId={'postgres'} initialData={initialData} />;
+  return <ConnectionDialogBody typeId={'POSTGRES'} initialData={initialData} />;
 };
 
 // TODO: (connections) make some nice error boundary routes for the dialog

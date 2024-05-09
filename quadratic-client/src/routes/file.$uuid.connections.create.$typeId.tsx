@@ -1,4 +1,4 @@
-import { ConnectionDialog } from '@/app/ui/connections/ConnectionDialog';
+import { ConnectionDialogBody } from '@/app/ui/connections/ConnectionDialogBody';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
@@ -16,5 +16,5 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 export const Component = () => {
   // const { typeId } = useParams() as { uuid: string; typeId: string };
 
-  return <ConnectionDialog typeId={'postgres'} />;
+  return <ConnectionDialogBody typeId={'POSTGRES'} />;
 };

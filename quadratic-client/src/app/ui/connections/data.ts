@@ -1,3 +1,4 @@
+import { ConnectionFormPostgres } from '@/app/ui/connections/ConnectionFormPostgres';
 import MysqlLogo from './logo-mysql.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
 
@@ -8,16 +9,14 @@ import PostgresLogo from './logo-postgres.svg?react';
 export const connectionsByType = {
   POSTGRES: {
     name: 'Postgres',
+    docsLink: 'TODO: (connections)',
     Logo: PostgresLogo,
-    id: 'postgres',
-    // logoIconUrl: ''
-    // Component: ConnectionFormFieldsPostgres,
+    Form: ConnectionFormPostgres,
   },
   MYSQL: {
     name: 'MySQL',
+    docsLink: 'TODO: (connections)',
     Logo: MysqlLogo,
-    id: 'mysql',
-    // logoIconUrl: ''
-    // Component: () => {},
+    Form: () => 'TODO: (connections) mysql form here',
   },
 };
