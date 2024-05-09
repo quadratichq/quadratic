@@ -45,8 +45,8 @@ afterAll(async () => {
 });
 
 describe('GET /v0/connections/:uuid', () => {
-  // TODO: move some of these tests into the connection middleware
-  // TODO: archived connection
+  // TODO: (connections) move some of these tests into the connection middleware
+  // TODO: (connections) archived connection
   describe('bad request', () => {
     it('responds with a 400 for an invalid uuid', async () => {
       await request(app)
@@ -77,7 +77,7 @@ describe('GET /v0/connections/:uuid', () => {
         });
     });
   });
-  // TODO: sharing connections
+  // TODO: (connections) sharing connections
   // describe('a connection you’ve been added to as an editor', () => {
   //   it.todo('responds with sharing data');
   // });

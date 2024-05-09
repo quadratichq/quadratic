@@ -17,7 +17,7 @@ import { z } from 'zod';
 
 const FORM_COMPONENTS_BY_TYPE_ID = {
   postgres: PostgresBody,
-  mysql: () => <div>TODO: mysql form here</div>,
+  mysql: () => <div>TODO: (connections) mysql form here</div>,
 };
 
 const FORM_ID = 'create-connection';
@@ -55,7 +55,7 @@ export const ConnectionDialog = ({
         <DialogTitle>Postgres connection</DialogTitle>
         <DialogDescription>
           For more information on Postgres connections,{' '}
-          <a href="#TODO:" className="underline">
+          <a href="#TODO: (connections) " className="underline">
             read our docs
           </a>
         </DialogDescription>
@@ -96,7 +96,7 @@ function PostgresBody({
   connectionUuid,
 }: {
   connectionUuid: string;
-  // TODO: note this is a very specific kind of get for postgres only, update the type
+  // TODO: (connections) note this is a very specific kind of get for postgres only, update the type
   initialData?: any; // z.infer<typeof ConnectionPostgresSchema>;
 }) {
   const [hidePassword, setHidePassword] = useState(true);
@@ -123,7 +123,7 @@ function PostgresBody({
         };
   const submit = useSubmit();
 
-  // TODO: cleanup how this submits empty strings rather than undefined
+  // TODO: (connections) cleanup how this submits empty strings rather than undefined
   const form = useForm<z.infer<typeof ConnectionFormPostgresSchema>>({
     resolver: zodResolver(ConnectionFormPostgresSchema),
     defaultValues,

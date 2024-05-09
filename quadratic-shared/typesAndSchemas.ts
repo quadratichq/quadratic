@@ -95,7 +95,7 @@ const ConnectionSchemaBase = z.object({
   updatedDate: z.string().datetime(),
 });
 
-// TODO: validate our string min/max here
+// TODO: (connections) validate our string min/max here
 export const ConnectionTypePostgresSchema = z.object({
   type: z.literal('POSTGRES'),
   name: z.string().min(1, { message: 'Required' }).max(80),
@@ -111,7 +111,7 @@ export const ConnectionTypeMysqlSchema = z.object({
   // color
 });
 
-// TODO: duplicated with API
+// TODO: (connections) duplicated with API
 export const connectionFieldZ = z.object({
   name: z.string(),
   description: z.string(),
@@ -121,7 +121,7 @@ export const connectionFieldZ = z.object({
   default: z.string().optional(),
 });
 
-// TODO: duplicated with API
+// TODO: (connections) duplicated with API
 export const connectionConfigurationZ = z.object({
   name: z.string(),
   type: z.enum(['POSTGRES']),
@@ -402,9 +402,9 @@ export const ApiSchemas = {
   // '/v0/connections.POST.response': z.object({ uuid: z.string().uuid() }),
   // '/v0/connections/:uuid.GET.response': z.any(),
 
-  '/v0/connections/:uuid/run.POST.request': z.any(), // TODO:
-  '/v0/connections/:uuid/run.POST.response': z.any(), // TODO:
-  '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ), // TODO: remove
+  '/v0/connections/:uuid/run.POST.request': z.any(), // TODO: (connections)
+  '/v0/connections/:uuid/run.POST.response': z.any(), // TODO: (connections)
+  '/v0/connections/supported.GET.response': z.array(connectionConfigurationZ), // TODO: (connections) remove
 
   /**
    *

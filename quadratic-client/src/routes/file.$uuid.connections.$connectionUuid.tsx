@@ -20,7 +20,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 
   if (data._intent === 'update-connection') {
     const { _intent, ...body } = data;
-    // TODO: fix type issue
+    // TODO: (connections) fix type issue
     await apiClient.connections.update(connectionUuid, body as ApiTypes['/v0/connections/:uuid.PUT.request']);
     return redirect(ROUTES.FILE_CONNECTIONS(uuid));
   }

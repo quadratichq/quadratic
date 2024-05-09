@@ -40,7 +40,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Connections',
-      // TODO: is this the right permission?
+      // TODO: (connections) is this the right permission?
       isAvailable: hasPermissionToEditFile,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const navigate = useNavigate();

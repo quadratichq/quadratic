@@ -37,7 +37,7 @@ async function handler(req: Request, res: Response) {
     type: connection.type,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
-    // TODO: fix types, don't send sensitive info
+    // TODO: (connections) fix types, don't send sensitive info
     // @ts-expect-error
     typeDetails: JSON.parse(connection.typeDetails),
   };

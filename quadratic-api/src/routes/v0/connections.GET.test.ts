@@ -83,7 +83,7 @@ describe('GET /v0/connections', () => {
         });
     });
   });
-  // TODO: sharing connections
+  // TODO: (connections) sharing connections
   // // describe('a connection you’ve been added to as an editor', () => {
   // //   it.todo('responds with sharing data');
   // // });

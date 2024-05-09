@@ -92,7 +92,7 @@ export const router = createBrowserRouter(
                 () => false
               }
             >
-              {/* TODO: we need to figure out what to do here when it's a publicly viewable file */}
+              {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
               <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader}>
                 <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')}>
                   <Route

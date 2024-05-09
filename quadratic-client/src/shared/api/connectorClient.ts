@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTOR_URL;
 
 // Postgres
 //
-// TODO: these should come from the connector service definition for these endpoints
+// TODO: (connections) these should come from the connector service definition for these endpoints
 // but for now, they are defined here
 type TestConnectionResponse = {
   connected: boolean;

@@ -28,7 +28,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     type: connection.type,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
-    // TODO: fix types
+    // TODO: (connections) fix types
     // @ts-expect-error
     typeDetails: JSON.parse(connection.typeDetails),
   });

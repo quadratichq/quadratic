@@ -26,7 +26,7 @@ export function ConnectionTest({ form }: { form: UseFormReturn<any> }) {
         // Get the form type
         const type: string = values.type.toLowerCase();
 
-        // TODO: remove sending extra data
+        // TODO: (connections) remove sending extra data
         console.log('Testing connection: ', type, values);
         setConnectionState('loading');
 
@@ -39,7 +39,7 @@ export function ConnectionTest({ form }: { form: UseFormReturn<any> }) {
           setConnectionState(connected ? 'success' : 'error');
         });
 
-        // TODO: log to sentry
+        // TODO: (connections) log to sentry
       })}
     >
       <div

@@ -18,7 +18,7 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
 
 const ConnectionTypeMysqlSchema = z.literal('MYSQL');
 const ConnectionTypeDetailsMysqlSchema = z.object({
-  // TODO: add mysql fields
+  // TODO: (connections) add mysql fields
   foo: z.string().min(1, { message: 'Required' }).max(255),
 });
 

@@ -7,7 +7,8 @@ export const useFileMetaRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_
 type LoaderData = Awaited<ReturnType<typeof loader>>;
 
 export const loader = async () => {
-  // TODO: get this working and split from /file/:uuid for revalidation
+  // TODO: (connections) get this working and split from /file/:uuid for revalidation
+  // Also: how will it work for people who don't have an account?
   const connections = await apiClient.connections.list();
   return { connections };
 };
