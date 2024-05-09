@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
@@ -95,7 +96,10 @@ export class CellsArray extends Container {
     cursorRectangle.width++;
     cursorRectangle.height++;
     codeCells?.forEach((codeCell) => {
-      this.draw(codeCell, cursorRectangle);
+      const cell = inlineEditorHandler.getShowing();
+      if (!cell || codeCell.x !== cell.x || codeCell.y !== cell.y || cell.sheetId !== this.sheetId) {
+        this.draw(codeCell, cursorRectangle);
+      }
     });
     pixiApp.setViewportDirty();
   }
