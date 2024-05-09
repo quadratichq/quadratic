@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
@@ -404,6 +405,10 @@ export const CodeEditor = () => {
                   editorEscapePressed: false,
                   waitingForEditorClose: undefined,
                 }));
+                if (inlineEditorHandler.isEditingFormula()) {
+                  debugger;
+                  inlineEditorHandler.close(0, 0, true);
+                }
               }}
               onSave={() => {
                 saveAndRunCell();

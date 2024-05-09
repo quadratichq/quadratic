@@ -4,6 +4,7 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
@@ -30,6 +31,7 @@ class InlineEditorHandler {
   private cellOffsets?: Rectangle;
   private height = 0;
   private open = false;
+  private showing = false;
 
   width = 0;
   location?: SheetPosTS;
@@ -67,17 +69,42 @@ class InlineEditorHandler {
     this.hideDiv();
   }
 
-  // todo: this needs improvements
   // Keeps the cursor visible in the viewport.
   keepCursorVisible = () => {
-    if (sheets.sheet.id !== this.location?.sheetId) return;
+    if (sheets.sheet.id !== this.location?.sheetId || !this.showing) return;
 
     const { position, bounds } = inlineEditorMonaco.getEditorSizing();
     const canvas = pixiApp.canvas.getBoundingClientRect();
+    console.log(position.left, bounds.left);
     const cursor = position.left + bounds.left;
     const worldCursorTop = pixiApp.viewport.toWorld(cursor, bounds.top - canvas.top);
     const worldCursorBottom = pixiApp.viewport.toWorld(cursor, bounds.bottom - canvas.top);
     const viewportBounds = pixiApp.viewport.getVisibleBounds();
+
+    pixiApp.debug
+      .clear()
+      .beginFill(0x0000ff)
+      .drawRect(
+        worldCursorTop.x + 10,
+        worldCursorTop.y + 10,
+        worldCursorBottom.x - worldCursorTop.x,
+        worldCursorBottom.y - worldCursorTop.y
+      )
+      .endFill();
+    if (
+      intersects.rectangleRectangle(
+        viewportBounds,
+        new Rectangle(
+          worldCursorTop.x,
+          worldCursorTop.y,
+          worldCursorBottom.x - worldCursorTop.x,
+          worldCursorBottom.y - worldCursorTop.y
+        )
+      )
+    ) {
+      return;
+    }
+
     let x = 0,
       y = 0;
     if (worldCursorTop.x > viewportBounds.right) {
@@ -125,8 +152,18 @@ class InlineEditorHandler {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
     }
     if (input) {
+      if (pixiAppSettings.editorInteractionState.showCodeEditor) {
+        pixiAppSettings.setEditorInteractionState?.({
+          ...pixiAppSettings.editorInteractionState,
+          waitingForEditorClose: {
+            selectedCell: pixiAppSettings.editorInteractionState.selectedCell,
+            selectedCellSheet: pixiAppSettings.editorInteractionState.selectedCellSheet,
+            mode: pixiAppSettings.editorInteractionState.mode,
+            showCellTypeMenu: false,
+          },
+        });
+      }
       this.open = true;
-      this.showDiv();
       const sheet = sheets.sheet;
       this.location = {
         sheetId: sheet.id,
@@ -171,6 +208,7 @@ class InlineEditorHandler {
       this.formulaExpandButton.style.lineHeight = this.height + 'px';
       inlineEditorMonaco.setColumn(value.length + 1);
       this.updateMonacoCursorPosition();
+      this.showDiv();
       this.keepCursorVisible();
       inlineEditorMonaco.focus();
     } else {
@@ -388,6 +426,7 @@ class InlineEditorHandler {
       throw new Error('Expected div to be defined in showDiv');
     }
     this.div.style.display = 'flex';
+    this.showing = true;
   }
 
   hideDiv() {
@@ -395,6 +434,7 @@ class InlineEditorHandler {
       throw new Error('Expected div to be defined in hideDiv');
     }
     this.div.style.display = 'none';
+    this.showing = false;
   }
 
   // Called when manually changing cell position via clicking on a new cell
