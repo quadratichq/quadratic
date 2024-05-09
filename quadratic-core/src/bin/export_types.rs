@@ -13,7 +13,7 @@ use quadratic_core::{
             JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
-        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
+        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectorKind,
     },
     sheet_offsets::{
         resize_transient::TransientResize,
@@ -43,6 +43,7 @@ fn main() {
 
     s += &generate_type_declarations!(
         CodeCellLanguage,
+        ConnectorKind,
         JsHtmlOutput,
         JsCodeCell,
         JsRenderCodeCell,
@@ -94,7 +95,10 @@ fn main() {
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {
-        std::fs::write("../quadratic-client/src/app/quadratic-core-types/index.d.ts", s)
-            .expect("failed to write types file");
+        std::fs::write(
+            "../quadratic-client/src/app/quadratic-core-types/index.d.ts",
+            s,
+        )
+        .expect("failed to write types file");
     }
 }

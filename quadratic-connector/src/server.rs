@@ -30,6 +30,7 @@ use tower_http::{
     trace::{DefaultMakeSpan, TraceLayer},
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use uuid::Uuid;
 
 use crate::sql::postgres::{query as query_postgres, test as test_postgres};
 use crate::{
@@ -40,15 +41,16 @@ use crate::{
 
 const HEALTHCHECK_INTERVAL_S: u64 = 5;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    sub: String,
-    exp: usize,
+    pub sub: String,
+    pub exp: usize,
 }
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SqlQuery {
-    pub(crate) statement: String,
+    pub(crate) query: String,
+    pub(crate) connection_id: Uuid,
 }
 
 #[derive(Serialize)]
@@ -72,13 +74,14 @@ pub(crate) fn app(state: State) -> Router {
         .allow_origin(Any)
         .allow_headers([CONTENT_TYPE, AUTHORIZATION, ACCEPT, ORIGIN]);
 
-    let auth = middleware::from_extractor_with_state::<Claims, State>(state.clone());
+    let auth = middleware::from_extractor_with_state::<Claims, _>(state.clone());
 
     Router::new()
         // protected routes
         .route("/postgres/test", post(test_postgres))
         .route("/postgres/query", post(query_postgres))
-        .layer(auth)
+        .route_layer(auth)
+        .with_state(state.clone())
         // state
         .layer(Extension(state))
         // unprotected routes
