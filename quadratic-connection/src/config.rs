@@ -5,7 +5,7 @@
 //! sub-repo.  If ANY of the environment variables are missing, the program will
 //! panic at startup.
 
-use crate::error::{ConnectorError, Result};
+use crate::error::{ConnectionError, Result};
 use dotenv::dotenv;
 use quadratic_rust_shared::environment::Environment;
 use serde::Deserialize;
@@ -30,7 +30,7 @@ pub(crate) fn config() -> Result<Config> {
     dotenv::from_filename(filename).ok();
     dotenv().ok();
 
-    let config = envy::from_env::<Config>().map_err(|e| ConnectorError::Config(e.to_string()))?;
+    let config = envy::from_env::<Config>().map_err(|e| ConnectionError::Config(e.to_string()))?;
     Ok(config)
 }
 

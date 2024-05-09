@@ -4,7 +4,7 @@ export const getLanguage = (language?: CodeCellLanguage) => {
   if (typeof language === 'string') {
     return language;
   } else if (typeof language === 'object') {
-    return 'Connector';
+    return 'Connection';
   }
 
   return 'Formula';

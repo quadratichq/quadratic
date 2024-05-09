@@ -193,11 +193,11 @@ pub type CellBorder = v1_4::CellBorder;
 pub enum CodeCellLanguage {
     Python,
     Formula,
-    Connector { kind: ConnectorKind, id: String },
+    Connection { kind: ConnectionKind, id: String },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum ConnectorKind {
+pub enum ConnectionKind {
     Postgres,
     Mysql,
 }

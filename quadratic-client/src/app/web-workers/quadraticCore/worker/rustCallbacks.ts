@@ -1,7 +1,7 @@
 // this file cannot include any non-type imports; see https://rustwasm.github.io/wasm-bindgen/reference/js-snippets.html#caveats
 
 import {
-  ConnectorKind,
+  ConnectionKind,
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
@@ -75,7 +75,12 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
-    sendConnector: (transactionId: string, query: string, connector_type: ConnectorKind, connection_id: String) => void;
+    sendConnection: (
+      transactionId: string,
+      query: string,
+      connector_type: ConnectionKind,
+      connection_id: String
+    ) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -222,14 +227,14 @@ export const jsUndoRedo = (undo: string, redo: string) => {
   self.sendUndoRedo(undo, redo);
 };
 
-export const jsConnector = (
+export const jsConnection = (
   transactionId: string,
   x: number,
   y: number,
   sheetId: string,
   query: string,
-  connector_type: ConnectorKind,
+  connector_type: ConnectionKind,
   connection_id: String
 ) => {
-  self.sendConnector(transactionId, query, connector_type, connection_id);
+  self.sendConnection(transactionId, query, connector_type, connection_id);
 };

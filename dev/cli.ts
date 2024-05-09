@@ -19,7 +19,7 @@ export class CLI {
     hideTypes: boolean;
     hideMultiplayer: boolean;
     hideFiles: boolean;
-    hideConnector: boolean;
+    hideConnection: boolean;
     hidePython: boolean;
     hideRustClient: boolean;
     dark: boolean;
@@ -38,7 +38,7 @@ export class CLI {
       .option("-m, --multiplayer", "Watch the quadratic-multiplayer directory")
       .option("-e, --rust-client", "Watch the quadratic-rust-client directory")
       .option("-f, --files", "Watch the quadratic-files directory")
-      .option("-n, --connector", "Watch the quadratic-connector directory")
+      .option("-n, --connection", "Watch the quadratic-connection directory")
       .option("-o, --rustClient", "Watch the quadratic-rust-client directory")
       .option(
         "-y, --python",
@@ -56,7 +56,7 @@ export class CLI {
       .option("-T, --hideTypes", "Hide Types output")
       .option("-M, --hideMultiplayer", "Hide Multiplayer output")
       .option("-F, --hideFiles", "Hide Files output")
-      .option("-N, --hideConnector", "Hide Connector output")
+      .option("-N, --hideConnection", "Hide Connection output")
       .option("-Y, --hidePython", "Hide Python output")
       .option("-O, --rustClient", "Hide RustClient")
       .option("-E, --hideRustClient", "Hide RustClient")

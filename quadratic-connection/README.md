@@ -1,4 +1,4 @@
-# Quadratic Connector Service
+# Quadratic Connection Service
 
 An Axum HTTP Server for processing the queries on remote data sources
 

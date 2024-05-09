@@ -35,7 +35,7 @@ use uuid::Uuid;
 use crate::sql::postgres::{query as query_postgres, test as test_postgres};
 use crate::{
     config::config,
-    error::{ConnectorError, Result},
+    error::{ConnectionError, Result},
     state::State,
 };
 
@@ -101,7 +101,7 @@ pub(crate) async fn serve() -> Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "quadratic_connector=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| "quadratic_connection=debug,tower_http=debug".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -113,11 +113,11 @@ pub(crate) async fn serve() -> Result<()> {
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
         .await
-        .map_err(|e| ConnectorError::InternalServer(e.to_string()))?;
+        .map_err(|e| ConnectionError::InternalServer(e.to_string()))?;
 
     let local_addr = listener
         .local_addr()
-        .map_err(|e| ConnectorError::InternalServer(e.to_string()))?;
+        .map_err(|e| ConnectionError::InternalServer(e.to_string()))?;
 
     tracing::info!(
         "listening on {local_addr}, environment={}",
@@ -144,7 +144,7 @@ pub(crate) async fn serve() -> Result<()> {
 
     axum::serve(listener, app).await.map_err(|e| {
         tracing::warn!("{e}");
-        ConnectorError::InternalServer(e.to_string())
+        ConnectionError::InternalServer(e.to_string())
     })?;
 
     Ok(())
@@ -156,7 +156,7 @@ where
     State: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = ConnectorError;
+    type Rejection = ConnectionError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self> {
         let state = State::from_ref(state);
@@ -164,7 +164,7 @@ where
             .settings
             .jwks
             .as_ref()
-            .ok_or(ConnectorError::InternalServer(
+            .ok_or(ConnectionError::InternalServer(
                 "JWKS not found in state".to_string(),
             ))?;
 
@@ -172,7 +172,7 @@ where
         let TypedHeader(Authorization(bearer)) = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
-            .map_err(|e| ConnectorError::InvalidToken(e.to_string()))?;
+            .map_err(|e| ConnectionError::InvalidToken(e.to_string()))?;
 
         let token_data = authorize(jwks, bearer.token(), false, true)?;
 

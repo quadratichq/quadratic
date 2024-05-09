@@ -1,12 +1,12 @@
 FROM rust:latest as builder
 
-RUN USER=root cargo new --bin quadratic-connector
-COPY . /quadratic-connector
+RUN USER=root cargo new --bin quadratic-connection
+COPY . /quadratic-connection
 RUN rustup component add rustfmt
-WORKDIR /quadratic-connector
-RUN cargo build --release --package quadratic-connector
+WORKDIR /quadratic-connection
+RUN cargo build --release --package quadratic-connection
 
 FROM debian:stable-slim as runtime
-COPY --from=builder /quadratic-connector/target/release/quadratic-connector .
+COPY --from=builder /quadratic-connection/target/release/quadratic-connection .
 RUN apt-get update && apt install -y ca-certificates
-CMD ["./quadratic-connector"]
+CMD ["./quadratic-connection"]

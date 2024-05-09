@@ -1,27 +1,32 @@
 import { debugWebWorkers } from '@/app/debugFlags';
-import { ConnectorKind } from '@/app/quadratic-core-types';
+import { ConnectionKind } from '@/app/quadratic-core-types';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendConnector: (transactionId: string, query: string, connector_type: ConnectorKind, connection_id: String) => void;
+    sendConnection: (
+      transactionId: string,
+      query: string,
+      connector_type: ConnectionKind,
+      connection_id: String
+    ) => void;
   };
 
-class CoreConnector {
+class CoreConnection {
   start() {
-    self.sendConnector = this.sendConnector;
+    self.sendConnection = this.sendConnection;
 
-    if (debugWebWorkers) console.log('[coreConnector] initialized.');
+    if (debugWebWorkers) console.log('[coreConnection] initialized.');
   }
 
-  sendConnector = async (
+  sendConnection = async (
     transactionId: string,
     query: string,
-    connector_type: ConnectorKind,
+    connector_type: ConnectionKind,
     connection_id: String
   ) => {
-    const base = coreClient.env.VITE_QUADRATIC_CONNECTOR_URL;
+    const base = coreClient.env.VITE_QUADRATIC_CONNECTION_URL;
     const kind = connector_type.toLocaleLowerCase();
     const url = `${base}/${kind}/query`;
     const jwt = await coreClient.getJwt();
@@ -49,4 +54,4 @@ class CoreConnector {
   };
 }
 
-export const coreConnector = new CoreConnector();
+export const coreConnection = new CoreConnection();

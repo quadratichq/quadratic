@@ -12,7 +12,7 @@ use crate::{
 };
 
 pub mod get_cells;
-pub mod run_connector;
+pub mod run_connection;
 pub mod run_formula;
 pub mod run_python;
 

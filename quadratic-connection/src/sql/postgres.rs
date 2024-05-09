@@ -1,9 +1,5 @@
-use axum::{extract, response::IntoResponse, Extension, Json};
-use axum_macros::debug_handler;
-use quadratic_rust_shared::{
-    // quadratic_api::{get_file_checkpoint, set_file_checkpoint},
-    sql::{postgres_connection::PostgresConnection, Connection},
-};
+use axum::{response::IntoResponse, Extension, Json};
+use quadratic_rust_shared::sql::{postgres_connection::PostgresConnection, Connection};
 use tokio::time::Instant;
 use uuid::Uuid;
 
@@ -51,17 +47,6 @@ async fn get_connection(
     );
 
     Ok(pg_connection)
-}
-
-/// TODO(ddimaria): remove once API is setup to return connections
-fn new_postgres_connection() -> PostgresConnection {
-    PostgresConnection::new(
-        Some("postgres".into()),
-        Some("postgres".into()),
-        "0.0.0.0".into(),
-        Some(5432),
-        Some("postgres".into()),
-    )
 }
 
 #[cfg(test)]

@@ -8,7 +8,7 @@ export const helpCLI =
   "\n     -c, --core            Watch the quadratic-core directory" +
   "\n     -m, --multiplayer     Watch the quadratic-multiplayer directory" +
   "\n     -f, --files           Watch the quadratic-files directory" +
-  "\n     -n, --connector       Watch the quadratic-connector directory" +
+  "\n     -n, --connection       Watch the quadratic-connection directory" +
   "\n     -y, --python          Watch the quadratic-kernel/python-wasm directory" +
   "\n     -e, --rustClient     Watch the quadratic-rust-client directory" +
   "\n     -s, --skipTypes       Skip WASM types compilation" +
@@ -19,7 +19,7 @@ export const helpCLI =
   "\n     -C, --hideCore        Hide Core output" +
   "\n     -P, --hideMultiplayer Hide Multiplayer output" +
   "\n     -F, --hideFiles       Hide Files output" +
-  "\n     -N, --hideConnector   Hide Connector output" +
+  "\n     -N, --hideConnection   Hide Connection output" +
   "\n     -Y, --hidePython      Hide Python output" +
   "\n     -O, --hideRustClient  Hide RustClient output" +
   "\n     -T, --hideTypes       Hide Types output" +

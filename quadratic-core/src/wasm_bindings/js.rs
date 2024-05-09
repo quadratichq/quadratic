@@ -89,13 +89,13 @@ extern "C" {
 
     pub fn jsUndoRedo(undo: bool, redo: bool);
 
-    pub fn jsConnector(
+    pub fn jsConnection(
         transactionId: String,
         x: i32,
         y: i32,
         sheet_id: String,
         query: String,
-        connector_type: ConnectorKind,
+        connector_type: ConnectionKind,
         connection_id: String,
     );
 }
@@ -474,17 +474,17 @@ pub fn jsUndoRedo(undo: bool, redo: bool) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsConnector(
+pub fn jsConnection(
     transactionId: String,
     x: i32,
     y: i32,
     sheet_id: String,
     query: String,
-    connector_type: ConnectorKind,
+    connector_type: ConnectionKind,
     connection_id: String,
 ) -> JsValue {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsConnector",
+        "jsConnection",
         format!(
             "{},{},{},{},{},{},{}",
             transactionId, x, y, sheet_id, query, connector_type, connection_id

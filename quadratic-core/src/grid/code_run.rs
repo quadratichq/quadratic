@@ -98,25 +98,25 @@ impl CodeRun {
 pub enum CodeCellLanguage {
     Python,
     Formula,
-    Connector { kind: ConnectorKind, id: String },
+    Connection { kind: ConnectionKind, id: String },
     // JavaScript,
 }
 
 #[derive(Serialize, Deserialize, Display, Copy, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "UPPERCASE")]
-pub enum ConnectorKind {
+pub enum ConnectionKind {
     Postgres,
     Mysql,
 }
 
-impl wasm_bindgen::describe::WasmDescribe for ConnectorKind {
+impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {
     fn describe() {
         JsValue::describe()
     }
 }
 
-impl wasm_bindgen::convert::IntoWasmAbi for ConnectorKind {
+impl wasm_bindgen::convert::IntoWasmAbi for ConnectionKind {
     type Abi = <JsValue as IntoWasmAbi>::Abi;
 
     fn into_abi(self) -> Self::Abi {

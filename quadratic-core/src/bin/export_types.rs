@@ -13,7 +13,7 @@ use quadratic_core::{
             JsRenderCellSpecial, JsRenderCodeCell, JsRenderCodeCellState,
         },
         sheet::search::SearchOptions,
-        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectorKind,
+        BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage, ConnectionKind,
     },
     sheet_offsets::{
         resize_transient::TransientResize,
@@ -43,7 +43,7 @@ fn main() {
 
     s += &generate_type_declarations!(
         CodeCellLanguage,
-        ConnectorKind,
+        ConnectionKind,
         JsHtmlOutput,
         JsCodeCell,
         JsRenderCodeCell,

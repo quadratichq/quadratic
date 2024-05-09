@@ -39,7 +39,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                 // let language = match code_cell_value.language.to_lowercase().as_str() {
                 //     "python" => Some(v1_5::CodeCellLanguage::Python),
                 //     "formula" => Some(v1_5::CodeCellLanguage::Formula),
-                //     "connector" => Some(v1_5::CodeCellLanguage::Connector),
+                //     "connector" => Some(v1_5::CodeCellLanguage::Connection),
                 //     _ => Some(v1_5::CodeCellLanguage::Formula), // this should not happen
                 // };
                 if let Some(language) = language {

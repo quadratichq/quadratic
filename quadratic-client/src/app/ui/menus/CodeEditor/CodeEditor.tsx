@@ -427,7 +427,7 @@ export const CodeEditor = () => {
             cellsAccessed={!unsaved ? cellsAccessed : []}
           />
           {mode === 'Python' ||
-            (mode === 'Connector' && (
+            (mode === 'Connection' && (
               <ReturnTypeInspector
                 evaluationResult={evaluationResult}
                 show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}

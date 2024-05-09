@@ -195,7 +195,7 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
                         replace_internal_cell_references(&code_cell.code.to_string(), pos)
                     }
                     CodeCellLanguage::Python => code_cell.code.to_string(),
-                    CodeCellLanguage::Connector { .. } => code_cell.code.to_string(),
+                    CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),
                 },
                 _ => sheet
                     .display_value(pos)

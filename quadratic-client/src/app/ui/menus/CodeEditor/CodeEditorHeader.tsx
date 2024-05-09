@@ -129,7 +129,7 @@ export const CodeEditorHeader = (props: Props) => {
               <Python sx={{ color: colors.languagePython }} fontSize="small" />
             ) : language === 'Formula' ? (
               <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
-            ) : language === 'Connector' ? (
+            ) : language === 'Connection' ? (
               <PostgresIcon sx={{ color: colors.languagePostgres }} fontSize="small" />
             ) : (
               <Subject fontSize="small" />
