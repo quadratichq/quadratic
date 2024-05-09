@@ -1,5 +1,6 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { colors } from '@/app/theme/colors';
+import { connectionsByType } from '@/app/ui/connections/data';
 import { PostgresIcon } from '@/app/ui/icons';
 import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { Type } from '@/shared/components/Type';
@@ -13,23 +14,6 @@ import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate, useParams } from 'react-router-dom';
-
-const connectionsById = {
-  postgres: {
-    name: 'Postgres',
-    logoFullUrl: '/images/connections-logo-postgresql.png',
-    id: 'postgres',
-    // logoIconUrl: ''
-    // Component: ConnectionFormFieldsPostgres,
-  },
-  mysql: {
-    name: 'MySQL',
-    logoFullUrl: '/images/connections-logo-mysql.png',
-    id: 'mysql',
-    // logoIconUrl: ''
-    // Component: () => {},
-  },
-};
 
 export const Breadcrumb = () => {
   const { uuid, typeId, connectionUuid } = useParams();
@@ -99,27 +83,22 @@ export const Index = () => {
     <>
       <DialogHeader>
         <Breadcrumb />
-        <DialogTitle>Manage connections</DialogTitle>
+        <DialogTitle>My connections</DialogTitle>
         <DialogDescription>Connetions let you pull outside data into your spreadsheets</DialogDescription>
       </DialogHeader>
       <div className="grid gap-6">
         <div className="grid grid-cols-2 gap-6">
-          {Object.entries(connectionsById).map(([id, connection], i) => (
+          {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
             <Button
-              key={id}
-              disabled={id !== 'postgres'}
+              key={type}
               variant="outline"
               className="group relative h-auto w-full"
               onClick={() => {
-                navigate(ROUTES.FILE_CONNECTIONS_CREATE(uuid, connection.id));
+                navigate(ROUTES.FILE_CONNECTIONS_CREATE(uuid, type.toLowerCase()));
               }}
             >
-              <PlusIcon className="absolute right-2 top-2 opacity-30 group-hover:opacity-100" />
-              <img
-                src={connection.logoFullUrl}
-                alt={connection.name + ' logo'}
-                className="max-h-[40px] max-w-[140px]"
-              />
+              <PlusIcon className="absolute bottom-2 right-2 opacity-30 group-hover:opacity-100" />
+              <Logo className="h-[40px] w-[160px]" />
             </Button>
           ))}
         </div>
@@ -160,7 +139,7 @@ export const Index = () => {
                       i < filteredConnections.length - 1 && 'border-b border-border'
                     )}
                   >
-                    <PostgresIcon style={{ color: colors.languagePostgres }} />
+                    <PostgresIcon style={{ color: colors.languagePostgres }} fontSize="small" />
                     <div className="flex flex-grow items-center justify-between">
                       <span className="text-sm">{name}</span>
                       <time dateTime={updatedDate} className="text-xs text-muted-foreground">

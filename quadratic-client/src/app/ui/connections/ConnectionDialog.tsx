@@ -1,4 +1,4 @@
-import { ConnectionTest } from '@/app/ui/components/ConnectionTest';
+import { ConnectionTest } from '@/app/ui/connections/ConnectionTest';
 import { Breadcrumb } from '@/routes/file.$uuid.connections';
 import { getDeleteConnectionAction, getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
 import { ROUTES } from '@/shared/constants/routes';

@@ -1,6 +1,6 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { useRootRouteLoaderData } from '@/router';
+import { useRootRouteLoaderData } from '@/routes/index';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';

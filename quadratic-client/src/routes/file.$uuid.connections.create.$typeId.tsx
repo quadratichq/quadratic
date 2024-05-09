@@ -1,4 +1,4 @@
-import { ConnectionDialog } from '@/app/ui/components/ConnectionDialog';
+import { ConnectionDialog } from '@/app/ui/connections/ConnectionDialog';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
