@@ -341,6 +341,7 @@ class InlineEditorHandler {
     if (!this.location) {
       throw new Error('Expected location to be defined in openCodeEditor');
     }
+    console.log(inlineEditorMonaco.get().slice(1));
     pixiAppSettings.setEditorInteractionState({
       ...pixiAppSettings.editorInteractionState,
       mode: 'Formula',

@@ -123,7 +123,7 @@ export const CodeEditor = () => {
         ));
 
       const initialCode = editorInteractionState.initialCode;
-
+      console.log(initialCode, pushCodeCell);
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setCellsAccessed(codeCell.cells_accessed);
@@ -137,13 +137,6 @@ export const CodeEditor = () => {
         if (!pushCodeCell) setEditorContent(initialCode ?? '');
         setEvaluationResult(undefined);
         setOut(undefined);
-      }
-
-      if (initialCode) {
-        setEditorInteractionState((oldState) => ({
-          ...oldState,
-          initialCode: undefined,
-        }));
       }
     };
 
