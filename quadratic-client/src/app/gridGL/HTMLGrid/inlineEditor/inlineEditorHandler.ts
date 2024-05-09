@@ -167,7 +167,6 @@ class InlineEditorHandler {
       if (!this.formulaExpandButton) {
         throw new Error('Expected formulaExpandDiv to be defined in InlineEditorHandler');
       }
-      this.formulaExpandButton.style.height = this.height + 'px';
       this.formulaExpandButton.style.lineHeight = this.height + 'px';
       inlineEditorMonaco.setColumn(value.length + 1);
       this.updateMonacoCursorPosition();

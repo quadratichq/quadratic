@@ -30,7 +30,6 @@ export const InlineEditor = () => {
                 borderRadius: '0',
                 padding: '0',
                 width: '23px',
-                // TODO: davidf: something is resetting the height when this renders
                 height: '23px',
                 right: '-23px',
                 backgroundColor: colors.languageFormula,
