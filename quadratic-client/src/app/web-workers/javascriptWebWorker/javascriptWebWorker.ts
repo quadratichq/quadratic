@@ -44,7 +44,7 @@ class JavascriptWebWorker {
     quadraticCore.sendJavascriptInit(JavascriptCoreChannel.port2);
   }
 
-  cancelExecution() {
+  cancelExecution = () => {
     mixpanel.track('[JavascriptWebWorker].restartFromUser');
 
     if (!this.worker) throw new Error('Expected worker to be defined in Javascript.ts');
@@ -52,7 +52,7 @@ class JavascriptWebWorker {
     quadraticCore.sendCancelExecution('Javascript');
     this.init();
     events.emit('javascriptState', 'ready');
-  }
+  };
 }
 
 export const javascriptWebWorker = new JavascriptWebWorker();

@@ -1,5 +1,6 @@
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle } from 'pixi.js';
+import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsArray } from './CellsArray';
 import { CellsBorders } from './CellsBorders';
 import { CellsFills } from './CellsFills';
@@ -8,12 +9,11 @@ import { CellsImages } from './cellsImages/CellsImages';
 import { CellsLabels } from './cellsLabel/CellsLabels';
 import { CellsMarkers } from './CellsMarkers';
 import { CellsSearch } from './CellsSearch';
-import { pixiApp } from '../pixiApp/PixiApp';
 
 export class CellsSheet extends Container {
   private cellsFills: CellsFills;
-  private cellsArray: CellsArray;
   private cellsBorders: CellsBorders;
+  cellsArray: CellsArray;
   cellsImages: CellsImages;
 
   cellsMarkers: CellsMarkers;

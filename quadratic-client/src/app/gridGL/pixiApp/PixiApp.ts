@@ -401,6 +401,10 @@ export class PixiApp {
     this.imagePlaceholders.removeChildren();
     this.imagePlaceholders.addChild(cellsImages);
   }
+
+  isCursorOnCodeCell(): boolean {
+    return this.cellsSheets.isCursorOnCodeCell();
+  }
 }
 
 export const pixiApp = new PixiApp();

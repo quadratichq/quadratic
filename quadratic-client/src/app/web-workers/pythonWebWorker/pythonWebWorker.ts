@@ -44,7 +44,7 @@ class PythonWebWorker {
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);
   }
 
-  cancelExecution() {
+  cancelExecution = () => {
     mixpanel.track('[PythonWebWorker].restartFromUser');
 
     if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
@@ -52,7 +52,7 @@ class PythonWebWorker {
     quadraticCore.sendCancelExecution('Python');
     this.init();
     events.emit('pythonState', 'loading');
-  }
+  };
 }
 
 export const pythonWebWorker = new PythonWebWorker();

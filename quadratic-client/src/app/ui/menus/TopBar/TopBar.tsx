@@ -19,6 +19,7 @@ import { TopBarMenuItem } from './TopBarMenuItem';
 import { TopBarShareButton } from './TopBarShareButton';
 import { TopBarUsers } from './TopBarUsers';
 import { TopBarZoomMenu } from './TopBarZoomMenu';
+import { KernelMenu } from '@/app/ui/menus/TopBar/KernelMenu';
 
 export const TopBar = () => {
   const theme = useTheme();
@@ -70,6 +71,7 @@ export const TopBar = () => {
             <DataMenu />
             <FormatMenu />
             <NumberFormatMenu />
+            <KernelMenu />
           </>
         )}
       </div>

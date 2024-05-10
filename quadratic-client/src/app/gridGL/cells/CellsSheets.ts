@@ -161,4 +161,11 @@ export class CellsSheets extends Container<CellsSheet> {
       cellsSheet.cellsLabels.finalizeCellsTextHash(message.hashX, message.hashY);
     }
   }
+
+  isCursorOnCodeCell(): boolean {
+    const cellsSheet = this.current;
+    if (!cellsSheet) return false;
+    const cursor = sheets.sheet.cursor.originPosition;
+    return cellsSheet.cellsArray.isCodeCell(cursor.x, cursor.y);
+  }
 }
