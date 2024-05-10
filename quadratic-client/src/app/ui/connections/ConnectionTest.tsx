@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 
 type ConnectionState = 'idle' | 'loading' | 'success' | 'error';
-export type ValidateThenTestConnection = () => Promise<() => TestConnectionResponse>;
+export type ValidateThenTestConnection = () => Promise<() => Promise<TestConnectionResponse>>;
 
 export function ConnectionTest({
   form,

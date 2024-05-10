@@ -82,7 +82,8 @@ export function ConnectionFormPostgres({
       form.handleSubmit(
         async (values) => {
           const { name, type, ...typeDetails } = values;
-          return connectionClient.test.postgres(typeDetails);
+
+          resolve(() => connectionClient.test.postgres(typeDetails));
         },
         () => {
           reject();
