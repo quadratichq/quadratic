@@ -35,6 +35,10 @@ class CoreConnection {
       query,
     };
 
+    let buffer = new ArrayBuffer(0);
+    let std_out = '';
+    let std_err = '';
+
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -44,10 +48,21 @@ class CoreConnection {
         },
         body: JSON.stringify(body),
       });
-      const buffer = await response.arrayBuffer();
+
+      if (!response.ok) {
+        std_err = await response.text();
+        console.warn(std_err);
+      } else {
+        buffer = await response.arrayBuffer();
+
+        const headers = response.headers;
+        std_out = `Record Count: ${headers.get('record-count')}
+Query Time: ${headers.get('elapsed-database-query-ms')} ms
+Total Time: ${headers.get('elapsed-total-ms')} ms`;
+      }
 
       // send the parquet bytes to core
-      core.connectorComplete(transactionId, buffer);
+      core.connectionComplete(transactionId, buffer, std_out, std_err.replace(/\\/g, '').replace(/"/g, ''));
     } catch (e) {
       console.error(`Error fetching ${url}`, e);
     }

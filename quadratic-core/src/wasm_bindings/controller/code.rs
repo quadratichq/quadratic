@@ -97,9 +97,11 @@ impl GridController {
         &mut self,
         transaction_id: String,
         data: JsValue,
+        std_out: Option<String>,
+        std_err: Option<String>,
     ) -> Result<(), JsValue> {
         let data = Uint8Array::new(&data);
-        self.connection_complete(transaction_id, data.to_vec())
+        self.connection_complete(transaction_id, data.to_vec(), std_out, std_err)
             .map_err(|e| e.to_string())?;
 
         Ok(())

@@ -4,23 +4,15 @@
 //! to be shared across all requests and threads.  Adds tracing/logging.
 
 use axum::{
-    async_trait,
-    extract::{FromRef, FromRequestParts},
     http::{
         header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, ORIGIN},
-        request::Parts,
         Method, StatusCode,
     },
-    middleware,
     response::IntoResponse,
     routing::{get, post},
-    Extension, Json, RequestPartsExt, Router,
+    Extension, Json, Router,
 };
-use axum_extra::{
-    headers::{authorization::Bearer, Authorization},
-    TypedHeader,
-};
-use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
+use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::sql::Connection;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
@@ -32,7 +24,10 @@ use tower_http::{
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
-use crate::sql::postgres::{query as query_postgres, test as test_postgres};
+use crate::{
+    auth::get_middleware,
+    sql::postgres::{query as query_postgres, test as test_postgres},
+};
 use crate::{
     config::config,
     error::{ConnectionError, Result},
@@ -40,12 +35,6 @@ use crate::{
 };
 
 const HEALTHCHECK_INTERVAL_S: u64 = 5;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Claims {
-    pub sub: String,
-    pub exp: usize,
-}
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SqlQuery {
@@ -72,15 +61,18 @@ pub(crate) fn app(state: State) -> Router {
         // allow requests from any origin
         .allow_methods([Method::GET, Method::POST])
         .allow_origin(Any)
-        .allow_headers([CONTENT_TYPE, AUTHORIZATION, ACCEPT, ORIGIN]);
+        .allow_headers([CONTENT_TYPE, AUTHORIZATION, ACCEPT, ORIGIN])
+        .expose_headers(Any);
 
-    let auth = middleware::from_extractor_with_state::<Claims, _>(state.clone());
+    let auth = get_middleware(state.clone());
 
     Router::new()
         // protected routes
         .route("/postgres/test", post(test_postgres))
         .route("/postgres/query", post(query_postgres))
+        // auth middleware
         .route_layer(auth)
+        // state, required
         .with_state(state.clone())
         // state
         .layer(Extension(state))
@@ -148,36 +140,6 @@ pub(crate) async fn serve() -> Result<()> {
     })?;
 
     Ok(())
-}
-
-#[async_trait]
-impl<S> FromRequestParts<S> for Claims
-where
-    State: FromRef<S>,
-    S: Send + Sync,
-{
-    type Rejection = ConnectionError;
-
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self> {
-        let state = State::from_ref(state);
-        let jwks = state
-            .settings
-            .jwks
-            .as_ref()
-            .ok_or(ConnectionError::InternalServer(
-                "JWKS not found in state".to_string(),
-            ))?;
-
-        // Extract the token from the authorization header
-        let TypedHeader(Authorization(bearer)) = parts
-            .extract::<TypedHeader<Authorization<Bearer>>>()
-            .await
-            .map_err(|e| ConnectionError::InvalidToken(e.to_string()))?;
-
-        let token_data = authorize(jwks, bearer.token(), false, true)?;
-
-        Ok(token_data.claims)
-    }
 }
 
 pub(crate) async fn healthcheck() -> impl IntoResponse {

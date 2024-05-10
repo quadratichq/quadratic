@@ -23,11 +23,17 @@ pub enum ConnectionError {
     #[error("Internal server error: {0}")]
     Config(String),
 
+    #[error("Connection error: {0}")]
+    Connection(String),
+
     #[error("Internal server error: {0}")]
     InternalServer(String),
 
     #[error("Internal token: {0}")]
     InvalidToken(String),
+
+    #[error("Query error: {0}")]
+    Query(String),
 
     #[error("Error requesting data: {0}")]
     Request(String),
@@ -39,11 +45,25 @@ pub enum ConnectionError {
     Unknown(String),
 }
 
+fn clean_errors(error: impl ToString) -> String {
+    let mut cleaned = error.to_string();
+    let remove = vec!["error returned from database: "];
+
+    for r in remove {
+        cleaned = format!("{:?}", cleaned).replace(r, "");
+    }
+
+    cleaned
+}
+
 impl From<SharedError> for ConnectionError {
     fn from(error: SharedError) -> Self {
         #[allow(clippy::match_single_binding)]
         match error {
-            _ => ConnectionError::Unknown(format!("Unknown Quadratic API error: {error}")),
+            SharedError::Auth(error) => ConnectionError::Authentication(error.to_string()),
+            SharedError::Sql(error) => ConnectionError::Query(error.to_string()),
+            SharedError::QuadraticApi(error) => ConnectionError::Connection(error.to_string()),
+            _ => ConnectionError::Unknown(error.to_string()),
         }
     }
 }
@@ -76,9 +96,16 @@ impl From<jsonwebtoken::errors::Error> for ConnectionError {
 impl IntoResponse for ConnectionError {
     fn into_response(self) -> Response {
         tracing::error!("Error: {:?}", self);
+
         let (status, error) = match self {
-            ConnectionError::InternalServer(error) => (StatusCode::INTERNAL_SERVER_ERROR, error),
-            ConnectionError::Authentication(error) => (StatusCode::UNAUTHORIZED, error),
+            ConnectionError::InternalServer(error) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, clean_errors(error))
+            }
+            ConnectionError::Authentication(error) => {
+                (StatusCode::UNAUTHORIZED, clean_errors(error))
+            }
+            ConnectionError::Query(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
+            ConnectionError::Connection(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };
 

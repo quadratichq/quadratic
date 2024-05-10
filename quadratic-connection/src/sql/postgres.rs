@@ -1,37 +1,23 @@
 use axum::{response::IntoResponse, Extension, Json};
-use quadratic_rust_shared::sql::{postgres_connection::PostgresConnection, Connection};
-use tokio::time::Instant;
+use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
 use uuid::Uuid;
 
 use crate::{
+    auth::Claims,
     connection::get_api_connection,
     error::Result,
-    server::{test_connection, Claims, SqlQuery, TestResponse},
+    server::{test_connection, SqlQuery, TestResponse},
     state::State,
 };
 
-type TestRequest = PostgresConnection;
+use super::query_generic;
 
-pub(crate) async fn test(Json(connection): Json<TestRequest>) -> Json<TestResponse> {
+/// Test the connection to the database.
+pub(crate) async fn test(Json(connection): Json<PostgresConnection>) -> Json<TestResponse> {
     test_connection(connection).await
 }
 
-/// Query the database and return the results as a parquet file.
-pub(crate) async fn query(
-    state: Extension<State>,
-    claims: Claims,
-    sql_query: Json<SqlQuery>,
-) -> Result<impl IntoResponse> {
-    let connection = get_connection(&*state, &claims, &sql_query.connection_id).await?;
-    let pool = connection.connect().await?;
-    let rows = connection.query(pool, &sql_query.query).await?;
-    let parquet = PostgresConnection::to_parquet(rows)?;
-
-    state.stats.lock().await.last_query_time = Some(Instant::now());
-
-    Ok(parquet)
-}
-
+/// Get the connection details from the API and create a PostgresConnection.
 async fn get_connection(
     state: &State,
     claims: &Claims,
@@ -47,6 +33,16 @@ async fn get_connection(
     );
 
     Ok(pg_connection)
+}
+
+/// Query the database and return the results as a parquet file.
+pub(crate) async fn query(
+    state: Extension<State>,
+    claims: Claims,
+    sql_query: Json<SqlQuery>,
+) -> Result<impl IntoResponse> {
+    let connection = get_connection(&*state, &claims, &sql_query.connection_id).await?;
+    query_generic::<PostgresConnection>(connection, state, sql_query).await
 }
 
 #[cfg(test)]

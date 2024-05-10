@@ -73,7 +73,7 @@ impl Connection for PostgresConnection {
         let row = sqlx::query(sql)
             .fetch_all(&mut pool)
             .await
-            .map_err(|e| SharedError::Sql(Sql::Query(format!("{sql}: {e}"))))?;
+            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
 
         Ok(row)
     }
