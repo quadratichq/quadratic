@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTION_URL;
 //
 // TODO: (connections) these should come from the connection service definition for these endpoints
 // but for now, they are defined here
-type TestConnectionResponse = {
+export type TestConnectionResponse = {
   connected: boolean;
   message: string | null;
 };

@@ -1,11 +1,13 @@
 import { CONNECTION_FORM_ID } from '@/app/ui/connections/ConnectionDialogBody';
-import { ConnectionTest } from '@/app/ui/connections/ConnectionTest';
+import { ConnectionTest, ValidateThenTestConnection } from '@/app/ui/connections/ConnectionTest';
 import { getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
+import { getCreateConnectionAction } from '@/routes/file.$uuid.connections.create.$connectionType';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ApiTypes, ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
+import { ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
 import { ConnectionNameSchema, ConnectionTypeDetailsPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -27,6 +29,7 @@ export function ConnectionFormPostgres({
   initialData?: any; // z.infer<typeof ConnectionPostgresSchema>;
 }) {
   const [hidePassword, setHidePassword] = useState(true);
+  const submit = useSubmit();
 
   const defaultValues: z.infer<typeof ConnectionFormPostgresSchema> =
     initialData && initialData.type === 'POSTGRES' && initialData.typeDetails
@@ -48,9 +51,6 @@ export function ConnectionFormPostgres({
           username: '',
           password: '',
         };
-  const submit = useSubmit();
-
-  // TODO: (connections) cleanup how this submits empty strings rather than undefined
   const form = useForm<z.infer<typeof ConnectionFormPostgresSchema>>({
     resolver: zodResolver(ConnectionFormPostgresSchema),
     defaultValues,
@@ -59,15 +59,36 @@ export function ConnectionFormPostgres({
   const onSubmit = (values: z.infer<typeof ConnectionTypePostgresSchema>) => {
     const { name, type, ...typeDetails } = values;
 
-    // Update
+    // If nothing changed, don't submit. Just navigate back
+    // if (Object.keys(form.formState.dirtyFields).length === 0) {
+    //   return;
+    // }
+
+    // Update the connection
     if (initialData) {
       const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
       submit(data, { method: 'POST', encType: 'application/json' });
-      // Create
-    } else {
-      const data: ApiTypes['/v0/connections.POST.request'] = { name, type, typeDetails };
-      submit(data, { method: 'POST', encType: 'application/json' });
+      return;
     }
+
+    // Create a new connection
+    const data = getCreateConnectionAction({ name, type, typeDetails });
+    submit(data, { method: 'POST', encType: 'application/json' });
+  };
+
+  // Simulate a form submission to do validation, run the test, return result
+  const validateThenTest: ValidateThenTestConnection = () => {
+    return new Promise((resolve, reject) => {
+      form.handleSubmit(
+        async (values) => {
+          const { name, type, ...typeDetails } = values;
+          return connectionClient.test.postgres(typeDetails);
+        },
+        () => {
+          reject();
+        }
+      )();
+    });
   };
 
   return (
@@ -175,7 +196,7 @@ export function ConnectionFormPostgres({
           </div>
         </form>
       </Form>
-      <ConnectionTest form={form} />
+      <ConnectionTest form={form} validateThenTest={validateThenTest} />
     </>
   );
 }

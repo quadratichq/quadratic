@@ -6,9 +6,7 @@ import { ActionFunctionArgs, LoaderFunctionArgs, redirect, useLoaderData } from 
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { connectionUuid } = params as { uuid: string; connectionUuid: string };
-  console.log('cionnect loader', connectionUuid);
   const connection = await apiClient.connections.get(connectionUuid);
-  console.log('cionnect', connection);
   return connection;
 };
 
@@ -50,7 +48,6 @@ export const getDeleteConnectionAction = (uuid: string) => {
 
 export const Component = () => {
   const initialData = useLoaderData() as Awaited<ReturnType<typeof loader>>;
-  console.log('/connections/:uuid', initialData);
   return <ConnectionDialogBody connectionType={'POSTGRES'} initialData={initialData} />;
 };
 
