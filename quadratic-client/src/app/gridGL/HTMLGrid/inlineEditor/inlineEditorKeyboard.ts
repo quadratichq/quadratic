@@ -10,9 +10,13 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 
 class InlineEditorKeyboard {
+  escapeBackspacePressed = false;
+
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
-  keyDown = (e: KeyboardEvent) => {
+  keyDown = async (e: KeyboardEvent) => {
+    this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
+
     // Escape key
     if (e.code === 'Escape') {
       if (inlineEditorHandler.cursorIsMoving) {
@@ -42,10 +46,18 @@ class InlineEditorKeyboard {
         } else {
           const column = inlineEditorMonaco.getCursorColumn();
           if (column === target) {
-            inlineEditorHandler.cursorIsMoving = true;
-            inlineEditorFormula.addInsertingCells(column);
-            keyboardPosition(e);
-            e.stopPropagation();
+            // if we're not moving and the formula is valid, close the editor
+            if (await inlineEditorFormula.isFormulaValid()) {
+              inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
+              e.stopPropagation();
+            } else {
+              if (isRight) {
+                inlineEditorHandler.cursorIsMoving = true;
+                inlineEditorFormula.addInsertingCells(column);
+                keyboardPosition(e);
+              }
+              e.stopPropagation();
+            }
           }
         }
       } else {
@@ -82,6 +94,12 @@ class InlineEditorKeyboard {
           keyboardPosition(e);
           e.stopPropagation();
         } else {
+          // if we're not moving and the formula is valid, close the editor
+          if (await inlineEditorFormula.isFormulaValid()) {
+            inlineEditorHandler.close(0, e.code === 'ArrowDown' ? 1 : -1, false);
+            e.stopPropagation();
+            return;
+          }
           const location = inlineEditorHandler.location;
           if (!location) {
             throw new Error('Expected inlineEditorHandler.location to be defined in keyDown');

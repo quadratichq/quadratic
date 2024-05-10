@@ -75,7 +75,6 @@ class InlineEditorHandler {
 
     const { position, bounds } = inlineEditorMonaco.getEditorSizing();
     const canvas = pixiApp.canvas.getBoundingClientRect();
-    console.log(position.left, bounds.left);
     const cursor = position.left + bounds.left;
     const worldCursorTop = pixiApp.viewport.toWorld(cursor, bounds.top - canvas.top);
     const worldCursorBottom = pixiApp.viewport.toWorld(cursor, bounds.bottom - canvas.top);

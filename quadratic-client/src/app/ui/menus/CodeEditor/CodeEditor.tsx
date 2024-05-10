@@ -12,7 +12,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
-import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
@@ -96,15 +96,24 @@ export const CodeEditor = () => {
       else {
         const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
         if (waitingForEditorClose) {
-          setEditorInteractionState((oldState) => ({
-            ...oldState,
-            selectedCell: waitingForEditorClose.selectedCell,
-            selectedCellSheet: waitingForEditorClose.selectedCellSheet,
-            mode: waitingForEditorClose.mode,
-            showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
-            showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
-            waitingForEditorClose: undefined,
-          }));
+          if (waitingForEditorClose.inlineEditor) {
+            pixiAppSettings.changeInput(true);
+            setEditorInteractionState((oldState) => ({
+              ...oldState,
+              waitingForEditorClose: undefined,
+              showCodeEditor: false,
+            }));
+          } else {
+            setEditorInteractionState((oldState) => ({
+              ...oldState,
+              selectedCell: waitingForEditorClose.selectedCell,
+              selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+              mode: waitingForEditorClose.mode,
+              showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
+              showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
+              waitingForEditorClose: undefined,
+            }));
+          }
         }
       }
     }
@@ -124,7 +133,6 @@ export const CodeEditor = () => {
         ));
 
       const initialCode = editorInteractionState.initialCode;
-      console.log(initialCode, pushCodeCell);
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setCellsAccessed(codeCell.cells_accessed);
@@ -309,10 +317,13 @@ export const CodeEditor = () => {
         selectedCell: waitingForEditorClose.selectedCell,
         selectedCellSheet: waitingForEditorClose.selectedCellSheet,
         mode: waitingForEditorClose.mode,
-        showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
+        showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
         showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
         waitingForEditorClose: undefined,
       }));
+      if (waitingForEditorClose.inlineEditor) {
+        pixiAppSettings.changeInput(true);
+      }
     } else {
       closeEditor(true);
     }
@@ -405,10 +416,6 @@ export const CodeEditor = () => {
                   editorEscapePressed: false,
                   waitingForEditorClose: undefined,
                 }));
-                if (inlineEditorHandler.isEditingFormula()) {
-                  debugger;
-                  inlineEditorHandler.close(0, 0, true);
-                }
               }}
               onSave={() => {
                 saveAndRunCell();

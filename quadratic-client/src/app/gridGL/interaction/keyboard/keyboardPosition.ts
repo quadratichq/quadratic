@@ -23,12 +23,14 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
     const downPosition = cursor.cursorPosition;
     const movePosition = cursor.keyboardMovePosition;
     const sheetId = sheets.sheet.id;
+
     // handle cases for meta/ctrl keys with algorithm:
     // - if on an empty cell then select to the first cell with a value
     // - if on a filled cell then select to the cell before the next empty cell
     // - if on a filled cell but the next cell is empty then select to the first cell with a value
     // - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
     //   the above checks are always made relative to the original cursor position (the highlighted cell)
+
     if (event.metaKey || event.ctrlKey) {
       // needed since we call await to get ranges, and without this, the browser will navigate
       event.preventDefault();
@@ -260,6 +262,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
         }
       }
     }
+
     // use arrow to select when shift key is pressed
     else if (event.shiftKey) {
       // we are moving an existing multiCursor
@@ -300,6 +303,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
         }
       }
     }
+
     // move arrow normally
     else {
       const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };

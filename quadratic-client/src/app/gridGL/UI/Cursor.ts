@@ -170,8 +170,9 @@ export class Cursor extends Graphics {
     } else {
       const { editorInteractionState } = pixiAppSettings;
       const cell = editorInteractionState.selectedCell;
-      if (!editorInteractionState.showCodeEditor || sheets.sheet.id !== editorInteractionState.selectedCellSheet)
+      if (!editorInteractionState.showCodeEditor || sheets.sheet.id !== editorInteractionState.selectedCellSheet) {
         return;
+      }
       offsets = sheets.sheet.getCellOffsets(cell.x, cell.y);
       color =
         editorInteractionState.mode === 'Python'

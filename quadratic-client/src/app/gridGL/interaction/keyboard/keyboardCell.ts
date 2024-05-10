@@ -69,7 +69,7 @@ export async function keyboardCell(options: {
       const row = cursorPosition.y;
       const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
       if (code) {
-        doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
+        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
       } else {
         const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
         doubleClickCell({ column, row, cell });
@@ -155,7 +155,7 @@ export async function keyboardCell(options: {
 
     // open code cell unless this is the actual code cell. In this case we can overwrite it
     if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {
-      doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
+      doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
     } else {
       pixiAppSettings.changeInput(true, event.key);
     }
