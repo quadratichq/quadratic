@@ -12,7 +12,6 @@ import { sheets } from '../../../grid/controller/Sheets';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
-import PythonStateItem from './PythonStateItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
@@ -107,7 +106,7 @@ export const BottomBar = () => {
       <Stack direction="row">
         <SelectionSummary />
         <SyncState />
-        {showOnDesktop && <PythonStateItem />}
+        {/* {showOnDesktop && <PythonStateItem />} */}
         {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem
             icon={<FeedbackIcon fontSize="inherit" />}

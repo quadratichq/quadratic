@@ -77,11 +77,12 @@ export const KernelMenu = () => {
       <MenuItem>
         <MenuLineItem primary={`Status: ${pythonCodeRunning || javascriptCodeRunning ? 'running' : 'idle'}`} />
       </MenuItem>
-      {pythonState.pythonState === 'loading' && (
-        <MenuItem disabled={true}>
-          <MenuLineItem primary="Python loading..."></MenuLineItem>
-        </MenuItem>
-      )}
+      <MenuDivider />
+      <MenuItem disabled={true}>
+        <MenuLineItem
+          primary={pythonState.pythonState === 'loading' ? 'Python loading...' : 'all code languages are ready'}
+        />
+      </MenuItem>
       {pythonCodeRunning && (
         <>
           <MenuDivider />
