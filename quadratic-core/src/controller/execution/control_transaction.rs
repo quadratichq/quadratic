@@ -398,7 +398,7 @@ mod tests {
             None,
             Some("error".into()),
         );
-        println!("{:?}", result);
+
         assert!(result.is_ok());
     }
 }
