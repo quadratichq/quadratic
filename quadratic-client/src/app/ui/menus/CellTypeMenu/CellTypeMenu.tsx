@@ -62,7 +62,7 @@ let CELL_TYPE_OPTIONS = [
   // todo: (connections) create CodeCellLanguage for these types in Rust (when ready to implement)
   // {
   //   name: 'SQL Query',
-  //   mode: 'Connector',
+  //   mode: 'Connection',
   //   icon: <Sql sx={{ color: colors.languageAI }} />,
   //   description: 'Import your data with queries.',
   //   disabled: false,
@@ -138,7 +138,7 @@ export default function CellTypeMenu() {
               name={name}
               description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
               icon={type === 'POSTGRES' ? <PostgresIcon sx={{ color: colors.languagePostgres }} /> : <Sql />}
-              onSelect={() => openEditor('Connector')}
+              onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
             />
           ))}
           <CommandItemWrapper

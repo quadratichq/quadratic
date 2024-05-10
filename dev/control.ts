@@ -275,7 +275,7 @@ export class Control {
                 this.runMultiplayer();
               } else {
                 this.runFiles();
-                this.runConnector();
+                this.runConnection();
               }
             }
           }
@@ -307,7 +307,7 @@ export class Control {
             this.runMultiplayer();
           } else {
             this.runFiles();
-            this.runConnector();
+            this.runConnection();
           }
         }
       });
@@ -387,7 +387,7 @@ export class Control {
         () => {
           if (!restart) {
             this.runFiles();
-            this.runConnector();
+            this.runConnection();
           }
         }
       )
@@ -447,7 +447,7 @@ export class Control {
     }
   }
 
-  async runConnector() {
+  async runConnection() {
     if (this.quitting) return;
     if (this.status.connector === "killed") return;
     this.status.connector = false;
@@ -459,7 +459,7 @@ export class Control {
       this.cli.options.connector ? ["watch", "-x", "'run'"] : ["run"],
       {
         signal: this.signals.connector.signal,
-        cwd: "quadratic-connector",
+        cwd: "quadratic-connection",
         env: { ...process.env, RUST_LOG: "info" },
       }
     );
@@ -472,18 +472,18 @@ export class Control {
     });
   }
 
-  async restartConnector() {
+  async restartConnection() {
     this.cli.options.connector = !this.cli.options.connector;
     if (this.connector) {
-      this.runConnector();
+      this.runConnection();
     }
   }
 
-  async killConnector() {
+  async killConnection() {
     if (this.status.connector === "killed") {
       this.status.connector = false;
       this.ui.print("connector", "restarting...");
-      this.runConnector();
+      this.runConnection();
     } else {
       if (this.connector) {
         await this.kill("connector");

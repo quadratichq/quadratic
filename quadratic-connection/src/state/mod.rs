@@ -6,6 +6,9 @@
 pub mod settings;
 pub mod stats;
 
+use std::sync::Arc;
+
+use jsonwebtoken::jwk::JwkSet;
 use tokio::sync::Mutex;
 
 use crate::config::Config;
@@ -13,17 +16,17 @@ use crate::state::settings::Settings;
 
 use self::stats::Stats;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct State {
-    pub(crate) _settings: Settings,
-    pub(crate) stats: Mutex<Stats>,
+    pub(crate) settings: Settings,
+    pub(crate) stats: Arc<Mutex<Stats>>,
 }
 
 impl State {
-    pub(crate) fn new(config: &Config) -> Self {
+    pub(crate) fn new(config: &Config, jwks: Option<JwkSet>) -> Self {
         State {
-            _settings: Settings::new(config),
-            stats: Mutex::new(Stats::new()),
+            settings: Settings::new(config, jwks),
+            stats: Arc::new(Mutex::new(Stats::new())),
         }
     }
 }

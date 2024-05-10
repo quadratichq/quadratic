@@ -12,7 +12,7 @@ export const COMPONENTS = {
   connector: {
     color: "blue",
     dark: "blue",
-    name: "Connector",
+    name: "Connection",
     shortcut: "n",
   },
   python: {

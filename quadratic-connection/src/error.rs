@@ -13,10 +13,10 @@ use quadratic_rust_shared::SharedError;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub(crate) type Result<T> = std::result::Result<T, ConnectorError>;
+pub(crate) type Result<T> = std::result::Result<T, ConnectionError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub(crate) enum ConnectorError {
+pub enum ConnectionError {
     #[error("Authentication error: {0}")]
     Authentication(String),
 
@@ -25,6 +25,9 @@ pub(crate) enum ConnectorError {
 
     #[error("Internal server error: {0}")]
     InternalServer(String),
+
+    #[error("Internal token: {0}")]
+    InvalidToken(String),
 
     #[error("Error requesting data: {0}")]
     Request(String),
@@ -36,45 +39,46 @@ pub(crate) enum ConnectorError {
     Unknown(String),
 }
 
-impl From<SharedError> for ConnectorError {
+impl From<SharedError> for ConnectionError {
     fn from(error: SharedError) -> Self {
         #[allow(clippy::match_single_binding)]
         match error {
-            _ => ConnectorError::Unknown(format!("Unknown Quadratic API error: {error}")),
+            _ => ConnectionError::Unknown(format!("Unknown Quadratic API error: {error}")),
         }
     }
 }
 
-impl From<serde_json::Error> for ConnectorError {
+impl From<serde_json::Error> for ConnectionError {
     fn from(error: serde_json::Error) -> Self {
-        ConnectorError::Serialization(error.to_string())
+        ConnectionError::Serialization(error.to_string())
     }
 }
 
-impl From<uuid::Error> for ConnectorError {
+impl From<uuid::Error> for ConnectionError {
     fn from(error: uuid::Error) -> Self {
-        ConnectorError::Unknown(error.to_string())
+        ConnectionError::Unknown(error.to_string())
     }
 }
 
-impl From<reqwest::Error> for ConnectorError {
+impl From<reqwest::Error> for ConnectionError {
     fn from(error: reqwest::Error) -> Self {
-        ConnectorError::Request(error.to_string())
+        ConnectionError::Request(error.to_string())
     }
 }
 
-impl From<jsonwebtoken::errors::Error> for ConnectorError {
+impl From<jsonwebtoken::errors::Error> for ConnectionError {
     fn from(error: jsonwebtoken::errors::Error) -> Self {
-        ConnectorError::Authentication(error.to_string())
+        ConnectionError::Authentication(error.to_string())
     }
 }
 
-// convert ConnectorErrors into readable responses with appropriate status codes
-impl IntoResponse for ConnectorError {
+// convert ConnectionErrors into readable responses with appropriate status codes
+impl IntoResponse for ConnectionError {
     fn into_response(self) -> Response {
+        tracing::error!("Error: {:?}", self);
         let (status, error) = match self {
-            ConnectorError::InternalServer(error) => (StatusCode::INTERNAL_SERVER_ERROR, error),
-            ConnectorError::Authentication(error) => (StatusCode::UNAUTHORIZED, error),
+            ConnectionError::InternalServer(error) => (StatusCode::INTERNAL_SERVER_ERROR, error),
+            ConnectionError::Authentication(error) => (StatusCode::UNAUTHORIZED, error),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };
 

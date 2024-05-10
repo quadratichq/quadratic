@@ -10,9 +10,9 @@ use crate::convert_pg_type;
 use crate::error::{Result, SharedError, Sql};
 use crate::sql::Connection;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PostgresConnection {
-    pub user: Option<String>,
+    pub username: Option<String>,
     pub password: Option<String>,
     pub host: String,
     pub port: Option<u16>,
@@ -21,14 +21,14 @@ pub struct PostgresConnection {
 
 impl PostgresConnection {
     pub fn new(
-        user: Option<String>,
+        username: Option<String>,
         password: Option<String>,
         host: String,
         port: Option<u16>,
         database: Option<String>,
     ) -> PostgresConnection {
         PostgresConnection {
-            user,
+            username,
             password,
             host,
             port,
@@ -45,8 +45,8 @@ impl Connection for PostgresConnection {
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = PgConnectOptions::new();
 
-        if let Some(ref user) = self.user {
-            options = options.username(user);
+        if let Some(ref username) = self.username {
+            options = options.username(username);
         }
 
         if let Some(ref password) = self.password {

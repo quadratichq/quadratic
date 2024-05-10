@@ -4,6 +4,7 @@
 //! a grid and writes them to S3.
 
 mod config;
+mod connection;
 mod error;
 mod server;
 mod sql;

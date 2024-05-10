@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod aws;
 pub mod environment;
 pub mod error;

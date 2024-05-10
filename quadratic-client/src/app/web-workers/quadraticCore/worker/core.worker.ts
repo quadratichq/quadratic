@@ -10,9 +10,9 @@
 
 import { debugWebWorkers } from '@/app/debugFlags';
 import { coreClient } from './coreClient';
-import { coreConnector } from './coreConnector';
+import { coreConnection } from './coreConnection';
 
 coreClient.start();
-coreConnector.start();
+coreConnection.start();
 
 if (debugWebWorkers) console.log('[core.worker] created');

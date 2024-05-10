@@ -1,4 +1,4 @@
-import { connectorClient } from '@/shared/api/connectorClient';
+import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
@@ -31,7 +31,7 @@ export function ConnectionTest({ form }: { form: UseFormReturn<any> }) {
         setConnectionState('loading');
 
         // @ts-ignore
-        connectorClient.test[type](values).then(({ connected, message }) => {
+        connectionClient.test[type](values).then(({ connected, message }) => {
           if (!connected) {
             console.error(message);
           }

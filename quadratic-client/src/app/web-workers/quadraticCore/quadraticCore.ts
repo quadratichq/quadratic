@@ -21,6 +21,7 @@ import {
   SearchOptions,
   SheetPos,
 } from '@/app/quadratic-core-types';
+import { authClient } from '@/auth';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
 import {
@@ -38,6 +39,7 @@ import {
   CoreClientGetCodeCell,
   CoreClientGetColumnsBounds,
   CoreClientGetEditCell,
+  CoreClientGetJwt,
   CoreClientGetRenderCell,
   CoreClientGetRowsBounds,
   CoreClientHasRenderCells,
@@ -63,7 +65,7 @@ class QuadraticCore {
     this.sendInit();
   }
 
-  private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
+  private handleMessage = async (e: MessageEvent<CoreClientMessage>) => {
     if (debugWebWorkersMessages) console.log(`[quadraticCore] message: ${e.data.type}`);
 
     // quadratic-core initiated messages
@@ -135,6 +137,11 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
+      return;
+    } else if (e.data.type === 'coreClientGetJwt') {
+      const jwt = await authClient.getTokenOrRedirect();
+      const data = e.data as CoreClientGetJwt;
+      this.send({ type: 'clientCoreGetJwt', id: data.id, jwt });
       return;
     }
 
