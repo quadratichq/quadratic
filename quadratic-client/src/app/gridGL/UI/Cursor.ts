@@ -29,12 +29,16 @@ export class Cursor extends Graphics {
   startCell: CursorCell;
   endCell: CursorCell;
 
+  // todo: this is duplicated of a pending PR (forgot which one)
+  visibleRectangle: Rectangle;
+
   constructor() {
     super();
     this.indicator = new Rectangle();
 
     this.startCell = CURSOR_CELL_DEFAULT_VALUE;
     this.endCell = CURSOR_CELL_DEFAULT_VALUE;
+    this.visibleRectangle = new Rectangle();
   }
 
   private drawCursor(): void {
@@ -94,6 +98,11 @@ export class Cursor extends Graphics {
     this.lineTo(x, y + height);
     this.lineTo(x, y);
 
+    this.visibleRectangle.x = x;
+    this.visibleRectangle.y = y;
+    this.visibleRectangle.width = width;
+    this.visibleRectangle.height = height;
+
     if (showInput && cellEdit) {
       this.lineStyle({
         width: CURSOR_THICKNESS * 1.5,
@@ -124,6 +133,10 @@ export class Cursor extends Graphics {
       this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
     }
+    this.visibleRectangle.x = this.startCell.x;
+    this.visibleRectangle.y = this.startCell.y;
+    this.visibleRectangle.width = this.endCell.x + this.endCell.width - this.startCell.x;
+    this.visibleRectangle.height = this.endCell.y + this.endCell.height - this.startCell.y;
   }
 
   private drawCursorIndicator(): void {

@@ -2,6 +2,7 @@ import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '@/app/act
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { copySelectionToPNG, fullClipboardSupport, pasteFromClipboard } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -56,6 +57,9 @@ interface Props {
   showContextMenu: boolean;
 }
 
+const HORIZONTAL_PADDING = 35;
+const VERTICAL_PADDING = 20;
+
 export const FloatingContextMenu = (props: Props) => {
   const { container, showContextMenu } = props;
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -106,8 +110,8 @@ export const FloatingContextMenu = (props: Props) => {
 
     const menuHeight = menuDiv.current?.clientHeight || 0;
 
-    let x = cell_offset_scaled.x + container.offsetLeft - 20;
-    let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
+    let x = cell_offset_scaled.x + container.offsetLeft - HORIZONTAL_PADDING;
+    let y = cell_offset_scaled.y + container.offsetTop - menuHeight - VERTICAL_PADDING;
 
     /**
      * Control menu visibility
@@ -136,33 +140,53 @@ export const FloatingContextMenu = (props: Props) => {
     if (!hasPermissionToEditFile(editorInteractionState.permissions)) visibility = 'hidden';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
-    const terminal_pos = sheet.getCellOffsets(
-      cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
-      cursor.multiCursor ? cursor.multiCursor.terminalPosition.y : cursor.cursorPosition.y
-    );
-    let multiselect_offset = viewport.toScreen(
-      terminal_pos.x + terminal_pos.width,
-      terminal_pos.y + terminal_pos.height
-    );
-    if (multiselect_offset.x < 0 || multiselect_offset.y < 0) visibility = 'hidden';
+
+    const selection = pixiApp.cursor.visibleRectangle;
+    const viewportBounds = pixiApp.viewport.getVisibleBounds();
+    if (!intersects.rectangleRectangle(selection, viewportBounds)) {
+      visibility = 'hidden';
+    }
 
     // Hide More menu if changing from visible to hidden
-    if (menuDiv.current.style.visibility === 'visible' && visibility === 'hidden') moreMenuToggle(false);
+    if ((moreMenuProps.state === 'open' || moreMenuProps.state === 'opening') && visibility === 'hidden') {
+      moreMenuToggle(false);
+    }
 
     // Apply visibility
-    menuDiv.current.style.visibility = visibility;
+    // menuDiv.current.style.visibility = visibility;
+    if (visibility !== 'hidden') {
+      menuDiv.current.style.opacity = '1';
+      menuDiv.current.style.pointerEvents = 'auto';
+    } else {
+      menuDiv.current.style.opacity = '0';
+      menuDiv.current.style.pointerEvents = 'none';
+    }
 
     /**
      * Menu positioning
      */
 
     // if outside of viewport keep it inside
-    if (x < container.offsetLeft + 35) {
+
+    // left
+    if (x < container.offsetLeft + HORIZONTAL_PADDING) {
       x = container.offsetLeft + 35;
-    } // left
+    }
+
+    // right
+    else if (
+      menuDiv.current.offsetWidth < window.innerWidth &&
+      x > container.offsetLeft + menuDiv.current.offsetWidth - 35
+    ) {
+      x = container.offsetLeft + menuDiv.current.offsetWidth - 35;
+    }
+
+    // top
     if (y < container.offsetTop + 35) {
       y = container.offsetTop + 35;
-    } // top
+    }
+
+    // bottom
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
@@ -177,7 +201,7 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [container, showContextMenu, editorInteractionState.permissions, moreMenuToggle]);
+  }, [container, showContextMenu, editorInteractionState.permissions, moreMenuProps.state, moreMenuToggle]);
 
   useEffect(() => {
     const { viewport } = pixiApp;
@@ -215,7 +239,8 @@ export const FloatingContextMenu = (props: Props) => {
         transformOrigin: '0 0',
         transform,
         pointerEvents: 'auto',
-        visibility: 'hidden',
+        opacity: 0,
+        transition: 'opacity 0.2s ease-in-out',
         borderRadius: '2px',
         boxShadow:
           'rgba(0, 0, 0, 0.2) 0px 3px 3px -2px, rgba(0, 0, 0, 0.14) 0px 3px 4px 0px, rgba(0, 0, 0, 0.12) 0px 1px 8px 0px',
