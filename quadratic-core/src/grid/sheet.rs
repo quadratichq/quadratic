@@ -20,6 +20,7 @@ pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
 pub mod code;
+pub mod column_row;
 pub mod formatting;
 pub mod rendering;
 pub mod search;

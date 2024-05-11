@@ -38,18 +38,12 @@ impl GridController {
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
 
-                Operation::DeleteColumn { column, .. } => {
-                    self.execute_delete_column(transaction, op, column)
-                }
-                Operation::DeleteRow { row, .. } => self.execute_delete_row(transaction, op, row),
-                Operation::InsertColumn { column, .. } => {
-                    self.execute_insert_column(transaction, op, column)
-                }
-                Operation::InsertRow { row, .. } => self.execute_insert_row(transaction, op, row),
-                Operation::MoveColumn { column, to } => {
-                    self.execute_move_column(transaction, op, column, to)
-                }
-                Operation::MoveRow { row, to } => self.execute_move_row(transaction, op, row, to),
+                Operation::DeleteColumn { .. } => self.execute_delete_column(transaction, op),
+                Operation::DeleteRow { .. } => self.execute_delete_row(transaction, op),
+                Operation::InsertColumn { .. } => self.execute_insert_column(transaction, op),
+                Operation::InsertRow { .. } => self.execute_insert_row(transaction, op),
+                Operation::MoveColumn { .. } => self.execute_move_column(transaction, op),
+                Operation::MoveRow { .. } => self.execute_move_row(transaction, op),
             }
 
             if cfg!(target_family = "wasm") && !transaction.is_server() {
