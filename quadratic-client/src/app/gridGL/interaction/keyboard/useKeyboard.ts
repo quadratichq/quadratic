@@ -32,13 +32,13 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
       if (pixiAppSettings.input.show) return;
 
       if (
-        (await keyboardViewport({
+        keyboardViewport({
           event,
           editorInteractionState,
           setEditorInteractionState,
           presentationMode,
           setPresentationMode,
-        })) ||
+        }) ||
         keyboardSearch(event, editorInteractionState, setEditorInteractionState)
       ) {
         event.stopPropagation();
