@@ -106,7 +106,7 @@ export function Console(props: ConsoleProps) {
               evalResult={evaluationResult}
               editorMode={editorMode}
               editorContent={editorContent}
-              isActive={true}
+              isActive={tab === 'ai-assistant'}
             />
           ) : (
             <Type className="px-3">

@@ -6,7 +6,7 @@ import { AI } from '@/app/ui/icons';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/router';
 import { apiClient } from '@/shared/api/apiClient';
-import { Input } from '@/shared/shadcn/ui/input';
+import { Textarea } from '@/shared/shadcn/ui/textarea.js';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
@@ -60,12 +60,17 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
   const [messages, setMessages] = useState<Message[]>([]);
   const controller = useRef<AbortController>();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const inputRef = useRef<HTMLInputElement | undefined>(undefined);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Focus the input when the tab comes into focus
   useEffect(() => {
-    if (isActive && inputRef.current) {
-      inputRef.current.focus();
+    if (isActive) {
+      window.requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+          textarea.focus();
+        }
+      });
     }
   }, [isActive]);
 
@@ -234,24 +239,30 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-3 pb-2"
+        className="z-10 flex items-center gap-2 px-3 pb-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
       >
-        <Input
+        <Textarea
+          ref={textareaRef}
           id="prompt-input"
           value={prompt}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
             setPrompt(event.target.value);
           }}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && prompt.length > 0) {
-              submitPrompt();
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              if (prompt.trim().length > 0) {
+                submitPrompt();
+              }
             }
           }}
           autoComplete="off"
           placeholder="Ask a question"
+          autoHeight={true}
+          maxHeight="120px"
         />
 
         <div className="relative flex items-center">
