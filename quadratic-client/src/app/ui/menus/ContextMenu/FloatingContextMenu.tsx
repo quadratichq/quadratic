@@ -57,7 +57,7 @@ interface Props {
   showContextMenu: boolean;
 }
 
-const HORIZONTAL_PADDING = 35;
+const HORIZONTAL_PADDING = 15;
 const VERTICAL_PADDING = 20;
 
 export const FloatingContextMenu = (props: Props) => {
@@ -168,21 +168,27 @@ export const FloatingContextMenu = (props: Props) => {
      * Menu positioning
      */
 
+    const columnHeader = pixiApp.headings.headingSize.width;
+    const rowHeader = pixiApp.headings.headingSize.height;
+
     // if outside of viewport keep it inside
 
     // left
-    if (x < container.offsetLeft + HORIZONTAL_PADDING) {
-      x = container.offsetLeft + 35;
+    if (x < container.offsetLeft + HORIZONTAL_PADDING + columnHeader) {
+      x = container.offsetLeft + HORIZONTAL_PADDING + columnHeader;
     }
 
     // right
-    else if (x + menuDiv.current.offsetWidth + 35 > container.offsetLeft + container.offsetWidth) {
-      x = container.offsetLeft + container.offsetWidth - menuDiv.current.offsetWidth - 35;
+    else if (x + menuDiv.current.offsetWidth + HORIZONTAL_PADDING > container.offsetLeft + container.offsetWidth) {
+      x = Math.max(
+        container.offsetLeft + container.offsetWidth - menuDiv.current.offsetWidth - HORIZONTAL_PADDING,
+        container.offsetLeft + HORIZONTAL_PADDING
+      );
     }
 
     // top
-    if (y < container.offsetTop + 35) {
-      y = container.offsetTop + 35;
+    if (y < container.offsetTop + HORIZONTAL_PADDING + rowHeader) {
+      y = container.offsetTop + HORIZONTAL_PADDING + rowHeader;
     }
 
     // bottom
