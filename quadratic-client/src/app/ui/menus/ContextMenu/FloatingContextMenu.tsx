@@ -160,6 +160,12 @@ export const FloatingContextMenu = (props: Props) => {
     if (x < container.offsetLeft + 35) {
       x = container.offsetLeft + 35;
     } // left
+    if (x + menuDiv.current.clientWidth > container.offsetLeft + container.clientWidth - 15) {
+      x = Math.max(
+        container.offsetLeft + container.clientWidth - menuDiv.current.clientWidth - 15,
+        container.offsetLeft + 35
+      );
+    } // right
     if (y < container.offsetTop + 35) {
       y = container.offsetTop + 35;
     } // top
