@@ -187,6 +187,6 @@ export const findInSheets = {
 };
 
 export const resizeColumnAction = {
-  label: 'Automatically resize current column',
+  label: 'Resize column to fit data',
   isAvailable: hasPermissionToEditFile,
 };

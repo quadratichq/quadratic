@@ -4,7 +4,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { CommandGroup, CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 
 export const columnRowCommandGroup: CommandGroup = {
-  heading: 'ColumnRow',
+  heading: 'Column',
   commands: [
     {
       label: resizeColumnAction.label,
