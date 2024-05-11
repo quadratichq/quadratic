@@ -4,6 +4,7 @@ use crate::controller::GridController;
 
 pub mod execute_borders;
 pub mod execute_code;
+pub mod execute_column_row;
 pub mod execute_cursor;
 pub mod execute_formats;
 pub mod execute_offsets;
@@ -36,6 +37,19 @@ impl GridController {
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
+
+                Operation::DeleteColumn { column, .. } => {
+                    self.execute_delete_column(transaction, op, column)
+                }
+                Operation::DeleteRow { row, .. } => self.execute_delete_row(transaction, op, row),
+                Operation::InsertColumn { column, .. } => {
+                    self.execute_insert_column(transaction, op, column)
+                }
+                Operation::InsertRow { row, .. } => self.execute_insert_row(transaction, op, row),
+                Operation::MoveColumn { column, to } => {
+                    self.execute_move_column(transaction, op, column, to)
+                }
+                Operation::MoveRow { row, to } => self.execute_move_row(transaction, op, row, to),
             }
 
             if cfg!(target_family = "wasm") && !transaction.is_server() {

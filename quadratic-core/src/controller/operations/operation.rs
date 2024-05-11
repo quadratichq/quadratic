@@ -1,10 +1,11 @@
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 use crate::{
     cell_values::CellValues,
     grid::{formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
-    SheetPos, SheetRect,
+    CellValue, SheetPos, SheetRect,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -85,6 +86,33 @@ pub enum Operation {
     SetCursor {
         sheet_rect: SheetRect,
     },
+
+    MoveColumn {
+        sheet_id: SheetId,
+        column: i64,
+        to: i64,
+    },
+    MoveRow {
+        sheet_id: SheetId,
+        row: i64,
+        to: i64,
+    },
+    DeleteColumn {
+        sheet_id: SheetId,
+        column: i64,
+    },
+    DeleteRow {
+        sheet_id: SheetId,
+        row: i64,
+    },
+    InsertColumn {
+        sheet_id: SheetId,
+        column: i64,
+    },
+    InsertRow {
+        sheet_id: SheetId,
+        row: i64,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -161,6 +189,24 @@ impl fmt::Display for Operation {
                     sheet_id, new_sheet_id
                 )
             }
+            Operation::MoveColumn {
+                column,
+                to,
+                sheet_id,
+            } => {
+                write!(fmt, "MoveColumn {{ column: {} to: {} }}", column, to)
+            }
+            Operation::MoveRow { row, to, .. } => {
+                write!(fmt, "MoveRow {{ row: {} to: {} }}", row, to)
+            }
+            Operation::DeleteColumn { column, .. } => {
+                write!(fmt, "DeleteColumn {{ column: {} }}", column)
+            }
+            Operation::DeleteRow { row, .. } => write!(fmt, "DeleteRow {{ row: {} }}", row),
+            Operation::InsertColumn { column, .. } => {
+                write!(fmt, "InsertColumn {{ column: {} }}", column)
+            }
+            Operation::InsertRow { row, .. } => write!(fmt, "InsertRow {{ row: {} }}", row),
         }
     }
 }
