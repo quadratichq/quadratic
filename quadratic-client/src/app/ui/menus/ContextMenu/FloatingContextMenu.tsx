@@ -98,14 +98,7 @@ export const FloatingContextMenu = (props: Props) => {
     const cursor = sheet.cursor;
 
     // Calculate position of input based on cell
-    const cell_offsets = sheet.getCellOffsets(
-      cursor.multiCursor
-        ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
-        : cursor.cursorPosition.x,
-      cursor.multiCursor
-        ? Math.min(cursor.cursorPosition.y, cursor.multiCursor.originPosition.y, cursor.multiCursor.terminalPosition.y)
-        : cursor.cursorPosition.y
-    );
+    const cell_offsets = pixiApp.cursor.visibleRectangle;
     let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
 
     const menuHeight = menuDiv.current?.clientHeight || 0;
@@ -183,11 +176,8 @@ export const FloatingContextMenu = (props: Props) => {
     }
 
     // right
-    else if (
-      menuDiv.current.offsetWidth < window.innerWidth &&
-      x > container.offsetLeft + menuDiv.current.offsetWidth - 35
-    ) {
-      x = container.offsetLeft + menuDiv.current.offsetWidth - 35;
+    else if (x + menuDiv.current.offsetWidth + 35 > container.offsetLeft + container.offsetWidth) {
+      x = container.offsetLeft + container.offsetWidth - menuDiv.current.offsetWidth - 35;
     }
 
     // top
