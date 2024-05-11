@@ -116,50 +116,59 @@ export const FloatingContextMenu = (props: Props) => {
     /**
      * Control menu visibility
      */
-    let visibility = 'visible';
+    let visibility: boolean | 'vanish' = true;
 
     // Hide if zoomed out too much
     if (viewport.scale.x < 0.1) {
-      visibility = 'hidden';
+      visibility = false;
     }
     // hide if boxCells is active
     if (cursor.boxCells) {
-      visibility = 'hidden';
+      visibility = false;
     }
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
-    if (!(cursor.multiCursor || showContextMenu)) visibility = 'hidden';
+    if (!(cursor.multiCursor || showContextMenu)) visibility = 'vanish';
 
     // Hide if currently selecting
-    if (pixiApp.pointer?.pointerDown?.active) visibility = 'hidden';
+    if (pixiApp.pointer?.pointerDown?.active) visibility = 'vanish';
 
     // Hide if in presentation mode
-    if (pixiAppSettings.presentationMode) visibility = 'hidden';
+    if (pixiAppSettings.presentationMode) visibility = 'vanish';
 
     // Hide if you don't have edit access
-    if (!hasPermissionToEditFile(editorInteractionState.permissions)) visibility = 'hidden';
+    if (!hasPermissionToEditFile(editorInteractionState.permissions)) visibility = 'vanish';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
 
     const selection = pixiApp.cursor.visibleRectangle;
     const viewportBounds = pixiApp.viewport.getVisibleBounds();
     if (!intersects.rectangleRectangle(selection, viewportBounds)) {
-      visibility = 'hidden';
+      visibility = false;
     }
 
     // Hide More menu if changing from visible to hidden
-    if ((moreMenuProps.state === 'open' || moreMenuProps.state === 'opening') && visibility === 'hidden') {
+    if (
+      (moreMenuProps.state === 'open' || moreMenuProps.state === 'opening') &&
+      (visibility === false || visibility === 'vanish')
+    ) {
       moreMenuToggle(false);
     }
 
     // Apply visibility
     // menuDiv.current.style.visibility = visibility;
-    if (visibility !== 'hidden') {
+    if (visibility === true) {
       menuDiv.current.style.opacity = '1';
       menuDiv.current.style.pointerEvents = 'auto';
-    } else {
+      menuDiv.current.style.visibility = 'visible';
+    } else if (visibility === false) {
       menuDiv.current.style.opacity = '0';
       menuDiv.current.style.pointerEvents = 'none';
+      menuDiv.current.style.visibility = 'visible';
+    } else if (visibility === 'vanish') {
+      menuDiv.current.style.opacity = '0';
+      menuDiv.current.style.pointerEvents = 'none';
+      menuDiv.current.style.visibility = 'hidden';
     }
 
     /**
