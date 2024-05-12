@@ -74,7 +74,9 @@ export const CodeEditorBody = (props: Props) => {
     const model = editor.getModel();
     if (!model) return;
 
-    setTimeout(() => (model as any)._commandManager.clear(), 250);
+    setTimeout(() => {
+      (model as any)._commandManager.clear();
+    }, 250);
   }, [editorInteractionState, editorRef]);
 
   const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run();
