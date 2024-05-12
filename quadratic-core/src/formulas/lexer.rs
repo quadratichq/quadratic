@@ -67,7 +67,7 @@ const UNTERMINATED_STRING_LITERAL_PATTERN: &str = r#"["']"#;
 /// List of token patterns, arranged roughly from least to most general.
 const TOKEN_PATTERNS: &[&str] = &[
     // Comparison operators `==`, `!=`, `<=`, and `>=`.
-    r#"[=!<>]="#,
+    r#"[=!<>]=|<>"#,
     // Double and triple dot.
     r"\.\.\.?",
     // Line comment.
