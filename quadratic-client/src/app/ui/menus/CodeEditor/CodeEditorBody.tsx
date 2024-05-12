@@ -19,6 +19,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { SheetPosTS } from '@/app/gridGL/types/size.js';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
@@ -31,6 +32,7 @@ interface Props {
   closeEditor: (skipSaveCheck: boolean) => void;
   evaluationResult?: EvaluationResult;
   cellsAccessed?: SheetRect[] | null;
+  cellLocation: SheetPosTS;
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // diagnostics?: Diagnostic[];
 }
@@ -39,7 +41,7 @@ interface Props {
 let registered = false;
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed } = props;
+  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed, cellLocation } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
   const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
@@ -63,9 +65,9 @@ export const CodeEditorBody = (props: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInteractionState.showCodeEditor]);
 
-  // This is to clear monaco editor's undo/redo stack when the cell changes
-  // useEffect gets triggered via recoil state change,
-  // we need to wait for new props and editor content to load before we can clear the undo/redo stack
+  // This is to clear monaco editor's undo/redo stack when the cell location changes
+  // useEffect gets triggered when the cell location changes, but the editor content is not loaded in the editor
+  // new editor content for the next cell also creates a undo stack entry
   // setTimeout of 250ms is to ensure that the new editor content is loaded, before we clear the undo/redo stack
   useEffect(() => {
     const editor = editorRef.current;
@@ -77,7 +79,7 @@ export const CodeEditorBody = (props: Props) => {
     setTimeout(() => {
       (model as any)._commandManager.clear();
     }, 250);
-  }, [editorInteractionState, editorRef]);
+  }, [cellLocation.x, cellLocation.y, cellLocation.sheetId, editorRef]);
 
   const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run();
   useEventListener('run-editor-action', runEditorAction);
