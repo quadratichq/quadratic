@@ -63,6 +63,20 @@ export const CodeEditorBody = (props: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInteractionState.showCodeEditor]);
 
+  // This is to clear monaco editor's undo/redo stack when the cell changes
+  // useEffect gets triggered via recoil state change,
+  // we need to wait for new props and editor content to load before we can clear the undo/redo stack
+  // setTimeout of 250ms is to ensure that the new editor content is loaded, before we clear the undo/redo stack
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const model = editor.getModel();
+    if (!model) return;
+
+    setTimeout(() => (model as any)._commandManager.clear(), 250);
+  }, [editorInteractionState, editorRef]);
+
   const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run();
   useEventListener('run-editor-action', runEditorAction);
   const onMount = useCallback(
