@@ -144,7 +144,7 @@ class InlineEditorKeyboard {
     // control to the formula box)
     else {
       if (inlineEditorHandler.cursorIsMoving) {
-        inlineEditorHandler.cursorIsMoving = false;
+        inlineEditorFormula.endInsertingCells();
         this.resetKeyboardPosition();
         if (sheets.sheet.id !== inlineEditorHandler.location?.sheetId) {
           inlineEditorMonaco.sendKeyboardEvent(e);
@@ -179,7 +179,6 @@ class InlineEditorKeyboard {
       // to false.
       setTimeout(() => {
         inlineEditorMonaco.focus();
-        inlineEditorHandler.cursorIsMoving = false;
       }, 0);
     }
   }

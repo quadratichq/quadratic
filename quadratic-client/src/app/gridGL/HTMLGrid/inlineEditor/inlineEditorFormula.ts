@@ -105,7 +105,7 @@ class InlineEditorFormula {
 
   // Handle the cursorPosition event (and changeSheet via inlineEditorHandler.changeSheet).
   cursorMoved = () => {
-    if (inlineEditorHandler.isEditingFormula()) {
+    if (inlineEditorHandler.cursorIsMoving) {
       const cursor = sheets.sheet.cursor;
 
       const location = inlineEditorHandler.location;
