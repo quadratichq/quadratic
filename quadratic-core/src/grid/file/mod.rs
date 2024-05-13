@@ -49,27 +49,42 @@ impl GridFile {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+enum GridFileBinary {
+    V1_5 { grid: v1_5::schema::GridSchema },
+}
+
+impl GridFileBinary {
+    fn into_latest(self) -> Result<v1_5::schema::GridSchema> {
+        match self {
+            GridFileBinary::V1_5 { grid } => Ok(grid),
+        }
+    }
+}
+
 pub fn import(file_contents: &[u8]) -> Result<Grid> {
     match import_binary(file_contents) {
         Ok(grid) => Ok(grid),
-        Err(e) => {
-            if let Ok(grid) = import_json(str::from_utf8(file_contents)?) {
-                Ok(grid)
-            } else {
-                Err(e)
+        Err(_) => {
+            let s = str::from_utf8(file_contents)?;
+            match import_json(s) {
+                Ok(grid) => Ok(grid),
+                Err(e) => {
+                    dbgjs!(&e);
+                    Err(e)
+                }
             }
         }
     }
 }
 
 fn import_binary(file_contents: &[u8]) -> Result<Grid> {
-    let file = serde_json::from_slice::<GridFile>(file_contents)
+    let file = bincode::deserialize::<GridFileBinary>(file_contents)
         .map_err(|e| {
-            dbg!(&e);
+            dbgjs!(&e);
             anyhow!(e)
         })?
         .into_latest()?;
-
     current::import(file)
 }
 
@@ -80,13 +95,13 @@ fn import_json(file_contents: &str) -> Result<Grid> {
             anyhow!(e)
         })?
         .into_latest()?;
-
     current::import(file)
 }
 
-pub fn export(grid: &mut Grid) -> Result<Vec<u8>> {
+pub fn export(grid: &Grid) -> Result<Vec<u8>> {
     let converted = current::export(grid)?;
-    let serialized = bincode::serialize(&converted).map_err(|e| anyhow!(e))?;
+    let serialized =
+        bincode::serialize(&GridFileBinary::V1_5 { grid: converted }).map_err(|e| anyhow!(e))?;
     Ok(serialized)
 }
 
@@ -95,6 +110,7 @@ mod tests {
     use super::*;
     use crate::{
         color::Rgba,
+        controller::GridController,
         grid::{generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine},
         Pos, Rect,
     };
@@ -119,16 +135,18 @@ mod tests {
     #[test]
     fn process_a_v1_3_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
-        let mut imported = import(V1_3_FILE).unwrap();
-        let _exported = export(&mut imported).unwrap();
+        let imported = import(V1_3_FILE).unwrap();
+        let exported = export(&imported).unwrap();
+        let exported_test = import_binary(&exported).unwrap();
+        assert_eq!(imported, exported_test);
     }
 
     #[test]
     fn process_a_v1_3_python_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let mut imported = import(V1_3_PYTHON_FILE).unwrap();
-        let _exported = export(&mut imported).unwrap();
-        println!("{:#?}", imported);
+        let exported = export(&mut imported).unwrap();
+        assert_eq!(imported, import_binary(&exported).unwrap());
     }
 
     #[test]
@@ -239,5 +257,24 @@ mod tests {
     fn imports_and_exports_v1_4_default() {
         let mut imported = import(V1_4_FILE).unwrap();
         export(&mut imported).unwrap();
+    }
+
+    #[test]
+    fn empty_file_binary() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.add_sheet(None);
+        gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((1, 0, sheet_id).into(), "12".to_string(), None);
+        gc.set_code_cell(
+            (0, 1, sheet_id).into(),
+            crate::grid::CodeCellLanguage::Formula,
+            "13".into(),
+            None,
+        );
+
+        let exported = export(&gc.grid()).unwrap();
+        let imported = import(&exported).unwrap();
+        assert_eq!(*gc.grid(), imported);
     }
 }

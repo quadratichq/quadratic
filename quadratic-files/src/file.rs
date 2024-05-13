@@ -7,7 +7,7 @@ use quadratic_core::{
         operations::operation::Operation, transaction::TransactionServer, GridController,
     },
     grid::{
-        file::{export_vec, import, CURRENT_VERSION},
+        file::{export, import, CURRENT_VERSION},
         Grid,
     },
 };
@@ -34,7 +34,7 @@ pub(crate) fn load_file(key: &str, file: &[u8]) -> Result<Grid> {
 
 /// Exports a .grid file
 pub(crate) fn export_file(key: &str, grid: &mut Grid) -> Result<Vec<u8>> {
-    export_vec(grid).map_err(|e| FilesError::ExportFile(key.into(), e.to_string()))
+    export(grid).map_err(|e| FilesError::ExportFile(key.into(), e.to_string()))
 }
 
 /// Apply a vec of operations to the grid

@@ -565,7 +565,7 @@ fn export_borders_builder(sheet: &Sheet) -> current::Borders {
         .collect()
 }
 
-pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
+pub fn export(grid: &Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid
