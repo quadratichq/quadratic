@@ -44,9 +44,9 @@ class Core {
   private clientQueue: Function[] = [];
   private renderQueue: Function[] = [];
 
-  private async loadGridFile(file: string): Promise<string> {
+  private async loadGridFile(file: string): Promise<Uint8Array> {
     const res = await fetch(file);
-    return await res.text();
+    return new Uint8Array(await res.arrayBuffer());
   }
 
   constructor() {
@@ -529,7 +529,7 @@ class Core {
     });
   }
 
-  async upgradeGridFile(file: string, sequenceNum: number): Promise<{ grid: string; version: string }> {
+  async upgradeGridFile(file: Uint8Array, sequenceNum: number): Promise<{ grid: Uint8Array; version: string }> {
     await initCore();
     const gc = GridController.newFromFile(file, sequenceNum, false);
     const grid = gc.exportToFile();
@@ -537,7 +537,7 @@ class Core {
     return { grid, version };
   }
 
-  export(): Promise<string> {
+  export(): Promise<Uint8Array> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -834,7 +834,9 @@ class Core {
     }
   }
 
-  async importExcel(message: ClientCoreImportExcel): Promise<{ contents?: string; version?: string; error?: string }> {
+  async importExcel(
+    message: ClientCoreImportExcel
+  ): Promise<{ contents?: Uint8Array; version?: string; error?: string }> {
     await initCore();
     try {
       const fileBytes = await readFileAsArrayBuffer(message.file);

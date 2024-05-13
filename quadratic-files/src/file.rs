@@ -28,7 +28,7 @@ use crate::{
 pub static GROUP_NAME: &str = "quadratic-file-service-1";
 
 /// Load a .grid file
-pub(crate) fn load_file(key: &str, file: &str) -> Result<Grid> {
+pub(crate) fn load_file(key: &str, file: &[u8]) -> Result<Grid> {
     import(file).map_err(|e| FilesError::ImportFile(key.into(), e.to_string()))
 }
 
@@ -56,9 +56,7 @@ pub(crate) async fn get_and_load_object(
         .await
         .map_err(|e| FilesError::LoadFile(key.into(), bucket.to_string(), e.to_string()))?
         .into_bytes();
-    let body = std::str::from_utf8(&body)
-        .map_err(|e| FilesError::LoadFile(key.into(), bucket.to_string(), e.to_string()))?;
-    let grid = load_file(key, body)?;
+    let grid = load_file(key, &body)?;
 
     Ok(GridController::from_grid(grid, sequence_num))
 }
@@ -254,7 +252,7 @@ mod tests {
         // load the file
         let mut file = load_file(
             key,
-            include_str!("../../quadratic-rust-shared/data/grid/v1_4_simple.grid"),
+            include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_simple.grid"),
         )
         .unwrap();
 

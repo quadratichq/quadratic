@@ -196,7 +196,7 @@ class QuadraticCore {
     });
   }
 
-  async upgradeGridFile(grid: string, sequenceNumber: number): Promise<{ grid: string; version: string }> {
+  async upgradeGridFile(grid: Uint8Array, sequenceNumber: number): Promise<{ grid: Uint8Array; version: string }> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: CoreClientUpgradeFile) => {
@@ -212,10 +212,10 @@ class QuadraticCore {
     });
   }
 
-  async export(): Promise<string> {
+  async export(): Promise<Uint8Array> {
     return new Promise((resolve) => {
       const id = this.id++;
-      this.waitingForResponse[id] = (message: { grid: string }) => {
+      this.waitingForResponse[id] = (message: { grid: Uint8Array }) => {
         resolve(message.grid);
       };
       this.send({ type: 'clientCoreExport', id });

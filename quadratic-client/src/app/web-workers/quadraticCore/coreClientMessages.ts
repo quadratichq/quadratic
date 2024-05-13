@@ -38,14 +38,14 @@ export interface CoreClientLoad {
 
 export interface ClientCoreUpgradeGridFile {
   type: 'clientCoreUpgradeGridFile';
-  grid: string;
+  grid: Uint8Array;
   sequenceNumber: number;
   id: number;
 }
 
 export interface CoreClientUpgradeFile {
   type: 'coreClientUpgradeGridFile';
-  grid: string;
+  grid: Uint8Array;
   version: string;
   id: number;
 }
@@ -70,7 +70,7 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: string;
+  grid: Uint8Array;
   id: number;
 }
 
@@ -776,7 +776,7 @@ export interface ClientCoreImportExcel {
 export interface CoreClientImportExcel {
   type: 'coreClientImportExcel';
   id: number;
-  contents?: string;
+  contents?: Uint8Array;
   version?: string;
   error?: string;
 }

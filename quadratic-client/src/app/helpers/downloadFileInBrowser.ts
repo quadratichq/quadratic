@@ -1,8 +1,8 @@
-export function downloadQuadraticFile(filename: string, data: string) {
+export function downloadQuadraticFile(filename: string, data: Uint8Array) {
   downloadFile(filename, data, 'application/json', 'grid');
 }
 
-export function downloadFile(filename: string, data: string, mime_type: string, extension: string) {
+export function downloadFile(filename: string, data: Uint8Array | string, mime_type: string, extension: string) {
   const blob = new Blob([data], { type: mime_type });
   //@ts-expect-error
   if (window.navigator.msSaveOrOpenBlob) {

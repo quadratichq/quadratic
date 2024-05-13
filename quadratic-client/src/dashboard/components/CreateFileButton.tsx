@@ -59,7 +59,9 @@ export default function CreateFileButton() {
           data = {
             name: file.name ? stripExtension(file.name) : 'Untitled',
             version: validFile.version,
-            contents: validFile.version === '1.3' ? JSON.stringify(validFile) : validFile.contents,
+            contents: /*validFile.version === '1.3' ? JSON.stringify(validFile) : */ new TextDecoder().decode(
+              validFile.contents
+            ),
           };
           break;
 
