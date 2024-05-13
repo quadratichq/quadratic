@@ -76,7 +76,7 @@ impl Rgba {
         if s.len() < 8 {
             s
         } else {
-            s[0..8].to_string()
+            s[0..7].to_string()
         }
     }
 }
