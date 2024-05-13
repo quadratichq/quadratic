@@ -1,9 +1,12 @@
+use arrow::array::{ArrayRef, StringArray};
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     postgres::{PgColumn, PgConnectOptions, PgRow},
     Column, ConnectOptions, PgConnection, Row, TypeInfo,
 };
+
+use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::convert_pg_type;
@@ -78,7 +81,7 @@ impl Connection for PostgresConnection {
         Ok(row)
     }
 
-    fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> Option<String> {
+    fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> Option<ArrayRef> {
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
                 convert_pg_type!(String, row, index)
@@ -102,11 +105,15 @@ impl Connection for PostgresConnection {
 
 #[macro_export]
 macro_rules! convert_pg_type {
-    ( $kind:ty, $row:ident, $index:ident ) => {
-        $row.try_get::<$kind, usize>($index)
-            .ok()
-            .map(|v| v.to_string())
-    };
+    ( $kind:ty, $row:ident, $index:ident ) => {{
+        let string_array = StringArray::from_iter_values(
+            $row.try_get::<$kind, usize>($index)
+                .ok()
+                .map(|v| v.to_string()),
+        );
+
+        Some(Arc::new(string_array) as ArrayRef)
+    }};
 }
 
 #[cfg(test)]

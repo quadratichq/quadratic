@@ -35,7 +35,7 @@ pub trait Connection {
         row: &Self::Row,
         column: &<<Self::Row as sqlx::Row>::Database as sqlx::Database>::Column,
         index: usize,
-    ) -> Option<String>;
+    ) -> Option<ArrayRef>;
 
     /// Default implementation of converting a vec of rows to a Parquet byte array
     ///
@@ -45,6 +45,7 @@ pub trait Connection {
         Self::Row: Row,
         Self::Column: Column,
     {
+        // headings
         let fields = data[0]
             .columns()
             .iter()
