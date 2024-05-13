@@ -106,6 +106,18 @@ impl FormulaFnArgs {
         std::mem::take(&mut self.values).into_iter()
     }
 
+    pub fn error_if_no_more_args(&self, arg_name: impl Into<Cow<'static, str>>) -> CodeResult<()> {
+        if !self.values.is_empty() {
+            Ok(())
+        } else {
+            Err(RunErrorMsg::MissingRequiredArgument {
+                func_name: self.func_name.into(),
+                arg_name: arg_name.into(),
+            }
+            .with_span(self.span))
+        }
+    }
+
     /// Returns an error if there are any arguments that have not been taken.
     pub fn error_if_more_args(&self) -> CodeResult<()> {
         if let Some(next_arg) = self.values.front() {

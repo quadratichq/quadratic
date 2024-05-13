@@ -306,6 +306,8 @@ macro_rules! formula_fn_arg {
         let mut $arg_name = $args.take_rest().map(Array::from).map(CodeResult::Ok);
     };
     (@assign($ctx:ident, $args:ident); $arg_name:ident: Iter< Spanned< $($arg_type:tt)*) => {
+        $args.error_if_no_more_args(stringify!($arg_name))?;
+
         // Flatten into iterator over non-array type.
         let remaining_args = $args.take_rest();
         let $arg_name = remaining_args.flat_map(|arg_value| {
@@ -430,7 +432,7 @@ macro_rules! formula_fn_convert_arg {
         $value.into_iter::<$inner_type>()
     };
     (@convert $value:expr, Value -> Iter< $($inner_type:tt)* $(>)*) => {
-        formula_fn_convert_arg!(@convert $value, Iter< Spanned< $inner_type > >).unspanned()
+        formula_fn_convert_arg!(@convert $value, Iter< Spanned< $inner_type > >).unspanned();
     };
 
     // Generic conversion

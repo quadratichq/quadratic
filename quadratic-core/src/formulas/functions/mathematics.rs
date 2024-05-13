@@ -99,7 +99,20 @@ mod tests {
         );
         assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "SUM(1/0)").msg);
         assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "SUM({1/0})").msg);
-        assert_eq!("0", eval_to_string(&g, "SUM()"));
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "SUM".into(),
+                arg_name: "numbers".into()
+            },
+            parse_formula("SUM()", Pos::ORIGIN)
+                .unwrap()
+                .eval(&mut Ctx::new(
+                    &g,
+                    Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)
+                ))
+                .unwrap_err()
+                .msg,
+        );
         assert_eq!("12", eval_to_string(&g, "SUM(12)"));
         assert_eq!("27", eval_to_string(&g, "SUM(0..5, 12)"));
         assert_eq!("27", eval_to_string(&g, "SUM(0..5, {\"\", \"abc\"}, 12)"));
@@ -140,7 +153,20 @@ mod tests {
     #[test]
     fn test_product() {
         let g = Grid::new();
-        assert_eq!("1", eval_to_string(&g, "PRODUCT()"));
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "PRODUCT".into(),
+                arg_name: "numbers".into()
+            },
+            parse_formula("PRODUCT()", Pos::ORIGIN)
+                .unwrap()
+                .eval(&mut Ctx::new(
+                    &g,
+                    Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)
+                ))
+                .unwrap_err()
+                .msg,
+        );
         assert_eq!("12", eval_to_string(&g, "PRODUCT(12)"));
         assert_eq!("1440", eval_to_string(&g, "PRODUCT(1..5, 12)"));
         assert_eq!(
