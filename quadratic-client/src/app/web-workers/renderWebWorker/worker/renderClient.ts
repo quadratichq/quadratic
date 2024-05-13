@@ -32,7 +32,7 @@ class RenderClient {
       case 'clientRenderInit':
         renderText.clientInit(e.data.bitmapFonts);
         renderCore.init(e.ports[0]);
-        break;
+        return;
 
       case 'clientRenderViewport':
         const startUpdate = !renderText.viewport;
@@ -44,15 +44,19 @@ class RenderClient {
         );
         renderText.sheetId = e.data.sheetId;
         if (startUpdate) renderText.ready();
-        break;
+        return;
 
       case 'clientRenderSheetOffsetsTransient':
-        renderText.sheetOffsets(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
-        break;
+        renderText.sheetOffsetsDelta(e.data.sheetId, e.data.column, e.data.row, e.data.delta);
+        return;
 
       case 'clientRenderShowLabel':
         renderText.showLabel(e.data.sheetId, e.data.x, e.data.y, e.data.show);
-        break;
+        return;
+
+      case 'clientRenderColumnMaxWidth':
+        this.sendColumnMaxWidth(e.data.id, renderText.columnMaxWidth(e.data.sheetId, e.data.column));
+        return;
 
       default:
         console.warn('[renderClient] Unhandled message type', e.data);
@@ -95,6 +99,10 @@ class RenderClient {
 
   finalizeCellsTextHash(sheetId: string, hashX: number, hashY: number) {
     this.send({ type: 'renderClientFinalizeCellsTextHash', sheetId, hashX, hashY });
+  }
+
+  sendColumnMaxWidth(id: number, maxWidth: number) {
+    this.send({ type: 'renderClientColumnMaxWidth', maxWidth, id });
   }
 }
 

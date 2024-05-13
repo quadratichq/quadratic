@@ -756,12 +756,9 @@ class Core {
   }
 
   commitTransientResize(sheetId: string, transientResize: string, cursor: string) {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
-        resolve(undefined);
-      });
+    this.clientQueue.push(() => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
     });
   }
   commitSingleResize(
@@ -771,12 +768,9 @@ class Core {
     size: number,
     cursor: string
   ) {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.commitSingleResize(sheetId, column, row, size, cursor);
-        resolve(undefined);
-      });
+    this.clientQueue.push(() => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.commitSingleResize(sheetId, column, row, size, cursor);
     });
   }
 
