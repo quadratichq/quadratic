@@ -34,6 +34,7 @@ export interface Rect { min: Pos, max: Pos, }
 export interface Span { start: number, end: number, }
 export interface SearchOptions { case_sensitive?: boolean, whole_cell?: boolean, search_code?: boolean, sheet_id?: string, }
 export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
+export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
 export interface Placement { index: number, position: number, size: number, }
 export interface ColumnRow { column: number, row: number, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
@@ -48,5 +49,5 @@ export interface JsCodeResult { transaction_id: string, success: boolean, error_
 export interface MinMax { min: number, max: number, }
 export interface TransientResize { row: bigint | null, column: bigint | null, old_size: number, new_size: number, }
 export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
-export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet";
+export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells";
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }

@@ -516,6 +516,10 @@ class CoreClient {
         core.removeCellNumericFormat(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         break;
 
+      case 'clientCoreMoveCells':
+        core.moveCells(e.data);
+        break;
+
       default:
         console.warn('[coreClient] Unhandled message type', e.data);
     }
