@@ -315,7 +315,7 @@ export class Multiplayer {
     if (update.viewport) {
       player.viewport = update.viewport;
       if (pixiAppSettings.editorInteractionState.follow === player.session_id) {
-        pixiApp.loadMultiplayerViewport(JSON.parse(player.viewport));
+        pixiApp.viewport.loadMultiplayerViewport(JSON.parse(player.viewport));
       }
     }
 
