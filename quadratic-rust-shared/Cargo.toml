@@ -9,7 +9,7 @@ edition = "2021"
 arrow = "51.0.0"
 aws-config = { version= "1.1.1", features = ["behavior-version-latest"] }
 aws-sdk-s3 = {version = "1.12.0", features = ["behavior-version-latest", "rt-tokio"] }
-bigdecimal = "0.4.3"
+bigdecimal = "0.3.0" # need this fixed to the sqlx dependency
 bytes = "1.6.0"
 chrono = "0.4.31"
 futures-util = "0.3.30"
@@ -19,7 +19,7 @@ redis = { version = "0.25.3", features = ["tokio-comp"] }
 reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
-sqlx = { version = "0.7.4", features = ["chrono", "uuid", "mysql", "postgres", "runtime-tokio-native-tls"] }
+sqlx = { version = "0.7.4", features = ["chrono", "uuid", "mysql", "postgres", "bigdecimal", "runtime-tokio-native-tls"] }
 strum = "0.26.2"
 strum_macros = "0.26.2"
 thiserror = "1.0.51"

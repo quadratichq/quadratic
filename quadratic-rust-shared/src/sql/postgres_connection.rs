@@ -1,3 +1,4 @@
+use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 use sqlx::{
@@ -90,9 +91,8 @@ impl Connection for PostgresConnection {
             "BIGINT" | "BIGSERIAL" | "INT8" => ArrowType::Int64(convert_pg_type!(i64, row, index)),
             "BOOLEAN" => ArrowType::Boolean(convert_pg_type!(bool, row, index)),
             "REAL" | "FLOAT4" => ArrowType::Float32(convert_pg_type!(f32, row, index)),
-            "DOUBLE PRECISION" | "FLOAT8" | "NUMERIC" => {
-                ArrowType::Float64(convert_pg_type!(f64, row, index))
-            }
+            "DOUBLE PRECISION" | "FLOAT8" => ArrowType::Float64(convert_pg_type!(f64, row, index)),
+            "NUMERIC" => ArrowType::BigDecimal(convert_pg_type!(BigDecimal, row, index)),
             "TIMESTAMP" => ArrowType::Timestamp(convert_pg_type!(NaiveDateTime, row, index)),
             "TIMESTAMPTZ" => ArrowType::TimestampTz(convert_pg_type!(DateTime<Local>, row, index)),
             "DATE" => ArrowType::Date32(convert_pg_type!(i32, row, index)),

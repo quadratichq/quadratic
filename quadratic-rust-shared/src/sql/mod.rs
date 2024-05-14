@@ -6,10 +6,11 @@ use arrow::{
     },
     datatypes::*,
 };
+use bigdecimal::{BigDecimal, ToPrimitive};
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::Future;
-use parquet::arrow::ArrowWriter;
+use parquet::{arrow::ArrowWriter, data_type::ByteArray};
 use sqlx::{Column, Row};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -33,6 +34,7 @@ pub enum ArrowType {
     Int64(i64),
     Float32(f32),
     Float64(f64),
+    BigDecimal(BigDecimal),
     Utf8(String),
     Boolean(bool),
     Date32(i32),
@@ -64,6 +66,17 @@ impl ArrowType {
             }
             ArrowType::Float64(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Float64, Float64Array, values)
+            }
+            // TODO(ddimaria): remove unwrap and convert to a void array once implemented
+            ArrowType::BigDecimal(_) => {
+                let converted = values.iter().filter_map(|value| match value {
+                    ArrowType::BigDecimal(value) => {
+                        Some((*value).to_string().parse::<f64>().unwrap())
+                    }
+                    _ => None,
+                });
+
+                Arc::new(Float64Array::from_iter(converted)) as ArrayRef
             }
             ArrowType::Utf8(_) => {
                 let converted = values.iter().filter_map(|value| match value {
