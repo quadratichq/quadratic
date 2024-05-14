@@ -29,7 +29,6 @@ export class Cursor extends Graphics {
   startCell: CursorCell;
   endCell: CursorCell;
 
-  // cursor rectangle for normal cells
   cursorRectangle?: Rectangle;
 
   constructor() {
@@ -38,6 +37,7 @@ export class Cursor extends Graphics {
 
     this.startCell = CURSOR_CELL_DEFAULT_VALUE;
     this.endCell = CURSOR_CELL_DEFAULT_VALUE;
+    this.cursorRectangle = new Rectangle();
   }
 
   private drawCursor(): void {
@@ -136,6 +136,12 @@ export class Cursor extends Graphics {
     } else {
       this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
+      this.cursorRectangle = new Rectangle(
+        this.startCell.x,
+        this.startCell.y,
+        this.endCell.width - this.startCell.width,
+        this.endCell.height - this.startCell.height
+      );
     }
   }
 
