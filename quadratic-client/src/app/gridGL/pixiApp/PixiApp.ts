@@ -114,6 +114,9 @@ export class PixiApp {
     this.canvas.className = 'pixi_canvas';
     this.canvas.tabIndex = 0;
 
+    const observer = new ResizeObserver(this.resize);
+    observer.observe(this.canvas);
+
     const resolution = Math.max(2, window.devicePixelRatio);
     this.renderer = new Renderer({
       view: this.canvas,
@@ -209,6 +212,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.render();
   };
 
   // called before and after a render
