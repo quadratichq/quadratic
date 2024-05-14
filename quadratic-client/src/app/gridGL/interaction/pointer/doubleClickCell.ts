@@ -39,7 +39,7 @@ export function doubleClickCell(options: {
         },
       });
     } else {
-      if (hasPermission) {
+      if (hasPermission && formula) {
         settings.changeInput(true, cell);
       } else {
         settings.setEditorInteractionState({
