@@ -60,6 +60,8 @@ export const debugGridSettings = debug && false;
 
 export const debugShowMultiplayer = debug && false;
 
+export const debugSaveURLState = (debug && false) || url.has('state');
+
 // --------
 // UI
 // --------

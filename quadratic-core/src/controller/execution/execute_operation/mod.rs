@@ -6,6 +6,7 @@ pub mod execute_borders;
 pub mod execute_code;
 pub mod execute_cursor;
 pub mod execute_formats;
+pub mod execute_move_cells;
 pub mod execute_offsets;
 pub mod execute_sheets;
 pub mod execute_values;
@@ -24,6 +25,7 @@ impl GridController {
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
                 Operation::SetBorders { .. } => self.execute_set_borders(transaction, op),
+                Operation::MoveCells { .. } => self.execute_move_cells(transaction, op),
 
                 Operation::AddSheet { .. } => self.execute_add_sheet(transaction, op),
                 Operation::DeleteSheet { .. } => self.execute_delete_sheet(transaction, op),

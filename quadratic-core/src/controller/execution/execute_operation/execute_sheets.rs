@@ -101,7 +101,7 @@ impl GridController {
                 return;
             };
             let original_order = sheet.order.clone();
-            sheet.order = order.clone();
+            sheet.order.clone_from(&order);
             self.grid.move_sheet(target, order.clone());
 
             if old_first != self.grid.first_sheet_id() {
@@ -133,7 +133,7 @@ impl GridController {
                 return;
             };
             let old_name = sheet.name.clone();
-            sheet.name = name.clone();
+            sheet.name.clone_from(&name);
 
             transaction
                 .forward_operations
@@ -161,7 +161,7 @@ impl GridController {
                 return;
             };
             let old_color = sheet.color.clone();
-            sheet.color = color.clone();
+            sheet.color.clone_from(&color);
 
             transaction
                 .forward_operations
