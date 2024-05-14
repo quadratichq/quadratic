@@ -79,7 +79,7 @@ export const CodeEditorBody = (props: Props) => {
     setTimeout(() => {
       (model as any)._commandManager.clear();
     }, 250);
-  }, [cellLocation.x, cellLocation.y, cellLocation.sheetId, editorRef]);
+  }, [cellLocation, editorRef]);
 
   const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run();
   useEventListener('run-editor-action', runEditorAction);
