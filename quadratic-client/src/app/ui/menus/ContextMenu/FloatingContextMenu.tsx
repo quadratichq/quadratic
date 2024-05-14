@@ -101,12 +101,16 @@ export const FloatingContextMenu = (props: Props) => {
     // Calculate position of input based on cell
     const cursorRectangle = pixiApp.cursor.cursorRectangle;
     if (!cursorRectangle) return;
-    let cell_offset_scaled = viewport.toScreen(cursorRectangle.x, cursorRectangle.y);
+    const cursorTopLeft = viewport.toScreen(cursorRectangle.x, cursorRectangle.y);
+    const cursorBottomRight = viewport.toScreen(
+      cursorRectangle.x + cursorRectangle.width,
+      cursorRectangle.y + cursorRectangle.height
+    );
 
     const menuHeight = menuDiv.current?.clientHeight || 0;
 
-    let x = cell_offset_scaled.x + container.offsetLeft - HORIZONTAL_PADDING;
-    let y = cell_offset_scaled.y + container.offsetTop - menuHeight - VERTICAL_PADDING;
+    let x = cursorTopLeft.x + container.offsetLeft - HORIZONTAL_PADDING;
+    let y = cursorTopLeft.y + container.offsetTop - menuHeight - VERTICAL_PADDING;
 
     /**
      * Control menu visibility
@@ -196,7 +200,15 @@ export const FloatingContextMenu = (props: Props) => {
       y = container.offsetTop + HORIZONTAL_PADDING + rowHeader;
     }
 
-    // bottom
+    // move cursor to bottom of selection if necessary
+    if (y + menuDiv.current.offsetHeight >= cursorTopLeft.y && y <= cursorBottomRight.y) {
+      y = cursorBottomRight.y + VERTICAL_PADDING;
+
+      // if selection is too big, then default to the top calculation for y
+      if (y + menuDiv.current.offsetHeight >= container.offsetTop + container.offsetHeight) {
+        y = container.offsetTop + HORIZONTAL_PADDING + rowHeader;
+      }
+    }
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
