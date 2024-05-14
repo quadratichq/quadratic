@@ -330,11 +330,11 @@ fn test_sheet_references() {
 
     let id1 = g.sheets()[0].id;
     let name1 = "MySheet".to_string();
-    g.sheets_mut()[0].name = name1.clone();
+    g.sheets_mut()[0].name.clone_from(&name1);
 
     let id2 = g.add_sheet(None);
     let name2 = "My Other Sheet".to_string();
-    g.sheets_mut()[1].name = name2.clone();
+    g.sheets_mut()[1].name.clone_from(&name2);
 
     let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A1], 42);
     let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A3], 6);

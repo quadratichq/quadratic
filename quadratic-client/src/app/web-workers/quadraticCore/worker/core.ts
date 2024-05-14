@@ -19,6 +19,7 @@ import {
   MinMax,
   SearchOptions,
   SheetPos,
+  SheetRect,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
@@ -29,6 +30,7 @@ import {
   ClientCoreFindNextRow,
   ClientCoreImportExcel,
   ClientCoreLoad,
+  ClientCoreMoveCells,
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
 import { coreClient } from './coreClient';
@@ -754,12 +756,9 @@ class Core {
   }
 
   commitTransientResize(sheetId: string, transientResize: string, cursor: string) {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
-        resolve(undefined);
-      });
+    this.clientQueue.push(() => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.commitOffsetsResize(sheetId, transientResize, cursor);
     });
   }
   commitSingleResize(
@@ -769,12 +768,9 @@ class Core {
     size: number,
     cursor: string
   ) {
-    return new Promise((resolve) => {
-      this.clientQueue.push(() => {
-        if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.commitSingleResize(sheetId, column, row, size, cursor);
-        resolve(undefined);
-      });
+    this.clientQueue.push(() => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      this.gridController.commitSingleResize(sheetId, column, row, size, cursor);
     });
   }
 
@@ -919,6 +915,21 @@ class Core {
   removeCellNumericFormat(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     this.gridController.removeCellNumericFormat(sheetId, pointsToRect(x, y, width, height), cursor);
+  }
+
+  moveCells(message: ClientCoreMoveCells) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    const source: SheetRect = {
+      min: { x: BigInt(message.sourceX), y: BigInt(message.sourceY) },
+      max: { x: BigInt(message.sourceX + message.sourceWidth), y: BigInt(message.sourceY + message.sourceHeight) },
+      sheet_id: { id: message.sourceSheetId },
+    };
+    const dest: SheetPos = {
+      x: BigInt(message.targetX),
+      y: BigInt(message.targetY),
+      sheet_id: { id: message.targetSheetId },
+    };
+    this.gridController.moveCells(source, dest, message.cursor);
   }
 }
 
