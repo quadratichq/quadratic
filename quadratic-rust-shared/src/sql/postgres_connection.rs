@@ -89,7 +89,7 @@ impl Connection for PostgresConnection {
             }
             "INT" | "SERIAL" | "INT4" => ArrowType::Int32(convert_pg_type!(i32, row, index)),
             "BIGINT" | "BIGSERIAL" | "INT8" => ArrowType::Int64(convert_pg_type!(i64, row, index)),
-            "BOOLEAN" => ArrowType::Boolean(convert_pg_type!(bool, row, index)),
+            "BOOL" => ArrowType::Boolean(convert_pg_type!(bool, row, index)),
             "REAL" | "FLOAT4" => ArrowType::Float32(convert_pg_type!(f32, row, index)),
             "DOUBLE PRECISION" | "FLOAT8" => ArrowType::Float64(convert_pg_type!(f64, row, index)),
             "NUMERIC" => ArrowType::BigDecimal(convert_pg_type!(BigDecimal, row, index)),
