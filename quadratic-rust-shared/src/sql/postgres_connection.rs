@@ -1,21 +1,14 @@
-use arrow::{
-    array::{ArrayRef, Int16Array, Int32Array, Int64Array, StringArray},
-    datatypes::{DataType, Field, Utf8Type},
-};
-use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 use sqlx::{
     postgres::{PgColumn, PgConnectOptions, PgRow},
     Column, ConnectOptions, PgConnection, Row, TypeInfo,
 };
-
-use std::sync::Arc;
 use uuid::Uuid;
 
+use crate::convert_pg_type;
 use crate::error::{Result, SharedError, Sql};
 use crate::sql::{ArrowType, Connection};
-use crate::{convert_int_pg_type, convert_pg_type, convert_string_pg_type};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PostgresConnection {
@@ -85,48 +78,6 @@ impl Connection for PostgresConnection {
         Ok(row)
     }
 
-    // fn rust_type(row: &Self::Row, column: &Self::Column, index: usize) -> Option<DataType> {
-    //     match column.type_info().name() {
-    //         "TEXT" | "VARCHAR" | "CHAR(N)" | "NAME" | "CITEXT" => Some(String),
-    //         // "SMALLINT" | "SMALLSERIAL" | "INT2" => {
-    //         //     convert_int_pg_type!(i16, Int16Array, row, index)
-    //         // }
-    //         // "INT" | "SERIAL" | "INT4" => convert_int_pg_type!(i32, Int32Array, row, index),
-    //         // "BIGINT" | "BIGSERIAL" | "INT8" => convert_int_pg_type!(i64, Int64Array, row, index),
-    //         // "BOOLEAN" => convert_pg_type!(bool, row, index),
-    //         // "REAL" | "FLOAT4" => convert_pg_type!(f32, row, index),
-    //         // "DOUBLE PRECISION" | "FLOAT8" => convert_pg_type!(f64, row, index),
-    //         // "TIMESTAMP" => convert_pg_type!(NaiveDateTime, row, index),
-    //         // "TIMESTAMPTZ" => convert_pg_type!(DateTime<Local>, row, index),
-    //         // "DATE" => convert_pg_type!(NaiveDate, row, index),
-    //         // "TIME" => convert_pg_type!(NaiveTime, row, index),
-    //         // "UUID" => convert_pg_type!(Uuid, row, index),
-    //         "VOID" => None,
-    //         _ => None,
-    //     }
-    // }
-
-    // fn arrow_type(row: &Self::Row, column: &Self::Column, index: usize) -> Option<DataType> {
-    //     match column.type_info().name() {
-    //         "TEXT" | "VARCHAR" | "CHAR(N)" | "NAME" | "CITEXT" => Some(DataType::Utf8),
-    //         // "SMALLINT" | "SMALLSERIAL" | "INT2" => {
-    //         //     convert_int_pg_type!(i16, Int16Array, row, index)
-    //         // }
-    //         // "INT" | "SERIAL" | "INT4" => convert_int_pg_type!(i32, Int32Array, row, index),
-    //         // "BIGINT" | "BIGSERIAL" | "INT8" => convert_int_pg_type!(i64, Int64Array, row, index),
-    //         // "BOOLEAN" => convert_pg_type!(bool, row, index),
-    //         // "REAL" | "FLOAT4" => convert_pg_type!(f32, row, index),
-    //         // "DOUBLE PRECISION" | "FLOAT8" => convert_pg_type!(f64, row, index),
-    //         // "TIMESTAMP" => convert_pg_type!(NaiveDateTime, row, index),
-    //         // "TIMESTAMPTZ" => convert_pg_type!(DateTime<Local>, row, index),
-    //         // "DATE" => convert_pg_type!(NaiveDate, row, index),
-    //         // "TIME" => convert_pg_type!(NaiveTime, row, index),
-    //         // "UUID" => convert_pg_type!(Uuid, row, index),
-    //         "VOID" => None,
-    //         _ => None,
-    //     }
-    // }
-
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
@@ -137,32 +88,22 @@ impl Connection for PostgresConnection {
             }
             "INT" | "SERIAL" | "INT4" => ArrowType::Int32(convert_pg_type!(i32, row, index)),
             "BIGINT" | "BIGSERIAL" | "INT8" => ArrowType::Int64(convert_pg_type!(i64, row, index)),
-            "BOOLEAN" => ArrowType::Boolean(convert_pg_type!(Option<bool>, row, index)),
+            "BOOLEAN" => ArrowType::Boolean(convert_pg_type!(bool, row, index)),
             "REAL" | "FLOAT4" => ArrowType::Float32(convert_pg_type!(f32, row, index)),
-            "DOUBLE PRECISION" | "FLOAT8" => ArrowType::Float64(convert_pg_type!(f64, row, index)),
+            "DOUBLE PRECISION" | "FLOAT8" | "NUMERIC" => {
+                ArrowType::Float64(convert_pg_type!(f64, row, index))
+            }
             "TIMESTAMP" => ArrowType::Timestamp(convert_pg_type!(NaiveDateTime, row, index)),
-            // "TIMESTAMPTZ" => convert_pg_type!(DateTime<Local>, row, index),
-            // "DATE" => convert_pg_type!(NaiveDate, row, index),
-            // "TIME" => convert_pg_type!(NaiveTime, row, index),
-            // "UUID" => convert_pg_type!(Uuid, row, index),
-            // "VOID" => None,
-            _ => ArrowType::Unsupported,
+            "TIMESTAMPTZ" => ArrowType::TimestampTz(convert_pg_type!(DateTime<Local>, row, index)),
+            "DATE" => ArrowType::Date32(convert_pg_type!(i32, row, index)),
+            "TIME" => ArrowType::Time32(convert_pg_type!(i32, row, index)),
+            "UUID" => ArrowType::Uuid(convert_pg_type!(Uuid, row, index)),
+            "VOID" => ArrowType::Void,
+            // try to convert others to a string
+            _ => ArrowType::Utf8(convert_pg_type!(String, row, index)),
         }
     }
 }
-
-// #[macro_export]
-// macro_rules! convert_pg_type {
-//     ( $kind:ty, $row:ident, $index:ident ) => {{
-//         let string_array = StringArray::from_iter_values(
-//             $row.try_get::<$kind, usize>($index)
-//                 .ok()
-//                 .map(|v| v.to_string()),
-//         );
-
-//         Some(Arc::new(string_array) as ArrayRef)
-//     }};
-// }
 
 #[macro_export]
 macro_rules! convert_pg_type {
@@ -170,26 +111,6 @@ macro_rules! convert_pg_type {
         $row.try_get::<$kind, usize>($index)
             .ok()
             .unwrap_or_default()
-    }};
-}
-
-#[macro_export]
-macro_rules! convert_string_pg_type {
-    ( $pg_kind:ty, $array_kind:ty, $row:ident, $index:ident ) => {{
-        let value = $row.try_get::<$pg_kind, usize>($index).ok();
-        let field = Field::new(value, DataType::Utf8, value.is_some());
-
-        Some(field)
-    }};
-}
-
-#[macro_export]
-macro_rules! convert_int_pg_type {
-    ( $pg_kind:ty, $array_kind:ty, $row:ident, $index:ident ) => {{
-        let int_array =
-            <$array_kind>::from_iter_values($row.try_get::<$pg_kind, usize>($index).ok());
-
-        Some(Arc::new(int_array) as ArrayRef)
     }};
 }
 
@@ -217,21 +138,21 @@ mod tests {
         let pool = connection.connect().await.unwrap();
         let rows = connection
             // .query(pool, "select * from \"FileCheckpoint\" limit 10")
-            .query(pool, "select * from \"FileCheckpoint\" limit 10")
+            .query(pool, "select * from \"Sample\" order by id limit 10")
             .await
             .unwrap();
 
-        // for row in &rows {
-        //     for (index, col) in row.columns().into_iter().enumerate() {
-        //         let value = PostgresConnection::to_arrow(&row, col, index);
-        //         println!(
-        //             "{} ({}) = {:?}",
-        //             col.name().to_string(),
-        //             col.type_info().name(),
-        //             value
-        //         );
-        //     }
-        // }
+        for row in &rows {
+            for (index, col) in row.columns().into_iter().enumerate() {
+                let value = PostgresConnection::to_arrow(&row, col, index);
+                println!(
+                    "{} ({}) = {:?}",
+                    col.name().to_string(),
+                    col.type_info().name(),
+                    value
+                );
+            }
+        }
 
         let _data = PostgresConnection::to_parquet(rows);
 

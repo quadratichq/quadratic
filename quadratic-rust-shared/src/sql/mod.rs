@@ -1,7 +1,8 @@
 use arrow::{
     array::{
-        ArrayRef, BooleanArray, Float32Array, Float64Array, Int16Array, Int32Array, Int64Array,
-        RecordBatch, StringArray, TimestampSecondArray,
+        ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array, Int16Array,
+        Int32Array, Int64Array, RecordBatch, StringArray, Time32SecondArray,
+        TimestampMillisecondArray,
     },
     datatypes::*,
 };
@@ -9,12 +10,13 @@ use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::Future;
 use parquet::arrow::ArrowWriter;
-use sqlx::{database::HasValueRef, Column, Row};
+use sqlx::{Column, Row};
 use std::sync::Arc;
+use uuid::Uuid;
 
 use self::{mysql_connection::MysqlConnection, postgres_connection::PostgresConnection};
-use crate::vec_arrow_type_to_array_ref;
 use crate::{error::Result, SharedError, Sql};
+use crate::{vec_arrow_type_to_array_ref, vec_time_arrow_type_to_array_ref};
 
 pub mod mysql_connection;
 pub mod postgres_connection;
@@ -32,108 +34,95 @@ pub enum ArrowType {
     Float32(f32),
     Float64(f64),
     Utf8(String),
-    Boolean(Option<bool>),
-    Date32(NaiveDate),
-    Date64(DateTime<Local>),
-    Time32(NaiveTime),
-    Time64(NaiveTime),
+    Boolean(bool),
+    Date32(i32),
+    Date64(i64),
+    Time32(i32),
+    Time64(i64),
     Timestamp(NaiveDateTime),
     TimestampTz(DateTime<Local>),
+    // Parquet supports Uuid, but Arrow does not
+    Uuid(Uuid),
     Void,
     Unsupported,
 }
-
-// impl From<ArrowType> for DataType {
-//     fn from(value: ArrowType) -> Self {
-//         match value {
-//             ArrowType::Int16(_) => DataType::Int16,
-//             ArrowType::Int32(_) => DataType::Int32,
-//             ArrowType::Int64(_) => DataType::Int64,
-//             ArrowType::Float32(_) => DataType::Float32,
-//             ArrowType::Float64(_) => DataType::Float64,
-//             ArrowType::Utf8(_) => DataType::Utf8,
-//             ArrowType::Boolean(_) => DataType::Boolean,
-//             ArrowType::Date32(_) => DataType::Date32,
-//             ArrowType::Date64(_) => DataType::Date64,
-//             ArrowType::Time32(_) => DataType::Time32(TimeUnit::Second),
-//             ArrowType::Time64(_) => DataType::Time64(TimeUnit::Microsecond),
-//             ArrowType::Timestamp(_) => DataType::Timestamp(TimeUnit::Nanosecond, None),
-//             ArrowType::TimestampTz(_) => {
-//                 DataType::Timestamp(TimeUnit::Nanosecond, Some("UTC".into()))
-//             }
-//             ArrowType::Void => DataType::Null,
-//             ArrowType::Unsupported => DataType::Null,
-//         }
-//     }
-// }
 
 impl ArrowType {
     pub fn to_array_ref(values: Vec<ArrowType>) -> ArrayRef {
         match values[0] {
             ArrowType::Int16(_) => {
-                vec_arrow_type_to_array_ref!(ArrowType::Int16, i16, Int16Array, values)
+                vec_arrow_type_to_array_ref!(ArrowType::Int16, Int16Array, values)
             }
             ArrowType::Int32(_) => {
-                vec_arrow_type_to_array_ref!(ArrowType::Int32, i32, Int32Array, values)
+                vec_arrow_type_to_array_ref!(ArrowType::Int32, Int32Array, values)
             }
             ArrowType::Int64(_) => {
-                vec_arrow_type_to_array_ref!(ArrowType::Int64, i64, Int64Array, values)
+                vec_arrow_type_to_array_ref!(ArrowType::Int64, Int64Array, values)
             }
             ArrowType::Float32(_) => {
-                vec_arrow_type_to_array_ref!(ArrowType::Float32, f32, Float32Array, values)
+                vec_arrow_type_to_array_ref!(ArrowType::Float32, Float32Array, values)
             }
             ArrowType::Float64(_) => {
-                vec_arrow_type_to_array_ref!(ArrowType::Float64, f64, Float64Array, values)
+                vec_arrow_type_to_array_ref!(ArrowType::Float64, Float64Array, values)
             }
             ArrowType::Utf8(_) => {
-                let converted = values
-                    .iter()
-                    .filter_map(|value| match value {
-                        ArrowType::Utf8(value) => Some(value.as_str()),
-                        _ => None,
-                    })
-                    .collect::<Vec<&str>>();
+                let converted = values.iter().filter_map(|value| match value {
+                    ArrowType::Utf8(value) => Some(value.as_str()),
+                    _ => None,
+                });
 
                 Arc::new(StringArray::from_iter_values(converted)) as ArrayRef
             }
             ArrowType::Boolean(_) => {
-                vec_arrow_type_to_array_ref!(ArrowType::Boolean, Option<bool>, BooleanArray, values)
+                vec_arrow_type_to_array_ref!(ArrowType::Boolean, BooleanArray, values)
             }
-            // ArrowType::Date32(v) => Arc::new(Date32Array::from(vec![Some(v)])),
-            // ArrowType::Date64(v) => Arc::new(Date64Array::from(vec![Some(v)])),
+            ArrowType::Date32(_) => {
+                vec_arrow_type_to_array_ref!(ArrowType::Date32, Date32Array, values)
+            }
+            ArrowType::Date64(_) => {
+                vec_arrow_type_to_array_ref!(ArrowType::Date64, Date64Array, values)
+            }
+            ArrowType::Time32(_) => {
+                vec_arrow_type_to_array_ref!(ArrowType::Time32, Time32SecondArray, values)
+            }
             // ArrowType::Time32(v) => Arc::new(Time32SecondArray::from(vec![Some(v)])),
             // ArrowType::Time64(v) => Arc::new(Time64MicrosecondArray::from(vec![Some(v)])),
-            // ArrowType::Timestamp(v) => {
-            //     let converted = values
-            //         .iter()
-            //         .filter_map(|value| match value {
-            //             ArrowType::Timestamp(value) => Some(*value),
-            //             _ => None,
-            //         })
-            //         .collect::<Vec<_>>();
+            ArrowType::Timestamp(_) => {
+                vec_time_arrow_type_to_array_ref!(
+                    ArrowType::Timestamp,
+                    TimestampMillisecondArray,
+                    values
+                )
+            }
+            ArrowType::TimestampTz(_) => {
+                vec_time_arrow_type_to_array_ref!(
+                    ArrowType::Timestamp,
+                    TimestampMillisecondArray,
+                    values
+                )
+            }
+            ArrowType::Uuid(_) => {
+                let converted = values.iter().filter_map(|value| match value {
+                    ArrowType::Uuid(value) => Some(value.to_string()),
+                    _ => None,
+                });
 
-            //     Arc::new(TimestampSecondArray::from_iter_values(converted)) as ArrayRef
-            // }
-            // {
-            //     vec_arrow_type_to_array_ref!(
-            //         ArrowType::Timestamp,
-            //         NaiveDateTime,
-            //         TimestampSecondArray,
-            //         values
-            //     )
-            // }
-            // ArrowType::TimestampTz(v) => Arc::new(TimestampMillisecondArray::from(vec![Some(v)])),
+                Arc::new(StringArray::from_iter_values(converted)) as ArrayRef
+            }
             // ArrowType::Void => Arc::new(NullArray::new(1)),
             // ArrowType::Unsupported => Arc::new(NullArray::new(1)),
-            _ => Arc::new(StringArray::from_iter_values(["".to_string()])) as ArrayRef,
+            _ => {
+                println!("Unsupported ArrowType: {:?}", values[0]);
+                Arc::new(StringArray::from_iter_values(["".to_string()])) as ArrayRef
+            }
         }
     }
 }
 
 #[macro_export]
 macro_rules! vec_arrow_type_to_array_ref {
-    ( $arrow_type_kind:path, $rust_kind:ty, $arrow_kind:ty, $values:ident ) => {{
-        let converted = $values.iter().filter_map(|value| match value {
+    ( $arrow_type_kind:path, $arrow_kind:ty, $values:ident ) => {{
+        let converted = $values.iter().map(|value| match value {
             $arrow_type_kind(value) => Some(*value),
             _ => None,
         });
@@ -142,15 +131,17 @@ macro_rules! vec_arrow_type_to_array_ref {
     }};
 }
 
-// #[macro_export]
-// macro_rules! impl_from_arrow_type {
-//     ( $arrow_type_kind:tt, $rust_kind:ty, $arrow_kind:ty, $values:ident ) => {{
-//         impl From<ArrowType> for rust_kind {
-//             fn from(value: ArrowType) -> Self {
-//                 match value {
-//                     ArrowType::Int16(_) => DataType::Int16,
-//     }};
-// }
+#[macro_export]
+macro_rules! vec_time_arrow_type_to_array_ref {
+    ( $arrow_type_kind:path, $arrow_kind:ty, $values:ident ) => {{
+        let converted = $values.iter().map(|value| match value {
+            $arrow_type_kind(value) => Some(value.and_utc().timestamp_millis()),
+            _ => None,
+        });
+
+        Arc::new(<$arrow_kind>::from_iter(converted)) as ArrayRef
+    }};
+}
 
 pub trait Connection {
     type Conn;
@@ -162,11 +153,6 @@ pub trait Connection {
 
     /// Generically query a database
     fn query(&self, pool: Self::Conn, sql: &str) -> impl Future<Output = Result<Vec<Self::Row>>>;
-
-    // fn to_bytes(row: &Self::Row, index: usize) -> Bytes {
-    //     let raw = row.try_get_raw(index).unwrap();
-    //     Bytes::from(raw)
-    // }
 
     /// Convert a database-specific column to an Arrow type
     fn to_arrow(
@@ -210,8 +196,6 @@ pub trait Connection {
             .map(|col| ArrowType::to_array_ref(col))
             .collect::<Vec<ArrayRef>>();
 
-        println!("{:?}", cols);
-
         // headings
         let fields = data[0]
             .columns()
@@ -225,6 +209,15 @@ pub trait Connection {
                 )
             })
             .collect::<Vec<Field>>();
+
+        for (index, col) in cols.iter().enumerate() {
+            println!(
+                "{} ({}) = {:?}",
+                fields[index].name(),
+                fields[index].data_type(),
+                col
+            );
+        }
 
         let schema = Schema::new(fields);
 
