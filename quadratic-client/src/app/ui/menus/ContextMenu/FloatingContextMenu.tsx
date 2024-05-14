@@ -99,8 +99,9 @@ export const FloatingContextMenu = (props: Props) => {
     const cursor = sheet.cursor;
 
     // Calculate position of input based on cell
-    const cell_offsets = pixiApp.cursor.visibleRectangle;
-    let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
+    const cursorRectangle = pixiApp.cursor.cursorRectangle;
+    if (!cursorRectangle) return;
+    let cell_offset_scaled = viewport.toScreen(cursorRectangle.x, cursorRectangle.y);
 
     const menuHeight = menuDiv.current?.clientHeight || 0;
 
@@ -127,7 +128,7 @@ export const FloatingContextMenu = (props: Props) => {
     // Hide if currently selecting
     if (pixiApp.pointer?.pointerDown?.active) visibility = 'vanish';
 
-    if (pixiApp.pointer.pointerCellMoving.state) visibility = 'hidden';
+    if (pixiApp.pointer.pointerCellMoving.state === 'move') visibility = 'vanish';
 
     // Hide if in presentation mode
     if (pixiAppSettings.presentationMode) visibility = 'vanish';
@@ -137,7 +138,8 @@ export const FloatingContextMenu = (props: Props) => {
 
     // Hide FloatingFormatMenu if multi cursor is off screen
 
-    const selection = pixiApp.cursor.visibleRectangle;
+    const selection = pixiApp.cursor.cursorRectangle;
+    if (!selection) return;
     const viewportBounds = pixiApp.viewport.getVisibleBounds();
     if (!intersects.rectangleRectangle(selection, viewportBounds)) {
       visibility = false;
