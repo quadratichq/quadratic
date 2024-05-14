@@ -1,4 +1,7 @@
-use quadratic_core::{formulas, Pos, Span, Spanned};
+use quadratic_core::{
+    formulas::{self},
+    Pos, Span, Spanned,
+};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -81,6 +84,11 @@ pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
     };
 
     serde_wasm_bindgen::to_value(&result).unwrap()
+}
+
+#[wasm_bindgen(js_name = "checkFormula")]
+pub fn check_formula(formula_string: &str) -> bool {
+    formulas::parse_and_check_formula(formula_string)
 }
 
 #[cfg(test)]

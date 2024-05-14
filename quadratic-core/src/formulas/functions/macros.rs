@@ -166,8 +166,8 @@ macro_rules! formula_fn {
 macro_rules! formula_fn_eval {
     ($($tok:tt)*) => {{
         #[allow(unused_mut)]
-        let ret: FormulaFn = |_ctx: &mut Ctx<'_>, mut _args: FormulaFnArgs| -> CodeResult<Value> {
-            formula_fn_eval_inner!(_ctx, _args, $($tok)*)
+        let ret: FormulaFn = |_ctx: &mut Ctx<'_>, _only_parse: bool, mut _args: FormulaFnArgs| -> CodeResult<Value> {
+            formula_fn_eval_inner!(_ctx, _only_parse, _args, $($tok)*)
         };
         ret
     }};
@@ -176,7 +176,7 @@ macro_rules! formula_fn_eval {
 /// Constructs the body of the `eval` function for a `FormulaFunction`.
 macro_rules! formula_fn_eval_inner {
     (
-        $ctx:ident, $args:ident, $body:expr;
+        $ctx:ident, $only_parse:expr, $args:ident, $body:expr;
         #[zip_map]
         $($params:tt)*
     ) => {{
@@ -192,14 +192,20 @@ macro_rules! formula_fn_eval_inner {
             move |_ctx, zipped_args| -> CodeResult<CellValue> {
                 formula_fn_args!(@unzip(_ctx, zipped_args); $($params)*);
 
-                // Evaluate the body of the function.
-                CodeResult::Ok(CellValue::from($body))
+                if $only_parse {
+                    // If we only care about parsing, then we return a blank
+                    // cell to avoid processing anything
+                    Ok(CellValue::Blank)
+                } else {
+                    // Evaluate the body of the function.
+                    CodeResult::Ok(CellValue::from($body))
+                }
             },
         )
     }};
 
     (
-        $ctx:ident, $args:ident, $body:expr;
+        $ctx:ident, $only_parse: expr, $args:ident, $body:expr;
         #[zip_map]
         $($params:tt)*
     ) => {{
@@ -212,25 +218,35 @@ macro_rules! formula_fn_eval_inner {
 
         $ctx.zip_map(
             &args_to_zip_map,
-            move |ctx, zipped_args| {
+            |ctx, zipped_args| {
                 formula_fn_args!(@unzip(ctx, zipped_args); $($params)*);
 
-                // Evaluate the body of the function.
-                CodeResult::Ok(CellValue::from($body))
+                if $only_parse {
+                    // If we only care about parsing, then we return a blank
+                    // cell to avoid processing anything
+                    Ok(CellValue::Blank)
+                } else {
+                    // Evaluate the body of the function.
+                    CodeResult::Ok(CellValue::from($body))
+                }
             },
         )
     }};
 
     (
-        $ctx:ident, $args:ident, $body:expr;
+        $ctx:ident, $only_parse: expr, $args:ident, $body:expr;
         $($params:tt)*
     ) => {{
         // Check number of arguments and assign arguments to variables.
         formula_fn_args!(@assign($ctx, $args); $($params)*);
         $args.error_if_more_args()?;
 
-        // Evaluate the body of the function.
-        Ok(Value::from($body))
+        // if only_parse {
+        //     Ok(())
+        // } else {
+            // Evaluate the body of the function.
+            Ok(Value::from($body))
+        // }
     }};
 }
 

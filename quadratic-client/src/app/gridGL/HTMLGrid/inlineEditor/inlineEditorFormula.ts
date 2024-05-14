@@ -10,7 +10,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import { ParseFormulaReturnType } from '@/app/helpers/formulaNotation';
-import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { checkFormula, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { colors } from '@/app/theme/colors';
 import { extractCellsFromParseFormula } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import * as monaco from 'monaco-editor';
@@ -148,20 +148,18 @@ class InlineEditorFormula {
   // Returns whether we are editing a formula only if it is valid (used for
   // PointerDown checks to differentiate between selecting a cell and closing
   // the inline formula editor).
-  async isFormulaValid(testFormula?: string, skipCloseParenthesisCheck?: true): Promise<boolean> {
+  isFormulaValid(testFormula?: string, skipCloseParenthesisCheck?: true): boolean {
     if (inlineEditorHandler.cursorIsMoving) return false;
     const location = inlineEditorHandler.location;
     if (!location) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
-    const results = await parseFormula(formula, location.x, location.y);
-    if (results.parse_error_msg) {
+    if (!checkFormula(formula)) {
       if (skipCloseParenthesisCheck) {
         return false;
       }
-      const value = await this.closeParentheses();
+      const value = this.closeParentheses();
       if (value !== testFormula) {
-        const results = await parseFormula(formula, location.x, location.y);
-        return !results.parse_error_msg;
+        return checkFormula(formula);
       } else {
         return false;
       }
@@ -170,7 +168,7 @@ class InlineEditorFormula {
     }
   }
 
-  async closeParentheses(): Promise<string | undefined> {
+  closeParentheses(): string | undefined {
     let formula = inlineEditorMonaco.get();
     let count = 0;
     for (let i = 0; i < formula.length; i++) {
@@ -184,7 +182,7 @@ class InlineEditorFormula {
       for (let i = 0; i < count; i++) {
         formula += ')';
       }
-      if (await this.isFormulaValid(formula, true)) {
+      if (this.isFormulaValid(formula, true)) {
         inlineEditorMonaco.set(formula);
         return formula;
       } else {
