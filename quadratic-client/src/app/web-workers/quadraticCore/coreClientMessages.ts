@@ -798,6 +798,19 @@ export interface CoreClientUndoRedo {
   redo: boolean;
 }
 
+export interface ClientCoreMoveCells {
+  type: 'clientCoreMoveCells';
+  sourceSheetId: string;
+  sourceX: number;
+  sourceY: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  targetSheetId: string;
+  targetX: number;
+  targetY: number;
+  cursor: string;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -854,7 +867,8 @@ export type ClientCoreMessage =
   | ClientCoreCommitSingleResize
   | ClientCoreInitPython
   | ClientCoreImportExcel
-  | ClientCoreCancelExecution;
+  | ClientCoreCancelExecution
+  | ClientCoreMoveCells;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell

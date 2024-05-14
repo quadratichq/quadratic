@@ -244,6 +244,17 @@ impl GridController {
             );
         }
     }
+
+    pub fn move_cells(&mut self, source: SheetRect, dest: SheetPos, cursor: Option<String>) {
+        let ops = self.move_cells_operations(source, dest);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::PasteClipboard,
+            Some(source.sheet_id),
+            Some(source.into()),
+        );
+    }
 }
 
 #[cfg(test)]
@@ -901,5 +912,46 @@ mod test {
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.display_value(Pos { x: 0, y: 0 }), None);
+    }
+
+    #[test]
+    fn move_cells() {
+        let mut gc = GridController::default();
+        let sheet_id = gc.sheet_ids()[0];
+
+        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3; 4, 5, 6}", 0, 0);
+        set_cell_value(&mut gc, sheet_id, "100", 0, 2);
+
+        gc.move_cells(
+            SheetRect::new_pos_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 2 }, sheet_id),
+            (10, 10, sheet_id).into(),
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value((10, 10).into()),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value((10, 12).into()),
+            Some(CellValue::Number(BigDecimal::from(100)))
+        );
+        assert_eq!(sheet.display_value((0, 0).into()), None);
+        assert_eq!(sheet.display_value((0, 2).into()), None);
+
+        gc.undo(None);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.display_value((10, 10).into()), None);
+        assert_eq!(sheet.display_value((10, 12).into()), None);
+        assert_eq!(
+            sheet.display_value((0, 0).into()),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value((0, 2).into()),
+            Some(CellValue::Number(BigDecimal::from(100)))
+        );
     }
 }
