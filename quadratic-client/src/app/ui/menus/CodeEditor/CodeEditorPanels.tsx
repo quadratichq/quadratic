@@ -68,6 +68,10 @@ export const CodeEditorPanels = (props: Props) => {
               const totalWidth = codeEditorPanelData.editorWidth + codeEditorPanelData.panelWidth;
               const newEditorWidth = Math.max(offsetFromRight, MIN_WIDTH_EDITOR);
               const newPanelWidth = Math.max(totalWidth - newEditorWidth, MIN_WIDTH_PANEL);
+
+              // don't allow resizing if the total width changes
+              if (newEditorWidth + newPanelWidth !== totalWidth) return;
+
               codeEditorPanelData.setEditorWidth(newEditorWidth);
               codeEditorPanelData.setPanelWidth(newPanelWidth);
             }}
