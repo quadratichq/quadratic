@@ -100,6 +100,7 @@ export class CellHighlights extends Container {
       this.marchLastTime = Date.now();
     }
     const highlightedCell = this.highlightedCells[this.highlightedCellIndex];
+    if (!highlightedCell) return;
     const colorNumber = convertColorStringToTint(
       colors.cellHighlightColor[highlightedCell.index % NUM_OF_CELL_REF_COLORS]
     );

@@ -438,12 +438,15 @@ class InlineEditorHandler {
 
   // Called when manually changing cell position via clicking on a new cell
   // (except when editing formula).
-  async changingPosition() {
+  changingPosition() {
     if (this.open) {
-      if (!this.formula || (await inlineEditorFormula.isFormulaValid())) {
+      if (!this.formula || inlineEditorFormula.isFormulaValid()) {
         this.close(0, 0, false);
       } else {
-        this.cursorIsMoving = true;
+        if (!this.cursorIsMoving) {
+          this.cursorIsMoving = true;
+          inlineEditorFormula.addInsertingCells(inlineEditorMonaco.getCursorColumn());
+        }
       }
     }
   }

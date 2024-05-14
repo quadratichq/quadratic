@@ -116,6 +116,7 @@ class InlineEditorFormula {
       // We start the cursorIsMoving unless we've returned to the home cell from
       // a Backspace or Escape key.
       if (inlineEditorKeyboard.escapeBackspacePressed) {
+        console.log('backspace pressed...');
         return;
       }
 
