@@ -1,4 +1,4 @@
-import { SheetRect } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { ParseFormulaReturnType } from './formulaNotation';
 
 export function parsePython(cellsAccessed?: SheetRect[] | null) {

@@ -1,7 +1,7 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { parsePython } from '@/app/helpers/parseEditorPythonCell';
-import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { SheetRect, parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { CodeCellLanguage, SheetRect } from '@/app/quadratic-core-types';
+import { parseFormula } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import monaco, { editor } from 'monaco-editor';
 import { useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';

@@ -32,7 +32,6 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
 
-    /// Returns [`TransactionSummary`]
     #[wasm_bindgen(js_name = "pasteFromClipboard")]
     pub fn js_paste_from_clipboard(
         &mut self,
@@ -62,6 +61,19 @@ impl GridController {
             special,
             cursor,
         );
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = "moveCells")]
+    pub fn js_move_cells(
+        &mut self,
+        source: JsValue,
+        dest: JsValue,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let source = serde_wasm_bindgen::from_value(source).map_err(|e| e.to_string())?;
+        let dest = serde_wasm_bindgen::from_value(dest).map_err(|e| e.to_string())?;
+        self.move_cells(source, dest, cursor);
         Ok(())
     }
 }

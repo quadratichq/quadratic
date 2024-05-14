@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -44,6 +45,8 @@ export class PixiApp {
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
 
+  // todo: UI should be pulled out and separated into its own class
+
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
   gridLines!: GridLines;
@@ -51,6 +54,7 @@ export class PixiApp {
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
+  cellMoving!: UICellMoving;
   headings!: GridHeadings;
   boxCells!: BoxCells;
   cellsSheets: CellsSheets;
@@ -171,6 +175,7 @@ export class PixiApp {
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
+    this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
     this.reset();
