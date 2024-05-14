@@ -172,6 +172,7 @@ class InlineEditorHandler {
       let value: string;
       if (initialValue) {
         value = initialValue;
+        this.changeToFormula(value[0] === '=');
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
         if (formula?.language === 'Formula') {
@@ -179,6 +180,7 @@ class InlineEditorHandler {
           this.changeToFormula(true);
         } else {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
+          this.changeToFormula(false);
         }
       }
       inlineEditorMonaco.set(value);
