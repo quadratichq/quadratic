@@ -85,6 +85,11 @@ pub enum Operation {
     SetCursor {
         sheet_rect: SheetRect,
     },
+
+    MoveCells {
+        source: SheetRect,
+        dest: SheetPos,
+    },
 }
 
 impl fmt::Display for Operation {
@@ -160,6 +165,9 @@ impl fmt::Display for Operation {
                     "DuplicateSheet {{ sheet_id: {} new_sheet_id: {} }}",
                     sheet_id, new_sheet_id
                 )
+            }
+            Operation::MoveCells { source, dest } => {
+                write!(fmt, "MoveCells {{ source: {} dest: {} }}", source, dest)
             }
         }
     }

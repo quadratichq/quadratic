@@ -368,24 +368,46 @@ function CopyLinkButton({
   const disabled = publicLinkAccess ? (isTeamFile ? false : optimisticPublicLinkAccess === 'NOT_SHARED') : true;
 
   return (
-    <Button
-      variant={disabled ? 'ghost' : 'link'}
-      disabled={disabled}
-      className="flex-shrink-0"
-      onClick={() => {
-        mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
-        navigator.clipboard
-          .writeText(url)
-          .then(() => {
-            addGlobalSnackbar('Copied link to clipboard.');
-          })
-          .catch(() => {
-            addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
-          });
-      }}
-    >
-      Copy link
-    </Button>
+    <>
+      {/*
+      // leaving this code here in case we decide to bring it back
+      <Button
+        variant={disabled ? 'ghost' : 'link'}
+        disabled={disabled}
+        className="flex-shrink-0"
+        onClick={() => {
+          mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+          navigator.clipboard
+            .writeText(url + getShareUrlParams())
+            .then(() => {
+              addGlobalSnackbar('Copied link to clipboard.');
+            })
+            .catch(() => {
+              addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
+            });
+        }}
+      >
+        Copy link with position
+      </Button> */}
+      <Button
+        variant={disabled ? 'ghost' : 'link'}
+        disabled={disabled}
+        className="flex-shrink-0"
+        onClick={() => {
+          mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+          navigator.clipboard
+            .writeText(url)
+            .then(() => {
+              addGlobalSnackbar('Copied link to clipboard.');
+            })
+            .catch(() => {
+              addGlobalSnackbar('Failed to copy link to clipboard.', { severity: 'error' });
+            });
+        }}
+      >
+        Copy link
+      </Button>
+    </>
   );
 }
 
