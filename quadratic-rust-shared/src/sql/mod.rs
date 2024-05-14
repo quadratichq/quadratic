@@ -6,11 +6,11 @@ use arrow::{
     },
     datatypes::*,
 };
-use bigdecimal::{BigDecimal, ToPrimitive};
+use bigdecimal::BigDecimal;
 use bytes::Bytes;
-use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use futures_util::Future;
-use parquet::{arrow::ArrowWriter, data_type::ByteArray};
+use parquet::arrow::ArrowWriter;
 use sqlx::{Column, Row};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -37,10 +37,11 @@ pub enum ArrowType {
     BigDecimal(BigDecimal),
     Utf8(String),
     Boolean(bool),
-    Date32(i32),
+    Date32(NaiveDate),
     Date64(i64),
-    Time32(i32),
+    Time32(NaiveTime),
     Time64(i64),
+    TimeTz(NaiveTime),
     Timestamp(NaiveDateTime),
     TimestampTz(DateTime<Local>),
     // Parquet supports Uuid, but Arrow does not
@@ -90,16 +91,26 @@ impl ArrowType {
                 vec_arrow_type_to_array_ref!(ArrowType::Boolean, BooleanArray, values)
             }
             ArrowType::Date32(_) => {
-                vec_arrow_type_to_array_ref!(ArrowType::Date32, Date32Array, values)
+                let converted = values.iter().flat_map(|value| match value {
+                    ArrowType::Date32(value) => Some(value.num_days_from_ce()),
+                    _ => None,
+                });
+
+                Arc::new(Date32Array::from_iter_values(converted)) as ArrayRef
             }
             ArrowType::Date64(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Date64, Date64Array, values)
             }
-            ArrowType::Time32(_) => {
-                vec_arrow_type_to_array_ref!(ArrowType::Time32, Time32SecondArray, values)
+            ArrowType::Time32(_) | ArrowType::TimeTz(_) => {
+                let converted = values.iter().flat_map(|value| match value {
+                    ArrowType::Time32(value) => {
+                        Some(value.num_seconds_from_midnight() as i32 as i32)
+                    }
+                    _ => None,
+                });
+
+                Arc::new(Time32SecondArray::from_iter_values(converted)) as ArrayRef
             }
-            // ArrowType::Time32(v) => Arc::new(Time32SecondArray::from(vec![Some(v)])),
-            // ArrowType::Time64(v) => Arc::new(Time64MicrosecondArray::from(vec![Some(v)])),
             ArrowType::Timestamp(_) => {
                 vec_time_arrow_type_to_array_ref!(
                     ArrowType::Timestamp,

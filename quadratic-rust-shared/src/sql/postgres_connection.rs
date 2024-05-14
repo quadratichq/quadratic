@@ -1,8 +1,10 @@
+use std::str::FromStr;
+
 use bigdecimal::BigDecimal;
-use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, FixedOffset, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 use sqlx::{
-    postgres::{PgColumn, PgConnectOptions, PgRow},
+    postgres::{types::PgTimeTz, PgColumn, PgConnectOptions, PgRow},
     Column, ConnectOptions, PgConnection, Row, TypeInfo,
 };
 use uuid::Uuid;
@@ -95,8 +97,12 @@ impl Connection for PostgresConnection {
             "NUMERIC" => ArrowType::BigDecimal(convert_pg_type!(BigDecimal, row, index)),
             "TIMESTAMP" => ArrowType::Timestamp(convert_pg_type!(NaiveDateTime, row, index)),
             "TIMESTAMPTZ" => ArrowType::TimestampTz(convert_pg_type!(DateTime<Local>, row, index)),
-            "DATE" => ArrowType::Date32(convert_pg_type!(i32, row, index)),
-            "TIME" => ArrowType::Time32(convert_pg_type!(i32, row, index)),
+            "DATE" => ArrowType::Date32(convert_pg_type!(NaiveDate, row, index)),
+            "TIME" => ArrowType::Time32(convert_pg_type!(NaiveTime, row, index)),
+            "TIMETZ" => {
+                let time = row.try_get::<PgTimeTz, usize>(index).ok();
+                time.map_or_else(|| ArrowType::Void, |time| ArrowType::Time32(time.time))
+            }
             "UUID" => ArrowType::Uuid(convert_pg_type!(Uuid, row, index)),
             "VOID" => ArrowType::Void,
             // try to convert others to a string
