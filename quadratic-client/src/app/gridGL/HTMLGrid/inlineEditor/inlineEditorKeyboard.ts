@@ -159,7 +159,7 @@ class InlineEditorKeyboard {
   };
 
   // Resets the keyboard position after cursorIsMoving has ended.
-  resetKeyboardPosition() {
+  resetKeyboardPosition(skipFocus?: boolean) {
     const location = inlineEditorHandler.location;
     if (!location) return;
 
@@ -178,12 +178,14 @@ class InlineEditorKeyboard {
     if (sheets.sheet.id !== location.sheetId) {
       sheets.current = location.sheetId;
 
-      // We need the timeout to wait for the sheet to change (and all events to
-      // handle) before we can focus on the inline editor and set cursorIsMoving
-      // to false.
-      setTimeout(() => {
-        inlineEditorMonaco.focus();
-      }, 0);
+      if (!skipFocus) {
+        // We need the timeout to wait for the sheet to change (and all events to
+        // handle) before we can focus on the inline editor and set cursorIsMoving
+        // to false.
+        setTimeout(() => {
+          inlineEditorMonaco.focus();
+        }, 0);
+      }
     }
   }
 }
