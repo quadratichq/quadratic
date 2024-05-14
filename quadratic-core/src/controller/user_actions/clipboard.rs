@@ -163,17 +163,7 @@ impl GridController {
                         );
                     }
                     if cell_wrap.is_some() {
-                        match cell_wrap.unwrap() {
-                            CellWrap::Overflow => {
-                                style.push_str("overflow: visible; white-space: nowrap;")
-                            }
-                            CellWrap::Wrap => style.push_str(
-                                "overflow: hidden; white-space: normal; word-wrap: break-word;",
-                            ),
-                            CellWrap::Clip => {
-                                style.push_str("overflow: hidden; white-space: clip;")
-                            }
-                        }
+                        style.push_str(cell_wrap.unwrap().as_css_string());
                     }
 
                     style.push('"');
