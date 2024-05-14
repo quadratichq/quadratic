@@ -381,7 +381,7 @@ export class CellsLabels {
     cellsHash.dirty = renderCells;
   }
 
-  setOffsets(column: number | undefined, row: number | undefined, delta: number) {
+  setOffsetsDelta(column: number | undefined, row: number | undefined, delta: number) {
     if (column !== undefined) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
       this.sheetOffsets.setColumnWidth(column, size);
@@ -389,6 +389,21 @@ export class CellsLabels {
       const size = this.sheetOffsets.getRowHeight(row) - delta;
       this.sheetOffsets.setRowHeight(row, size);
     }
+    if (delta) {
+      this.adjustHeadings(delta, column, row);
+    }
+  }
+
+  setOffsetsSize(column: number | undefined, row: number | undefined, size: number) {
+    let delta = 0;
+    if (column !== undefined) {
+      delta = this.sheetOffsets.getColumnWidth(column) - size;
+      this.sheetOffsets.setColumnWidth(column, size);
+    } else if (row !== undefined) {
+      delta = this.sheetOffsets.getRowHeight(row) - size;
+      this.sheetOffsets.setRowHeight(row, size);
+    }
+
     if (delta) {
       this.adjustHeadings(delta, column, row);
     }
