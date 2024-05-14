@@ -148,9 +148,12 @@ class InlineEditorFormula {
 
   // Returns whether we are editing a formula only if it is valid (used for
   // PointerDown checks to differentiate between selecting a cell and closing
-  // the inline formula editor).
+  // the inline formula editor). Also checks if there is a selection (which will
+  // be replaced by pointer down).
   isFormulaValid(testFormula?: string, skipCloseParenthesisCheck?: true): boolean {
     if (inlineEditorHandler.cursorIsMoving) return false;
+    if (inlineEditorMonaco.hasSelection()) return false;
+
     const location = inlineEditorHandler.location;
     if (!location) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);

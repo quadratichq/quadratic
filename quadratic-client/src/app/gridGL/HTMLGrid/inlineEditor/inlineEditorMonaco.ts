@@ -277,6 +277,14 @@ class InlineEditorMonaco {
     }
     this.editor.trigger('keyboard', 'type', e);
   }
+
+  hasSelection(): boolean {
+    if (!this.editor) {
+      throw new Error('Expected editor to be defined in hasSelection');
+    }
+    const selection = this.editor.getSelection();
+    return selection ? !selection.isEmpty() : false;
+  }
 }
 
 export const inlineEditorMonaco = new InlineEditorMonaco();
