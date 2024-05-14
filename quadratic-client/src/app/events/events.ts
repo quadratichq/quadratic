@@ -78,6 +78,7 @@ interface EventTypes {
 
   offlineTransactions: (transactions: number, operations: number) => void;
 
+  codeEditor: () => void;
   cellMoving: (move: boolean) => void;
 }
 
