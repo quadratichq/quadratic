@@ -1,8 +1,7 @@
-use std::str::FromStr;
-
 use bigdecimal::BigDecimal;
-use chrono::{DateTime, FixedOffset, Local, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::{
     postgres::{types::PgTimeTz, PgColumn, PgConnectOptions, PgRow},
     Column, ConnectOptions, PgConnection, Row, TypeInfo,
@@ -103,7 +102,16 @@ impl Connection for PostgresConnection {
                 let time = row.try_get::<PgTimeTz, usize>(index).ok();
                 time.map_or_else(|| ArrowType::Void, |time| ArrowType::Time32(time.time))
             }
+            "INTERVAL" => {
+                // TODO(ddimaria): implement once we support intervals
+                // let interval = row.try_get::<PgInterval, usize>(index).ok();
+                // PgInterval { months: -2, days: 0, microseconds: 0
+                ArrowType::Void
+            }
+            "JSON" => ArrowType::Json(convert_pg_type!(Value, row, index)),
+            "JSONB" => ArrowType::Jsonb(convert_pg_type!(Value, row, index)),
             "UUID" => ArrowType::Uuid(convert_pg_type!(Uuid, row, index)),
+            "XML" => ArrowType::Void,
             "VOID" => ArrowType::Void,
             // try to convert others to a string
             _ => ArrowType::Utf8(convert_pg_type!(String, row, index)),

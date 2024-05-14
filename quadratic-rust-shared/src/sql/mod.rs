@@ -11,13 +11,17 @@ use bytes::Bytes;
 use chrono::{DateTime, Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
 use futures_util::Future;
 use parquet::arrow::ArrowWriter;
+use serde_json::Value;
 use sqlx::{Column, Row};
 use std::sync::Arc;
 use uuid::Uuid;
 
 use self::{mysql_connection::MysqlConnection, postgres_connection::PostgresConnection};
 use crate::{error::Result, SharedError, Sql};
-use crate::{vec_arrow_type_to_array_ref, vec_time_arrow_type_to_array_ref};
+use crate::{
+    vec_arrow_type_to_array_ref, vec_string_arrow_type_to_array_ref,
+    vec_time_arrow_type_to_array_ref,
+};
 
 pub mod mysql_connection;
 pub mod postgres_connection;
@@ -44,8 +48,11 @@ pub enum ArrowType {
     TimeTz(NaiveTime),
     Timestamp(NaiveDateTime),
     TimestampTz(DateTime<Local>),
+
     // Parquet supports Uuid, but Arrow does not
     Uuid(Uuid),
+    Json(Value),
+    Jsonb(Value),
     Void,
     Unsupported,
 }
@@ -68,25 +75,15 @@ impl ArrowType {
             ArrowType::Float64(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Float64, Float64Array, values)
             }
-            // TODO(ddimaria): remove unwrap and convert to a void array once implemented
             ArrowType::BigDecimal(_) => {
                 let converted = values.iter().filter_map(|value| match value {
-                    ArrowType::BigDecimal(value) => {
-                        Some((*value).to_string().parse::<f64>().unwrap())
-                    }
+                    ArrowType::BigDecimal(value) => (*value).to_string().parse::<f64>().ok(),
                     _ => None,
                 });
 
                 Arc::new(Float64Array::from_iter(converted)) as ArrayRef
             }
-            ArrowType::Utf8(_) => {
-                let converted = values.iter().filter_map(|value| match value {
-                    ArrowType::Utf8(value) => Some(value.as_str()),
-                    _ => None,
-                });
-
-                Arc::new(StringArray::from_iter_values(converted)) as ArrayRef
-            }
+            ArrowType::Utf8(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Utf8, values),
             ArrowType::Boolean(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Boolean, BooleanArray, values)
             }
@@ -103,36 +100,22 @@ impl ArrowType {
             }
             ArrowType::Time32(_) | ArrowType::TimeTz(_) => {
                 let converted = values.iter().flat_map(|value| match value {
-                    ArrowType::Time32(value) => {
-                        Some(value.num_seconds_from_midnight() as i32 as i32)
-                    }
+                    ArrowType::Time32(value) => Some(value.num_seconds_from_midnight() as i32),
                     _ => None,
                 });
 
                 Arc::new(Time32SecondArray::from_iter_values(converted)) as ArrayRef
             }
             ArrowType::Timestamp(_) => {
-                vec_time_arrow_type_to_array_ref!(
-                    ArrowType::Timestamp,
-                    TimestampMillisecondArray,
-                    values
-                )
+                vec_time_arrow_type_to_array_ref!(ArrowType::Timestamp, values)
             }
-            ArrowType::TimestampTz(_) => {
-                vec_time_arrow_type_to_array_ref!(
-                    ArrowType::Timestamp,
-                    TimestampMillisecondArray,
-                    values
-                )
-            }
-            ArrowType::Uuid(_) => {
-                let converted = values.iter().filter_map(|value| match value {
-                    ArrowType::Uuid(value) => Some(value.to_string()),
-                    _ => None,
-                });
 
-                Arc::new(StringArray::from_iter_values(converted)) as ArrayRef
+            ArrowType::TimestampTz(_) => {
+                vec_time_arrow_type_to_array_ref!(ArrowType::Timestamp, values)
             }
+            ArrowType::Json(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Json, values),
+            ArrowType::Jsonb(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Jsonb, values),
+            ArrowType::Uuid(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Uuid, values),
             // ArrowType::Void => Arc::new(NullArray::new(1)),
             // ArrowType::Unsupported => Arc::new(NullArray::new(1)),
             _ => {
@@ -156,14 +139,26 @@ macro_rules! vec_arrow_type_to_array_ref {
 }
 
 #[macro_export]
+macro_rules! vec_string_arrow_type_to_array_ref {
+    ( $arrow_type_kind:path, $values:ident ) => {{
+        let converted = $values.iter().filter_map(|value| match value {
+            $arrow_type_kind(value) => Some(value.to_string()),
+            _ => None,
+        });
+
+        Arc::new(<StringArray>::from_iter_values(converted)) as ArrayRef
+    }};
+}
+
+#[macro_export]
 macro_rules! vec_time_arrow_type_to_array_ref {
-    ( $arrow_type_kind:path, $arrow_kind:ty, $values:ident ) => {{
+    ( $arrow_type_kind:path, $values:ident ) => {{
         let converted = $values.iter().map(|value| match value {
             $arrow_type_kind(value) => Some(value.and_utc().timestamp_millis()),
             _ => None,
         });
 
-        Arc::new(<$arrow_kind>::from_iter(converted)) as ArrayRef
+        Arc::new(<TimestampMillisecondArray>::from_iter(converted)) as ArrayRef
     }};
 }
 
