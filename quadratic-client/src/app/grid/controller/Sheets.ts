@@ -138,13 +138,13 @@ class Sheets {
       pixiAppSettings.changeInput(false);
       pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
-      pixiApp.loadViewport();
+      pixiApp.viewport.loadViewport();
     }
   }
 
-  getSheetByName(name: string): Sheet | undefined {
+  getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {
     for (const sheet of this.sheets) {
-      if (sheet.name === name) {
+      if (sheet.name === name || (urlCompare && decodeURI(name).toLowerCase() === sheet.name.toLowerCase())) {
         return sheet;
       }
     }

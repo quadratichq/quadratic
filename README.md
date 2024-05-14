@@ -21,10 +21,6 @@ The `main` branch is always live for individuals and teams to use.
 
 Read the documentation ⟶ <https://docs.quadratichq.com>
 
-## Community
-
-Join the conversation on our Discord channel ⟶ <https://discord.gg/quadratic>
-
 # What is Quadratic?
 
 Quadratic is a Web-based spreadsheet application that runs in the browser and as a native app (via Electron).

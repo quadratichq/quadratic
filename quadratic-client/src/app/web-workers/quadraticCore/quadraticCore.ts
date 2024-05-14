@@ -774,6 +774,30 @@ class QuadraticCore {
     });
   }
 
+  moveCells(
+    sourceX: number,
+    sourceY: number,
+    sourceWidth: number,
+    sourceHeight: number,
+    sourceSheetId: string,
+    targetX: number,
+    targetY: number,
+    targetSheetId: string
+  ) {
+    this.send({
+      type: 'clientCoreMoveCells',
+      sourceSheetId,
+      sourceX,
+      sourceY,
+      sourceWidth,
+      sourceHeight,
+      targetSheetId,
+      targetX,
+      targetY,
+      cursor: sheets.getCursorPosition(),
+    });
+  }
+
   //#endregion
 
   //#region Bounds
