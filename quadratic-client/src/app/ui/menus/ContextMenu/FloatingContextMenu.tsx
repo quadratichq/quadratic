@@ -1,5 +1,6 @@
 import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 import { copySelectionToPNG, fullClipboardSupport, pasteFromClipboard } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
@@ -49,7 +50,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface Props {
@@ -125,6 +126,8 @@ export const FloatingContextMenu = (props: Props) => {
 
     // Hide if currently selecting
     if (pixiApp.pointer?.pointerDown?.active) visibility = 'vanish';
+
+    if (pixiApp.pointer.pointerCellMoving.state) visibility = 'hidden';
 
     // Hide if in presentation mode
     if (pixiAppSettings.presentationMode) visibility = 'vanish';
@@ -208,8 +211,12 @@ export const FloatingContextMenu = (props: Props) => {
     return transform;
   }, [container, showContextMenu, editorInteractionState.permissions, moreMenuProps.state, moreMenuToggle]);
 
+  // trigger is used to hide the menu when cellMoving
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setTrigger] = useState(0);
   useEffect(() => {
     const { viewport } = pixiApp;
+    const trigger = () => setTrigger((prev) => prev + 1);
 
     if (!viewport) return;
     viewport.on('moved', updateContextMenuCSSTransform);
@@ -217,6 +224,7 @@ export const FloatingContextMenu = (props: Props) => {
     document.addEventListener('pointerup', updateContextMenuCSSTransform);
     window.addEventListener('resize', updateContextMenuCSSTransform);
     window.addEventListener('keyup', updateContextMenuCSSTransform);
+    events.on('cellMoving', trigger);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
@@ -224,6 +232,7 @@ export const FloatingContextMenu = (props: Props) => {
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
       window.removeEventListener('resize', updateContextMenuCSSTransform);
       window.addEventListener('keyup', updateContextMenuCSSTransform);
+      events.off('cellMoving', trigger);
     };
   }, [updateContextMenuCSSTransform]);
 

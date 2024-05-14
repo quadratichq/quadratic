@@ -47,19 +47,16 @@ impl GridController {
                     sheet_id,
                 });
             }
-
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && !client_resized
                 && !transaction.is_server()
             {
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    crate::wasm_bindings::js::jsOffsetsModified(
-                        sheet.id.to_string(),
-                        Some(column),
-                        None,
-                        new_size,
-                    );
-                }
+                crate::wasm_bindings::js::jsOffsetsModified(
+                    sheet_id.to_string(),
+                    Some(column),
+                    None,
+                    new_size,
+                );
             }
         }
     }
