@@ -25,7 +25,7 @@ export const CodeHint = () => {
       setCellHasValue(newCellHasValue);
 
       const offsets = sheets.sheet.getCellOffsets(x, y);
-      if (ref.current && ref.current.offsetWidth < offsets.width) {
+      if (ref.current && ref.current.offsetWidth < offsets.width - CURSOR_THICKNESS * 2) {
         setOffsets(offsets);
         setHide(false);
       } else {
