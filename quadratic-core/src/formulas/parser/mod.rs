@@ -317,5 +317,7 @@ mod tests {
         assert!(!parse_and_check_formula("SUM()"));
         assert!(!parse_and_check_formula("SUM("));
         assert!(!parse_and_check_formula("NOT_A_FUNCTION()"));
+        assert!(parse_and_check_formula("SUM(10, 20, 30)"));
+        assert!(parse_and_check_formula("SUM(A1, A2, A3, A4)"));
     }
 }

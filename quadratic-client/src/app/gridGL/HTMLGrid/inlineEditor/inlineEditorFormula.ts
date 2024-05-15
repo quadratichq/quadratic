@@ -115,10 +115,7 @@ class InlineEditorFormula {
 
       // We start the cursorIsMoving unless we've returned to the home cell from
       // a Backspace or Escape key.
-      if (inlineEditorKeyboard.escapeBackspacePressed) {
-        console.log('backspace pressed...');
-        return;
-      }
+      if (inlineEditorKeyboard.escapeBackspacePressed) return;
 
       inlineEditorHandler.cursorIsMoving = true;
       inlineEditorMonaco.removeSelection();
