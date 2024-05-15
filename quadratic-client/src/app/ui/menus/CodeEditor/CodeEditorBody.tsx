@@ -19,7 +19,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
-import { SheetPosTS } from '@/app/gridGL/types/size.js';
+import { SheetPosTS } from '@/app/gridGL/types/size';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
