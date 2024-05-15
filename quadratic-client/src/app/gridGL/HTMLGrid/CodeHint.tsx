@@ -34,6 +34,7 @@ export const CodeHint = () => {
       setOffsets(sheets.sheet.getCellOffsets(x, y));
     };
     updateCursor();
+    events.on('setCursor', updateCursor);
     events.on('cursorPosition', updateCursor);
     events.on('changeSheet', updateCursor);
     events.on('cursorPosition', updateCursor);
@@ -42,6 +43,7 @@ export const CodeHint = () => {
     events.on('resizeHeadingColumn', updateCursor);
 
     return () => {
+      events.off('setCursor', updateCursor);
       events.off('cursorPosition', updateCursor);
       events.off('changeSheet', updateCursor);
       events.off('cursorPosition', updateCursor);
