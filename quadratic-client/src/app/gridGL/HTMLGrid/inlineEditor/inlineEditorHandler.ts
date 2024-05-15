@@ -208,8 +208,8 @@ class InlineEditorHandler {
       }
       this.formulaExpandButton.style.lineHeight = this.height + 'px';
       inlineEditorMonaco.setColumn(value.length + 1);
-      this.updateMonacoCursorPosition();
       this.showDiv();
+      this.updateMonacoCursorPosition();
       this.keepCursorVisible();
       inlineEditorMonaco.focus();
     } else {
