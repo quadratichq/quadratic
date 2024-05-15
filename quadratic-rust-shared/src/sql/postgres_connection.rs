@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
+use arrow::datatypes::Date32Type;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{
-    postgres::{types::PgTimeTz, PgColumn, PgConnectOptions, PgRow},
+    postgres::{types::PgTimeTz, PgColumn, PgConnectOptions, PgRow, PgTypeKind},
     Column, ConnectOptions, PgConnection, Row, TypeInfo,
 };
 use uuid::Uuid;
@@ -82,7 +85,7 @@ impl Connection for PostgresConnection {
 
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
+            "TEXT" | "VARCHAR" | "CHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
                 ArrowType::Utf8(convert_pg_type!(String, row, index))
             }
             "SMALLINT" | "SMALLSERIAL" | "INT2" => {
@@ -96,7 +99,10 @@ impl Connection for PostgresConnection {
             "NUMERIC" => ArrowType::BigDecimal(convert_pg_type!(BigDecimal, row, index)),
             "TIMESTAMP" => ArrowType::Timestamp(convert_pg_type!(NaiveDateTime, row, index)),
             "TIMESTAMPTZ" => ArrowType::TimestampTz(convert_pg_type!(DateTime<Local>, row, index)),
-            "DATE" => ArrowType::Date32(convert_pg_type!(NaiveDate, row, index)),
+            "DATE" => {
+                let naive_date = convert_pg_type!(NaiveDate, row, index);
+                ArrowType::Date32(Date32Type::from_naive_date(naive_date))
+            }
             "TIME" => ArrowType::Time32(convert_pg_type!(NaiveTime, row, index)),
             "TIMETZ" => {
                 let time = row.try_get::<PgTimeTz, usize>(index).ok();
@@ -114,7 +120,33 @@ impl Connection for PostgresConnection {
             "XML" => ArrowType::Void,
             "VOID" => ArrowType::Void,
             // try to convert others to a string
-            _ => ArrowType::Utf8(convert_pg_type!(String, row, index)),
+            _ => {
+                match column.type_info().kind() {
+                    PgTypeKind::Enum(_) => {
+                        let value = row
+                            .try_get_raw(index)
+                            .and_then(|value| Ok(value.as_str().unwrap_or_default().to_string()));
+
+                        if let Ok(value) = value {
+                            return ArrowType::Utf8(value);
+                        }
+                    }
+                    PgTypeKind::Simple => {}
+                    PgTypeKind::Pseudo => {}
+                    PgTypeKind::Domain(_type_info) => {}
+                    PgTypeKind::Composite(_type_info_array) => {}
+                    PgTypeKind::Array(_type_info) => {}
+                    PgTypeKind::Range(_type_info) => {}
+                };
+
+                // println!(
+                //     "Unknown type: {:?}",
+                //     row.try_get_raw(index)
+                //         .and_then(|value| Ok(value.as_str().unwrap_or_default().to_string()))
+                // );
+
+                ArrowType::Utf8(convert_pg_type!(String, row, index))
+            }
         }
     }
 }

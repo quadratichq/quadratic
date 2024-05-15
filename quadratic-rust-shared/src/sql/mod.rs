@@ -41,16 +41,14 @@ pub enum ArrowType {
     BigDecimal(BigDecimal),
     Utf8(String),
     Boolean(bool),
-    Date32(NaiveDate),
+    Date32(i32),
     Date64(i64),
     Time32(NaiveTime),
     Time64(i64),
     TimeTz(NaiveTime),
     Timestamp(NaiveDateTime),
     TimestampTz(DateTime<Local>),
-
-    // Parquet supports Uuid, but Arrow does not
-    Uuid(Uuid),
+    Uuid(Uuid), // Parquet supports Uuid, but Arrow does not
     Json(Value),
     Jsonb(Value),
     Void,
@@ -89,7 +87,10 @@ impl ArrowType {
             }
             ArrowType::Date32(_) => {
                 let converted = values.iter().flat_map(|value| match value {
-                    ArrowType::Date32(value) => Some(value.num_days_from_ce()),
+                    ArrowType::Date32(value) => {
+                        println!("value: {:?}", value);
+                        Some(*value)
+                    }
                     _ => None,
                 });
 
@@ -107,11 +108,11 @@ impl ArrowType {
                 Arc::new(Time32SecondArray::from_iter_values(converted)) as ArrayRef
             }
             ArrowType::Timestamp(_) => {
-                vec_time_arrow_type_to_array_ref!(ArrowType::Timestamp, values)
+                vec_time_arrow_type_to_array_ref!(values)
             }
 
             ArrowType::TimestampTz(_) => {
-                vec_time_arrow_type_to_array_ref!(ArrowType::Timestamp, values)
+                vec_time_arrow_type_to_array_ref!(values)
             }
             ArrowType::Json(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Json, values),
             ArrowType::Jsonb(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Jsonb, values),
@@ -152,9 +153,10 @@ macro_rules! vec_string_arrow_type_to_array_ref {
 
 #[macro_export]
 macro_rules! vec_time_arrow_type_to_array_ref {
-    ( $arrow_type_kind:path, $values:ident ) => {{
+    ( $values:ident ) => {{
         let converted = $values.iter().map(|value| match value {
-            $arrow_type_kind(value) => Some(value.and_utc().timestamp_millis()),
+            ArrowType::Timestamp(value) => Some(value.and_utc().timestamp_millis()),
+            ArrowType::TimestampTz(value) => Some(value.timestamp_millis()),
             _ => None,
         });
 
@@ -229,27 +231,19 @@ pub trait Connection {
             })
             .collect::<Vec<Field>>();
 
-        for (index, col) in cols.iter().enumerate() {
-            println!(
-                "{} ({}) = {:?}",
-                fields[index].name(),
-                fields[index].data_type(),
-                col
-            );
-        }
+        // for (index, col) in cols.iter().enumerate() {
+        //     println!(
+        //         "{} ({}) = {:?}",
+        //         fields[index].name(),
+        //         fields[index].data_type(),
+        //         col
+        //     );
+        // }
 
         let schema = Schema::new(fields);
-
-        let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)
-            .map_err(|e| SharedError::Sql(Sql::ParquetConversion(e.to_string())))?;
-
-        writer
-            .write(&RecordBatch::try_new(Arc::new(schema.clone()), cols).unwrap())
-            .map_err(|e| SharedError::Sql(Sql::ParquetConversion(e.to_string())))?;
-
-        let parquet = writer
-            .into_inner()
-            .map_err(|e| SharedError::Sql(Sql::ParquetConversion(e.to_string())))?;
+        let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)?;
+        writer.write(&RecordBatch::try_new(Arc::new(schema), cols)?)?;
+        let parquet = writer.into_inner()?;
 
         Ok(parquet.into())
     }
