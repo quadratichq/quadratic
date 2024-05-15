@@ -154,13 +154,13 @@ class InlineEditorFormula {
     const location = inlineEditorHandler.location;
     if (!location) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
-    if (!checkFormula(formula)) {
+    if (!checkFormula(formula, location.x, location.y)) {
       if (skipCloseParenthesisCheck) {
         return false;
       }
       const value = this.closeParentheses();
       if (value !== testFormula) {
-        return checkFormula(formula);
+        return checkFormula(formula, location.x, location.y);
       } else {
         return false;
       }

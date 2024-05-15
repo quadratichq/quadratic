@@ -87,8 +87,8 @@ pub fn parse_formula(formula_string: &str, x: f64, y: f64) -> JsValue {
 }
 
 #[wasm_bindgen(js_name = "checkFormula")]
-pub fn check_formula(formula_string: &str) -> bool {
-    formulas::parse_and_check_formula(formula_string)
+pub fn check_formula(formula_string: &str, x: i32, y: i32) -> bool {
+    formulas::parse_and_check_formula(formula_string, x as i64, y as i64)
 }
 
 #[cfg(test)]
