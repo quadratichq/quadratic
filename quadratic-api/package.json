@@ -41,7 +41,7 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "express-async-errors": "^3.1.1",
-    "express-jwt": "^7.7.7",
+    "express-jwt": "^8.4.1",
     "express-rate-limit": "^6.7.0",
     "express-validator": "^7.0.1",
     "helmet": "^6.0.1",
