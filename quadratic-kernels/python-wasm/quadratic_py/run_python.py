@@ -40,7 +40,8 @@ async def run_python(code: str, pos: Tuple[int, int]):
     serr = StringIO()
     output_value = None
     globals['pos'] = lambda: (pos.x, pos.y)
-    globals['rel_cell'] = lambda x, y: getCell(x + pos.x, y + pos.y)
+    globals['rel_cell'] = lambda x, y: cell(x + pos.x, y + pos.y)
+    globals['rel_cells'] = lambda first, second, option: cells((first[0] + pos.x, first[1] + pos.y), (second[0] + pos.x, second[1] + pos.y), option)
     globals['rc'] = globals['rel_cell']
 
     try:

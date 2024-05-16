@@ -21,6 +21,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { Diagnostic } from 'vscode-languageserver-types';
 import { events } from '@/app/events/events';
 import { SheetRect } from '@/app/quadratic-core-types';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
@@ -130,6 +131,9 @@ export const CodeEditorBody = (props: Props) => {
         () => closeEditor(false),
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
+      editorRef.current.addCommand(monacoRef.current.KeyCode.KeyL | monacoRef.current.KeyMod.CtrlCmd, () => {
+        insertCellRef(editorInteractionState);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closeEditor, didMount]);
