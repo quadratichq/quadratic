@@ -140,6 +140,8 @@ class InlineEditorKeyboard {
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
         showCellTypeMenu: true,
+        selectedCell: { x: sheets.sheet.cursor.originPosition.x, y: sheets.sheet.cursor.originPosition.y },
+        selectedCellSheet: sheets.sheet.id,
       });
       e.preventDefault();
       e.stopPropagation();
