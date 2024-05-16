@@ -20,6 +20,7 @@ def attempt_fix_await(code: str) -> str:
     code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)cells\[", r"\1await cells[", code)
     code = re.sub(r"([^a-zA-Z0-9]|^)rel_await cell\(", r"\1await rel_cell(", code) # intentional
+    code = re.sub(r"([^a-zA-Z0-9]|^)rel_await cells\(", r"\1await rel_cells(", code) # intentional
     code = re.sub(r"([^a-zA-Z0-9]|^)rc\(", r"\1await rc(", code)
 
     code = code.replace("await await getCell", "await getCell")
@@ -29,6 +30,7 @@ def attempt_fix_await(code: str) -> str:
     code = code.replace("await await cells(", "await cells(")
     code = code.replace("await await cells[", "await cells[")
     code = code.replace("await await rel_cell[", "await rel_cell(")
+    code = code.replace("await await rel_cells[", "await rel_cells(")
     code = code.replace("await await rc[", "await rc(")
 
     return code
@@ -47,18 +49,18 @@ def normalize_bool(value: str) -> bool:
 
 # Convert from python types to quadratic types
 def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | time | datetime | pd.Period | timedelta | None) -> Tuple[str, str]:
-    
-    try:    
+
+    try:
         if value == None or value == "":
             return ("", "blank")
-        
+
         if type(value) == str:
             return (str(value), "text")
-            
+
         value = ast.literal_eval(value)
     except:
         pass
-    
+
     try:
         if type(value) == int or type(value) == float or isinstance(value, np.number):
             return (str(value), "number")
@@ -66,7 +68,7 @@ def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | ti
             return (str(bool(value)), "logical")
         elif isinstance(value, (pd.Timestamp, np.datetime64, date, time, datetime)) or pd.api.types.is_datetime64_dtype(value):
             return (str(to_unix_timestamp(value)), "instant")
-        
+
         # TODO(ddimaria): implement when we implement duration in Rust
         # elif isinstance(value, (pd.Period, np.timedelta64, timedelta)):
         # elif isinstance(value, pd.Period):
@@ -75,7 +77,7 @@ def to_quadratic_type(value: int | float | str | bool | pd.Timestamp | date | ti
             return (str(value), "text")
     except:
         return (str(value), "text")
-    
+
 
 # Convert from quadratic types to python types
 def to_python_type(value: str, value_type: str) -> int | float | str | bool:
