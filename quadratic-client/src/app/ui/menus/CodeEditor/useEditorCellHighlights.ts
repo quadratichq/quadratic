@@ -91,7 +91,6 @@ export const useEditorCellHighlights = (
 
       if (language === 'Python') {
         parsed = parsePython(cellsAccessed) as ParseFormulaReturnType;
-        console.log(cellsAccessed, parsed);
       }
 
       if (language === 'Formula') {
