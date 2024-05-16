@@ -18,6 +18,7 @@
   ],
   "type": "module",
   "scripts": {
+    "preinstall": "npx npm-force-resolutions",
     "start": "node dev",
     "api:start": "npm start --workspace=quadratic-api",
     "clean": "npm exec --workspaces -- npx rimraf node_modules && npx rimraf node_modules",
@@ -53,8 +54,12 @@
     "docker:down:kill-volumes": "docker compose down -v"
   },
   "dependencies": {
+    "npm-force-resolutions": "^0.0.10",
     "vitest": "^1.5.0",
     "zod": "^3.22.4"
+  },
+  "resolutions": {
+    "axios": "0.28.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.3",
