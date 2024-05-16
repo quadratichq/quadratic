@@ -19,6 +19,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { events } from '@/app/events/events';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
@@ -62,6 +63,16 @@ export const CodeEditorBody = (props: Props) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInteractionState.showCodeEditor]);
+
+  useEffect(() => {
+    const insertText = (text: string) => {
+      editorRef.current?.trigger('keyboard', 'type', { text });
+    };
+    events.on('insertCodeEditorText', insertText);
+    return () => {
+      events.off('insertCodeEditorText', insertText);
+    };
+  });
 
   const runEditorAction = (e: CustomEvent<string>) => editorRef.current?.getAction(e.detail)?.run();
   useEventListener('run-editor-action', runEditorAction);
