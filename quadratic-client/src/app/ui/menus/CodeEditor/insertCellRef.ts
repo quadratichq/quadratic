@@ -3,7 +3,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 
-export const insertCellRef = (editorInteractionState: EditorInteractionState) => {
+export const insertCellRef = (editorInteractionState: EditorInteractionState, relative?: boolean) => {
   const { selectedCell, selectedCellSheet, mode: language } = editorInteractionState;
   let ref = '';
   let sheet = '';
@@ -38,16 +38,24 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState) =>
       if (sheet) {
         ref = `cells((${start.x}, ${start.y}), (${end.x}, ${end.y}), '${sheet}')`;
       } else {
-        ref = `rel_cells((${start.x - selectedCell.x}, ${start.y - selectedCell.y}), (${end.x - selectedCell.x}, ${
-          end.y - selectedCell.y
-        }))`;
+        if (relative) {
+          ref = `rel_cells((${start.x - selectedCell.x}, ${start.y - selectedCell.y}), (${end.x - selectedCell.x}, ${
+            end.y - selectedCell.y
+          }))`;
+        } else {
+          ref = `cells((${start.x}, ${start.y}), (${end.x}, ${end.y}))`;
+        }
       }
     } else {
       const location = cursor.originPosition;
       if (sheet) {
         ref = `cell(${location.x}, ${location.y}, '${sheet}')`;
       } else {
-        ref = `rel_cell(${location.x - selectedCell.x}, ${location.y - selectedCell.y})`;
+        if (relative) {
+          ref = `rel_cell(${location.x - selectedCell.x}, ${location.y - selectedCell.y})`;
+        } else {
+          ref = `cell(${location.x}, ${location.y})`;
+        }
       }
     }
   } else if (language === 'Javascript') {
@@ -57,16 +65,24 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState) =>
       if (sheet) {
         ref = `cells((${start.x}, ${start.y}), (${end.x}, ${end.y}), '${sheet}')`;
       } else {
-        ref = `relCells((${start.x - selectedCell.x}, ${start.y - selectedCell.y}), (${end.x - selectedCell.x}, ${
-          end.y - selectedCell.y
-        }))`;
+        if (relative) {
+          ref = `relCells((${start.x - selectedCell.x}, ${start.y - selectedCell.y}), (${end.x - selectedCell.x}, ${
+            end.y - selectedCell.y
+          }))`;
+        } else {
+          ref = `cells((${start.x}, ${start.y}), (${end.x}, ${end.y}))`;
+        }
       }
     } else {
       const location = cursor.originPosition;
       if (sheet) {
         ref = `cell(${location.x}, ${location.y}, '${sheet}')`;
       } else {
-        ref = `relCell(${location.x - selectedCell.x}, ${location.y - selectedCell.y})`;
+        if (relative) {
+          ref = `relCell(${location.x - selectedCell.x}, ${location.y - selectedCell.y})`;
+        } else {
+          ref = `cell(${location.x}, ${location.y})`;
+        }
       }
     }
   }

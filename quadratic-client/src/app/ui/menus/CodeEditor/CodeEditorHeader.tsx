@@ -148,7 +148,8 @@ export const CodeEditorHeader = (props: Props) => {
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        {hasPermission && <CodeEditorRefButton />}
+        {hasPermission && <CodeEditorRefButton relative={true} />}
+        {hasPermission && <CodeEditorRefButton relative={false} />}
         {hasPermission && language === 'Python' && <SnippetsPopover />}
         {hasPermission && (
           <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">

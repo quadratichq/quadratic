@@ -4,11 +4,16 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import AddLocationIcon from '@mui/icons-material/AddLocation';
+import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import { IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const CodeEditorRefButton = () => {
+interface Props {
+  relative: boolean;
+}
+
+export const CodeEditorRefButton = (props: Props) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
 
   const [disabled, setDisabled] = useState(true);
@@ -29,10 +34,14 @@ export const CodeEditorRefButton = () => {
 
   return (
     <div className="code-editor-ref-button">
-      <TooltipHint title="Insert cell reference" placement="bottom">
+      <TooltipHint title={`Insert ${props.relative ? 'relative ' : ''}cell reference`} placement="bottom">
         <span>
-          <IconButton disabled={disabled} size="small" onClick={() => insertCellRef(editorInteractionState)}>
-            <AddLocationIcon fontSize="small" />
+          <IconButton
+            disabled={disabled}
+            size="small"
+            onClick={() => insertCellRef(editorInteractionState, props.relative)}
+          >
+            {props.relative ? <AddLocationIcon fontSize="small" /> : <AddLocationAltIcon fontSize="small" />}
           </IconButton>
         </span>
       </TooltipHint>
