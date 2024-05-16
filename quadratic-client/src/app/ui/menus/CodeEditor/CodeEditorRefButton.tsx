@@ -41,11 +41,19 @@ export const CodeEditorRefButton = () => {
         const start = getA1Notation(startLocation.x, startLocation.y);
         const endLocation = cursor.multiCursor.terminalPosition;
         const end = getA1Notation(endLocation.x, endLocation.y);
-        ref = `'${sheet}'!${start}:${end}`;
+        if (sheet) {
+          ref = `'${sheet}'!${start}:${end}`;
+        } else {
+          ref = `${start}:${end}`;
+        }
       } else {
         const location = cursor.originPosition;
         const a1Notation = getA1Notation(location.x, location.y);
-        ref = `'${sheet}'!${a1Notation}`;
+        if (sheet) {
+          ref = `'${sheet}'!${a1Notation}`;
+        } else {
+          ref = a1Notation;
+        }
       }
     } else if (language === 'Python') {
       if (cursor.multiCursor) {

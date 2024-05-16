@@ -29,6 +29,6 @@ export function parsePython(cellsAccessed?: SheetRect[] | null) {
       span: { start: 0, end: 0 },
     });
   });
-  console.log(parsedEditorContent);
+
   return parsedEditorContent;
 }
