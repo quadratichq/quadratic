@@ -1,6 +1,6 @@
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import Editor, { Monaco } from '@monaco-editor/react';
-import monaco from 'monaco-editor';
+import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -67,7 +67,16 @@ export const CodeEditorBody = (props: Props) => {
 
   useEffect(() => {
     const insertText = (text: string) => {
-      editorRef.current?.trigger('keyboard', 'type', { text });
+      if (!editorRef.current) return;
+      const position = editorRef.current.getPosition();
+      const model = editorRef.current.getModel();
+      if (!position || !model) return;
+      const selection = editorRef.current.getSelection();
+      const range =
+        selection || new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+      model.applyEdits([{ range, text }]);
+      editorRef.current.setPosition(range.getEndPosition().delta(text.length, 0));
+      editorRef.current.focus();
     };
     events.on('insertCodeEditorText', insertText);
     return () => {
