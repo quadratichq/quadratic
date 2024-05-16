@@ -26,11 +26,9 @@ use uuid::Uuid;
 
 use crate::{
     auth::get_middleware,
-    sql::postgres::{query as query_postgres, test as test_postgres},
-};
-use crate::{
     config::config,
     error::{ConnectionError, Result},
+    sql::postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
     state::State,
 };
 
@@ -70,6 +68,7 @@ pub(crate) fn app(state: State) -> Router {
         // protected routes
         .route("/postgres/test", post(test_postgres))
         .route("/postgres/query", post(query_postgres))
+        .route("/postgres/schema/:id", get(schema_postgres))
         // auth middleware
         .route_layer(auth)
         // state, required

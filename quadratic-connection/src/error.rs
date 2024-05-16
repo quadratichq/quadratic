@@ -95,19 +95,19 @@ impl From<jsonwebtoken::errors::Error> for ConnectionError {
 // convert ConnectionErrors into readable responses with appropriate status codes
 impl IntoResponse for ConnectionError {
     fn into_response(self) -> Response {
-        tracing::error!("Error: {:?}", self);
-
-        let (status, error) = match self {
+        let (status, error) = match &self {
             ConnectionError::InternalServer(error) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, clean_errors(error))
             }
-            ConnectionError::Authentication(error) => {
+            ConnectionError::Authentication(error) | ConnectionError::InvalidToken(error) => {
                 (StatusCode::UNAUTHORIZED, clean_errors(error))
             }
             ConnectionError::Query(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
-            ConnectionError::Connection(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
+            ConnectionError::Connection(error) => (StatusCode::NOT_FOUND, clean_errors(error)),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };
+
+        tracing::warn!("{} {}: {:?}", status, error, self);
 
         (status, error).into_response()
     }

@@ -1,6 +1,8 @@
 use axum::{http::HeaderMap, response::IntoResponse, Extension, Json};
-use quadratic_rust_shared::sql::Connection;
+use quadratic_rust_shared::sql::{Connection, SchemaTable};
+use serde::Serialize;
 use tokio::time::Instant;
+use uuid::Uuid;
 
 use crate::{
     error::Result,
@@ -10,6 +12,15 @@ use crate::{
 };
 
 pub(crate) mod postgres;
+
+#[derive(Debug, Serialize)]
+pub struct Schema {
+    id: Uuid,
+    name: String,
+    r#type: String,
+    database: String,
+    pub tables: Vec<SchemaTable>,
+}
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query_generic<T: Connection>(
@@ -25,15 +36,18 @@ pub(crate) async fn query_generic<T: Connection>(
 
     let start_connect = Instant::now();
     let pool = connection.connect().await?;
+
     headers.insert("ELAPSED-DATABASE-CONNECTION-MS", time_header(start_connect));
 
     let start_query = Instant::now();
     let rows = connection.query(pool, &sql_query.query).await?;
+
     headers.insert("RECORD-COUNT", number_header(rows.len()));
     headers.insert("ELAPSED-DATABASE-QUERY-MS", time_header(start_query));
 
     let start_conversion = Instant::now();
     let parquet = T::to_parquet(rows)?;
+
     headers.insert(
         "ELAPSED-PARQUET-CONVERSION-MS",
         time_header(start_conversion),

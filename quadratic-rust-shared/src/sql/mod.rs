@@ -4,13 +4,15 @@ use arrow::{
         Int32Array, Int64Array, RecordBatch, StringArray, Time32SecondArray,
         TimestampMillisecondArray,
     },
+    datatypes::Schema as ArrowSchema,
     datatypes::*,
 };
 use bigdecimal::BigDecimal;
 use bytes::Bytes;
-use chrono::{DateTime, Datelike, Local, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, Timelike};
 use futures_util::Future;
 use parquet::arrow::ArrowWriter;
+use serde::Serialize;
 use serde_json::Value;
 use sqlx::{Column, Row};
 use std::sync::Arc;
@@ -164,6 +166,26 @@ macro_rules! vec_time_arrow_type_to_array_ref {
     }};
 }
 
+#[derive(Debug, Serialize)]
+pub struct SchemaColumn {
+    name: String,
+    r#type: String,
+    is_nullable: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SchemaTable {
+    name: String,
+    schema: String,
+    columns: Vec<SchemaColumn>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DatabaseSchema {
+    database: String,
+    pub tables: Vec<SchemaTable>,
+}
+
 pub trait Connection {
     type Conn;
     type Row: Row;
@@ -174,6 +196,9 @@ pub trait Connection {
 
     /// Generically query a database
     fn query(&self, pool: Self::Conn, sql: &str) -> impl Future<Output = Result<Vec<Self::Row>>>;
+
+    /// Generically query a database
+    fn schema(&self, pool: Self::Conn) -> impl Future<Output = Result<DatabaseSchema>>;
 
     /// Convert a database-specific column to an Arrow type
     fn to_arrow(
@@ -240,7 +265,7 @@ pub trait Connection {
         //     );
         // }
 
-        let schema = Schema::new(fields);
+        let schema = ArrowSchema::new(fields);
         let mut writer = ArrowWriter::try_new(file, Arc::new(schema.clone()), None)?;
         writer.write(&RecordBatch::try_new(Arc::new(schema), cols)?)?;
         let parquet = writer.into_inner()?;

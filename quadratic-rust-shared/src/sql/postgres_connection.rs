@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use arrow::datatypes::Date32Type;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
@@ -11,9 +9,12 @@ use sqlx::{
 };
 use uuid::Uuid;
 
-use crate::convert_pg_type;
 use crate::error::{Result, SharedError, Sql};
 use crate::sql::{ArrowType, Connection};
+use crate::{
+    convert_pg_type,
+    sql::{DatabaseSchema, SchemaColumn, SchemaTable},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PostgresConnection {
@@ -75,12 +76,65 @@ impl Connection for PostgresConnection {
     }
 
     async fn query(&self, mut pool: Self::Conn, sql: &str) -> Result<Vec<Self::Row>> {
-        let row = sqlx::query(sql)
+        let rows = sqlx::query(sql)
             .fetch_all(&mut pool)
             .await
             .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
 
-        Ok(row)
+        Ok(rows)
+    }
+
+    async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
+        let sql = "
+            SELECT c.table_catalog as database, c.table_schema as schema, c.table_name as table, c.column_name, c.udt_name as column_type, c.is_nullable
+            FROM information_schema.tables as t inner join information_schema.columns as c on t.table_name = c.table_name
+            WHERE t.table_type = 'BASE TABLE' 
+                AND c.table_schema NOT IN 
+                    ('pg_catalog', 'information_schema')
+                    and c.table_catalog = 'postgres'
+            order by c.table_name, c.ordinal_position, c.column_name";
+
+        let rows = self.query(pool, sql).await?;
+        let mut tables = vec![];
+        let mut columns = vec![];
+        let mut current_table = String::new();
+
+        let mut schema = DatabaseSchema {
+            database: self.database.to_owned().unwrap_or_default(),
+            tables: vec![],
+        };
+
+        for (index, row) in rows.into_iter().enumerate() {
+            let table_name = row.get::<String, usize>(2);
+
+            if index == 0 {
+                current_table = table_name.to_owned();
+            }
+
+            if table_name != current_table {
+                tables.push(SchemaTable {
+                    name: current_table,
+                    schema: row.get::<String, usize>(1),
+                    columns,
+                });
+
+                current_table = table_name.to_owned();
+                columns = vec![];
+            }
+
+            columns.push(SchemaColumn {
+                name: row.get::<String, usize>(3),
+                r#type: row.get::<String, usize>(4),
+                is_nullable: match row.get::<String, usize>(5).to_lowercase().as_str() {
+                    "yes" => true,
+                    _ => false,
+                },
+            });
+        }
+
+        schema.tables = tables;
+
+        Ok(schema)
     }
 
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
@@ -203,5 +257,15 @@ mod tests {
         let _data = PostgresConnection::to_parquet(rows);
 
         // println!("{:?}", _data);
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn test_postgres_schema() {
+        let connection = new_postgres_connection();
+        let pool = connection.connect().await.unwrap();
+        let schema = connection.schema(pool).await.unwrap();
+
+        // println!("{:?}", schema);
     }
 }
