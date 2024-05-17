@@ -1,188 +1,204 @@
-use std::collections::HashMap;
-use std::str::FromStr;
-
 use crate::grid::file::v1_5::schema as v1_5;
 use crate::grid::file::v1_6::schema as v1_6;
 use anyhow::Result;
-use chrono::DateTime;
 
-fn convert_column_values(
-    from: &HashMap<String, v1_5::ColumnValues>,
-) -> HashMap<String, v1_6::CellValue> {
-    from.iter()
-        .map(|(k, v)| {
-            let v1_5::ColumnValue { type_field, value } = &v.content.values[0];
-            let value = match type_field.to_lowercase().as_str() {
-                "text" => v1_6::CellValue::Text(value.clone()),
-                "number" => v1_6::CellValue::Number(value.clone()),
-                _ => panic!("Unknown type_field: {}", type_field),
-            };
-            (k.clone(), value)
-        })
-        .collect()
-}
-
-fn upgrade_column(sheet: &v1_5::Sheet, x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
-    let mut values = convert_column_values(&column.values);
-
-    // add CellValue::Formula/Python to v1_6::Column.values
-    sheet
-        .code_cells
-        .iter()
-        .for_each(|(cell_ref, code_cell_value)| {
-            if cell_ref.column == column.id {
-                let pos = cell_ref_to_pos(sheet, cell_ref);
-                let language = match code_cell_value.language.to_lowercase().as_str() {
-                    "python" => Some(v1_6::CodeCellLanguage::Python),
-                    "formula" => Some(v1_6::CodeCellLanguage::Formula),
-                    _ => Some(v1_6::CodeCellLanguage::Formula), // this should not happen
-                };
-                if let Some(language) = language {
-                    values.insert(
-                        pos.y.to_string(),
-                        v1_6::CellValue::Code(v1_6::CodeCell {
-                            code: code_cell_value.code_string.clone(),
-                            language,
-                        }),
-                    );
-                }
-            }
-        });
-
+fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
     (
         *x,
         v1_6::Column {
-            values,
+            values: column
+                .values
+                .iter()
+                .map(|(k, v)| {
+                    (
+                        k.into(),
+                        match &v {
+                            v1_5::CellValue::Text(value) => v1_6::CellValue::Text(value.clone()),
+                            v1_5::CellValue::Number(value) => {
+                                v1_6::CellValue::Number(value.clone())
+                            }
+                            v1_5::CellValue::Html(value) => v1_6::CellValue::Html(value.clone()),
+                            v1_5::CellValue::Blank => v1_6::CellValue::Blank,
+                            v1_5::CellValue::Code(code_cell) => {
+                                v1_6::CellValue::Code(v1_6::CodeCell {
+                                    language: match code_cell.language {
+                                        v1_5::CodeCellLanguage::Python => {
+                                            v1_6::CodeCellLanguage::Python
+                                        }
+                                        v1_5::CodeCellLanguage::Formula => {
+                                            v1_6::CodeCellLanguage::Formula
+                                        }
+                                    },
+                                    code: code_cell.code.clone(),
+                                })
+                            }
+                            v1_5::CellValue::Logical(value) => v1_6::CellValue::Logical(*value),
+                            v1_5::CellValue::Error(value) => v1_6::CellValue::Error(value.clone()),
+                            v1_5::CellValue::Duration(value) => {
+                                v1_6::CellValue::Duration(value.clone())
+                            }
+                            v1_5::CellValue::Instant(value) => {
+                                v1_6::CellValue::Instant(value.clone())
+                            }
+                        },
+                    )
+                })
+                .collect(),
             align: column
                 .align
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: match v.content.value.as_str() {
-                            "left" => CellAlign::Left,
-                            "center" => CellAlign::Center,
-                            "right" => CellAlign::Right,
-                            _ => CellAlign::Left, // this should not happen
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: match v.value {
+                                v1_5::CellAlign::Left => v1_6::CellAlign::Left,
+                                v1_5::CellAlign::Center => v1_6::CellAlign::Center,
+                                v1_5::CellAlign::Right => v1_6::CellAlign::Right,
+                            },
+                            len: v.len as u32,
                         },
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    )
                 })
                 .collect(),
             wrap: column
                 .wrap
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: match v.content.value.to_lowercase().as_str() {
-                            "overflow" => v1_6::CellWrap::Overflow,
-                            "wrap" => v1_6::CellWrap::Wrap,
-                            "clip" => v1_6::CellWrap::Clip,
-                            _ => v1_6::CellWrap::Overflow, // this should not happen
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: match v.value {
+                                v1_5::CellWrap::Wrap => v1_6::CellWrap::Wrap,
+                                v1_5::CellWrap::Overflow => v1_6::CellWrap::Overflow,
+                                v1_5::CellWrap::Clip => v1_6::CellWrap::Clip,
+                            },
+                            len: v.len as u32,
                         },
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    )
                 })
                 .collect(),
             numeric_format: column
                 .numeric_format
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: v1_6::NumericFormat {
-                            kind: match v.content.value.kind.to_lowercase().as_str() {
-                                "number" => v1_6::NumericFormatKind::Number,
-                                "percentage" => v1_6::NumericFormatKind::Percentage,
-                                "currency" => v1_6::NumericFormatKind::Currency,
-                                "exponential" => v1_6::NumericFormatKind::Exponential,
-                                _ => v1_6::NumericFormatKind::Number, // this should not happen
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: v1_6::NumericFormat {
+                                kind: match v.value.kind {
+                                    v1_5::NumericFormatKind::Number => {
+                                        v1_6::NumericFormatKind::Number
+                                    }
+                                    v1_5::NumericFormatKind::Currency => {
+                                        v1_6::NumericFormatKind::Currency
+                                    }
+                                    v1_5::NumericFormatKind::Percentage => {
+                                        v1_6::NumericFormatKind::Percentage
+                                    }
+                                    v1_5::NumericFormatKind::Exponential => {
+                                        v1_6::NumericFormatKind::Exponential
+                                    }
+                                },
+                                symbol: v.value.symbol.clone(),
                             },
-                            symbol: v.content.value.symbol.clone(),
+                            len: v.len as u32,
                         },
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    )
                 })
                 .collect(),
             numeric_decimals: column
                 .numeric_decimals
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: v.content.value,
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: v.value,
+                            len: v.len as u32,
+                        },
+                    )
                 })
                 .collect(),
             numeric_commas: column
                 .numeric_commas
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: v.content.value,
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: v.value,
+                            len: v.len as u32,
+                        },
+                    )
                 })
                 .collect(),
             bold: column
                 .bold
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: v.content.value,
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: v.value,
+                            len: v.len as u32,
+                        },
+                    )
                 })
                 .collect(),
             italic: column
                 .italic
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: v.content.value,
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: v.value,
+                            len: v.len as u32,
+                        },
+                    )
                 })
                 .collect(),
             text_color: column
                 .text_color
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: v.content.value.clone(),
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: v.value.clone(),
+                            len: v.len as u32,
+                        },
+                    )
                 })
                 .collect(),
             fill_color: column
                 .fill_color
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: v.content.value.clone(),
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: v.value.clone(),
+                            len: v.len as u32,
+                        },
+                    )
                 })
                 .collect(),
             render_size: column
                 .render_size
                 .iter()
                 .map(|(k, v)| {
-                    let value = ColumnRepeat {
-                        value: v1_6::RenderSize {
-                            w: v.content.value.w.clone(),
-                            h: v.content.value.h.clone(),
+                    (
+                        k.clone(),
+                        v1_6::ColumnRepeat {
+                            value: v1_6::RenderSize {
+                                w: v.value.w.clone(),
+                                h: v.value.h.clone(),
+                            },
+                            len: v.len as u32,
                         },
-                        len: v.content.len as u32,
-                    };
-                    (k.clone(), value)
+                    )
                 })
                 .collect(),
         },
@@ -193,101 +209,123 @@ fn upgrade_columns(sheet: &v1_5::Sheet) -> Vec<(i64, v1_6::Column)> {
     sheet
         .columns
         .iter()
-        .map(|(x, column)| upgrade_column(sheet, x, column))
+        .map(|(x, column)| upgrade_column(x, column))
         .collect()
 }
 
-fn cell_ref_to_sheet_rect(sheet: &v1_5::Sheet, cell_ref: &v1_5::CellRef) -> v1_6::SheetRect {
-    let x = sheet
-        .columns
-        .iter()
-        .find(|column| column.1.id == cell_ref.column)
-        .unwrap()
-        .0;
-    let y = sheet
-        .rows
-        .iter()
-        .find(|row| row.1 == cell_ref.row)
-        .unwrap()
-        .0;
-    v1_6::SheetRect {
-        min: v1_6::Pos { x, y },
-        max: v1_6::Pos { x, y },
-        sheet_id: v1_6::Id::from(cell_ref.sheet.id.clone()),
-    }
-}
+// fn cell_ref_to_sheet_rect(sheet: &v1_5::Sheet, cell_ref: &v1_5::CellRef) -> v1_6::SheetRect {
+//     let x = sheet
+//         .columns
+//         .iter()
+//         .find(|column| column.1.id == cell_ref.column)
+//         .unwrap()
+//         .0;
+//     let y = sheet
+//         .rows
+//         .iter()
+//         .find(|row| row.1 == cell_ref.row)
+//         .unwrap()
+//         .0;
+//     v1_6::SheetRect {
+//         min: v1_6::Pos { x, y },
+//         max: v1_6::Pos { x, y },
+//         sheet_id: v1_6::Id::from(cell_ref.sheet.id.clone()),
+//     }
+// }
 
-fn cell_ref_to_pos(sheet: &v1_5::Sheet, cell_ref: &v1_5::CellRef) -> v1_6::Pos {
-    let x = sheet
-        .columns
-        .iter()
-        .find(|column| column.1.id == cell_ref.column)
-        .unwrap()
-        .0;
-    let y = sheet
-        .rows
-        .iter()
-        .find(|row| row.1 == cell_ref.row)
-        .unwrap()
-        .0;
-    v1_6::Pos { x, y }
-}
+// fn cell_ref_to_pos(sheet: &v1_5::Sheet, cell_ref: &v1_5::CellRef) -> v1_6::Pos {
+//     let x = sheet
+//         .columns
+//         .iter()
+//         .find(|column| column.1.id == cell_ref.column)
+//         .unwrap()
+//         .0;
+//     let y = sheet
+//         .rows
+//         .iter()
+//         .find(|row| row.1 == cell_ref.row)
+//         .unwrap()
+//         .0;
+//     v1_6::Pos { x, y }
+// }
 
-fn column_id_to_x(sheet: &v1_5::Sheet, column_id: &String) -> i64 {
-    sheet
-        .columns
-        .iter()
-        .find(|column| column.1.id.id == *column_id)
-        .unwrap()
-        .0
-}
+// fn column_id_to_x(sheet: &v1_5::Sheet, column_id: &String) -> i64 {
+//     sheet
+//         .columns
+//         .iter()
+//         .find(|column| column.1.id.id == *column_id)
+//         .unwrap()
+//         .0
+// }
 
 fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
     sheet
-        .code_cells
+        .code_runs
         .iter()
-        .filter_map(|(cell_ref, code_cell_value)| {
-            code_cell_value.output.clone().map(|output| {
-                let result = match output.result.clone() {
-                    v1_5::CodeCellRunResult::Ok { output_value, .. } => {
-                        v1_6::CodeRunResult::Ok(match output_value {
-                            v1_5::OutputValue::Single(value) => v1_6::OutputValue::Single(value),
-                            v1_5::OutputValue::Array(array) => v1_6::OutputValue::Array(array),
-                        })
-                    }
-                    v1_5::CodeCellRunResult::Err { error } => {
-                        // note: we never saved the error type in v1_5
-                        v1_6::CodeRunResult::Err(v1_6::RunError {
-                            span: error.span,
-                            msg: v1_6::RunErrorMsg::InternalError(error.msg.into()),
-                        })
-                    }
-                };
-
-                (
-                    cell_ref_to_pos(sheet, cell_ref),
-                    v1_6::CodeRun {
-                        formatted_code_string: None,
-                        last_modified: Some(
-                            DateTime::from_str(&code_cell_value.last_modified).unwrap_or_default(),
-                        ),
-                        std_out: output.std_out.clone(),
-                        std_err: output.std_err.clone(),
-                        spill_error: output.spill,
-                        cells_accessed: match output.result {
-                            v1_5::CodeCellRunResult::Ok { cells_accessed, .. } => cells_accessed
-                                .into_iter()
-                                .map(|cell_ref| cell_ref_to_sheet_rect(sheet, &cell_ref))
-                                .collect(),
-                            v1_5::CodeCellRunResult::Err { .. } => vec![],
-                        },
-                        result,
-                        return_type: None,
-                        line_number: None,
-                        output_type: None,
+        .map(|(pos, old_code_run)| {
+            (
+                v1_6::Pos { x: pos.x, y: pos.y },
+                v1_6::CodeRun {
+                    formatted_code_string: old_code_run.formatted_code_string.clone(),
+                    last_modified: old_code_run.last_modified.clone(),
+                    std_err: old_code_run.std_err.clone(),
+                    std_out: old_code_run.std_out.clone(),
+                    spill_error: old_code_run.spill_error,
+                    cells_accessed: old_code_run.cells_accessed.clone(),
+                    return_type: old_code_run.return_type.clone(),
+                    line_number: old_code_run.line_number,
+                    output_type: old_code_run.output_type.clone(),
+                    result: match &old_code_run.result {
+                        v1_5::CodeRunResult::Ok(output_value) => {
+                            v1_6::CodeRunResult::Ok(match output_value {
+                                v1_5::OutputValue::Single(value) => {
+                                    if value.type_field == "text".to_string() {
+                                        v1_6::OutputValue::Single(v1_6::CellValue::Text(
+                                            value.value.clone(),
+                                        ))
+                                    } else if value.type_field == "number".to_string() {
+                                        v1_6::OutputValue::Single(v1_6::CellValue::Number(
+                                            value.value.clone(),
+                                        ))
+                                    } else {
+                                        panic!("Unknown type_field: {}", value.type_field)
+                                    }
+                                }
+                                v1_5::OutputValue::Array(array) => {
+                                    v1_6::OutputValue::Array(v1_6::OutputArray {
+                                        values: array
+                                            .values
+                                            .iter()
+                                            .map(|value| {
+                                                if value.type_field == "text".to_string() {
+                                                    v1_6::CellValue::Text(value.value.clone())
+                                                } else if value.type_field == "number".to_string() {
+                                                    v1_6::CellValue::Number(value.value.clone())
+                                                } else {
+                                                    panic!(
+                                                        "Unknown type_field: {}",
+                                                        value.type_field
+                                                    )
+                                                }
+                                            })
+                                            .collect(),
+                                        size: v1_6::OutputSize {
+                                            w: array.size.w,
+                                            h: array.size.h,
+                                        },
+                                    })
+                                }
+                            })
+                        }
+                        v1_5::CodeRunResult::Err(error) => {
+                            v1_6::CodeRunResult::Err(v1_6::RunError {
+                                span: error.span.clone(),
+                                msg: error.msg.clone().into(),
+                            })
+                        }
                     },
-                )
-            })
+                },
+            )
         })
         .collect()
 }
@@ -296,10 +334,7 @@ fn upgrade_borders(sheet: &v1_5::Sheet) -> v1_6::Borders {
     sheet
         .borders
         .iter()
-        .map(|(column_id, borders)| {
-            let x = column_id_to_x(sheet, column_id);
-            (x.to_string(), borders.clone())
-        })
+        .map(|(x, borders)| (x.clone(), borders.clone()))
         .collect()
 }
 
@@ -318,7 +353,7 @@ fn upgrade_sheet(sheet: &v1_5::Sheet) -> v1_6::Sheet {
 
 pub(crate) fn upgrade(schema: v1_5::GridSchema) -> Result<v1_6::GridSchema> {
     let schema = v1_6::GridSchema {
-        version: Some("1.5".into()),
+        version: Some("1.6".into()),
         sheets: schema.sheets.iter().map(upgrade_sheet).collect(),
     };
     Ok(schema)

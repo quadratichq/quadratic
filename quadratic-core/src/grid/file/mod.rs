@@ -35,16 +35,10 @@ enum GridFile {
 impl GridFile {
     fn into_latest(self) -> Result<v1_6::schema::GridSchema> {
         match self {
-            GridFile::V1_5 { grid } => Ok(v1_5::file_upgrade(grid)),
-            GridFile::V1_4 { grid } => v1_4::file::upgrade(grid),
+            GridFile::V1_5 { grid } => v1_5::file::upgrade(grid),
+            GridFile::V1_4 { grid } => v1_5::file::upgrade(v1_4::file::upgrade(grid)?),
             GridFile::V1_3 { grid } => {
-                if let Ok(v1_4) = v1_3::file::upgrade(grid) {
-                    v1_4::file::upgrade(v1_4)
-                } else {
-                    Err(anyhow!(
-                        "Failed to upgrade from v1.3 to v1.4 (on the way to v1.5"
-                    ))
-                }
+                v1_5::file::upgrade(v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?)
             }
         }
     }
@@ -96,13 +90,13 @@ fn import_json(file_contents: &str) -> Result<Grid> {
             anyhow!(e)
         })?
         .into_latest()?;
-    current::import(file_binary)
+    current::import(file)
 }
 
 pub fn export(grid: &Grid) -> Result<Vec<u8>> {
     let converted = current::export(grid)?;
     let serialized =
-        bincode::serialize(&GridFileBinary::V1_5 { grid: converted }).map_err(|e| anyhow!(e))?;
+        bincode::serialize(&GridFileBinary::V1_6 { grid: converted }).map_err(|e| anyhow!(e))?;
     Ok(serialized)
 }
 
