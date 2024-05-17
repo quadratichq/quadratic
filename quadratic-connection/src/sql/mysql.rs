@@ -1,7 +1,7 @@
 use axum::{extract::Path, response::IntoResponse, Extension, Json};
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
-    sql::{postgres_connection::PostgresConnection, Connection},
+    sql::{mysql_connection::MySqlConnection, Connection},
 };
 use uuid::Uuid;
 
@@ -16,18 +16,18 @@ use crate::{
 use super::{query_generic, Schema};
 
 /// Test the connection to the database.
-pub(crate) async fn test(Json(connection): Json<PostgresConnection>) -> Json<TestResponse> {
+pub(crate) async fn test(Json(connection): Json<MySqlConnection>) -> Json<TestResponse> {
     test_connection(connection).await
 }
 
-/// Get the connection details from the API and create a PostgresConnection.
+/// Get the connection details from the API and create a MySqlConnection.
 async fn get_connection(
     state: &State,
     claims: &Claims,
     connection_id: &Uuid,
-) -> Result<(PostgresConnection, ApiConnection)> {
+) -> Result<(MySqlConnection, ApiConnection)> {
     let connection = get_api_connection(state, "", &claims.sub, connection_id).await?;
-    let pg_connection = PostgresConnection::new(
+    let pg_connection = MySqlConnection::new(
         Some(connection.type_details.username.to_owned()),
         Some(connection.type_details.password.to_owned()),
         connection.type_details.host.to_owned(),
@@ -47,7 +47,7 @@ pub(crate) async fn query(
     let connection = get_connection(&*state, &claims, &sql_query.connection_id)
         .await?
         .0;
-    query_generic::<PostgresConnection>(connection, state, sql_query).await
+    query_generic::<MySqlConnection>(connection, state, sql_query).await
 }
 
 /// Get the schema of the database
@@ -79,7 +79,7 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn test_postgres_connection() {
+    async fn test_mysql_connection() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
             query: "select * from \"FileCheckpoint\" limit 2".into(),

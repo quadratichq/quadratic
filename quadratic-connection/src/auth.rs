@@ -21,16 +21,22 @@ use crate::{
     state::State,
 };
 
+/// The claims from the Quadratic/Auth0 JWT token.
+/// We need our own implementation of this because we need to impl on it.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
     pub exp: usize,
 }
 
+/// Instance of Axum's middleware that also contains a copy of state
 pub fn get_middleware(state: State) -> FromExtractorLayer<Claims, State> {
     middleware::from_extractor_with_state::<Claims, _>(state)
 }
 
+/// Extract the claims from the request.
+/// Anytime a claims parameter is added to a handler, this will automatically
+/// be called.
 #[async_trait]
 impl<S> FromRequestParts<S> for Claims
 where

@@ -18,7 +18,7 @@ use sqlx::{Column, Row};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use self::{mysql_connection::MysqlConnection, postgres_connection::PostgresConnection};
+use self::{mysql_connection::MySqlConnection, postgres_connection::PostgresConnection};
 use crate::{error::Result, SharedError, Sql};
 use crate::{
     vec_arrow_type_to_array_ref, vec_string_arrow_type_to_array_ref,
@@ -30,7 +30,7 @@ pub mod postgres_connection;
 
 pub enum SqlConnection {
     Postgres(PostgresConnection),
-    Mysql(MysqlConnection),
+    Mysql(MySqlConnection),
 }
 
 #[derive(Clone, Debug)]

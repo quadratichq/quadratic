@@ -11,6 +11,7 @@ use crate::{
     state::State,
 };
 
+pub(crate) mod mysql;
 pub(crate) mod postgres;
 
 #[derive(Debug, Serialize)]

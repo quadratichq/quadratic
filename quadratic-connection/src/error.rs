@@ -92,7 +92,8 @@ impl From<jsonwebtoken::errors::Error> for ConnectionError {
     }
 }
 
-// convert ConnectionErrors into readable responses with appropriate status codes
+// Convert ConnectionErrors into readable responses with appropriate status codes.
+// These are the errors that are returned to the client.
 impl IntoResponse for ConnectionError {
     fn into_response(self) -> Response {
         let (status, error) = match &self {

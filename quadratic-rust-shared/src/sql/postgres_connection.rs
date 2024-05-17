@@ -21,7 +21,7 @@ pub struct PostgresConnection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub host: String,
-    pub port: Option<u16>,
+    pub port: Option<String>,
     pub database: Option<String>,
 }
 
@@ -30,7 +30,7 @@ impl PostgresConnection {
         username: Option<String>,
         password: Option<String>,
         host: String,
-        port: Option<u16>,
+        port: Option<String>,
         database: Option<String>,
     ) -> PostgresConnection {
         PostgresConnection {
@@ -60,7 +60,9 @@ impl Connection for PostgresConnection {
         }
 
         if let Some(ref port) = self.port {
-            options = options.port(*port);
+            options = options.port(port.parse::<u16>().map_err(|_| {
+                SharedError::Sql(Sql::Connect("Could not parse port into a number".into()))
+            })?);
         }
 
         if let Some(ref database) = self.database {
@@ -226,7 +228,7 @@ mod tests {
             Some("postgres".into()),
             Some("postgres".into()),
             "0.0.0.0".into(),
-            Some(5432),
+            Some("5432".into()),
             Some("postgres".into()),
         )
     }
@@ -264,7 +266,7 @@ mod tests {
     async fn test_postgres_schema() {
         let connection = new_postgres_connection();
         let pool = connection.connect().await.unwrap();
-        let schema = connection.schema(pool).await.unwrap();
+        let _schema = connection.schema(pool).await.unwrap();
 
         // println!("{:?}", schema);
     }

@@ -28,6 +28,7 @@ use crate::{
     auth::get_middleware,
     config::config,
     error::{ConnectionError, Result},
+    sql::mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
     sql::postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
     state::State,
 };
@@ -64,21 +65,35 @@ pub(crate) fn app(state: State) -> Router {
 
     let auth = get_middleware(state.clone());
 
+    // Routes apply in reverse order, so placing a route before the middleware
+    // usurps the middleware.
     Router::new()
         // protected routes
+        //
+        // postgres
         .route("/postgres/test", post(test_postgres))
         .route("/postgres/query", post(query_postgres))
         .route("/postgres/schema/:id", get(schema_postgres))
+        // mysql
+        .route("/mysql/test", post(test_mysql))
+        .route("/mysql/query", post(query_mysql))
+        .route("/mysql/schema/:id", get(schema_mysql))
+        //
         // auth middleware
         .route_layer(auth)
+        //
         // state, required
         .with_state(state.clone())
-        // state
+        //
+        // state, repeated, but required
         .layer(Extension(state))
+        //
         // unprotected routes
         .route("/health", get(healthcheck))
+        //
         // cors
         .layer(cors)
+        //
         // logger
         .layer(
             TraceLayer::new_for_http()
@@ -86,7 +101,7 @@ pub(crate) fn app(state: State) -> Router {
         )
 }
 
-/// Start the websocket server.  This is the entrypoint for the application.
+/// Start the server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
     tracing_subscriber::registry()

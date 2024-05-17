@@ -142,7 +142,7 @@ pub struct Connection {
 #[serde(rename_all = "camelCase")]
 pub struct TypeDetails {
     pub host: String,
-    pub port: u16,
+    pub port: String,
     pub username: String,
     pub password: String,
     pub database: String,
