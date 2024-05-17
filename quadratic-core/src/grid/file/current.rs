@@ -1,7 +1,7 @@
 use crate::color::Rgba;
 use crate::grid::{
     block::SameValue,
-    file::v1_5::schema::{self as current},
+    file::v1_6::schema::{self as current},
     formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
     CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,

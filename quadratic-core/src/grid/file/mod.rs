@@ -8,8 +8,9 @@ pub mod current;
 mod v1_3;
 mod v1_4;
 mod v1_5;
+mod v1_6;
 
-pub static CURRENT_VERSION: &str = "1.5";
+pub static CURRENT_VERSION: &str = "1.6";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
@@ -32,9 +33,9 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_5::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_6::schema::GridSchema> {
         match self {
-            GridFile::V1_5 { grid } => Ok(grid),
+            GridFile::V1_5 { grid } => Ok(v1_5::file_upgrade(grid)),
             GridFile::V1_4 { grid } => v1_4::file::upgrade(grid),
             GridFile::V1_3 { grid } => {
                 if let Ok(v1_4) = v1_3::file::upgrade(grid) {
@@ -51,13 +52,13 @@ impl GridFile {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum GridFileBinary {
-    V1_5 { grid: v1_5::schema::GridSchema },
+    V1_6 { grid: v1_6::schema::GridSchema },
 }
 
 impl GridFileBinary {
-    fn into_latest(self) -> Result<v1_5::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_6::schema::GridSchema> {
         match self {
-            GridFileBinary::V1_5 { grid } => Ok(grid),
+            GridFileBinary::V1_6 { grid } => Ok(grid),
         }
     }
 }
@@ -95,7 +96,7 @@ fn import_json(file_contents: &str) -> Result<Grid> {
             anyhow!(e)
         })?
         .into_latest()?;
-    current::import(file)
+    current::import(file_binary)
 }
 
 pub fn export(grid: &Grid) -> Result<Vec<u8>> {
