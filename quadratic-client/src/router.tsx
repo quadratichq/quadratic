@@ -1,16 +1,14 @@
 import * as CloudFilesMigration from '@/dashboard/CloudFilesMigrationRoute';
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
-import { Empty } from '@/dashboard/components/Empty';
+import * as Page404 from '@/routes/404';
 import * as FileMeta from '@/routes/_file.$uuid';
 import * as Create from '@/routes/files.create';
+import * as Login from '@/routes/login';
+import * as LoginResult from '@/routes/login-result';
+import * as Logout from '@/routes/logout';
 import { apiClient } from '@/shared/api/apiClient';
-import { SUPPORT_EMAIL } from '@/shared/constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
-import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import localforage from 'localforage';
 import {
-  Link,
   Navigate,
   Route,
   ShouldRevalidateFunctionArgs,
@@ -19,21 +17,8 @@ import {
   redirect,
   useLocation,
 } from 'react-router-dom';
-import { authClient, protectedRouteLoaderWrapper } from './auth';
+import { protectedRouteLoaderWrapper } from './auth';
 import * as IndexRoute from './routes/index';
-
-// @ts-expect-error - for testing purposes
-window.lf = localforage;
-
-const dontRevalidateDialogs = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
-  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
-  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
-
-  if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
-    return false;
-  }
-  return true;
-};
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -53,12 +38,10 @@ export const router = createBrowserRouter(
               path=":uuid"
               id={ROUTE_LOADER_IDS.FILE}
               lazy={() => import('./routes/file.$uuid')}
-              shouldRevalidate={
-                // We don't want to revalidate the initial file route because
-                // we don't have any 2-way data flow setup for the file contents
-                // But file metadata is handled in the pathless route below
-                () => false
-              }
+              // We don't want to revalidate the initial file route because
+              // we don't have any 2-way data flow setup for the file contents
+              // But file metadata is handled in the pathless route below
+              shouldRevalidate={() => false}
             >
               {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
               <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader}>
@@ -154,84 +137,21 @@ export const router = createBrowserRouter(
           />
         </Route>
 
-        <Route
-          path="*"
-          element={
-            <Empty
-              title="404: not found"
-              description={
-                <>
-                  Check the URL and try again. Or, contact us for help at <a href={SUPPORT_EMAIL}>{SUPPORT_EMAIL}</a>
-                </>
-              }
-              Icon={ExclamationTriangleIcon}
-              actions={
-                <Button asChild variant="secondary">
-                  <Link to="/">Go home</Link>
-                </Button>
-              }
-            />
-          }
-        />
+        <Route path="*" Component={Page404.Component} />
       </Route>
-      <Route
-        path={ROUTES.LOGIN}
-        loader={async ({ request }) => {
-          const isAuthenticated = await authClient.isAuthenticated();
-
-          // If they’re logged in, redirect home
-          if (isAuthenticated) {
-            return redirect('/');
-          }
-
-          // If not, send them to Auth0
-          // Watch for a `from` query param, as unprotected routes will redirect
-          // to here for them to auth first
-          // Also watch for the presence of a `signup` query param, which means
-          // send the user to sign up flow, not login
-          const url = new URL(request.url);
-          const redirectTo = url.searchParams.get('from') || '/';
-          const isSignupFlow = url.searchParams.get('signup') !== null;
-          await authClient.login(redirectTo, isSignupFlow);
-
-          // auth0 will re-route us (above) but telling react-router where we
-          // are re-routing to makes sure that this doesn't end up in the history stack
-          return redirect(redirectTo);
-        }}
-      />
-      <Route
-        path={ROUTES.LOGIN_RESULT}
-        loader={async () => {
-          // try/catch here handles case where this _could_ error out and we
-          // have no errorElement so we just redirect back to home
-          try {
-            await authClient.handleSigninRedirect();
-            let isAuthenticated = await authClient.isAuthenticated();
-            if (isAuthenticated) {
-              // Acknowledge the user has just logged in. The backend may need
-              // to run some logic before making any other API calls in parallel
-              await apiClient.users.acknowledge();
-
-              let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
-              return redirect(redirectTo);
-            }
-          } catch (e) {
-            console.error(e);
-          }
-          return redirect('/');
-        }}
-      />
-      <Route
-        path={ROUTES.LOGOUT}
-        loader={async () => {
-          return redirect('/');
-        }}
-        action={async () => {
-          // We signout in a "resource route" that we can hit from a fetcher.Form
-          await authClient.logout();
-          return redirect('/');
-        }}
-      />
+      <Route path={ROUTES.LOGIN} loader={Login.loader} />
+      <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />
+      <Route path={ROUTES.LOGOUT} loader={Logout.loader} action={Logout.action} />
     </>
   )
 );
+
+function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
+  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
+  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
+
+  if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
+    return false;
+  }
+  return true;
+}
