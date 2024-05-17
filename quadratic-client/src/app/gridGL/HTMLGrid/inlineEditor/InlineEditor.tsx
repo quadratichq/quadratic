@@ -28,7 +28,6 @@ export const InlineEditor = () => {
           variant="ghost"
           style={{
             position: 'absolute',
-            display: 'none',
             alignItems: 'center',
             borderRadius: '0',
             padding: '0',

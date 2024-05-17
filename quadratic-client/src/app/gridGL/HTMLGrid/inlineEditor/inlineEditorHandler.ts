@@ -55,9 +55,9 @@ class InlineEditorHandler {
   // Resets state after editing is complete.
   private reset() {
     this.location = undefined;
-    this.changeToFormula(false);
     this.temporaryBold = false;
     this.temporaryItalic = false;
+    this.changeToFormula(false);
     this.height = 0;
     this.open = false;
     this.cursorIsMoving = false;
@@ -80,16 +80,6 @@ class InlineEditorHandler {
     const worldCursorBottom = pixiApp.viewport.toWorld(cursor, bounds.bottom - canvas.top);
     const viewportBounds = pixiApp.viewport.getVisibleBounds();
 
-    pixiApp.debug
-      .clear()
-      .beginFill(0x0000ff)
-      .drawRect(
-        worldCursorTop.x + 10,
-        worldCursorTop.y + 10,
-        worldCursorBottom.x - worldCursorTop.x,
-        worldCursorBottom.y - worldCursorTop.y
-      )
-      .endFill();
     if (
       intersects.rectangleRectangle(
         viewportBounds,
@@ -302,7 +292,11 @@ class InlineEditorHandler {
     } else {
       inlineEditorMonaco.setLanguage('plaintext');
     }
-    this.formulaExpandButton.style.display = formula ? 'block' : 'none';
+
+    // We need to use visibility instead of display to avoid an annoying warning
+    // with <Tooltip>.
+    this.formulaExpandButton.style.visibility = formula ? 'visible' : 'hidden';
+    this.formulaExpandButton.style.pointerEvents = formula ? 'auto' : 'none';
 
     if (formula && this.location) {
       inlineEditorFormula.cellHighlights(this.location, inlineEditorMonaco.get().slice(1));
@@ -436,7 +430,10 @@ class InlineEditorHandler {
     if (!this.div) {
       throw new Error('Expected div to be defined in showDiv');
     }
-    this.div.style.display = 'flex';
+    // We need to use visibility instead of display to avoid an annoying warning
+    // with <Tooltip>.
+    this.div.style.visibility = 'visible';
+    this.div.style.pointerEvents = 'auto';
     this.showing = true;
   }
 
@@ -444,7 +441,10 @@ class InlineEditorHandler {
     if (!this.div) {
       throw new Error('Expected div to be defined in hideDiv');
     }
-    this.div.style.display = 'none';
+    // We need to use visibility instead of display to avoid an annoying warning
+    // with <Tooltip>.
+    this.div.style.visibility = 'hidden';
+    this.div.style.pointerEvents = 'none';
     this.showing = false;
   }
 
