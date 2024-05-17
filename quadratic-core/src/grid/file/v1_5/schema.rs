@@ -131,9 +131,7 @@ pub enum CodeRunResult {
 }
 
 pub type OutputValue = v1_4::OutputValue;
-pub type OutputArray = v1_4::OutputArray;
 pub type OutputSize = v1_4::OutputSize;
-pub type OutputValueValue = v1_4::OutputValueValue;
 pub type Span = v1_4::Span;
 pub type RenderSize = v1_4::RenderSize;
 

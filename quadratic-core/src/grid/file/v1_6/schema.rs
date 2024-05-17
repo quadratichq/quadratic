@@ -46,12 +46,10 @@ impl From<crate::Pos> for Pos {
         Self { x: pos.x, y: pos.y }
     }
 }
-pub type SheetPos = v1_5::SheetPos;
 pub type SheetRect = v1_5::SheetRect;
 pub type Offsets = v1_5::Offsets;
 pub type Borders = v1_5::Borders;
 pub type RunError = v1_5::RunError;
-pub type RunErrorMsg = v1_5::RunErrorMsg;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Sheet {
@@ -112,7 +110,6 @@ pub struct OutputValueValue {
     pub value: String,
 }
 
-pub type Span = v1_5::Span;
 pub type RenderSize = v1_5::RenderSize;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
