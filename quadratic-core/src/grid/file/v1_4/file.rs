@@ -13,8 +13,8 @@ fn convert_column_values(
         .map(|(k, v)| {
             let v1_4::ColumnValue { type_field, value } = &v.content.values[0];
             let value = match type_field.to_lowercase().as_str() {
-                "text" => v1_5::CellValue::Text(value.clone()),
-                "number" => v1_5::CellValue::Number(value.clone()),
+                "TEXT" => v1_5::CellValue::Text(value.clone()),
+                "NUMBER" => v1_5::CellValue::Number(value.clone()),
                 _ => panic!("Unknown type_field: {}", type_field),
             };
             (k.clone(), value)
