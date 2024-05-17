@@ -25,7 +25,6 @@ export const InlineEditor = () => {
 
       <Tooltip title="Open Formula in multi-line code editor">
         <Button
-          className="button***"
           variant="ghost"
           style={{
             position: 'absolute',

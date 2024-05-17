@@ -113,6 +113,7 @@ export async function keyboardCell(options: {
             selectedCellSheet: sheets.sheet.id,
             mode: cell.language,
             showCellTypeMenu: false,
+            initialCode: undefined,
           },
         });
       } else {
@@ -123,6 +124,7 @@ export async function keyboardCell(options: {
           selectedCellSheet: sheets.sheet.id,
           mode: cell.language,
           showCodeEditor: true,
+          initialCode: undefined,
         });
       }
     } else if (editorInteractionState.showCodeEditor) {
@@ -134,6 +136,7 @@ export async function keyboardCell(options: {
           selectedCell: { x: x, y: y },
           selectedCellSheet: sheets.sheet.id,
           mode: 'Python',
+          initialCode: undefined,
         },
       });
     } else {
@@ -144,6 +147,7 @@ export async function keyboardCell(options: {
         selectedCell: { x: x, y: y },
         selectedCellSheet: sheets.sheet.id,
         mode: undefined,
+        initialCode: undefined,
       });
     }
     event.preventDefault();

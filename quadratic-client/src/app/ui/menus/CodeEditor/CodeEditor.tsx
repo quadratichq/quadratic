@@ -104,6 +104,7 @@ export const CodeEditor = () => {
               showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
               showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
               waitingForEditorClose: undefined,
+              initialCode: waitingForEditorClose.initialCode,
             }));
           }
         }
@@ -312,6 +313,7 @@ export const CodeEditor = () => {
         showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
         showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
         waitingForEditorClose: undefined,
+        initialCode: waitingForEditorClose.initialCode,
       }));
       if (waitingForEditorClose.inlineEditor) {
         pixiAppSettings.changeInput(true);

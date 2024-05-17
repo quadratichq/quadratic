@@ -128,6 +128,7 @@ class InlineEditorHandler {
     if (this.formula) {
       if (sheets.sheet.id !== this.location.sheetId) {
         this.hideDiv();
+        // not sure why this is here
         window.removeEventListener('keydown', inlineEditorKeyboard.keyDown);
         window.addEventListener('keydown', inlineEditorKeyboard.keyDown);
       } else {
@@ -302,6 +303,7 @@ class InlineEditorHandler {
       inlineEditorMonaco.setLanguage('plaintext');
     }
     this.formulaExpandButton.style.display = formula ? 'block' : 'none';
+
     if (formula && this.location) {
       inlineEditorFormula.cellHighlights(this.location, inlineEditorMonaco.get().slice(1));
     } else {
@@ -400,13 +402,18 @@ class InlineEditorHandler {
   // Attaches the inline editor to a div created by React in InlineEditor.tsx
   attach(div: HTMLDivElement) {
     if (this.div) throw new Error('Inline editor already attached');
-    div.style.display = 'none';
     this.div = div;
+    this.hideDiv();
 
     inlineEditorMonaco.attach(div);
 
-    this.formulaExpandButton = div.childNodes[1]! as HTMLDivElement;
-    this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
+    const expandButton = div.childNodes[1] as HTMLDivElement | undefined;
+    if (expandButton) {
+      this.formulaExpandButton = expandButton;
+      this.formulaExpandButton.addEventListener('click', this.openCodeEditor);
+    } else {
+      throw new Error('Expected expandButton to be defined in attach');
+    }
   }
 
   // Returns whether we are editing a formula.

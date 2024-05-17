@@ -25,6 +25,7 @@ export interface EditorInteractionState {
     mode?: CodeCellLanguage;
     showCellTypeMenu: boolean;
     inlineEditor?: boolean;
+    initialCode?: string;
   };
   undo: boolean;
   redo: boolean;
