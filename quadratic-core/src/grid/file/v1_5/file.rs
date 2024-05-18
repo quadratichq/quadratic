@@ -279,11 +279,11 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                         v1_5::CodeRunResult::Ok(output_value) => {
                             v1_6::CodeRunResult::Ok(match output_value {
                                 v1_5::OutputValue::Single(value) => {
-                                    if value.type_field == "TEXT".to_string() {
+                                    if value.type_field.to_lowercase() == "text" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Text(
                                             value.value.clone(),
                                         ))
-                                    } else if value.type_field == "NUMBER".to_string() {
+                                    } else if value.type_field.to_lowercase() == "number" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Number(
                                             value.value.clone(),
                                         ))
@@ -297,9 +297,13 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                             .values
                                             .iter()
                                             .map(|value| {
-                                                if value.type_field == "text".to_string() {
+                                                if value.type_field.to_lowercase()
+                                                    == "text".to_string()
+                                                {
                                                     v1_6::CellValue::Text(value.value.clone())
-                                                } else if value.type_field == "number".to_string() {
+                                                } else if value.type_field.to_lowercase()
+                                                    == "number".to_string()
+                                                {
                                                     v1_6::CellValue::Number(value.value.clone())
                                                 } else {
                                                     panic!(

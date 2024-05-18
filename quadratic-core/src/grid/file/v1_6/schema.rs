@@ -1,5 +1,5 @@
 use crate::grid::file::v1_5::schema as v1_5;
-use chrono::{serde::ts_seconds_option, DateTime, Utc};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -74,9 +74,6 @@ pub struct CodeRun {
     pub line_number: Option<u32>,
     pub output_type: Option<String>,
     pub spill_error: bool,
-
-    // the Option is necessary to use serde
-    #[serde(with = "ts_seconds_option")]
     pub last_modified: Option<DateTime<Utc>>,
 }
 
