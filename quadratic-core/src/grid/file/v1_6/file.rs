@@ -19,7 +19,7 @@ mod tests {
     fn import_and_export_a_v1_5_file() {
         let imported = import(V1_5_FILE).unwrap();
         let exported = export(&imported).unwrap();
-        println!("{}", exported);
-        // assert_eq!(V1_4_FILE, exported);
+        let imported_copy = import(&exported).unwrap();
+        assert_eq!(imported_copy, imported);
     }
 }
