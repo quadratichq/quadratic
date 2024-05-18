@@ -213,51 +213,6 @@ fn upgrade_columns(sheet: &v1_5::Sheet) -> Vec<(i64, v1_6::Column)> {
         .collect()
 }
 
-// fn cell_ref_to_sheet_rect(sheet: &v1_5::Sheet, cell_ref: &v1_5::CellRef) -> v1_6::SheetRect {
-//     let x = sheet
-//         .columns
-//         .iter()
-//         .find(|column| column.1.id == cell_ref.column)
-//         .unwrap()
-//         .0;
-//     let y = sheet
-//         .rows
-//         .iter()
-//         .find(|row| row.1 == cell_ref.row)
-//         .unwrap()
-//         .0;
-//     v1_6::SheetRect {
-//         min: v1_6::Pos { x, y },
-//         max: v1_6::Pos { x, y },
-//         sheet_id: v1_6::Id::from(cell_ref.sheet.id.clone()),
-//     }
-// }
-
-// fn cell_ref_to_pos(sheet: &v1_5::Sheet, cell_ref: &v1_5::CellRef) -> v1_6::Pos {
-//     let x = sheet
-//         .columns
-//         .iter()
-//         .find(|column| column.1.id == cell_ref.column)
-//         .unwrap()
-//         .0;
-//     let y = sheet
-//         .rows
-//         .iter()
-//         .find(|row| row.1 == cell_ref.row)
-//         .unwrap()
-//         .0;
-//     v1_6::Pos { x, y }
-// }
-
-// fn column_id_to_x(sheet: &v1_5::Sheet, column_id: &String) -> i64 {
-//     sheet
-//         .columns
-//         .iter()
-//         .find(|column| column.1.id.id == *column_id)
-//         .unwrap()
-//         .0
-// }
-
 fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
     sheet
         .code_runs
@@ -287,7 +242,14 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Number(
                                             value.value.clone(),
                                         ))
+                                    } else if value.type_field.to_lowercase() == "html" {
+                                        v1_6::OutputValue::Single(v1_6::CellValue::Html(
+                                            value.value.clone(),
+                                        ))
+                                    } else if value.type_field.to_lowercase() == "blank" {
+                                        v1_6::OutputValue::Single(v1_6::CellValue::Blank)
                                     } else {
+                                        dbgjs!(format!("Unknown type_field: {}", value.type_field));
                                         panic!("Unknown type_field: {}", value.type_field)
                                     }
                                 }

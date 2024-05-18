@@ -57,28 +57,20 @@ impl GridFileBinary {
     }
 }
 
+/// Imports a file. We check if the first character is `{` to determine if it is
+/// a JSON file.
 pub fn import(file_contents: &[u8]) -> Result<Grid> {
-    match import_binary(file_contents) {
-        Ok(grid) => Ok(grid),
-        Err(_) => {
-            let s = str::from_utf8(file_contents)?;
-            match import_json(s) {
-                Ok(grid) => Ok(grid),
-                Err(e) => {
-                    dbgjs!(&e);
-                    Err(e)
-                }
-            }
-        }
+    if file_contents[0] == b'{' {
+        import_json(str::from_utf8(file_contents)?)
+    } else {
+        import_binary(file_contents)
     }
 }
 
+/// Imports a binary file.
 fn import_binary(file_contents: &[u8]) -> Result<Grid> {
     let file = bincode::deserialize::<GridFileBinary>(file_contents)
-        .map_err(|e| {
-            dbgjs!(&e);
-            anyhow!(e)
-        })?
+        .map_err(|e| anyhow!(e))?
         .into_latest()?;
     current::import(file)
 }
@@ -126,10 +118,19 @@ mod tests {
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_4_simple.grid");
     const V1_4_AIRPORTS_DISTANCE_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid");
+    const V1_5_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
+
+    #[test]
+    fn process_a_number_v1_3_file() {
+        let imported = import(V1_3_FILE).unwrap();
+        let exported = export(&imported).unwrap();
+        let exported_test = import_binary(&exported).unwrap();
+        assert_eq!(imported, exported_test);
+    }
 
     #[test]
     fn process_a_v1_3_file() {
-        // TODO(ddimaria): validate that elements of the imported and exported file are valid
         let imported = import(V1_3_FILE).unwrap();
         let exported = export(&imported).unwrap();
         let exported_test = import_binary(&exported).unwrap();
@@ -233,25 +234,26 @@ mod tests {
 
     #[test]
     fn process_a_v1_4_airports_distance_file() {
-        let mut imported = import(V1_4_AIRPORTS_DISTANCE_FILE).unwrap();
-        let _exported = export(&mut imported).unwrap();
+        let imported = import(V1_4_AIRPORTS_DISTANCE_FILE).unwrap();
+        let exported = export(&imported).unwrap();
+        let imported_copy = import(&exported).unwrap();
+        assert_eq!(imported, imported_copy);
     }
 
-    // const V1_5_FILE: &[u8] =
-    //     include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
-
-    // todo: V1_5_FILE needs to be converted to binary to work properly
-    // #[test]
-    // fn imports_and_exports_a_current_grid() {
-    //     let mut imported = import(V1_5_FILE).unwrap();
-    //     let exported = export(&mut imported).unwrap();
-    //     assert_eq!(V1_5_FILE, exported);
-    // }
+    #[test]
+    fn imports_and_exports_a_v1_5_grid() {
+        let imported = import(V1_5_FILE).unwrap();
+        let exported = export(&imported).unwrap();
+        let imported_copy = import(&exported).unwrap();
+        assert_eq!(imported_copy, imported);
+    }
 
     #[test]
     fn imports_and_exports_v1_4_default() {
-        let mut imported = import(V1_4_FILE).unwrap();
-        export(&mut imported).unwrap();
+        let imported = import(V1_4_FILE).unwrap();
+        let exported = export(&imported).unwrap();
+        let imported_copy = import(&exported).unwrap();
+        assert_eq!(imported_copy, imported);
     }
 
     #[test]
