@@ -1,6 +1,8 @@
 use crate::grid::file::v1_5::schema as v1_5;
 use crate::grid::file::v1_6::schema as v1_6;
 use anyhow::Result;
+use bigdecimal::BigDecimal;
+use std::str::FromStr;
 
 fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
     (
@@ -14,9 +16,9 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                         k.into(),
                         match &v {
                             v1_5::CellValue::Text(value) => v1_6::CellValue::Text(value.clone()),
-                            v1_5::CellValue::Number(value) => {
-                                v1_6::CellValue::Number(value.clone())
-                            }
+                            v1_5::CellValue::Number(value) => v1_6::CellValue::Number(
+                                BigDecimal::from_str(value).unwrap_or_default(),
+                            ),
                             v1_5::CellValue::Html(value) => v1_6::CellValue::Html(value.clone()),
                             v1_5::CellValue::Blank => v1_6::CellValue::Blank,
                             v1_5::CellValue::Code(code_cell) => {
@@ -240,7 +242,7 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                         ))
                                     } else if value.type_field.to_lowercase() == "number" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Number(
-                                            value.value.clone(),
+                                            BigDecimal::from_str(&value.value).unwrap_or_default(),
                                         ))
                                     } else if value.type_field.to_lowercase() == "html" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Html(
@@ -266,7 +268,10 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                                 } else if value.type_field.to_lowercase()
                                                     == "number".to_string()
                                                 {
-                                                    v1_6::CellValue::Number(value.value.clone())
+                                                    v1_6::CellValue::Number(
+                                                        BigDecimal::from_str(&value.value)
+                                                            .unwrap_or_default(),
+                                                    )
                                                 } else {
                                                     panic!(
                                                         "Unknown type_field: {}",

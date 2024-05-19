@@ -11,7 +11,6 @@ use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
 
 use anyhow::Result;
-use bigdecimal::BigDecimal;
 use chrono::Utc;
 use indexmap::IndexMap;
 use std::{
@@ -210,9 +209,7 @@ fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet)
 fn import_cell_value(value: &current::CellValue) -> CellValue {
     match value {
         current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
-        current::CellValue::Number(number) => {
-            CellValue::Number(BigDecimal::from_str(number).unwrap_or_default())
-        }
+        current::CellValue::Number(number) => CellValue::Number(number.to_owned()),
         current::CellValue::Html(html) => CellValue::Html(html.to_owned()),
         current::CellValue::Code(code_cell) => CellValue::Code(CodeCellValue {
             code: code_cell.code.to_owned(),
@@ -447,6 +444,38 @@ fn export_column_data_wrap(
         .collect()
 }
 
+fn export_values(values: &BTreeMap<i64, CellValue>) -> HashMap<String, current::CellValue> {
+    values
+        .iter()
+        .map(|(y, value)| {
+            (
+                y.to_string(),
+                match value {
+                    CellValue::Text(text) => current::CellValue::Text(text.to_owned()),
+                    CellValue::Number(number) => current::CellValue::Number(number.to_owned()),
+                    CellValue::Html(html) => current::CellValue::Html(html.clone()),
+                    CellValue::Code(cell_code) => current::CellValue::Code(current::CodeCell {
+                        code: cell_code.code.to_owned(),
+                        language: match cell_code.language {
+                            CodeCellLanguage::Python => current::CodeCellLanguage::Python,
+                            CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
+                        },
+                    }),
+                    CellValue::Logical(logical) => current::CellValue::Logical(*logical),
+                    CellValue::Instant(instant) => current::CellValue::Instant(instant.to_string()),
+                    CellValue::Duration(duration) => {
+                        current::CellValue::Duration(duration.to_string())
+                    }
+                    CellValue::Error(error) => {
+                        current::CellValue::Error(current::RunError::from_grid_run_error(error))
+                    }
+                    CellValue::Blank => current::CellValue::Blank,
+                },
+            )
+        })
+        .collect()
+}
+
 fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
     sheet
         .columns
@@ -465,50 +494,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                     text_color: export_column_data_string(&column.text_color),
                     fill_color: export_column_data_string(&column.fill_color),
                     render_size: export_column_data_render_size(&column.render_size),
-                    values: column
-                        .values
-                        .iter()
-                        .map(|(y, value)| {
-                            (
-                                y.to_string(),
-                                match value {
-                                    CellValue::Text(text) => {
-                                        current::CellValue::Text(text.to_owned())
-                                    }
-                                    CellValue::Number(number) => {
-                                        current::CellValue::Number(number.to_string())
-                                    }
-                                    CellValue::Html(html) => current::CellValue::Html(html.clone()),
-                                    CellValue::Code(cell_code) => {
-                                        current::CellValue::Code(current::CodeCell {
-                                            code: cell_code.code.to_owned(),
-                                            language: match cell_code.language {
-                                                CodeCellLanguage::Python => {
-                                                    current::CodeCellLanguage::Python
-                                                }
-                                                CodeCellLanguage::Formula => {
-                                                    current::CodeCellLanguage::Formula
-                                                }
-                                            },
-                                        })
-                                    }
-                                    CellValue::Logical(logical) => {
-                                        current::CellValue::Logical(*logical)
-                                    }
-                                    CellValue::Instant(instant) => {
-                                        current::CellValue::Instant(instant.to_string())
-                                    }
-                                    CellValue::Duration(duration) => {
-                                        current::CellValue::Duration(duration.to_string())
-                                    }
-                                    CellValue::Error(error) => current::CellValue::Error(
-                                        current::RunError::from_grid_run_error(error),
-                                    ),
-                                    CellValue::Blank => current::CellValue::Blank,
-                                },
-                            )
-                        })
-                        .collect(),
+                    values: export_values(&column.values),
                 },
             )
         })
@@ -552,7 +538,7 @@ fn export_borders_builder(sheet: &Sheet) -> current::Borders {
 fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
     match cell_value {
         CellValue::Text(text) => current::CellValue::Text(text.to_owned()),
-        CellValue::Number(number) => current::CellValue::Number(number.to_string()),
+        CellValue::Number(number) => current::CellValue::Number(number.to_owned()),
         CellValue::Html(html) => current::CellValue::Html(html.to_owned()),
         CellValue::Code(cell_code) => current::CellValue::Code(current::CodeCell {
             code: cell_code.code.to_owned(),

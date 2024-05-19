@@ -1,4 +1,5 @@
 use crate::grid::file::v1_5::schema as v1_5;
+use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -128,7 +129,7 @@ pub struct Column {
 pub enum CellValue {
     Blank,
     Text(String),
-    Number(String),
+    Number(f64),
     Html(String),
     Code(CodeCell),
     Logical(bool),
