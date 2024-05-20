@@ -45,7 +45,10 @@ export async function selectColumns(start: number, end: number) {
       });
     }
   } else {
-    const columns = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    const columns = Array.from(
+      { length: Math.max(start, end) - Math.min(start, end) + 1 },
+      (_, i) => Math.min(start, end) + i
+    );
     cursor.changePosition({ cursorPosition: { x: start, y: 0 }, columnRow: { columns } });
   }
 }
@@ -70,7 +73,10 @@ export async function selectRows(start: number, end: number): Promise<void> {
       });
     }
   } else {
-    const rows = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    const rows = Array.from(
+      { length: Math.max(start, end) - Math.min(start, end) + 1 },
+      (_, i) => Math.min(start, end) + i
+    );
     cursor.changePosition({ cursorPosition: { x: 0, y: start }, columnRow: { rows } });
   }
 }
