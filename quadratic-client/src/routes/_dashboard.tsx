@@ -142,7 +142,6 @@ export const Component = () => {
  */
 function Navbar({ isLoading }: { isLoading: boolean }) {
   const [, setSearchParams] = useSearchParams();
-  const [, setDashboardState] = useDashboardContext();
   const {
     teams,
     userMakingRequest: { id: ownerUserId },
@@ -263,7 +262,13 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
                 size="sm"
                 className="w-full"
                 onClick={() => {
-                  setDashboardState((prev) => ({ ...prev, showCreateTeamDialog: true }));
+                  setSearchParams(
+                    (prev) => {
+                      prev.set(SEARCH_PARAMS.DIALOG.KEY, SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM);
+                      return prev;
+                    },
+                    { replace: true }
+                  );
                 }}
               >
                 Create team
