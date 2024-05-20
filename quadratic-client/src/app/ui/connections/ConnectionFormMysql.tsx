@@ -78,7 +78,7 @@ export function ConnectionFormMysql({
         async (values) => {
           const { name, type, ...typeDetails } = values;
 
-          resolve(() => connectionClient.test.postgres(typeDetails));
+          resolve(() => connectionClient.test.mysql(typeDetails));
         },
         () => {
           reject();
