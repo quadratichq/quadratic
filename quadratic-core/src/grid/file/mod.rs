@@ -263,12 +263,12 @@ mod tests {
         gc.add_sheet(None);
         // gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
         gc.set_cell_value((1, 0, sheet_id).into(), "12".to_string(), None);
-        // gc.set_code_cell(
-        //     (0, 1, sheet_id).into(),
-        //     crate::grid::CodeCellLanguage::Formula,
-        //     "13".into(),
-        //     None,
-        // );
+        gc.set_code_cell(
+            (0, 1, sheet_id).into(),
+            crate::grid::CodeCellLanguage::Formula,
+            "13".into(),
+            None,
+        );
 
         let exported = export(gc.grid()).unwrap();
         let imported = import(&exported).unwrap();
