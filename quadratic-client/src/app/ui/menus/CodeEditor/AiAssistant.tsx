@@ -6,7 +6,7 @@ import { AI } from '@/app/ui/icons';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/router';
 import { apiClient } from '@/shared/api/apiClient';
-import { Textarea } from '@/shared/shadcn/ui/textarea.js';
+import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
