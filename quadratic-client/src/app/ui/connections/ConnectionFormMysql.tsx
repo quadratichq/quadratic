@@ -8,27 +8,26 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionFormMysqlSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 
-type FormValues = z.infer<typeof ConnectionFormPostgresSchema>;
+type FormValues = z.infer<typeof ConnectionFormMysqlSchema>;
 
-export function ConnectionFormPostgres({
+export function ConnectionFormMysql({
   initialData,
   connectionUuid,
 }: {
   connectionUuid: string;
-  // TODO: (connections) note this is a very specific kind of get for postgres only, update the type
-  initialData?: ApiTypes['/v0/connections/:uuid.GET.response']; // z.infer<typeof ConnectionPostgresSchema>;
+  initialData?: ApiTypes['/v0/connections/:uuid.GET.response']; // z.infer<typeof ConnectionMysqlSchema>;
 }) {
   const [hidePassword, setHidePassword] = useState(true);
   const submit = useSubmit();
 
   const defaultValues: FormValues =
-    initialData && initialData.type === 'POSTGRES' && initialData.typeDetails
+    initialData && initialData.type === 'MYSQL' && initialData.typeDetails
       ? {
           name: initialData.name,
           type: initialData.type,
@@ -40,7 +39,7 @@ export function ConnectionFormPostgres({
         }
       : {
           name: '',
-          type: 'POSTGRES',
+          type: 'MYSQL',
           host: '',
           port: '',
           database: '',
@@ -48,7 +47,7 @@ export function ConnectionFormPostgres({
           password: '',
         };
   const form = useForm<FormValues>({
-    resolver: zodResolver(ConnectionFormPostgresSchema),
+    resolver: zodResolver(ConnectionFormMysqlSchema),
     defaultValues,
   });
 

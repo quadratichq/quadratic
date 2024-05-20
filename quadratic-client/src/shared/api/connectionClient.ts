@@ -1,5 +1,8 @@
 import { authClient } from '@/auth';
-import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ConnectionTypeDetailsMysqlSchema,
+  ConnectionTypeDetailsPostgresSchema,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import z from 'zod';
 const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTION_URL;
 
@@ -11,12 +14,29 @@ export type TestConnectionResponse = {
   connected: boolean;
   message: string | null;
 };
-const PostgresSchema = ConnectionFormPostgresSchema.omit({ type: true, name: true });
-type TestPostgresBody = z.infer<typeof PostgresSchema>;
 
 export const connectionClient = {
   test: {
-    postgres: async (body: TestPostgresBody) => {
+    mysql: async (body: z.infer<typeof ConnectionTypeDetailsMysqlSchema>) => {
+      try {
+        let jwt = await authClient.getTokenOrRedirect();
+        const res = fetch(`${API_URL}/mysql/test`, {
+          method: 'POST',
+          headers: new Headers({ 'content-type': 'application/json', authorization: `Bearer ${jwt}` }),
+          body: JSON.stringify(body),
+        });
+        const json: TestConnectionResponse = await res.then((res) => res.json());
+        return json;
+      } catch (err) {
+        console.error('Failed to connect to connection service', err);
+        return {
+          connected: false,
+          message:
+            'Network error: failed to make connection. Make sure you’re connected to the internet and try again.',
+        };
+      }
+    },
+    postgres: async (body: z.infer<typeof ConnectionTypeDetailsPostgresSchema>) => {
       try {
         let jwt = await authClient.getTokenOrRedirect();
         const res = fetch(`${API_URL}/postgres/test`, {
