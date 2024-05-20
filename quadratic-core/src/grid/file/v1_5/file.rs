@@ -1,8 +1,6 @@
 use crate::grid::file::v1_5::schema as v1_5;
 use crate::grid::file::v1_6::schema as v1_6;
 use anyhow::Result;
-use bigdecimal::BigDecimal;
-use std::str::FromStr;
 
 fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
     (
@@ -17,8 +15,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                         match &v {
                             v1_5::CellValue::Text(value) => v1_6::CellValue::Text(value.clone()),
                             v1_5::CellValue::Number(value) => {
-                                let bd = BigDecimal::from_str(value).unwrap_or_default();
-                                v1_6::CellValue::Number(bd.to_f32().unwrap_or_default())
+                                v1_6::CellValue::Number(value.to_owned())
                             }
                             v1_5::CellValue::Html(value) => v1_6::CellValue::Html(value.clone()),
                             v1_5::CellValue::Blank => v1_6::CellValue::Blank,
@@ -239,17 +236,15 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                 v1_5::OutputValue::Single(value) => {
                                     if value.type_field.to_lowercase() == "text" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Text(
-                                            value.value.clone(),
+                                            value.value.to_owned(),
                                         ))
                                     } else if value.type_field.to_lowercase() == "number" {
-                                        let bd =
-                                            BigDecimal::from_str(&value.value).unwrap_or_default();
                                         v1_6::OutputValue::Single(v1_6::CellValue::Number(
-                                            bd.to_f32().unwrap_or_default(),
+                                            value.value.to_owned(),
                                         ))
                                     } else if value.type_field.to_lowercase() == "html" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Html(
-                                            value.value.clone(),
+                                            value.value.to_owned(),
                                         ))
                                     } else if value.type_field.to_lowercase() == "blank" {
                                         v1_6::OutputValue::Single(v1_6::CellValue::Blank)
@@ -271,11 +266,7 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                                 } else if value.type_field.to_lowercase()
                                                     == "number".to_string()
                                                 {
-                                                    let bd = BigDecimal::from_str(&value.value)
-                                                        .unwrap_or_default();
-                                                    v1_6::CellValue::Number(
-                                                        bd.to_f32().unwrap_or_default(),
-                                                    )
+                                                    v1_6::CellValue::Number(value.value.clone())
                                                 } else {
                                                     panic!(
                                                         "Unknown type_field: {}",

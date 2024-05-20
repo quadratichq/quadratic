@@ -1,12 +1,14 @@
-use crate::CellValue;
-use crate::file::v1_6::schema::{self as current},
+use std::str::FromStr;
+
+use bigdecimal::BigDecimal;
+
+use super::schema::{self as current};
+use crate::{grid::CodeCellLanguage, CellValue, CodeCellValue};
 
 pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
     match cell_value {
         CellValue::Text(text) => current::CellValue::Text(text.to_owned()),
-        CellValue::Number(number) => {
-            current::CellValue::Number(number.to_f32().unwrap_or_default())
-        }
+        CellValue::Number(number) => export_cell_value_number(number),
         CellValue::Html(html) => current::CellValue::Html(html.to_owned()),
         CellValue::Code(cell_code) => current::CellValue::Code(current::CodeCell {
             code: cell_code.code.to_owned(),
@@ -25,21 +27,22 @@ pub fn export_cell_value(cell_value: &CellValue) -> current::CellValue {
     }
 }
 
-pub fn big_decimal_to_cell_value(number: BigDecimal) -> CellValue {
-    let (bigint, exponent) = number.as_bigint_and_exponent();
-    if exponent >= 0 {
-        CellValue::NumberI64(bigint.to_i64().unwrap_or_default())
-    } else {
-        CellValue::NumberF64((bigint.to_i64().unwrap_or_default(), exponent as u32))
-    }
+// Change BigDecimal to a current::CellValue (this will be used to convert BD to
+// various CellValue::Number* types, such as NumberF32, etc.)
+pub fn export_cell_value_number(number: &BigDecimal) -> current::CellValue {
+    current::CellValue::Number(number.to_string())
+}
+
+// Change BigDecimal's serialization to a grid::CellValue (this will be used to
+// convert BD to various CellValue::Number* types, such as NumberF32, etc.)
+pub fn import_cell_value_number(number: String) -> CellValue {
+    CellValue::Number(BigDecimal::from_str(&number).unwrap_or_default())
 }
 
 pub fn import_cell_value(value: &current::CellValue) -> CellValue {
     match value {
         current::CellValue::Text(text) => CellValue::Text(text.to_owned()),
-        current::CellValue::Number(number) => {
-            CellValue::Number(BigDecimal::from_f32(*number).unwrap_or_default())
-        }
+        current::CellValue::Number(number) => import_cell_value_number(number.to_owned()),
         current::CellValue::Html(html) => CellValue::Html(html.to_owned()),
         current::CellValue::Code(code_cell) => CellValue::Code(CodeCellValue {
             code: code_cell.code.to_owned(),

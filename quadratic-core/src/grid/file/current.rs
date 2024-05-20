@@ -1,24 +1,23 @@
+use super::v1_6::file::{export_cell_value, import_cell_value};
+use super::CURRENT_VERSION;
 use crate::color::Rgba;
 use crate::grid::{
     block::SameValue,
     file::v1_6::schema::{self as current},
     formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
-    CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
-    NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
+    CellWrap, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds, NumericFormat,
+    NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
 use crate::sheet_offsets::SheetOffsets;
-use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
+use crate::{CellValue, Pos, Rect, Value};
 use anyhow::Result;
-use bigdecimal::BigDecimal;
 use chrono::Utc;
 use indexmap::IndexMap;
 use std::{
     collections::{BTreeMap, HashMap},
     str::FromStr,
 };
-
-use super::CURRENT_VERSION;
 
 fn set_column_format_align(
     column_data: &mut ColumnData<SameValue<CellAlign>>,
@@ -423,34 +422,7 @@ fn export_column_data_wrap(
 fn export_values(values: &BTreeMap<i64, CellValue>) -> HashMap<String, current::CellValue> {
     values
         .iter()
-        .map(|(y, value)| {
-            (
-                y.to_string(),
-                match value {
-                    CellValue::Text(text) => current::CellValue::Text(text.to_owned()),
-                    CellValue::Number(number) => {
-                        current::CellValue::Number(BigDecimal::to_f32(number).unwrap_or_default())
-                    }
-                    CellValue::Html(html) => current::CellValue::Html(html.clone()),
-                    CellValue::Code(cell_code) => current::CellValue::Code(current::CodeCell {
-                        code: cell_code.code.to_owned(),
-                        language: match cell_code.language {
-                            CodeCellLanguage::Python => current::CodeCellLanguage::Python,
-                            CodeCellLanguage::Formula => current::CodeCellLanguage::Formula,
-                        },
-                    }),
-                    CellValue::Logical(logical) => current::CellValue::Logical(*logical),
-                    CellValue::Instant(instant) => current::CellValue::Instant(instant.to_string()),
-                    CellValue::Duration(duration) => {
-                        current::CellValue::Duration(duration.to_string())
-                    }
-                    CellValue::Error(error) => {
-                        current::CellValue::Error(current::RunError::from_grid_run_error(error))
-                    }
-                    CellValue::Blank => current::CellValue::Blank,
-                },
-            )
-        })
+        .map(|(y, value)| (y.to_string(), export_cell_value(value)))
         .collect()
 }
 
