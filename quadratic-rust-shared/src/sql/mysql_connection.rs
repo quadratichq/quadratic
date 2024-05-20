@@ -140,73 +140,32 @@ impl Connection for MySqlConnection {
     }
 
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
-        println!("{:?}", column.type_info().name());
-
         match column.type_info().name() {
-            // "TEXT" | "VARCHAR" | "CHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
-            //     ArrowType::Utf8(convert_mysql_type!(String, row, index))
-            // }
-            // "SMALLINT" | "SMALLSERIAL" | "INT2" => {
-            //     ArrowType::Int16(convert_mysql_type!(i16, row, index))
-            // }
-            // "INT" | "SERIAL" | "INT4" => ArrowType::Int32(convert_mysql_type!(i32, row, index)),
-            // "BIGINT" | "BIGSERIAL" | "INT8" => {
-            //     ArrowType::Int64(convert_mysql_type!(i64, row, index))
-            // }
-            // "BOOL" => ArrowType::Boolean(convert_mysql_type!(bool, row, index)),
-            // "REAL" | "FLOAT4" => ArrowType::Float32(convert_mysql_type!(f32, row, index)),
-            // "DOUBLE PRECISION" | "FLOAT8" => {
-            //     ArrowType::Float64(convert_mysql_type!(f64, row, index))
-            // }
-            // "NUMERIC" => ArrowType::BigDecimal(convert_mysql_type!(BigDecimal, row, index)),
-            // "TIMESTAMP" => ArrowType::Timestamp(convert_mysql_type!(NaiveDateTime, row, index)),
-            // "TIMESTAMPTZ" => {
-            //     ArrowType::TimestampTz(convert_mysql_type!(DateTime<Local>, row, index))
-            // }
-            // "DATE" => {
-            //     let naive_date = convert_mysql_type!(NaiveDate, row, index);
-            //     ArrowType::Date32(Date32Type::from_naive_date(naive_date))
-            // }
-            // "TIME" => ArrowType::Time32(convert_mysql_type!(NaiveTime, row, index)),
-            // "INTERVAL" => {
-            //     // TODO(ddimaria): implement once we support intervals
-            //     // let interval = row.try_get::<PgInterval, usize>(index).ok();
-            //     // PgInterval { months: -2, days: 0, microseconds: 0
-            //     ArrowType::Void
-            // }
-            // "JSON" => ArrowType::Json(convert_mysql_type!(Value, row, index)),
-            // "JSONB" => ArrowType::Jsonb(convert_mysql_type!(Value, row, index)),
-            // "UUID" => ArrowType::Uuid(convert_mysql_type!(Uuid, row, index)),
-            // "XML" => ArrowType::Void,
-            // "VOID" => ArrowType::Void,
-            // try to convert others to a string
-            _ => {
-                // match column.type_info().kind() {
-                //     PgTypeKind::Enum(_) => {
-                //         let value = row
-                //             .try_get_raw(index)
-                //             .and_then(|value| Ok(value.as_str().unwrap_or_default().to_string()));
-
-                //         if let Ok(value) = value {
-                //             return ArrowType::Utf8(value);
-                //         }
-                //     }
-                //     PgTypeKind::Simple => {}
-                //     PgTypeKind::Pseudo => {}
-                //     PgTypeKind::Domain(_type_info) => {}
-                //     PgTypeKind::Composite(_type_info_array) => {}
-                //     PgTypeKind::Array(_type_info) => {}
-                //     PgTypeKind::Range(_type_info) => {}
-                // };
-
-                // println!(
-                //     "Unknown type: {:?}",
-                //     row.try_get_raw(index)
-                //         .and_then(|value| Ok(value.to_owned()))
-                // );
-
-                ArrowType::Utf8(convert_mysql_type!(String, row, index))
+            "TEXT" | "VARCHAR" | "CHAR" => ArrowType::Utf8(convert_mysql_type!(String, row, index)),
+            "TINYINT" => ArrowType::Int8(convert_mysql_type!(i8, row, index)),
+            "SMALLINT" => ArrowType::Int16(convert_mysql_type!(i16, row, index)),
+            "MEDIUMINT" | "INT" => ArrowType::Int32(convert_mysql_type!(i32, row, index)),
+            "BIGINT" => ArrowType::Int64(convert_mysql_type!(i64, row, index)),
+            "TINYINT UNSIGNED" => ArrowType::UInt8(convert_mysql_type!(u8, row, index)),
+            "SMALLINT UNSIGNED" => ArrowType::UInt16(convert_mysql_type!(u16, row, index)),
+            "INT UNSIGNED" => ArrowType::UInt32(convert_mysql_type!(u32, row, index)),
+            "BIGINT UNSIGNED" | "BIT" => ArrowType::UInt64(convert_mysql_type!(u64, row, index)),
+            "BOOL" | "BOOLEAN" => ArrowType::Boolean(convert_mysql_type!(bool, row, index)),
+            "FLOAT" => ArrowType::Float32(convert_mysql_type!(f32, row, index)),
+            "DOUBLE" => ArrowType::Float64(convert_mysql_type!(f64, row, index)),
+            "DECIMAL" => ArrowType::BigDecimal(convert_mysql_type!(BigDecimal, row, index)),
+            "TIMESTAMP" => ArrowType::TimestampTz(convert_mysql_type!(DateTime<Local>, row, index)),
+            "DATETIME" => ArrowType::Timestamp(convert_mysql_type!(NaiveDateTime, row, index)),
+            "DATE" => {
+                let naive_date = convert_mysql_type!(NaiveDate, row, index);
+                ArrowType::Date32(Date32Type::from_naive_date(naive_date))
             }
+            "TIME" => ArrowType::Time32(convert_mysql_type!(NaiveTime, row, index)),
+            "YEAR" => ArrowType::UInt16(convert_mysql_type!(u16, row, index)),
+            "JSON" => ArrowType::Json(convert_mysql_type!(Value, row, index)),
+            "UUID" => ArrowType::Uuid(convert_mysql_type!(Uuid, row, index)),
+            // try to convert others to a string
+            _ => ArrowType::Utf8(convert_mysql_type!(String, row, index)),
         }
     }
 }
@@ -229,11 +188,11 @@ mod tests {
 
     fn new_mysql_connection() -> MySqlConnection {
         MySqlConnection::new(
-            Some("mysql".into()),
-            Some("mysql".into()),
+            Some("user".into()),
+            Some("password".into()),
             "0.0.0.0".into(),
-            Some("5432".into()),
-            Some("mysql".into()),
+            Some("3306".into()),
+            Some("connection".into()),
         )
     }
 
@@ -244,7 +203,10 @@ mod tests {
         let pool = connection.connect().await.unwrap();
         let rows = connection
             // .query(pool, "select * from \"FileCheckpoint\" limit 10")
-            .query(pool, "select * from \"Sample\" order by id limit 10")
+            .query(
+                pool,
+                "select * from all_native_data_types order by id limit 1",
+            )
             .await
             .unwrap();
 

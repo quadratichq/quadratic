@@ -1,11 +1,10 @@
 use arrow::{
     array::{
         ArrayRef, BooleanArray, Date32Array, Date64Array, Float32Array, Float64Array, Int16Array,
-        Int32Array, Int64Array, RecordBatch, StringArray, Time32SecondArray,
-        TimestampMillisecondArray,
+        Int32Array, Int64Array, Int8Array, RecordBatch, StringArray, Time32SecondArray,
+        TimestampMillisecondArray, UInt16Array, UInt32Array, UInt64Array, UInt8Array,
     },
-    datatypes::Schema as ArrowSchema,
-    datatypes::*,
+    datatypes::{Schema as ArrowSchema, *},
 };
 use bigdecimal::BigDecimal;
 use bytes::Bytes;
@@ -35,9 +34,14 @@ pub enum SqlConnection {
 
 #[derive(Clone, Debug)]
 pub enum ArrowType {
+    Int8(i8),
     Int16(i16),
     Int32(i32),
     Int64(i64),
+    UInt8(u8),
+    UInt16(u16),
+    UInt32(u32),
+    UInt64(u64),
     Float32(f32),
     Float64(f64),
     BigDecimal(BigDecimal),
@@ -60,6 +64,9 @@ pub enum ArrowType {
 impl ArrowType {
     pub fn to_array_ref(values: Vec<ArrowType>) -> ArrayRef {
         match values[0] {
+            ArrowType::Int8(_) => {
+                vec_arrow_type_to_array_ref!(ArrowType::Int8, Int8Array, values)
+            }
             ArrowType::Int16(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Int16, Int16Array, values)
             }
@@ -68,6 +75,18 @@ impl ArrowType {
             }
             ArrowType::Int64(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Int64, Int64Array, values)
+            }
+            ArrowType::UInt8(_) => {
+                vec_arrow_type_to_array_ref!(ArrowType::UInt8, UInt8Array, values)
+            }
+            ArrowType::UInt16(_) => {
+                vec_arrow_type_to_array_ref!(ArrowType::UInt16, UInt16Array, values)
+            }
+            ArrowType::UInt32(_) => {
+                vec_arrow_type_to_array_ref!(ArrowType::UInt32, UInt32Array, values)
+            }
+            ArrowType::UInt64(_) => {
+                vec_arrow_type_to_array_ref!(ArrowType::UInt64, UInt64Array, values)
             }
             ArrowType::Float32(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Float32, Float32Array, values)
@@ -88,15 +107,13 @@ impl ArrowType {
                 vec_arrow_type_to_array_ref!(ArrowType::Boolean, BooleanArray, values)
             }
             ArrowType::Date32(_) => {
-                let converted = values.iter().flat_map(|value| match value {
-                    ArrowType::Date32(value) => {
-                        println!("value: {:?}", value);
-                        Some(*value)
-                    }
-                    _ => None,
-                });
+                // let converted = values.iter().flat_map(|value| match value {
+                //     ArrowType::Date32(value) => Some(*value),
+                //     _ => None,
+                // });
 
-                Arc::new(Date32Array::from_iter_values(converted)) as ArrayRef
+                // Arc::new(Date32Array::from_iter_values(converted)) as ArrayRef
+                vec_arrow_type_to_array_ref!(ArrowType::Date32, Date32Array, values)
             }
             ArrowType::Date64(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Date64, Date64Array, values)

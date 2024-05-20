@@ -240,7 +240,10 @@ mod tests {
         let pool = connection.connect().await.unwrap();
         let rows = connection
             // .query(pool, "select * from \"FileCheckpoint\" limit 10")
-            .query(pool, "select * from \"Sample\" order by id limit 10")
+            .query(
+                pool,
+                "select * from all_native_data_types order by id limit 1",
+            )
             .await
             .unwrap();
 
