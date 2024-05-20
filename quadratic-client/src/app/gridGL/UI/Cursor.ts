@@ -1,3 +1,5 @@
+//! Draws the cursor, code cursor, and selection to the screen.
+
 import { Graphics, Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
@@ -40,7 +42,7 @@ export class Cursor extends Graphics {
     this.cursorRectangle = new Rectangle();
   }
 
-  private drawCursor(): void {
+  private drawCursor() {
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
     const { viewport } = pixiApp;
@@ -117,7 +119,7 @@ export class Cursor extends Graphics {
     }
   }
 
-  private drawMultiCursor(): void {
+  private drawMultiCursor() {
     const sheet = sheets.sheet;
     const { cursor } = sheet;
 
@@ -145,7 +147,48 @@ export class Cursor extends Graphics {
     }
   }
 
-  private drawCursorIndicator(): void {
+  private drawCursorHole() {
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+    this.beginHole();
+    const hole = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
+    this.drawShape(hole);
+    this.endHole();
+  }
+
+  private drawColumnRowCursor() {
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+    const columnRow = cursor.columnRow;
+    if (!columnRow) return;
+
+    this.lineStyle();
+    this.beginFill(colors.cursorCell, FILL_ALPHA);
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    if (columnRow.all) {
+      this.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      this.drawCursorHole();
+    } else if (columnRow.columns) {
+      columnRow.columns.forEach((column) => {
+        const { x, width } = sheet.getCellOffsets(column, 0);
+        this.drawRect(x, bounds.y, width, bounds.height);
+        if (column === cursor.cursorPosition.x) {
+          this.drawCursorHole();
+        }
+      });
+    } else if (columnRow.rows) {
+      columnRow.rows.forEach((row) => {
+        const { y, height } = sheet.getCellOffsets(0, row);
+        this.drawRect(bounds.x, y, bounds.width, height);
+        if (row === cursor.cursorPosition.y) {
+          this.drawCursorHole();
+        }
+      });
+    }
+    this.endFill();
+  }
+
+  private drawCursorIndicator() {
     const { viewport } = pixiApp;
     const cursor = sheets.sheet.cursor;
 
@@ -178,7 +221,7 @@ export class Cursor extends Graphics {
     }
   }
 
-  private drawCodeCursor(): void {
+  private drawCodeCursor() {
     const { editorInteractionState } = pixiAppSettings;
     if (!editorInteractionState.showCodeEditor || sheets.sheet.id !== editorInteractionState.selectedCellSheet) return;
     const cell = editorInteractionState.selectedCell;
@@ -197,7 +240,7 @@ export class Cursor extends Graphics {
     this.drawRect(x, y, width, height);
   }
 
-  private drawEditorHighlightedCells(): void {
+  private drawEditorHighlightedCells() {
     const highlightedCells = pixiApp.highlightedCells.getHighlightedCells();
     const highlightedCellIndex = pixiApp.highlightedCells.highlightedCellIndex;
     if (!highlightedCells.length) return;
@@ -244,17 +287,26 @@ export class Cursor extends Graphics {
     }
   }
 
-  update() {
-    if (this.dirty) {
+  // Besides the dirty flag, we also need to update the cursor when the viewport
+  // is dirty and columnRow is set because the columnRow selection is drawn to
+  // visible bounds on the screen, not to the selection size.
+  update(viewportDirty: boolean) {
+    const columnRow = !!sheets.sheet.cursor.columnRow;
+    if (this.dirty || (viewportDirty && columnRow)) {
       this.dirty = false;
       this.clear();
-      this.drawCursor();
+      if (!columnRow) {
+        this.drawCursor();
+      }
       this.drawCodeCursor();
       this.drawEditorHighlightedCells();
 
       if (!pixiAppSettings.input.show) {
         this.drawMultiCursor();
-        this.drawCursorIndicator();
+        this.drawColumnRowCursor();
+        if (!columnRow) {
+          this.drawCursorIndicator();
+        }
       }
 
       pixiApp.setViewportDirty();

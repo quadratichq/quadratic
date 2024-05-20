@@ -3,58 +3,74 @@ import { sheets } from '../../grid/controller/Sheets';
 
 export function selectAllCells() {
   const sheet = sheets.sheet;
-  const bounds = sheet.getBounds(true);
-
-  if (bounds) {
-    sheet.cursor.changePosition({
-      multiCursor: {
-        originPosition: { x: bounds.left, y: bounds.top },
-        terminalPosition: { x: bounds.right, y: bounds.bottom },
-      },
-      cursorPosition: { x: bounds.left, y: bounds.top },
-    });
+  const cursor = sheet.cursor;
+  if (cursor.columnRow?.all) {
+    const bounds = sheet.getBounds(true);
+    if (bounds) {
+      cursor.changePosition({
+        multiCursor: {
+          originPosition: { x: bounds.left, y: bounds.top },
+          terminalPosition: { x: bounds.right, y: bounds.bottom },
+        },
+        cursorPosition: { x: bounds.left, y: bounds.top },
+      });
+    } else {
+      cursor.changePosition({
+        multiCursor: undefined,
+        cursorPosition: { x: 0, y: 0 },
+      });
+    }
   } else {
-    sheet.cursor.changePosition({
-      multiCursor: undefined,
-      cursorPosition: { x: 0, y: 0 },
-    });
+    cursor.changePosition({ columnRow: { all: true } });
   }
 }
 
 export async function selectColumns(start: number, end: number) {
   const sheet = sheets.sheet;
-  const bounds = await quadraticCore.getColumnsBounds(sheet.id, start, end, true);
-  if (bounds) {
-    sheet.cursor.changePosition({
-      cursorPosition: { x: start, y: bounds.min },
-      multiCursor: {
-        originPosition: { x: start, y: bounds.min },
-        terminalPosition: { x: end, y: bounds.max },
-      },
-    });
+  const cursor = sheet.cursor;
+  const columnRow = cursor.columnRow;
+  if (columnRow?.columns && columnRow.columns[0] === start && columnRow.columns[0] === end) {
+    const bounds = await quadraticCore.getColumnsBounds(sheet.id, start, end, true);
+    if (bounds) {
+      cursor.changePosition({
+        cursorPosition: { x: start, y: bounds.min },
+        multiCursor: {
+          originPosition: { x: Math.min(start, end), y: bounds.min },
+          terminalPosition: { x: Math.max(start, end), y: bounds.max },
+        },
+      });
+    } else {
+      cursor.changePosition({
+        cursorPosition: { x: start, y: 0 },
+      });
+    }
   } else {
-    sheet.cursor.changePosition({
-      cursorPosition: { x: start, y: 0 },
-      multiCursor: undefined,
-    });
+    const columns = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    cursor.changePosition({ cursorPosition: { x: start, y: 0 }, columnRow: { columns } });
   }
 }
 
 export async function selectRows(start: number, end: number): Promise<void> {
   const sheet = sheets.sheet;
-  const bounds = await quadraticCore.getRowsBounds(sheet.id, start, end, true);
-  if (bounds) {
-    sheet.cursor.changePosition({
-      cursorPosition: { x: bounds.min, y: start },
-      multiCursor: {
-        originPosition: { x: bounds.min, y: start },
-        terminalPosition: { x: bounds.max, y: end },
-      },
-    });
+  const cursor = sheet.cursor;
+  const columnRow = cursor.columnRow;
+  if (columnRow?.rows && columnRow.rows[0] === start && columnRow.rows[0] === end) {
+    const bounds = await quadraticCore.getRowsBounds(sheet.id, start, end, true);
+    if (bounds) {
+      sheet.cursor.changePosition({
+        cursorPosition: { x: bounds.min, y: start },
+        multiCursor: {
+          originPosition: { x: bounds.min, y: Math.min(start, end) },
+          terminalPosition: { x: bounds.max, y: Math.max(start, end) },
+        },
+      });
+    } else {
+      sheet.cursor.changePosition({
+        cursorPosition: { x: 0, y: start },
+      });
+    }
   } else {
-    sheet.cursor.changePosition({
-      cursorPosition: { x: 0, y: start },
-      multiCursor: undefined,
-    });
+    const rows = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    cursor.changePosition({ cursorPosition: { x: 0, y: start }, columnRow: { rows } });
   }
 }

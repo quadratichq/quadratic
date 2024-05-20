@@ -112,7 +112,7 @@ export class Update {
     debugTimeCheck('[Update] headings');
     pixiApp.boxCells.update();
     debugTimeCheck('[Update] boxCells');
-    pixiApp.cursor.update();
+    pixiApp.cursor.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] cursor');
     pixiApp.multiplayerCursor.update();
     debugTimeCheck('[Update] multiplayerCursor');

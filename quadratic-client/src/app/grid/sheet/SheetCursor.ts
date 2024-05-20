@@ -1,3 +1,7 @@
+//! Holds the state of the cursor for a sheet. Allows for saving and loading of
+//! that state as you switch between sheets, a multiplayer user follows your
+//! cursor, or you save the cursor state in the URL at ?state=.
+
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
@@ -5,35 +9,49 @@ import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
 
-type MultiCursor =
-  | {
-      originPosition: Coordinate;
-      terminalPosition: Coordinate;
-    }
-  | undefined;
+// Multi-cursor for selecting multiple cells.
+//
+// todo: this should be changed to Rectangle[] to allow multiple selections via
+// shift key.
+interface MultiCursor {
+  originPosition: Coordinate;
+  terminalPosition: Coordinate;
+}
 
+// Select column and/or row for the entire sheet.
+interface ColumnRowCursor {
+  columns?: number[];
+  rows?: number[];
+  all?: true;
+}
+
+// Save object for the cursor state.
 export interface SheetCursorSave {
   sheetId: string;
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor: MultiCursor;
+  multiCursor?: MultiCursor;
+  columnRow?: ColumnRowCursor;
 }
 
 export class SheetCursor {
   private _viewport?: IViewportTransformState;
 
   sheetId: string;
+
+  // used to determine if the boxCells (ie, autocomplete) is active
   boxCells: boolean;
+
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor: MultiCursor;
+  multiCursor?: MultiCursor;
+  columnRow?: ColumnRowCursor;
 
   constructor(sheet: Sheet) {
     this.sheetId = sheet.id;
     this.boxCells = false;
     this.keyboardMovePosition = { x: 0, y: 0 };
     this.cursorPosition = { x: 0, y: 0 };
-    this.multiCursor = undefined;
   }
 
   set viewport(save: IViewportTransformState) {
@@ -66,11 +84,21 @@ export class SheetCursor {
 
   changePosition(options: {
     multiCursor?: MultiCursor;
+    columnRow?: ColumnRowCursor;
     cursorPosition?: Coordinate;
     keyboardMovePosition?: Coordinate;
     ensureVisible?: boolean;
-  }): void {
-    this.multiCursor = options.multiCursor;
+  }) {
+    if (options.columnRow) {
+      this.columnRow = options.columnRow;
+      this.multiCursor = undefined;
+    } else if (options.multiCursor) {
+      this.multiCursor = options.multiCursor;
+      this.columnRow = undefined;
+    } else {
+      this.multiCursor = undefined;
+      this.columnRow = undefined;
+    }
     if (options.cursorPosition) {
       this.cursorPosition = options.cursorPosition;
       this.keyboardMovePosition = options.keyboardMovePosition ?? this.cursorPosition;

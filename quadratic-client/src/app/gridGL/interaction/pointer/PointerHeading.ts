@@ -55,12 +55,6 @@ export class PointerHeading {
     return false;
   }
 
-  selectAll() {
-    const { cursor } = pixiApp;
-    selectAllCells();
-    cursor.dirty = true;
-  }
-
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
     clearTimeout(this.fitToColumnTimeout);
     const { headings, viewport } = pixiApp;
@@ -106,7 +100,7 @@ export class PointerHeading {
           this.downTimeout = undefined;
           zoomToFit();
         } else {
-          this.selectAll();
+          selectAllCells();
           this.downTimeout = window.setTimeout(() => {
             if (this.downTimeout) {
               this.downTimeout = undefined;
@@ -121,12 +115,12 @@ export class PointerHeading {
         if (intersects.column !== undefined) {
           let x1 = cursor.cursorPosition.x;
           let x2 = intersects.column;
-          selectColumns(Math.min(x1, x2), Math.max(x1, x2));
+          selectColumns(x1, x2);
           pixiApp.cursor.dirty = true;
         } else if (intersects.row !== undefined) {
           let y1 = cursor.cursorPosition.y;
           let y2 = intersects.row;
-          selectRows(Math.min(y1, y2), Math.max(y1, y2));
+          selectRows(y1, y2);
           pixiApp.cursor.dirty = true;
         }
       } else {

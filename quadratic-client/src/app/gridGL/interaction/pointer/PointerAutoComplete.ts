@@ -185,9 +185,7 @@ export class PointerAutoComplete {
     const cursor = sheet.cursor;
 
     if (width === 1 && height === 1) {
-      cursor.changePosition({
-        multiCursor: undefined,
-      });
+      cursor.changePosition({});
     } else {
       sheet.cursor.changePosition({
         multiCursor: {
