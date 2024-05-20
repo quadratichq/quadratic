@@ -1,3 +1,4 @@
+import { ConnectionFormMysql } from '@/app/ui/connections/ConnectionFormMysql';
 import { ConnectionFormPostgres } from '@/app/ui/connections/ConnectionFormPostgres';
 import MysqlLogo from './logo-mysql.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
@@ -17,6 +18,7 @@ export const connectionsByType = {
     name: 'MySQL',
     docsLink: 'TODO: (connections)',
     Logo: MysqlLogo,
-    Form: () => 'TODO: (connections) mysql form here',
+    Form: ConnectionFormMysql,
   },
+  // TODO: (connections) consider moving all configuration into this one file
 };

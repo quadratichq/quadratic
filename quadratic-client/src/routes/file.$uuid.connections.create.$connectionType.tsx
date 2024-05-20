@@ -19,13 +19,28 @@ export const loader = async ({ params }: LoaderFunctionArgs) => {
   return { connectionType };
 };
 
+type Action = CreateConnectionAction;
 export const action = async ({ request, params }: ActionFunctionArgs) => {
-  const data: ApiTypes['/v0/connections.POST.request'] = await request.json();
-  // await new Promise((resolve) => setTimeout(resolve, 5000));
-  await apiClient.connections.create(data);
-  // TODO if it completes, redirect to connections list, otherwise show error
-  return redirect(ROUTES.FILE_CONNECTIONS(params?.uuid as string));
-  // return redirect(checkoutSessionUrl.url);
+  const action: Action = await request.json();
+
+  if (action._intent === 'create-connection') {
+    const { _intent, ...data } = action;
+    const result = await apiClient.connections.create(data);
+    if (result) {
+      return redirect(ROUTES.FILE_CONNECTIONS(params?.uuid as string));
+    }
+    return { ok: false };
+  }
+
+  return { ok: false };
+};
+
+type CreateConnectionAction = ReturnType<typeof getCreateConnectionAction>;
+export const getCreateConnectionAction = (body: ApiTypes['/v0/connections.POST.request']) => {
+  return {
+    _intent: 'create-connection',
+    ...body,
+  };
 };
 
 export const Component = () => {

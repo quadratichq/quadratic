@@ -29,10 +29,10 @@ export const ConnectionDialogBody = ({
   const connectionName = connectionsByType[connectionType].name;
   const connectionDocsLink = connectionsByType[connectionType].docsLink;
 
-  const onClose = () => {
-    navigate(ROUTES.FILE(uuid));
+  const handleCancel = () => {
+    navigate(ROUTES.FILE_CONNECTIONS(uuid));
   };
-  const onDelete = () => {
+  const handleDelete = () => {
     const data = getDeleteConnectionAction(connectionUuid);
     submit(data, { method: 'POST', encType: 'application/json' });
   };
@@ -54,12 +54,12 @@ export const ConnectionDialogBody = ({
 
       <DialogFooter className="flex items-center">
         {isEdit && (
-          <Button onClick={onDelete} variant="destructive" disabled={isSubmitting} className="mr-auto">
+          <Button onClick={handleDelete} variant="destructive" disabled={isSubmitting} className="mr-auto">
             Delete
           </Button>
         )}
         {isSubmitting && <CircularProgress style={{ width: '18px', height: '18px', marginRight: '.25rem' }} />}
-        <Button onClick={onClose} variant="outline" disabled={isSubmitting}>
+        <Button onClick={handleCancel} variant="outline" disabled={isSubmitting}>
           Cancel
         </Button>
 

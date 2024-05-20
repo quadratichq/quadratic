@@ -12,22 +12,32 @@ export type ConnectionType = z.infer<typeof ConnectionTypesSchema>;
 
 export const ConnectionTypePostgresSchema = z.literal(ConnectionTypesSchema.enum.POSTGRES);
 export const ConnectionTypeDetailsPostgresSchema = z.object({
-  host: z.string().min(1, { message: 'Required' }).max(255),
-  port: z.coerce.number({ invalid_type_error: 'Must be a number' }).int().positive().min(0).max(65535).optional(),
+  host: z.string().min(1, { message: 'Required' }),
+  port: z
+    .string()
+    .optional()
+    .refine(
+      (port) => {
+        if (port === '') return true;
+        const portNumber = Number(port);
+        if (isNaN(portNumber)) return false;
+        return portNumber >= 0 && portNumber <= 65535;
+      },
+      {
+        message: 'Port must be a valid number between 0 and 65535',
+      }
+    ),
   username: z.string().optional(),
   password: z.string().optional(),
   database: z.string().optional(),
 });
 
-const ConnectionTypeMysqlSchema = z.literal(ConnectionTypesSchema.enum.MYSQL);
-const ConnectionTypeDetailsMysqlSchema = z.object({
-  // TODO: (connections) add mysql fields
-  foo: z.string().min(1, { message: 'Required' }).max(255),
-});
+export const ConnectionTypeMysqlSchema = z.literal(ConnectionTypesSchema.enum.MYSQL);
+export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsPostgresSchema;
 
 /**
  * =============================================================================
- * Schemas for client forms
+ * Forms
  * =============================================================================
  */
 export const ConnectionFormPostgresSchema = z.object({
@@ -38,7 +48,7 @@ export const ConnectionFormPostgresSchema = z.object({
 export const ConnectionFormMysqlSchema = z.object({
   name: ConnectionNameSchema,
   type: ConnectionTypeMysqlSchema,
-  ...ConnectionTypeDetailsMysqlSchema.shape,
+  ...ConnectionTypeDetailsPostgresSchema.shape,
 });
 
 /**
@@ -73,42 +83,59 @@ export const ConnectionMysqlSchema = z.object({
 
 const ConnectionSchema = z.union([ConnectionPostgresSchema, ConnectionMysqlSchema]);
 
+const GenericConnectionSchema = z.object({
+  uuid: z.string().uuid(),
+  createdDate: z.string().datetime(),
+  updatedDate: z.string().datetime(),
+
+  name: ConnectionNameSchema,
+  type: ConnectionTypesSchema,
+  typeDetails: z.any(),
+});
+
 export const ApiSchemasConnections = {
   // List connections
-  '/v0/connections.GET.response': z.array(
-    z.union([ConnectionPostgresSchema.omit({ typeDetails: true }), ConnectionMysqlSchema.omit({ typeDetails: true })])
-  ),
+  '/v0/connections.GET.response': z.array(GenericConnectionSchema.omit({ typeDetails: true })),
+  // z.array(
+  //   z.union([ConnectionPostgresSchema.omit({ typeDetails: true }), ConnectionMysqlSchema.omit({ typeDetails: true })])
+  // ),
 
   // Create connection
-  '/v0/connections.POST.request': z.union([
-    z.object({
-      name: ConnectionPostgresSchema.shape.name,
-      type: ConnectionPostgresSchema.shape.type,
-      typeDetails: ConnectionPostgresSchema.shape.typeDetails,
-    }),
-    z.object({
-      name: ConnectionMysqlSchema.shape.name,
-      type: ConnectionMysqlSchema.shape.type,
-      typeDetails: ConnectionMysqlSchema.shape.typeDetails,
-    }),
-  ]),
+  '/v0/connections.POST.request': GenericConnectionSchema.pick({
+    name: true,
+    type: true,
+    typeDetails: true,
+  }),
+  // z.union([
+  //   z.object({
+  //     name: ConnectionPostgresSchema.shape.name,
+  //     type: ConnectionPostgresSchema.shape.type,
+  //     typeDetails: ConnectionPostgresSchema.shape.typeDetails,
+  //   }),
+  //   z.object({
+  //     name: ConnectionMysqlSchema.shape.name,
+  //     type: ConnectionMysqlSchema.shape.type,
+  //     typeDetails: ConnectionMysqlSchema.shape.typeDetails,
+  //   }),
+  // ]),
   '/v0/connections.POST.response': z.object({ uuid: z.string().uuid() }),
 
   // Get connection
-  '/v0/connections/:uuid.GET.response': ConnectionSchema,
+  '/v0/connections/:uuid.GET.response': GenericConnectionSchema,
 
   // Update connection
-  '/v0/connections/:uuid.PUT.request': z.union([
-    z.object({
-      name: ConnectionPostgresSchema.shape.name,
-      typeDetails: ConnectionPostgresSchema.shape.typeDetails,
-    }),
-    z.object({
-      name: ConnectionBaseSchema.shape.name,
-      typeDetails: ConnectionMysqlSchema.shape.typeDetails,
-    }),
-  ]),
-  '/v0/connections/:uuid.PUT.response': ConnectionSchema,
+  '/v0/connections/:uuid.PUT.request': GenericConnectionSchema.pick({ name: true, typeDetails: true }),
+  // z.union([
+  //   z.object({
+  //     name: ConnectionPostgresSchema.shape.name,
+  //     typeDetails: ConnectionPostgresSchema.shape.typeDetails,
+  //   }),
+  //   z.object({
+  //     name: ConnectionBaseSchema.shape.name,
+  //     typeDetails: ConnectionMysqlSchema.shape.typeDetails,
+  //   }),
+  // ]),
+  '/v0/connections/:uuid.PUT.response': GenericConnectionSchema,
 
   // Delete connection
   '/v0/connections/:uuid.DELETE.response': z.object({ message: z.string() }),

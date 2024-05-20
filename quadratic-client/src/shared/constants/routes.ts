@@ -1,3 +1,5 @@
+import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+
 // Any routes referenced outside of the root router are stored here
 export const ROUTES = {
   LOGOUT: '/logout',
@@ -13,7 +15,7 @@ export const ROUTES = {
   FILE_CONNECTION: (fileUuid: string, connectionUuid: string) => `/file/${fileUuid}/connections/${connectionUuid}`,
   CONNECTIONS: '/connections',
   CONNECTIONS_CREATE: '/connections/create',
-  CONNECTIONS_CREATE_TYPE: (type: 'postgres' | 'etc') => `/connections/create/${type}`, // TODO: (connections)  Pull types from backend
+  CONNECTIONS_CREATE_TYPE: (type: ConnectionType) => `/connections/create/${type}`,
 
   // API routes are client-side routes to use react-router's data APIs (e.g. fetchers)
   API_FILE: (uuid: string) => `/api/files/${uuid}`,
