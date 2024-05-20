@@ -1,5 +1,6 @@
 //! Draws the cursor, code cursor, and selection to the screen.
 
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { Graphics, Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../actions';
 import { sheets } from '../../grid/controller/Sheets';
@@ -150,9 +151,18 @@ export class Cursor extends Graphics {
   private drawCursorHole() {
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
-    this.beginHole();
+    const visible = pixiApp.viewport.getVisibleBounds();
     const hole = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
-    this.drawShape(hole);
+
+    // need to ensure the hole is contained by the screen rect, otherwise we get
+    // weird visual artifacts.
+    if (!intersects.rectangleRectangle(hole, visible)) return;
+    this.beginHole();
+    const x1 = hole.x < visible.left ? visible.left : hole.left;
+    const x2 = hole.right > visible.right ? visible.right : hole.right;
+    const y1 = hole.y < visible.top ? visible.top : hole.top;
+    const y2 = hole.bottom > visible.bottom ? visible.bottom : hole.bottom;
+    this.drawRect(x1, y1, x2 - x1, y2 - y1);
     this.endHole();
   }
 
