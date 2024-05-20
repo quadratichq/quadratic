@@ -140,21 +140,21 @@ mod tests {
     #[test]
     fn process_a_v1_3_python_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
-        let mut imported = import(V1_3_PYTHON_FILE).unwrap();
-        let exported = export(&mut imported).unwrap();
+        let imported = import(V1_3_PYTHON_FILE).unwrap();
+        let exported = export(&imported).unwrap();
         assert_eq!(imported, import_binary(&exported).unwrap());
     }
 
     #[test]
     fn process_a_v1_3_python_text_only_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
-        let mut imported = import(V1_3_TEXT_ONLY_CODE_CELL_FILE).unwrap();
-        let _exported = export(&mut imported).unwrap();
+        let imported = import(V1_3_TEXT_ONLY_CODE_CELL_FILE).unwrap();
+        let _exported = export(&imported).unwrap();
     }
 
     #[test]
     fn process_a_v1_3_single_formula_file() {
-        let mut imported = import(V1_3_SINGLE_FORMULAS_CODE_CELL_FILE).unwrap();
+        let imported = import(V1_3_SINGLE_FORMULAS_CODE_CELL_FILE).unwrap();
         assert!(imported.sheets[0]
             .code_runs
             .get(&Pos { x: 0, y: 2 })
@@ -167,45 +167,45 @@ mod tests {
             }
             _ => panic!("Expected a formula"),
         };
-        let _exported = export(&mut imported).unwrap();
+        let _exported = export(&imported).unwrap();
     }
 
     #[test]
     fn process_a_v1_3_npm_downloads_file() {
-        let mut imported = import(V1_3_NPM_DOWNLOADS_FILE).unwrap();
-        let _exported = export(&mut imported).unwrap();
+        let imported = import(V1_3_NPM_DOWNLOADS_FILE).unwrap();
+        let _exported = export(&imported).unwrap();
         // println!("{}", _exported);
     }
 
     #[test]
     fn process_a_v1_4_file() {
         // TODO(ddimaria): validate that elements of the imported and exported file are valid
-        let mut imported = import(V1_4_FILE).unwrap();
-        let _exported = export(&mut imported).unwrap();
+        let imported = import(V1_4_FILE).unwrap();
+        let _exported = export(&imported).unwrap();
     }
 
     #[test]
     fn process_a_blank_v1_4_file() {
         let empty =
             r#"{"sheets":[{"name":"Sheet 1","id":{"id":"4b42eacf-5737-47a2-ac44-e4929d3abc3a"},"order":"a0","cells":[],"code_cells":[],"formats":[],"columns":[],"rows":[],"offsets":[[],[]],"borders":{}}],"version":"1.4"}"#.as_bytes();
-        let mut imported = import(empty).unwrap();
-        let _exported = export(&mut imported).unwrap();
+        let imported = import(empty).unwrap();
+        let _exported = export(&imported).unwrap();
     }
 
     #[test]
     fn process_a_v1_3_borders_file() {
-        let mut imported = import(V1_3_BORDERS_FILE).unwrap();
+        let imported = import(V1_3_BORDERS_FILE).unwrap();
         // println!("{:?}", imported.sheets[0].borders);
-        let _exported = export(&mut imported).unwrap();
+        let _exported = export(&imported).unwrap();
         // println!("{}", _exported);
     }
 
     #[test]
     fn process_a_simple_v1_4_borders_file() {
         let empty = r##"{"sheets":[{"id":{"id":"d48a3488-fb1d-438d-ba0b-d4ad81b8c239"},"name":"Sheet 1","color":null,"order":"a0","offsets":[[],[]],"columns":[[0,{"id":{"id":"6287d0f0-b559-4de2-a73f-5b140237b3c4"},"values":{"0":{"y":0,"content":{"Values":[{"type":"text","value":"a"}]}}},"spills":{},"align":{},"wrap":{},"numeric_format":{},"numeric_decimals":{},"numeric_commas":{},"bold":{},"italic":{},"text_color":{},"fill_color":{}}]],"rows":[[0,{"id":"a9ed07c9-98af-453d-9b5e-311c48be42f7"}]],"borders":{"6287d0f0-b559-4de2-a73f-5b140237b3c4":[[0,[{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"},{"color":"#000000ff","line":"line1"}]]]},"code_cells":[]}],"version":"1.4"}"##.as_bytes();
-        let mut imported = import(empty).unwrap();
+        let imported = import(empty).unwrap();
         // println!("{:#?}", imported.sheets()[0].borders);
-        let _exported = export(&mut imported).unwrap();
+        let _exported = export(&imported).unwrap();
         // println!("{}", _exported);
     }
 
@@ -270,7 +270,7 @@ mod tests {
         //     None,
         // );
 
-        let exported = export(&gc.grid()).unwrap();
+        let exported = export(gc.grid()).unwrap();
         let imported = import(&exported).unwrap();
         assert_eq!(*gc.grid(), imported);
     }

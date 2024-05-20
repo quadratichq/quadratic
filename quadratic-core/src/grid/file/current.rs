@@ -159,7 +159,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
 
             // todo: there's probably a better way of doing this
             for (y, value) in column.values.iter() {
-                let cell_value = import_cell_value(&value);
+                let cell_value = import_cell_value(value);
                 if let Ok(y) = y.parse::<i64>() {
                     col.values.insert(y, cell_value);
                 }
@@ -222,11 +222,7 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
                     Value::Array(crate::Array::from(
                         values
                             .chunks(size.w as usize)
-                            .map(|row| {
-                                row.iter()
-                                    .map(|cell| import_cell_value(cell))
-                                    .collect::<Vec<_>>()
-                            })
+                            .map(|row| row.iter().map(import_cell_value).collect::<Vec<_>>())
                             .collect::<Vec<Vec<_>>>(),
                     ))
                 }
@@ -518,9 +514,7 @@ pub fn export(grid: &Grid) -> Result<current::GridSchema> {
                                         },
                                         values: array
                                             .rows()
-                                            .flat_map(|row| {
-                                                row.iter().map(|cell| export_cell_value(cell))
-                                            })
+                                            .flat_map(|row| row.iter().map(export_cell_value))
                                             .collect(),
                                     })
                                 }

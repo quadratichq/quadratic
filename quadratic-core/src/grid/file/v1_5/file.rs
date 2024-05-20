@@ -56,7 +56,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                                 v1_5::CellAlign::Center => v1_6::CellAlign::Center,
                                 v1_5::CellAlign::Right => v1_6::CellAlign::Right,
                             },
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -73,7 +73,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                                 v1_5::CellWrap::Overflow => v1_6::CellWrap::Overflow,
                                 v1_5::CellWrap::Clip => v1_6::CellWrap::Clip,
                             },
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -102,7 +102,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                                 },
                                 symbol: v.value.symbol.clone(),
                             },
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -115,7 +115,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                         k.clone(),
                         v1_6::ColumnRepeat {
                             value: v.value,
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -128,7 +128,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                         k.clone(),
                         v1_6::ColumnRepeat {
                             value: v.value,
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -141,7 +141,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                         k.clone(),
                         v1_6::ColumnRepeat {
                             value: v.value,
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -154,7 +154,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                         k.clone(),
                         v1_6::ColumnRepeat {
                             value: v.value,
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -167,7 +167,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                         k.clone(),
                         v1_6::ColumnRepeat {
                             value: v.value.clone(),
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -180,7 +180,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                         k.clone(),
                         v1_6::ColumnRepeat {
                             value: v.value.clone(),
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -196,7 +196,7 @@ fn upgrade_column(x: &i64, column: &v1_5::Column) -> (i64, v1_6::Column) {
                                 w: v.value.w.clone(),
                                 h: v.value.h.clone(),
                             },
-                            len: v.len as u32,
+                            len: v.len,
                         },
                     )
                 })
@@ -222,7 +222,7 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                 v1_6::Pos { x: pos.x, y: pos.y },
                 v1_6::CodeRun {
                     formatted_code_string: old_code_run.formatted_code_string.clone(),
-                    last_modified: old_code_run.last_modified.clone(),
+                    last_modified: old_code_run.last_modified,
                     std_err: old_code_run.std_err.clone(),
                     std_out: old_code_run.std_out.clone(),
                     spill_error: old_code_run.spill_error,
@@ -259,12 +259,12 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                                             .values
                                             .iter()
                                             .map(|value| {
-                                                if value.type_field.to_lowercase()
-                                                    == "text".to_string()
+                                                if value.type_field.to_lowercase().as_str()
+                                                    == "text"
                                                 {
                                                     v1_6::CellValue::Text(value.value.clone())
-                                                } else if value.type_field.to_lowercase()
-                                                    == "number".to_string()
+                                                } else if value.type_field.to_lowercase().as_str()
+                                                    == "number"
                                                 {
                                                     v1_6::CellValue::Number(value.value.clone())
                                                 } else {
@@ -286,7 +286,7 @@ fn upgrade_code_runs(sheet: &v1_5::Sheet) -> Vec<(v1_6::Pos, v1_6::CodeRun)> {
                         v1_5::CodeRunResult::Err(error) => {
                             v1_6::CodeRunResult::Err(v1_6::RunError {
                                 span: error.span.clone(),
-                                msg: error.msg.clone().into(),
+                                msg: error.msg.clone(),
                             })
                         }
                     },
