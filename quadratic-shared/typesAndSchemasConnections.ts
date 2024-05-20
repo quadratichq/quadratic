@@ -12,8 +12,21 @@ export type ConnectionType = z.infer<typeof ConnectionTypesSchema>;
 
 export const ConnectionTypePostgresSchema = z.literal(ConnectionTypesSchema.enum.POSTGRES);
 export const ConnectionTypeDetailsPostgresSchema = z.object({
-  host: z.string().min(1, { message: 'Required' }).max(255),
-  port: z.coerce.number({ invalid_type_error: 'Must be a number' }).int().positive().min(0).max(65535).optional(),
+  host: z.string().min(1, { message: 'Required' }),
+  port: z
+    .string()
+    .optional()
+    .refine(
+      (port) => {
+        if (port === '') return false;
+        const portNumber = Number(port);
+        if (isNaN(portNumber)) return false;
+        return portNumber >= 0 && portNumber <= 65535;
+      },
+      {
+        message: 'Port must be a valid number between 0 and 65535',
+      }
+    ),
   username: z.string().optional(),
   password: z.string().optional(),
   database: z.string().optional(),

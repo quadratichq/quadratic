@@ -7,8 +7,11 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ConnectionTypePostgresSchema } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionNameSchema, ConnectionTypeDetailsPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import {
+  ConnectionNameSchema,
+  ConnectionTypeDetailsPostgresSchema,
+  ConnectionTypePostgresSchema,
+} from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
@@ -16,9 +19,11 @@ import { z } from 'zod';
 
 const ConnectionFormPostgresSchema = z.object({
   name: ConnectionNameSchema,
-  type: ConnectionTypePostgresSchema.shape.type,
+  type: ConnectionTypePostgresSchema,
   ...ConnectionTypeDetailsPostgresSchema.shape,
 });
+
+type FormValues = z.infer<typeof ConnectionFormPostgresSchema>;
 
 export function ConnectionFormPostgres({
   initialData,
@@ -31,7 +36,7 @@ export function ConnectionFormPostgres({
   const [hidePassword, setHidePassword] = useState(true);
   const submit = useSubmit();
 
-  const defaultValues: z.infer<typeof ConnectionFormPostgresSchema> =
+  const defaultValues: FormValues =
     initialData && initialData.type === 'POSTGRES' && initialData.typeDetails
       ? {
           name: initialData.name,
@@ -51,12 +56,12 @@ export function ConnectionFormPostgres({
           username: '',
           password: '',
         };
-  const form = useForm<z.infer<typeof ConnectionFormPostgresSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(ConnectionFormPostgresSchema),
     defaultValues,
   });
 
-  const onSubmit = (values: z.infer<typeof ConnectionTypePostgresSchema>) => {
+  const onSubmit = (values: FormValues) => {
     const { name, type, ...typeDetails } = values;
 
     // If nothing changed, don't submit. Just navigate back
