@@ -49,7 +49,8 @@ export async function selectColumns(start: number, end: number) {
       { length: Math.max(start, end) - Math.min(start, end) + 1 },
       (_, i) => Math.min(start, end) + i
     );
-    cursor.changePosition({ cursorPosition: { x: start, y: 0 }, columnRow: { columns } });
+    const y = cursor.cursorPosition.x === start ? cursor.cursorPosition.y : 0;
+    cursor.changePosition({ cursorPosition: { x: start, y }, columnRow: { columns } });
   }
 }
 
@@ -77,6 +78,7 @@ export async function selectRows(start: number, end: number): Promise<void> {
       { length: Math.max(start, end) - Math.min(start, end) + 1 },
       (_, i) => Math.min(start, end) + i
     );
-    cursor.changePosition({ cursorPosition: { x: 0, y: start }, columnRow: { rows } });
+    const x = cursor.cursorPosition.y === start ? cursor.cursorPosition.x : 0;
+    cursor.changePosition({ cursorPosition: { x, y: start }, columnRow: { rows } });
   }
 }

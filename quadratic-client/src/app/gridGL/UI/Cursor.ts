@@ -179,13 +179,24 @@ export class Cursor extends Graphics {
       this.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
       this.drawCursorHole();
     } else if (columnRow.columns) {
+      let minX = Infinity,
+        maxX = -Infinity;
       columnRow.columns.forEach((column) => {
         const { x, width } = sheet.getCellOffsets(column, 0);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x + width);
         this.drawRect(x, bounds.y, width, bounds.height);
         if (column === cursor.cursorPosition.x) {
           this.drawCursorHole();
         }
       });
+
+      // draw outline
+      this.lineStyle(1, colors.cursorCell, 1, 0, true);
+      this.moveTo(minX, bounds.top);
+      this.lineTo(minX, bounds.bottom);
+      this.moveTo(maxX, bounds.top);
+      this.lineTo(maxX, bounds.bottom);
     } else if (columnRow.rows) {
       columnRow.rows.forEach((row) => {
         const { y, height } = sheet.getCellOffsets(0, row);
