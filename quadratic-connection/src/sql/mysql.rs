@@ -64,7 +64,7 @@ pub(crate) async fn schema(
         name: api_connection.name,
         r#type: api_connection.r#type,
         database: api_connection.type_details.database,
-        tables: database_schema.tables,
+        tables: database_schema.tables.into_values().collect(),
     };
 
     Ok(Json(schema))
