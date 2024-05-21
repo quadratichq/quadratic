@@ -34,6 +34,7 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   instanceType: instanceSize,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [multiplayerEc2SecurityGroup.id],
+  subnetId: [subNet1, subNet2][Math.floor(Math.random() * 2)],
   ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
   userDataReplaceOnChange: true,
