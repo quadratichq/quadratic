@@ -545,7 +545,7 @@ pub(crate) mod tests {
             error_level: ErrorLevel::Error,
         };
 
-        // expect an error since there are no transactions
+        // expect an error since we're requesting a higher sequence_num
         test_handle(
             socket,
             state,
