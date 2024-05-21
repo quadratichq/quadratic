@@ -166,6 +166,7 @@ export class Multiplayer {
           cursor: 0,
           active: false,
           code_editor: false,
+          inline_code_editor: false,
         },
         viewport: pixiApp.saveMultiplayerViewport(),
         codeRunning: JSON.stringify(this.codeRunning),
@@ -209,7 +210,15 @@ export class Multiplayer {
     this.send({ type: 'clientMultiplayerSheet', sheetId: sheets.sheet.id });
   };
 
-  sendCellEdit(text: string, cursor: number, codeEditor: boolean, bold?: boolean, italic?: boolean) {
+  sendCellEdit(options: {
+    text: string;
+    cursor: number;
+    codeEditor: boolean;
+    inlineCodeEditor: boolean;
+    bold?: boolean;
+    italic?: boolean;
+  }) {
+    const { text, cursor, codeEditor, inlineCodeEditor, bold, italic } = options;
     this.send({
       type: 'clientMultiplayerCellEdit',
       cellEdit: {
@@ -217,6 +226,7 @@ export class Multiplayer {
         cursor,
         active: true,
         code_editor: codeEditor,
+        inline_code_editor: inlineCodeEditor,
         bold,
         italic,
       },

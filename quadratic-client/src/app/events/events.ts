@@ -41,7 +41,7 @@ interface EventTypes {
   setCursor: (cursor: string) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
-  changeInput: (input: boolean) => void;
+  changeInput: (input: boolean, initialValue?: string) => void;
   headingSize: (width: number, height: number) => void;
   gridSettings: () => void;
 
