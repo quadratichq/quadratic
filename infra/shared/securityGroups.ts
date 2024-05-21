@@ -1,4 +1,5 @@
 import * as aws from "@pulumi/aws";
+import { addOpenSSHRule } from "../helpers/addOpenSSHRule";
 import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 
 // Create a Security Group for the Files EC2 instance
@@ -69,20 +70,6 @@ export const redisSecurityGroup = new aws.ec2.SecurityGroup("redis-sg", {
 
 // Allow SSH traffic to the Preview Instances
 if (isPreviewEnvironment) {
-  filesEc2SecurityGroup.ingress.apply((ingress) => {
-    ingress.push({
-      protocol: "tcp",
-      fromPort: 22,
-      toPort: 22,
-      cidrBlocks: ["0.0.0.0/0"],
-    });
-  });
-  multiplayerEc2SecurityGroup.ingress.apply((ingress) => {
-    ingress.push({
-      protocol: "tcp",
-      fromPort: 22,
-      toPort: 22,
-      cidrBlocks: ["0.0.0.0/0"],
-    });
-  });
+  addOpenSSHRule(filesEc2SecurityGroup.id);
+  addOpenSSHRule(multiplayerEc2SecurityGroup.id);
 }
