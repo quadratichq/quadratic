@@ -431,6 +431,11 @@ class InlineEditorHandler {
     // with <Tooltip>.
     this.div.style.visibility = 'visible';
     this.div.style.pointerEvents = 'auto';
+
+    // This may be called before created
+    if (this.formulaExpandButton) {
+      this.formulaExpandButton.style.display = 'block';
+    }
     this.showing = true;
   }
 
@@ -442,6 +447,11 @@ class InlineEditorHandler {
     // with <Tooltip>.
     this.div.style.visibility = 'hidden';
     this.div.style.pointerEvents = 'none';
+
+    // This may be called before created
+    if (this.formulaExpandButton) {
+      this.formulaExpandButton.style.display = 'none';
+    }
     this.showing = false;
   }
 
