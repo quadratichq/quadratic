@@ -106,7 +106,7 @@ export class PointerDown {
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
-    inlineEditorHandler.changingPosition();
+    inlineEditorHandler.handleCellPointerDown();
     cursor.changePosition({
       keyboardMovePosition: { x: column, y: row },
       cursorPosition: { x: column, y: row },

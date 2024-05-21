@@ -175,9 +175,6 @@ class InlineEditorHandler {
         }
       }
       inlineEditorMonaco.set(value);
-      if (initialValue) {
-        inlineEditorMonaco.setColumn(initialValue.length + 1);
-      }
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
@@ -450,7 +447,7 @@ class InlineEditorHandler {
 
   // Called when manually changing cell position via clicking on a new cell
   // (except when editing formula).
-  changingPosition() {
+  handleCellPointerDown() {
     if (this.open) {
       if (!this.formula || inlineEditorFormula.isFormulaValid()) {
         this.close(0, 0, false);

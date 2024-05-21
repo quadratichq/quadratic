@@ -53,12 +53,13 @@ class InlineEditorMonaco {
     return this.editor.getValue();
   }
 
-  // Sets the value of the inline editor.
+  // Sets the value of the inline editor and moves the cursor to the end.
   set(s: string) {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in setValue');
     }
     this.editor.setValue(s);
+    this.setColumn(s.length + 1);
   }
 
   deleteText(position: number, length: number) {
