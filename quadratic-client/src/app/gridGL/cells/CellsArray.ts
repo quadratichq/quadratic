@@ -97,9 +97,8 @@ export class CellsArray extends Container {
     cursorRectangle.height++;
     codeCells?.forEach((codeCell) => {
       const cell = inlineEditorHandler.getShowing();
-      if (!cell || codeCell.x !== cell.x || codeCell.y !== cell.y || cell.sheetId !== this.sheetId) {
-        this.draw(codeCell, cursorRectangle);
-      }
+      const editingCell = cell && codeCell.x === cell.x && codeCell.y === cell.y && cell.sheetId === this.sheetId;
+      this.draw(codeCell, cursorRectangle, editingCell);
     });
     pixiApp.setViewportDirty();
   }
@@ -118,7 +117,7 @@ export class CellsArray extends Container {
     return sheet;
   }
 
-  private draw(codeCell: JsRenderCodeCell, cursorRectangle: Rectangle): void {
+  private draw(codeCell: JsRenderCodeCell, cursorRectangle: Rectangle, editingCell?: boolean): void {
     const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
 
     const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w, codeCell.h);
@@ -142,7 +141,9 @@ export class CellsArray extends Container {
       }
     }
 
-    this.cellsSheet.cellsMarkers.add(start, codeCell, true);
+    if (!editingCell) {
+      this.cellsSheet.cellsMarkers.add(start, codeCell, true);
+    }
     const end = this.sheet.getCellOffsets(Number(codeCell.x) + codeCell.w, Number(codeCell.y) + codeCell.h);
     if (codeCell.spill_error) {
       const cursorPosition = sheets.sheet.cursor.cursorPosition;
