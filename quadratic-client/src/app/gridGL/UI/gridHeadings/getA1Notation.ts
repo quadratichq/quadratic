@@ -30,3 +30,7 @@ export function getRowA1Notation(row: number): string {
   if (row === 0) return '0';
   return `n${-row}`;
 }
+
+export function getA1Notation(column: number, row: number): string {
+  return `${getColumnA1Notation(column)}${getRowA1Notation(row)}`;
+}

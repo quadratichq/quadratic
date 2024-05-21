@@ -138,7 +138,10 @@ mod tests {
         let sheet_id = sheet.id;
 
         let mut ctx = Ctx::new(&g, pos![nAn1].to_sheet_pos(sheet_id));
-        assert_eq!("7.5".to_string(), form.eval(&mut ctx).unwrap().to_string(),);
+        assert_eq!(
+            "7.5".to_string(),
+            form.eval(&mut ctx, false).unwrap().to_string(),
+        );
 
         assert_eq!(
             "17",
@@ -154,7 +157,20 @@ mod tests {
         assert_eq!("0", eval_to_string(&g, "AVERAGE(,)"));
 
         // Test with no arguments
-        assert_eq!(RunErrorMsg::DivideByZero, eval_to_err(&g, "AVERAGE()").msg,);
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "AVERAGE".into(),
+                arg_name: "numbers".into()
+            },
+            parse_formula("AVERAGE()", Pos::ORIGIN)
+                .unwrap()
+                .eval(
+                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
+                    false
+                )
+                .unwrap_err()
+                .msg,
+        );
     }
 
     #[test]
@@ -208,7 +224,20 @@ mod tests {
     #[test]
     fn test_count() {
         let g = Grid::new();
-        assert_eq!("0", eval_to_string(&g, "COUNT()"));
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "COUNT".into(),
+                arg_name: "numbers".into()
+            },
+            parse_formula("COUNT()", Pos::ORIGIN)
+                .unwrap()
+                .eval(
+                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
+                    false
+                )
+                .unwrap_err()
+                .msg,
+        );
         assert_eq!("0", eval_to_string(&g, "COUNT(A1)"));
         assert_eq!("0", eval_to_string(&g, "COUNT(A1:B4)"));
         assert_eq!(
@@ -224,7 +253,20 @@ mod tests {
     #[test]
     fn test_counta() {
         let g = Grid::new();
-        assert_eq!("0", eval_to_string(&g, "COUNTA()"));
+        assert_eq!(
+            RunErrorMsg::MissingRequiredArgument {
+                func_name: "COUNTA".into(),
+                arg_name: "range".into()
+            },
+            parse_formula("COUNTA()", Pos::ORIGIN)
+                .unwrap()
+                .eval(
+                    &mut Ctx::new(&g, Pos::ORIGIN.to_sheet_pos(g.sheets()[0].id)),
+                    false
+                )
+                .unwrap_err()
+                .msg,
+        );
         assert_eq!("0", eval_to_string(&g, "COUNTA(A1)"));
         assert_eq!("0", eval_to_string(&g, "COUNTA(A1:B4)"));
         assert_eq!(

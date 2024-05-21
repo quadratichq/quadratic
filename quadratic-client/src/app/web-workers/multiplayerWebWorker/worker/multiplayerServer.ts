@@ -46,6 +46,7 @@ export const cellEditDefault = (): CellEdit => ({
   cursor: 0,
   active: false,
   code_editor: false,
+  inline_code_editor: false,
 });
 
 export class MultiplayerServer {
