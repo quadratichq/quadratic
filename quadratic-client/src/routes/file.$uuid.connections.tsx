@@ -1,8 +1,7 @@
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { colors } from '@/app/theme/colors';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsBreadcrumb } from '@/app/ui/connections/ConnectionsBreadcrumb';
 import { connectionsByType } from '@/app/ui/connections/data';
-import { PostgresIcon } from '@/app/ui/icons';
 import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -114,7 +113,7 @@ export const Index = () => {
                       {navigation.state === 'loading' && navigation.location.pathname.includes(connectionUuid) ? (
                         <CircularProgress style={{ width: '15px', height: '15px' }} />
                       ) : (
-                        <PostgresIcon style={{ color: colors.languagePostgres }} fontSize="small" />
+                        <LanguageIcon language={type} fontSize="small" />
                       )}
                     </div>
                     <div className="flex flex-grow items-center justify-between">

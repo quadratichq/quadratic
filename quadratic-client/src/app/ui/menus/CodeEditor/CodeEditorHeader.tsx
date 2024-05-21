@@ -1,20 +1,19 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { getLanguage2 } from '@/app/helpers/codeCellLanguage';
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { cn } from '@/shared/shadcn/utils';
-import { Close, PlayArrow, Stop, Subject } from '@mui/icons-material';
+import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
-import { colors } from '../../../theme/colors';
 import { TooltipHint } from '../../components/TooltipHint';
-import { Formula, PostgresIcon, Python } from '../../icons';
 import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
@@ -31,7 +30,7 @@ export const CodeEditorHeader = (props: Props) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
-  const language = getLanguage(editorInteractionState.mode);
+  const language = getLanguage2(editorInteractionState.mode);
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
@@ -123,17 +122,10 @@ export const CodeEditorHeader = (props: Props) => {
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-warning after:content-['']`
         )}
       >
+        {/* TODO: (connections) language might be MYSQL which we don't want. We want the pretty name */}
         <TooltipHint title={`${language}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
           <div className="flex items-center">
-            {language === 'Python' ? (
-              <Python sx={{ color: colors.languagePython }} fontSize="small" />
-            ) : language === 'Formula' ? (
-              <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
-            ) : language === 'Connection' ? (
-              <PostgresIcon sx={{ color: colors.languagePostgres }} fontSize="small" />
-            ) : (
-              <Subject fontSize="small" />
-            )}
+            <LanguageIcon language={language} fontSize="small" />
           </div>
         </TooltipHint>
       </div>
