@@ -166,6 +166,14 @@ export class Cursor extends Graphics {
     this.endHole();
   }
 
+  private drawCursorOutline() {
+    const sheet = sheets.sheet;
+    const cursor = sheet.cursor;
+    const outline = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
+    this.lineStyle(1, colors.cursorCell, 1, 0, true);
+    this.drawRect(outline.x, outline.y, outline.width, outline.height);
+  }
+
   private drawColumnRowCursor() {
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
@@ -198,15 +206,27 @@ export class Cursor extends Graphics {
       this.moveTo(maxX, bounds.top);
       this.lineTo(maxX, bounds.bottom);
     } else if (columnRow.rows) {
+      let minY = Infinity,
+        maxY = -Infinity;
       columnRow.rows.forEach((row) => {
         const { y, height } = sheet.getCellOffsets(0, row);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y + height);
         this.drawRect(bounds.x, y, bounds.width, height);
         if (row === cursor.cursorPosition.y) {
           this.drawCursorHole();
         }
       });
+
+      // draw outline
+      this.lineStyle(1, colors.cursorCell, 1, 0, true);
+      this.moveTo(bounds.left, minY);
+      this.lineTo(bounds.right, minY);
+      this.moveTo(bounds.left, maxY);
+      this.lineTo(bounds.right, maxY);
     }
     this.endFill();
+    this.drawCursorOutline();
   }
 
   private drawCursorIndicator() {
