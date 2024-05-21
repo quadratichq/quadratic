@@ -152,8 +152,8 @@ export interface CoreClientGetCellFormatSummary {
 
 export interface ClientCoreSummarizeSelection {
   type: 'clientCoreSummarizeSelection';
-  sheetId: string;
   decimalPlaces: number;
+  sheetId: string;
   id: number;
   x: number;
   y: number;
