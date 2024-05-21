@@ -10,7 +10,7 @@ const config = new pulumi.Config();
 // Configuration from command line
 const filesSubdomain = config.require("files-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
-const quadraticApiUri = config.require("quadratic-api-uri");
+const apiSubdomain = config.require("api-subdomain");
 const filesECRName = config.require("files-ecr-repo-name");
 const filesPulumiEscEnvironmentName = config.require(
   "files-pulumi-esc-environment-name"
@@ -19,7 +19,8 @@ const filesPulumiEscEnvironmentName = config.require(
 // Configuration from Pulumi ESC
 const instanceSize = config.require("files-instance-size");
 const domain = config.require("domain");
-
+const dependencySetupBashCommand = "";
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
@@ -32,14 +33,20 @@ const instance = new aws.ec2.Instance("files-instance", {
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(
-      filesECRName,
-      dockerImageTag,
+      {
+        name: filesECRName,
+        image: `${ecrRegistryUrl}/${filesECRName}:${dockerImageTag}`,
+        addHostDns: true,
+        envFile: ".env",
+        portMappings: [{ hostPort: 80, containerPort: 80 }]
+      },
       filesPulumiEscEnvironmentName,
       {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
-        QUADRATIC_API_URI: quadraticApiUri,
+        QUADRATIC_API_URI: `http://${apiSubdomain}.${domain}`,
       },
+      dependencySetupBashCommand,
       true
     )
   ),

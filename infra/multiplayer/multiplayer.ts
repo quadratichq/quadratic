@@ -26,6 +26,8 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 const instanceSize = config.require("multiplayer-instance-size");
+const dependencySetupBashCommand = "";
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
 const instance = new aws.ec2.Instance("multiplayer-instance", {
   tags: {
@@ -40,14 +42,20 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(
-      multiplayerECRName,
-      dockerImageTag,
+      {
+        name: multiplayerECRName,
+        image: `${ecrRegistryUrl}/${multiplayerECRName}:${dockerImageTag}`,
+        addHostDns: true,
+        envFile: ".env",
+        portMappings: [{ hostPort: 80, containerPort: 80 }],
+      },
       multiplayerPulumiEscEnvironmentName,
       {
         PUBSUB_HOST: host,
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
       },
+      dependencySetupBashCommand,
       true
     )
   ),
