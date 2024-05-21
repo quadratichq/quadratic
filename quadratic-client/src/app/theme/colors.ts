@@ -37,6 +37,7 @@ export const colors = {
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
   languagePostgres: '#336791',
+  languageMysql: '#00758f',
   error: '#f25f5c',
   cellHighlightColor: [
     muiColors.orange['900'],

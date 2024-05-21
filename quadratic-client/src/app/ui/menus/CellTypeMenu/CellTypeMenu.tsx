@@ -2,15 +2,14 @@ import { cellTypeMenuOpenedCountAtom } from '@/app/atoms/cellTypeMenuOpenedCount
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
-import { Formula, JavaScript, PostgresIcon, Python, Sql } from '@/app/ui/icons';
 import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 import '../../styles/floating-dialog.css';
 
+import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { ROUTES } from '@/shared/constants/routes';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -39,7 +38,7 @@ let CELL_TYPE_OPTIONS = [
   {
     name: 'Python',
     mode: 'Python',
-    icon: <Python sx={{ color: colors.languagePython }} />,
+    icon: <LanguageIcon language="Python" />,
     description: (
       <>
         Script with Pandas, NumPy, SciPy, Micropip,{' '}
@@ -50,7 +49,7 @@ let CELL_TYPE_OPTIONS = [
   {
     name: 'Formula',
     mode: 'Formula',
-    icon: <Formula sx={{ color: colors.languageFormula }} />,
+    icon: <LanguageIcon language="Formula" />,
     description: (
       <>
         Classic spreadsheet logic like <code>SUM</code>, <code>AVERAGE</code>,{' '}
@@ -69,8 +68,7 @@ let CELL_TYPE_OPTIONS = [
   // },
   {
     name: 'JavaScript',
-    mode: '',
-    icon: <JavaScript className="text-gray-700" />,
+    icon: <LanguageIcon language="Javascript" />,
     description: 'The world’s most popular programming language.',
     disabled: true,
     experimental: true,
@@ -137,7 +135,7 @@ export default function CellTypeMenu() {
               key={uuid}
               name={name}
               description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
-              icon={type === 'POSTGRES' ? <PostgresIcon sx={{ color: colors.languagePostgres }} /> : <Sql />}
+              icon={<LanguageIcon language={type} />}
               onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
             />
           ))}
