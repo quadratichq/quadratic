@@ -63,6 +63,7 @@ quadratic-client/public/*.whl
 docker/localstack/data
 docker/redis/data
 docker/postgres/data
+docker/mysql/data
 
 # JMeter
 jmeter.log

@@ -1,21 +1,29 @@
+use std::collections::HashMap;
+
+use arrow::datatypes::Date32Type;
+use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::{
-    postgres::{PgColumn, PgConnectOptions, PgRow},
+    postgres::{types::PgTimeTz, PgColumn, PgConnectOptions, PgRow, PgTypeKind},
     Column, ConnectOptions, PgConnection, Row, TypeInfo,
 };
 use uuid::Uuid;
 
-use crate::convert_pg_type;
 use crate::error::{Result, SharedError, Sql};
-use crate::sql::Connection;
+use crate::sql::{ArrowType, Connection};
+use crate::{
+    convert_pg_type,
+    sql::{DatabaseSchema, SchemaColumn, SchemaTable},
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PostgresConnection {
     pub username: Option<String>,
     pub password: Option<String>,
     pub host: String,
-    pub port: Option<u16>,
+    pub port: Option<String>,
     pub database: Option<String>,
 }
 
@@ -24,7 +32,7 @@ impl PostgresConnection {
         username: Option<String>,
         password: Option<String>,
         host: String,
-        port: Option<u16>,
+        port: Option<String>,
         database: Option<String>,
     ) -> PostgresConnection {
         PostgresConnection {
@@ -54,7 +62,9 @@ impl Connection for PostgresConnection {
         }
 
         if let Some(ref port) = self.port {
-            options = options.port(*port);
+            options = options.port(port.parse::<u16>().map_err(|_| {
+                SharedError::Sql(Sql::Connect("Could not parse port into a number".into()))
+            })?);
         }
 
         if let Some(ref database) = self.database {
@@ -70,43 +80,135 @@ impl Connection for PostgresConnection {
     }
 
     async fn query(&self, mut pool: Self::Conn, sql: &str) -> Result<Vec<Self::Row>> {
-        let row = sqlx::query(sql)
+        let rows = sqlx::query(sql)
             .fetch_all(&mut pool)
             .await
-            .map_err(|e| SharedError::Sql(Sql::Query(format!("{sql}: {e}"))))?;
+            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
 
-        Ok(row)
+        Ok(rows)
     }
 
-    fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> Option<String> {
+    async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
+        let database = self.database.as_ref().ok_or_else(|| {
+            SharedError::Sql(Sql::Schema("Database name is required for MySQL".into()))
+        })?;
+
+        let sql = format!("
+            SELECT c.table_catalog as database, c.table_schema as schema, c.table_name as table, c.column_name, c.udt_name as column_type, c.is_nullable
+            FROM information_schema.tables as t inner join information_schema.columns as c on t.table_name = c.table_name
+            WHERE t.table_type = 'BASE TABLE' 
+                AND c.table_schema NOT IN 
+                    ('pg_catalog', 'information_schema')
+                    and c.table_catalog = '{database}'
+            order by c.table_name, c.ordinal_position, c.column_name");
+
+        let rows = self.query(pool, &sql).await?;
+
+        let mut schema = DatabaseSchema {
+            database: self.database.to_owned().unwrap_or_default(),
+            tables: HashMap::new(),
+        };
+
+        for row in rows.into_iter() {
+            let table_name = row.get::<String, usize>(2);
+
+            schema
+                .tables
+                .entry(table_name.to_owned())
+                .or_insert_with(|| SchemaTable {
+                    name: table_name,
+                    schema: row.get::<String, usize>(1),
+                    columns: vec![],
+                })
+                .columns
+                .push(SchemaColumn {
+                    name: row.get::<String, usize>(3),
+                    r#type: row.get::<String, usize>(4),
+                    is_nullable: match row.get::<String, usize>(5).to_lowercase().as_str() {
+                        "yes" => true,
+                        _ => false,
+                    },
+                });
+        }
+
+        Ok(schema)
+    }
+
+    fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
-                convert_pg_type!(String, row, index)
+            "TEXT" | "VARCHAR" | "CHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
+                ArrowType::Utf8(convert_pg_type!(String, row, index))
             }
-            "SMALLINT" | "SMALLSERIAL" | "INT2" => convert_pg_type!(i16, row, index),
-            "INT" | "SERIAL" | "INT4" => convert_pg_type!(i32, row, index),
-            "BIGINT" | "BIGSERIAL" | "INT8" => convert_pg_type!(i64, row, index),
-            "BOOLEAN" => convert_pg_type!(bool, row, index),
-            "REAL" | "FLOAT4" => convert_pg_type!(f32, row, index),
-            "DOUBLE PRECISION" | "FLOAT8" => convert_pg_type!(f64, row, index),
-            "TIMESTAMP" => convert_pg_type!(NaiveDateTime, row, index),
-            "TIMESTAMPTZ" => convert_pg_type!(DateTime<Local>, row, index),
-            "DATE" => convert_pg_type!(NaiveDate, row, index),
-            "TIME" => convert_pg_type!(NaiveTime, row, index),
-            "UUID" => convert_pg_type!(Uuid, row, index),
-            "VOID" => None,
-            _ => None,
+            "SMALLINT" | "SMALLSERIAL" | "INT2" => {
+                ArrowType::Int16(convert_pg_type!(i16, row, index))
+            }
+            "INT" | "SERIAL" | "INT4" => ArrowType::Int32(convert_pg_type!(i32, row, index)),
+            "BIGINT" | "BIGSERIAL" | "INT8" => ArrowType::Int64(convert_pg_type!(i64, row, index)),
+            "BOOL" => ArrowType::Boolean(convert_pg_type!(bool, row, index)),
+            "REAL" | "FLOAT4" => ArrowType::Float32(convert_pg_type!(f32, row, index)),
+            "DOUBLE PRECISION" | "FLOAT8" => ArrowType::Float64(convert_pg_type!(f64, row, index)),
+            "NUMERIC" => ArrowType::BigDecimal(convert_pg_type!(BigDecimal, row, index)),
+            "TIMESTAMP" => ArrowType::Timestamp(convert_pg_type!(NaiveDateTime, row, index)),
+            "TIMESTAMPTZ" => ArrowType::TimestampTz(convert_pg_type!(DateTime<Local>, row, index)),
+            "DATE" => {
+                let naive_date = convert_pg_type!(NaiveDate, row, index);
+                ArrowType::Date32(Date32Type::from_naive_date(naive_date))
+            }
+            "TIME" => ArrowType::Time32(convert_pg_type!(NaiveTime, row, index)),
+            "TIMETZ" => {
+                let time = row.try_get::<PgTimeTz, usize>(index).ok();
+                time.map_or_else(|| ArrowType::Void, |time| ArrowType::Time32(time.time))
+            }
+            "INTERVAL" => {
+                // TODO(ddimaria): implement once we support intervals
+                // let interval = row.try_get::<PgInterval, usize>(index).ok();
+                // PgInterval { months: -2, days: 0, microseconds: 0
+                ArrowType::Void
+            }
+            "JSON" => ArrowType::Json(convert_pg_type!(Value, row, index)),
+            "JSONB" => ArrowType::Jsonb(convert_pg_type!(Value, row, index)),
+            "UUID" => ArrowType::Uuid(convert_pg_type!(Uuid, row, index)),
+            "XML" => ArrowType::Void,
+            "VOID" => ArrowType::Void,
+            // try to convert others to a string
+            _ => {
+                match column.type_info().kind() {
+                    PgTypeKind::Enum(_) => {
+                        let value = row
+                            .try_get_raw(index)
+                            .and_then(|value| Ok(value.as_str().unwrap_or_default().to_string()));
+
+                        if let Ok(value) = value {
+                            return ArrowType::Utf8(value);
+                        }
+                    }
+                    PgTypeKind::Simple => {}
+                    PgTypeKind::Pseudo => {}
+                    PgTypeKind::Domain(_type_info) => {}
+                    PgTypeKind::Composite(_type_info_array) => {}
+                    PgTypeKind::Array(_type_info) => {}
+                    PgTypeKind::Range(_type_info) => {}
+                };
+
+                // println!(
+                //     "Unknown type: {:?}",
+                //     row.try_get_raw(index)
+                //         .and_then(|value| Ok(value.as_str().unwrap_or_default().to_string()))
+                // );
+
+                ArrowType::Utf8(convert_pg_type!(String, row, index))
+            }
         }
     }
 }
 
 #[macro_export]
 macro_rules! convert_pg_type {
-    ( $kind:ty, $row:ident, $index:ident ) => {
+    ( $kind:ty, $row:ident, $index:ident ) => {{
         $row.try_get::<$kind, usize>($index)
             .ok()
-            .map(|v| v.to_string())
-    };
+            .unwrap_or_default()
+    }};
 }
 
 #[cfg(test)]
@@ -121,7 +223,7 @@ mod tests {
             Some("postgres".into()),
             Some("postgres".into()),
             "0.0.0.0".into(),
-            Some(5432),
+            Some("5432".into()),
             Some("postgres".into()),
         )
     }
@@ -132,24 +234,38 @@ mod tests {
         let connection = new_postgres_connection();
         let pool = connection.connect().await.unwrap();
         let rows = connection
-            .query(pool, "select * from \"FileCheckpoint\" limit 10")
+            // .query(pool, "select * from \"FileCheckpoint\" limit 10")
+            .query(
+                pool,
+                "select * from all_native_data_types order by id limit 1",
+            )
             .await
             .unwrap();
+
+        for row in &rows {
+            for (index, col) in row.columns().into_iter().enumerate() {
+                let value = PostgresConnection::to_arrow(&row, col, index);
+                println!(
+                    "{} ({}) = {:?}",
+                    col.name().to_string(),
+                    col.type_info().name(),
+                    value
+                );
+            }
+        }
 
         let _data = PostgresConnection::to_parquet(rows);
 
         // println!("{:?}", _data);
+    }
 
-        // for row in rows {
-        //     for (index, col) in row.columns().into_iter().enumerate() {
-        //         let value = PostgresConnection::to_arrow(&row, col, index);
-        //         println!(
-        //             "{} ({}) = {:?}",
-        //             col.name().to_string(),
-        //             col.type_info().name(),
-        //             value
-        //         );
-        //     }
-        // }
+    #[tokio::test]
+    #[traced_test]
+    async fn test_postgres_schema() {
+        let connection = new_postgres_connection();
+        let pool = connection.connect().await.unwrap();
+        let _schema = connection.schema(pool).await.unwrap();
+
+        // println!("{:?}", schema);
     }
 }

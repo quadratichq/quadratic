@@ -8,6 +8,7 @@
 
 use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
 
+use crate::auth::Claims;
 use crate::config::config;
 use crate::state::State;
 
@@ -27,7 +28,14 @@ pub(crate) fn _new_postgres_connection() -> PostgresConnection {
         Some("postgres".into()),
         Some("postgres".into()),
         "0.0.0.0".into(),
-        Some(5432),
+        Some("5432".into()),
         Some("postgres".into()),
     )
+}
+
+pub(crate) fn get_claims() -> Claims {
+    Claims {
+        sub: "test".to_string(),
+        exp: 0,
+    }
 }

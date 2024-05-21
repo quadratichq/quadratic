@@ -343,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.80"
+version = "0.1.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6fa2087f2753a7da8cc1c0dbfcf89579dd57458e36769de5ac750b4671737ca"
+checksum = "a66537f1bb974b254c98ed142ff995236e81b9d0fe4db0575f46612cb15eb0f9"
 dependencies = [
  "proc-macro2 1.0.78",
  "quote 1.0.35",
@@ -898,6 +898,17 @@ name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
+
+[[package]]
+name = "bigdecimal"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6773ddc0eafc0e509fb60e48dff7f450f8e674a0686ae8605e8d9901bd5eefa"
+dependencies = [
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+]
 
 [[package]]
 name = "bigdecimal"
@@ -3006,7 +3017,7 @@ dependencies = [
  "arrow-data",
  "arrow-schema",
  "async-trait",
- "bigdecimal",
+ "bigdecimal 0.4.3",
  "bytes",
  "calamine",
  "chrono",
@@ -3131,7 +3142,7 @@ dependencies = [
  "arrow",
  "aws-config",
  "aws-sdk-s3",
- "bigdecimal",
+ "bigdecimal 0.3.1",
  "bytes",
  "chrono",
  "futures-util",
@@ -3880,6 +3891,7 @@ checksum = "24ba59a9342a3d9bab6c56c118be528b27c9b60e490080e9711a04dccac83ef6"
 dependencies = [
  "ahash",
  "atoi",
+ "bigdecimal 0.3.1",
  "byteorder",
  "bytes",
  "chrono",
@@ -3961,6 +3973,7 @@ checksum = "1ed31390216d20e538e447a7a9b959e06ed9fc51c37b514b46eb758016ecd418"
 dependencies = [
  "atoi",
  "base64 0.21.5",
+ "bigdecimal 0.3.1",
  "bitflags 2.4.1",
  "byteorder",
  "bytes",
@@ -4005,6 +4018,7 @@ checksum = "7c824eb80b894f926f89a0b9da0c7f435d27cdd35b8c655b114e58223918577e"
 dependencies = [
  "atoi",
  "base64 0.21.5",
+ "bigdecimal 0.3.1",
  "bitflags 2.4.1",
  "byteorder",
  "chrono",
@@ -4023,6 +4037,7 @@ dependencies = [
  "log",
  "md-5",
  "memchr",
+ "num-bigint",
  "once_cell",
  "rand",
  "serde",

@@ -128,6 +128,49 @@ services:
       - quadratic-files
       - all
 
+  quadratic-connection:
+    build:
+      context: .
+      dockerfile: quadratic-connection/Dockerfile
+      args:
+        - binary=quadratic-connection
+    env_file:
+      - quadratic-connection/.env.docker
+    # override env vars here
+    environment:
+      QUADRATIC_API_URI: http://host.docker.internal:8000
+      RUST_LOG: info
+    restart: "always"
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      quadratic-api:
+        condition: service_started
+    profiles:
+      - backend
+      - quadratic-connection
+      - all
+
+  mysql:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: connection
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - 3306:3306
+    volumes:
+      - ./docker/mysql/data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    profiles:
+      - additional-databases
+      - quadratic-connection
+      - all
+
 volumes:
   docker:
     name: docker

@@ -11,6 +11,12 @@ use thiserror::Error;
 pub type Result<T> = std::result::Result<T, SharedError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
+pub enum Arrow {
+    #[error("Arrow error: {0}")]
+    External(String),
+}
+
+#[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Auth {
     #[error("JWT error: {0}")]
     Jwt(String),
@@ -32,10 +38,16 @@ pub enum Sql {
 
     #[error("Error executing query: {0}")]
     Query(String),
+
+    #[error("Error creating schema: {0}")]
+    Schema(String),
 }
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum SharedError {
+    #[error("Error with Arrow: {0}")]
+    Arrow(Arrow),
+
     #[error("Error with auth: {0}")]
     Auth(Auth),
 
@@ -88,5 +100,17 @@ impl From<uuid::Error> for SharedError {
 impl From<jsonwebtoken::errors::Error> for SharedError {
     fn from(error: jsonwebtoken::errors::Error) -> Self {
         SharedError::Auth(Auth::Jwt(error.to_string()))
+    }
+}
+
+impl From<parquet::errors::ParquetError> for SharedError {
+    fn from(error: parquet::errors::ParquetError) -> Self {
+        SharedError::Sql(Sql::ParquetConversion(error.to_string()))
+    }
+}
+
+impl From<arrow::error::ArrowError> for SharedError {
+    fn from(error: arrow::error::ArrowError) -> Self {
+        SharedError::Arrow(Arrow::External(error.to_string()))
     }
 }
