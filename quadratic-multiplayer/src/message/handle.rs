@@ -220,6 +220,7 @@ pub(crate) async fn handle_message(
             let expected_num_transactions = sequence_num
                 .checked_sub(min_sequence_num)
                 .unwrap_or_default();
+
             tracing::warn!("min_sequence_num: {}", min_sequence_num);
             tracing::warn!("sequence_num: {}", sequence_num);
             tracing::warn!("expected_num_transactions: {}", expected_num_transactions);
@@ -233,14 +234,13 @@ pub(crate) async fn handle_message(
             // we don't have the expected number of transactions
             // send an error to the client so they can reload
             if transactions.len() < expected_num_transactions as usize {
-                tracing::error!("should reload");
-                // return Ok(Some(MessageResponse::Error {
-                //     error: MpError::MissingTransactions(
-                //         expected_num_transactions.to_string(),
-                //         transactions.len().to_string(),
-                //     ),
-                //     error_level: ErrorLevel::Error,
-                // }));
+                return Ok(Some(MessageResponse::Error {
+                    error: MpError::MissingTransactions(
+                        expected_num_transactions.to_string(),
+                        transactions.len().to_string(),
+                    ),
+                    error_level: ErrorLevel::Error,
+                }));
             }
 
             let response = MessageResponse::Transactions {
@@ -448,7 +448,7 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
-    async fn handle_transaction() {
+    async fn handle_set_and_get_transactions() {
         let (socket, state, _, file_id, user_1, _) = setup().await;
         let id = Uuid::new_v4();
         let session_id = user_1.session_id;
@@ -468,24 +468,48 @@ pub(crate) mod tests {
         let response = MessageResponse::Transaction {
             id,
             file_id,
-            operations,
+            operations: operations.clone(),
             sequence_num: 1,
         };
 
+        test_handle(
+            socket.clone(),
+            state.clone(),
+            file_id,
+            user_1.clone(),
+            request,
+            None,
+            Some(response.clone()),
+        )
+        .await;
+
+        // now test get_transactions
+        let request = MessageRequest::GetTransactions {
+            file_id,
+            session_id,
+            min_sequence_num: 0,
+        };
+
+        let string_operations = operations.to_string();
+        let response = MessageResponse::Transactions {
+            transactions: format!("[{{\"id\":\"{id}\",\"file_id\":\"{file_id}\",\"operations\":{string_operations},\"sequence_num\":1}}]"),
+        };
+
+        // expect an empty array since there are no transactions
         test_handle(
             socket,
             state,
             file_id,
             user_1,
             request,
-            None,
             Some(response),
+            None,
         )
         .await;
     }
 
     #[tokio::test]
-    async fn handle_get_transaction() {
+    async fn handle_missing_transactions() {
         let (socket, state, _, file_id, user_1, _) = setup().await;
         let session_id = user_1.session_id;
 
