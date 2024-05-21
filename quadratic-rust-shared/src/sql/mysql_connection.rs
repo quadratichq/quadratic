@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use arrow::datatypes::Date32Type;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{
-    mysql::{MySqlColumn, MySqlConnectOptions, MySqlRow, MySqlTypeInfo},
+    mysql::{MySqlColumn, MySqlConnectOptions, MySqlRow /* , MySqlTypeInfo*/},
     Column, ConnectOptions, MySqlConnection as SqlxMySqlConnection, Row, TypeInfo,
 };
 use uuid::Uuid;
@@ -87,54 +89,45 @@ impl Connection for MySqlConnection {
     }
 
     async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
-        let sql = "
-            SELECT c.table_catalog as database, c.table_schema as schema, c.table_name as table, c.column_name, c.udt_name as column_type, c.is_nullable
-            FROM information_schema.tables as t inner join information_schema.columns as c on t.table_name = c.table_name
-            WHERE t.table_type = 'BASE TABLE' 
-                AND c.table_schema NOT IN 
-                    ('pg_catalog', 'information_schema')
-                    and c.table_catalog = 'mysql'
-            order by c.table_name, c.ordinal_position, c.column_name";
+        let database = self.database.as_ref().ok_or_else(|| {
+            SharedError::Sql(Sql::Schema("Database name is required for MySQL".into()))
+        })?;
 
-        let rows = self.query(pool, sql).await?;
-        let mut tables = vec![];
-        let mut columns = vec![];
-        let mut current_table = String::new();
+        let sql = format!("
+            select c.TABLE_SCHEMA as 'database', c.TABLE_SCHEMA as 'schema', c.TABLE_NAME as 'table', 
+                c.COLUMN_NAME as 'column_name', c.DATA_TYPE as 'column_type', c.IS_NULLABLE as 'is_nullable'
+            from INFORMATION_SCHEMA.COLUMNS as c
+            where table_schema = '{database}'
+            order by c.TABLE_NAME, c.ORDINAL_POSITION, c.COLUMN_NAME");
+
+        let rows = self.query(pool, &sql).await?;
 
         let mut schema = DatabaseSchema {
             database: self.database.to_owned().unwrap_or_default(),
-            tables: vec![],
+            tables: HashMap::new(),
         };
 
-        for (index, row) in rows.into_iter().enumerate() {
+        for row in rows.into_iter() {
             let table_name = row.get::<String, usize>(2);
 
-            if index == 0 {
-                current_table = table_name.to_owned();
-            }
-
-            if table_name != current_table {
-                tables.push(SchemaTable {
-                    name: current_table,
+            schema
+                .tables
+                .entry(table_name.to_owned())
+                .or_insert_with(|| SchemaTable {
+                    name: table_name,
                     schema: row.get::<String, usize>(1),
-                    columns,
+                    columns: vec![],
+                })
+                .columns
+                .push(SchemaColumn {
+                    name: row.get::<String, usize>(3),
+                    r#type: row.get::<String, usize>(4),
+                    is_nullable: match row.get::<String, usize>(5).to_lowercase().as_str() {
+                        "yes" => true,
+                        _ => false,
+                    },
                 });
-
-                current_table = table_name.to_owned();
-                columns = vec![];
-            }
-
-            columns.push(SchemaColumn {
-                name: row.get::<String, usize>(3),
-                r#type: row.get::<String, usize>(4),
-                is_nullable: match row.get::<String, usize>(5).to_lowercase().as_str() {
-                    "yes" => true,
-                    _ => false,
-                },
-            });
         }
-
-        schema.tables = tables;
 
         Ok(schema)
     }
@@ -234,6 +227,13 @@ mod tests {
         let pool = connection.connect().await.unwrap();
         let _schema = connection.schema(pool).await.unwrap();
 
-        // println!("{:?}", schema);
+        for (table_name, table) in &_schema.tables {
+            println!("Table: {}", table_name);
+            for column in &table.columns {
+                println!("Column: {} ({})", column.name, column.r#type);
+            }
+        }
+
+        // println!("{:?}", _schema.tables);
     }
 }

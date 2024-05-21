@@ -14,7 +14,7 @@ use parquet::arrow::ArrowWriter;
 use serde::Serialize;
 use serde_json::Value;
 use sqlx::{Column, Row};
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 
 use self::{mysql_connection::MySqlConnection, postgres_connection::PostgresConnection};
@@ -200,7 +200,7 @@ pub struct SchemaTable {
 #[derive(Debug, Serialize)]
 pub struct DatabaseSchema {
     database: String,
-    pub tables: Vec<SchemaTable>,
+    pub tables: HashMap<String, SchemaTable>,
 }
 
 pub trait Connection {

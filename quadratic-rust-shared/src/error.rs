@@ -38,6 +38,9 @@ pub enum Sql {
 
     #[error("Error executing query: {0}")]
     Query(String),
+
+    #[error("Error creating schema: {0}")]
+    Schema(String),
 }
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
