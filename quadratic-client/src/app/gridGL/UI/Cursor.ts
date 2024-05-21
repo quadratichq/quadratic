@@ -29,12 +29,15 @@ export class Cursor extends Graphics {
   startCell: CursorCell;
   endCell: CursorCell;
 
+  cursorRectangle?: Rectangle;
+
   constructor() {
     super();
     this.indicator = new Rectangle();
 
     this.startCell = CURSOR_CELL_DEFAULT_VALUE;
     this.endCell = CURSOR_CELL_DEFAULT_VALUE;
+    this.cursorRectangle = new Rectangle();
   }
 
   private drawCursor(): void {
@@ -78,8 +81,14 @@ export class Cursor extends Graphics {
     }
 
     // hide cursor if code editor is open and CodeCursor is in the same cell
-    if (editorInteractionState.showCodeEditor && editor_selected_cell.x === cell.x && editor_selected_cell.y === cell.y)
+    if (
+      editorInteractionState.showCodeEditor &&
+      editor_selected_cell.x === cell.x &&
+      editor_selected_cell.y === cell.y
+    ) {
+      this.cursorRectangle = undefined;
       return;
+    }
 
     // draw cursor
     this.lineStyle({
@@ -102,6 +111,9 @@ export class Cursor extends Graphics {
         alignment: 1,
       });
       this.drawRect(x, y, width, height);
+      this.cursorRectangle = undefined;
+    } else {
+      this.cursorRectangle = new Rectangle(x, y, width, height);
     }
   }
 
@@ -114,15 +126,22 @@ export class Cursor extends Graphics {
       this.beginFill(colors.cursorCell, FILL_ALPHA);
       this.startCell = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.terminalPosition.x, cursor.terminalPosition.y);
-      this.drawRect(
+      this.cursorRectangle = new Rectangle(
         this.startCell.x,
         this.startCell.y,
         this.endCell.x + this.endCell.width - this.startCell.x,
         this.endCell.y + this.endCell.height - this.startCell.y
       );
+      this.drawShape(this.cursorRectangle);
     } else {
       this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
+      this.cursorRectangle = new Rectangle(
+        this.startCell.x,
+        this.startCell.y,
+        this.endCell.width - this.startCell.width,
+        this.endCell.height - this.startCell.height
+      );
     }
   }
 

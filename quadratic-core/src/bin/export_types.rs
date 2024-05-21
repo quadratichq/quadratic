@@ -75,6 +75,7 @@ fn main() {
         Span,
         SearchOptions,
         SheetPos,
+        SheetRect,
         Placement,
         ColumnRow,
         SheetInfo,
@@ -94,7 +95,10 @@ fn main() {
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {
-        std::fs::write("../quadratic-client/src/app/quadratic-core-types/index.d.ts", s)
-            .expect("failed to write types file");
+        std::fs::write(
+            "../quadratic-client/src/app/quadratic-core-types/index.d.ts",
+            s,
+        )
+        .expect("failed to write types file");
     }
 }

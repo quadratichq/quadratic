@@ -172,7 +172,7 @@ pub fn find_number_series(options: SeriesOptions) -> Vec<CellValue> {
     let mut current = numbers[numbers.len() - 1].to_owned();
 
     if negative {
-        current = numbers[0].to_owned();
+        numbers[0].clone_into(&mut current);
     }
 
     let calc = |val: &BigDecimal| match (&addition, &multiplication, negative) {

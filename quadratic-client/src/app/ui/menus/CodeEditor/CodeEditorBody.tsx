@@ -1,4 +1,4 @@
-import { SheetRect, provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import Editor, { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import { useCallback, useEffect, useState } from 'react';
@@ -19,6 +19,7 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { SheetRect } from '@/app/quadratic-core-types';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';

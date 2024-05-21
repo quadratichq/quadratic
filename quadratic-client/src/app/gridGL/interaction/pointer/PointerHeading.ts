@@ -1,4 +1,3 @@
-import { events } from '@/app/events/events';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -13,6 +12,9 @@ import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
+
+// minimum cell when resizing in 1 character
+const MIN_CELL_WIDTH = 10;
 
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
@@ -70,7 +72,7 @@ export class PointerHeading {
     if (headingResize) {
       pixiApp.setViewportDirty();
       if (this.clicked && headingResize.column !== undefined) {
-        this.onDoubleClickColumn(headingResize.column);
+        this.autoResizeColumn(headingResize.column);
         event.preventDefault();
         return true;
       } else if (this.clicked && headingResize.row !== undefined) {
@@ -255,15 +257,20 @@ export class PointerHeading {
     return false;
   }
 
-  private async onDoubleClickColumn(column: number) {
+  async autoResizeColumn(column: number) {
     const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
-    const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-    const size = Math.max(contentSizePlusMargin, CELL_WIDTH);
+    let size: number;
+    if (maxWidth === 0) {
+      size = CELL_WIDTH;
+    } else {
+      const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+      size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+    }
     const sheetId = sheets.sheet.id;
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
       quadraticCore.commitSingleResize(sheetId, column, undefined, size);
-      events.emit('resizeHeadingColumn', column);
+      // events.emit('resizeHeadingColumn', column);
     }
   }
 

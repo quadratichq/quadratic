@@ -77,6 +77,9 @@ interface EventTypes {
   resizeHeadingColumn: (column: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
+
+  codeEditor: () => void;
+  cellMoving: (move: boolean) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
