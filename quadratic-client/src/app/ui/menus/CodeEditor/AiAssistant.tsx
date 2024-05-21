@@ -1,4 +1,5 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
@@ -239,7 +240,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         </div>
       </div>
       <form
-        className="z-10 flex items-center gap-2 px-3 pb-2"
+        className="z-10 flex gap-2 px-3 pb-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -252,11 +253,8 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
             setPrompt(event.target.value);
           }}
           onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              if (prompt.trim().length > 0) {
-                submitPrompt();
-              }
+            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && prompt.trim().length > 0) {
+              submitPrompt();
             }
           }}
           autoComplete="off"
@@ -265,8 +263,8 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           maxHeight="120px"
         />
 
-        <div className="relative flex items-center">
-          {loading && <CircularProgress size="1rem" className="absolute right-14 top-2.5" />}
+        <div className="relative flex items-end">
+          {loading && <CircularProgress size="1rem" className="absolute bottom-2.5 right-14" />}
           {loading ? (
             <TooltipHint title="Stop generating">
               <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
@@ -276,7 +274,11 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           ) : (
             <ConditionalWrapper
               condition={prompt.length !== 0}
-              Wrapper={({ children }) => <TooltipHint title="Send">{children as React.ReactElement}</TooltipHint>}
+              Wrapper={({ children }) => (
+                <TooltipHint title="Send" shortcut={`${KeyboardSymbols.Command}↵`}>
+                  {children as React.ReactElement}
+                </TooltipHint>
+              )}
             >
               <IconButton
                 size="small"

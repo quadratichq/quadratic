@@ -40,11 +40,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           }
         }}
         onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-          if (event.key === 'Enter' && !event.shiftKey) {
-            onKeyDown?.(event);
-            if (autoHeight) {
-              adjustHeight();
-            }
+          onKeyDown?.(event);
+          if (autoHeight) {
+            adjustHeight();
           }
         }}
         {...props}
