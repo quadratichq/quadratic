@@ -71,16 +71,16 @@ export const redisSecurityGroup = new aws.ec2.SecurityGroup("redis-sg", {
 if (isPreviewEnvironment) {
   new aws.ec2.SecurityGroupRule(`files-ssh-ingress-rule`, {
     type: "ingress",
-    fromPort: 80,
-    toPort: 80,
+    fromPort: 22,
+    toPort: 22,
     protocol: "tcp",
     cidrBlocks: ["0.0.0.0/0"],
     securityGroupId: filesEc2SecurityGroup.id,
   });
   new aws.ec2.SecurityGroupRule(`multiplayer-ssh-ingress-rule`, {
     type: "ingress",
-    fromPort: 80,
-    toPort: 80,
+    fromPort: 22,
+    toPort: 22,
     protocol: "tcp",
     cidrBlocks: ["0.0.0.0/0"],
     securityGroupId: multiplayerEc2SecurityGroup.id,
