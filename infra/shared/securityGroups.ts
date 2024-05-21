@@ -83,6 +83,6 @@ if (isPreviewEnvironment) {
     toPort: 80,
     protocol: "tcp",
     cidrBlocks: ["0.0.0.0/0"],
-    securityGroupId: filesEc2SecurityGroup.id,
+    securityGroupId: multiplayerEc2SecurityGroup.id,
   });
 }
