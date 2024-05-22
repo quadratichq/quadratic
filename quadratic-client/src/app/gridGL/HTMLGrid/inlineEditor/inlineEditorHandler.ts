@@ -161,6 +161,7 @@ class InlineEditorHandler {
         y: sheet.cursor.originPosition.y,
       };
       let value: string;
+      let changeToFormula = false;
       if (initialValue) {
         value = initialValue;
         this.changeToFormula(value[0] === '=');
@@ -168,10 +169,9 @@ class InlineEditorHandler {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
         if (formula?.language === 'Formula') {
           value = '=' + formula.code_string;
-          this.changeToFormula(true);
+          changeToFormula = true;
         } else {
           value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
-          this.changeToFormula(false);
         }
       }
       inlineEditorMonaco.set(value);
@@ -197,6 +197,7 @@ class InlineEditorHandler {
       this.formulaExpandButton.style.lineHeight = this.height + 'px';
       inlineEditorMonaco.setColumn(value.length + 1);
       this.showDiv();
+      this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
       this.keepCursorVisible();
       inlineEditorMonaco.focus();
@@ -283,10 +284,12 @@ class InlineEditorHandler {
     this.formula = formula;
     if (formula) {
       inlineEditorMonaco.setLanguage('Formula');
+      this.formulaExpandButton.style.display = 'block';
 
       // need to show the change to A1 notation
       pixiApp.headings.dirty = true;
     } else {
+      this.formulaExpandButton.style.display = 'none';
       inlineEditorMonaco.setLanguage('plaintext');
     }
 
@@ -394,7 +397,6 @@ class InlineEditorHandler {
   attach(div: HTMLDivElement) {
     if (this.div) throw new Error('Inline editor already attached');
     this.div = div;
-    this.hideDiv();
 
     inlineEditorMonaco.attach(div);
 
@@ -405,6 +407,7 @@ class InlineEditorHandler {
     } else {
       throw new Error('Expected expandButton to be defined in attach');
     }
+    this.hideDiv();
   }
 
   // Returns whether we are editing a formula.
@@ -432,10 +435,6 @@ class InlineEditorHandler {
     this.div.style.visibility = 'visible';
     this.div.style.pointerEvents = 'auto';
 
-    // This may be called before created
-    if (this.formulaExpandButton) {
-      this.formulaExpandButton.style.display = 'block';
-    }
     this.showing = true;
   }
 
@@ -448,9 +447,8 @@ class InlineEditorHandler {
     this.div.style.visibility = 'hidden';
     this.div.style.pointerEvents = 'none';
 
-    // This may be called before created
     if (this.formulaExpandButton) {
-      this.formulaExpandButton.style.display = 'none';
+      this.formulaExpandButton.style.visibility = 'hidden';
     }
     this.showing = false;
   }
