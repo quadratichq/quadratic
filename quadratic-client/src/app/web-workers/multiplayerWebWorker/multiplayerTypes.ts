@@ -6,6 +6,7 @@ export interface CellEdit {
   text: string;
   cursor: number;
   code_editor: boolean;
+  inline_code_editor: boolean;
   bold?: boolean;
   italic?: boolean;
   inline_code_editor?: boolean;

@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
@@ -135,7 +136,9 @@ class Sheets {
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
       pixiApp.boxCells.reset();
-      pixiAppSettings.changeInput(false);
+      if (!inlineEditorHandler.isEditingFormula()) {
+        pixiAppSettings.changeInput(false);
+      }
       pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
       pixiApp.viewport.loadViewport();

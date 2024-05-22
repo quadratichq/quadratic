@@ -2,6 +2,7 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Selection } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
@@ -102,7 +103,9 @@ export class SheetCursor {
     }
     if (!test) {
       pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
-      multiplayer.sendSelection(this.getMultiplayerSelection());
+      if (!inlineEditorHandler.cursorIsMoving) {
+        multiplayer.sendSelection(this.getMultiplayerSelection());
+      }
     }
   }
 

@@ -212,7 +212,15 @@ export class Multiplayer {
     this.send({ type: 'clientMultiplayerSheet', sheetId: sheets.sheet.id });
   };
 
-  sendCellEdit(text: string, cursor: number, codeEditor: boolean, bold?: boolean, italic?: boolean) {
+  sendCellEdit(options: {
+    text: string;
+    cursor: number;
+    codeEditor: boolean;
+    inlineCodeEditor: boolean;
+    bold?: boolean;
+    italic?: boolean;
+  }) {
+    const { text, cursor, codeEditor, inlineCodeEditor, bold, italic } = options;
     this.send({
       type: 'clientMultiplayerCellEdit',
       cellEdit: {
@@ -220,6 +228,7 @@ export class Multiplayer {
         cursor,
         active: true,
         code_editor: codeEditor,
+        inline_code_editor: inlineCodeEditor,
         bold,
         italic,
 

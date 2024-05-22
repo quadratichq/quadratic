@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -189,7 +190,7 @@ export class PointerHeading {
           }
           this.resizing.lastSize = size;
 
-          window.dispatchEvent(new CustomEvent<number>('resize-heading-column', { detail: this.resizing.column }));
+          events.emit('resizeHeadingColumn', this.resizing.column);
         }
       } else if (this.resizing.row !== undefined) {
         let size: number;
@@ -264,7 +265,6 @@ export class PointerHeading {
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
       quadraticCore.commitSingleResize(sheetId, column, undefined, size);
-      // events.emit('resizeHeadingColumn', column);
     }
   }
 

@@ -87,7 +87,7 @@ export const HoverCell = () => {
                 To fix this, remove content in {pluralize('cell', spillError.length)}{' '}
                 {spillError.map((pos, index) => (
                   <>
-                    <code className="hover-cell-code">
+                    <code className="hover-cell-code" key={index}>
                       ({String(pos.x)}, {String(pos.y)})
                     </code>
                     {index !== spillError.length - 1 ? (index === spillError.length - 2 ? ', and ' : ', ') : '.'}
