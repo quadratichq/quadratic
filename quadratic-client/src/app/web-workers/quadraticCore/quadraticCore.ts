@@ -51,11 +51,11 @@ import {
 } from './coreClientMessages';
 
 class QuadraticCore {
-  private worker: Worker;
+  private worker?: Worker;
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
 
-  constructor() {
+  initWorker() {
     this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
@@ -156,6 +156,10 @@ class QuadraticCore {
   };
 
   private send(message: ClientCoreMessage, extra?: MessagePort | Transferable) {
+    if (!this.worker) {
+      throw new Error('Expected worker to be initialized in quadraticCore.send');
+    }
+
     if (extra) {
       this.worker.postMessage(message, [extra]);
     } else {

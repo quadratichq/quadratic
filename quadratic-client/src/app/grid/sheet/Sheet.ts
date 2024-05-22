@@ -19,12 +19,12 @@ export class Sheet {
   bounds: GridBounds;
   boundsWithoutFormatting: GridBounds;
 
-  constructor(info: SheetInfo) {
+  constructor(info: SheetInfo, testSkipOffsetsLoad = false) {
     this.id = info.sheet_id;
     this.name = info.name;
     this.order = info.order;
     this.color = info.color ?? undefined;
-    this.offsets = SheetOffsetsWasm.load(info.offsets);
+    this.offsets = testSkipOffsetsLoad ? ({} as SheetOffsets) : SheetOffsetsWasm.load(info.offsets);
     this.cursor = new SheetCursor(this);
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
@@ -32,15 +32,18 @@ export class Sheet {
   }
 
   static testSheet(): Sheet {
-    return new Sheet({
-      sheet_id: 'test-sheet',
-      name: 'Test Sheet',
-      order: '1',
-      color: 'red',
-      offsets: '',
-      bounds: { type: 'empty' },
-      bounds_without_formatting: { type: 'empty' },
-    });
+    return new Sheet(
+      {
+        sheet_id: 'test-sheet',
+        name: 'Test Sheet',
+        order: '1',
+        color: 'red',
+        offsets: '',
+        bounds: { type: 'empty' },
+        bounds_without_formatting: { type: 'empty' },
+      },
+      true
+    );
   }
 
   private updateBounds = (sheetsBounds: SheetBounds) => {

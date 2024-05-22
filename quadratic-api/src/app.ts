@@ -6,11 +6,11 @@ import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
+import '../polyfills';
 import { CORS, NODE_ENV, SENTRY_DSN } from './env-vars';
 import ai_chat_router from './routes/ai_chat';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
-
 export const app = express();
 
 // Configure Sentry

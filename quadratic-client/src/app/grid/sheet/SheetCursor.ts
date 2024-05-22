@@ -22,7 +22,7 @@ export interface SheetCursorSave {
   sheetId: string;
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor?: { x: number; y: number; width: number; height: number }[];
+  multiCursor?: { originPosition: Coordinate; terminalPosition: Coordinate }; //{ x: number; y: number; width: number; height: number }[];
   columnRow?: ColumnRowCursor;
 }
 
@@ -36,7 +36,7 @@ export class SheetCursor {
 
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor?: Rectangle[];
+  multiCursor?: { originPosition: Coordinate; terminalPosition: Coordinate }; //Rectangle[];
   columnRow?: ColumnRowCursor;
 
   constructor(sheet: Sheet) {
@@ -69,18 +69,21 @@ export class SheetCursor {
   load(value: SheetCursorSave): void {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
-    this.multiCursor = value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
+    this.multiCursor = value.multiCursor; //value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
     multiplayer.sendSelection(this.getMultiplayerSelection());
     pixiApp.cursor.dirty = true;
   }
 
-  changePosition(options: {
-    multiCursor?: Rectangle[];
-    columnRow?: ColumnRowCursor;
-    cursorPosition?: Coordinate;
-    keyboardMovePosition?: Coordinate;
-    ensureVisible?: boolean;
-  }) {
+  changePosition(
+    options: {
+      multiCursor?: { originPosition: Coordinate; terminalPosition: Coordinate }; //Rectangle[];
+      columnRow?: ColumnRowCursor;
+      cursorPosition?: Coordinate;
+      keyboardMovePosition?: Coordinate;
+      ensureVisible?: boolean;
+    },
+    test?: boolean
+  ) {
     if (options.columnRow) {
       this.columnRow = options.columnRow;
       this.multiCursor = undefined;
@@ -97,22 +100,26 @@ export class SheetCursor {
     } else if (options.keyboardMovePosition) {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
-    pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
-    multiplayer.sendSelection(this.getMultiplayerSelection());
+    if (!test) {
+      pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
+      multiplayer.sendSelection(this.getMultiplayerSelection());
+    }
   }
 
   // gets a stringified selection string for multiplayer
   getMultiplayerSelection(): string {
-    const cursor = this.cursorPosition;
-    const rectangle = this.multiCursor
-      ? new Rectangle(
-          this.multiCursor.originPosition.x,
-          this.multiCursor.originPosition.y,
-          this.multiCursor.terminalPosition.x - this.multiCursor.originPosition.x,
-          this.multiCursor.terminalPosition.y - this.multiCursor.originPosition.y
-        )
-      : undefined;
-    return JSON.stringify({ cursor, rectangle });
+    // TODO
+    return '';
+    // const cursor = this.cursorPosition;
+    // const rectangle = this.multiCursor
+    //   ? new Rectangle(
+    //       this.multiCursor.originPosition.x,
+    //       this.multiCursor.originPosition.y,
+    //       this.multiCursor.terminalPosition.x - this.multiCursor.originPosition.x,
+    //       this.multiCursor.terminalPosition.y - this.multiCursor.originPosition.y
+    //     )
+    //   : undefined;
+    // return JSON.stringify({ cursor, rectangle });
   }
 
   changeBoxCells(boxCells: boolean) {
@@ -135,12 +142,18 @@ export class SheetCursor {
     return new Rectangle(origin.x, origin.y, terminal.x - origin.x, terminal.y - origin.y);
   }
 
-  getRustSelection(): String {
+  getRustSelection(): string {
     const sheet_id = { id: this.sheetId };
     const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
     const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
     const all = this.columnRow?.all ?? false;
-    const rects = null;
+    const rect = this.getRectangle();
+    const rects = [
+      {
+        min: { x: BigInt(rect.x), y: BigInt(rect.y) },
+        max: { x: BigInt(rect.x + rect.width), y: BigInt(rect.y + rect.height) },
+      },
+    ];
     const selection: Selection = {
       sheet_id,
       rects,
@@ -148,6 +161,13 @@ export class SheetCursor {
       rows,
       all,
     };
-    return JSON.stringify(selection);
+
+    // Used to coerce bigints to numbers for JSON.stringify; see
+    // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
+    const bigIntReplacer = (_key: string, value: any): any => {
+      return typeof value === 'bigint' ? Number(value) : value;
+    };
+
+    return JSON.stringify(selection, bigIntReplacer);
   }
 }
