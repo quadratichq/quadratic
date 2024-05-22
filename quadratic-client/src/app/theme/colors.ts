@@ -20,6 +20,7 @@ export const colors = {
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
   headerSelectedBackgroundColor: 0xe7f7ff,
+  headerSelectedRowColumnBackgroundColor: 0xb6e7ff,
   headerCornerBackgroundColor: 0xffffff,
   boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
   htmlPlaceholderThumbnailColor: 0xeeeeee,

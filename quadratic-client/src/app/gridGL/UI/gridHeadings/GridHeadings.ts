@@ -18,7 +18,6 @@ export const LABEL_PADDING_ROWS = 2;
 export const GRID_HEADER_FONT_SIZE = 10;
 export const ROW_DIGIT_OFFSET = { x: 0, y: -1 };
 const GRID_HEADING_RESIZE_TOLERANCE = 3;
-const SELECTION_IN_COLUMN_OR_ROW_WIDTH = 1.5;
 
 // this is the number of digits to use when calculating what horizontal headings are hidden
 export const LABEL_DIGITS_TO_CALCULATE_SKIP = 4;
@@ -136,14 +135,14 @@ export class GridHeadings extends Container {
 
     // fill the entire viewport if all cells are selected
     if (sheets.sheet.cursor.columnRow?.all) {
-      this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
+      this.headingsGraphics.beginFill(colors.headerSelectedRowColumnBackgroundColor);
       this.headingsGraphics.drawRect(viewport.left, viewport.top, viewport.screenWidthInWorldPixels, cellHeight);
       this.headingsGraphics.endFill();
     }
 
-    // only fill headings if there is a columnRow selection
+    // dark fill headings if there is a columnRow selection
     else if (sheets.sheet.cursor.columnRow?.columns) {
-      this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
+      this.headingsGraphics.beginFill(colors.headerSelectedRowColumnBackgroundColor);
       sheets.sheet.cursor.columnRow.columns.forEach((column) => {
         const offset = offsets.getColumnPlacement(column);
         this.headingsGraphics.drawRect(offset.position, viewport.top, offset.size, cellHeight);
@@ -153,19 +152,23 @@ export class GridHeadings extends Container {
 
     // if we're selecting rows, then show all columns as selected
     else if (sheets.sheet.cursor.columnRow?.rows) {
-      this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
-      const headingTop = viewport.top + cellHeight;
-      this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
-      this.headingsGraphics.moveTo(viewport.left, headingTop);
-      this.headingsGraphics.lineTo(viewport.right, headingTop);
+      // keep these in case we change our mind
+      // const headingTop = viewport.top + cellHeight;
+      // this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
+      // this.headingsGraphics.moveTo(viewport.left, headingTop);
+      // this.headingsGraphics.lineTo(viewport.right, headingTop);
     }
 
     // otherwise highlight column headings based on selected cells
     else {
-      this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
-      const headingTop = viewport.top + cellHeight;
-      this.headingsGraphics.moveTo(xSelectedStart, headingTop);
-      this.headingsGraphics.lineTo(xSelectedEnd, headingTop);
+      this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
+      this.headingsGraphics.drawRect(xSelectedStart, viewport.top, xSelectedEnd - xSelectedStart, cellHeight);
+      this.headingsGraphics.endFill();
+
+      // keep these in case we want to change back to line style
+      // this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
+      // this.headingsGraphics.moveTo(xSelectedStart, headingTop);
+      // this.headingsGraphics.lineTo(xSelectedEnd, headingTop);
     }
 
     const start = offsets.getXPlacement(bounds.left);
@@ -288,14 +291,14 @@ export class GridHeadings extends Container {
 
     // fill the entire viewport if all cells are selected
     if (sheets.sheet.cursor.columnRow?.all) {
-      this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
+      this.headingsGraphics.beginFill(colors.headerSelectedRowColumnBackgroundColor);
       this.headingsGraphics.drawRect(viewport.left, viewport.top, this.rowWidth, viewport.screenHeightInWorldPixels);
       this.headingsGraphics.endFill();
     }
 
-    // only fill headings if there is a columnRow selection
+    // dark fill headings if there is a columnRow selection
     else if (sheets.sheet.cursor.columnRow?.rows) {
-      this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
+      this.headingsGraphics.beginFill(colors.headerSelectedRowColumnBackgroundColor);
       sheets.sheet.cursor.columnRow.rows.forEach((row) => {
         const offset = offsets.getRowPlacement(row);
         this.headingsGraphics.drawRect(viewport.left, offset.position, this.rowWidth, offset.size);
@@ -305,16 +308,16 @@ export class GridHeadings extends Container {
 
     // if we're selecting columns, then show all rows as selected
     else if (sheets.sheet.cursor.columnRow?.columns) {
-      this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
-      this.headingsGraphics.moveTo(bounds.left + this.rowWidth, viewport.top);
-      this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
+      this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
+      this.headingsGraphics.drawRect(bounds.left, viewport.top, this.rowWidth, bounds.height);
+      this.headingsGraphics.endFill();
     }
 
     // otherwise highlight row headings based on selected cells
     else {
-      this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
-      this.headingsGraphics.moveTo(bounds.left + this.rowWidth, ySelectedStart);
-      this.headingsGraphics.lineTo(bounds.left + this.rowWidth, ySelectedEnd);
+      this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
+      this.headingsGraphics.drawRect(bounds.left, ySelectedStart, this.rowWidth, ySelectedEnd - ySelectedStart);
+      this.headingsGraphics.endFill();
     }
 
     let mod = 0;
