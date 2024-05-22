@@ -10,6 +10,9 @@ import { CellPosition, ParseFormulaReturnType, Span } from '../../../helpers/for
 import { DASHED } from '../../dashedTextures';
 import { drawDashedRectangle, drawDashedRectangleMarching } from './cellHighlightsDraw';
 
+// TODO: these files need to be cleaned up and properly typed. Lots of untyped
+// data passed around within the data.
+
 export interface HighlightedCellRange {
   column: number;
   row: number;
@@ -134,7 +137,13 @@ export class CellHighlights extends Container {
   }
 
   private getSheet(cellSheet: string | undefined, sheetId: string): string {
-    return (cellSheet ? sheets.getSheetByName(cellSheet)?.id : sheetId) ?? sheetId;
+    if (!cellSheet) return sheetId;
+
+    // It may come in as either a sheet id or a sheet name.
+    if (sheets.getById(cellSheet)) {
+      return cellSheet;
+    }
+    return sheets.getSheetByName(cellSheet)?.id ?? sheetId;
   }
 
   public evalCoord(cell: { type: 'Relative' | 'Absolute'; coord: number }, origin: number) {
@@ -145,7 +154,7 @@ export class CellHighlights extends Container {
   }
 
   private fromCellRange(
-    cellRange: { type: 'CellRange'; start: CellPosition; end: CellPosition },
+    cellRange: { type: 'CellRange'; start: CellPosition; end: CellPosition; sheet?: string },
     origin: Coordinate,
     sheet: string,
     span: Span,
@@ -155,13 +164,12 @@ export class CellHighlights extends Container {
     const startY = this.evalCoord(cellRange.start.y, origin.y);
     const endX = this.evalCoord(cellRange.end.x, origin.x);
     const endY = this.evalCoord(cellRange.end.y, origin.y);
-
     this.highlightedCells.push({
       column: startX,
       row: startY,
       width: endX - startX,
       height: endY - startY,
-      sheet: this.getSheet(cellRange.start.sheet, sheet),
+      sheet: this.getSheet(cellRange.sheet ?? cellRange.start.sheet, sheet),
       span,
       index,
     });
