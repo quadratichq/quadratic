@@ -65,6 +65,7 @@ export class Pointer {
     );
   }
 
+  // todo: this should be removed when the code editor's layout is changed
   private isOverCodeEditor(e: InteractionEvent): boolean {
     const codeEditor = document.getElementById('QuadraticCodeEditorID');
     const overCodeEditor = !!codeEditor?.matches(':hover');

@@ -48,6 +48,7 @@ pub(crate) struct CellEdit {
     pub text: String,
     pub cursor: u32,
     pub code_editor: bool,
+    pub inline_code_editor: bool,
     pub bold: Option<bool>,
     pub italic: Option<bool>,
 }
@@ -443,6 +444,7 @@ mod tests {
             text: "hello".to_string(),
             cursor: 0,
             code_editor: false,
+            inline_code_editor: false,
             bold: None,
             italic: None,
         };
@@ -466,6 +468,7 @@ mod tests {
             text: "hello".to_string(),
             cursor: 0,
             code_editor: false,
+            inline_code_editor: false,
             bold: None,
             italic: None,
         };

@@ -1,4 +1,5 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Size } from '@/app/gridGL/types/size';
 import { useFileContext } from '@/app/ui/components/FileProvider';
@@ -29,7 +30,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
 
   useEffect(() => {
     const keyDownWindow = async (event: KeyboardEvent) => {
-      if (pixiAppSettings.input.show) return;
+      if (pixiAppSettings.input.show || inlineEditorHandler.isOpen()) return;
 
       if (
         keyboardViewport({
@@ -51,8 +52,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
   }, [editorInteractionState, presentationMode, setEditorInteractionState, setPresentationMode]);
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
-    if (pixiAppSettings.input.show) return;
-
+    if (pixiAppSettings.input.show && inlineEditorHandler.isOpen()) return;
     if (
       keyboardClipboard({
         event,
@@ -65,7 +65,7 @@ export const useKeyboard = (props: IProps): { onKeyDown: (event: React.KeyboardE
     )
       return;
 
-    if (keyboardPosition(event)) return;
+    if (keyboardPosition(event.nativeEvent)) return;
 
     // Prevent these commands if "command" key is being pressed
     if (event.metaKey || event.ctrlKey) {
