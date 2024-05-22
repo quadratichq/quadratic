@@ -35,6 +35,7 @@ export interface Span { start: number, end: number, }
 export interface SearchOptions { case_sensitive?: boolean, whole_cell?: boolean, search_code?: boolean, sheet_id?: string, }
 export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
 export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
+export interface Selection { sheet_id: SheetId, rects: Array<Rect> | null, rows: Array<bigint> | null, columns: Array<bigint> | null, all: boolean, }
 export interface Placement { index: number, position: number, size: number, }
 export interface ColumnRow { column: number, row: number, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }

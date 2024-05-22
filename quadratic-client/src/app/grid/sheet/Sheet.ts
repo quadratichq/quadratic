@@ -31,6 +31,18 @@ export class Sheet {
     events.on('sheetBounds', this.updateBounds);
   }
 
+  static testSheet(): Sheet {
+    return new Sheet({
+      sheet_id: 'test-sheet',
+      name: 'Test Sheet',
+      order: '1',
+      color: 'red',
+      offsets: '',
+      bounds: { type: 'empty' },
+      bounds_without_formatting: { type: 'empty' },
+    });
+  }
+
   private updateBounds = (sheetsBounds: SheetBounds) => {
     if (this.id === sheetsBounds.sheet_id) {
       this.bounds = sheetsBounds.bounds;

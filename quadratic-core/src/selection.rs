@@ -9,18 +9,15 @@ pub struct Selection {
     pub sheet_id: SheetId,
     pub rects: Option<Vec<Rect>>,
     pub rows: Option<Vec<i64>>,
-    pub column: Option<Vec<i64>>,
+    pub columns: Option<Vec<i64>>,
     pub all: bool,
 }
 
 impl FromStr for Selection {
-    type Err = ();
+    type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        serde_json::from_str::<Selection>(s).map_err(|e| {
-            dbg!(e.to_string());
-            ()
-        })
+        serde_json::from_str::<Selection>(s).map_err(|e| e.to_string())
     }
 }
 
@@ -38,7 +35,7 @@ mod test {
                 sheet_id: SheetId::test(),
                 rects: Some(vec![Rect::from_numbers(0, 1, 4, 4)]),
                 rows: None,
-                column: None,
+                columns: None,
                 all: false
             }
         );
@@ -54,7 +51,7 @@ mod test {
                 sheet_id: SheetId::test(),
                 rects: None,
                 rows: Some(vec!(3, 5)),
-                column: None,
+                columns: None,
                 all: false
             }
         );
@@ -70,7 +67,7 @@ mod test {
                 sheet_id: SheetId::test(),
                 rects: None,
                 rows: None,
-                column: Some(vec!(7, 8, 9)),
+                columns: Some(vec!(7, 8, 9)),
                 all: false
             }
         );
@@ -86,7 +83,7 @@ mod test {
                 sheet_id: SheetId::test(),
                 rects: None,
                 rows: None,
-                column: None,
+                columns: None,
                 all: true
             }
         );

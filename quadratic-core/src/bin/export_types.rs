@@ -15,6 +15,7 @@ use quadratic_core::{
         sheet::search::SearchOptions,
         BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
     },
+    selection::Selection,
     sheet_offsets::{
         resize_transient::TransientResize,
         sheet_offsets_wasm::{ColumnRow, Placement},
@@ -76,7 +77,7 @@ fn main() {
         SearchOptions,
         SheetPos,
         SheetRect,
-        // SheetRects,
+        Selection,
         Placement,
         ColumnRow,
         SheetInfo,

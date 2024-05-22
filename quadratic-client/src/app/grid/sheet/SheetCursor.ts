@@ -2,21 +2,13 @@
 //! that state as you switch between sheets, a multiplayer user follows your
 //! cursor, or you save the cursor state in the URL at ?state=.
 
+import { Selection } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
-
-// Multi-cursor for selecting multiple cells.
-//
-// todo: this should be changed to Rectangle[] to allow multiple selections via
-// shift key.
-interface MultiCursor {
-  originPosition: Coordinate;
-  terminalPosition: Coordinate;
-}
 
 // Select column and/or row for the entire sheet.
 interface ColumnRowCursor {
@@ -30,7 +22,7 @@ export interface SheetCursorSave {
   sheetId: string;
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor?: MultiCursor;
+  multiCursor?: { x: number; y: number; width: number; height: number }[];
   columnRow?: ColumnRowCursor;
 }
 
@@ -44,7 +36,7 @@ export class SheetCursor {
 
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor?: MultiCursor;
+  multiCursor?: Rectangle[];
   columnRow?: ColumnRowCursor;
 
   constructor(sheet: Sheet) {
@@ -77,13 +69,13 @@ export class SheetCursor {
   load(value: SheetCursorSave): void {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
-    this.multiCursor = value.multiCursor;
+    this.multiCursor = value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
     multiplayer.sendSelection(this.getMultiplayerSelection());
     pixiApp.cursor.dirty = true;
   }
 
   changePosition(options: {
-    multiCursor?: MultiCursor;
+    multiCursor?: Rectangle[];
     columnRow?: ColumnRowCursor;
     cursorPosition?: Coordinate;
     keyboardMovePosition?: Coordinate;
@@ -141,5 +133,21 @@ export class SheetCursor {
     const origin = this.originPosition;
     const terminal = this.terminalPosition;
     return new Rectangle(origin.x, origin.y, terminal.x - origin.x, terminal.y - origin.y);
+  }
+
+  getRustSelection(): String {
+    const sheet_id = { id: this.sheetId };
+    const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
+    const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
+    const all = this.columnRow?.all ?? false;
+    const rects = null;
+    const selection: Selection = {
+      sheet_id,
+      rects,
+      columns,
+      rows,
+      all,
+    };
+    return JSON.stringify(selection);
   }
 }
