@@ -1,3 +1,4 @@
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
@@ -59,12 +60,11 @@ export class PointerDown {
         }
         const code = await quadraticCore.getCodeCell(sheet.id, column, row);
         if (code) {
-          doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
+          doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
         } else {
           const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
           doubleClickCell({ column, row, cell });
         }
-
         this.active = false;
         event.preventDefault();
         return;
@@ -106,6 +106,7 @@ export class PointerDown {
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
+    inlineEditorHandler.handleCellPointerDown();
     cursor.changePosition({
       keyboardMovePosition: { x: column, y: row },
       cursorPosition: { x: column, y: row },
@@ -153,7 +154,9 @@ export class PointerDown {
         originPosition: new Point(this.position.x, this.position.y),
         terminalPosition: new Point(this.position.x, this.position.y),
       };
-      pixiAppSettings.changeInput(false);
+      if (!inlineEditorHandler.isEditingFormula()) {
+        pixiAppSettings.changeInput(false);
+      }
     } else {
       // cursor origin and terminal are not in the same cell
 
@@ -183,7 +186,9 @@ export class PointerDown {
             terminalPosition: { x: termX, y: termY },
           },
         });
-        pixiAppSettings.changeInput(false);
+        if (!inlineEditorHandler.isEditingFormula()) {
+          pixiAppSettings.changeInput(false);
+        }
 
         // update previousPosition
         this.previousPosition = {

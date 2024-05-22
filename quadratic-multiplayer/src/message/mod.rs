@@ -19,6 +19,7 @@ pub(crate) struct CellEdit {
     pub text: String,
     pub cursor: u32,
     pub code_editor: bool,
+    pub inline_code_editor: bool,
     pub bold: Option<bool>,
     pub italic: Option<bool>,
 }
