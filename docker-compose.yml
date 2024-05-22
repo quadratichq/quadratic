@@ -8,7 +8,7 @@ services:
     volumes:
       - ./docker/redis/data:/data
     networks:
-      - host
+      - localnetwork
 
   postgres:
     extends:
@@ -35,7 +35,7 @@ services:
   https-portal:
     image: steveltn/https-portal:1
     ports:
-      # - "80:80"
+      - "80:80"
       - "443:443"
     restart: always
     environment:
@@ -43,7 +43,7 @@ services:
       STAGE: "local" # Use 'production' to use a LetsEncrypt signed SSL cert
       FORCE_RENEW: "false"
     networks:
-      - host
+      - localnetwork
     depends_on:
       - quadratic-client
 
@@ -56,9 +56,9 @@ services:
       - quadratic-client/.env.docker
     # override env vars here
     environment:
-      VITE_QUADRATIC_API_URL: http://host.docker.internal:8000
-      VITE_QUADRATIC_MULTIPLAYER_URL: ws://host.docker.internal:3001/ws
-      VITE_QUADRATIC_CONNECTION_URL: http://host.docker.internal:3003
+      VITE_QUADRATIC_API_URL: https://0.0.0.0:8000
+      VITE_QUADRATIC_MULTIPLAYER_URL: wss://0.0.0.0:3001/ws
+      VITE_QUADRATIC_CONNECTION_URL: https://0.0.0.0:3003
     restart: "always"
     ports:
       - "3000:3000"
@@ -71,7 +71,7 @@ services:
       - frontend
       - all
     networks:
-      - host
+      - localnetwork
 
   quadratic-api:
     build:
@@ -119,7 +119,7 @@ services:
       - quadratic-multiplayer
       - all
     networks:
-      - host
+      - localnetwork
 
   quadratic-files:
     build:
@@ -178,4 +178,4 @@ volumes:
     name: docker
 
 networks:
-  host:
+  localnetwork:

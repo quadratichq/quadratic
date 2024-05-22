@@ -11,7 +11,7 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: "5s"
     networks:
-      - host
+      - localnetwork
 
   postgres:
     image: postgres:15
@@ -63,4 +63,4 @@ services:
       "
 
 networks:
-  host:
+  localnetwork:
