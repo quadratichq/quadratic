@@ -109,7 +109,7 @@ export class Update {
     debugTimeCheck('[Update] gridLines');
     pixiApp.axesLines.update();
     debugTimeCheck('[Update] axesLines');
-    pixiApp.headings.update();
+    pixiApp.headings.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] headings');
     pixiApp.boxCells.update();
     debugTimeCheck('[Update] boxCells');

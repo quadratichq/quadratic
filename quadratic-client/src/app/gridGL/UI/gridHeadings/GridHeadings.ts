@@ -151,6 +151,15 @@ export class GridHeadings extends Container {
       this.headingsGraphics.endFill();
     }
 
+    // if we're selecting rows, then show all columns as selected
+    else if (sheets.sheet.cursor.columnRow?.rows) {
+      this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
+      const headingTop = viewport.top + cellHeight;
+      this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
+      this.headingsGraphics.moveTo(viewport.left, headingTop);
+      this.headingsGraphics.lineTo(viewport.right, headingTop);
+    }
+
     // otherwise highlight column headings based on selected cells
     else {
       this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
@@ -292,10 +301,20 @@ export class GridHeadings extends Container {
         this.headingsGraphics.drawRect(viewport.left, offset.position, this.rowWidth, offset.size);
       });
       this.headingsGraphics.endFill();
-    } else {
+    }
+
+    // if we're selecting columns, then show all rows as selected
+    else if (sheets.sheet.cursor.columnRow?.columns) {
       this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
-      this.headingsGraphics.moveTo(bounds.left + this.headingSize.width, ySelectedStart);
-      this.headingsGraphics.lineTo(bounds.left + this.headingSize.width, ySelectedEnd);
+      this.headingsGraphics.moveTo(bounds.left + this.rowWidth, viewport.top);
+      this.headingsGraphics.lineTo(bounds.left + this.rowWidth, viewport.bottom);
+    }
+
+    // otherwise highlight row headings based on selected cells
+    else {
+      this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
+      this.headingsGraphics.moveTo(bounds.left + this.rowWidth, ySelectedStart);
+      this.headingsGraphics.lineTo(bounds.left + this.rowWidth, ySelectedEnd);
     }
 
     let mod = 0;
@@ -382,8 +401,16 @@ export class GridHeadings extends Container {
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
   }
 
-  update() {
-    if (!this.dirty) return;
+  update(viewportDirty: boolean) {
+    // update only if dirty or if viewport is dirty and there is a column or row
+    // selection (which requires a redraw)
+    if (
+      !this.dirty &&
+      !viewportDirty &&
+      !(viewportDirty && (sheets.sheet.cursor.columnRow?.columns || sheets.sheet.cursor.columnRow?.rows))
+    ) {
+      return;
+    }
     this.dirty = false;
     const { selectedColumns, selectedRows } = this.createSelectedArrays();
     this.labels.clear();
