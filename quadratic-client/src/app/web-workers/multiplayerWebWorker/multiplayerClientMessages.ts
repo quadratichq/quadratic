@@ -80,11 +80,16 @@ export interface MultiplayerClientUsersInRoom {
   room: ReceiveRoom;
 }
 
+export interface MultiplayerClientReload {
+  type: 'multiplayerClientReload';
+}
+
 export type MultiplayerClientMessage =
   | MultiplayerClientState
   | MultiplayerClientUserUpdate
   | MultiplayerClientUsersInRoom
-  | MultiplayerClientUserUpdate;
+  | MultiplayerClientUserUpdate
+  | MultiplayerClientReload;
 
 export type ClientMultiplayerMessage =
   | ClientMultiplayerInit
