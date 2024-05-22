@@ -472,6 +472,19 @@ export const CodeEditor = () => {
               }}
               position="HORIZONTAL"
             />
+            {/* TODO: (connections) make this work */}
+            <ResizeControl
+              style={{ bottom: 30 + '%', width: panelWidth + 'px' }}
+              setState={(mouseEvent) => {
+                // if (!containerRef.current) return;
+                // const containerRect = containerRef.current?.getBoundingClientRect();
+                // const newValue = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
+                // if (newValue >= 25 && newValue <= 75) {
+                //   setPanelHeightPercentage(newValue);
+                // }
+              }}
+              position="HORIZONTAL"
+            />
             {/* left-to-right: outer edge */}
             <ResizeControl
               style={{ left: `-1px` }}

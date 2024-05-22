@@ -6,46 +6,64 @@ import {
 import z from 'zod';
 const API_URL = import.meta.env.VITE_QUADRATIC_CONNECTION_URL;
 
-// Postgres
-//
 // TODO: (connections) these should come from the connection service definition for these endpoints
 // but for now, they are defined here
-export type TestConnectionResponse = {
-  connected: boolean;
-  message: string | null;
-};
+const TestSchema = z.object({ connected: z.boolean(), message: z.string().nullable() });
+export type TestConnectionResponse = z.infer<typeof TestSchema>;
+const SqlSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string(),
+  database: z.string(),
+  tables: z.array(
+    z.object({
+      name: z.string(),
+      schema: z.string(), // public or ...?
+      columns: z.array(
+        z.object({
+          name: z.string(),
+          type: z.string(),
+          is_nullable: z.boolean(),
+        })
+      ),
+    })
+  ),
+});
+type SqlSchemaResponse = z.infer<typeof SqlSchema>;
 
 export const connectionClient = {
-  test: {
-    mysql: async (body: z.infer<typeof ConnectionTypeDetailsMysqlSchema>) => {
+  schemas: {
+    get: async (connectionType: 'postgres' | 'mysql', connectionId: string): Promise<SqlSchemaResponse | null> => {
       try {
         let jwt = await authClient.getTokenOrRedirect();
-        const res = fetch(`${API_URL}/mysql/test`, {
-          method: 'POST',
+        const res = await fetch(`${API_URL}/${connectionType}/schema/${connectionId}`, {
+          method: 'GET',
           headers: new Headers({ 'content-type': 'application/json', authorization: `Bearer ${jwt}` }),
-          body: JSON.stringify(body),
         });
-        const json: TestConnectionResponse = await res.then((res) => res.json());
-        return json;
+        const data = await res.json();
+        return SqlSchema.parse(data);
       } catch (err) {
-        console.error('Failed to connect to connection service', err);
-        return {
-          connected: false,
-          message:
-            'Network error: failed to make connection. Make sure you’re connected to the internet and try again.',
-        };
+        console.error('Failed to get the schema from the connection service', err);
+        return null;
       }
     },
-    postgres: async (body: z.infer<typeof ConnectionTypeDetailsPostgresSchema>) => {
+  },
+  test: {
+    run: async ({
+      type,
+      typeDetails,
+    }:
+      | { type: 'postgres'; typeDetails: z.infer<typeof ConnectionTypeDetailsPostgresSchema> }
+      | { type: 'mysql'; typeDetails: z.infer<typeof ConnectionTypeDetailsMysqlSchema> }) => {
       try {
         let jwt = await authClient.getTokenOrRedirect();
-        const res = fetch(`${API_URL}/postgres/test`, {
+        const res = await fetch(`${API_URL}/${type}/test`, {
           method: 'POST',
           headers: new Headers({ 'content-type': 'application/json', authorization: `Bearer ${jwt}` }),
-          body: JSON.stringify(body),
+          body: JSON.stringify(typeDetails),
         });
-        const json: TestConnectionResponse = await res.then((res) => res.json());
-        return json;
+        const data = await res.json();
+        return TestSchema.parse(data);
       } catch (err) {
         console.error('Failed to connect to connection service', err);
         return {

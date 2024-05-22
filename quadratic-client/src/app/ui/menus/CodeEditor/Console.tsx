@@ -1,4 +1,5 @@
 import { Coordinate } from '@/app/gridGL/types/size';
+import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { useRootRouteLoaderData } from '@/routes/index';
 import { Type } from '@/shared/components/Type';
@@ -24,7 +25,7 @@ interface ConsoleProps {
   setPanelPosition: React.Dispatch<React.SetStateAction<PanelPosition>>;
 }
 
-type Tab = 'console' | 'ai-assistant';
+type Tab = 'console' | 'ai-assistant' | 'schema';
 
 export function Console(props: ConsoleProps) {
   const {
@@ -67,6 +68,8 @@ export function Console(props: ConsoleProps) {
               Console
             </TabsTrigger>
             <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>
+            {/* TODO: (connections) if it's sql */}
+            <TabsTrigger value="schema">Data browser</TabsTrigger>
           </TabsList>
         </div>
 
@@ -91,10 +94,9 @@ export function Console(props: ConsoleProps) {
           className={cn(
             'm-0 grid overflow-hidden',
             panelPosition === 'bottom' && 'grid-rows-[1fr_auto]',
-            panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]',
-            panelPosition === 'bottom' && tab !== 'ai-assistant' && 'hidden'
+            panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]'
           )}
-          style={panelPosition === 'left' ? { height: `${100 - panelHeightPercentage}%` } : {}}
+          style={panelPosition === 'left' ? { height: `${100 - panelHeightPercentage - 30}%` } : {}}
         >
           {panelPosition === 'left' && (
             <Type className={cn(`gap-2 px-3 py-3`, consoleBadgeSharedClasses)}>AI assistant</Type>
@@ -117,6 +119,23 @@ export function Console(props: ConsoleProps) {
               to use the AI assistant.
             </Type>
           )}
+        </TabsContent>
+
+        <TabsContent
+          forceMount={true}
+          value="schema"
+          className={cn(
+            'm-0 grid grid-rows-[auto_1fr] overflow-hidden',
+            panelPosition === 'bottom' && tab !== 'schema' && 'hidden'
+          )}
+          style={panelPosition === 'left' ? { height: `${panelHeightPercentage}%` } : {}}
+        >
+          {/* Only visible when panel is on the left */}
+          {panelPosition === 'left' && (
+            <Type className={cn('flex items-center gap-2 px-3 py-3', consoleBadgeSharedClasses)}>Data browser</Type>
+          )}
+
+          <SchemaViewer />
         </TabsContent>
       </Tabs>
 
