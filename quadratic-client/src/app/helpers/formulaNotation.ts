@@ -28,16 +28,19 @@ export type CellRef =
       type: 'CellRange';
       start: CellPosition;
       end: CellPosition;
+      sheet?: string;
     }
   | {
       type: 'Cell';
       pos: CellPosition;
+      sheet?: string;
     };
 
 export type ParseFormulaReturnType = {
   parse_error_msg: string | undefined;
   parse_error_span: { start: number | null; end: number | null } | undefined;
   cell_refs: {
+    sheet?: string;
     cell_ref: CellRef;
     span: Span;
   }[];
