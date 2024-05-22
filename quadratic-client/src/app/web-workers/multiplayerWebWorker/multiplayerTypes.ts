@@ -9,7 +9,6 @@ export interface CellEdit {
   inline_code_editor: boolean;
   bold?: boolean;
   italic?: boolean;
-  inline_code_editor?: boolean;
 }
 
 export interface MultiplayerUserServer {

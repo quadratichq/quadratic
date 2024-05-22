@@ -231,9 +231,6 @@ export class Multiplayer {
         inline_code_editor: inlineCodeEditor,
         bold,
         italic,
-
-        // todo: this is not used
-        inline_code_editor: false,
       },
     });
   }

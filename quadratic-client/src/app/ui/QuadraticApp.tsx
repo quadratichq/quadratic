@@ -1,7 +1,6 @@
 import { useUndo } from '@/app/events/useUndo';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
-import { initWorkers } from '@/app/web-workers/workers';
 import { useRootRouteLoaderData } from '@/router';
 import { useEffect, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -35,7 +34,6 @@ export default function QuadraticApp() {
   useEffect(() => {
     if (uuid && !pixiApp.initialized) {
       pixiApp.init().then(() => {
-        initWorkers();
         if (!loggedInUser) {
           const anonymous = { sub: v4(), first_name: 'Anonymous', last_name: 'User' };
           multiplayer.init(uuid, anonymous, true);
