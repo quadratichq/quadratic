@@ -1,3 +1,4 @@
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
@@ -78,7 +79,9 @@ export class SheetCursor {
       this.keyboardMovePosition = options.keyboardMovePosition;
     }
     pixiApp.updateCursorPosition({ ensureVisible: options.ensureVisible ?? true });
-    multiplayer.sendSelection(this.getMultiplayerSelection());
+    if (!inlineEditorHandler.cursorIsMoving) {
+      multiplayer.sendSelection(this.getMultiplayerSelection());
+    }
   }
 
   // gets a stringified selection string for multiplayer

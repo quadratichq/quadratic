@@ -1,8 +1,9 @@
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 
-export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boolean {
+export function keyboardPosition(event: KeyboardEvent): boolean {
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
 
@@ -13,18 +14,23 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
     });
   };
 
-  // todo: these checks should be a single call within Rust instead of having TS handle the logic (this will reduce the number of calls into quadraticCore)
+  // todo: these checks should be a single call within Rust instead of having TS
+  // handle the logic (this will reduce the number of calls into quadraticCore)
+  // todo: clean up this function by breaking it up into separate
+  // functions!
   const moveCursor = async (deltaX: number, deltaY: number) => {
     // movePosition is either originPosition or terminalPosition (whichever !== cursorPosition)
     const downPosition = cursor.cursorPosition;
     const movePosition = cursor.keyboardMovePosition;
     const sheetId = sheets.sheet.id;
+
     // handle cases for meta/ctrl keys with algorithm:
     // - if on an empty cell then select to the first cell with a value
     // - if on a filled cell then select to the cell before the next empty cell
     // - if on a filled cell but the next cell is empty then select to the first cell with a value
     // - if there are no more cells then select the next cell over (excel selects to the end of the sheet; we don’t have an end (yet) so right now I select one cell over)
     //   the above checks are always made relative to the original cursor position (the highlighted cell)
+
     if (event.metaKey || event.ctrlKey) {
       // needed since we call await to get ranges, and without this, the browser will navigate
       event.preventDefault();
@@ -256,6 +262,7 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
         }
       }
     }
+
     // use arrow to select when shift key is pressed
     else if (event.shiftKey) {
       // we are moving an existing multiCursor
@@ -272,7 +279,9 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
           },
           keyboardMovePosition: newMovePosition,
         });
-        pixiAppSettings.changeInput(false);
+        if (!inlineEditorHandler.cursorIsMoving) {
+          pixiAppSettings.changeInput(false);
+        }
       }
       // we are creating a new multiCursor
       else {
@@ -289,9 +298,12 @@ export function keyboardPosition(event: React.KeyboardEvent<HTMLElement>): boole
           },
           keyboardMovePosition: newMovePosition,
         });
-        pixiAppSettings.changeInput(false);
+        if (!inlineEditorHandler.cursorIsMoving) {
+          pixiAppSettings.changeInput(false);
+        }
       }
     }
+
     // move arrow normally
     else {
       const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };

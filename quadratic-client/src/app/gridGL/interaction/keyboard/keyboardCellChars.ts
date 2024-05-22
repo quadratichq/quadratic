@@ -31,6 +31,7 @@ const specialChars = [
   '|',
   '}',
   '~',
+  '=',
 ];
 
 export const isAllowedFirstChar = (char: string): boolean => {
