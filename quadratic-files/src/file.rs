@@ -195,6 +195,8 @@ pub(crate) async fn process_queue_for_room(
         .ack(channel, GROUP_NAME, keys, Some(active_channels), false)
         .await?;
 
+    drop(pubsub);
+
     // update the checkpoint in quadratic-api
     let key = &key(*file_id, last_sequence_num);
     set_file_checkpoint(
@@ -210,14 +212,20 @@ pub(crate) async fn process_queue_for_room(
 
     // add FILE_ID.SEQUENCE_NUM to the processed transactions channel
     let message = processed_transaction_key(&file_id.to_string(), &last_sequence_num.to_string());
+    let processed_transactions_channel = state
+        .settings
+        .pubsub_processed_transactions_channel
+        .to_owned();
+
     add_processed_transaction(
-        state,
-        &state.settings.pubsub_processed_transactions_channel,
+        &Arc::clone(state),
+        &processed_transactions_channel,
         &message,
     )
     .await?;
 
     state.stats.lock().await.last_processed_file_time = Some(Instant::now());
+    state.stats.lock().await.files_to_process_in_pubsub = 0;
 
     tracing::info!(
         "Processed sequence numbers {first_sequence_num} - {last_sequence_num} for room {file_id} in {:?}", start.elapsed()

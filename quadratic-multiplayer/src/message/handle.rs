@@ -217,9 +217,13 @@ pub(crate) async fn handle_message(
             state.update_user_heartbeat(file_id, &session_id).await?;
 
             let sequence_num = state.get_sequence_num(&file_id).await?;
+
+            // calculate the expected number of transactions to get from redis
+            // add 1 to include the min_sequence_num (inclusive range)
             let expected_num_transactions = sequence_num
                 .checked_sub(min_sequence_num)
-                .unwrap_or_default();
+                .unwrap_or_default()
+                + 1;
 
             tracing::warn!("min_sequence_num: {}", min_sequence_num);
             tracing::warn!("sequence_num: {}", sequence_num);

@@ -108,6 +108,8 @@ pub(crate) async fn serve() -> Result<()> {
 
     // in a separate thread, log stats
     tokio::spawn({
+        let state = Arc::clone(&state);
+
         async move {
             let mut interval = time::interval(Duration::from_secs(HEALTHCHECK_INTERVAL_S));
 

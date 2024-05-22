@@ -142,6 +142,8 @@ pub(crate) async fn truncate_processed_transactions(
         };
     }
 
+    state.stats.lock().await.channels_to_truncate_in_pubsub = 0;
+
     Ok(())
 }
 
