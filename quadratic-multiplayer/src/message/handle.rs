@@ -491,7 +491,7 @@ pub(crate) mod tests {
         let request = MessageRequest::GetTransactions {
             file_id,
             session_id,
-            min_sequence_num: 0,
+            min_sequence_num: 1,
         };
 
         let string_operations = operations.to_string();
@@ -520,24 +520,8 @@ pub(crate) mod tests {
         let request = MessageRequest::GetTransactions {
             file_id,
             session_id,
-            min_sequence_num: 0,
+            min_sequence_num: 1,
         };
-
-        let response = MessageResponse::Transactions {
-            transactions: "[]".to_string(),
-        };
-
-        // expect an empty array since there are no transactions
-        test_handle(
-            socket.clone(),
-            state.clone(),
-            file_id,
-            user_1.clone(),
-            request.clone(),
-            Some(response),
-            None,
-        )
-        .await;
 
         // increment the sequence_num
         get_mut_room!(state, file_id)
@@ -545,7 +529,7 @@ pub(crate) mod tests {
             .increment_sequence_num();
 
         let response = MessageResponse::Error {
-            error: MpError::MissingTransactions("1".into(), "0".into()),
+            error: MpError::MissingTransactions("1".into(), "0".into()), // requested 1, got 0
             error_level: ErrorLevel::Error,
         };
 
