@@ -7,6 +7,8 @@ services:
       service: redis
     volumes:
       - ./docker/redis/data:/data
+    networks:
+      - host
 
   postgres:
     extends:
@@ -30,6 +32,21 @@ services:
     volumes:
       - ./docker/localstack/cli:/aws
 
+  https-portal:
+    image: steveltn/https-portal:1
+    ports:
+      # - "80:80"
+      - "443:443"
+    restart: always
+    environment:
+      DOMAINS: "localhost -> http://quadratic-client:3000"
+      STAGE: "local" # Use 'production' to use a LetsEncrypt signed SSL cert
+      FORCE_RENEW: "false"
+    networks:
+      - host
+    depends_on:
+      - quadratic-client
+
   quadratic-client:
     build:
       context: .
@@ -37,6 +54,11 @@ services:
     env_file:
       - quadratic-client/.env.local
       - quadratic-client/.env.docker
+    # override env vars here
+    environment:
+      VITE_QUADRATIC_API_URL: http://host.docker.internal:8000
+      VITE_QUADRATIC_MULTIPLAYER_URL: ws://host.docker.internal:3001/ws
+      VITE_QUADRATIC_CONNECTION_URL: http://host.docker.internal:3003
     restart: "always"
     ports:
       - "3000:3000"
@@ -125,6 +147,31 @@ services:
       - backend
       - quadratic-files
       - all
+
+  # quadratic-connection:
+  #   build:
+  #     context: .
+  #     dockerfile: quadratic-connection/Dockerfile
+  #     args:
+  #       - binary=quadratic-connection
+  #   env_file:
+  #     - quadratic-connection/.env.docker
+  #   # override env vars here
+  #   environment:
+  #     QUADRATIC_API_URI: http://host.docker.internal:8000
+  #     RUST_LOG: info
+  #   restart: "always"
+  #   ports:
+  #     - "3003:3003"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     quadratic-api:
+  #       condition: service_started
+  #   profiles:
+  #     - backend
+  #     - quadratic-connection
+  #     - all
 
 volumes:
   docker:
