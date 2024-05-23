@@ -21,7 +21,7 @@ import {
 import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
-  needRefresh: (state: 'required' | 'recommended') => void;
+  needRefresh: (state: 'required' | 'recommended' | 'force') => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell) => void;
@@ -41,7 +41,7 @@ interface EventTypes {
   setCursor: (cursor: string) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
-  changeInput: (input: boolean) => void;
+  changeInput: (input: boolean, initialValue?: string) => void;
   headingSize: (width: number, height: number) => void;
   gridSettings: () => void;
 
@@ -80,6 +80,9 @@ interface EventTypes {
 
   connector: (query: string) => void;
   connectorResponse: (buffer: ArrayBuffer) => void;
+
+  codeEditor: () => void;
+  cellMoving: (move: boolean) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

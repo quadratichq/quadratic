@@ -76,6 +76,7 @@ fn main() {
         Span,
         SearchOptions,
         SheetPos,
+        SheetRect,
         Placement,
         ColumnRow,
         SheetInfo,

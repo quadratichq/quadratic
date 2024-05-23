@@ -1,4 +1,5 @@
 import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
@@ -6,7 +7,7 @@ import { AI } from '@/app/ui/icons';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/index';
 import { apiClient } from '@/shared/api/apiClient';
-import { Input } from '@/shared/shadcn/ui/input';
+import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useRef, useState } from 'react';
@@ -60,12 +61,17 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
   const [messages, setMessages] = useState<Message[]>([]);
   const controller = useRef<AbortController>();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  const inputRef = useRef<HTMLInputElement | undefined>(undefined);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Focus the input when the tab comes into focus
   useEffect(() => {
-    if (isActive && inputRef.current) {
-      inputRef.current.focus();
+    if (isActive) {
+      window.requestAnimationFrame(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+          textarea.focus();
+        }
+      });
     }
   }, [isActive]);
 
@@ -239,23 +245,26 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           e.preventDefault();
         }}
       >
-        <Input
+        <Textarea
+          ref={textareaRef}
           id="prompt-input"
           value={prompt}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
             setPrompt(event.target.value);
           }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && prompt.length > 0) {
+          onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && prompt.trim().length > 0) {
               submitPrompt();
             }
           }}
           autoComplete="off"
           placeholder="Ask a question"
+          autoHeight={true}
+          maxHeight="120px"
         />
 
-        <div className="relative flex items-center">
-          {loading && <CircularProgress size="1rem" className="absolute right-14 top-2.5" />}
+        <div className="relative flex items-end">
+          {loading && <CircularProgress size="1rem" className="absolute bottom-2.5 right-14" />}
           {loading ? (
             <TooltipHint title="Stop generating">
               <IconButton size="small" color="primary" onClick={abortPrompt} edge="end">
@@ -265,7 +274,11 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           ) : (
             <ConditionalWrapper
               condition={prompt.length !== 0}
-              Wrapper={({ children }) => <TooltipHint title="Send">{children as React.ReactElement}</TooltipHint>}
+              Wrapper={({ children }) => (
+                <TooltipHint title="Send" shortcut={`${KeyboardSymbols.Command}↵`}>
+                  {children as React.ReactElement}
+                </TooltipHint>
+              )}
             >
               <IconButton
                 size="small"

@@ -90,6 +90,8 @@ export class Update {
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
       pixiApp.multiplayerCursor.dirty ||
+      pixiApp.cellHighlights.isDirty() ||
+      pixiApp.cellMoving.dirty ||
       pixiApp.cursor.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
@@ -98,7 +100,7 @@ export class Update {
           pixiApp.axesLines.dirty ? 'axesLines ' : ''
         }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}${
           pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''
-        }`
+        }${pixiApp.cellMoving.dirty ? 'cellMoving' : ''}`
       );
     }
 
@@ -113,8 +115,12 @@ export class Update {
     debugTimeCheck('[Update] boxCells');
     pixiApp.cursor.update();
     debugTimeCheck('[Update] cursor');
+    pixiApp.cellHighlights.update();
+    debugTimeCheck('[Update] cellHighlights');
     pixiApp.multiplayerCursor.update();
     debugTimeCheck('[Update] multiplayerCursor');
+    pixiApp.cellMoving.update();
+    debugTimeCheck('[Update] cellMoving');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

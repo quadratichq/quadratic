@@ -123,7 +123,7 @@ impl State {
             .lock()
             .await
             .connection
-            .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string())
+            .get_messages_from(&file_id.to_string(), &min_sequence_num.to_string(), false)
             .await?
             .iter()
             .flat_map(|(_, message)| serde_json::from_str::<TransactionServer>(message))
@@ -138,7 +138,7 @@ impl State {
             .lock()
             .await
             .connection
-            .last_message(&file_id.to_string())
+            .last_message(&file_id.to_string(), false)
             .await?)
     }
 }

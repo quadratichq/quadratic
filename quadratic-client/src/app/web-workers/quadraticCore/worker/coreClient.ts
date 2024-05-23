@@ -467,11 +467,11 @@ class CoreClient {
         return;
 
       case 'clientCoreCommitTransientResize':
-        await core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
+        core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
         return;
 
       case 'clientCoreCommitSingleResize':
-        await core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
+        core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
         return;
 
       case 'clientCoreInit':
@@ -524,6 +524,13 @@ class CoreClient {
       case 'clientCoreRemoveCellNumericFormat':
         core.removeCellNumericFormat(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
+
+      case 'clientCoreMoveCells':
+        core.moveCells(e.data);
+        return;
+
+      default:
+        console.warn('[coreClient] Unhandled message type', e.data);
     }
 
     if (e.data.id !== undefined) {

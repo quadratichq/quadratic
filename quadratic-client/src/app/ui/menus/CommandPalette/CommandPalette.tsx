@@ -9,6 +9,7 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { Command } from './CommandPaletteListItem';
 import borderCommandGroup from './commands/Borders';
 import codeCommandGroup from './commands/Code';
+import { columnRowCommandGroup } from './commands/ColumnRow';
 import editCommandGroup from './commands/Edit';
 import fileCommandGroup from './commands/File';
 import formatCommandGroup from './commands/Format';
@@ -53,6 +54,7 @@ export const CommandPalette = () => {
     helpCommandGroup,
     codeCommandGroup,
     searchCommandGroup,
+    columnRowCommandGroup,
   ];
 
   return (

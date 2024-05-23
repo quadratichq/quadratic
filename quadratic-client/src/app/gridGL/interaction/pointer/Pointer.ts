@@ -1,3 +1,4 @@
+import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { Viewport } from 'pixi-viewport';
@@ -15,6 +16,7 @@ export class Pointer {
   pointerHtmlCells: PointerHtmlCells;
   pointerCursor: PointerCursor;
   pointerDown: PointerDown;
+  pointerCellMoving: PointerCellMoving;
 
   constructor(viewport: Viewport) {
     this.pointerHeading = new PointerHeading();
@@ -22,6 +24,7 @@ export class Pointer {
     this.pointerDown = new PointerDown();
     this.pointerCursor = new PointerCursor();
     this.pointerHtmlCells = new PointerHtmlCells();
+    this.pointerCellMoving = new PointerCellMoving();
 
     viewport.on('pointerdown', this.handlePointerDown);
     viewport.on('pointermove', this.pointerMove);
@@ -62,6 +65,7 @@ export class Pointer {
     );
   }
 
+  // todo: this should be removed when the code editor's layout is changed
   private isOverCodeEditor(e: InteractionEvent): boolean {
     const codeEditor = document.getElementById('QuadraticCodeEditorID');
     const overCodeEditor = !!codeEditor?.matches(':hover');
@@ -75,32 +79,43 @@ export class Pointer {
     if (this.isMoreThanOneTouch(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
     const event = e.data.originalEvent as PointerEvent;
-    this.pointerHtmlCells.pointerDown(e) ||
+    this.pointerCellMoving.pointerDown(event) ||
+      this.pointerHtmlCells.pointerDown(e) ||
       this.pointerHeading.pointerDown(world, event) ||
       this.pointerAutoComplete.pointerDown(world) ||
       this.pointerDown.pointerDown(world, event);
+
+    this.updateCursor();
   };
 
   private pointerMove = (e: InteractionEvent): void => {
     if (this.isMoreThanOneTouch(e) || this.isOverCodeEditor(e)) return;
     const world = pixiApp.viewport.toWorld(e.data.global);
-    this.pointerHtmlCells.pointerMove(e) ||
+    const event = e.data.originalEvent as PointerEvent;
+    this.pointerCellMoving.pointerMove(event, world) ||
+      this.pointerHtmlCells.pointerMove(e) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
       this.pointerDown.pointerMove(world) ||
       this.pointerCursor.pointerMove(world);
 
-    // change the cursor based on pointer priority
+    this.updateCursor();
+  };
+
+  // change the cursor based on pointer priority
+  private updateCursor() {
     const cursor =
+      pixiApp.pointer.pointerCellMoving.cursor ??
       pixiApp.pointer.pointerHtmlCells.cursor ??
       pixiApp.pointer.pointerHeading.cursor ??
       pixiApp.pointer.pointerAutoComplete.cursor;
     pixiApp.canvas.style.cursor = cursor ?? 'unset';
-  };
+  }
 
   private pointerUp = (e: InteractionEvent): void => {
     if (this.isMoreThanOneTouch(e)) return;
-    this.pointerHtmlCells.pointerUp() ||
+    this.pointerCellMoving.pointerUp() ||
+      this.pointerHtmlCells.pointerUp() ||
       this.pointerHeading.pointerUp() ||
       this.pointerAutoComplete.pointerUp() ||
       this.pointerDown.pointerUp();
@@ -116,6 +131,7 @@ export class Pointer {
       return true;
     }
     return (
+      this.pointerCellMoving.handleEscape() ||
       this.pointerHtmlCells.handleEscape() ||
       this.pointerHeading.handleEscape() ||
       this.pointerAutoComplete.handleEscape()

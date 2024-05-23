@@ -53,12 +53,18 @@ fn client(config: Config) -> Result<Client> {
     ))
 }
 
-fn to_key(key: &str) -> String {
-    format!("{key}-0")
+fn to_key(key: &str, preserve_sequence: bool) -> String {
+    if preserve_sequence {
+        key.into()
+    } else {
+        format!("{key}-0")
+    }
 }
 
-fn to_keys(keys: Vec<&str>) -> Vec<String> {
-    keys.iter().map(|key| to_key(key)).collect::<Vec<_>>()
+fn to_keys(keys: Vec<&str>, preserve_sequence: bool) -> Vec<String> {
+    keys.iter()
+        .map(|key| to_key(key, preserve_sequence))
+        .collect::<Vec<_>>()
 }
 
 fn from_key(key: &str) -> String {
@@ -73,15 +79,21 @@ fn from_value(value: &Value) -> String {
     }
 }
 
-fn parse_message(id: &StreamId) -> Message {
-    let StreamId { id, map: value } = id;
-    let parsed_id = from_key(id);
+fn parse_message(id: &StreamId, preserve_sequence: bool) -> Message {
+    let StreamId { mut id, map: value } = id.to_owned();
+
+    if !preserve_sequence {
+        id = from_key(&id);
+    }
+
     let message = from_value(value.iter().next().unwrap().1);
-    (parsed_id.to_string(), message)
+    (id.to_string(), message)
 }
 
-fn stream_ids_to_messages(ids: Vec<StreamId>) -> Vec<Message> {
-    ids.iter().map(parse_message).collect::<Vec<_>>()
+fn stream_ids_to_messages(ids: Vec<StreamId>, preserve_sequence: bool) -> Vec<Message> {
+    ids.iter()
+        .map(|id| parse_message(id, preserve_sequence))
+        .collect::<Vec<_>>()
 }
 
 impl super::PubSub for RedisConnection {
@@ -193,6 +205,7 @@ impl super::PubSub for RedisConnection {
         group: &str,
         keys: Vec<&str>,
         active_channel: Option<&str>,
+        preserve_sequence: bool,
     ) -> Result<()> {
         if keys.is_empty() {
             return Err(SharedError::PubSub(
@@ -200,7 +213,7 @@ impl super::PubSub for RedisConnection {
             ));
         }
 
-        let ids = to_keys(keys);
+        let ids = to_keys(keys, preserve_sequence);
 
         self.multiplex
             .xack::<&str, &str, String, u128>(channel, group, &ids)
@@ -214,6 +227,19 @@ impl super::PubSub for RedisConnection {
         Ok(())
     }
 
+    /// Trim messages from a channel
+    async fn trim(&mut self, channel: &str, key: &str) -> Result<i64> {
+        let xtrim = cmd("XTRIM").arg(channel).arg("MINID").arg(key).to_owned();
+        let value = self.multiplex.send_packed_command(&xtrim).await?;
+
+        match value {
+            Value::Int(num) => Ok(num),
+            _ => Err(SharedError::PubSub(
+                "Error trimming messages for channel {channel} key {key}".into(),
+            )),
+        }
+    }
+
     /// Get unread messages from a channel.  Specify the keys to get messages for,
     /// or None to get all new messages.
     ///
@@ -225,22 +251,21 @@ impl super::PubSub for RedisConnection {
         &mut self,
         channel: &str,
         group: &str,
-        keys: Option<Vec<&str>>,
+        consumer: &str,
+        maybe_id: Option<&str>,
         max_messages: usize,
+        preserve_sequence: bool,
     ) -> Result<Vec<Message>> {
-        // convert keys to ids, default to all new messages (">") if None
-        let ids = keys.map_or_else(|| vec![">".to_string()], |keys| to_keys(keys));
-
-        // redis requires the number of keys to match the number of ids
-        let keys = vec![channel; ids.len()];
+        // convert id, default to all new messages (">") if None
+        let id = maybe_id.map_or_else(|| ">".into(), |id| to_key(id, preserve_sequence));
 
         let opts = StreamReadOptions::default()
             .count(max_messages)
-            .group(group, channel);
+            .group(group, consumer);
 
         let raw_messages: Result<StreamReadReply> = self
             .multiplex
-            .xread_options(&keys, &ids, &opts)
+            .xread_options(&[channel], &[&id], &opts)
             .await
             .map_err(|e| {
                 SharedError::PubSub(format!("Error reading messages for channel {channel}: {e}"))
@@ -249,21 +274,40 @@ impl super::PubSub for RedisConnection {
         let messages = raw_messages?
             .keys
             .iter()
-            .flat_map(|StreamKey { key: _key, ids }| ids.iter().map(parse_message))
+            .flat_map(|StreamKey { key: _key, ids }| {
+                ids.iter().map(|id| parse_message(id, preserve_sequence))
+            })
             .collect::<Vec<_>>();
 
         Ok(messages)
     }
 
+    /// Get messages from the beginning of a channel ending at a specific id
+    async fn get_messages_before(
+        &mut self,
+        channel: &str,
+        id: &str,
+        preserve_sequence: bool,
+    ) -> Result<Vec<Message>> {
+        let messages: StreamRangeReply = self.multiplex.xrange(channel, "-", id).await?;
+
+        Ok(stream_ids_to_messages(messages.ids, preserve_sequence))
+    }
+
     /// Get messages from a channel starting from a specific id
-    async fn get_messages_from(&mut self, channel: &str, id: &str) -> Result<Vec<Message>> {
+    async fn get_messages_from(
+        &mut self,
+        channel: &str,
+        id: &str,
+        preserve_sequence: bool,
+    ) -> Result<Vec<Message>> {
         let messages: StreamRangeReply = self.multiplex.xrange(channel, id, "+").await?;
 
-        Ok(stream_ids_to_messages(messages.ids))
+        Ok(stream_ids_to_messages(messages.ids, preserve_sequence))
     }
 
     /// Get the last message in a channel
-    async fn last_message(&mut self, channel: &str) -> Result<Message> {
+    async fn last_message(&mut self, channel: &str, preserve_sequence: bool) -> Result<Message> {
         let message: StreamRangeReply =
             self.multiplex.xrevrange_count(channel, "+", "-", 1).await?;
 
@@ -271,7 +315,7 @@ impl super::PubSub for RedisConnection {
             SharedError::PubSub("Error getting last message: no messages found".into())
         })?;
 
-        Ok(parse_message(id))
+        Ok(parse_message(id, preserve_sequence))
     }
 }
 
@@ -300,6 +344,7 @@ pub mod tests {
         let (config, channel) = setup();
         let messages = ["test 1", "test 2"];
         let group = "group 1";
+        let consumer = "consumer 1";
 
         let mut connection = RedisConnection::new(config).await.unwrap();
         connection.subscribe(&channel, group).await.unwrap();
@@ -336,7 +381,7 @@ pub mod tests {
 
         // get all new messages
         let results = connection
-            .messages(&channel, group, None, 10)
+            .messages(&channel, group, consumer, None, 10, false)
             .await
             .unwrap();
 
@@ -359,7 +404,7 @@ pub mod tests {
 
         // acknowledge all messages
         connection
-            .ack(&channel, group, ids.clone(), None)
+            .ack(&channel, group, ids.clone(), None, false)
             .await
             .unwrap();
 
@@ -371,8 +416,9 @@ pub mod tests {
 
         // println!("pending: {:?}", pending);
 
+        let max_id = ids.into_iter().max().unwrap();
         let results = connection
-            .messages(&channel, group, Some(ids), 10)
+            .messages(&channel, group, consumer, Some(max_id), 10, false)
             .await
             .unwrap();
 
@@ -397,7 +443,7 @@ pub mod tests {
         }
 
         // get the last message
-        let results = connection.last_message(&channel).await.unwrap();
+        let results = connection.last_message(&channel, false).await.unwrap();
 
         assert_eq!(results, ("2".into(), messages[1].into()));
     }

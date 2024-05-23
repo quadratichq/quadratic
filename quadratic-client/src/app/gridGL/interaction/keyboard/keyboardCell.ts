@@ -1,4 +1,5 @@
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -63,16 +64,18 @@ export async function keyboardCell(options: {
   }
 
   if (event.key === 'Enter') {
-    const column = cursorPosition.x;
-    const row = cursorPosition.y;
-    const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
-    if (code) {
-      doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
-    } else {
-      const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
-      doubleClickCell({ column, row, cell });
+    if (!inlineEditorHandler.isEditingFormula()) {
+      const column = cursorPosition.x;
+      const row = cursorPosition.y;
+      const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
+      if (code) {
+        doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
+      } else {
+        const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
+        doubleClickCell({ column, row, cell });
+      }
+      event.preventDefault();
     }
-    event.preventDefault();
   }
 
   // Don't allow actions beyond here for certain users
@@ -95,7 +98,7 @@ export async function keyboardCell(options: {
     event.preventDefault();
   }
 
-  if (event.key === '/' || event.key === '=') {
+  if (event.key === '/') {
     const x = cursorPosition.x;
     const y = cursorPosition.y;
     const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
@@ -110,6 +113,7 @@ export async function keyboardCell(options: {
             selectedCellSheet: sheets.sheet.id,
             mode: cell.language,
             showCellTypeMenu: false,
+            initialCode: undefined,
           },
         });
       } else {
@@ -120,6 +124,7 @@ export async function keyboardCell(options: {
           selectedCellSheet: sheets.sheet.id,
           mode: cell.language,
           showCodeEditor: true,
+          initialCode: undefined,
         });
       }
     } else if (editorInteractionState.showCodeEditor) {
@@ -131,6 +136,7 @@ export async function keyboardCell(options: {
           selectedCell: { x: x, y: y },
           selectedCellSheet: sheets.sheet.id,
           mode: 'Python',
+          initialCode: undefined,
         },
       });
     } else {
@@ -141,6 +147,7 @@ export async function keyboardCell(options: {
         selectedCell: { x: x, y: y },
         selectedCellSheet: sheets.sheet.id,
         mode: undefined,
+        initialCode: undefined,
       });
     }
     event.preventDefault();
@@ -152,7 +159,7 @@ export async function keyboardCell(options: {
 
     // open code cell unless this is the actual code cell. In this case we can overwrite it
     if (code && (Number(code.x) !== cursorPosition.x || Number(code.y) !== cursorPosition.y)) {
-      doubleClickCell({ column: Number(code.x), row: Number(code.y), mode: code.language, cell: '' });
+      doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
     } else {
       pixiAppSettings.changeInput(true, event.key);
     }

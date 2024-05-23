@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
@@ -135,16 +136,18 @@ class Sheets {
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
       pixiApp.boxCells.reset();
-      pixiAppSettings.changeInput(false);
+      if (!inlineEditorHandler.isEditingFormula()) {
+        pixiAppSettings.changeInput(false);
+      }
       pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
-      pixiApp.loadViewport();
+      pixiApp.viewport.loadViewport();
     }
   }
 
-  getSheetByName(name: string): Sheet | undefined {
+  getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {
     for (const sheet of this.sheets) {
-      if (sheet.name === name) {
+      if (sheet.name === name || (urlCompare && decodeURI(name).toLowerCase() === sheet.name.toLowerCase())) {
         return sheet;
       }
     }

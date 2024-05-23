@@ -189,7 +189,9 @@ mod tests {
                 color: Some("red".to_string()),
             },
         ];
-        transaction.forward_operations.clone_from(&forward_operations);
+        transaction
+            .forward_operations
+            .clone_from(&forward_operations);
         let reverse_operations = vec![
             Operation::SetSheetName { sheet_id, name },
             Operation::SetSheetColor {
@@ -197,7 +199,9 @@ mod tests {
                 color: None,
             },
         ];
-        transaction.reverse_operations.clone_from(&reverse_operations);
+        transaction
+            .reverse_operations
+            .clone_from(&reverse_operations);
         let forward_transaction = transaction.to_forward_transaction();
         assert_eq!(forward_transaction.id, transaction.id);
         assert_eq!(forward_transaction.operations, forward_operations);

@@ -1,11 +1,11 @@
 import { events } from '@/app/events/events';
+import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
+import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { HEADING_SIZE } from '@/shared/constants/gridConstants';
-import { Drag, Viewport } from 'pixi-viewport';
-import { Container, Graphics, Point, Rectangle, Renderer, utils } from 'pixi.js';
-import { isMobile } from 'react-device-detect';
+import { Container, Graphics, Rectangle, Renderer, utils } from 'pixi.js';
 import { editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
 import {
   copyToClipboardEvent,
@@ -24,14 +24,11 @@ import { GridHeadings } from '../UI/gridHeadings/GridHeadings';
 import { CellsSheets } from '../cells/CellsSheets';
 import { Pointer } from '../interaction/pointer/Pointer';
 import { ensureVisible } from '../interaction/viewportHelper';
-import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '../pixiOverride/Wheel';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
-import { HighlightedCells } from './highlightedCells';
+import { Viewport } from './Viewport';
 import './pixiApp.css';
-
-// todo: move viewport stuff to a viewport.ts file
-const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
+import { urlParams } from './urlParams/urlParams';
 
 utils.skipHello();
 
@@ -44,13 +41,16 @@ export class PixiApp {
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
 
-  highlightedCells = new HighlightedCells();
+  // todo: UI should be pulled out and separated into its own class
+
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
   gridLines!: GridLines;
   axesLines!: AxesLines;
   cursor!: Cursor;
+  cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
+  cellMoving!: UICellMoving;
   headings!: GridHeadings;
   boxCells!: BoxCells;
   cellsSheets: CellsSheets;
@@ -81,6 +81,9 @@ export class PixiApp {
     this.initialized = true;
     this.initCanvas();
     this.rebuild();
+
+    urlParams.init();
+
     if (this.sheetsCreated) {
       renderWebWorker.pixiIsReady(sheets.current, this.viewport.getVisibleBounds());
     }
@@ -111,6 +114,9 @@ export class PixiApp {
     this.canvas.className = 'pixi_canvas';
     this.canvas.tabIndex = 0;
 
+    const observer = new ResizeObserver(this.resize);
+    observer.observe(this.canvas);
+
     const resolution = Math.max(2, window.devicePixelRatio);
     this.renderer = new Renderer({
       view: this.canvas,
@@ -120,42 +126,6 @@ export class PixiApp {
     });
     this.viewport.options.interaction = this.renderer.plugins.interaction;
     this.stage.addChild(this.viewport);
-    this.viewport
-      .drag({
-        pressDrag: true,
-        wheel: false, // handled by Wheel plugin below
-        ...(isMobile ? {} : { keyToPress: ['Space'] }),
-      })
-      .decelerate()
-      .pinch()
-      .clampZoom({
-        minScale: 0.01,
-        maxScale: 10,
-      });
-    this.viewport.plugins.add(
-      'wheel',
-      new Wheel(this.viewport, {
-        trackpadPinch: true,
-        wheelZoom: true,
-        percent: 1.5,
-        keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
-      })
-    );
-    if (!isMobile) {
-      this.viewport.plugins.add(
-        'drag-middle-mouse',
-        new Drag(this.viewport, {
-          pressToDrag: true,
-          mouseButtons: 'middle',
-          wheel: 'false',
-        })
-      );
-    }
-
-    this.viewport.on('moved', () => {});
-
-    // hack to ensure pointermove works outside of canvas
-    this.viewport.off('pointerout');
 
     // this holds the viewport's contents
     this.viewportContents = this.viewport.addChild(new Container());
@@ -170,6 +140,8 @@ export class PixiApp {
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
+    this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
+    this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
     this.reset();
@@ -204,6 +176,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
     sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
     multiplayer.sendViewport(this.saveMultiplayerViewport());
@@ -217,6 +190,7 @@ export class PixiApp {
     if (!isEmbed) {
       this.canvas.focus();
     }
+    urlParams.show();
     this.setViewportDirty();
   }
 
@@ -240,6 +214,8 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
+    this.render();
   };
 
   // called before and after a render
@@ -247,6 +223,7 @@ export class PixiApp {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
+    this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
     this.headings.visible = false;
     this.boxCells.visible = false;
@@ -262,6 +239,7 @@ export class PixiApp {
     this.gridLines.visible = true;
     this.axesLines.visible = true;
     this.cursor.visible = true;
+    this.cellHighlights.visible = true;
     this.multiplayerCursor.visible = true;
     this.headings.visible = true;
     this.boxCells.visible = true;
@@ -298,20 +276,12 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.multiplayerCursor.dirty = true;
     this.boxCells.reset();
     this.paused = false;
     this.reset();
     this.setViewportDirty();
-  }
-
-  loadViewport(): void {
-    const lastViewport = sheets.sheet.cursor.viewport;
-    if (lastViewport) {
-      this.viewport.position.set(lastViewport.x, lastViewport.y);
-      this.viewport.scale.set(lastViewport.scaleX, lastViewport.scaleY);
-      this.viewport.dirty = true;
-    }
   }
 
   getStartingViewport(): { x: number; y: number } {
@@ -332,45 +302,18 @@ export class PixiApp {
     });
   }
 
-  loadMultiplayerViewport(options: { x: number; y: number; bounds: Rectangle; sheetId: string }): void {
-    const { x, y, bounds } = options;
-    let width: number | undefined;
-    let height: number | undefined;
-
-    // ensure the entire follow-ee's bounds is visible to the current user
-    if (this.viewport.screenWidth / this.viewport.screenHeight > bounds.width / bounds.height) {
-      height = bounds.height;
-    } else {
-      width = bounds.width;
-    }
-    if (sheets.current !== options.sheetId) {
-      sheets.current = options.sheetId;
-      this.viewport.moveCenter(new Point(x, y));
-    } else {
-      this.viewport.animate({
-        position: new Point(x, y),
-        width,
-        height,
-        removeOnInterrupt: true,
-        time: MULTIPLAYER_VIEWPORT_EASE_TIME,
-      });
-    }
-    this.viewport.dirty = true;
-  }
-
   updateCursorPosition(
     options = {
       ensureVisible: true,
     }
   ): void {
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.headings.dirty = true;
     if (!pixiAppSettings.showCellTypeOutlines) {
       this.cellsSheets.updateCellsArray();
     }
     if (options.ensureVisible) ensureVisible();
-
-    // triggers useGetBorderMenu clearSelection()
     events.emit('cursorPosition');
   }
 
@@ -381,8 +324,22 @@ export class PixiApp {
     if (sheets.sheet.id === options.sheetId) {
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
+      this.cellHighlights.dirty = true;
       pixiApp.headings.dirty = true;
       this.multiplayerCursor.dirty = true;
+    }
+  }
+
+  // called when the viewport is loaded from the URL
+  urlViewportLoad(sheetId: string) {
+    const cellsSheet = sheets.getById(sheetId);
+    if (cellsSheet) {
+      cellsSheet.cursor.viewport = {
+        x: this.viewport.x,
+        y: this.viewport.y,
+        scaleX: this.viewport.scale.x,
+        scaleY: this.viewport.scale.y,
+      };
     }
   }
 }

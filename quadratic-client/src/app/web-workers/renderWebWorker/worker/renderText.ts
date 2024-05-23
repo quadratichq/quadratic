@@ -123,10 +123,16 @@ class RenderText {
     this.cellsLabels.delete(sheetId);
   }
 
-  sheetOffsets(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
+  sheetOffsetsDelta(sheetId: string, column: number | undefined, row: number | undefined, delta: number) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsets');
-    cellsLabels.setOffsets(column, row, delta);
+    cellsLabels.setOffsetsDelta(column, row, delta);
+  }
+
+  sheetOffsetsSize(sheetId: string, column: number | undefined, row: number | undefined, size: number) {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.sheetOffsetsSize');
+    cellsLabels.setOffsetsSize(column, row, size);
   }
 
   sheetInfoUpdate(sheetInfo: SheetInfo) {

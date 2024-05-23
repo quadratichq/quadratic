@@ -220,16 +220,11 @@ async fn handle_socket(
                 }
 
                 match error {
-                    // kill the ws connection for auth errors
-                    MpError::Authentication(_) => {
-                        break;
-                    }
-                    // kill the ws connection for file permission errors
-                    MpError::FilePermissions(_) => {
-                        break;
-                    }
-                    // kill the ws connection for room not found errors
-                    MpError::RoomNotFound(_) => {
+                    // kill the ws connection for certain errors
+                    MpError::Authentication(_)
+                    | MpError::UserNotFound(_, _)
+                    | MpError::FilePermissions(_)
+                    | MpError::RoomNotFound(_) => {
                         break;
                     }
                     // noop

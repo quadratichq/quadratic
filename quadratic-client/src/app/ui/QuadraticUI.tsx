@@ -38,7 +38,7 @@ export default function QuadraticUI() {
   // Resize the canvas when user goes in/out of presentation mode
   useEffect(() => {
     pixiApp.resize();
-  }, [presentationMode]);
+  }, [presentationMode, editorInteractionState.showCodeEditor]);
 
   return (
     <div
