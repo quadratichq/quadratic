@@ -6,6 +6,7 @@ use arrow::{
     },
     datatypes::{Schema as ArrowSchema, *},
 };
+use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, Timelike};
@@ -14,7 +15,7 @@ use parquet::arrow::ArrowWriter;
 use serde::Serialize;
 use serde_json::Value;
 use sqlx::{Column, Row};
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::BTreeMap, sync::Arc};
 use uuid::Uuid;
 
 use self::{mysql_connection::MySqlConnection, postgres_connection::PostgresConnection};
@@ -200,11 +201,12 @@ pub struct SchemaTable {
 #[derive(Debug, Serialize)]
 pub struct DatabaseSchema {
     database: String,
-    pub tables: HashMap<String, SchemaTable>,
+    pub tables: BTreeMap<String, SchemaTable>,
 }
 
+#[async_trait]
 pub trait Connection {
-    type Conn;
+    type Conn: sqlx::Connection;
     type Row: Row;
     type Column: Column;
 
@@ -290,3 +292,43 @@ pub trait Connection {
         Ok(parquet.into())
     }
 }
+
+// async fn schema<<T: Connection>::Conn>(
+//     conn: impl Connection,
+//     sql_conn: SqlConnection,
+//     database: &str,
+//     query: impl Future<Output = Result<Vec<T>>>,
+// ) -> Result<DatabaseSchema> {
+//     let rows = query.await?;
+
+//     let mut schema = DatabaseSchema {
+//         database: database.to_owned(),
+//         tables: BTreeMap::new(),
+//     };
+
+//     for row in rows.into_iter() {
+//         let table_name = row.get::<String, usize>(2);
+
+//         schema
+//             .tables
+//             // get or insert the table
+//             .entry(table_name.to_owned())
+//             .or_insert_with(|| SchemaTable {
+//                 name: table_name,
+//                 schema: row.get::<String, usize>(1),
+//                 columns: vec![],
+//             })
+//             .columns
+//             // add the column to the table
+//             .push(SchemaColumn {
+//                 name: row.get::<String, usize>(3),
+//                 r#type: row.get::<String, usize>(4),
+//                 is_nullable: match row.get::<String, usize>(5).to_lowercase().as_str() {
+//                     "yes" => true,
+//                     _ => false,
+//                 },
+//             });
+//     }
+
+//     Ok(schema)
+// }

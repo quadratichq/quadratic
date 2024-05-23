@@ -343,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "async-trait"
-version = "0.1.74"
+version = "0.1.80"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a66537f1bb974b254c98ed142ff995236e81b9d0fe4db0575f46612cb15eb0f9"
+checksum = "c6fa2087f2753a7da8cc1c0dbfcf89579dd57458e36769de5ac750b4671737ca"
 dependencies = [
  "proc-macro2 1.0.78",
  "quote 1.0.35",
@@ -3140,6 +3140,7 @@ name = "quadratic-rust-shared"
 version = "0.1.0"
 dependencies = [
  "arrow",
+ "async-trait",
  "aws-config",
  "aws-sdk-s3",
  "bigdecimal 0.3.1",

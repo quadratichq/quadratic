@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
 use bigdecimal::BigDecimal;
@@ -104,7 +104,7 @@ impl Connection for MySqlConnection {
 
         let mut schema = DatabaseSchema {
             database: self.database.to_owned().unwrap_or_default(),
-            tables: HashMap::new(),
+            tables: BTreeMap::new(),
         };
 
         for row in rows.into_iter() {

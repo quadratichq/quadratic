@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 arrow = "51.0.0"
+async-trait = "0.1.80"
 aws-config = { version= "1.1.1", features = ["behavior-version-latest"] }
 aws-sdk-s3 = {version = "1.12.0", features = ["behavior-version-latest", "rt-tokio"] }
 bigdecimal = "0.3.0" # need this fixed to the sqlx dependency

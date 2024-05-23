@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
 use bigdecimal::BigDecimal;
@@ -94,10 +94,10 @@ impl Connection for PostgresConnection {
         })?;
 
         let sql = format!("
-            SELECT c.table_catalog as database, c.table_schema as schema, c.table_name as table, c.column_name, c.udt_name as column_type, c.is_nullable
-            FROM information_schema.tables as t inner join information_schema.columns as c on t.table_name = c.table_name
-            WHERE t.table_type = 'BASE TABLE' 
-                AND c.table_schema NOT IN 
+            select c.table_catalog as database, c.table_schema as schema, c.table_name as table, c.column_name, c.udt_name as column_type, c.is_nullable
+            from information_schema.tables as t inner join information_schema.columns as c on t.table_name = c.table_name
+            where t.table_type = 'BASE TABLE' 
+                and c.table_schema not in 
                     ('pg_catalog', 'information_schema')
                     and c.table_catalog = '{database}'
             order by c.table_name, c.ordinal_position, c.column_name");
@@ -106,7 +106,7 @@ impl Connection for PostgresConnection {
 
         let mut schema = DatabaseSchema {
             database: self.database.to_owned().unwrap_or_default(),
-            tables: HashMap::new(),
+            tables: BTreeMap::new(),
         };
 
         for row in rows.into_iter() {
@@ -114,6 +114,7 @@ impl Connection for PostgresConnection {
 
             schema
                 .tables
+                // get or insert the table
                 .entry(table_name.to_owned())
                 .or_insert_with(|| SchemaTable {
                     name: table_name,
@@ -121,6 +122,7 @@ impl Connection for PostgresConnection {
                     columns: vec![],
                 })
                 .columns
+                // add the column to the table
                 .push(SchemaColumn {
                     name: row.get::<String, usize>(3),
                     r#type: row.get::<String, usize>(4),
