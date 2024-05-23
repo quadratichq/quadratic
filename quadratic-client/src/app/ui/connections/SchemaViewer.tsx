@@ -4,7 +4,7 @@ import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
-import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
+import { KeyboardArrowRight } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 
@@ -47,7 +47,7 @@ export const SchemaViewer = () => {
 
   return (
     <div className="overflow-scroll px-3 text-sm">
-      <div className="z-10 flex items-center justify-between bg-background px-1">
+      {/* <div className="z-10 flex items-center justify-between bg-background px-1">
         <p className="font-semibold">[CONNECTION]</p>
         <div>
           <TooltipHint title="Refresh schema">
@@ -61,12 +61,7 @@ export const SchemaViewer = () => {
             </IconButton>
           </TooltipHint>
         </div>
-        {/* <p>
-          <label className="flex items-center gap-1 text-xs text-muted-foreground">
-            Expand all <Switch checked={expandAll} onCheckedChange={() => setExpandAll((prev) => !prev)} />
-          </label>
-        </p> */}
-      </div>
+      </div> */}
       {loadState === 'error' && (
         <Type className="text-destructive">
           Error loading data schema.{' '}
@@ -116,9 +111,9 @@ function TableListItem({
 
   return (
     <li>
-      <button
+      <div
         className={cn(
-          'group/item sticky top-0 z-10 flex w-full items-stretch justify-between gap-1 bg-background pr-1 hover:bg-accent',
+          'group/item sticky top-0 z-10 flex w-full cursor-default items-stretch justify-between gap-1 bg-background pr-1 hover:bg-accent',
           expanded && 'bgz-accent'
         )}
         onClick={() => {
@@ -149,7 +144,7 @@ function TableListItem({
             <SqlAdd fontSize="inherit" />
           </IconButton>
         </TooltipHint>
-      </button>
+      </div>
       {expanded && (
         <ul className="pl-3 pr-2">
           {/* TODO (connections) handle when there are 0 columns in a table */}

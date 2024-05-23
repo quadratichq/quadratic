@@ -84,8 +84,8 @@ export function Console(props: ConsoleProps) {
               Console
             </TabsTrigger>
             <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>
-            {/* TODO: (connections) if it's sql */}
-            <TabsTrigger value="data-browser">Data browser</TabsTrigger>
+            {/* TODO: (connections) if it's sql and you have permission */}
+            {isConnection && <TabsTrigger value="data-browser">Data browser</TabsTrigger>}
           </TabsList>
         </div>
 

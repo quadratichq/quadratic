@@ -1,6 +1,6 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { Dispatch, SetStateAction, useEffect } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export type PanelPosition = 'bottom' | 'left';
@@ -42,10 +42,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     'codeEditorPanelHeightPercentage',
     50
   );
-  const [panelHeightPercentages, setPanelHeightPercentages] = useLocalStorage<number[]>(
-    'codeEditorPanelHeightPercentages',
-    [33, 33]
-  );
+  const [panelHeightPercentages, setPanelHeightPercentages] = useState<number[]>([33, 33]);
   const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
 
   // When we change the number of panels, reset the heights
@@ -56,7 +53,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     } else {
       setPanelHeightPercentages([50, 50]);
     }
-  }, [mode]);
+  }, [mode, setPanelHeightPercentages]);
 
   // Whenever we change the position of the panel to be left-to-right, make sure
   // there's enough width for the editor and the panel
