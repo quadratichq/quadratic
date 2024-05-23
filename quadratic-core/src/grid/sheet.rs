@@ -23,6 +23,7 @@ pub mod code;
 pub mod formatting;
 pub mod rendering;
 pub mod search;
+pub mod summarize;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -34,7 +35,7 @@ pub struct Sheet {
     pub offsets: SheetOffsets,
 
     #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) columns: BTreeMap<i64, Column>,
+    pub columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
 
     #[serde(with = "crate::util::indexmap_serde")]

@@ -19,6 +19,7 @@ import {
   MinMax,
   PasteSpecial,
   SearchOptions,
+  Selection,
   SheetPos,
 } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
@@ -404,20 +405,15 @@ class QuadraticCore {
 
   summarizeSelection(
     decimalPlaces: number,
-    sheetId: string,
-    rectangle: Rectangle
+    selection: Selection
   ): Promise<{ count: number; sum: number | undefined; average: number | undefined } | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       const message: ClientCoreSummarizeSelection = {
         type: 'clientCoreSummarizeSelection',
         id,
-        sheetId,
+        selection: JSON.stringify(selection),
         decimalPlaces,
-        x: rectangle.x,
-        y: rectangle.y,
-        width: rectangle.width,
-        height: rectangle.height,
       };
       this.waitingForResponse[id] = (message: CoreClientSummarizeSelection) => {
         resolve(message.summary);
