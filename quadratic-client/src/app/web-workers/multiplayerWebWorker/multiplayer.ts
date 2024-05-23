@@ -112,6 +112,10 @@ export class Multiplayer {
         this.receiveUsersInRoom(e.data.room);
         break;
 
+      case 'multiplayerClientReload':
+        events.emit('needRefresh', 'force');
+        break;
+
       default:
         console.warn('Unhandled message type', e.data);
     }
