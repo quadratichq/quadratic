@@ -106,7 +106,7 @@ const hostedZone = pulumi.output(
 );
 
 // Create a Route 53 record pointing to the NLB
-const dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
+const dnsRecord = new aws.route53.Record("connection-r53-record", {
   zoneId: hostedZone.id,
   name: `${connectionSubdomain}.${domain}`, // subdomain you want to use
   type: "A",
