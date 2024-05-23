@@ -30,7 +30,7 @@ const alb = new aws.lb.LoadBalancer("connection-alb", {
 });
 
 // Create a new Target Group
-const targetGroup = new aws.lb.TargetGroup("multiplayer-nlb-tg", {
+const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
   port: 80,
   protocol: "TCP",
   targetType: "ip",
@@ -40,7 +40,7 @@ const targetGroup = new aws.lb.TargetGroup("multiplayer-nlb-tg", {
 // Listen to HTTP traffic on port 80
 const listener = new aws.lb.Listener("connection-alb-listener", {
   tags: {
-    Name: `multiplayer-nlb-${connectionSubdomain}`,
+    Name: `connection-nlb-${connectionSubdomain}`,
   },
   loadBalancerArn: alb.arn,
   port: 443,
