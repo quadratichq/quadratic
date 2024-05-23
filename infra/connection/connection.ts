@@ -8,6 +8,7 @@ const connectionSubdomain = config.require("connection-subdomain");
 const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
 const connectionECRName = config.require("connection-ecr-repo-name");
+const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
@@ -20,7 +21,7 @@ const appService = new awsx.ecs.FargateService("connection-fargate-service", {
   taskDefinitionArgs: {
     container: {
       name: "app",
-      image: `${connectionECRName}:${dockerImageTag}`,
+      image: `${ecrRegistryUrl}/${connectionECRName}:${dockerImageTag}`,
       memory: 512,
       cpu: 2,
       portMappings: [{ hostPort: 80 }],
@@ -38,6 +39,7 @@ const appService = new awsx.ecs.FargateService("connection-fargate-service", {
       ],
     },
   },
+  assignPublicIp: true,
   desiredCount: 1,
 });
 
