@@ -1,5 +1,8 @@
 import z from 'zod';
 
+// Helper to turn empty string into undefined, so JSON.stringify() will remove empty values
+const transformEmptyStringToUndefined = (val: any) => (val === '' ? undefined : val);
+
 /**
  * =============================================================================
  * Shared
@@ -26,10 +29,11 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
       {
         message: 'Port must be a valid number between 0 and 65535',
       }
-    ),
+    )
+    .transform(transformEmptyStringToUndefined),
   database: z.string().min(1, { message: 'Required' }),
-  username: z.string().optional(),
-  password: z.string().optional(),
+  username: z.string().optional().transform(transformEmptyStringToUndefined),
+  password: z.string().optional().transform(transformEmptyStringToUndefined),
 });
 
 export const ConnectionTypeMysqlSchema = z.literal(ConnectionTypesSchema.enum.MYSQL);
