@@ -93,7 +93,7 @@ export const useEditorCellHighlights = (
       let parsed;
 
       if (language === 'Python') {
-        parsed = parsePython(cellsAccessed) as ParseFormulaReturnType;
+        parsed = parsePython(cellsAccessed);
       }
 
       if (language === 'Formula') {
