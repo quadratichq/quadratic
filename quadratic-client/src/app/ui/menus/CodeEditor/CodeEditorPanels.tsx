@@ -1,3 +1,4 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { ResizeControl } from '@/app/ui/menus/CodeEditor/ResizeControl';
 import {
   CodeEditorPanelData,
@@ -5,6 +6,7 @@ import {
   MIN_WIDTH_VISIBLE_GRID,
 } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
 import { RefObject } from 'react';
+import { useRecoilValue } from 'recoil';
 
 interface Props {
   containerRef: RefObject<HTMLDivElement>;
@@ -14,7 +16,14 @@ interface Props {
 const MIN_WIDTH_EDITOR = 350;
 
 export const CodeEditorPanels = (props: Props) => {
-  const { containerRef, codeEditorPanelData } = props;
+  const {
+    containerRef,
+    codeEditorPanelData,
+    codeEditorPanelData: { panelHeightPercentages, setPanelHeightPercentages },
+  } = props;
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const isConnection = typeof editorInteractionState.mode === 'object';
+
   return (
     <>
       {codeEditorPanelData.panelPosition === 'left' && (
@@ -22,7 +31,7 @@ export const CodeEditorPanels = (props: Props) => {
           {/* left-to-right: height of sections in panel */}
           <ResizeControl
             style={{
-              top: codeEditorPanelData.panelHeightPercentage + '%',
+              top: panelHeightPercentages[0] + '%',
               width: codeEditorPanelData.panelWidth + 'px',
             }}
             setState={(mouseEvent) => {
@@ -31,11 +40,42 @@ export const CodeEditorPanels = (props: Props) => {
               const containerRect = containerRef.current?.getBoundingClientRect();
               const newValue = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
               if (newValue >= 25 && newValue <= 75) {
-                codeEditorPanelData.setPanelHeightPercentage(newValue);
+                setPanelHeightPercentages((prev) => {
+                  if (isConnection) {
+                    const whatsLeft = 100 - newValue;
+                    return [newValue, whatsLeft / 2, whatsLeft / 2];
+                  } else {
+                    return [newValue, 100 - newValue];
+                  }
+                });
               }
             }}
             position="HORIZONTAL"
           />
+          {isConnection && (
+            <ResizeControl
+              style={{
+                bottom: panelHeightPercentages[2] + '%',
+                width: codeEditorPanelData.panelWidth + 'px',
+              }}
+              setState={(mouseEvent) => {
+                // TODO: (connections) make this work
+                console.log('fired');
+                // if (!containerRef.current) return;
+
+                // const containerRect = containerRef.current?.getBoundingClientRect();
+                // const newValue = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
+                // if (newValue >= 25 && newValue <= 75) {
+                //   setPanelHeightPercentages((prev) => {
+                //     const whatsLeft = 100 - newValue;
+                //     console.log('bottom', [whatsLeft / 2, whatsLeft / 2, newValue]);
+                //     return [whatsLeft / 2, whatsLeft / 2, newValue];
+                //   });
+                // }
+              }}
+              position="HORIZONTAL"
+            />
+          )}
           {/* left-to-right: outer edge */}
           <ResizeControl
             style={{ left: `-1px` }}

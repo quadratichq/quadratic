@@ -1,4 +1,7 @@
 import { Coordinate } from '@/app/gridGL/types/size';
+import { TooltipHint } from '@/app/ui/components/TooltipHint';
+import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
+import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { useRootRouteLoaderData } from '@/routes/index';
@@ -6,9 +9,10 @@ import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
-import { ViewStreamOutlined } from '@mui/icons-material';
+import { IconButton } from '@mui/material';
 import { useState } from 'react';
-import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
+import { useRecoilValue } from 'recoil';
+import { EditorInteractionState, editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { colors } from '../../../theme/colors';
 import { AiAssistant } from './AiAssistant';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
@@ -22,27 +26,51 @@ interface ConsoleProps {
   codeEditorPanelData: CodeEditorPanelData;
 }
 
-type Tab = 'console' | 'ai-assistant' | 'schema';
+type Tab = 'console' | 'ai-assistant' | 'data-browser';
 
 export function Console(props: ConsoleProps) {
-  const { consoleOutput, editorMode, editorContent, evaluationResult, spillError, codeEditorPanelData } = props;
+  const {
+    consoleOutput,
+    editorMode,
+    editorContent,
+    evaluationResult,
+    spillError,
+    codeEditorPanelData: { panelPosition, setPanelPosition, panelHeightPercentages },
+  } = props;
   const { isAuthenticated } = useRootRouteLoaderData();
-  const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   const [tab, setTab] = useState<Tab>('console');
+  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+  const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
 
   const consoleBadgeSharedClasses = `font-medium`;
+  const isConnection = typeof editorInteractionState.mode === 'object';
 
   return (
     <>
+      {/* Panel position (left/bottom) control */}
+      <div className={cn('absolute', panelPosition === 'bottom' ? 'right-1.5 top-1.5' : 'right-0.5 top-0.5')}>
+        <TooltipHint title={panelPosition === 'bottom' ? 'Move panel left' : 'Move panel bottom'}>
+          <IconButton
+            onClick={(e) => {
+              setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
+              // TODO: figure out why keeping focus is kinda ugly
+              e.currentTarget.blur();
+            }}
+          >
+            {panelPosition === 'left' ? <PanelPositionBottomIcon /> : <PanelPositionLeftIcon />}
+          </IconButton>
+        </TooltipHint>
+      </div>
+
       <Tabs
         value={tab}
         onValueChange={(value) => {
           setTab(value as Tab);
         }}
-        className={cn('h-full', codeEditorPanelData.panelPosition === 'bottom' && 'grid grid-rows-[auto_1fr]')}
+        className={cn('h-full', panelPosition === 'bottom' && 'grid grid-rows-[auto_1fr]')}
       >
         {/* Only visible when panel is on the bottom */}
-        <div className={cn(codeEditorPanelData.panelPosition !== 'bottom' && 'hidden', 'px-3 pb-2 pt-2')}>
+        <div className={cn(panelPosition !== 'bottom' && 'hidden', 'px-2 pb-2 pt-2')}>
           <TabsList>
             <TabsTrigger
               value="console"
@@ -57,7 +85,7 @@ export function Console(props: ConsoleProps) {
             </TabsTrigger>
             <TabsTrigger value="ai-assistant">AI assistant</TabsTrigger>
             {/* TODO: (connections) if it's sql */}
-            <TabsTrigger value="schema">Data browser</TabsTrigger>
+            <TabsTrigger value="data-browser">Data browser</TabsTrigger>
           </TabsList>
         </div>
 
@@ -66,36 +94,35 @@ export function Console(props: ConsoleProps) {
           value="console"
           className={cn(
             'm-0 grid grid-rows-[auto_1fr] overflow-hidden',
-            codeEditorPanelData.panelPosition === 'bottom' && tab !== 'console' && 'hidden'
+            panelPosition === 'bottom' && tab !== 'console' && 'hidden'
           )}
-          style={
-            codeEditorPanelData.panelPosition === 'left'
-              ? { height: `${codeEditorPanelData.panelHeightPercentage}%` }
-              : {}
-          }
+          style={panelPosition === 'left' ? { height: panelHeightPercentages[0] + '%' } : {}}
         >
           {/* Only visible when panel is on the left */}
-          {codeEditorPanelData.panelPosition === 'left' && (
+          {panelPosition === 'left' && (
             <Type className={cn('flex items-center gap-2 px-3 py-3', consoleBadgeSharedClasses)}>Console</Type>
           )}
           <ConsoleOutput {...props} />
         </TabsContent>
+
         <TabsContent
           forceMount={true}
           value="ai-assistant"
           className={cn(
             'm-0 grid overflow-hidden',
-            codeEditorPanelData.panelPosition === 'bottom' && 'grid-rows-[1fr_auto]',
-            codeEditorPanelData.panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]',
-            codeEditorPanelData.panelPosition === 'bottom' && tab !== 'ai-assistant' && 'hidden'
+            panelPosition === 'bottom' && 'grid-rows-[1fr_auto]',
+            panelPosition === 'left' && 'grid grid-rows-[auto_1fr_auto]',
+            panelPosition === 'bottom' && tab !== 'ai-assistant' && 'hidden'
           )}
           style={
-            codeEditorPanelData.panelPosition === 'left'
-              ? { height: `${100 - codeEditorPanelData.panelHeightPercentage}%` }
+            panelPosition === 'left'
+              ? {
+                  height: panelHeightPercentages[1] + '%',
+                }
               : {}
           }
         >
-          {codeEditorPanelData.panelPosition === 'left' && (
+          {panelPosition === 'left' && (
             <Type className={cn(`gap-2 px-3 py-3`, consoleBadgeSharedClasses)}>AI assistant</Type>
           )}
 
@@ -117,23 +144,24 @@ export function Console(props: ConsoleProps) {
             </Type>
           )}
         </TabsContent>
-      </Tabs>
 
-      <Tabs
-        className={cn('absolute', codeEditorPanelData.panelPosition === 'bottom' ? 'right-2 top-2' : 'right-2 top-2')}
-        value={codeEditorPanelData.panelPosition}
-        onValueChange={(e) => {
-          codeEditorPanelData.setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
-        }}
-      >
-        <TabsList className={codeEditorPanelData.panelPosition === 'left' ? 'h-8 py-0.5' : ''}>
-          <TabsTrigger value="bottom" className={codeEditorPanelData.panelPosition === 'left' ? 'py-0.5' : ''}>
-            <ViewStreamOutlined fontSize="small" />
-          </TabsTrigger>
-          <TabsTrigger value="left" className={codeEditorPanelData.panelPosition === 'left' ? 'py-0.5' : ''}>
-            <ViewStreamOutlined fontSize="small" className="rotate-90" />
-          </TabsTrigger>
-        </TabsList>
+        {isConnection && (
+          <TabsContent
+            forceMount={true}
+            value="data-browser"
+            className={cn(
+              'm-0 grid grid-rows-[auto_1fr] overflow-hidden',
+              panelPosition === 'bottom' && tab !== 'data-browser' && 'hidden'
+            )}
+            style={panelPosition === 'left' ? { height: panelHeightPercentages[2] + '%' } : {}}
+          >
+            {panelPosition === 'left' && (
+              <Type className={cn(`gap-2 px-3 py-3`, consoleBadgeSharedClasses)}>Data browser</Type>
+            )}
+            {/* TODO: (connections) permissions */}
+            <SchemaViewer />
+          </TabsContent>
+        )}
       </Tabs>
     </>
   );
