@@ -1,5 +1,7 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { useEffect } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 export type PanelPosition = 'bottom' | 'left';
 
@@ -12,6 +14,8 @@ export interface CodeEditorPanelData {
   setPanelWidth: (value: number | ((old: number) => number)) => void;
   panelHeightPercentage: number;
   setPanelHeightPercentage: (value: number) => void;
+  panelHeightPercentages: number[];
+  setPanelHeightPercentages: Dispatch<SetStateAction<number[]>>;
   panelPosition: PanelPosition;
   setPanelPosition: (value: PanelPosition | ((old: PanelPosition) => PanelPosition)) => void;
 }
@@ -27,6 +31,7 @@ export const MIN_WIDTH_VISIBLE_GRID = 215;
 const MAX_WIDTH = 1024;
 
 export const useCodeEditorPanelData = (): CodeEditorPanelData => {
+  const { mode } = useRecoilValue(editorInteractionStateAtom);
   const [editorWidth, setEditorWidth] = useLocalStorage<number>(
     'codeEditorWidth',
     window.innerWidth * 0.35 // default to 35% of the window width
@@ -37,7 +42,18 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     'codeEditorPanelHeightPercentage',
     50
   );
+  const [panelHeightPercentages, setPanelHeightPercentages] = useState<number[]>([33, 33]);
   const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
+
+  // When we change the number of panels, reset the heights
+  useEffect(() => {
+    console.log('ran', mode);
+    if (typeof mode === 'object') {
+      setPanelHeightPercentages([34, 33, 33]);
+    } else {
+      setPanelHeightPercentages([50, 50]);
+    }
+  }, [mode, setPanelHeightPercentages]);
 
   // Whenever we change the position of the panel to be left-to-right, make sure
   // there's enough width for the editor and the panel
@@ -96,6 +112,8 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     setPanelWidth,
     panelHeightPercentage,
     setPanelHeightPercentage,
+    panelHeightPercentages,
+    setPanelHeightPercentages,
     panelPosition,
     setPanelPosition,
   };
