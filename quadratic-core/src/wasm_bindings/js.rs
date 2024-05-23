@@ -73,15 +73,7 @@ extern "C" {
         w: u32,
         h: u32,
     );
-    pub fn jsTransactionStart(
-        transaction_id: String,
-        name: String,
-        sheet_id: Option<String>,
-        x: Option<i64>,
-        y: Option<i64>,
-        w: Option<u32>,
-        h: Option<u32>,
-    );
+    pub fn jsTransactionStart(transaction_id: String, name: String);
     pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32);
     pub fn jsSendTransaction(transaction_id: String, transaction: String);
 
@@ -400,27 +392,10 @@ pub fn jsImportProgress(file_name: &str, current: u32, total: u32, x: i64, y: i6
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsTransactionStart(
-    transaction_id: String,
-    name: String,
-    sheet_id: Option<String>,
-    x: Option<i64>,
-    y: Option<i64>,
-    w: Option<u32>,
-    h: Option<u32>,
-) {
+pub fn jsTransactionStart(transaction_id: String, name: String) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsTransactionStart",
-        format!(
-            "{},{},{},{},{},{},{}",
-            transaction_id,
-            name,
-            sheet_id.unwrap_or_default(),
-            x.unwrap_or_default(),
-            y.unwrap_or_default(),
-            w.unwrap_or_default(),
-            h.unwrap_or_default()
-        ),
+        format!("{},{}", transaction_id, name,),
     ));
 }
 

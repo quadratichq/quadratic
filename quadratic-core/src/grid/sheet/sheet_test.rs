@@ -190,11 +190,11 @@ mod tests {
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: -2, y: -1 }),
+            sheet.display_value(Pos { x: 0, y: -1 }),
             Some(CellValue::Number(BigDecimal::from(2)))
         );
         assert_eq!(
-            sheet.display_value(Pos { x: -3, y: -1 }),
+            sheet.display_value(Pos { x: 1, y: -1 }),
             Some(CellValue::Number(BigDecimal::from(3)))
         );
     }

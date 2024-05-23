@@ -1,4 +1,3 @@
-import { Rectangle } from '@/app/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
@@ -78,12 +77,8 @@ export interface CoreClientExport {
 
 export interface ClientCoreExportCsvSelection {
   type: 'clientCoreExportCsvSelection';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
   id: number;
+  selection: Selection;
 }
 
 export interface CoreClientExportCsvSelection {
@@ -243,129 +238,80 @@ export interface ClientCoreSetCellValue {
 
 export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   bold: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellItalic {
   type: 'clientCoreSetCellItalic';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   italic: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellFillColor {
   type: 'clientCoreSetCellFillColor';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   fillColor?: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   color?: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellAlign {
   type: 'clientCoreSetCellAlign';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   align?: CellAlign;
   cursor?: string;
 }
 
 export interface ClientCoreSetCurrency {
   type: 'clientCoreSetCurrency';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   symbol: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetPercentage {
   type: 'clientCoreSetPercentage';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
 export interface ClientCoreSetExponential {
   type: 'clientCoreSetExponential';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
 export interface ClientCoreRemoveCellNumericFormat {
   type: 'clientCoreRemoveCellNumericFormat';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
 export interface ClientCoreChangeDecimals {
   type: 'clientCoreChangeDecimals';
-  sheetId: string;
-  sourceX: number;
-  sourceY: number;
-  rectangle: Rectangle;
+  selection: Selection;
   delta: number;
   cursor?: string;
 }
 
 export interface ClientCoreClearFormatting {
   type: 'clientCoreClearFormatting';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
 export interface ClientCoreToggleCommas {
   type: 'clientCoreToggleCommas';
-  sheetId: string;
-  sourceX: number;
-  sourceY: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
@@ -405,11 +351,7 @@ export interface CoreClientImportParquet {
 
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
@@ -454,8 +396,6 @@ export interface ClientCoreSetCellRenderResize {
   sheetId: string;
   x: number;
   y: number;
-  width: number;
-  height: number;
   cursor: string;
 }
 
@@ -593,11 +533,7 @@ export interface ClientCoreRedo {
 export interface ClientCoreCopyToClipboard {
   type: 'clientCoreCopyToClipboard';
   id: number;
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
 }
 
 export interface CoreClientCopyToClipboard {
@@ -610,11 +546,7 @@ export interface CoreClientCopyToClipboard {
 export interface ClientCoreCutToClipboard {
   type: 'clientCoreCutToClipboard';
   id: number;
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor: string;
 }
 
@@ -737,11 +669,6 @@ export interface CoreClientTransactionStart {
   type: 'coreClientTransactionStart';
   transactionId: string;
   transactionType: TransactionName;
-  sheetId?: string;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
 }
 
 export interface CoreClientTransactionProgress {
@@ -792,11 +719,7 @@ export interface CoreClientUndoRedo {
 
 export interface ClientCoreMoveCells {
   type: 'clientCoreMoveCells';
-  sourceSheetId: string;
-  sourceX: number;
-  sourceY: number;
-  sourceWidth: number;
-  sourceHeight: number;
+  source: Selection;
   targetSheetId: string;
   targetX: number;
   targetY: number;

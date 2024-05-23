@@ -3,7 +3,7 @@
 //! cursor, or you save the cursor state in the URL at ?state=.
 
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Selection } from '@/app/quadratic-core-types';
+import { Rect, Selection } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { IViewportTransformState } from 'pixi-viewport';
 import { Rectangle } from 'pixi.js';
@@ -18,12 +18,19 @@ interface ColumnRowCursor {
   all?: true;
 }
 
+export interface RectangleLike {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 // Save object for the cursor state.
 export interface SheetCursorSave {
   sheetId: string;
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor?: { originPosition: Coordinate; terminalPosition: Coordinate }; //{ x: number; y: number; width: number; height: number }[];
+  multiCursor?: RectangleLike[];
   columnRow?: ColumnRowCursor;
 }
 
@@ -37,7 +44,7 @@ export class SheetCursor {
 
   keyboardMovePosition: Coordinate;
   cursorPosition: Coordinate;
-  multiCursor?: { originPosition: Coordinate; terminalPosition: Coordinate }; //Rectangle[];
+  multiCursor?: Rectangle[];
   columnRow?: ColumnRowCursor;
 
   constructor(sheet: Sheet) {
@@ -70,14 +77,14 @@ export class SheetCursor {
   load(value: SheetCursorSave): void {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
-    this.multiCursor = value.multiCursor; //value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
+    this.multiCursor = value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
     multiplayer.sendSelection(this.getMultiplayerSelection());
     pixiApp.cursor.dirty = true;
   }
 
   changePosition(
     options: {
-      multiCursor?: { originPosition: Coordinate; terminalPosition: Coordinate }; //Rectangle[];
+      multiCursor?: Rectangle[];
       columnRow?: ColumnRowCursor;
       cursorPosition?: Coordinate;
       keyboardMovePosition?: Coordinate;
@@ -131,18 +138,8 @@ export class SheetCursor {
     }
   }
 
-  get originPosition(): Coordinate {
-    return this.multiCursor ? this.multiCursor.originPosition : this.cursorPosition;
-  }
-
-  get terminalPosition(): Coordinate {
-    return this.multiCursor ? this.multiCursor.terminalPosition : this.cursorPosition;
-  }
-
-  getRectangle(): Rectangle {
-    const origin = this.originPosition;
-    const terminal = this.terminalPosition;
-    return new Rectangle(origin.x, origin.y, terminal.x - origin.x, terminal.y - origin.y);
+  getCursor(): Coordinate {
+    return this.cursorPosition;
   }
 
   getRustSelection(): Selection {
@@ -150,15 +147,17 @@ export class SheetCursor {
     const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
     const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
     const all = this.columnRow?.all ?? false;
-    const rect = this.getRectangle();
-    const rects = [
-      {
+    let rects: Rect[] | null = null;
+    if (this.multiCursor) {
+      rects = this.multiCursor.map((rect) => ({
         min: { x: BigInt(rect.x), y: BigInt(rect.y) },
         max: { x: BigInt(rect.x + rect.width), y: BigInt(rect.y + rect.height) },
-      },
-    ];
+      }));
+    }
     return {
       sheet_id,
+      x: BigInt(this.cursorPosition.x),
+      y: BigInt(this.cursorPosition.y),
       rects,
       columns,
       rows,

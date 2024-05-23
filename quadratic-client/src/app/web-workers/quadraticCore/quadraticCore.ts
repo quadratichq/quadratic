@@ -420,166 +420,113 @@ class QuadraticCore {
     });
   }
 
-  setCellBold(sheetId: string, rectangle: Rectangle, bold: boolean, cursor?: string) {
+  setCellBold(selection: Selection, bold: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellBold',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       bold,
       cursor,
     });
   }
 
-  setCellFillColor(sheetId: string, rectangle: Rectangle, fillColor?: string, cursor?: string) {
+  setCellFillColor(selection: Selection, fillColor?: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellFillColor',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       fillColor,
       cursor,
     });
   }
 
-  setCellItalic(sheetId: string, rectangle: Rectangle, italic: boolean, cursor?: string) {
+  setCellItalic(selection: Selection, italic: boolean, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellItalic',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       italic,
       cursor,
     });
   }
 
-  setCellTextColor(sheetId: string, rectangle: Rectangle, color?: string, cursor?: string) {
+  setCellTextColor(selection: Selection, color?: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellTextColor',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       color,
       cursor,
     });
   }
 
-  setCellAlign(sheetId: string, rectangle: Rectangle, align?: CellAlign, cursor?: string) {
+  setCellAlign(selection: Selection, align?: CellAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellAlign',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       align,
       cursor,
     });
   }
 
-  setCellCurrency(sheetId: string, rectangle: Rectangle, symbol: string, cursor?: string) {
+  setCellCurrency(selection: Selection, symbol: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCurrency',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       symbol,
       cursor,
     });
   }
 
-  setCellPercentage(sheetId: string, rectangle: Rectangle, cursor?: string) {
+  setCellPercentage(selection: Selection, cursor?: string) {
     this.send({
       type: 'clientCoreSetPercentage',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       cursor,
     });
   }
 
-  setCellExponential(sheetId: string, rectangle: Rectangle, cursor?: string) {
+  setCellExponential(selection: Selection, cursor?: string) {
     this.send({
       type: 'clientCoreSetExponential',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       cursor,
     });
   }
 
-  removeCellNumericFormat(sheetId: string, rectangle: Rectangle, cursor?: string) {
+  removeCellNumericFormat(selection: Selection, cursor?: string) {
     this.send({
       type: 'clientCoreRemoveCellNumericFormat',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       cursor,
     });
   }
 
-  changeDecimalPlaces(sheetId: string, x: number, y: number, rectangle: Rectangle, delta: number, cursor?: string) {
+  changeDecimalPlaces(selection: Selection, delta: number, cursor?: string) {
     this.send({
       type: 'clientCoreChangeDecimals',
-      sheetId,
-      sourceX: x,
-      sourceY: y,
-      rectangle,
+      selection,
       delta,
       cursor,
     });
   }
 
-  clearFormatting(sheetId: string, rectangle: Rectangle, cursor?: string) {
+  clearFormatting(selection: Selection, cursor?: string) {
     this.send({
       type: 'clientCoreClearFormatting',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       cursor,
     });
   }
 
-  toggleCommas(sheetId: string, source: Coordinate, rectangle: Rectangle, cursor?: string) {
+  toggleCommas(selection: Selection, cursor?: string) {
     this.send({
       type: 'clientCoreToggleCommas',
-      sheetId,
-      sourceX: source.x,
-      sourceY: source.y,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       cursor,
     });
   }
 
-  deleteCellValues(sheetId: string, rectangle: Rectangle, cursor?: string) {
+  deleteCellValues(selection: Selection, cursor?: string) {
     this.send({
       type: 'clientCoreDeleteCellValues',
-      sheetId,
-      x: rectangle.x,
-      y: rectangle.y,
-      width: rectangle.width,
-      height: rectangle.height,
+      selection,
       cursor,
     });
   }
@@ -651,7 +598,7 @@ class QuadraticCore {
 
   //#region Clipboard
 
-  copyToClipboard(sheetId: string, rectangle: Rectangle): Promise<{ plainText: string; html: string }> {
+  copyToClipboard(selection: Selection): Promise<{ plainText: string; html: string }> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
@@ -659,17 +606,13 @@ class QuadraticCore {
       };
       this.send({
         type: 'clientCoreCopyToClipboard',
-        sheetId,
-        x: rectangle.x,
-        y: rectangle.y,
-        width: rectangle.width,
-        height: rectangle.height,
         id,
+        selection,
       });
     });
   }
 
-  cutToClipboard(sheetId: string, rectangle: Rectangle, cursor: string): Promise<{ plainText: string; html: string }> {
+  cutToClipboard(selection: Selection, cursor: string): Promise<{ plainText: string; html: string }> {
     return new Promise((resolve) => {
       const id = this.id++;
       this.waitingForResponse[id] = (message: { plainText: string; html: string }) => {
@@ -678,11 +621,7 @@ class QuadraticCore {
       this.send({
         type: 'clientCoreCutToClipboard',
         id,
-        sheetId,
-        x: rectangle.x,
-        y: rectangle.y,
-        width: rectangle.width,
-        height: rectangle.height,
+        selection,
         cursor,
       });
     });
@@ -725,14 +664,12 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number) {
+  setCellRenderResize(sheetId: string, x: number, y: number) {
     this.send({
       type: 'clientCoreSetCellRenderResize',
       sheetId,
       x,
       y,
-      width,
-      height,
       cursor: sheets.getCursorPosition(),
     });
   }
@@ -753,8 +690,7 @@ class QuadraticCore {
     });
   }
 
-  exportCsvSelection(): Promise<string> {
-    const cursorRect = sheets.sheet.cursor.getRectangle();
+  exportCsvSelection(selection: Selection): Promise<string> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: { csv: string }) => {
@@ -762,33 +698,16 @@ class QuadraticCore {
       };
       return this.send({
         type: 'clientCoreExportCsvSelection',
-        sheetId: sheets.sheet.id,
-        x: cursorRect.x,
-        y: cursorRect.y,
-        width: cursorRect.width,
-        height: cursorRect.height,
         id,
+        selection,
       });
     });
   }
 
-  moveCells(
-    sourceX: number,
-    sourceY: number,
-    sourceWidth: number,
-    sourceHeight: number,
-    sourceSheetId: string,
-    targetX: number,
-    targetY: number,
-    targetSheetId: string
-  ) {
+  moveCells(source: Selection, targetX: number, targetY: number, targetSheetId: string) {
     this.send({
       type: 'clientCoreMoveCells',
-      sourceSheetId,
-      sourceX,
-      sourceY,
-      sourceWidth,
-      sourceHeight,
+      source,
       targetSheetId,
       targetX,
       targetY,

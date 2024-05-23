@@ -18,8 +18,8 @@ import {
   JsRenderCell,
   MinMax,
   SearchOptions,
+  Selection,
   SheetPos,
-  SheetRect,
   SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
@@ -271,84 +271,51 @@ class Core {
     });
   }
 
-  setCellBold(sheetId: string, x: number, y: number, width: number, height: number, bold: boolean, cursor?: string) {
+  setCellBold(selection: Selection, bold: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellBold(sheetId, pointsToRect(x, y, width, height), bold, cursor);
+        this.gridController.setCellBold(JSON.stringify(selection, bigIntReplacer), bold, cursor);
         resolve(undefined);
       });
     });
   }
 
-  setCellItalic(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    italic: boolean,
-    cursor?: string
-  ) {
+  setCellItalic(selection: Selection, italic: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellItalic(sheetId, pointsToRect(x, y, width, height), italic, cursor);
+        this.gridController.setCellItalic(JSON.stringify(selection, bigIntReplacer), italic, cursor);
         resolve(undefined);
       });
     });
   }
 
-  setCellTextColor(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    color: string,
-    cursor?: string
-  ) {
+  setCellTextColor(selection: Selection, color?: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellTextColor(sheetId, pointsToRect(x, y, width, height), color, cursor);
+        this.gridController.setCellTextColor(JSON.stringify(selection, bigIntReplacer), color, cursor);
         resolve(undefined);
       });
     });
   }
 
-  setCellFillColor(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    fillColor?: string,
-    cursor?: string
-  ) {
+  setCellFillColor(selection: Selection, fillColor?: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellFillColor(sheetId, pointsToRect(x, y, width, height), fillColor, cursor);
+        this.gridController.setCellFillColor(JSON.stringify(selection, bigIntReplacer), fillColor, cursor);
         resolve(undefined);
       });
     });
   }
 
-  toggleCommas(
-    sheetId: string,
-    sourceX: number,
-    sourceY: number,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    cursor?: string
-  ) {
+  toggleCommas(selection: Selection, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.toggleCommas(sheetId, new Pos(sourceX, sourceY), pointsToRect(x, y, width, height), cursor);
+        this.gridController.toggleCommas(JSON.stringify(selection, bigIntReplacer), cursor);
         resolve(undefined);
       });
     });
@@ -364,11 +331,11 @@ class Core {
     });
   }
 
-  setCurrency(sheetId: string, x: number, y: number, width: number, height: number, symbol: string, cursor?: string) {
+  setCurrency(selection: Selection, symbol: string, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellCurrency(sheetId, pointsToRect(x, y, width, height), symbol, cursor);
+        this.gridController.setCellCurrency(JSON.stringify(selection, bigIntReplacer), symbol, cursor);
         resolve(undefined);
       });
     });
@@ -425,11 +392,11 @@ class Core {
     });
   }
 
-  deleteCellValues(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+  deleteCellValues(selection: Selection, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.deleteCellValues(sheetId, pointsToRect(x, y, width, height), cursor);
+        this.gridController.deleteCellValues(JSON.stringify(selection, bigIntReplacer), cursor);
         resolve(undefined);
       });
     });
@@ -913,24 +880,19 @@ class Core {
     this.gridController.setCellExponential(sheetId, pointsToRect(x, y, width, height), cursor);
   }
 
-  removeCellNumericFormat(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+  removeCellNumericFormat(selection: Selection, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.removeCellNumericFormat(sheetId, pointsToRect(x, y, width, height), cursor);
+    this.gridController.removeCellNumericFormat(JSON.stringify(selection, bigIntReplacer), cursor);
   }
 
   moveCells(message: ClientCoreMoveCells) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    const source: SheetRect = {
-      min: { x: BigInt(message.sourceX), y: BigInt(message.sourceY) },
-      max: { x: BigInt(message.sourceX + message.sourceWidth), y: BigInt(message.sourceY + message.sourceHeight) },
-      sheet_id: { id: message.sourceSheetId },
-    };
     const dest: SheetPos = {
       x: BigInt(message.targetX),
       y: BigInt(message.targetY),
       sheet_id: { id: message.targetSheetId },
     };
-    this.gridController.moveCells(source, dest, message.cursor);
+    this.gridController.moveCells(JSON.stringify(message.source, bigIntReplacer), dest, message.cursor);
   }
 }
 

@@ -206,3 +206,17 @@ impl BitOrAssign for BoolSummary {
         *self = *self | rhs;
     }
 }
+
+enum Format {
+    Align(Option<CellAlign>),
+    Wrap(Option<CellWrap>),
+    NumericFormat(Option<NumericFormat>),
+    NumericDecimals(Option<i16>),
+    NumericCommas(Option<bool>),
+    Bold(Option<bool>),
+    Italic(Option<bool>),
+    TextColor(Option<String>),
+    FillColor(Option<String>),
+    // this can not be used within a column or row
+    // RenderSize(Option<RenderSize>),
+}

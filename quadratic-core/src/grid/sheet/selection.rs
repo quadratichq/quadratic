@@ -227,6 +227,8 @@ mod tests {
 
         let selection = Selection {
             sheet_id: sheet.id,
+            x: 0,
+            y: 0,
             rects: None,
             rows: None,
             columns: None,
@@ -257,6 +259,8 @@ mod tests {
 
         let selection = Selection {
             sheet_id: sheet.id,
+            x: 0,
+            y: 0,
             rects: None,
             rows: None,
             columns: Some(vec![0, 1, -1]),
@@ -295,6 +299,8 @@ mod tests {
 
         let selection = Selection {
             sheet_id: sheet.id,
+            x: 0,
+            y: 0,
             rects: None,
             rows: Some(vec![0, 1, -10]),
             columns: None,
@@ -321,6 +327,8 @@ mod tests {
             .selection(
                 Selection {
                     sheet_id: sheet.id,
+                    x: 0,
+                    y: 0,
                     rects: Some(vec![
                         Rect::from_numbers(0, 0, 2, 2),
                         Rect::from_numbers(2, 2, 1, 1),
@@ -338,6 +346,8 @@ mod tests {
             .selection(
                 Selection {
                     sheet_id: sheet.id,
+                    x: 0,
+                    y: 0,
                     rects: Some(vec![Rect::from_numbers(-2, -10, 2, 2)]),
                     rows: None,
                     columns: None,

@@ -25,6 +25,14 @@ pub enum Operation {
         sheet_rect: SheetRect,
         attr: CellFmtArray,
     },
+    SetCellFormatsRects {
+        sheet_rects: Vec<SheetRect>,
+        attr: CellFmtArray,
+    },
+    SetCellFormatsColumnsRows {
+        columns: Option<Vec<i64>>,
+        rows: Option<Vec<i64>>,
+    },
     SetBorders {
         sheet_rect: SheetRect,
         borders: SheetBorders,

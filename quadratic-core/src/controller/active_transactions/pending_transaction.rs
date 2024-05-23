@@ -25,11 +25,11 @@ pub struct PendingTransaction {
     // a name for the transaction for user display purposes
     pub transaction_name: TransactionName,
 
-    // the SheetId the transaction starts for user display purposes
-    pub sheet_id: Option<SheetId>,
+    // // the SheetId the transaction starts for user display purposes
+    // pub sheet_id: Option<SheetId>,
 
-    // the optional rect for the transaction for user display purposes
-    pub rect: Option<Rect>,
+    // // the optional rect for the transaction for user display purposes
+    // pub rect: Option<Rect>,
 
     // cursor sent as part of this transaction
     pub cursor: Option<String>,
@@ -72,8 +72,8 @@ impl Default for PendingTransaction {
         PendingTransaction {
             id: Uuid::new_v4(),
             transaction_name: TransactionName::Unknown,
-            sheet_id: None,
-            rect: None,
+            // sheet_id: None,
+            // rect: None,
             cursor: None,
             transaction_type: TransactionType::User,
             operations: VecDeque::new(),

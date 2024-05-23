@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
+    selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     Pos, Rect, SheetPos, SheetRect,
 };
@@ -75,15 +76,25 @@ impl GridController {
         }
     }
 
-    pub fn send_updated_bounds_rect(&mut self, sheet_rect: &SheetRect, format: bool) {
-        let recalculated = if let Some(sheet) = self.try_sheet_mut(sheet_rect.sheet_id) {
-            sheet.recalculate_add_bounds((*sheet_rect).into(), format)
-        } else {
-            false
-        };
+    /// Tries to update and send the bounds rect to the client. If
+    /// Selection.rects is defined, then it uses a simple recalculation of the
+    /// bounds. If not, it uses the full recalculation.
+    pub fn send_updated_bounds_rect(&mut self, selection: &Selection, format: bool) {
+        let mut recalculated = false;
+        if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
+            if let Some(rects) = selection.rects.as_ref() {
+                rects.iter().for_each(|rect| {
+                    if sheet.recalculate_add_bounds(*rect, format) {
+                        recalculated = true;
+                    }
+                });
+            } else {
+                return self.send_updated_bounds(selection.sheet_id);
+            }
+        }
 
         if cfg!(target_family = "wasm") && recalculated {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
                     crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
                 }

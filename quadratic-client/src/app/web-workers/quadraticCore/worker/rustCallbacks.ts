@@ -55,15 +55,7 @@ declare var self: WorkerGlobalScope &
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
-    sendTransactionStart: (
-      transactionId: string,
-      transactionType: TransactionName,
-      sheetId?: string,
-      x?: number,
-      y?: number,
-      w?: number,
-      h?: number
-    ) => void;
+    sendTransactionStart: (transactionId: string, transactionType: TransactionName) => void;
     sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCell: (
@@ -179,17 +171,9 @@ export const jsSheetBoundsUpdate = (bounds: string) => {
   self.sendSheetBoundsUpdateRender(sheetBounds);
 };
 
-export const jsTransactionStart = (
-  transaction_id: string,
-  transaction_name: string,
-  sheet_id: string | undefined,
-  x?: bigint,
-  y?: bigint,
-  w?: number,
-  h?: number
-) => {
+export const jsTransactionStart = (transaction_id: string, transaction_name: string) => {
   const transactionType = JSON.parse(transaction_name);
-  self.sendTransactionStart(transaction_id, transactionType, sheet_id, Number(x), Number(y), w, h);
+  self.sendTransactionStart(transaction_id, transactionType);
 };
 
 export const jsTransactionProgress = (transactionId: String, remainingOperations: number) => {

@@ -175,76 +175,27 @@ class CoreClient {
         break;
 
       case 'clientCoreSetCellBold':
-        await core.setCellBold(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.bold,
-          e.data.cursor
-        );
+        await core.setCellBold(e.data.selection, e.data.bold, e.data.cursor);
         break;
 
       case 'clientCoreSetCellItalic':
-        await core.setCellItalic(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.italic,
-          e.data.cursor
-        );
+        await core.setCellItalic(e.data.selection, e.data.italic, e.data.cursor);
         break;
 
       case 'clientCoreSetCellTextColor':
-        await core.setCellTextColor(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.color ?? '',
-          e.data.cursor
-        );
+        await core.setCellTextColor(e.data.selection, e.data.color, e.data.cursor);
         break;
 
       case 'clientCoreSetCellFillColor':
-        await core.setCellFillColor(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.fillColor,
-          e.data.cursor
-        );
+        await core.setCellFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
         break;
 
       case 'clientCoreToggleCommas':
-        await core.toggleCommas(
-          e.data.sheetId,
-          e.data.sourceX,
-          e.data.sourceY,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.cursor
-        );
+        await core.toggleCommas(e.data.selection, e.data.cursor);
         break;
 
       case 'clientCoreSetCurrency':
-        await core.setCurrency(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.symbol,
-          e.data.cursor
-        );
+        await core.setCurrency(e.data.selection, e.data.symbol, e.data.cursor);
         break;
 
       case 'clientCoreImportCsv':
@@ -280,7 +231,7 @@ class CoreClient {
         break;
 
       case 'clientCoreDeleteCellValues':
-        await core.deleteCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.deleteCellValues(e.data.selection, e.data.cursor);
         break;
 
       case 'clientCoreSetCodeCellValue':
@@ -513,7 +464,7 @@ class CoreClient {
         break;
 
       case 'clientCoreRemoveCellNumericFormat':
-        core.removeCellNumericFormat(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.removeCellNumericFormat(e.data.selection, e.data.cursor);
         break;
 
       case 'clientCoreMoveCells':
@@ -602,24 +553,11 @@ class CoreClient {
     this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds });
   };
 
-  sendTransactionStart = (
-    transactionId: string,
-    transactionType: TransactionName,
-    sheetId?: string,
-    x?: number,
-    y?: number,
-    w?: number,
-    h?: number
-  ) => {
+  sendTransactionStart = (transactionId: string, transactionType: TransactionName) => {
     this.send({
       type: 'coreClientTransactionStart',
       transactionId,
       transactionType,
-      sheetId,
-      x,
-      y,
-      w,
-      h,
     });
   };
 

@@ -65,6 +65,8 @@ mod tests {
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),
+            x: 0,
+            y: 0,
             all: false,
             columns: None,
             rows: None,
@@ -79,6 +81,8 @@ mod tests {
         let rect = Rect::new_span(Pos { x: 100, y: 100 }, Pos { x: 1000, y: 105 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),
+            x: 0,
+            y: 0,
             all: false,
             columns: None,
             rows: None,
@@ -94,10 +98,12 @@ mod tests {
         sheet.test_set_value(1, 1, "9.1234567891");
         sheet.test_set_value(1, 2, "12313");
         sheet.test_set_value(1, 3, "0");
-        sheet.test_set_code_run_array(1, 4, vec!["1", "2", "3"], false);
+        sheet.test_set_code_run_array(1, 4, vec!["1", "2", "3"], true);
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),
+            x: 0,
+            y: 0,
             all: false,
             columns: None,
             rows: None,
@@ -116,6 +122,8 @@ mod tests {
         // returns none if selection is too large (MAX_SUMMARIZE_SELECTION_SIZE)
         let selection = Selection {
             sheet_id: sheet.id.clone(),
+            x: 0,
+            y: 0,
             all: true,
             columns: None,
             rows: None,
@@ -133,18 +141,20 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.test_set_value(-1, -1, "0.00100000000000");
         sheet.test_set_value(-1, 0, "0.00500000000000");
-        let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: -10 });
+        let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: 1 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),
+            x: 0,
+            y: 0,
             all: false,
             columns: None,
             rows: None,
             rects: Some(vec![rect]),
         };
         let result = sheet.summarize_selection(selection, 9).unwrap();
-        assert_eq!(result.count, 1);
-        assert_eq!(result.sum, Some(0.001));
-        assert_eq!(result.average, Some(0.001));
+        assert_eq!(result.count, 2);
+        assert_eq!(result.sum, Some(0.006));
+        assert_eq!(result.average, Some(0.003));
     }
 
     #[test]
@@ -157,6 +167,8 @@ mod tests {
         sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "", "3"], true);
         let selection = Selection {
             sheet_id: sheet.id.clone(),
+            x: 0,
+            y: 0,
             all: false,
             columns: Some(vec![-2, -1, 0, 1, 2]),
             rows: None,
@@ -178,6 +190,8 @@ mod tests {
         sheet.test_set_code_run_array(-10, -1, vec!["1", "2", "", "3"], true);
         let selection = Selection {
             sheet_id: sheet.id.clone(),
+            x: 0,
+            y: 0,
             all: false,
             columns: None,
             rows: Some(vec![-2, -1, 0, 1, 2]),
@@ -200,6 +214,8 @@ mod tests {
         sheet.test_set_code_run_array(-20, -20, vec!["1", "2", "3"], false);
         let selection = Selection {
             sheet_id: sheet.id.clone(),
+            x: 0,
+            y: 0,
             all: true,
             columns: None,
             rows: None,
