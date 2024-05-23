@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
+import { connectionNlbSecurityGroup } from "../shared/securityGroups";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -12,8 +13,47 @@ const ecrRegistryUrl = config.require("ecr-registry-url");
 
 // Configuration from Pulumi ESC
 const domain = config.require("domain");
+const certificateArn = config.require("certificate-arn");
+const subNet1 = config.require("subnet1");
+const subNet2 = config.require("subnet2");
+const vpcId = config.require("vpc-id");
 
 const cluster = new aws.ecs.Cluster("connection-cluster");
+
+// Create a new Application Load Balancer
+const alb = new aws.lb.LoadBalancer("connection-alb", {
+  internal: false,
+  loadBalancerType: "application",
+  subnets: [subNet1, subNet2],
+  enableCrossZoneLoadBalancing: true,
+  securityGroups: [connectionNlbSecurityGroup.id],
+});
+
+// Create a new Target Group
+const targetGroup = new aws.lb.TargetGroup("multiplayer-nlb-tg", {
+  port: 80,
+  protocol: "TCP",
+  targetType: "ip",
+  vpcId: vpcId,
+});
+
+// Listen to HTTP traffic on port 80
+const listener = new aws.lb.Listener("connection-alb-listener", {
+  tags: {
+    Name: `multiplayer-nlb-${connectionSubdomain}`,
+  },
+  loadBalancerArn: alb.arn,
+  port: 443,
+  protocol: "TLS",
+  certificateArn: certificateArn, // Attach the SSL certificate
+  sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
+  defaultActions: [
+    {
+      type: "forward",
+      targetGroupArn: targetGroup.arn,
+    },
+  ],
+});
 
 // Create a Fargate service task that uses the image from the ECR repository
 const appService = new awsx.ecs.FargateService("connection-fargate-service", {
@@ -39,37 +79,44 @@ const appService = new awsx.ecs.FargateService("connection-fargate-service", {
       ],
     },
   },
-  assignPublicIp: true,
+  networkConfiguration: {
+    assignPublicIp: true,
+    subnets: [subNet1, subNet2],
+    securityGroups: [connectionNlbSecurityGroup.id],
+  },
+  loadBalancers: [
+    {
+      targetGroupArn: targetGroup.arn,
+      containerName: "app",
+      containerPort: 80,
+    },
+  ],
+  //   assignPublicIp: true,
   desiredCount: 1,
 });
 
-// // Export the URL of the service
-// const nlb = appService.service.loadBalancers.apply((lb) => lb);
+// Get the hosted zone ID for domain
+const hostedZone = pulumi.output(
+  aws.route53.getZone(
+    {
+      name: domain,
+    },
+    { async: true }
+  )
+);
 
-// // Get the hosted zone ID for domain
-// const hostedZone = pulumi.output(
-//   aws.route53.getZone(
-//     {
-//       name: domain,
-//     },
-//     { async: true }
-//   )
-// );
+// Create a Route 53 record pointing to the NLB
+const dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
+  zoneId: hostedZone.id,
+  name: `${connectionSubdomain}.${domain}`, // subdomain you want to use
+  type: "A",
+  aliases: [
+    {
+      name: alb.dnsName,
+      zoneId: alb.zoneId,
+      evaluateTargetHealth: true,
+    },
+  ],
+});
 
-// // Create a Route 53 record pointing to the NLB
-// let dnsRecord = "none"
-// if (nlb !== undefined)
-//     dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
-//     zoneId: hostedZone.id,
-//     name: `${connectionSubdomain}.${domain}`, // subdomain you want to use
-//     type: "A",
-//     aliases: [
-//         {
-//         name: nlb.dnsName,
-//         zoneId: nlb.zoneId,
-//         evaluateTargetHealth: true,
-//         },
-//     ],
-//     });
-
-export const connectionPublicDns = "dnsRecord.name";
+export const connectionPublicDns = dnsRecord.name;

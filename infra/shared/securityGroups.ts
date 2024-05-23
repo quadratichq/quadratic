@@ -67,6 +67,24 @@ export const redisSecurityGroup = new aws.ec2.SecurityGroup("redis-sg", {
   ],
 });
 
+// Create a Security Group for the Connection NLB
+export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
+  "connection-nlb-security-group",
+  {
+    ingress: [
+      {
+        protocol: "tcp",
+        fromPort: 443,
+        toPort: 443,
+        cidrBlocks: ["0.0.0.0/0"],
+      },
+    ],
+    egress: [
+      { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+    ],
+  }
+);
+
 // Allow SSH traffic to the Preview Instances
 if (isPreviewEnvironment) {
   new aws.ec2.SecurityGroupRule(`files-ssh-ingress-rule`, {
