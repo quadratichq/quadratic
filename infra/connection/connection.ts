@@ -38,6 +38,7 @@ const appService = new awsx.ecs.FargateService("connection-fargate-service", {
       ],
     },
   },
+  assignPublicIp: true,
   desiredCount: 1,
 });
 
