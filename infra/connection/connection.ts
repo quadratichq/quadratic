@@ -44,7 +44,7 @@ const listener = new aws.lb.Listener("connection-alb-listener", {
   },
   loadBalancerArn: alb.arn,
   port: 443,
-  protocol: "TLS",
+  protocol: "HTTPS",
   certificateArn: certificateArn, // Attach the SSL certificate
   sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
   defaultActions: [
