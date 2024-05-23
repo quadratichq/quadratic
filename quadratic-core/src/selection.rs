@@ -27,7 +27,7 @@ mod test {
 
     #[test]
     fn selection_from_str_rects() {
-        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"rects":[{"min":{"x":0,"y":1},"max":{"x":3,"y":4}}],"rows":null,"column":null,"all":false}"#;
+        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"rects":[{"min":{"x":0,"y":1},"max":{"x":3,"y":4}}],"rows":null,"columns":null,"all":false}"#;
         let selection: Selection = Selection::from_str(s).unwrap();
         assert_eq!(
             selection,
@@ -43,7 +43,7 @@ mod test {
 
     #[test]
     fn selection_from_str_rows() {
-        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"rects":null,"rows":[3,5],"column":null,"all":false}"#;
+        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"rects":null,"rows":[3,5],"columns":null,"all":false}"#;
         let selection: Selection = Selection::from_str(s).unwrap();
         assert_eq!(
             selection,
@@ -59,7 +59,7 @@ mod test {
 
     #[test]
     fn selection_from_str_columns() {
-        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"rects":null,"rows":null,"column":[7, 8, 9],"all":false}"#;
+        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"rects":null,"rows":null,"columns":[7, 8, 9],"all":false}"#;
         let selection: Selection = Selection::from_str(s).unwrap();
         assert_eq!(
             selection,
@@ -75,7 +75,7 @@ mod test {
 
     #[test]
     fn selection_from_str_all() {
-        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"rects":null,"rows":null,"column":null,"all":true}"#;
+        let s = r#"{"sheet_id":{"id":"00000000-0000-0000-0000-000000000000"},"rects":null,"rows":null,"columns":null,"all":true}"#;
         let selection: Selection = Selection::from_str(s).unwrap();
         assert_eq!(
             selection,

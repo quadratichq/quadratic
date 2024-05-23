@@ -253,8 +253,10 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const rect = pointsToRect(message.x, message.y, message.width, message.height);
-        const summary = this.gridController.summarizeSelection(message.sheetId, rect, BigInt(message.decimalPlaces));
+        const summary = this.gridController.summarizeSelection(
+          JSON.stringify(message.selection),
+          BigInt(message.decimalPlaces)
+        );
         if (summary) {
           const result = {
             count: Number(summary.count),

@@ -11,6 +11,7 @@ import {
   JsRenderFill,
   MinMax,
   SearchOptions,
+  Selection,
   SheetBounds,
   SheetInfo,
   SheetPos,
@@ -154,7 +155,7 @@ export interface ClientCoreSummarizeSelection {
   type: 'clientCoreSummarizeSelection';
   decimalPlaces: number;
   id: number;
-  selection: string;
+  selection: Selection;
 }
 
 export interface CoreClientSummarizeSelection {
