@@ -8,6 +8,8 @@ use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 const MAX_SUMMARIZE_SELECTION_SIZE: i64 = 50000;
 
 impl Sheet {
+    /// Returns the summary of values in the Grid. If there is there is less
+    /// than two values, then returns None.
     pub fn summarize_selection(
         &self,
         selection: Selection,
@@ -30,11 +32,11 @@ impl Sheet {
             }
         });
 
-        let average: BigDecimal = if count > 0 {
-            &sum / count
-        } else {
-            BigDecimal::zero()
-        };
+        if count <= 1 {
+            return None;
+        }
+
+        let average: BigDecimal = &sum / count;
 
         Some(SummarizeSelectionResult {
             count,
@@ -82,10 +84,8 @@ mod tests {
             rows: None,
             rects: Some(vec![rect]),
         };
-        let result = sheet.summarize_selection(selection, 9).unwrap();
-        assert_eq!(result.count, 0);
-        assert_eq!(result.sum, Some(0.0));
-        assert_eq!(result.average, Some(0.0));
+        let result = sheet.summarize_selection(selection, 9);
+        assert_eq!(result, None);
     }
 
     #[test]
@@ -132,6 +132,7 @@ mod tests {
     fn summarize_trailing_zeros() {
         let mut sheet = Sheet::test();
         sheet.test_set_value(-1, -1, "0.00100000000000");
+        sheet.test_set_value(-1, 0, "0.00500000000000");
         let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: -10 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),

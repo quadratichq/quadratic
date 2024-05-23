@@ -3,7 +3,7 @@ use crate::wasm_bindings::GridController;
 use serde::Serialize;
 use wasm_bindgen::prelude::wasm_bindgen;
 
-#[derive(Debug, ts_rs::TS, Serialize)]
+#[derive(Debug, ts_rs::TS, Serialize, PartialEq)]
 pub struct SummarizeSelectionResult {
     pub count: i64,
     pub sum: Option<f64>,

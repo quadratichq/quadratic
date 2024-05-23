@@ -3,13 +3,20 @@ use crate::{grid::CodeRunResult, selection::Selection, CellValue, Pos, Value};
 use super::Sheet;
 
 impl Sheet {
-    /// Returns an iterator over &CellValue in the Selection.
+    /// Returns a Vec of (Pos, &CellValue) for a Selection in the Sheet.
+    /// Note: there's an order of precedence in enumerating the selection:
+    /// 1. All
+    /// 2. Columns
+    /// 3. Rows
+    /// 4. Rects
+    /// If the selection is empty or the count > max_count then it returns None.
+    /// It ignores CellValue::Blank, and CellValue::Code (since it uses the CodeRun instead).
+    /// Note: if the Code has an error, then it will not be part of the result (for now).
     pub fn selection(
         &self,
         selection: Selection,
         max_count: Option<i64>,
     ) -> Option<Vec<(Pos, &CellValue)>> {
-        dbgjs!(&selection);
         let mut count = 0;
         let mut vec = Vec::new();
 
@@ -240,6 +247,7 @@ mod tests {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
+        sheet.test_set_code_run(0, 5, "11");
         sheet.test_set_code_run_array(-1, -10, vec!["10", "11", "12"], true);
 
         assert_eq!(
@@ -263,15 +271,14 @@ mod tests {
                 &CellValue::Number(BigDecimal::from_str("1").unwrap())
             ))
         );
-        // assert_eq!(
-        //     vec.get(9),
-        //     Some(&(
-        //         Pos { x: -1, y: -9 },
-        //         &CellValue::Number(BigDecimal::from_str("12").unwrap())
-        //     ))
-        // );
-        dbg!(&results);
-        assert_eq!(results.len(), 9);
+        assert_eq!(
+            results.get(9),
+            Some(&(
+                Pos { x: -1, y: -8 },
+                &CellValue::Number(BigDecimal::from_str("12").unwrap())
+            ))
+        );
+        assert_eq!(results.len(), 10);
     }
 
     #[test]

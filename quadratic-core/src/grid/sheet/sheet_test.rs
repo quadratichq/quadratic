@@ -32,6 +32,40 @@ impl Sheet {
     }
 
     #[cfg(test)]
+    pub fn test_set_code_run(&mut self, x: i64, y: i64, s: &str) {
+        use crate::{
+            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
+            CellValue, Pos, Value,
+        };
+        use bigdecimal::BigDecimal;
+        use chrono::Utc;
+        use std::collections::HashSet;
+
+        self.set_cell_value(
+            Pos { x, y },
+            crate::CellValue::Code(crate::CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: s.to_string(),
+            }),
+        );
+        self.set_code_run(
+            Pos { x, y },
+            Some(CodeRun {
+                std_out: None,
+                std_err: None,
+                formatted_code_string: None,
+                cells_accessed: HashSet::new(),
+                result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(0)))),
+                return_type: Some("number".into()),
+                line_number: None,
+                output_type: None,
+                spill_error: false,
+                last_modified: Utc::now(),
+            }),
+        );
+    }
+
+    #[cfg(test)]
     pub fn test_set_code_run_array(&mut self, x: i64, y: i64, n: Vec<&str>, vertical: bool) {
         use crate::{
             grid::{CodeCellLanguage, CodeRun, CodeRunResult},
@@ -180,6 +214,16 @@ mod tests {
         assert_eq!(
             sheet.display_value(Pos { x: -1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from(3)))
+        );
+    }
+
+    #[test]
+    fn test_set_code_run() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run(0, 0, "1");
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(0)))
         );
     }
 }
