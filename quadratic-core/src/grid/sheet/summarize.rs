@@ -41,10 +41,12 @@ impl Sheet {
                 }
             }
         } else if let Some(columns) = selection.columns {
-            for column in columns.iter() {
-                for (_y, entry) in self.columns.get(column).unwrap().values.iter() {
-                    if add_entry(entry) {
-                        return None;
+            for x in columns.iter() {
+                if let Some(column) = self.columns.get(x) {
+                    for (_y, entry) in column.values.iter() {
+                        if add_entry(entry) {
+                            return None;
+                        }
                     }
                 }
             }
@@ -107,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn test_summarize_rects() {
+    fn summarize_rects() {
         let mut sheet = Sheet::test();
 
         set_value(&mut sheet, 1, 1, "12.12");
@@ -144,9 +146,12 @@ mod tests {
     }
 
     #[test]
-    fn test_summarize_rounding() {
+    fn summarize_rounding() {
         let mut sheet = Sheet::test();
         set_value(&mut sheet, 1, 1, "9.1234567891");
+        set_value(&mut sheet, 1, 2, "12313");
+        set_value(&mut sheet, 1, 3, "0");
+
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),
@@ -162,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn test_summary_too_large() {
+    fn summary_too_large() {
         let mut sheet = Sheet::test();
 
         // returns none if selection is too large (MAX_SUMMARIZE_SELECTION_SIZE)
@@ -187,13 +192,82 @@ mod tests {
         assert!(result.is_none());
     }
 
-    // // trailing zeros
-    // set_value(&mut gc, -1, -1, "0.00100000000000");
-    // let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: -10 });
-    // let result = gc
-    //     .js_summarize_selection(sheet_id.to_string(), &rect, 9)
-    //     .unwrap();
-    // assert_eq!(result.count, 1);
-    // assert_eq!(result.sum, Some(0.001));
-    // assert_eq!(result.average, Some(0.001));
+    #[test]
+    fn summarize_trailing_zeros() {
+        let mut sheet = Sheet::test();
+        set_value(&mut sheet, -1, -1, "0.00100000000000");
+        let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: -10 });
+        let selection = Selection {
+            sheet_id: sheet.id.clone(),
+            all: false,
+            columns: None,
+            rows: None,
+            rects: Some(vec![rect]),
+        };
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 1);
+        assert_eq!(result.sum, Some(0.001));
+        assert_eq!(result.average, Some(0.001));
+    }
+
+    #[test]
+    fn summarize_column() {
+        let mut sheet = Sheet::test();
+        for i in 0..10 {
+            set_value(&mut sheet, 1, i, "2");
+            set_value(&mut sheet, -1, i, "2");
+        }
+        let selection = Selection {
+            sheet_id: sheet.id.clone(),
+            all: false,
+            columns: Some(vec![-1, 0, 1, 2]),
+            rows: None,
+            rects: None,
+        };
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 20);
+        assert_eq!(result.sum, Some(40.0));
+        assert_eq!(result.average, Some(2.0));
+    }
+
+    #[test]
+    fn summarize_row() {
+        let mut sheet = Sheet::test();
+        for i in 0..10 {
+            set_value(&mut sheet, i, 1, "2");
+            set_value(&mut sheet, i, -1, "2");
+        }
+        let selection = Selection {
+            sheet_id: sheet.id.clone(),
+            all: false,
+            columns: None,
+            rows: Some(vec![-1, 0, 1, 2]),
+            rects: None,
+        };
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 20);
+        assert_eq!(result.sum, Some(40.0));
+        assert_eq!(result.average, Some(2.0));
+    }
+
+    #[test]
+    fn summarize_all() {
+        let mut sheet = Sheet::test();
+        for i in 0..10 {
+            for j in 0..10 {
+                set_value(&mut sheet, i, j, "2");
+            }
+        }
+        let selection = Selection {
+            sheet_id: sheet.id.clone(),
+            all: true,
+            columns: None,
+            rows: None,
+            rects: None,
+        };
+        let result = sheet.summarize_selection(selection, 9).unwrap();
+        assert_eq!(result.count, 100);
+        assert_eq!(result.sum, Some(200.0));
+        assert_eq!(result.average, Some(2.0));
+    }
 }
