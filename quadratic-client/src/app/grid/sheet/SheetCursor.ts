@@ -146,6 +146,7 @@ export class SheetCursor {
   }
 
   getRustSelection(): Selection {
+    console.log(this.columnRow);
     const sheet_id = { id: this.sheetId };
     const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
     const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
