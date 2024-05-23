@@ -5,6 +5,7 @@ import { getLanguage2 } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
@@ -31,6 +32,14 @@ export const CodeEditorHeader = (props: Props) => {
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
   const language = getLanguage2(editorInteractionState.mode);
+  const { connections } = useFileMetaRouteLoaderData();
+
+  let currentConnectionName = '';
+  let foundConnection = connections.find(
+    // @ts-expect-error
+    (connection) => connection.uuid === editorInteractionState?.mode?.Connection?.id
+  );
+  if (foundConnection) currentConnectionName = foundConnection.name;
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
@@ -129,10 +138,15 @@ export const CodeEditorHeader = (props: Props) => {
           </div>
         </TooltipHint>
       </div>
-      <div className="mx-2 flex truncate text-sm font-medium">
-        Cell ({cellLocation.x}, {cellLocation.y})
-        {currentCodeEditorCellIsNotInActiveSheet && (
-          <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+      <div className="mx-2 flex flex-col truncate">
+        <div className="text-sm font-medium leading-4">
+          Cell ({cellLocation.x}, {cellLocation.y})
+          {currentCodeEditorCellIsNotInActiveSheet && (
+            <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
+          )}
+        </div>
+        {currentConnectionName && (
+          <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
         )}
       </div>
 

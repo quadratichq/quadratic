@@ -27,9 +27,9 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
         message: 'Port must be a valid number between 0 and 65535',
       }
     ),
+  database: z.string().min(1, { message: 'Required' }),
   username: z.string().optional(),
   password: z.string().optional(),
-  database: z.string().optional(),
 });
 
 export const ConnectionTypeMysqlSchema = z.literal(ConnectionTypesSchema.enum.MYSQL);

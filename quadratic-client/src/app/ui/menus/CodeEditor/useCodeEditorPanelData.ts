@@ -47,7 +47,6 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
 
   // When we change the number of panels, reset the heights
   useEffect(() => {
-    console.log('ran', mode);
     if (typeof mode === 'object') {
       setPanelHeightPercentages([34, 33, 33]);
     } else {
