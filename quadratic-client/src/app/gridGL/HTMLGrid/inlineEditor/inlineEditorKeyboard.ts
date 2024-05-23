@@ -39,6 +39,12 @@ class InlineEditorKeyboard {
       e.stopPropagation();
     }
 
+    // Tab key
+    else if (e.code === 'Tab') {
+      inlineEditorHandler.close(e.shiftKey ? -1 : 1, 0, false);
+      e.stopPropagation();
+    }
+
     // Horizontal arrow keys
     else if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
       const isRight = e.code === 'ArrowRight';
