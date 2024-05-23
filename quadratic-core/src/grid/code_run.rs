@@ -43,6 +43,22 @@ impl CodeRun {
         }
     }
 
+    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
+    /// A spill or error returns None. Note: this assumes a CellValue::Code exists at the location.
+    pub fn cell_value_ref(&self, x: u32, y: u32) -> Option<&CellValue> {
+        if self.spill_error {
+            None
+        } else {
+            match &self.result {
+                CodeRunResult::Ok(value) => match value {
+                    Value::Single(v) => Some(v),
+                    Value::Array(a) => Some(a.get(x, y).map(|v| v).ok()?),
+                },
+                CodeRunResult::Err(_) => None,
+            }
+        }
+    }
+
     /// Returns the size of the output array, or defaults to `_1X1` (since output always includes the code_cell).
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {

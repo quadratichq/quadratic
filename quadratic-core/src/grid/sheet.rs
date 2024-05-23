@@ -23,7 +23,10 @@ pub mod code;
 pub mod formatting;
 pub mod rendering;
 pub mod search;
+pub mod selection;
 pub mod summarize;
+
+pub mod sheet_test;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -186,6 +189,11 @@ impl Sheet {
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y).cloned()
+    }
+
+    pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
+        let column = self.get_column(pos.x)?;
+        column.values.get(&pos.y)
     }
 
     /// Returns a formatting property of a cell.

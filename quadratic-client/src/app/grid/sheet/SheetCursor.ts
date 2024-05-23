@@ -145,7 +145,7 @@ export class SheetCursor {
     return new Rectangle(origin.x, origin.y, terminal.x - origin.x, terminal.y - origin.y);
   }
 
-  getRustSelection(): string {
+  getRustSelection(): Selection {
     const sheet_id = { id: this.sheetId };
     const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;
     const rows = this.columnRow?.rows ? this.columnRow.rows.map((y) => BigInt(y)) : null;
@@ -157,20 +157,12 @@ export class SheetCursor {
         max: { x: BigInt(rect.x + rect.width), y: BigInt(rect.y + rect.height) },
       },
     ];
-    const selection: Selection = {
+    return {
       sheet_id,
       rects,
       columns,
       rows,
       all,
     };
-
-    // Used to coerce bigints to numbers for JSON.stringify; see
-    // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
-    const bigIntReplacer = (_key: string, value: any): any => {
-      return typeof value === 'bigint' ? Number(value) : value;
-    };
-
-    return JSON.stringify(selection, bigIntReplacer);
   }
 }

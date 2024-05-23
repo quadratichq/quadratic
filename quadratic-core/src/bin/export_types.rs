@@ -23,6 +23,7 @@ use quadratic_core::{
     wasm_bindings::controller::{
         bounds::MinMax,
         sheet_info::{SheetBounds, SheetInfo},
+        summarize::SummarizeSelectionResult,
     },
     Rect, *,
 };
@@ -94,6 +95,7 @@ fn main() {
         SheetBounds,
         TransactionName,
         JsGetCellResponse,
+        SummarizeSelectionResult,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

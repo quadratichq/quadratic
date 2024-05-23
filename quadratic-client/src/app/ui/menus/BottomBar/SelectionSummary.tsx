@@ -17,15 +17,11 @@ export const SelectionSummary = () => {
   const [copied, setCopied] = useState(false);
 
   const runCalculationOnActiveSelection = async () => {
-    let result = await quadraticCore.summarizeSelection(
-      decimal_places,
-      sheets.sheet.id,
-      sheets.sheet.cursor.getRectangle()
-    );
+    let result = await quadraticCore.summarizeSelection(decimal_places, sheets.sheet.cursor.getRustSelection());
     if (result) {
       setCount(result.count.toString());
-      setSum(result.sum !== undefined ? result.sum.toString() : undefined);
-      setAvg(result.average !== undefined ? result.average.toString() : undefined);
+      setSum(result.sum === null ? undefined : result.sum.toString());
+      setAvg(result.average === null ? undefined : result.average.toString());
     } else {
       setCount(undefined);
       setSum(undefined);
@@ -35,10 +31,11 @@ export const SelectionSummary = () => {
 
   // Run async calculations to get the count/avg/sum meta info
   useEffect(() => {
-    if (cursor.multiCursor) {
+    if (cursor.multiCursor || cursor.columnRow) {
       runCalculationOnActiveSelection();
     }
   }, [
+    cursor.columnRow,
     cursor.multiCursor,
     cursor.originPosition.x,
     cursor.originPosition.y,

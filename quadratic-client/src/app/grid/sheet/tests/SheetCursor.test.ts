@@ -12,8 +12,7 @@ beforeEach(() => {
 
 describe('SheetCursor.getRustSelection', () => {
   it('origin', () => {
-    const selectionStringified = sheetCursor.getRustSelection();
-    const selection: Selection = JSON.parse(selectionStringified);
+    const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },
       all: false,
@@ -25,8 +24,7 @@ describe('SheetCursor.getRustSelection', () => {
 
   it('single position', () => {
     sheetCursor.changePosition({ cursorPosition: { x: 1, y: 2 } }, true);
-    const selectionStringified = sheetCursor.getRustSelection();
-    const selection: Selection = JSON.parse(selectionStringified);
+    const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },
       all: false,
@@ -41,8 +39,7 @@ describe('SheetCursor.getRustSelection', () => {
       { multiCursor: { originPosition: { x: 1, y: 2 }, terminalPosition: { x: 3, y: 4 } } },
       true
     );
-    const selectionStringified = sheetCursor.getRustSelection();
-    const selection: Selection = JSON.parse(selectionStringified);
+    const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },
       all: false,
@@ -54,8 +51,7 @@ describe('SheetCursor.getRustSelection', () => {
 
   it('a row', () => {
     sheetCursor.changePosition({ columnRow: { rows: [1] } }, true);
-    const selectionStringified = sheetCursor.getRustSelection();
-    const selection: Selection = JSON.parse(selectionStringified);
+    const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },
       all: false,
@@ -67,8 +63,7 @@ describe('SheetCursor.getRustSelection', () => {
 
   it('rows', () => {
     sheetCursor.changePosition({ columnRow: { rows: [1, 2, 3] } }, true);
-    const selectionStringified = sheetCursor.getRustSelection();
-    const selection: Selection = JSON.parse(selectionStringified);
+    const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },
       all: false,
@@ -80,8 +75,7 @@ describe('SheetCursor.getRustSelection', () => {
 
   it('a column', () => {
     sheetCursor.changePosition({ columnRow: { columns: [1] } }, true);
-    const selectionStringified = sheetCursor.getRustSelection();
-    const selection: Selection = JSON.parse(selectionStringified);
+    const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },
       all: false,
@@ -93,8 +87,7 @@ describe('SheetCursor.getRustSelection', () => {
 
   it('columns', () => {
     sheetCursor.changePosition({ columnRow: { columns: [1, 2, 3] } }, true);
-    const selectionStringified = sheetCursor.getRustSelection();
-    const selection: Selection = JSON.parse(selectionStringified);
+    const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },
       all: false,
@@ -106,8 +99,7 @@ describe('SheetCursor.getRustSelection', () => {
 
   it('all', () => {
     sheetCursor.changePosition({ columnRow: { all: true } }, true);
-    const selectionStringified = sheetCursor.getRustSelection();
-    const selection: Selection = JSON.parse(selectionStringified);
+    const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },
       all: true,

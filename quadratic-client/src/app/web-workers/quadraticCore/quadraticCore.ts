@@ -21,6 +21,7 @@ import {
   SearchOptions,
   Selection,
   SheetPos,
+  SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
 import { renderWebWorker } from '../renderWebWorker/renderWebWorker';
@@ -403,16 +404,13 @@ class QuadraticCore {
     this.send({ type: 'clientCoreInitMultiplayer' }, port);
   }
 
-  summarizeSelection(
-    decimalPlaces: number,
-    selection: Selection
-  ): Promise<{ count: number; sum: number | undefined; average: number | undefined } | undefined> {
+  summarizeSelection(decimalPlaces: number, selection: Selection): Promise<SummarizeSelectionResult | undefined> {
     return new Promise((resolve) => {
       const id = this.id++;
       const message: ClientCoreSummarizeSelection = {
         type: 'clientCoreSummarizeSelection',
         id,
-        selection: JSON.stringify(selection),
+        selection,
         decimalPlaces,
       };
       this.waitingForResponse[id] = (message: CoreClientSummarizeSelection) => {

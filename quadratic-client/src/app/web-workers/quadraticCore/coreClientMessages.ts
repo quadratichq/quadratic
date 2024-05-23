@@ -15,6 +15,7 @@ import {
   SheetBounds,
   SheetInfo,
   SheetPos,
+  SummarizeSelectionResult,
   TransactionName,
 } from '@/app/quadratic-core-types';
 import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
@@ -161,13 +162,7 @@ export interface ClientCoreSummarizeSelection {
 export interface CoreClientSummarizeSelection {
   type: 'coreClientSummarizeSelection';
   id: number;
-  summary:
-    | {
-        count: number;
-        sum: number | undefined;
-        average: number | undefined;
-      }
-    | undefined;
+  summary: SummarizeSelectionResult | undefined;
 }
 
 export interface ClientCoreSearch {

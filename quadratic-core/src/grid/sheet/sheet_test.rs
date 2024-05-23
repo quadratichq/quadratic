@@ -1,0 +1,185 @@
+use super::Sheet;
+
+impl Sheet {
+    #[cfg(test)]
+    pub fn test_set_value(&mut self, x: i64, y: i64, s: &str) {
+        use crate::{CellValue, Pos};
+        use bigdecimal::BigDecimal;
+        use std::str::FromStr;
+
+        let value = if let Ok(bd) = BigDecimal::from_str(s) {
+            CellValue::Number(bd)
+        } else {
+            CellValue::Text(s.to_string())
+        };
+
+        self.set_cell_value(Pos { x, y }, value);
+    }
+
+    #[cfg(test)]
+    /// Sets values in a rectangle starting at (x, y) with width w and height h.
+    /// Rectangle is formed row first (so for x then for y).
+    pub fn test_set_values(&mut self, x: i64, y: i64, w: i64, h: i64, s: Vec<&str>) {
+        assert!(
+            w * h == s.len() as i64,
+            "Expected array to be same size as w * h in set_values"
+        );
+        for xx in 0..w {
+            for yy in 0..h {
+                self.test_set_value(x + xx, y + yy, s[(yy * h + xx) as usize]);
+            }
+        }
+    }
+
+    #[cfg(test)]
+    pub fn test_set_code_run_array(&mut self, x: i64, y: i64, n: Vec<&str>, vertical: bool) {
+        use crate::{
+            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
+            Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
+        };
+        use bigdecimal::BigDecimal;
+        use chrono::Utc;
+        use std::{collections::HashSet, str::FromStr};
+
+        let array_size = if vertical {
+            ArraySize::new(1, n.len() as u32).unwrap()
+        } else {
+            ArraySize::new(n.len() as u32, 1).unwrap()
+        };
+        let mut array = Array::new_empty(array_size);
+        for (i, s) in n.iter().enumerate() {
+            if !s.is_empty() {
+                let value = if let Ok(bd) = BigDecimal::from_str(*s) {
+                    CellValue::Number(bd)
+                } else {
+                    CellValue::Text(s.to_string())
+                };
+                if vertical {
+                    let _ = array.set(0, i as u32, value);
+                } else {
+                    let _ = array.set(i as u32, 0, value);
+                }
+            }
+        }
+        self.set_cell_value(
+            Pos { x, y },
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "".to_string(),
+            }),
+        );
+        self.set_code_run(
+            Pos { x, y },
+            Some(CodeRun {
+                std_out: None,
+                std_err: None,
+                formatted_code_string: None,
+                cells_accessed: HashSet::new(),
+                result: CodeRunResult::Ok(Value::Array(array)),
+                return_type: Some("number".into()),
+                line_number: None,
+                output_type: None,
+                spill_error: false,
+                last_modified: Utc::now(),
+            }),
+        );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use bigdecimal::BigDecimal;
+
+    use crate::{grid::Sheet, CellValue, Pos};
+
+    #[test]
+    fn test_set_value() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_value(0, 0, "1");
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: 0, y: 0 }),
+            Some(&CellValue::Number(BigDecimal::from(1)))
+        );
+        sheet.test_set_value(0, 0, "hello");
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: 0, y: 0 }),
+            Some(&CellValue::Text("hello".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_set_values() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: 0, y: 0 }),
+            Some(&CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: 1, y: 0 }),
+            Some(&CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: 0, y: 1 }),
+            Some(&CellValue::Number(BigDecimal::from(3)))
+        );
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: 1, y: 1 }),
+            Some(&CellValue::Number(BigDecimal::from(4)))
+        );
+
+        sheet.test_set_values(-10, -10, 2, 2, vec!["a", "b", "c", "d"]);
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: -10, y: -10 }),
+            Some(&CellValue::Text("a".to_string()))
+        );
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: -9, y: -10 }),
+            Some(&CellValue::Text("b".to_string()))
+        );
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: -10, y: -9 }),
+            Some(&CellValue::Text("c".to_string()))
+        );
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: -9, y: -9 }),
+            Some(&CellValue::Text("d".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_set_code_run_array_horizontal() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], false);
+        assert_eq!(
+            sheet.display_value(Pos { x: -1, y: -1 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: -2, y: -1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: -3, y: -1 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+    }
+
+    #[test]
+    fn test_set_code_run_array_vertical() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(-1, -1, vec!["1", "2", "3"], true);
+        assert_eq!(
+            sheet.display_value(Pos { x: -1, y: -1 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: -1, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: -1, y: 1 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+    }
+}

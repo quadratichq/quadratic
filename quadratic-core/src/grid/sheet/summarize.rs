@@ -1,7 +1,7 @@
 use super::Sheet;
 use crate::{
     selection::Selection, util::round,
-    wasm_bindings::controller::summarize::SummarizeSelectionResult, CellValue, Pos,
+    wasm_bindings::controller::summarize::SummarizeSelectionResult, CellValue,
 };
 use bigdecimal::{BigDecimal, ToPrimitive, Zero};
 
@@ -17,64 +17,19 @@ impl Sheet {
         let mut count: i64 = 0;
         let mut sum = BigDecimal::zero();
 
-        // helper function to add an entry to the sum and count; returns true if
-        // the count exceeds the maximum allowed
-        let mut add_entry = |entry: &CellValue| -> bool {
-            match entry {
-                CellValue::Number(n) => {
-                    sum += n;
-                    count += 1;
-                }
-                _ => {
-                    count += 1;
-                }
+        let values = self.selection(selection, Some(MAX_SUMMARIZE_SELECTION_SIZE))?;
+        values.iter().for_each(|(_pos, value)| match value {
+            CellValue::Number(n) => {
+                sum += n;
+                count += 1;
             }
-            count > MAX_SUMMARIZE_SELECTION_SIZE
-        };
+            CellValue::Blank => {}
+            CellValue::Code(_) => {}
+            _ => {
+                count += 1;
+            }
+        });
 
-        if selection.all == true {
-            for (_x, column) in self.columns.iter() {
-                for (_y, entry) in column.values.iter() {
-                    if add_entry(entry) {
-                        return None;
-                    }
-                }
-            }
-        } else if let Some(columns) = selection.columns {
-            for x in columns.iter() {
-                if let Some(column) = self.columns.get(x) {
-                    for (_y, entry) in column.values.iter() {
-                        if add_entry(entry) {
-                            return None;
-                        }
-                    }
-                }
-            }
-        } else if let Some(rows) = selection.rows {
-            for (_x, column) in self.columns.iter() {
-                for (y, entry) in column.values.iter() {
-                    if rows.contains(y) {
-                        if add_entry(entry) {
-                            return None;
-                        }
-                    }
-                }
-            }
-        } else if let Some(rects) = selection.rects {
-            for rect in rects.iter() {
-                for x in rect.min.x..=rect.max.x {
-                    for y in rect.min.y..=rect.max.y {
-                        if let Some(entry) = self.cell_value(Pos { x, y }) {
-                            if add_entry(&entry) {
-                                return None;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // average
         let average: BigDecimal = if count > 0 {
             &sum / count
         } else {
@@ -91,30 +46,18 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
     use crate::grid::sheet::summarize::MAX_SUMMARIZE_SELECTION_SIZE;
     use crate::grid::Sheet;
     use crate::selection::Selection;
-    // create a test grid and test that the summarize function works
-    use crate::{CellValue, Pos, Rect};
-
-    fn set_value(sheet: &mut Sheet, x: i64, y: i64, n: &str) {
-        sheet.set_cell_value(
-            Pos { x, y },
-            CellValue::Number(BigDecimal::from_str(n).unwrap()),
-        );
-    }
+    use crate::{Pos, Rect};
 
     #[test]
     fn summarize_rects() {
         let mut sheet = Sheet::test();
 
-        set_value(&mut sheet, 1, 1, "12.12");
-        set_value(&mut sheet, 1, 2, "12313");
-        set_value(&mut sheet, 1, 3, "0");
+        sheet.test_set_value(1, 1, "12.12");
+        sheet.test_set_value(1, 2, "12313");
+        sheet.test_set_value(1, 3, "0");
 
         // span of 10 cells, 3 have numeric values
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
@@ -148,10 +91,10 @@ mod tests {
     #[test]
     fn summarize_rounding() {
         let mut sheet = Sheet::test();
-        set_value(&mut sheet, 1, 1, "9.1234567891");
-        set_value(&mut sheet, 1, 2, "12313");
-        set_value(&mut sheet, 1, 3, "0");
-
+        sheet.test_set_value(1, 1, "9.1234567891");
+        sheet.test_set_value(1, 2, "12313");
+        sheet.test_set_value(1, 3, "0");
+        sheet.test_set_code_run_array(1, 4, vec!["1", "2", "3"], false);
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),
@@ -161,9 +104,9 @@ mod tests {
             rects: Some(vec![rect]),
         };
         let result = sheet.summarize_selection(selection, 9).unwrap();
-        assert_eq!(result.count, 3);
-        assert_eq!(result.sum, Some(12322.123456789));
-        assert_eq!(result.average, Some(4107.374485596));
+        assert_eq!(result.count, 6);
+        assert_eq!(result.sum, Some(12328.123456789));
+        assert_eq!(result.average, Some(2054.687242798));
     }
 
     #[test]
@@ -171,22 +114,15 @@ mod tests {
         let mut sheet = Sheet::test();
 
         // returns none if selection is too large (MAX_SUMMARIZE_SELECTION_SIZE)
-        let rect = Rect::new_span(
-            Pos { x: 100, y: 100 },
-            Pos {
-                x: 1,
-                y: 100 + MAX_SUMMARIZE_SELECTION_SIZE + 1,
-            },
-        );
         let selection = Selection {
             sheet_id: sheet.id.clone(),
-            all: false,
+            all: true,
             columns: None,
             rows: None,
-            rects: Some(vec![rect]),
+            rects: None,
         };
         for i in 0..MAX_SUMMARIZE_SELECTION_SIZE + 1 {
-            set_value(&mut sheet, 100, 100 + i, "1");
+            sheet.test_set_value(100, 100 + i, "1");
         }
         let result = sheet.summarize_selection(selection, 9);
         assert!(result.is_none());
@@ -195,7 +131,7 @@ mod tests {
     #[test]
     fn summarize_trailing_zeros() {
         let mut sheet = Sheet::test();
-        set_value(&mut sheet, -1, -1, "0.00100000000000");
+        sheet.test_set_value(-1, -1, "0.00100000000000");
         let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: -10 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),
@@ -211,42 +147,44 @@ mod tests {
     }
 
     #[test]
-    fn summarize_column() {
+    fn summarize_columns() {
         let mut sheet = Sheet::test();
         for i in 0..10 {
-            set_value(&mut sheet, 1, i, "2");
-            set_value(&mut sheet, -1, i, "2");
+            sheet.test_set_value(1, i, "2");
+            sheet.test_set_value(-1, i, "2");
         }
+        sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "", "3"], true);
         let selection = Selection {
             sheet_id: sheet.id.clone(),
             all: false,
-            columns: Some(vec![-1, 0, 1, 2]),
+            columns: Some(vec![-2, -1, 0, 1, 2]),
             rows: None,
             rects: None,
         };
         let result = sheet.summarize_selection(selection, 9).unwrap();
-        assert_eq!(result.count, 20);
-        assert_eq!(result.sum, Some(40.0));
+        assert_eq!(result.count, 23);
+        assert_eq!(result.sum, Some(46.0));
         assert_eq!(result.average, Some(2.0));
     }
 
     #[test]
-    fn summarize_row() {
+    fn summarize_rows() {
         let mut sheet = Sheet::test();
         for i in 0..10 {
-            set_value(&mut sheet, i, 1, "2");
-            set_value(&mut sheet, i, -1, "2");
+            sheet.test_set_value(i, 1, "2");
+            sheet.test_set_value(i, -1, "2");
         }
+        sheet.test_set_code_run_array(-10, -1, vec!["1", "2", "", "3"], true);
         let selection = Selection {
             sheet_id: sheet.id.clone(),
             all: false,
             columns: None,
-            rows: Some(vec![-1, 0, 1, 2]),
+            rows: Some(vec![-2, -1, 0, 1, 2]),
             rects: None,
         };
         let result = sheet.summarize_selection(selection, 9).unwrap();
-        assert_eq!(result.count, 20);
-        assert_eq!(result.sum, Some(40.0));
+        assert_eq!(result.count, 23);
+        assert_eq!(result.sum, Some(46.0));
         assert_eq!(result.average, Some(2.0));
     }
 
@@ -255,9 +193,10 @@ mod tests {
         let mut sheet = Sheet::test();
         for i in 0..10 {
             for j in 0..10 {
-                set_value(&mut sheet, i, j, "2");
+                sheet.test_set_value(i, j, "2");
             }
         }
+        sheet.test_set_code_run_array(-20, -20, vec!["1", "2", "3"], false);
         let selection = Selection {
             sheet_id: sheet.id.clone(),
             all: true,
@@ -266,8 +205,8 @@ mod tests {
             rects: None,
         };
         let result = sheet.summarize_selection(selection, 9).unwrap();
-        assert_eq!(result.count, 100);
-        assert_eq!(result.sum, Some(200.0));
+        assert_eq!(result.count, 103);
+        assert_eq!(result.sum, Some(206.0));
         assert_eq!(result.average, Some(2.0));
     }
 }

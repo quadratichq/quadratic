@@ -20,6 +20,7 @@ import {
   SearchOptions,
   SheetPos,
   SheetRect,
+  SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
@@ -38,6 +39,12 @@ import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
 import { pointsToRect, rectangleToRect } from './rustConversions';
+
+// Used to coerce bigints to numbers for JSON.stringify; see
+// https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
+const bigIntReplacer = (_key: string, value: any): any => {
+  return typeof value === 'bigint' ? Number(value) : value;
+};
 
 class Core {
   gridController?: GridController;
@@ -247,24 +254,16 @@ class Core {
     });
   }
 
-  summarizeSelection(
-    message: ClientCoreSummarizeSelection
-  ): Promise<{ count: number; sum: number | undefined; average: number | undefined } | undefined> {
+  summarizeSelection(message: ClientCoreSummarizeSelection): Promise<SummarizeSelectionResult | undefined> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         const summary = this.gridController.summarizeSelection(
-          JSON.stringify(message.selection),
+          JSON.stringify(message.selection, bigIntReplacer),
           BigInt(message.decimalPlaces)
         );
         if (summary) {
-          const result = {
-            count: Number(summary.count),
-            sum: summary.sum,
-            average: summary.average,
-          };
-          summary.free();
-          resolve(result);
+          resolve(JSON.parse(summary));
         } else {
           resolve(undefined);
         }
