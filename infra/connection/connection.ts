@@ -21,7 +21,7 @@ const appService = new awsx.ecs.FargateService("connection-fargate-service", {
   taskDefinitionArgs: {
     container: {
       name: "app",
-      image: ` ${ecrRegistryUrl}/${connectionECRName}:${dockerImageTag}`,
+      image: `${ecrRegistryUrl}/${connectionECRName}:${dockerImageTag}`,
       memory: 512,
       cpu: 2,
       portMappings: [{ hostPort: 80 }],
