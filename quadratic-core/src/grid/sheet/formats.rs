@@ -98,7 +98,7 @@ impl Sheet {
         }
         old_formats
 
-        // need to trigger client changes
+        // todo: need to trigger client changes
     }
 
     /// Sets the Formats for columns and returns existing Formats for columns.
@@ -118,7 +118,7 @@ impl Sheet {
                 self.formats_columns.insert(*x, format);
             }
 
-            // need to trigger client changes
+            // todo: need to trigger client changes
         });
         old_formats
     }
@@ -140,7 +140,7 @@ impl Sheet {
                 self.formats_rows.insert(*y, format);
             }
 
-            // need to trigger client changes
+            // todo: need to trigger client changes
         });
         old_formats
     }
@@ -167,7 +167,7 @@ impl Sheet {
             }
         });
 
-        // need to trigger client changes
+        // todo: need to trigger client changes
 
         old_formats
     }

@@ -28,8 +28,7 @@ const canvasIsTarget = () => {
 export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   if (!canvasIsTarget()) return;
   debugTimeReset();
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  const { plainText, html } = await quadraticCore.copyToClipboard(sheets.sheet.id, rectangle);
+  const { plainText, html } = await quadraticCore.copyToClipboard(sheets.getRustSelection());
   toClipboard(plainText, html);
   e.preventDefault();
   debugTimeCheck('copy to clipboard');
@@ -39,12 +38,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!canvasIsTarget()) return;
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  const { plainText, html } = await quadraticCore.cutToClipboard(
-    sheets.sheet.id,
-    rectangle,
-    sheets.getCursorPosition()
-  );
+  const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
   toClipboard(plainText, html);
   e.preventDefault();
   debugTimeCheck('[Clipboard] cut to clipboard');
@@ -58,7 +52,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
     console.warn('clipboardData is not defined');
     return;
   }
-  const cursor = sheets.sheet.cursor.originPosition;
+  const cursor = sheets.sheet.cursor.getCursor();
   let html: string | undefined;
   let plainText: string | undefined;
 
@@ -113,18 +107,14 @@ const toClipboard = (plainText: string, html: string) => {
 export const cutToClipboard = async () => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
   debugTimeReset();
-  const { plainText, html } = await quadraticCore.cutToClipboard(
-    sheets.sheet.id,
-    sheets.sheet.cursor.getRectangle(),
-    sheets.getCursorPosition()
-  );
+  const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
   toClipboard(plainText, html);
   debugTimeCheck('cut to clipboard (fallback)');
 };
 
 export const copyToClipboard = async () => {
   debugTimeReset();
-  const { plainText, html } = await quadraticCore.copyToClipboard(sheets.sheet.id, sheets.sheet.cursor.getRectangle());
+  const { plainText, html } = await quadraticCore.copyToClipboard(sheets.getRustSelection());
   toClipboard(plainText, html);
   debugTimeCheck('copy to clipboard');
 };
@@ -158,8 +148,8 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
 
 export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
-  const target = sheets.sheet.cursor.originPosition;
 
+  const target = sheets.sheet.cursor.getCursor();
   if (fullClipboardSupport()) {
     const clipboardData = await navigator.clipboard.read();
 
@@ -178,7 +168,6 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
       const item = await htmlItem.getType('text/html');
       html = await item.text();
     }
-
     quadraticCore.pasteFromClipboard({
       sheetId: sheets.sheet.id,
       x: target.x,

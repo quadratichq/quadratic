@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { CellAlign, CellFormatSummary, GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -63,10 +63,6 @@ export class Sheet {
     }
   }
 
-  deleteCells(rectangle: Rectangle) {
-    quadraticCore.deleteCellValues(this.id, rectangle, sheets.getCursorPosition());
-  }
-
   updateSheetInfo(info: SheetInfo) {
     this.name = info.name;
     this.order = info.order;
@@ -96,73 +92,6 @@ export class Sheet {
       Number(bounds.max.y) - Number(bounds.min.y)
     );
   }
-
-  //#region set grid information
-
-  setCellFillColor(rectangle: Rectangle, fillColor?: string) {
-    quadraticCore.setCellFillColor(this.id, rectangle, fillColor, sheets.getCursorPosition());
-  }
-
-  setCellBold(rectangle: Rectangle, bold: boolean) {
-    quadraticCore.setCellBold(this.id, rectangle, bold, sheets.getCursorPosition());
-  }
-
-  setCellItalic(rectangle: Rectangle, italic: boolean): void {
-    quadraticCore.setCellItalic(this.id, rectangle, italic, sheets.getCursorPosition());
-  }
-
-  setCellTextColor(rectangle: Rectangle, color?: string): void {
-    quadraticCore.setCellTextColor(this.id, rectangle, color, sheets.getCursorPosition());
-  }
-
-  setCellAlign(rectangle: Rectangle, align?: CellAlign): void {
-    quadraticCore.setCellAlign(this.id, rectangle, align, sheets.getCursorPosition());
-  }
-
-  setCurrency(rectangle: Rectangle, symbol: string = '$') {
-    quadraticCore.setCellCurrency(this.id, rectangle, symbol, sheets.getCursorPosition());
-  }
-
-  toggleCommas(source: Coordinate, rectangle: Rectangle) {
-    quadraticCore.toggleCommas(this.id, source, rectangle, sheets.getCursorPosition());
-  }
-
-  setPercentage(rectangle: Rectangle) {
-    quadraticCore.setCellPercentage(this.id, rectangle, sheets.getCursorPosition());
-  }
-
-  setExponential(rectangle: Rectangle) {
-    quadraticCore.setCellExponential(this.id, rectangle, sheets.getCursorPosition());
-  }
-
-  removeCellNumericFormat(rectangle: Rectangle) {
-    quadraticCore.removeCellNumericFormat(this.id, rectangle, sheets.getCursorPosition());
-  }
-
-  changeDecimals(delta: number): void {
-    quadraticCore.changeDecimalPlaces(
-      this.id,
-      this.cursor.originPosition.x,
-      this.cursor.originPosition.y,
-      this.cursor.getRectangle(),
-      delta,
-      sheets.getCursorPosition()
-    );
-  }
-
-  clearFormatting(): void {
-    quadraticCore.clearFormatting(this.id, this.cursor.getRectangle());
-  }
-
-  async getFormatPrimaryCell(): Promise<CellFormatSummary> {
-    return await quadraticCore.getCellFormatSummary(
-      this.id,
-      this.cursor.originPosition.x,
-      this.cursor.originPosition.y
-    );
-  }
-
-  //#endregion
 
   //#region Offsets
 

@@ -1,68 +1,63 @@
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 import { CellAlignment } from '../../../../schemas';
 
-export const setFillColor = (color?: ColorResult): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setCellFillColor(rectangle, color ? convertReactColorToString(color) : undefined);
+export const setFillColor = (color?: ColorResult) => {
+  quadraticCore.setCellFillColor(sheets.getRustSelection(), color ? convertReactColorToString(color) : undefined);
 };
 
-export const setBold = (bold: boolean): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setCellBold(rectangle, bold);
+export const setBold = (bold: boolean) => {
+  quadraticCore.setCellBold(sheets.getRustSelection(), bold, sheets.getCursorPosition());
 };
 
-export const setItalic = (italic: boolean): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setCellItalic(rectangle, italic);
+export const setItalic = (italic: boolean) => {
+  quadraticCore.setCellItalic(sheets.getRustSelection(), italic, sheets.getCursorPosition());
 };
 
-export const setTextColor = (rgb?: ColorResult): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setCellTextColor(rectangle, rgb ? convertReactColorToString(rgb) : undefined);
+export const setTextColor = (rgb?: ColorResult) => {
+  quadraticCore.setCellTextColor(
+    sheets.getRustSelection(),
+    rgb ? convertReactColorToString(rgb) : undefined,
+    sheets.getCursorPosition()
+  );
 };
 
-export const setAlignment = (alignment: CellAlignment): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setCellAlign(rectangle, alignment);
+export const setAlignment = (alignment: CellAlignment) => {
+  quadraticCore.setCellAlign(sheets.getRustSelection(), alignment, sheets.getCursorPosition());
 };
 
-export const textFormatIncreaseDecimalPlaces = (): void => {
-  sheets.sheet.changeDecimals(1);
+export const textFormatIncreaseDecimalPlaces = () => {
+  quadraticCore.changeDecimalPlaces(sheets.getRustSelection(), 1, sheets.getCursorPosition());
 };
 
-export const textFormatDecreaseDecimalPlaces = (): void => {
-  sheets.sheet.changeDecimals(-1);
+export const textFormatDecreaseDecimalPlaces = () => {
+  quadraticCore.changeDecimalPlaces(sheets.getRustSelection(), -1, sheets.getCursorPosition());
 };
 
-export const toggleCommas = (): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.toggleCommas(sheets.sheet.cursor.originPosition, rectangle);
+export const toggleCommas = () => {
+  quadraticCore.toggleCommas(sheets.getRustSelection(), sheets.getCursorPosition());
 };
 
-export const textFormatSetCurrency = (): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setCurrency(rectangle);
+export const textFormatSetCurrency = (currency = '$') => {
+  quadraticCore.setCellCurrency(sheets.getRustSelection(), currency, sheets.getCursorPosition());
 };
 
-export const textFormatSetPercentage = (): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setPercentage(rectangle);
+export const textFormatSetPercentage = () => {
+  quadraticCore.setCellPercentage(sheets.getRustSelection(), sheets.getCursorPosition());
 };
 
-export const removeCellNumericFormat = (): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.removeCellNumericFormat(rectangle);
+export const removeCellNumericFormat = () => {
+  quadraticCore.removeCellNumericFormat(sheets.getRustSelection(), sheets.getCursorPosition());
 };
 
-export const textFormatSetExponential = (): void => {
-  const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setExponential(rectangle);
+export const textFormatSetExponential = () => {
+  quadraticCore.setCellExponential(sheets.getRustSelection(), sheets.getCursorPosition());
 };
 
 export const clearFormatting = () => {
-  sheets.sheet.clearFormatting();
+  quadraticCore.clearFormatting(sheets.getRustSelection(), sheets.getCursorPosition());
 };
 
 export const clearFormattingAndBorders = () => {

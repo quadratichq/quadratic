@@ -121,13 +121,13 @@ pub struct Sheet {
 
     // The following skips are necessary since we're adding it mid-version. Next
     // version we should remove them.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub formats_all: Option<Format>,
 
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub formats_columns: Vec<(i64, Format)>,
 
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub formats_rows: Vec<(i64, Format)>,
 }
 

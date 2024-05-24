@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { SheetInfo } from '@/app/quadratic-core-types';
+import { Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
@@ -276,6 +276,10 @@ class Sheets {
 
   getMultiplayerSelection(): string {
     return this.sheet.cursor.getMultiplayerSelection();
+  }
+
+  getRustSelection(): Selection {
+    return this.sheet.cursor.getRustSelection();
   }
 }
 

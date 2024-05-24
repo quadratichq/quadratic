@@ -142,6 +142,15 @@ export class SheetCursor {
     return this.cursorPosition;
   }
 
+  // Gets all cursor Rectangles (either multiCursor or single cursor)
+  getRectangles(): Rectangle[] {
+    if (this.multiCursor) {
+      return this.multiCursor;
+    } else {
+      return [new Rectangle(this.cursorPosition.x, this.cursorPosition.y, 1, 1)];
+    }
+  }
+
   getRustSelection(): Selection {
     const sheet_id = { id: this.sheetId };
     const columns = this.columnRow?.columns ? this.columnRow.columns.map((x) => BigInt(x)) : null;

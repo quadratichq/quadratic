@@ -64,16 +64,7 @@ export class PointerCellMoving {
     if (this.state !== 'move' || !this.moving) {
       throw new Error('Expected moving to be defined in completeMove');
     }
-    quadraticCore.moveCells(
-      this.moving.column,
-      this.moving.row,
-      this.moving.width,
-      this.moving.height,
-      sheets.sheet.id,
-      this.moving.toColumn,
-      this.moving.toRow,
-      sheets.sheet.id
-    );
+    quadraticCore.moveCells(sheets.getRustSelection(), this.moving.toColumn, this.moving.toRow, sheets.sheet.id);
   }
 
   private reset() {
@@ -163,14 +154,19 @@ export class PointerCellMoving {
 
   private pointerMoveHover(world: Point): boolean {
     const sheet = sheets.sheet;
-    const origin = sheet.cursor.originPosition;
+    const rectangles = sheet.cursor.getRectangles();
+
+    // we do not move if there are multiple rectangles (for now)
+    if (rectangles.length > 1) return false;
+    const rectangle = rectangles[0];
+
+    const origin = sheet.cursor.getCursor();
     const column = origin.x;
     const row = origin.y;
 
     const overlap = this.moveOverlaps(world);
     if (overlap) {
       this.state = 'hover';
-      const rectangle = sheet.cursor.getRectangle();
       const screenRectangle = pixiApp.cursor.cursorRectangle;
       if (!screenRectangle) return false;
       let adjustX = 0,

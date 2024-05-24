@@ -61,7 +61,6 @@ export class Cursor extends Graphics {
       : 0;
     this.indicator.width = this.indicator.height = indicatorSize;
     const indicatorPadding = Math.max(INDICATOR_PADDING / viewport.scale.x, 1);
-    const cursorPosition = cursor.cursorPosition;
     let indicatorOffset = 0;
 
     // showInput changes after cellEdit is removed from DOM
@@ -74,11 +73,7 @@ export class Cursor extends Graphics {
         setTimeout(() => (this.dirty = true), 0);
       }
     } else {
-      if (
-        !cursor.multiCursor ||
-        (cursor.multiCursor.terminalPosition.x === cursorPosition.x &&
-          cursor.multiCursor.terminalPosition.y === cursorPosition.y)
-      ) {
+      if (!cursor.multiCursor || cursor.multiCursor.length === 1) {
         indicatorOffset = indicatorSize / 2 + indicatorPadding;
       }
     }
@@ -127,15 +122,20 @@ export class Cursor extends Graphics {
     if (cursor.multiCursor) {
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
       this.beginFill(colors.cursorCell, FILL_ALPHA);
-      this.startCell = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
-      this.endCell = sheet.getCellOffsets(cursor.terminalPosition.x, cursor.terminalPosition.y);
-      this.cursorRectangle = new Rectangle(
-        this.startCell.x,
-        this.startCell.y,
-        this.endCell.x + this.endCell.width - this.startCell.x,
-        this.endCell.y + this.endCell.height - this.startCell.y
-      );
-      this.drawShape(this.cursorRectangle);
+      cursor.multiCursor.forEach((cursor) => {
+        const { x, y, width, height } = sheet.getCellOffsets(cursor.x, cursor.y);
+        this.drawRect(x, y, width, height);
+      });
+      // this.startCell = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
+      // this.endCell = sheet.getCellOffsets(cursor.terminalPosition.x, cursor.terminalPosition.y);
+      // this.cursorRectangle = new Rectangle(
+      //   this.startCell.x,
+      //   this.startCell.y,
+      //   this.endCell.x + this.endCell.width - this.startCell.x,
+      //   this.endCell.y + this.endCell.height - this.startCell.y
+      // );
+      // this.drawShape(this.cursorRectangle);
+      this.endFill();
     } else {
       this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
@@ -150,9 +150,9 @@ export class Cursor extends Graphics {
 
   private drawCursorHole() {
     const sheet = sheets.sheet;
-    const cursor = sheet.cursor;
+    const cursor = sheet.cursor.getCursor();
     const visible = pixiApp.viewport.getVisibleBounds();
-    const hole = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
+    const hole = sheet.getCellOffsets(cursor.x, cursor.y);
 
     // need to ensure the hole is contained by the screen rect, otherwise we get
     // weird visual artifacts.
@@ -168,8 +168,8 @@ export class Cursor extends Graphics {
 
   private drawCursorOutline() {
     const sheet = sheets.sheet;
-    const cursor = sheet.cursor;
-    const outline = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
+    const cursor = sheet.cursor.getCursor();
+    const outline = sheet.getCellOffsets(cursor.x, cursor.y);
     this.lineStyle(1, colors.cursorCell, 1, 0, true);
     this.drawRect(outline.x, outline.y, outline.width, outline.height);
   }
