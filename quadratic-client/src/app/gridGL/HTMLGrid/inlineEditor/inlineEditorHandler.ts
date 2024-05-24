@@ -155,10 +155,11 @@ class InlineEditorHandler {
       }
       this.open = true;
       const sheet = sheets.sheet;
+      const cursor = sheet.cursor.getCursor();
       this.location = {
         sheetId: sheet.id,
-        x: sheet.cursor.originPosition.x,
-        y: sheet.cursor.originPosition.y,
+        x: cursor.x,
+        y: cursor.y,
       };
       let value: string;
       let changeToFormula = false;

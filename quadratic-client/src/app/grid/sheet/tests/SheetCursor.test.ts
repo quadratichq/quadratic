@@ -1,5 +1,6 @@
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
+import { Rectangle } from 'pixi.js';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 let sheetCursor: SheetCursor;
@@ -35,10 +36,7 @@ describe('SheetCursor.getRustSelection', () => {
   });
 
   it('multi cursor', () => {
-    sheetCursor.changePosition(
-      { multiCursor: { originPosition: { x: 1, y: 2 }, terminalPosition: { x: 3, y: 4 } } },
-      true
-    );
+    sheetCursor.changePosition({ multiCursor: [new Rectangle(1, 2, 3, 3)] });
     const selection = sheetCursor.getRustSelection();
     expect(selection).toEqual({
       sheet_id: { id: sheet.id },

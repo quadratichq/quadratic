@@ -664,12 +664,14 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setCellRenderResize(sheetId: string, x: number, y: number) {
+  setCellRenderResize(sheetId: string, x: number, y: number, width: number, height: number) {
     this.send({
       type: 'clientCoreSetCellRenderResize',
       sheetId,
       x,
       y,
+      width,
+      height,
       cursor: sheets.getCursorPosition(),
     });
   }

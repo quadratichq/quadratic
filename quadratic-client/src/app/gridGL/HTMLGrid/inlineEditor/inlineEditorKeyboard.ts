@@ -143,10 +143,11 @@ class InlineEditorKeyboard {
     // trigger cell type menu
     else if (e.code === 'Slash' && inlineEditorMonaco.get().length === 0) {
       pixiAppSettings.changeInput(false);
+      const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
         showCellTypeMenu: true,
-        selectedCell: { x: sheets.sheet.cursor.originPosition.x, y: sheets.sheet.cursor.originPosition.y },
+        selectedCell: { x: cursor.x, y: cursor.y },
         selectedCellSheet: sheets.sheet.id,
       });
       e.preventDefault();

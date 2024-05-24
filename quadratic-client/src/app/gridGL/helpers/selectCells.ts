@@ -1,17 +1,17 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 
 export function selectAllCells() {
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
+
+  // if we've already selected all, then select the content within the sheet
   if (cursor.columnRow?.all) {
     const bounds = sheet.getBounds(true);
     if (bounds) {
       cursor.changePosition({
-        multiCursor: {
-          originPosition: { x: bounds.left, y: bounds.top },
-          terminalPosition: { x: bounds.right, y: bounds.bottom },
-        },
+        multiCursor: [new Rectangle(bounds.left, bounds.top, bounds.right, bounds.bottom)],
         cursorPosition: { x: bounds.left, y: bounds.top },
       });
     } else {
@@ -25,60 +25,48 @@ export function selectAllCells() {
   }
 }
 
-export async function selectColumns(start: number, end: number) {
+export async function selectColumns(columns: number[]) {
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
   const columnRow = cursor.columnRow;
-  if (columnRow?.columns && columnRow.columns[0] === start && columnRow.columns[0] === end) {
-    const bounds = await quadraticCore.getColumnsBounds(sheet.id, start, end, true);
+
+  // if second selection of same [column] then select content within column
+  if (columnRow?.columns && columnRow.columns.length === 1 && columnRow.columns[0] === columns[0]) {
+    const bounds = await quadraticCore.getColumnsBounds(sheet.id, columns[0], columns[0], true);
     if (bounds) {
       cursor.changePosition({
-        cursorPosition: { x: start, y: bounds.min },
-        multiCursor: {
-          originPosition: { x: Math.min(start, end), y: bounds.min },
-          terminalPosition: { x: Math.max(start, end), y: bounds.max },
-        },
+        cursorPosition: { x: columns[0], y: bounds.min },
+        multiCursor: [new Rectangle(columns[0], bounds.min, columns[0], bounds.max)],
       });
     } else {
       cursor.changePosition({
-        cursorPosition: { x: start, y: 0 },
+        cursorPosition: { x: columns[0], y: 0 },
       });
     }
   } else {
-    const columns = Array.from(
-      { length: Math.max(start, end) - Math.min(start, end) + 1 },
-      (_, i) => Math.min(start, end) + i
-    );
-    const y = cursor.cursorPosition.x === start ? cursor.cursorPosition.y : 0;
-    cursor.changePosition({ cursorPosition: { x: start, y }, columnRow: { columns } });
+    cursor.changePosition({ columnRow: { columns } });
   }
 }
 
-export async function selectRows(start: number, end: number): Promise<void> {
+export async function selectRows(rows: number[]): Promise<void> {
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
   const columnRow = cursor.columnRow;
-  if (columnRow?.rows && columnRow.rows[0] === start && columnRow.rows[0] === end) {
-    const bounds = await quadraticCore.getRowsBounds(sheet.id, start, end, true);
+
+  // if second selection of same [row] then select content within row
+  if (columnRow?.rows && columnRow.rows[0] === rows[0] && columnRow.rows[0] === rows[0]) {
+    const bounds = await quadraticCore.getRowsBounds(sheet.id, rows[0], rows[0], true);
     if (bounds) {
       sheet.cursor.changePosition({
-        cursorPosition: { x: bounds.min, y: start },
-        multiCursor: {
-          originPosition: { x: bounds.min, y: Math.min(start, end) },
-          terminalPosition: { x: bounds.max, y: Math.max(start, end) },
-        },
+        cursorPosition: { x: bounds.min, y: rows[0] },
+        multiCursor: [new Rectangle(bounds.min, rows[0], bounds.max, rows[0])],
       });
     } else {
       sheet.cursor.changePosition({
-        cursorPosition: { x: 0, y: start },
+        cursorPosition: { x: 0, y: rows[0] },
       });
     }
   } else {
-    const rows = Array.from(
-      { length: Math.max(start, end) - Math.min(start, end) + 1 },
-      (_, i) => Math.min(start, end) + i
-    );
-    const x = cursor.cursorPosition.y === start ? cursor.cursorPosition.x : 0;
-    cursor.changePosition({ cursorPosition: { x, y: start }, columnRow: { rows } });
+    cursor.changePosition({ columnRow: { rows } });
   }
 }

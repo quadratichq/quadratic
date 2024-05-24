@@ -396,6 +396,8 @@ export interface ClientCoreSetCellRenderResize {
   sheetId: string;
   x: number;
   y: number;
+  width: number;
+  height: number;
   cursor: string;
 }
 

@@ -1,7 +1,6 @@
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -21,15 +20,8 @@ function inCodeEditor(editorInteractionState: EditorInteractionState, cursor: Sh
   }
 
   // selectedCell is inside multi-cursor
-  if (cursor.multiCursor) {
-    if (
-      selectedX >= cursor.originPosition.x &&
-      selectedX <= cursor.terminalPosition.x &&
-      selectedY >= cursor.originPosition.y &&
-      selectedY <= cursor.terminalPosition.y
-    ) {
-      return true;
-    }
+  if (cursor.multiCursor?.some((cursor) => cursor.contains(selectedX, selectedY))) {
+    return true;
   }
   return false;
 }
@@ -86,14 +78,7 @@ export async function keyboardCell(options: {
   if (event.key === 'Backspace' || event.key === 'Delete') {
     if (!inCodeEditor(editorInteractionState, cursor)) {
       // delete a range or a single cell, depending on if MultiCursor is active
-      sheet.deleteCells(
-        new Rectangle(
-          cursor.originPosition.x,
-          cursor.originPosition.y,
-          cursor.terminalPosition.x - cursor.originPosition.x,
-          cursor.terminalPosition.y - cursor.originPosition.y
-        )
-      );
+      quadraticCore.deleteCellValues(sheets.getRustSelection(), sheets.getCursorPosition());
     }
     event.preventDefault();
   }
