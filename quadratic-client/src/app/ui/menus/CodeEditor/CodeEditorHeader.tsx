@@ -128,7 +128,6 @@ export const CodeEditorHeader = (props: Props) => {
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-warning after:content-['']`
         )}
       >
-        {/* TODO: (connections) language might be MYSQL which we don't want. We want the pretty name */}
         <TooltipHint title={`${codeCell?.label}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
           <div className="flex items-center">
             <LanguageIcon language={codeCell?.id} fontSize="small" />

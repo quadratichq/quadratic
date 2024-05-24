@@ -35,6 +35,7 @@ export function Console(props: ConsoleProps) {
     editorContent,
     evaluationResult,
     spillError,
+    codeEditorPanelData,
     codeEditorPanelData: { panelPosition, setPanelPosition, panelHeightPercentages },
   } = props;
   const { isAuthenticated } = useRootRouteLoaderData();
@@ -98,10 +99,7 @@ export function Console(props: ConsoleProps) {
           )}
           style={panelPosition === 'left' ? { height: panelHeightPercentages[0] + '%' } : {}}
         >
-          {/* Only visible when panel is on the left */}
-          {panelPosition === 'left' && (
-            <Type className={cn('flex items-center gap-2 px-3 py-3', consoleBadgeSharedClasses)}>Console</Type>
-          )}
+          <SidePanelHeader codeEditorPanelData={codeEditorPanelData}>Console</SidePanelHeader>
           <ConsoleOutput {...props} />
         </TabsContent>
 
@@ -122,9 +120,7 @@ export function Console(props: ConsoleProps) {
               : {}
           }
         >
-          {panelPosition === 'left' && (
-            <Type className={cn(`gap-2 px-3 py-3`, consoleBadgeSharedClasses)}>AI assistant</Type>
-          )}
+          <SidePanelHeader codeEditorPanelData={codeEditorPanelData}>AI assistant</SidePanelHeader>
 
           {isAuthenticated ? (
             <AiAssistant
@@ -155,9 +151,7 @@ export function Console(props: ConsoleProps) {
             )}
             style={panelPosition === 'left' ? { height: panelHeightPercentages[2] + '%' } : {}}
           >
-            {panelPosition === 'left' && (
-              <Type className={cn(`gap-2 px-3 py-3`, consoleBadgeSharedClasses)}>Data browser</Type>
-            )}
+            <SidePanelHeader codeEditorPanelData={codeEditorPanelData}>Data browser</SidePanelHeader>
             {/* TODO: (connections) permissions */}
             <SchemaViewer />
           </TabsContent>
@@ -165,6 +159,18 @@ export function Console(props: ConsoleProps) {
       </Tabs>
     </>
   );
+}
+
+function SidePanelHeader({
+  codeEditorPanelData,
+  children,
+}: {
+  codeEditorPanelData: CodeEditorPanelData;
+  children: React.ReactNode;
+}) {
+  return codeEditorPanelData.panelPosition === 'left' ? (
+    <Type className={'gap-2 px-3 py-3 pb-2 font-medium'}>{children}</Type>
+  ) : null;
 }
 
 export function ConsoleOutput({
