@@ -73,9 +73,10 @@ impl GridController {
         selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.remove_number_formatting(selection, cursor);
-        Ok(())
+        todo!();
+        // let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        // self.remove_number_formatting(selection, cursor);
+        // Ok(())
     }
 
     /// Sets cells numeric_format to currency

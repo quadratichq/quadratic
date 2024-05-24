@@ -28,6 +28,7 @@ mod bounds;
 mod code_run;
 mod column;
 pub mod file;
+pub mod formats;
 pub mod formatting;
 mod ids;
 pub mod js_types;

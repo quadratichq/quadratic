@@ -201,13 +201,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> (String, String) {
         let (ops, plain_text, html) = self.cut_to_clipboard_operations(sheet_rect);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::CutClipboard,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::CutClipboard);
         (plain_text, html)
     }
 
@@ -222,38 +216,20 @@ impl GridController {
         // first try html
         if let Some(html) = html {
             if let Ok(ops) = self.paste_html_operations(dest_pos, html, special) {
-                return self.start_user_transaction(
-                    ops,
-                    cursor,
-                    TransactionName::PasteClipboard,
-                    Some(dest_pos.sheet_id),
-                    Some(Rect::single_pos(dest_pos.into())),
-                );
+                return self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
             }
         }
         // if not quadratic html, then use the plain text
         // first try html
         if let Some(plain_text) = plain_text {
             let ops = self.paste_plain_text_operations(dest_pos, plain_text, special);
-            self.start_user_transaction(
-                ops,
-                cursor,
-                TransactionName::PasteClipboard,
-                Some(dest_pos.sheet_id),
-                Some(Rect::single_pos(dest_pos.into())),
-            );
+            self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
         }
     }
 
     pub fn move_cells(&mut self, source: SheetRect, dest: SheetPos, cursor: Option<String>) {
         let ops = self.move_cells_operations(source, dest);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::PasteClipboard,
-            Some(source.sheet_id),
-            Some(source.into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
     }
 }
 

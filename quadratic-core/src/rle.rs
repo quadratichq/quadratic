@@ -16,6 +16,15 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
             _ => self.0.push((value, 1)),
         }
     }
+    pub fn push_n(&mut self, value: T, len: usize) {
+        if len == 0 {
+            return;
+        }
+        match self.0.last_mut() {
+            Some((old_value, old_len)) if *old_value == value => *old_len += len,
+            _ => self.0.push((value, len)),
+        }
+    }
     pub fn iter_runs(&self) -> impl Iterator<Item = (&T, usize)> {
         self.0.iter().map(|(value, len)| (value, *len))
     }
@@ -34,5 +43,23 @@ impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
             ret.push(it);
         }
         ret
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn push_n() {
+        let mut rle = super::RunLengthEncoding::new();
+        rle.push_n(1, 0);
+        assert_eq!(rle.0, vec![]);
+        rle.push_n(1, 1);
+        assert_eq!(rle.0, vec![(1, 1)]);
+        rle.push_n(1, 2);
+        assert_eq!(rle.0, vec![(1, 3)]);
+        rle.push_n(2, 1);
+        assert_eq!(rle.0, vec![(1, 3), (2, 1)]);
+        rle.push_n(2, 2);
+        assert_eq!(rle.0, vec![(1, 3), (2, 3)]);
     }
 }

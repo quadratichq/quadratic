@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cell_values::CellValues,
-    grid::{formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
+    grid::{formats::Formats, formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
+    selection::Selection,
     SheetPos, SheetRect,
 };
 
@@ -21,18 +22,18 @@ pub enum Operation {
     ComputeCode {
         sheet_pos: SheetPos,
     },
+
+    // Deprecated. Use SetCellFormatsSelection instead.
     SetCellFormats {
         sheet_rect: SheetRect,
         attr: CellFmtArray,
     },
-    SetCellFormatsRects {
-        sheet_rects: Vec<SheetRect>,
-        attr: CellFmtArray,
+
+    SetCellFormatsSelection {
+        selection: Selection,
+        formats: Formats,
     },
-    SetCellFormatsColumnsRows {
-        columns: Option<Vec<i64>>,
-        rows: Option<Vec<i64>>,
-    },
+
     SetBorders {
         sheet_rect: SheetRect,
         borders: SheetBorders,
@@ -119,6 +120,13 @@ impl fmt::Display for Operation {
                 sheet_pos, run, index
             ),
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
+            Operation::SetCellFormatsSelection { selection, formats } => {
+                write!(
+                    fmt,
+                    "SetCellFormatsSelection {{ selection: {:?} formats: {:?} }}",
+                    selection, formats
+                )
+            }
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),
             Operation::DeleteSheet { sheet_id } => {
                 write!(fmt, "DeleteSheet {{ sheet_id: {} }}", sheet_id)

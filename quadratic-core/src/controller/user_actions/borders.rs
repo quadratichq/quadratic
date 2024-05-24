@@ -12,13 +12,7 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.set_borders_operations(sheet_rect, selections, style);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetBorders,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetBorders);
     }
 }
 

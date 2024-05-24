@@ -19,13 +19,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.autocomplete_operations(sheet_id, selection, range)?;
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::Autocomplete,
-            Some(sheet_id),
-            Some(range),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::Autocomplete);
         Ok(())
     }
 }

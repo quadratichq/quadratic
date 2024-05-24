@@ -24,6 +24,9 @@ impl GridController {
                 Operation::SetCodeRun { .. } => self.execute_set_code_run(transaction, op),
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::SetCellFormats { .. } => self.execute_set_cell_formats(transaction, op),
+                Operation::SetCellFormatsSelection { .. } => {
+                    self.execute_set_cell_formats_selection(transaction, op)
+                }
                 Operation::SetBorders { .. } => self.execute_set_borders(transaction, op),
                 Operation::MoveCells { .. } => self.execute_move_cells(transaction, op),
 

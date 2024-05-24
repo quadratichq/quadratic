@@ -314,6 +314,11 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     code_runs: import_code_cell_builder(&sheet)?,
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
+
+                    // TODO!!!
+                    formats_all: Default::default(),
+                    formats_columns: BTreeMap::new(),
+                    formats_rows: BTreeMap::new(),
                 };
                 new_sheet.recalculate_bounds();
                 import_borders_builder(&mut new_sheet, &mut sheet);

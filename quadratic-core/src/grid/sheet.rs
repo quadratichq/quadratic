@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use super::bounds::GridBounds;
 use super::column::Column;
+use super::formats::Format;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, FormattingSummary};
@@ -20,6 +21,7 @@ pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
 pub mod code;
+pub mod formats;
 pub mod formatting;
 pub mod rendering;
 pub mod search;
@@ -44,6 +46,15 @@ pub struct Sheet {
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
 
+    // Column/Row, and All formatting
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub formats_columns: BTreeMap<i64, Format>,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub formats_rows: BTreeMap<i64, Format>,
+
+    #[serde(skip_serializing_if = "Format::is_default")]
+    pub formats_all: Format,
+
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
 
@@ -62,6 +73,10 @@ impl Sheet {
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
             code_runs: IndexMap::new(),
+
+            formats_columns: BTreeMap::new(),
+            formats_rows: BTreeMap::new(),
+            formats_all: Format::default(),
 
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
