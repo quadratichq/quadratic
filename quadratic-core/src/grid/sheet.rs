@@ -47,13 +47,19 @@ pub struct Sheet {
     pub code_runs: IndexMap<Pos, CodeRun>,
 
     // Column/Row, and All formatting
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    #[serde(
+        skip_serializing_if = "BTreeMap::is_empty",
+        with = "crate::util::btreemap_serde"
+    )]
     pub formats_columns: BTreeMap<i64, Format>,
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    #[serde(
+        skip_serializing_if = "BTreeMap::is_empty",
+        with = "crate::util::btreemap_serde"
+    )]
     pub formats_rows: BTreeMap<i64, Format>,
 
-    #[serde(skip_serializing_if = "Format::is_default")]
-    pub formats_all: Format,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub formats_all: Option<Format>,
 
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
@@ -76,7 +82,7 @@ impl Sheet {
 
             formats_columns: BTreeMap::new(),
             formats_rows: BTreeMap::new(),
-            formats_all: Format::default(),
+            formats_all: None,
 
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,

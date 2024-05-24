@@ -9,7 +9,12 @@ use super::Sheet;
 impl Sheet {
     /// Gets existing all format in Formats form.
     fn formats_all(&self) -> Formats {
-        Formats::repeat(self.formats_all.clone(), 1)
+        Formats::repeat(
+            self.formats_all
+                .as_ref()
+                .map_or(Format::default(), |f| f.clone()),
+            1,
+        )
     }
 
     /// Gets existing Formats for columns.
@@ -85,7 +90,11 @@ impl Sheet {
     fn set_formats_all(&mut self, formats: Formats) -> Formats {
         let old_formats = self.formats_all();
         if let Some(format) = formats.get_at(0) {
-            self.formats_all = format.clone();
+            if format.is_default() {
+                self.formats_all = None;
+            } else {
+                self.formats_all = Some(format.clone());
+            }
         }
         old_formats
 
@@ -94,7 +103,7 @@ impl Sheet {
 
     /// Sets the Formats for columns and returns existing Formats for columns.
     fn set_formats_columns(&mut self, columns: &Vec<i64>, formats: Formats) -> Formats {
-        let mut old_formats = self.formats_columns(columns);
+        let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
         columns.iter().for_each(|x| {
             old_formats.push(
@@ -103,7 +112,11 @@ impl Sheet {
                     .map_or(Format::default(), |f| f.clone()),
             );
             let format = formats_iter.next().map_or(Format::default(), |f| f.clone());
-            self.formats_columns.insert(*x, format);
+            if format.is_default() {
+                self.formats_columns.remove(x);
+            } else {
+                self.formats_columns.insert(*x, format);
+            }
 
             // need to trigger client changes
         });
@@ -112,7 +125,7 @@ impl Sheet {
 
     /// Sets the Formats for rows and returns existing Formats for rows.
     fn set_formats_rows(&mut self, rows: &Vec<i64>, formats: Formats) -> Formats {
-        let mut old_formats = self.formats_rows(rows);
+        let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
         rows.iter().for_each(|y| {
             old_formats.push(
@@ -121,7 +134,11 @@ impl Sheet {
                     .map_or(Format::default(), |f| f.clone()),
             );
             let format = formats_iter.next().map_or(Format::default(), |f| f.clone());
-            self.formats_rows.insert(*y, format);
+            if format.is_default() {
+                self.formats_rows.remove(y);
+            } else {
+                self.formats_rows.insert(*y, format);
+            }
 
             // need to trigger client changes
         });
@@ -181,7 +198,7 @@ mod tests {
     };
 
     #[test]
-    fn test_set_formats_selection_rect() {
+    fn set_formats_selection_rect() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(
             Format {
@@ -238,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn test_set_formats_selection_rects() {
+    fn set_formats_selection_rects() {
         let mut sheet = Sheet::test();
         let mut formats = Formats::repeat(
             Format {
@@ -272,5 +289,143 @@ mod tests {
         );
         assert_eq!(sheet.get_formatting_value::<Bold>(Pos { x: 2, y: 2 }), None);
         assert_eq!(old_formats, Formats::repeat(Format::default(), 5));
+    }
+
+    #[test]
+    fn set_format_all() {
+        let mut sheet = Sheet::test();
+        let formats = Formats::repeat(
+            Format {
+                bold: Some(true),
+                ..Format::default()
+            },
+            1,
+        );
+        let old_formats = sheet.set_formats_all(formats);
+        assert_eq!(
+            sheet.formats_all,
+            Some(Format {
+                bold: Some(true),
+                ..Format::default()
+            })
+        );
+        assert_eq!(old_formats, Formats::repeat(Format::default(), 1));
+
+        let old_formats = sheet.set_formats_all(Formats::repeat(Format::default(), 1));
+        assert_eq!(sheet.formats_all, None);
+        assert_eq!(
+            old_formats,
+            Formats::repeat(
+                Format {
+                    bold: Some(true),
+                    ..Format::default()
+                },
+                1
+            )
+        );
+    }
+
+    #[test]
+    fn set_format_columns() {
+        let mut sheet = Sheet::test();
+        let formats = Formats::repeat(
+            Format {
+                bold: Some(true),
+                ..Format::default()
+            },
+            3,
+        );
+        let old_formats = sheet.set_formats_columns(&vec![0, 1, 2], formats);
+        assert_eq!(
+            sheet.formats_columns.get(&0),
+            Some(&Format {
+                bold: Some(true),
+                ..Format::default()
+            })
+        );
+        assert_eq!(
+            sheet.formats_columns.get(&1),
+            Some(&Format {
+                bold: Some(true),
+                ..Format::default()
+            })
+        );
+        assert_eq!(
+            sheet.formats_columns.get(&2),
+            Some(&Format {
+                bold: Some(true),
+                ..Format::default()
+            })
+        );
+        assert_eq!(sheet.formats_columns.get(&3), None);
+        assert_eq!(old_formats, Formats::repeat(Format::default(), 3));
+
+        let old_formats =
+            sheet.set_formats_columns(&vec![0, 1, 2], Formats::repeat(Format::default(), 3));
+        assert_eq!(sheet.formats_columns.get(&0), None);
+        assert_eq!(sheet.formats_columns.get(&1), None);
+        assert_eq!(sheet.formats_columns.get(&2), None);
+        assert_eq!(
+            old_formats,
+            Formats::repeat(
+                Format {
+                    bold: Some(true),
+                    ..Format::default()
+                },
+                3
+            )
+        );
+    }
+
+    #[test]
+    fn set_formats_rows() {
+        let mut sheet = Sheet::test();
+        let formats = Formats::repeat(
+            Format {
+                bold: Some(true),
+                ..Format::default()
+            },
+            3,
+        );
+        let old_formats = sheet.set_formats_rows(&vec![0, 1, 2], formats);
+        assert_eq!(
+            sheet.formats_rows.get(&0),
+            Some(&Format {
+                bold: Some(true),
+                ..Format::default()
+            })
+        );
+        assert_eq!(
+            sheet.formats_rows.get(&1),
+            Some(&Format {
+                bold: Some(true),
+                ..Format::default()
+            })
+        );
+        assert_eq!(
+            sheet.formats_rows.get(&2),
+            Some(&Format {
+                bold: Some(true),
+                ..Format::default()
+            })
+        );
+        assert_eq!(sheet.formats_rows.get(&3), None);
+        assert_eq!(old_formats, Formats::repeat(Format::default(), 3));
+
+        let old_formats =
+            sheet.set_formats_rows(&vec![0, 1, 2], Formats::repeat(Format::default(), 3));
+        assert_eq!(sheet.formats_rows.get(&0), None);
+        assert_eq!(sheet.formats_rows.get(&1), None);
+        assert_eq!(sheet.formats_rows.get(&2), None);
+        assert_eq!(
+            old_formats,
+            Formats::repeat(
+                Format {
+                    bold: Some(true),
+                    ..Format::default()
+                },
+                3
+            )
+        );
     }
 }

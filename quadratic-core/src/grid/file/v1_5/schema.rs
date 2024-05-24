@@ -95,6 +95,20 @@ pub type Offsets = v1_4::Offsets;
 pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Format {
+    pub align: Option<CellAlign>,
+    pub wrap: Option<CellWrap>,
+    pub numeric_format: Option<NumericFormat>,
+    pub numeric_decimals: Option<i16>,
+    pub numeric_commas: Option<bool>,
+    pub bold: Option<bool>,
+    pub italic: Option<bool>,
+    pub text_color: Option<String>,
+    pub fill_color: Option<String>,
+    pub render_size: Option<RenderSize>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Sheet {
     pub id: Id,
     pub name: String,
@@ -104,6 +118,17 @@ pub struct Sheet {
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
     pub code_runs: Vec<(Pos, CodeRun)>,
+
+    // The following skips are necessary since we're adding it mid-version. Next
+    // version we should remove them.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub formats_all: Option<Format>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub formats_columns: Vec<(i64, Format)>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub formats_rows: Vec<(i64, Format)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

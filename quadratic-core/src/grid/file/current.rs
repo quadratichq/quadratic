@@ -1,4 +1,5 @@
 use crate::color::Rgba;
+use crate::grid::formats::Format;
 use crate::grid::{
     block::SameValue,
     file::v1_5::schema::{self as current},
@@ -296,6 +297,50 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
     Ok(code_runs)
 }
 
+fn import_format(format: &current::Format) -> Format {
+    Format {
+        align: format.align.as_ref().map(|align| match align {
+            current::CellAlign::Left => CellAlign::Left,
+            current::CellAlign::Center => CellAlign::Center,
+            current::CellAlign::Right => CellAlign::Right,
+        }),
+        wrap: format.wrap.as_ref().map(|wrap| match wrap {
+            current::CellWrap::Wrap => CellWrap::Wrap,
+            current::CellWrap::Overflow => CellWrap::Overflow,
+            current::CellWrap::Clip => CellWrap::Clip,
+        }),
+        numeric_format: format
+            .numeric_format
+            .as_ref()
+            .map(|numeric_format| NumericFormat {
+                kind: match numeric_format.kind {
+                    current::NumericFormatKind::Number => NumericFormatKind::Number,
+                    current::NumericFormatKind::Currency => NumericFormatKind::Currency,
+                    current::NumericFormatKind::Percentage => NumericFormatKind::Percentage,
+                    current::NumericFormatKind::Exponential => NumericFormatKind::Exponential,
+                },
+                symbol: numeric_format.symbol.to_owned(),
+            }),
+        numeric_decimals: format.numeric_decimals,
+        numeric_commas: format.numeric_commas,
+        bold: format.bold,
+        italic: format.italic,
+        text_color: format.text_color.to_owned(),
+        fill_color: format.fill_color.to_owned(),
+        render_size: format.render_size.as_ref().map(|render_size| RenderSize {
+            w: render_size.w.to_owned(),
+            h: render_size.h.to_owned(),
+        }),
+    }
+}
+
+fn import_formats(format: &Vec<(i64, current::Format)>) -> BTreeMap<i64, Format> {
+    format
+        .iter()
+        .map(|(y, format)| (*y, import_format(format)))
+        .collect()
+}
+
 pub fn import(file: current::GridSchema) -> Result<Grid> {
     Ok(Grid {
         sheets: file
@@ -315,10 +360,9 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
 
-                    // TODO!!!
-                    formats_all: Default::default(),
-                    formats_columns: BTreeMap::new(),
-                    formats_rows: BTreeMap::new(),
+                    formats_all: sheet.formats_all.as_ref().map(|f| import_format(&f)),
+                    formats_columns: import_formats(&sheet.formats_columns),
+                    formats_rows: import_formats(&sheet.formats_rows),
                 };
                 new_sheet.recalculate_bounds();
                 import_borders_builder(&mut new_sheet, &mut sheet);
@@ -570,6 +614,59 @@ fn export_borders_builder(sheet: &Sheet) -> current::Borders {
         .collect()
 }
 
+fn export_format(format: &Format) -> Option<current::Format> {
+    if format.is_default() {
+        None
+    } else {
+        Some(current::Format {
+            align: format.align.map(|align| match align {
+                CellAlign::Left => current::CellAlign::Left,
+                CellAlign::Center => current::CellAlign::Center,
+                CellAlign::Right => current::CellAlign::Right,
+            }),
+            wrap: format.wrap.map(|wrap| match wrap {
+                CellWrap::Wrap => current::CellWrap::Wrap,
+                CellWrap::Overflow => current::CellWrap::Overflow,
+                CellWrap::Clip => current::CellWrap::Clip,
+            }),
+            numeric_format: format.numeric_format.as_ref().map(|numeric_format| {
+                current::NumericFormat {
+                    kind: match numeric_format.kind {
+                        NumericFormatKind::Number => current::NumericFormatKind::Number,
+                        NumericFormatKind::Currency => current::NumericFormatKind::Currency,
+                        NumericFormatKind::Percentage => current::NumericFormatKind::Percentage,
+                        NumericFormatKind::Exponential => current::NumericFormatKind::Exponential,
+                    },
+                    symbol: numeric_format.symbol.to_owned(),
+                }
+            }),
+            numeric_decimals: format.numeric_decimals,
+            numeric_commas: format.numeric_commas,
+            bold: format.bold,
+            italic: format.italic,
+            text_color: format.text_color.to_owned(),
+            fill_color: format.fill_color.to_owned(),
+            render_size: format
+                .render_size
+                .as_ref()
+                .map(|render_size| current::RenderSize {
+                    w: render_size.w.to_owned(),
+                    h: render_size.h.to_owned(),
+                }),
+        })
+    }
+}
+
+fn export_formats(formats: &BTreeMap<i64, Format>) -> Vec<(i64, current::Format)> {
+    formats
+        .iter()
+        .filter_map(|(y, format)| {
+            let f = export_format(format)?;
+            Some((*y, f))
+        })
+        .collect()
+}
+
 pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
@@ -586,6 +683,13 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                 offsets: sheet.offsets.export(),
                 columns: export_column_builder(sheet),
                 borders: export_borders_builder(sheet),
+                formats_all: sheet
+                    .formats_all
+                    .as_ref()
+                    .map(|f| export_format(&f))
+                    .flatten(),
+                formats_columns: export_formats(&sheet.formats_columns),
+                formats_rows: export_formats(&sheet.formats_rows),
                 code_runs: sheet
                     .code_runs
                     .iter()
