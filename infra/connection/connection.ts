@@ -32,7 +32,7 @@ const alb = new aws.lb.LoadBalancer("connection-alb", {
 // Create a new Target Group
 const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
   port: 80,
-  protocol: "TCP",
+  protocol: "HTTP",
   targetType: "ip",
   vpcId: vpcId,
 });
