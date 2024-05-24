@@ -65,6 +65,8 @@ const appService = new awsx.classic.ecs.FargateService("app-svc", {
   desiredCount: 1,
 });
 
+export const connectionPublicDns = web.endpoint.hostname;
+
 ////////////////////////
 
 // const cluster = new aws.ecs.Cluster("connection-cluster");
@@ -167,5 +169,3 @@ const appService = new awsx.classic.ecs.FargateService("app-svc", {
 //     },
 //   ],
 // });
-
-// export const connectionPublicDns = dnsRecord.name;
