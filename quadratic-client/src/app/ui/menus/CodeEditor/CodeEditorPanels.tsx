@@ -60,18 +60,17 @@ export const CodeEditorPanels = (props: Props) => {
               }}
               setState={(mouseEvent) => {
                 // TODO: (connections) make this work
-                console.log('fired');
-                // if (!containerRef.current) return;
+                if (!containerRef.current) return;
 
-                // const containerRect = containerRef.current?.getBoundingClientRect();
-                // const newValue = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
-                // if (newValue >= 25 && newValue <= 75) {
-                //   setPanelHeightPercentages((prev) => {
-                //     const whatsLeft = 100 - newValue;
-                //     console.log('bottom', [whatsLeft / 2, whatsLeft / 2, newValue]);
-                //     return [whatsLeft / 2, whatsLeft / 2, newValue];
-                //   });
-                // }
+                const containerRect = containerRef.current?.getBoundingClientRect();
+                const newValue = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
+                if (newValue >= 25 && newValue <= 75) {
+                  setPanelHeightPercentages((prev) => {
+                    const whatsLeft = 100 - newValue;
+                    console.log('bottom', [whatsLeft / 2, whatsLeft / 2, newValue]);
+                    return [newValue / 2, newValue / 2, whatsLeft];
+                  });
+                }
               }}
               position="HORIZONTAL"
             />
