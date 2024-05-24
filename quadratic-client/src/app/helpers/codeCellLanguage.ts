@@ -1,5 +1,29 @@
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
-import { Language } from '@/app/ui/components/LanguageIcon';
+
+const codeCellsById = {
+  Formula: { id: 'Formula', label: 'Formula' },
+  Javascript: { id: 'Javascript', label: 'JavaScript' },
+  Python: { id: 'Python', label: 'Python' },
+  POSTGRES: { id: 'POSTGRES', label: 'Postgres', type: 'connection' },
+  MYSQL: { id: 'MYSQL', label: 'MySQL', type: 'connection' },
+} as const;
+export type CodeCellIds = keyof typeof codeCellsById;
+// type CodeCell = (typeof codeCellsById)[CodeCellIds];
+
+export const getCodeCell = (language?: CodeCellLanguage) => {
+  let id: CodeCellIds | undefined = undefined;
+  if (typeof language === 'string') {
+    id = language;
+  } else if (typeof language === 'object') {
+    id = language.Connection.kind;
+  }
+
+  if (id && codeCellsById[id]) {
+    return codeCellsById[id];
+  }
+
+  return undefined;
+};
 
 export const getLanguage = (language?: CodeCellLanguage) => {
   if (typeof language === 'string') {
@@ -11,26 +35,10 @@ export const getLanguage = (language?: CodeCellLanguage) => {
   return 'Formula';
 };
 
-export const getLanguage2 = (language?: CodeCellLanguage): Language => {
-  if (typeof language === 'string') {
-    return language;
-  } else if (typeof language === 'object') {
-    return language.Connection.kind;
+export const getConnectionUuid = (language?: CodeCellLanguage): string | undefined => {
+  if (typeof language === 'object' && language.Connection) {
+    return language.Connection.id;
   }
 
-  return 'Formula';
-};
-
-export const matchLanguage = (input: CodeCellLanguage, language: string, kind?: string): boolean => {
-  if (typeof input === 'string') {
-    return input === language;
-  } else if (typeof input === 'object') {
-    if (kind) {
-      return input.Connection && input.Connection.kind === kind;
-    } else {
-      return language === 'Connection';
-    }
-  }
-
-  return false;
+  return undefined;
 };
