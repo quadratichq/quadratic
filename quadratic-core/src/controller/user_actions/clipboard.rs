@@ -120,20 +120,19 @@ impl GridController {
                     if italic {
                         style.push_str("font-style:italic;");
                     }
-                    if text_color.is_some() {
-                        if let Ok(text_color) = Rgba::from_css_str(text_color.unwrap().as_str()) {
+                    if let Some(text_color) = text_color {
+                        if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {
                             style.push_str(format!("color:{};", text_color.as_rgb_hex()).as_str());
                         }
                     }
-                    if fill_color.is_some() {
-                        if let Ok(fill_color) = Rgba::from_css_str(fill_color.unwrap().as_str()) {
+                    if let Some(fill_color) = fill_color {
+                        if let Ok(fill_color) = Rgba::from_css_str(fill_color.as_str()) {
                             style.push_str(
                                 format!("background-color:{};", fill_color.as_rgb_hex()).as_str(),
                             );
                         }
                     }
-                    if cell_border.is_some() {
-                        let cell_border = cell_border.unwrap();
+                    if let Some(cell_border) = cell_border {
                         for (side, border) in cell_border.borders.iter().enumerate() {
                             let side = match side {
                                 0 => "-left",
@@ -155,15 +154,15 @@ impl GridController {
                             }
                         }
                     }
-                    if cell_align.is_some() {
+                    if let Some(cell_align) = cell_align {
                         style.push_str(
-                            format!("text-align:{};", cell_align.unwrap())
+                            format!("text-align:{};", cell_align)
                                 .to_lowercase()
                                 .as_str(),
                         );
                     }
-                    if cell_wrap.is_some() {
-                        style.push_str(cell_wrap.unwrap().as_css_string());
+                    if let Some(cell_wrap) = cell_wrap {
+                        style.push_str(cell_wrap.as_css_string());
                     }
 
                     style.push('"');
