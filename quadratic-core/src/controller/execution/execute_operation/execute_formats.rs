@@ -85,10 +85,9 @@ impl GridController {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
                 let old_formats = sheet.set_formats_selection(&selection, &formats);
 
-                // if !transaction.is_server() {
-                //     self.send_updated_bounds_rect(&selection, true);
-                //     self.send_render_cells(&selection);
-                // }
+                if !transaction.is_server() {
+                    self.send_updated_bounds_selection(&selection, true);
+                }
 
                 transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
 

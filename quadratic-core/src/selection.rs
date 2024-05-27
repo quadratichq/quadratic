@@ -12,6 +12,7 @@ pub struct Selection {
     pub x: i64,
     pub y: i64,
 
+    // These are used instead of an Enum to make the TS conversion easier.
     pub rects: Option<Vec<Rect>>,
     pub rows: Option<Vec<i64>>,
     pub columns: Option<Vec<i64>>,

@@ -62,7 +62,6 @@ fn main() {
         grid::SheetId,
         grid::js_types::JsRenderCell,
         grid::js_types::JsRenderFill,
-        grid::js_types::FormattingSummary,
         grid::js_types::CellFormatSummary,
         grid::js_types::JsClipboard,
         ArraySize,

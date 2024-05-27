@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
+    selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     Pos, Rect, SheetPos, SheetRect,
 };
@@ -84,6 +85,22 @@ impl GridController {
 
         if cfg!(target_family = "wasm") && recalculated {
             if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
+                    crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
+                }
+            }
+        };
+    }
+
+    pub fn send_updated_bounds_selection(&mut self, selection: &Selection, format: bool) {
+        let recalculated = if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
+            sheet.recalculate_add_bounds_selection(selection, format)
+        } else {
+            false
+        };
+
+        if cfg!(target_family = "wasm") && recalculated {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
                     crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
                 }
