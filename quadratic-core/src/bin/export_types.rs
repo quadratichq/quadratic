@@ -59,7 +59,6 @@ fn main() {
         grid::CellWrap,
         grid::NumericFormat,
         grid::NumericFormatKind,
-        grid::BoolSummary,
         grid::SheetId,
         grid::js_types::JsRenderCell,
         grid::js_types::JsRenderFill,

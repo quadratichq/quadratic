@@ -1,3 +1,4 @@
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -6,13 +7,13 @@ import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebW
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
-export function keyboardViewport(options: {
+export async function keyboardViewport(options: {
   event: KeyboardEvent;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   presentationMode: boolean;
   setPresentationMode: Function;
-}): boolean {
+}): Promise<boolean> {
   const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
   const { pointer } = pixiApp;
 
@@ -101,16 +102,16 @@ export function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    sheets.sheet
-      .getFormatPrimaryCell()
-      .then((formatPrimaryCell) => setBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true)));
+    const cursor = sheets.sheet.cursor.getCursor();
+    const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y);
+    setBold(!(formatCell ? formatCell.bold === true : true));
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    sheets.sheet
-      .getFormatPrimaryCell()
-      .then((formatPrimaryCell) => setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true)));
+    const cursor = sheets.sheet.cursor.getCursor();
+    const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y);
+    setItalic(!(formatCell ? formatCell.italic === true : true));
     return true;
   }
 

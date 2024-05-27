@@ -75,7 +75,7 @@ impl GridController {
         }
     }
 
-    // Supports SetCellFormatsSelection operation.
+    /// Executes SetCellFormatsSelection operation.
     pub fn execute_set_cell_formats_selection(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -83,28 +83,29 @@ impl GridController {
     ) {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                todo!();
-                // let old_formats = sheet.cell_formats_selection(&selection);
-                // self.set_cell_formats(&selection, formats.clone());
+                let old_formats = sheet.set_formats_selection(&selection, &formats);
 
                 // if !transaction.is_server() {
                 //     self.send_updated_bounds_rect(&selection, true);
                 //     self.send_render_cells(&selection);
                 // }
 
-                // transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(&selection);
+                transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
 
-                // transaction
-                //     .forward_operations
-                //     .push(Operation::SetCellFormatsSelection { selection, formats });
+                transaction
+                    .forward_operations
+                    .push(Operation::SetCellFormatsSelection {
+                        selection: selection.clone(),
+                        formats,
+                    });
 
-                // transaction.reverse_operations.insert(
-                //     0,
-                //     Operation::SetCellFormatsSelection {
-                //         selection,
-                //         formats: old_formats,
-                //     },
-                // );
+                transaction.reverse_operations.insert(
+                    0,
+                    Operation::SetCellFormatsSelection {
+                        selection,
+                        formats: old_formats,
+                    },
+                );
             }
         }
     }

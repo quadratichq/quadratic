@@ -534,19 +534,11 @@ class Core {
     });
   }
 
-  setCellAlign(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    align?: CellAlign,
-    cursor?: string
-  ) {
+  setCellAlign(selection: Selection, align?: CellAlign, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellAlign(sheetId, pointsToRect(x, y, width, height), align, cursor);
+        this.gridController.setCellAlign(JSON.stringify(selection, bigIntReplacer), align, cursor);
         resolve(undefined);
       });
     });

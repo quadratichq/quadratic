@@ -173,4 +173,22 @@ export class SheetCursor {
       all,
     };
   }
+
+  // Returns the largest rectangle that contains all the multiCursor rectangles
+  getLargestMultiCursorRectangle(): Rectangle {
+    if (!this.multiCursor) {
+      return new Rectangle(this.cursorPosition.x, this.cursorPosition.y, 1, 1);
+    }
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    this.multiCursor.forEach((rect) => {
+      left = Math.min(left, rect.x);
+      top = Math.min(top, rect.y);
+      right = Math.max(right, rect.x + rect.width);
+      bottom = Math.max(bottom, rect.y + rect.height);
+    });
+    return new Rectangle(left, top, right - left, bottom - top);
+  }
 }

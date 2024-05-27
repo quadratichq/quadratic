@@ -1,6 +1,6 @@
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Point } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiApp } from '../../pixiApp/PixiApp';
@@ -36,11 +36,12 @@ export class PointerDown {
     // If right click and we have a multi cell selection.
     // If the user has clicked inside the selection.
     if (rightClick && cursor.multiCursor) {
+      const lastMultiCursor = cursor.multiCursor[cursor.multiCursor.length - 1];
       if (
-        column >= cursor.multiCursor.originPosition.x &&
-        column <= cursor.multiCursor.terminalPosition.x &&
-        row >= cursor.multiCursor.originPosition.y &&
-        row <= cursor.multiCursor.terminalPosition.y
+        column >= lastMultiCursor.left &&
+        column <= lastMultiCursor.right &&
+        row >= lastMultiCursor.top &&
+        row <= lastMultiCursor.bottom
       )
         // Ignore this click. User is accessing the RightClickMenu.
         return;
@@ -84,10 +85,7 @@ export class PointerDown {
 
         cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
-          multiCursor: {
-            originPosition: new Point(originX, originY),
-            terminalPosition: new Point(termX, termY),
-          },
+          multiCursor: [new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1)],
         });
       }
       return;
@@ -181,10 +179,7 @@ export class PointerDown {
         sheet.cursor.changePosition({
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
-          multiCursor: {
-            originPosition: { x: originX, y: originY },
-            terminalPosition: { x: termX, y: termY },
-          },
+          multiCursor: [new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1)],
         });
         if (!inlineEditorHandler.isEditingFormula()) {
           pixiAppSettings.changeInput(false);

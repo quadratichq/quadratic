@@ -303,15 +303,7 @@ class CoreClient {
         break;
 
       case 'clientCoreSetCellAlign':
-        await core.setCellAlign(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.align,
-          e.data.cursor
-        );
+        await core.setCellAlign(e.data.selection, e.data.align, e.data.cursor);
         break;
 
       case 'clientCoreCopyToClipboard':

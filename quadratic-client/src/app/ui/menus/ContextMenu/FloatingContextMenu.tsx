@@ -47,6 +47,7 @@ import {
   textFormatSetExponential,
   textFormatSetPercentage,
 } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
@@ -293,7 +294,11 @@ export const FloatingContextMenu = (props: Props) => {
           <IconButton
             size="small"
             onClick={async () => {
-              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
+              const formatPrimaryCell = await quadraticCore.getCellFormatSummary(
+                sheets.sheet.id,
+                sheets.sheet.cursor.cursorPosition.x,
+                sheets.sheet.cursor.cursorPosition.y
+              );
               setBold(!formatPrimaryCell?.bold);
             }}
           >
@@ -305,7 +310,11 @@ export const FloatingContextMenu = (props: Props) => {
           <IconButton
             size="small"
             onClick={async () => {
-              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
+              const formatPrimaryCell = await quadraticCore.getCellFormatSummary(
+                sheets.sheet.id,
+                sheets.sheet.cursor.cursorPosition.x,
+                sheets.sheet.cursor.cursorPosition.y
+              );
               setItalic(!formatPrimaryCell?.italic);
             }}
           >

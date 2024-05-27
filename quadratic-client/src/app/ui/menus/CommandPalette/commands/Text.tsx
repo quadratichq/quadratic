@@ -26,8 +26,8 @@ const commands: CommandGroup = {
             action={async () => {
               const summary = await quadraticCore.getCellFormatSummary(
                 sheets.sheet.id,
-                sheets.sheet.cursor.originPosition.x,
-                sheets.sheet.cursor.originPosition.y
+                sheets.sheet.cursor.cursorPosition.x,
+                sheets.sheet.cursor.cursorPosition.y
               );
               setBold(!summary.bold);
             }}
@@ -48,8 +48,8 @@ const commands: CommandGroup = {
             action={async () => {
               const summary = await quadraticCore.getCellFormatSummary(
                 sheets.sheet.id,
-                sheets.sheet.cursor.originPosition.x,
-                sheets.sheet.cursor.originPosition.y
+                sheets.sheet.cursor.cursorPosition.x,
+                sheets.sheet.cursor.cursorPosition.y
               );
               setItalic(!summary.italic);
             }}

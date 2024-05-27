@@ -22,11 +22,11 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
   if (cursor.multiCursor) {
-    const { originPosition, terminalPosition } = cursor.multiCursor;
-    column = originPosition.x;
-    row = originPosition.y;
-    width = terminalPosition.x - column;
-    height = terminalPosition.y - row;
+    const selection = cursor.getLargestMultiCursorRectangle();
+    column = selection.left;
+    row = selection.top;
+    width = selection.width;
+    height = selection.height;
   } else {
     column = cursor.cursorPosition.x;
     row = cursor.cursorPosition.y;

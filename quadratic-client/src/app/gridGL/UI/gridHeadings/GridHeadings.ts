@@ -81,12 +81,14 @@ export class GridHeadings extends Container {
     const selectedColumns: number[] = [];
     const selectedRows: number[] = [];
     if (cursor.multiCursor) {
-      for (let x = cursor.multiCursor.originPosition.x; x <= cursor.multiCursor.terminalPosition.x; x++) {
-        selectedColumns.push(x);
-      }
-      for (let y = cursor.multiCursor.originPosition.y; y <= cursor.multiCursor.terminalPosition.y; y++) {
-        selectedRows.push(y);
-      }
+      cursor.multiCursor.forEach((rectangle) => {
+        for (let x = rectangle.x; x < rectangle.x + rectangle.width; x++) {
+          selectedColumns.push(x);
+        }
+        for (let y = rectangle.y; y < rectangle.y + rectangle.height; y++) {
+          selectedRows.push(y);
+        }
+      });
     } else {
       selectedColumns.push(cursor.cursorPosition.x);
       selectedRows.push(cursor.cursorPosition.y);

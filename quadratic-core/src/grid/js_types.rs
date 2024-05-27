@@ -1,8 +1,6 @@
-use std::ops::{BitOr, BitOrAssign};
-
 use serde::{Deserialize, Serialize};
 
-use super::formatting::{BoolSummary, CellAlign, CellWrap};
+use super::formatting::{CellAlign, CellWrap};
 use super::CodeCellLanguage;
 use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
@@ -133,27 +131,6 @@ pub struct CellFormatSummary {
 
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
-}
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct FormattingSummary {
-    pub bold: BoolSummary,
-    pub italic: BoolSummary,
-}
-impl BitOr for FormattingSummary {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        FormattingSummary {
-            bold: self.bold | rhs.bold,
-            italic: self.italic | rhs.italic,
-        }
-    }
-}
-impl BitOrAssign for FormattingSummary {
-    fn bitor_assign(&mut self, rhs: Self) {
-        *self = self.clone() | rhs;
-    }
 }
 
 #[derive(Serialize, PartialEq, Debug)]

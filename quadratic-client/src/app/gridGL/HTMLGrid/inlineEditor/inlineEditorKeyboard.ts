@@ -14,7 +14,7 @@ class InlineEditorKeyboard {
 
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
-  keyDown = (e: KeyboardEvent) => {
+  keyDown = async (e: KeyboardEvent) => {
     if (inlineEditorHandler.cursorIsMoving) {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
@@ -51,7 +51,7 @@ class InlineEditorKeyboard {
       const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
-          keyboardPosition(e);
+          await keyboardPosition(e);
           e.stopPropagation();
         } else {
           const column = inlineEditorMonaco.getCursorColumn();
@@ -64,7 +64,7 @@ class InlineEditorKeyboard {
               if (isRight) {
                 inlineEditorHandler.cursorIsMoving = true;
                 inlineEditorFormula.addInsertingCells(column);
-                keyboardPosition(e);
+                await keyboardPosition(e);
               }
               e.stopPropagation();
             }
@@ -101,7 +101,7 @@ class InlineEditorKeyboard {
     else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
-          keyboardPosition(e);
+          await keyboardPosition(e);
           e.stopPropagation();
         } else {
           // if we're not moving and the formula is valid, close the editor
@@ -117,7 +117,7 @@ class InlineEditorKeyboard {
           const column = inlineEditorMonaco.getCursorColumn();
           inlineEditorFormula.addInsertingCells(column);
           inlineEditorHandler.cursorIsMoving = true;
-          keyboardPosition(e);
+          await keyboardPosition(e);
           e.stopPropagation();
         }
       } else {

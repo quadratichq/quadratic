@@ -33,7 +33,7 @@ impl SheetOffsets {
         height: i32,
     ) -> ScreenRect {
         let rect = Rect::from_numbers(column as i64, row as i64, width as i64, height as i64);
-        self.rect_cell_offsets(rect)
+        self.screen_rect_cell_offsets(rect)
     }
 
     /// gets the column width. Returns a f32

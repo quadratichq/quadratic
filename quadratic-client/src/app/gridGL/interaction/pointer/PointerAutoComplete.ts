@@ -31,19 +31,14 @@ export class PointerAutoComplete {
 
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
+    if (cursor.multiCursor && cursor.multiCursor.length > 1) return false;
+
     // handle dragging from the corner
     if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       this.active = true;
-      if (cursor.multiCursor) {
-        this.selection = new Rectangle(
-          cursor.multiCursor.originPosition.x,
-          cursor.multiCursor.originPosition.y,
-          cursor.multiCursor.terminalPosition.x - cursor.multiCursor.originPosition.x,
-          cursor.multiCursor.terminalPosition.y - cursor.multiCursor.originPosition.y
-        );
-      } else {
-        this.selection = new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 0, 0);
-      }
+      this.selection = cursor.multiCursor
+        ? cursor.multiCursor[0]
+        : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 0, 0);
       this.screenSelection = sheet.getScreenRectangle(
         this.selection.left,
         this.selection.top,
@@ -188,16 +183,7 @@ export class PointerAutoComplete {
       cursor.changePosition({});
     } else {
       sheet.cursor.changePosition({
-        multiCursor: {
-          originPosition: {
-            x: left,
-            y: top,
-          },
-          terminalPosition: {
-            x: right,
-            y: bottom,
-          },
-        },
+        multiCursor: [new Rectangle(left, top, right - left, bottom - top)],
         ensureVisible: false,
       });
     }

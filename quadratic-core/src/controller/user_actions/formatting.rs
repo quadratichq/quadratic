@@ -1,3 +1,7 @@
+//! These functions set formatting for cells. Note: these functions are
+//! deprecated in favor of formats.rs. We maintained some of the macros to
+//! ensure offline transactions continue to work.
+
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::{operations::operation::Operation, GridController};
 use crate::{
@@ -149,7 +153,7 @@ macro_rules! impl_set_cell_fmt_method {
     };
 }
 
-impl_set_cell_fmt_method!(set_cell_align<CellAlign>(CellFmtArray::Align));
+// impl_set_cell_fmt_method!(set_cell_align<CellAlign>(CellFmtArray::Align));
 impl_set_cell_fmt_method!(set_cell_wrap<CellWrap>(CellFmtArray::Wrap));
 impl_set_cell_fmt_method!(set_cell_numeric_format<NumericFormat>(CellFmtArray::NumericFormat));
 impl_set_cell_fmt_method!(set_cell_numeric_decimals<NumericDecimals>(CellFmtArray::NumericDecimals));

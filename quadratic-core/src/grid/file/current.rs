@@ -360,7 +360,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
 
-                    formats_all: sheet.formats_all.as_ref().map(|f| import_format(&f)),
+                    format_all: sheet.formats_all.as_ref().map(|f| import_format(&f)),
                     formats_columns: import_formats(&sheet.formats_columns),
                     formats_rows: import_formats(&sheet.formats_rows),
                 };
@@ -684,7 +684,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                 columns: export_column_builder(sheet),
                 borders: export_borders_builder(sheet),
                 formats_all: sheet
-                    .formats_all
+                    .format_all
                     .as_ref()
                     .map(|f| export_format(&f))
                     .flatten(),

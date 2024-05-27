@@ -221,6 +221,10 @@ impl Rect {
             max: Pos { x: max_x, y: max_y },
         }
     }
+
+    pub fn count(&self) -> usize {
+        self.width() as usize * self.height() as usize
+    }
 }
 
 impl From<SheetRect> for Rect {
@@ -769,5 +773,11 @@ mod test {
                 sheet_id
             }
         );
+    }
+
+    #[test]
+    fn count() {
+        let rect = Rect::from_numbers(1, 2, 3, 4);
+        assert_eq!(rect.count(), 12);
     }
 }

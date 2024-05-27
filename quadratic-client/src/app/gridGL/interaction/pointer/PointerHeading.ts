@@ -17,6 +17,17 @@ const MINIMUM_COLUMN_SIZE = 20;
 // minimum cell when resizing in 1 character
 const MIN_CELL_WIDTH = 10;
 
+function fillArray(start: number, end: number): number[] {
+  const result = [];
+  if (start > end) {
+    [start, end] = [end, start];
+  }
+  for (let i = start; i <= end; i++) {
+    result.push(i);
+  }
+  return result;
+}
+
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
 }
@@ -116,19 +127,20 @@ export class PointerHeading {
         if (intersects.column !== undefined) {
           let x1 = cursor.cursorPosition.x;
           let x2 = intersects.column;
-          selectColumns(x1, x2);
+
+          selectColumns(fillArray(x1, x2));
           pixiApp.cursor.dirty = true;
         } else if (intersects.row !== undefined) {
           let y1 = cursor.cursorPosition.y;
           let y2 = intersects.row;
-          selectRows(y1, y2);
+          selectRows(fillArray(y1, y2));
           pixiApp.cursor.dirty = true;
         }
       } else {
         if (intersects.column !== undefined) {
-          selectColumns(intersects.column, intersects.column);
+          selectColumns([intersects.column]);
         } else if (intersects.row !== undefined) {
-          selectRows(intersects.row, intersects.row);
+          selectRows([intersects.row]);
         }
       }
     }

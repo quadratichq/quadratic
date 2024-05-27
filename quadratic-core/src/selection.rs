@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{grid::SheetId, Rect};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Selection {
     pub sheet_id: SheetId,
@@ -16,6 +16,26 @@ pub struct Selection {
     pub rows: Option<Vec<i64>>,
     pub columns: Option<Vec<i64>>,
     pub all: bool,
+}
+
+impl Selection {
+    pub fn has_sheet_selection(&self) -> bool {
+        self.rows.is_some() || self.columns.is_some() || self.all
+    }
+
+    pub fn count(&self) -> usize {
+        if let Some(ref rects) = self.rects {
+            rects.iter().map(|r| r.count()).sum()
+        } else if let Some(ref rows) = self.rows {
+            rows.len()
+        } else if let Some(ref columns) = self.columns {
+            columns.len()
+        } else if self.all {
+            1
+        } else {
+            0
+        }
+    }
 }
 
 impl FromStr for Selection {

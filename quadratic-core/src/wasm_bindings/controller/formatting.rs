@@ -5,21 +5,6 @@ use super::*;
 #[wasm_bindgen]
 impl GridController {
     /// Returns a summary of the formatting in a region as a
-    /// [`FormattingSummary`].
-    #[wasm_bindgen(js_name = "getFormattingSummary")]
-    pub fn js_formatting_summary(
-        &self,
-        sheet_id: String,
-        region: &Rect,
-    ) -> Result<JsValue, JsValue> {
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
-            return Result::Err("Sheet not found".into());
-        };
-        let output: FormattingSummary = sheet.get_formatting_summary(*region);
-        Ok(serde_wasm_bindgen::to_value(&output)?)
-    }
-
-    /// Returns a summary of the formatting in a region as a
     /// [`CellFormatSummary`].
     #[wasm_bindgen(js_name = "getCellFormatSummary")]
     pub fn js_cell_format_summary(&self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
@@ -34,18 +19,13 @@ impl GridController {
     #[wasm_bindgen(js_name = "setCellAlign")]
     pub fn js_set_cell_align(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
-        align: JsValue,
+        selection: String,
+        align: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        if let Ok(value) = serde_wasm_bindgen::from_value(align) {
-            self.set_cell_align(rect.to_sheet_rect(sheet_id), value, cursor);
-        }
-        Ok(())
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let align = CellAlign::from_str(&align).map_err(|_| "Invalid align")?;
+        self.set_cell_align_selection(selection, align, cursor)
     }
 
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
@@ -70,8 +50,8 @@ impl GridController {
     #[wasm_bindgen(js_name = "removeCellNumericFormat")]
     pub fn js_remove_numeric_format(
         &mut self,
-        selection: String,
-        cursor: Option<String>,
+        _selection: String,
+        _cursor: Option<String>,
     ) -> Result<(), JsValue> {
         todo!();
         // let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;

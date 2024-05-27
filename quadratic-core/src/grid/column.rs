@@ -326,31 +326,6 @@ impl<T: Serialize + for<'d> Deserialize<'d> + fmt::Debug + Clone + PartialEq>
     }
 }
 
-impl ColumnData<SameValue<bool>> {
-    pub fn bool_summary(&self, y_range: Range<i64>) -> BoolSummary {
-        let mut last_block_end = y_range.start;
-        let mut ret = BoolSummary::default();
-
-        for block in self.blocks_covering_range(y_range) {
-            match block.content().value {
-                true => ret.is_any_true = true,
-                false => ret.is_any_false = true,
-            }
-
-            if block.start() > last_block_end {
-                ret.is_any_false = true;
-            }
-            last_block_end = block.end();
-
-            if ret.is_any_true && ret.is_any_false {
-                break;
-            }
-        }
-
-        ret
-    }
-}
-
 #[cfg(test)]
 mod test {
     use super::*;

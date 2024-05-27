@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 use super::bounds::GridBounds;
 use super::column::Column;
 use super::formats::Format;
-use super::formatting::{BoolSummary, CellFmtAttr};
+use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
-use super::js_types::{CellFormatSummary, FormattingSummary};
+use super::js_types::CellFormatSummary;
 use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::sheet_offsets::SheetOffsets;
@@ -59,7 +59,7 @@ pub struct Sheet {
     pub formats_rows: BTreeMap<i64, Format>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub formats_all: Option<Format>,
+    pub format_all: Option<Format>,
 
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
@@ -82,7 +82,7 @@ impl Sheet {
 
             formats_columns: BTreeMap::new(),
             formats_rows: BTreeMap::new(),
-            formats_all: None,
+            format_all: None,
 
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
@@ -240,27 +240,6 @@ impl Sheet {
         } else {
             None
         }
-    }
-
-    /// Returns a summary of formatting in a region.
-    pub fn get_formatting_summary(&self, region: Rect) -> FormattingSummary {
-        let mut bold = BoolSummary::default();
-        let mut italic = BoolSummary::default();
-
-        for x in region.x_range() {
-            match self.columns.get(&x) {
-                None => {
-                    bold.is_any_false = true;
-                    italic.is_any_false = true;
-                }
-                Some(column) => {
-                    bold |= column.bold.bool_summary(region.y_range());
-                    italic |= column.italic.bool_summary(region.y_range());
-                }
-            };
-        }
-
-        FormattingSummary { bold, italic }
     }
 
     /// Returns a summary of formatting in a region.
@@ -651,33 +630,6 @@ mod test {
 
         let format_kind = sheet.cell_numeric_format_kind((5, 1).into());
         assert_eq!(format_kind, Some(NumericFormatKind::Number));
-    }
-
-    #[test]
-    fn test_formatting_summary() {
-        let (grid, sheet_id, selected) = test_setup_basic();
-        let mut sheet = grid.sheet(sheet_id).clone();
-        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-
-        // just set a single bold value
-        let value = sheet.get_formatting_summary(selected);
-        let mut format_summary = FormattingSummary {
-            bold: BoolSummary {
-                is_any_true: true,
-                is_any_false: false,
-            },
-            italic: BoolSummary {
-                is_any_true: false,
-                is_any_false: false,
-            },
-        };
-        assert_eq!(value, format_summary);
-
-        // now add in a single italic value
-        let _ = sheet.set_formatting_value::<Italic>((3, 1).into(), Some(true));
-        let value = sheet.get_formatting_summary(selected);
-        format_summary.italic.is_any_true = true;
-        assert_eq!(value, format_summary);
     }
 
     #[test]

@@ -28,9 +28,10 @@ export const BottomBar = () => {
     const updateCursor = () => {
       const cursor = sheets.sheet.cursor;
       setCursorPositionString(`(${cursor.cursorPosition.x}, ${cursor.cursorPosition.y})`);
-      if (cursor.multiCursor) {
+      if (cursor.multiCursor && cursor.multiCursor.length === 1) {
+        const multiCursor = cursor.multiCursor[0];
         setMultiCursorPositionString(
-          `(${cursor.multiCursor.originPosition.x}, ${cursor.multiCursor.originPosition.y}), (${cursor.multiCursor.terminalPosition.x}, ${cursor.multiCursor.terminalPosition.y})`
+          `(${multiCursor.left}, ${multiCursor.top}), (${multiCursor.right}, ${multiCursor.bottom})`
         );
       } else {
         setMultiCursorPositionString('');
