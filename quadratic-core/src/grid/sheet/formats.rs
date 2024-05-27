@@ -93,6 +93,10 @@ impl Sheet {
                             old_formats.push(FormatUpdate::default());
                         } else {
                             let mut old_format = FormatUpdate::default();
+                            if let Some(align) = format_update.align {
+                                old_format.align = Some(column.align.get(y));
+                                column.align.set(y, align);
+                            }
                             if let Some(wrap) = format_update.wrap {
                                 old_format.wrap = Some(column.wrap.get(y));
                                 column.wrap.set(y, wrap);

@@ -534,7 +534,7 @@ class Core {
     });
   }
 
-  setCellAlign(selection: Selection, align?: CellAlign, cursor?: string) {
+  setCellAlign(selection: Selection, align: CellAlign, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');

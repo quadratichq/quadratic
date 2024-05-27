@@ -38,7 +38,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, selection::Selection};
+    use crate::{controller::GridController, selection::Selection, Rect};
 
     #[test]
     fn test_set_cell_align_selection() {
@@ -49,8 +49,8 @@ mod test {
                 sheet_id,
                 x: 0,
                 y: 0,
-                rects: None,
-                rows: Some(vec![0]),
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
                 columns: None,
                 all: false,
             },
@@ -58,5 +58,11 @@ mod test {
             None,
         )
         .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().align.get(0),
+            Some(crate::grid::CellAlign::Center)
+        );
     }
 }

@@ -16,11 +16,9 @@ export type CellAlign = "center" | "left" | "right";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export interface NumericFormat { type: NumericFormatKind, symbol: string | null, }
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";
-export interface BoolSummary { isAnyTrue: boolean, isAnyFalse: boolean, }
 export interface SheetId { id: string, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, }
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
-export interface FormattingSummary { bold: BoolSummary, italic: BoolSummary, }
 export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, textColor: string | null, fillColor: string | null, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface ArraySize { w: number, h: number, }

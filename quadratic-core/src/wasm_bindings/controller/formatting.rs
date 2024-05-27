@@ -20,11 +20,11 @@ impl GridController {
     pub fn js_set_cell_align(
         &mut self,
         selection: String,
-        align: String,
+        align: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        let align = CellAlign::from_str(&align).map_err(|_| "Invalid align")?;
+        let align = serde_wasm_bindgen::from_value(align).map_err(|_| "Invalid align")?;
         self.set_cell_align_selection(selection, align, cursor)
     }
 
