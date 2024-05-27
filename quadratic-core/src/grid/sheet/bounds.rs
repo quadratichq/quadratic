@@ -207,7 +207,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or column_start
+    /// Returns the found column or column_start or bounds_rect_min/bounds_rect_max  
     pub fn find_next_column(
         &self,
         column_start: i64,
@@ -238,7 +238,11 @@ impl Sheet {
                     }
                     x += if reverse { -1 } else { 1 };
                 }
-                x
+                if x < rect.min.x {
+                    rect.min.x
+                } else {
+                    rect.max.x
+                }
             }
         }
     }
@@ -247,7 +251,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or row_start
+    /// Returns the found column or row_start or bounds_rect_min/bounds_rect_max
     pub fn find_next_row(
         &self,
         row_start: i64,
@@ -278,7 +282,11 @@ impl Sheet {
                     }
                     y += if reverse { -1 } else { 1 };
                 }
-                y
+                if y < rect.min.y {
+                    rect.min.y
+                } else {
+                    rect.max.y
+                }
             }
         }
     }
