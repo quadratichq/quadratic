@@ -50,11 +50,7 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.change_decimal_places_operations(source, sheet_rect, delta);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetFormats,
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     pub fn toggle_commas(
@@ -130,11 +126,7 @@ impl GridController {
     ) {
         let attr = CellFmtArray::RenderSize(RunLengthEncoding::repeat(value, sheet_rect.len()));
         let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetFormats,
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         self.send_html_output_rect(&sheet_rect);
     }
 }
@@ -151,11 +143,7 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, sheet_rect.len()));
                 let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-                self.start_user_transaction(
-                    ops,
-                    cursor,
-                    TransactionName::SetFormats,
-                );
+                self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
             }
         }
     };
@@ -230,11 +218,12 @@ mod test {
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");
 
-        // delete and redo
-        gc.delete_cells_rect(rect1, None);
-        assert_eq!(get(&gc, pos1), "blue");
-        assert_eq!(get(&gc, pos2), "red");
-        assert_eq!(get(&gc, pos3), "red");
+        // moved....
+        // // delete and redo
+        // gc.delete_cells_rect(rect1, None);
+        // assert_eq!(get(&gc, pos1), "blue");
+        // assert_eq!(get(&gc, pos2), "red");
+        // assert_eq!(get(&gc, pos3), "red");
 
         gc.clear_formatting(rect1, None);
         assert_eq!(get(&gc, pos1), "");

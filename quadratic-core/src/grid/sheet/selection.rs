@@ -14,7 +14,7 @@ impl Sheet {
     /// Note: if the Code has an error, then it will not be part of the result (for now).
     pub fn selection(
         &self,
-        selection: Selection,
+        selection: &Selection,
         max_count: Option<i64>,
     ) -> Option<Vec<(Pos, &CellValue)>> {
         let mut count = 0;

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{controller::GridController, grid::SheetId, Pos, Rect};
+use crate::{controller::GridController, grid::SheetId, selection::Selection, Pos, Rect};
 
 #[wasm_bindgen]
 impl GridController {
@@ -66,18 +66,14 @@ impl GridController {
     }
 
     /// Deletes a region of cells.
-    ///
-    /// Returns a [`TransactionSummary`].
     #[wasm_bindgen(js_name = "deleteCellValues")]
     pub fn js_delete_cell_values(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        Ok(serde_wasm_bindgen::to_value(
-            &self.delete_cells_rect(rect.to_sheet_rect(sheet_id), cursor),
-        )?)
+    ) -> Result<(), JsValue> {
+        let selection =
+            Selection::from_str(&selection).map_err(|_| JsValue::from_str("Invalid selection"))?;
+        self.delete_cells(&selection, cursor)
     }
 }

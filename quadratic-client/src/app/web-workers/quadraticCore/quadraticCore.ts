@@ -456,7 +456,7 @@ class QuadraticCore {
     });
   }
 
-  setCellAlign(selection: Selection, align?: CellAlign, cursor?: string) {
+  setCellAlign(selection: Selection, align: CellAlign, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellAlign',
       selection,

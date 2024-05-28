@@ -129,6 +129,21 @@ pub struct FormatUpdate {
 }
 
 impl FormatUpdate {
+    pub fn cleared() -> Self {
+        Self {
+            align: Some(None),
+            wrap: Some(None),
+            numeric_format: Some(None),
+            numeric_decimals: Some(None),
+            numeric_commas: Some(None),
+            bold: Some(None),
+            italic: Some(None),
+            text_color: Some(None),
+            fill_color: Some(None),
+            render_size: Some(None),
+        }
+    }
+
     pub fn is_default(&self) -> bool {
         self.align.is_none()
             && self.wrap.is_none()

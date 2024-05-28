@@ -1,6 +1,7 @@
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
 
+use crate::selection::Selection;
 use crate::{SheetPos, SheetRect};
 
 impl GridController {
@@ -39,8 +40,8 @@ impl GridController {
     }
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.
-    pub fn delete_cells_rect(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
-        let ops = self.delete_cells_rect_operations(sheet_rect);
+    pub fn delete_cells(&mut self, selection: &Selection, cursor: Option<String>) {
+        let ops = self.delete_cells_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 
