@@ -36,7 +36,8 @@ const repo = new awsx.ecr.Repository("connection-repo", {
 // Build and publish a Docker image to a private ECR registry.
 const img = new awsx.ecr.Image("connection-image", {
   repositoryUrl: repo.url,
-  context: "../quadratic-connection",
+  context: "../",
+  dockerfile: "../quadratic-connection/Dockerfile",
 });
 
 // Create a Fargate service task that can scale out.
