@@ -59,7 +59,6 @@ export const CodeEditorPanels = (props: Props) => {
                 width: codeEditorPanelData.panelWidth + 'px',
               }}
               setState={(mouseEvent) => {
-                // TODO: (connections) make this work
                 if (!containerRef.current) return;
 
                 const containerRect = containerRef.current?.getBoundingClientRect();

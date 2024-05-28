@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getLanguage2 } from '@/app/helpers/codeCellLanguage';
+import { getCodeCell, getConnectionUuid } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
@@ -31,15 +31,12 @@ export const CodeEditorHeader = (props: Props) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
-  const language = getLanguage2(editorInteractionState.mode);
+  const codeCell = getCodeCell(editorInteractionState.mode);
   const { connections } = useFileMetaRouteLoaderData();
 
-  let currentConnectionName = '';
-  let foundConnection = connections.find(
-    // @ts-expect-error
-    (connection) => connection.uuid === editorInteractionState?.mode?.Connection?.id
-  );
-  if (foundConnection) currentConnectionName = foundConnection.name;
+  const connectionUuid = getConnectionUuid(editorInteractionState.mode);
+  const foundConnection = connections.find((connection) => connection.uuid === connectionUuid);
+  const currentConnectionName = foundConnection ? foundConnection.name : '';
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;
@@ -131,10 +128,9 @@ export const CodeEditorHeader = (props: Props) => {
             `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-warning after:content-['']`
         )}
       >
-        {/* TODO: (connections) language might be MYSQL which we don't want. We want the pretty name */}
-        <TooltipHint title={`${language}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
+        <TooltipHint title={`${codeCell?.label}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
           <div className="flex items-center">
-            <LanguageIcon language={language} fontSize="small" />
+            <LanguageIcon language={codeCell?.id} fontSize="small" />
           </div>
         </TooltipHint>
       </div>
@@ -156,7 +152,7 @@ export const CodeEditorHeader = (props: Props) => {
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
-        {hasPermission && language === 'Python' && <SnippetsPopover />}
+        {hasPermission && codeCell?.id === 'Python' && <SnippetsPopover />}
         {hasPermission && (
           <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
             <span>

@@ -1,12 +1,11 @@
+import { CodeCellIds } from '@/app/helpers/codeCellLanguage';
 import { colors } from '@/app/theme/colors';
 import { Formula, JavaScript, MysqlIcon, PostgresIcon, Python } from '@/app/ui/icons';
 import { Subject } from '@mui/icons-material';
 import { SvgIconProps } from '@mui/material/SvgIcon';
 
-export type Language = 'Python' | 'Formula' | 'Javascript' | 'POSTGRES' | 'MYSQL';
-
 interface LanguageIconProps extends SvgIconProps {
-  language?: Language;
+  language?: CodeCellIds;
 }
 
 export function LanguageIcon({ language, ...props }: LanguageIconProps) {
