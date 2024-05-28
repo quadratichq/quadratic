@@ -1,8 +1,10 @@
+use std::collections::HashSet;
+
 use super::Sheet;
 use crate::{
     grid::formats::{Format, FormatUpdate, Formats},
     selection::Selection,
-    Rect,
+    Pos, Rect,
 };
 
 impl Sheet {
@@ -83,10 +85,18 @@ impl Sheet {
     fn set_formats_rects(&mut self, rects: &Vec<Rect>, formats: &Formats) -> Formats {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
+
+        // tracks client changes
+        let mut renders = HashSet::new();
+        let mut html = HashSet::new();
+        let mut fills = HashSet::new();
+
         rects.iter().for_each(|rect| {
             for x in rect.min.x..=rect.max.x {
                 let column = self.get_or_create_column(x);
                 for y in rect.min.y..=rect.max.y {
+                    let pos = Pos { x, y };
+
                     // todo: this will be much simpler when we have a `column.format`
                     if let Some(format_update) = formats_iter.next() {
                         if format_update.is_default() {
@@ -135,6 +145,15 @@ impl Sheet {
                             }
                             old_formats.push(old_format);
                         }
+                        if format_update.render_cells_changed() {
+                            renders.insert(pos);
+                        }
+                        if format_update.html_changed() {
+                            html.insert(pos);
+                        }
+                        if format_update.fill_changed() {
+                            fills.insert(pos);
+                        }
                     } else {
                         old_formats.push(FormatUpdate::default());
                     }
@@ -142,8 +161,9 @@ impl Sheet {
             }
         });
 
-        // todo: need to trigger client changes
-
+        self.send_render_cells(&renders);
+        self.send_html_output(&html);
+        self.send_fills(&fills);
         old_formats
     }
 
@@ -164,13 +184,18 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
+    use chrono::Utc;
+
     use crate::{
         grid::{
             formats::{Format, FormatUpdate, Formats},
-            Bold, Italic, Sheet,
+            Bold, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
         selection::Selection,
-        Pos, Rect,
+        wasm_bindings::js::{expect_js_call, hash_test},
+        CellValue, CodeCellValue, Pos, Rect, Value,
     };
 
     #[test]
@@ -194,6 +219,12 @@ mod tests {
             Some(true)
         );
         assert_eq!(sheet.get_formatting_value::<Bold>(Pos { x: 2, y: 2 }), None);
+
+        let cells =
+            serde_json::to_string(&sheet.get_render_cells(Rect::from_numbers(0, 0, 2, 2))).unwrap();
+        let args = format!("{},{},{},{}", sheet.id, 0, 0, hash_test(&cells));
+        expect_js_call("jsRenderCellSheets", args, true);
+
         let old_formats = sheet.set_formats_rects(&vec![rect], &old_formats);
         assert!(sheet
             .get_formatting_value::<Bold>(Pos { x: 0, y: 0 })
@@ -202,6 +233,51 @@ mod tests {
             .get_formatting_value::<Bold>(Pos { x: 1, y: 1 })
             .is_none());
         assert_eq!(old_formats, formats);
+    }
+
+    #[test]
+    fn set_formats_selection_rect_html() {
+        let mut sheet = Sheet::test();
+        let pos = Pos { x: 1, y: 1 };
+        sheet.set_cell_value(
+            pos,
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "test".to_string(),
+            }),
+        );
+
+        let code_run = CodeRun {
+            std_err: None,
+            std_out: None,
+            formatted_code_string: None,
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Html("test".to_string()))),
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            spill_error: false,
+            last_modified: Utc::now(),
+        };
+
+        sheet.set_code_run(pos, Some(code_run));
+        let formats = Formats::repeat(
+            FormatUpdate {
+                render_size: Some(Some(RenderSize {
+                    w: "1".to_string(),
+                    h: "2".to_string(),
+                })),
+                ..Default::default()
+            },
+            1,
+        );
+        sheet.set_formats_rects(&vec![Rect::single_pos(pos)], &formats);
+        let expected = sheet.get_single_html_output(pos).unwrap();
+        expect_js_call(
+            "jsUpdateHtml",
+            serde_json::to_string(&expected).unwrap(),
+            true,
+        );
     }
 
     #[test]

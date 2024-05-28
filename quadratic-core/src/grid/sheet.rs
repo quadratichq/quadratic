@@ -26,9 +26,10 @@ pub mod formatting;
 pub mod rendering;
 pub mod search;
 pub mod selection;
-pub mod summarize;
-
+pub mod send_render;
 pub mod sheet_test;
+
+pub mod summarize;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -94,7 +95,7 @@ impl Sheet {
     // creates a Sheet for testing
     #[cfg(test)]
     pub fn test() -> Self {
-        Sheet::new(SheetId::new(), String::from("name"), String::from("A0"))
+        Sheet::new(SheetId::test(), String::from("name"), String::from("A0"))
     }
 
     /// Populates the current sheet with random values

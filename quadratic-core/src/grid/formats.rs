@@ -141,6 +141,27 @@ impl FormatUpdate {
             && self.fill_color.is_none()
             && self.render_size.is_none()
     }
+
+    /// Whether we need to send a client html update.
+    pub fn html_changed(&self) -> bool {
+        self.render_size.is_some()
+    }
+
+    /// Whether we need to send a render cell update.
+    pub fn render_cells_changed(&self) -> bool {
+        self.align.is_some()
+            || self.wrap.is_some()
+            || self.numeric_format.is_some()
+            || self.numeric_decimals.is_some()
+            || self.numeric_commas.is_some()
+            || self.bold.is_some()
+            || self.italic.is_some()
+            || self.text_color.is_some()
+    }
+
+    pub fn fill_changed(&self) -> bool {
+        self.fill_color.is_some()
+    }
 }
 
 /// Converts a FormatUpdate to a Format.
