@@ -1,7 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
-import { connectionNlbSecurityGroup } from "../shared/securityGroups";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -18,53 +17,45 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 
-const cluster = new aws.ecs.Cluster("connection-cluster");
+////////////////////////////////////////////////////////
 
-// Create a new Application Load Balancer
-const alb = new aws.lb.LoadBalancer("connection-alb", {
-  internal: false,
-  loadBalancerType: "application",
-  subnets: [subNet1, subNet2],
-  enableCrossZoneLoadBalancing: true,
-  securityGroups: [connectionNlbSecurityGroup.id],
+// Create an ECS Fargate cluster.
+const cluster = new awsx.classic.ecs.Cluster("cluster");
+
+// Define the Networking for our service.
+const alb = new awsx.classic.lb.ApplicationLoadBalancer("connection-lb", {
+  external: true,
+  securityGroups: cluster.securityGroups,
 });
-
-// Create a new Target Group
-const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
-  port: 80,
-  protocol: "HTTP",
-  targetType: "ip",
-  vpcId: vpcId,
-});
-
-// Listen to HTTP traffic on port 80
-const listener = new aws.lb.Listener("connection-alb-listener", {
-  tags: {
-    Name: `connection-nlb-${connectionSubdomain}`,
-  },
-  loadBalancerArn: alb.arn,
+const web = alb.createListener("web", {
+  external: true,
   port: 443,
   protocol: "HTTPS",
   certificateArn: certificateArn, // Attach the SSL certificate
   sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
-  defaultActions: [
-    {
-      type: "forward",
-      targetGroupArn: targetGroup.arn,
-    },
-  ],
 });
 
-// Create a Fargate service task that uses the image from the ECR repository
-const appService = new awsx.ecs.FargateService("connection-fargate-service", {
-  cluster: cluster.arn,
+// Create a repository for container images.
+const repo = new awsx.ecr.Repository("connection-repo", {
+  forceDelete: true,
+});
+
+// Build and publish a Docker image to a private ECR registry.
+const img = new awsx.ecr.Image("connection-image", {
+  repositoryUrl: repo.url,
+  context: "../",
+  dockerfile: "../quadratic-connection/Dockerfile",
+});
+
+// Create a Fargate service task that can scale out.
+const appService = new awsx.classic.ecs.FargateService("app-svc", {
+  cluster,
   taskDefinitionArgs: {
     container: {
-      name: "app",
-      image: `${ecrRegistryUrl}/${connectionECRName}:${dockerImageTag}`,
-      memory: 512,
-      cpu: 2,
-      portMappings: [{ hostPort: 80 }],
+      image: img.imageUri,
+      cpu: 102 /*10% of 1024*/,
+      memory: 50 /*MB*/,
+      portMappings: [web],
       environment: [
         // TODO: Pull these from Pulumi ESC
         { name: "QUADRATIC_API_URI", value: quadraticApiUri },
@@ -79,19 +70,6 @@ const appService = new awsx.ecs.FargateService("connection-fargate-service", {
       ],
     },
   },
-  networkConfiguration: {
-    assignPublicIp: true,
-    subnets: [subNet1, subNet2],
-    securityGroups: [connectionNlbSecurityGroup.id],
-  },
-  loadBalancers: [
-    {
-      targetGroupArn: targetGroup.arn,
-      containerName: "app",
-      containerPort: 80,
-    },
-  ],
-  //   assignPublicIp: true,
   desiredCount: 1,
 });
 
@@ -112,8 +90,8 @@ const dnsRecord = new aws.route53.Record("connection-r53-record", {
   type: "A",
   aliases: [
     {
-      name: alb.dnsName,
-      zoneId: alb.zoneId,
+      name: alb.loadBalancer.dnsName,
+      zoneId: alb.loadBalancer.zoneId,
       evaluateTargetHealth: true,
     },
   ],
