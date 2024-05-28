@@ -35,5 +35,5 @@ echo 'Building quadratic-rust-client...'
 npm run build --workspace=quadratic-rust-client
 
 echo 'Building front-end...'
-npm install
+npm ci
 npm run build --workspace=quadratic-client
