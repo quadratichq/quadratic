@@ -311,11 +311,11 @@ class Core {
     });
   }
 
-  toggleCommas(selection: Selection, cursor?: string) {
+  setCommas(selection: Selection, commas: boolean, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.toggleCommas(JSON.stringify(selection, bigIntReplacer), cursor);
+        this.gridController.setCellCommas(JSON.stringify(selection, bigIntReplacer), commas, cursor);
         resolve(undefined);
       });
     });
@@ -862,14 +862,14 @@ class Core {
     );
   }
 
-  setPercentage(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+  setPercentage(selection: Selection, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.setCellPercentage(sheetId, pointsToRect(x, y, width, height), cursor);
+    this.gridController.setCellPercentage(JSON.stringify(selection, bigIntReplacer), cursor);
   }
 
-  setExponential(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+  setExponential(selection: Selection, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.setCellExponential(sheetId, pointsToRect(x, y, width, height), cursor);
+    this.gridController.setCellExponential(JSON.stringify(selection, bigIntReplacer), cursor);
   }
 
   removeCellNumericFormat(selection: Selection, cursor?: string) {

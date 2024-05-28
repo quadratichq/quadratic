@@ -364,6 +364,7 @@ mod test {
                 italic: None,
                 text_color: None,
                 fill_color: None,
+                commas: None,
             }
         );
         assert_eq!(
@@ -377,6 +378,7 @@ mod test {
                 italic: Some(true),
                 text_color: None,
                 fill_color: None,
+                commas: None,
             }
         );
 
@@ -835,6 +837,7 @@ mod test {
                 italic: None,
                 text_color: None,
                 fill_color: None,
+                commas: None,
             }
         );
         assert_eq!(
@@ -844,6 +847,7 @@ mod test {
                 italic: Some(true),
                 text_color: None,
                 fill_color: None,
+                commas: None,
             }
         );
     }

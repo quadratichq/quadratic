@@ -1,5 +1,4 @@
 use self::selection::Selection;
-
 use super::*;
 
 #[wasm_bindgen]
@@ -25,23 +24,20 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
         let align = serde_wasm_bindgen::from_value(align).map_err(|_| "Invalid align")?;
-        self.set_cell_align_selection(selection, align, cursor)
+        self.set_align_selection(selection, align, cursor)
     }
 
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
     #[wasm_bindgen(js_name = "setCellWrap")]
     pub fn js_set_cell_wrap(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         wrap: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        if let Ok(value) = serde_wasm_bindgen::from_value(wrap) {
-            self.set_cell_wrap(rect.to_sheet_rect(sheet_id), value, cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        if let Ok(wrap) = serde_wasm_bindgen::from_value(wrap) {
+            self.set_cell_wrap_selection(selection, wrap, cursor)?;
         }
         Ok(())
     }
@@ -61,144 +57,113 @@ impl GridController {
 
     /// Sets cells numeric_format to currency
     #[wasm_bindgen(js_name = "setCellCurrency")]
-    pub fn js_set_cell_currency(
+    pub fn js_set_currency(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         symbol: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        self.set_currency(&rect.to_sheet_rect(sheet_id), Some(symbol), cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_numeric_format_selection(
+            selection,
+            NumericFormatKind::Currency,
+            Some(symbol),
+            cursor,
+        )?;
         Ok(())
     }
 
     /// Sets cells numeric_format to percentage
     #[wasm_bindgen(js_name = "setCellPercentage")]
-    pub fn js_set_cell_percentage(
+    pub fn js_set_percentage(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        let currency = NumericFormat {
-            kind: NumericFormatKind::Percentage,
-            symbol: None,
-        };
-        self.set_cell_numeric_format(rect.to_sheet_rect(sheet_id), Some(currency), cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_numeric_format_selection(selection, NumericFormatKind::Percentage, None, cursor)?;
         Ok(())
     }
 
     /// Sets cells numeric_format to scientific notation
     #[wasm_bindgen(js_name = "setCellExponential")]
-    pub fn js_set_cell_exponential(
+    pub fn js_set_exponential(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        let exponential = NumericFormat {
-            kind: NumericFormatKind::Exponential,
-            symbol: None,
-        };
-        self.set_cell_numeric_format(rect.to_sheet_rect(sheet_id), Some(exponential), cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_numeric_format_selection(selection, NumericFormatKind::Exponential, None, cursor)?;
         Ok(())
     }
 
     /// Sets cells numeric_commas
-    #[wasm_bindgen(js_name = "toggleCommas")]
-    pub fn js_toggle_commas(
+    #[wasm_bindgen(js_name = "setCellCommas")]
+    pub fn js_set_commas(
         &mut self,
-        sheet_id: String,
-        source: Pos,
-        rect: Rect,
+        selection: String,
+        commas: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        self.toggle_commas(
-            source.to_sheet_pos(sheet_id),
-            rect.to_sheet_rect(sheet_id),
-            cursor,
-        );
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_commas_selection(selection, commas, cursor)?;
         Ok(())
     }
 
     /// Sets cell bold formatting given as an optional [`bool`].
     #[wasm_bindgen(js_name = "setCellBold")]
-    pub fn js_set_cell_bold(
+    pub fn js_set_bold(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
-        bold: Option<bool>,
+        selection: String,
+        bold: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        self.set_cell_bold(rect.to_sheet_rect(sheet_id), bold, cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_bold_selection(selection, bold, cursor)?;
         Ok(())
     }
     /// Sets cell italic formatting given as an optional [`bool`].
     #[wasm_bindgen(js_name = "setCellItalic")]
-    pub fn js_set_cell_italic(
+    pub fn js_set_italic(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
-        italic: Option<bool>,
+        selection: String,
+        italic: bool,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        self.set_cell_italic(rect.to_sheet_rect(sheet_id), italic, cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_italic_selection(selection, italic, cursor)?;
         Ok(())
     }
 
     /// Sets cell text color given as an optional [`String`].
     #[wasm_bindgen(js_name = "setCellTextColor")]
-    pub fn js_set_cell_text_color(
+    pub fn js_set_text_color(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         text_color: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        self.set_cell_text_color(rect.to_sheet_rect(sheet_id), text_color, cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_text_color_selection(selection, text_color, cursor)?;
         Ok(())
     }
 
     /// Sets cell fill color given as an optional [`String`].
     #[wasm_bindgen(js_name = "setCellFillColor")]
-    pub fn js_set_cell_fill_color(
+    pub fn js_fill_color(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         fill_color: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        self.set_cell_fill_color(rect.to_sheet_rect(sheet_id), fill_color, cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.set_fill_color_selection(selection, fill_color, cursor)?;
         Ok(())
     }
 
     /// Sets cell render size (used for Html-style cells).
     #[wasm_bindgen(js_name = "setCellRenderSize")]
-    pub fn js_set_cell_render_size(
+    pub fn js_set_render_size(
         &mut self,
         sheet_id: String,
         rect: &Rect,

@@ -19,7 +19,7 @@ export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENT
 export interface SheetId { id: string, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, }
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
-export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, textColor: string | null, fillColor: string | null, }
+export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface ArraySize { w: number, h: number, }
 export type Axis = "X" | "Y";

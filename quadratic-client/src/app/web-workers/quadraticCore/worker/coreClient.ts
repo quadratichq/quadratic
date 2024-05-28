@@ -190,8 +190,8 @@ class CoreClient {
         await core.setCellFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
         break;
 
-      case 'clientCoreToggleCommas':
-        await core.toggleCommas(e.data.selection, e.data.cursor);
+      case 'clientCoreSetCommas':
+        await core.setCommas(e.data.selection, e.data.commas, e.data.cursor);
         break;
 
       case 'clientCoreSetCurrency':
@@ -307,17 +307,13 @@ class CoreClient {
         break;
 
       case 'clientCoreCopyToClipboard':
-        const result = await core.copyToClipboard(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        const result = await core.copyToClipboard(e.data.selection);
         this.send({ type: 'coreClientCopyToClipboard', id: e.data.id, ...result });
         break;
 
       case 'clientCoreCutToClipboard':
         const cutResult = await core.cutToClipboard(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
+          e.data.selection
           e.data.cursor
         );
         this.send({ type: 'coreClientCutToClipboard', id: e.data.id, ...cutResult });
@@ -368,7 +364,7 @@ class CoreClient {
         break;
 
       case 'clientCoreExportCsvSelection':
-        const csv = await core.exportCsvSelection(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        const csv = await core.exportCsvSelection(e.data.selection);
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         break;
 
@@ -421,7 +417,7 @@ class CoreClient {
         break;
 
       case 'clientCoreClearFormatting':
-        core.clearFormatting(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.clearFormatting(e.data.selection, e.data.cursor);
         break;
 
       case 'clientCoreRerunCodeCells':
@@ -438,21 +434,18 @@ class CoreClient {
 
       case 'clientCoreChangeDecimals':
         core.changeDecimals(
-          e.data.sheetId,
-          e.data.sourceX,
-          e.data.sourceY,
-          e.data.rectangle,
+          e.data.selection,
           e.data.delta,
           e.data.cursor
         );
         break;
 
       case 'clientCoreSetPercentage':
-        core.setPercentage(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.setPercentage(e.data.selection, e.data.cursor);
         break;
 
       case 'clientCoreSetExponential':
-        core.setExponential(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.setExponential(e.data.selection, e.data.cursor);
         break;
 
       case 'clientCoreRemoveCellNumericFormat':

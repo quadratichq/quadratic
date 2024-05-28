@@ -36,8 +36,11 @@ export const textFormatDecreaseDecimalPlaces = () => {
   quadraticCore.changeDecimalPlaces(sheets.getRustSelection(), -1, sheets.getCursorPosition());
 };
 
-export const toggleCommas = () => {
-  quadraticCore.toggleCommas(sheets.getRustSelection(), sheets.getCursorPosition());
+export const setCellCommas = async () => {
+  const cursor = sheets.sheet.cursor.getCursor();
+  const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y);
+  const commas = !(formatCell ? formatCell.commas === true : true);
+  quadraticCore.setCommas(sheets.getRustSelection(), commas, sheets.getCursorPosition());
 };
 
 export const textFormatSetCurrency = (currency = '$') => {

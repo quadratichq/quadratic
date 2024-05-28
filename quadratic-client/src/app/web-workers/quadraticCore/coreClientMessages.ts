@@ -267,7 +267,7 @@ export interface ClientCoreSetCellTextColor {
 export interface ClientCoreSetCellAlign {
   type: 'clientCoreSetCellAlign';
   selection: Selection;
-  align?: CellAlign;
+  align: CellAlign;
   cursor?: string;
 }
 
@@ -309,9 +309,10 @@ export interface ClientCoreClearFormatting {
   cursor?: string;
 }
 
-export interface ClientCoreToggleCommas {
-  type: 'clientCoreToggleCommas';
+export interface ClientCoreSetCommas {
+  type: 'clientCoreSetCommas';
   selection: Selection;
+  commas: boolean;
   cursor?: string;
 }
 
@@ -751,7 +752,7 @@ export type ClientCoreMessage =
   | ClientCoreChangeDecimals
   | ClientCoreClearFormatting
   | ClientCoreGetRenderCell
-  | ClientCoreToggleCommas
+  | ClientCoreSetCommas
   | ClientCoreImportCsv
   | ClientCoreImportParquet
   | ClientCoreDeleteCellValues

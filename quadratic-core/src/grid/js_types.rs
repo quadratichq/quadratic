@@ -128,6 +128,7 @@ impl JsRenderBorder {
 pub struct CellFormatSummary {
     pub bold: Option<bool>,
     pub italic: Option<bool>,
+    pub commas: Option<bool>,
 
     pub text_color: Option<String>,
     pub fill_color: Option<String>,

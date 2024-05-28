@@ -251,12 +251,14 @@ impl Sheet {
                 italic: None,
                 text_color: None,
                 fill_color: None,
+                commas: None,
             },
             Some(column) => CellFormatSummary {
                 bold: column.bold.get(pos.y),
                 italic: column.italic.get(pos.y),
                 text_color: column.text_color.get(pos.y),
                 fill_color: column.fill_color.get(pos.y),
+                commas: column.numeric_commas.get(pos.y),
             },
         }
     }
@@ -271,6 +273,7 @@ impl Sheet {
                 let italic = column.italic.get(pos.y);
                 let fill_color = column.fill_color.get(pos.y);
                 let text_color = column.text_color.get(pos.y);
+                let commas = column.numeric_commas.get(pos.y);
 
                 if bold.is_some()
                     || italic.is_some()
@@ -282,6 +285,7 @@ impl Sheet {
                         italic,
                         fill_color,
                         text_color,
+                        commas,
                     })
                 } else {
                     None
@@ -649,6 +653,7 @@ mod test {
             italic: None,
             text_color: None,
             fill_color: None,
+            commas: None,
         };
         assert_eq!(value, cell_format_summary);
 

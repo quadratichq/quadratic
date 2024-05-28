@@ -11,13 +11,13 @@ use crate::{
     },
     grid::{
         formats::{FormatUpdate, Formats},
-        CellAlign,
+        CellAlign, CellWrap, NumericFormat, NumericFormatKind,
     },
     selection::Selection,
 };
 
 impl GridController {
-    pub(crate) fn set_cell_align_selection(
+    pub(crate) fn set_align_selection(
         &mut self,
         selection: Selection,
         align: CellAlign,
@@ -34,17 +34,144 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
+
+    pub(crate) fn set_bold_selection(
+        &mut self,
+        selection: Selection,
+        bold: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                bold: Some(Some(bold)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_italic_selection(
+        &mut self,
+        selection: Selection,
+        italic: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                italic: Some(Some(italic)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_cell_wrap_selection(
+        &mut self,
+        selection: Selection,
+        wrap: CellWrap,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                wrap: Some(Some(wrap)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_numeric_format_selection(
+        &mut self,
+        selection: Selection,
+        kind: NumericFormatKind,
+        symbol: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat { kind, symbol })),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_commas_selection(
+        &mut self,
+        selection: Selection,
+        commas: bool,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                numeric_commas: Some(Some(commas)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_text_color_selection(
+        &mut self,
+        selection: Selection,
+        color: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                text_color: Some(color),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_fill_color_selection(
+        &mut self,
+        selection: Selection,
+        color: Option<String>,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                fill_color: Some(color),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{controller::GridController, selection::Selection, Rect};
+    use crate::{controller::GridController, grid::CellWrap, selection::Selection, Rect};
 
     #[test]
-    fn test_set_cell_align_selection() {
+    fn set_align_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_align_selection(
+        gc.set_align_selection(
             Selection {
                 sheet_id,
                 x: 0,
@@ -63,6 +190,265 @@ mod test {
         assert_eq!(
             sheet.columns.get(&0).unwrap().align.get(0),
             Some(crate::grid::CellAlign::Center)
+        );
+    }
+
+    #[test]
+    fn set_bold_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_bold_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            true,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.columns.get(&0).unwrap().bold.get(0), Some(true));
+    }
+
+    #[test]
+    fn set_cell_wrap_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_wrap_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            CellWrap::Clip,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().wrap.get(0),
+            Some(CellWrap::Clip)
+        );
+    }
+
+    #[test]
+    fn set_numeric_format_currency() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_numeric_format_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            crate::grid::NumericFormatKind::Currency,
+            Some("€".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().numeric_format.get(0),
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("€".to_string())
+            })
+        );
+    }
+
+    #[test]
+    fn set_numeric_format_exponential() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_numeric_format_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            crate::grid::NumericFormatKind::Exponential,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().numeric_format.get(0),
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Exponential,
+                symbol: None
+            })
+        );
+    }
+
+    #[test]
+    fn set_numeric_format_percentage() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_numeric_format_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            crate::grid::NumericFormatKind::Percentage,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().numeric_format.get(0),
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Percentage,
+                symbol: None
+            })
+        );
+    }
+
+    #[test]
+    fn toggle_commas_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_commas_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            true,
+            None,
+        )
+        .unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().numeric_commas.get(0),
+            Some(true)
+        );
+
+        gc.set_commas_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            false,
+            None,
+        )
+        .unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().numeric_commas.get(0),
+            Some(false)
+        );
+    }
+
+    #[test]
+    fn set_italic_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_italic_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            true,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.columns.get(&0).unwrap().italic.get(0), Some(true));
+    }
+
+    #[test]
+    fn set_text_color_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_text_color_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().text_color.get(0),
+            Some("red".to_string())
+        );
+    }
+
+    #[test]
+    fn set_fill_color_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_fill_color_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            Some("blue".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().fill_color.get(0),
+            Some("blue".to_string())
         );
     }
 }

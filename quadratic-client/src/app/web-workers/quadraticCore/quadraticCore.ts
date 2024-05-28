@@ -515,10 +515,11 @@ class QuadraticCore {
     });
   }
 
-  toggleCommas(selection: Selection, cursor?: string) {
+  setCommas(selection: Selection, commas: boolean, cursor?: string) {
     this.send({
-      type: 'clientCoreToggleCommas',
+      type: 'clientCoreSetCommas',
       selection,
+      commas,
       cursor,
     });
   }
