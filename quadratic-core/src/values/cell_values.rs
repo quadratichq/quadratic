@@ -1,6 +1,5 @@
 //! CellValues is a 2D array of CellValue used for Operation::SetCellValues.
-
-//! The height must be known, but the width can grow as needed.
+//! The width and height may grow as needed.
 
 use crate::CellValue;
 use serde::{Deserialize, Serialize};
@@ -30,7 +29,9 @@ impl CellValues {
     }
 
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
-        assert!(y < self.h, "CellValues::set y is out of bounds");
+        if y >= self.h {
+            self.h = y;
+        }
 
         // w can grow if too small
         if x >= self.w {

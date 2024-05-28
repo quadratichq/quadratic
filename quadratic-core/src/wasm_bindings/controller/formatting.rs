@@ -211,14 +211,10 @@ impl GridController {
     #[wasm_bindgen(js_name = "clearFormatting")]
     pub fn js_clear_formatting(
         &mut self,
-        sheet_id: String,
-        rect: Rect,
+        selection: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        self.clear_formatting(rect.to_sheet_rect(sheet_id), cursor);
-        Ok(())
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.clear_format(selection, cursor)
     }
 }

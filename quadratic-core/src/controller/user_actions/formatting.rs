@@ -165,6 +165,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{RenderSize, SheetId, TextColor},
+        selection::Selection,
         Pos, Rect, SheetPos, SheetRect,
     };
 
@@ -218,14 +219,14 @@ mod test {
         assert_eq!(get(&gc, pos2), "red");
         assert_eq!(get(&gc, pos3), "red");
 
-        // moved....
-        // // delete and redo
-        // gc.delete_cells_rect(rect1, None);
-        // assert_eq!(get(&gc, pos1), "blue");
-        // assert_eq!(get(&gc, pos2), "red");
-        // assert_eq!(get(&gc, pos3), "red");
+        // delete and redo
+        let selection = Selection::sheet_rect(rect1);
+        gc.delete_cells(&selection, None);
+        assert_eq!(get(&gc, pos1), "blue");
+        assert_eq!(get(&gc, pos2), "red");
+        assert_eq!(get(&gc, pos3), "red");
 
-        gc.clear_formatting(rect1, None);
+        gc.clear_formatting(&selection, None);
         assert_eq!(get(&gc, pos1), "");
         assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "red");
@@ -531,7 +532,8 @@ mod test {
             Some("$".to_string()),
             None,
         );
-        gc.clear_formatting(SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id), None);
+        let selection = Selection::pos(0, 0, sheet_id);
+        gc.clear_formatting(&selection, None);
         let cells = gc
             .sheet(sheet_id)
             .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
@@ -539,14 +541,8 @@ mod test {
         assert_eq!(cells[0].value, "1.12345678");
 
         // ensure not found sheet_id fails silently
-        gc.clear_formatting(
-            SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 },
-                sheet_id: SheetId::new(),
-            },
-            None,
-        );
+        let selection = Selection::pos(0, 0, SheetId::new());
+        gc.clear_formatting(&selection, None);
     }
 
     #[test]

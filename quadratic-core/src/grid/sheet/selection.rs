@@ -16,6 +16,7 @@ impl Sheet {
         &self,
         selection: &Selection,
         max_count: Option<i64>,
+        skip_code_runs: bool,
     ) -> Option<Vec<(Pos, &CellValue)>> {
         let mut count = 0;
         let mut vec = Vec::new();
@@ -35,44 +36,47 @@ impl Sheet {
                     }
                 }));
             }
-            for (pos, code_run) in self.code_runs.iter() {
-                match code_run.result {
-                    CodeRunResult::Ok(ref value) => match value {
-                        Value::Single(v) => {
-                            count += 1;
-                            if count >= max_count.unwrap_or(i64::MAX) {
-                                return None;
+            if !skip_code_runs {
+                for (pos, code_run) in self.code_runs.iter() {
+                    match code_run.result {
+                        CodeRunResult::Ok(ref value) => match value {
+                            Value::Single(v) => {
+                                count += 1;
+                                if count >= max_count.unwrap_or(i64::MAX) {
+                                    return None;
+                                }
+                                vec.push((*pos, v));
                             }
-                            vec.push((*pos, v));
-                        }
-                        Value::Array(a) => {
-                            for x in 0..a.width() {
-                                for y in 0..a.height() {
-                                    if let Ok(entry) = a.get(x, y) {
-                                        if !matches!(entry, &CellValue::Blank)
-                                            && !matches!(entry, &CellValue::Code(_))
-                                        {
-                                            count += 1;
-                                            if count >= max_count.unwrap_or(i64::MAX) {
-                                                return None;
+                            Value::Array(a) => {
+                                for x in 0..a.width() {
+                                    for y in 0..a.height() {
+                                        if let Ok(entry) = a.get(x, y) {
+                                            if !matches!(entry, &CellValue::Blank)
+                                                && (!skip_code_runs
+                                                    || !matches!(entry, &CellValue::Code(_)))
+                                            {
+                                                count += 1;
+                                                if count >= max_count.unwrap_or(i64::MAX) {
+                                                    return None;
+                                                }
+                                                vec.push((
+                                                    Pos {
+                                                        x: x as i64 + pos.x,
+                                                        y: y as i64 + pos.y,
+                                                    },
+                                                    entry,
+                                                ));
                                             }
-                                            vec.push((
-                                                Pos {
-                                                    x: x as i64 + pos.x,
-                                                    y: y as i64 + pos.y,
-                                                },
-                                                entry,
-                                            ));
                                         }
                                     }
                                 }
                             }
-                        }
-                    },
-                    CodeRunResult::Err(_) => {}
+                        },
+                        CodeRunResult::Err(_) => {}
+                    }
                 }
             }
-        } else if let Some(columns) = selection.columns {
+        } else if let Some(columns) = selection.columns.as_ref() {
             for x in columns.iter() {
                 if let Some(column) = self.columns.get(x) {
                     count += column.values.len() as i64;
@@ -81,7 +85,7 @@ impl Sheet {
                     }
                     vec.extend(column.values.iter().filter_map(|(y, entry)| {
                         if !matches!(entry, &CellValue::Blank)
-                            && !matches!(entry, &CellValue::Code(_))
+                            && (!skip_code_runs || !matches!(entry, &CellValue::Code(_)))
                         {
                             Some((Pos { x: *x, y: *y }, entry))
                         } else {
@@ -90,21 +94,58 @@ impl Sheet {
                     }));
                 }
             }
-            for (pos, code_run) in self.code_runs.iter() {
-                let rect = code_run.output_rect(*pos, false);
-                if columns
-                    .iter()
-                    .any(|column| *column >= rect.min.x && *column <= rect.max.x)
-                {
-                    for x in rect.min.x..=rect.max.x {
-                        if columns.contains(&x) {
-                            for y in rect.min.y..=rect.max.y {
+            if !skip_code_runs {
+                for (pos, code_run) in self.code_runs.iter() {
+                    let rect = code_run.output_rect(*pos, false);
+                    if columns
+                        .iter()
+                        .any(|column| *column >= rect.min.x && *column <= rect.max.x)
+                    {
+                        for x in rect.min.x..=rect.max.x {
+                            if columns.contains(&x) {
+                                for y in rect.min.y..=rect.max.y {
+                                    if let Some(entry) = code_run
+                                        .cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
+                                    {
+                                        if !matches!(entry, &CellValue::Blank) {
+                                            count += 1;
+                                            if count >= max_count.unwrap_or(i64::MAX) {
+                                                return None;
+                                            }
+                                            vec.push((Pos { x, y }, entry));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if let Some(rows) = selection.rows.as_ref() {
+            for (x, column) in self.columns.iter() {
+                for (y, entry) in column.values.iter() {
+                    if rows.contains(y)
+                        && !matches!(entry, &CellValue::Blank)
+                        && (!skip_code_runs || !matches!(entry, &CellValue::Code(_)))
+                    {
+                        count += 1;
+                        if count >= max_count.unwrap_or(i64::MAX) {
+                            return None;
+                        }
+                        vec.push((Pos { x: *x, y: *y }, entry));
+                    }
+                }
+            }
+            if !skip_code_runs {
+                for (pos, code_run) in self.code_runs.iter() {
+                    let rect = code_run.output_rect(*pos, false);
+                    for y in rect.min.y..=rect.max.y {
+                        if rows.contains(&y) {
+                            for x in rect.min.x..=rect.max.x {
                                 if let Some(entry) =
                                     code_run.cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
                                 {
-                                    if !matches!(entry, &CellValue::Blank)
-                                        && !matches!(entry, &CellValue::Code(_))
-                                    {
+                                    if !matches!(entry, &CellValue::Blank) {
                                         count += 1;
                                         if count >= max_count.unwrap_or(i64::MAX) {
                                             return None;
@@ -117,50 +158,13 @@ impl Sheet {
                     }
                 }
             }
-        } else if let Some(rows) = selection.rows {
-            for (x, column) in self.columns.iter() {
-                for (y, entry) in column.values.iter() {
-                    if rows.contains(y)
-                        && !matches!(entry, &CellValue::Blank)
-                        && !matches!(entry, &CellValue::Code(_))
-                    {
-                        count += 1;
-                        if count >= max_count.unwrap_or(i64::MAX) {
-                            return None;
-                        }
-                        vec.push((Pos { x: *x, y: *y }, entry));
-                    }
-                }
-            }
-            for (pos, code_run) in self.code_runs.iter() {
-                let rect = code_run.output_rect(*pos, false);
-                for y in rect.min.y..=rect.max.y {
-                    if rows.contains(&y) {
-                        for x in rect.min.x..=rect.max.x {
-                            if let Some(entry) =
-                                code_run.cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
-                            {
-                                if !matches!(entry, &CellValue::Blank)
-                                    && !matches!(entry, &CellValue::Code(_))
-                                {
-                                    count += 1;
-                                    if count >= max_count.unwrap_or(i64::MAX) {
-                                        return None;
-                                    }
-                                    vec.push((Pos { x, y }, entry));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } else if let Some(rects) = selection.rects {
+        } else if let Some(rects) = selection.rects.as_ref() {
             for rect in rects.iter() {
                 for x in rect.min.x..=rect.max.x {
                     for y in rect.min.y..=rect.max.y {
                         if let Some(entry) = self.cell_value_ref(Pos { x, y }) {
                             if !matches!(entry, &CellValue::Blank)
-                                && !matches!(entry, &CellValue::Code(_))
+                                && (!skip_code_runs || !matches!(entry, &CellValue::Code(_)))
                             {
                                 count += 1;
                                 if count >= max_count.unwrap_or(i64::MAX) {
@@ -172,28 +176,28 @@ impl Sheet {
                     }
                 }
             }
-            for (pos, code_run) in self.code_runs.iter() {
-                let rect = code_run.output_rect(*pos, false);
-                for x in rect.min.x..=rect.max.x {
-                    for y in rect.min.y..=rect.max.y {
-                        if rects.iter().any(|rect| rect.contains(Pos { x, y })) {
-                            if let Some(entry) =
-                                code_run.cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
-                            {
-                                if !matches!(entry, &CellValue::Blank)
-                                    && !matches!(entry, &CellValue::Code(_))
+            if !skip_code_runs {
+                for (pos, code_run) in self.code_runs.iter() {
+                    let rect = code_run.output_rect(*pos, false);
+                    for x in rect.min.x..=rect.max.x {
+                        for y in rect.min.y..=rect.max.y {
+                            if rects.iter().any(|rect| rect.contains(Pos { x, y })) {
+                                if let Some(entry) =
+                                    code_run.cell_value_ref((x - pos.x) as u32, (y - pos.y) as u32)
                                 {
-                                    count += 1;
-                                    if count >= max_count.unwrap_or(i64::MAX) {
-                                        return None;
+                                    if !matches!(entry, &CellValue::Blank) {
+                                        count += 1;
+                                        if count >= max_count.unwrap_or(i64::MAX) {
+                                            return None;
+                                        }
+                                        vec.push((
+                                            Pos {
+                                                x: x + pos.x,
+                                                y: y + pos.y,
+                                            },
+                                            entry,
+                                        ));
                                     }
-                                    vec.push((
-                                        Pos {
-                                            x: x + pos.x,
-                                            y: y + pos.y,
-                                        },
-                                        entry,
-                                    ));
                                 }
                             }
                         }
@@ -207,11 +211,9 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
     use crate::{grid::Sheet, selection::Selection, CellValue, Pos, Rect};
+    use bigdecimal::BigDecimal;
+    use std::str::FromStr;
 
     #[test]
     fn selection_all() {
@@ -235,8 +237,14 @@ mod tests {
             all: true,
         };
 
-        let results = sheet.selection(selection, None).unwrap();
+        let results = sheet.selection(&selection, None, false).unwrap();
         assert_eq!(results.len(), 12);
+
+        let results = sheet.selection(&selection, Some(10), false);
+        assert!(results.is_none());
+
+        let results = sheet.selection(&selection, None, true).unwrap();
+        assert_eq!(results.len(), 9);
     }
 
     #[test]
@@ -267,7 +275,7 @@ mod tests {
             all: false,
         };
 
-        let results: Vec<(Pos, &CellValue)> = sheet.selection(selection, None).unwrap();
+        let results = sheet.selection(&selection, None, false).unwrap();
         assert_eq!(
             results.get(0),
             Some(&(
@@ -283,6 +291,12 @@ mod tests {
             ))
         );
         assert_eq!(results.len(), 10);
+
+        let results = sheet.selection(&selection, Some(5), false);
+        assert!(results.is_none());
+
+        let results = sheet.selection(&selection, None, true).unwrap();
+        assert_eq!(results.len(), 6);
     }
 
     #[test]
@@ -307,8 +321,14 @@ mod tests {
             all: false,
         };
 
-        let results = sheet.selection(selection, None).unwrap();
+        let results = sheet.selection(&selection, None, false).unwrap();
         assert_eq!(results.len(), 9);
+
+        let results = sheet.selection(&selection, Some(5), false);
+        assert!(results.is_none());
+
+        let results = sheet.selection(&selection, None, true).unwrap();
+        assert_eq!(results.len(), 6);
     }
 
     #[test]
@@ -321,11 +341,11 @@ mod tests {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "3"], true);
+        sheet.test_set_code_run_array(-1, 0, vec!["1", "2", "3"], true);
 
         let results = sheet
             .selection(
-                Selection {
+                &Selection {
                     sheet_id: sheet.id,
                     x: 0,
                     y: 0,
@@ -338,24 +358,27 @@ mod tests {
                     all: false,
                 },
                 None,
+                false,
             )
             .unwrap();
         assert_eq!(results.len(), 5);
 
-        let results = sheet
-            .selection(
-                Selection {
-                    sheet_id: sheet.id,
-                    x: 0,
-                    y: 0,
-                    rects: Some(vec![Rect::from_numbers(-2, -10, 2, 2)]),
-                    rows: None,
-                    columns: None,
-                    all: false,
-                },
-                None,
-            )
-            .unwrap();
-        assert_eq!(results.len(), 2);
+        let selection = Selection {
+            sheet_id: sheet.id,
+            x: 0,
+            y: 0,
+            rects: Some(vec![Rect::from_numbers(-2, -2, 4, 4)]),
+            rows: None,
+            columns: None,
+            all: false,
+        };
+        let results = sheet.selection(&selection, None, false).unwrap();
+        assert_eq!(results.len(), 6);
+
+        let results = sheet.selection(&selection, Some(1), false);
+        assert!(results.is_none());
+
+        let results = sheet.selection(&selection, None, true).unwrap();
+        assert_eq!(results.len(), 4);
     }
 }

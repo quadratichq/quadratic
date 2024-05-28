@@ -74,6 +74,7 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let selection =
             Selection::from_str(&selection).map_err(|_| JsValue::from_str("Invalid selection"))?;
-        self.delete_cells(&selection, cursor)
+        self.delete_cells(&selection, cursor);
+        Ok(())
     }
 }

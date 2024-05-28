@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{grid::SheetId, Rect};
+use crate::{grid::SheetId, Rect, SheetRect};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -20,6 +20,45 @@ pub struct Selection {
 }
 
 impl Selection {
+    /// Creates a selection via a single sheet rect
+    pub fn sheet_rect(sheet_rect: SheetRect) -> Self {
+        Selection {
+            sheet_id: sheet_rect.sheet_id,
+            x: sheet_rect.min.x,
+            y: sheet_rect.min.y,
+            rects: Some(vec![sheet_rect.into()]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Creates a selection via  single rect
+    pub fn rect(rect: Rect, sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x: rect.min.x,
+            y: rect.min.y,
+            rects: Some(vec![rect]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
+    /// Create a selection via a single position.
+    pub fn pos(x: i64, y: i64, sheet_id: SheetId) -> Self {
+        Selection {
+            sheet_id,
+            x,
+            y,
+            rects: Some(vec![Rect::from_numbers(x, y, 1, 1)]),
+            rows: None,
+            columns: None,
+            all: false,
+        }
+    }
+
     pub fn has_sheet_selection(&self) -> bool {
         self.rows.is_some() || self.columns.is_some() || self.all
     }
@@ -119,6 +158,59 @@ mod test {
                 rows: None,
                 columns: None,
                 all: true
+            }
+        );
+    }
+
+    #[test]
+    fn selection_from_rect() {
+        let rect = Rect::from_numbers(0, 0, 1, 1);
+        let selection = Selection::rect(rect, SheetId::test());
+        assert_eq!(
+            selection,
+            Selection {
+                x: 0,
+                y: 0,
+                sheet_id: SheetId::test(),
+                rects: Some(vec!(rect)),
+                rows: None,
+                columns: None,
+                all: false
+            }
+        );
+    }
+
+    #[test]
+    fn selection_from_pos() {
+        let selection = Selection::pos(0, 0, SheetId::test());
+        assert_eq!(
+            selection,
+            Selection {
+                x: 0,
+                y: 0,
+                sheet_id: SheetId::test(),
+                rects: Some(vec!(Rect::from_numbers(0, 0, 1, 1))),
+                rows: None,
+                columns: None,
+                all: false
+            }
+        );
+    }
+
+    #[test]
+    fn selection_from_sheet_rect() {
+        let sheet_rect = SheetRect::from_numbers(0, 0, 1, 1, SheetId::test());
+        let selection = Selection::sheet_rect(sheet_rect);
+        assert_eq!(
+            selection,
+            Selection {
+                x: 0,
+                y: 0,
+                sheet_id: SheetId::test(),
+                rects: Some(vec!(Rect::from_numbers(0, 0, 1, 1))),
+                rows: None,
+                columns: None,
+                all: false
             }
         );
     }

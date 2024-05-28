@@ -7,6 +7,7 @@ use crate::{
         formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders,
         CodeCellLanguage,
     },
+    selection::Selection,
     CellValue, Pos, SheetPos, SheetRect,
 };
 use anyhow::{Error, Result};
@@ -32,7 +33,8 @@ impl GridController {
         sheet_rect: SheetRect,
     ) -> (Vec<Operation>, String, String) {
         let copy = self.copy_to_clipboard(sheet_rect);
-        let operations = self.delete_values_and_formatting_operations(sheet_rect);
+        let selection = Selection::sheet_rect(sheet_rect);
+        let operations = self.delete_values_and_formatting_operations(&selection);
         (operations, copy.0, copy.1)
     }
 

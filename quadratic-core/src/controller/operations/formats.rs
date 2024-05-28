@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn clear_format_selection_operations() {
-        let mut gc = GridController::test();
+        let gc = GridController::test();
         let selection = Selection {
             sheet_id: gc.sheet_ids()[0],
             x: 0,

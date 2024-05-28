@@ -17,6 +17,16 @@ use crate::{
 };
 
 impl GridController {
+    pub(crate) fn clear_format(
+        &mut self,
+        selection: Selection,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let ops = self.clear_format_selection_operations(&selection);
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
     pub(crate) fn set_align_selection(
         &mut self,
         selection: Selection,

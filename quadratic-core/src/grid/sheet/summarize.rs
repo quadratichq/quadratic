@@ -19,7 +19,7 @@ impl Sheet {
         let mut count: i64 = 0;
         let mut sum = BigDecimal::zero();
 
-        let values = self.selection(selection, Some(MAX_SUMMARIZE_SELECTION_SIZE))?;
+        let values = self.selection(&selection, Some(MAX_SUMMARIZE_SELECTION_SIZE), false)?;
         values.iter().for_each(|(_pos, value)| match value {
             CellValue::Number(n) => {
                 sum += n;

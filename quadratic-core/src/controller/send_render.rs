@@ -371,6 +371,7 @@ mod test {
     }
 
     #[test]
+    #[serial]
     fn send_render_cells_from_rects() {
         let mut gc = GridController::test();
         let sheet_id = SheetId::new();

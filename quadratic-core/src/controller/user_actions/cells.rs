@@ -2,7 +2,7 @@ use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::GridController;
 
 use crate::selection::Selection;
-use crate::{SheetPos, SheetRect};
+use crate::SheetPos;
 
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
@@ -46,14 +46,14 @@ impl GridController {
     }
 
     /// Starts a transaction to clear formatting in a given rect.
-    pub fn clear_formatting(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
-        let ops = self.clear_formatting_operations(sheet_rect);
+    pub fn clear_formatting(&mut self, selection: &Selection, cursor: Option<String>) {
+        let ops = self.clear_format_selection_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
     /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
-    pub fn delete_values_and_formatting(&mut self, sheet_rect: SheetRect, cursor: Option<String>) {
-        let ops = self.delete_values_and_formatting_operations(sheet_rect);
+    pub fn delete_values_and_formatting(&mut self, selection: Selection, cursor: Option<String>) {
+        let ops = self.delete_values_and_formatting_operations(&selection);
         self.start_user_transaction(ops, cursor, TransactionName::SetCells);
     }
 }

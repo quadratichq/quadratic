@@ -453,6 +453,7 @@ mod tests {
             js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell},
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
+        selection::Selection,
         wasm_bindings::js::{expect_js_call, hash_test},
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
@@ -492,15 +493,8 @@ mod tests {
         );
         assert!(sheet.has_render_cells(rect));
 
-        gc.delete_cells_rect(
-            SheetPos {
-                x: 2,
-                y: 3,
-                sheet_id,
-            }
-            .into(),
-            None,
-        );
+        let selection = Selection::pos(2, 3, sheet_id);
+        gc.delete_cells(&selection, None);
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.has_render_cells(rect));
     }

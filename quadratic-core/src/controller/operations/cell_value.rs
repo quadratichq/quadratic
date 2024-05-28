@@ -116,10 +116,13 @@ impl GridController {
 
     /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cells_operations(&mut self, selection: &Selection) -> Vec<Operation> {
+    pub fn delete_cells_operations(&self, selection: &Selection) -> Vec<Operation> {
         let mut ops = vec![];
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            if let Some(values) = sheet.selection(selection, None) {
+            // Find all cells with values.
+            if let Some(values) = sheet.selection(&selection, None, true) {
+                // Find the minimum x and y values of the selection, which will
+                // populate CellValues.
                 let mut min_x = i64::MAX;
                 let mut min_y = i64::MAX;
                 let mut cell_values = CellValues::new(0, 0);
@@ -170,6 +173,7 @@ mod test {
         cell_values::CellValues,
         controller::{operations::operation::Operation, GridController},
         grid::SheetId,
+        selection::Selection,
         CellValue, SheetPos,
     };
 
@@ -283,5 +287,31 @@ mod test {
             value,
         );
         dbg!(cell_value.to_string());
+    }
+
+    #[test]
+    fn delete_cells_operations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        gc.set_cell_value(sheet_pos, "hello".to_string(), None);
+        let selection = Selection::pos(1, 2, sheet_id);
+        let operations = gc.delete_cells_operations(&selection);
+        assert_eq!(operations.len(), 1);
+        assert_eq!(
+            operations,
+            vec![Operation::SetCellValues {
+                sheet_pos: SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id
+                },
+                values: CellValues::from(CellValue::Blank)
+            }]
+        );
     }
 }

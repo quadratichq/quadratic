@@ -388,6 +388,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{Bold, CodeRunResult, Italic, NumericFormat},
+        selection::Selection,
         test_util::print_table,
         SheetPos, Value,
     };
@@ -527,8 +528,8 @@ mod test {
     #[test]
     fn test_delete_cell_values() {
         let (mut grid, sheet_id, selected) = test_setup_basic();
-
-        grid.delete_cells_rect(selected.to_sheet_rect(sheet_id), None);
+        let selection = &Selection::rect(selected, sheet_id);
+        grid.delete_cells(selection, None);
         let sheet = grid.sheet(sheet_id);
 
         print_table(&grid, sheet_id, selected);
@@ -562,8 +563,8 @@ mod test {
 
         // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
         print_table(&grid, sheet_id, view_rect);
-
-        grid.delete_cells_rect(selected.to_sheet_rect(sheet_id), None);
+        let selection = Selection::rect(selected, sheet_id);
+        grid.delete_cells(&selection, None);
         let sheet = grid.sheet(sheet_id);
 
         print_table(&grid, sheet_id, view_rect);
