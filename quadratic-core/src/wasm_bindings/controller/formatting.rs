@@ -46,13 +46,12 @@ impl GridController {
     #[wasm_bindgen(js_name = "removeCellNumericFormat")]
     pub fn js_remove_numeric_format(
         &mut self,
-        _selection: String,
-        _cursor: Option<String>,
+        selection: String,
+        cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        todo!();
-        // let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        // self.remove_number_formatting(selection, cursor);
-        // Ok(())
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.remove_number_formatting_selection(selection, cursor)?;
+        Ok(())
     }
 
     /// Sets cells numeric_format to currency

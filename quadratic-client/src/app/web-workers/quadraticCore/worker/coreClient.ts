@@ -312,10 +312,7 @@ class CoreClient {
         break;
 
       case 'clientCoreCutToClipboard':
-        const cutResult = await core.cutToClipboard(
-          e.data.selection
-          e.data.cursor
-        );
+        const cutResult = await core.cutToClipboard(e.data.selection, e.data.cursor);
         this.send({ type: 'coreClientCutToClipboard', id: e.data.id, ...cutResult });
         break;
 
@@ -433,11 +430,7 @@ class CoreClient {
         break;
 
       case 'clientCoreChangeDecimals':
-        core.changeDecimals(
-          e.data.selection,
-          e.data.delta,
-          e.data.cursor
-        );
+        core.changeDecimals(e.data.selection, e.data.delta, e.data.cursor);
         break;
 
       case 'clientCoreSetPercentage':

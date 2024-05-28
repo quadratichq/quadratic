@@ -1,7 +1,3 @@
-//! These functions set formatting for cells. Note: these functions are
-//! deprecated in favor of formats.rs. We maintained some of the macros to
-//! ensure offline transactions continue to work.
-
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::{operations::operation::Operation, GridController};
 use crate::{
@@ -54,7 +50,11 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.change_decimal_places_operations(source, sheet_rect, delta);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetFormats,
+        );
     }
 
     pub fn toggle_commas(
@@ -130,7 +130,11 @@ impl GridController {
     ) {
         let attr = CellFmtArray::RenderSize(RunLengthEncoding::repeat(value, sheet_rect.len()));
         let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_transaction(
+            ops,
+            cursor,
+            TransactionName::SetFormats,
+        );
         self.send_html_output_rect(&sheet_rect);
     }
 }
@@ -147,13 +151,17 @@ macro_rules! impl_set_cell_fmt_method {
                 let attr =
                     $cell_fmt_array_constructor(RunLengthEncoding::repeat(value, sheet_rect.len()));
                 let ops = vec![Operation::SetCellFormats { sheet_rect, attr }];
-                self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+                self.start_user_transaction(
+                    ops,
+                    cursor,
+                    TransactionName::SetFormats,
+                );
             }
         }
     };
 }
 
-// impl_set_cell_fmt_method!(set_cell_align<CellAlign>(CellFmtArray::Align));
+impl_set_cell_fmt_method!(set_cell_align<CellAlign>(CellFmtArray::Align));
 impl_set_cell_fmt_method!(set_cell_wrap<CellWrap>(CellFmtArray::Wrap));
 impl_set_cell_fmt_method!(set_cell_numeric_format<NumericFormat>(CellFmtArray::NumericFormat));
 impl_set_cell_fmt_method!(set_cell_numeric_decimals<NumericDecimals>(CellFmtArray::NumericDecimals));

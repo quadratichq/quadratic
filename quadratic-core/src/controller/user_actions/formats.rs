@@ -161,6 +161,23 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
+
+    pub(crate) fn remove_number_formatting_selection(
+        &mut self,
+        selection: Selection,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                numeric_format: Some(None),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
