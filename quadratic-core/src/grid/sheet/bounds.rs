@@ -476,26 +476,34 @@ mod test {
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.find_next_column(-1, 2, false, true), 1);
+        assert_eq!(sheet.find_next_column(-1, 2, true, true), -1);
+        assert_eq!(sheet.find_next_column(3, 2, false, true), 3);
         assert_eq!(sheet.find_next_column(3, 2, true, true), 1);
         assert_eq!(sheet.find_next_column(2, 2, false, true), 2);
+        assert_eq!(sheet.find_next_column(2, 2, true, true), 1);
+        assert_eq!(sheet.find_next_column(0, 2, false, true), 1);
         assert_eq!(sheet.find_next_column(0, 2, true, true), 0);
-        assert_eq!(sheet.find_next_column(1, 2, false, false), 2);
-        assert_eq!(sheet.find_next_column(1, 2, true, false), 0);
+        assert_eq!(sheet.find_next_column(1, 2, false, false), 1);
+        assert_eq!(sheet.find_next_column(1, 2, true, false), 1);
     }
 
     #[test]
     fn test_find_next_row() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(Pos { y: 1, x: 2 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.find_next_row(-1, 2, false, true), 1);
+        assert_eq!(sheet.find_next_row(-1, 2, true, true), -1);
+        assert_eq!(sheet.find_next_row(3, 2, false, true), 3);
         assert_eq!(sheet.find_next_row(3, 2, true, true), 1);
         assert_eq!(sheet.find_next_row(2, 2, false, true), 2);
+        assert_eq!(sheet.find_next_row(2, 2, true, true), 1);
+        assert_eq!(sheet.find_next_row(0, 2, false, true), 1);
         assert_eq!(sheet.find_next_row(0, 2, true, true), 0);
-        assert_eq!(sheet.find_next_row(1, 2, false, false), 2);
-        assert_eq!(sheet.find_next_row(1, 2, true, false), 0);
+        assert_eq!(sheet.find_next_row(1, 2, false, false), 1);
+        assert_eq!(sheet.find_next_row(1, 2, true, false), 1);
     }
 
     #[test]
