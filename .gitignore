@@ -60,8 +60,10 @@ quadratic-multiplayer/coverage
 
 # Docker Data
 docker/localstack/data
-docker/redis/data
+docker/mysql/data
 docker/postgres/data
+docker/redis/data
+docker/static/html
 
 # JMeter
 jmeter.log

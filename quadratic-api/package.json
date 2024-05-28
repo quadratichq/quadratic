@@ -5,10 +5,12 @@
   "main": "index.js",
   "scripts": {
     "start": "dotenv -e .env -- ts-node-dev --respawn --exit-child --watch src --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
-    "start-no-watch": "dotenv -e .env -- ts-node --project ./tsconfig.json -- ./src/server.ts --max-old-space-size=8192",
+    "start-no-watch": "npm run start:prod",
+    "start:prod": "dotenv -e .env -- node dist/src/server.js --max-old-space-size=8192",
     "postinstall": "prisma generate",
     "prebuild": "rm -rf dist",
-    "build": "tsc && tsc ../quadratic-shared/*.ts",
+    "build": "tsc  --project tsconfig.production.json && tsc ../quadratic-shared/*.ts",
+    "build:prod": "npm run prebuild && NODE_ENV=production npm run build",
     "update-university-domains": "node scripts/updateUniversityDomains.js",
     "lint": "npm run lint:eslint && npm run lint:prettier",
     "lint:eslint": "eslint src/**/*.ts",
@@ -69,7 +71,8 @@
     "dotenv-cli": "^7.1.0",
     "prisma": "^4.12.0",
     "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0"
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
   },
   "engines": {
     "node": "18.x"

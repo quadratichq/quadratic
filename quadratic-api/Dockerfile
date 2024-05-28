@@ -10,5 +10,5 @@ FROM node:18-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app .
 RUN apt-get update && apt install -y openssl
-# RUN npm run build --workspace=quadratic-api
-CMD ["npm", "start"]
+RUN npm run build:prod --workspace=quadratic-api
+CMD ["npm", "start:prod"]

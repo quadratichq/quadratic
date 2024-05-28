@@ -7,8 +7,6 @@ services:
       service: redis
     volumes:
       - ./docker/redis/data:/data
-    networks:
-      - localnetwork
 
   postgres:
     extends:
@@ -29,49 +27,83 @@ services:
     extends:
       file: docker-compose.base.yml
       service: aws-cli
+    depends_on:
+      - localstack
     volumes:
       - ./docker/localstack/cli:/aws
 
-  https-portal:
-    image: steveltn/https-portal:1
-    ports:
-      - "80:80"
-      - "443:443"
+  nginx:
     restart: always
-    environment:
-      DOMAINS: "localhost -> http://quadratic-client:3000"
-      STAGE: "local" # Use 'production' to use a LetsEncrypt signed SSL cert
-      FORCE_RENEW: "false"
-    networks:
-      - localnetwork
-    depends_on:
-      - quadratic-client
-
-  quadratic-client:
-    build:
-      context: .
-      dockerfile: quadratic-client/Dockerfile
-    env_file:
-      - quadratic-client/.env.local
-      - quadratic-client/.env.docker
-    # override env vars here
-    environment:
-      VITE_QUADRATIC_API_URL: https://0.0.0.0:8000
-      VITE_QUADRATIC_MULTIPLAYER_URL: wss://0.0.0.0:3001/ws
-      VITE_QUADRATIC_CONNECTION_URL: https://0.0.0.0:3003
-    restart: "always"
+    image: nginx:1-alpine
     ports:
-      - "3000:3000"
-    command: "npm start --workspace=quadratic-client -- --host"
+      - 80:80
+      - 443:443
+      - 3000:80
+    volumes:
+      - ./docker/static/html:/usr/share/nginx/html
+      - ./docker/static/conf/:/etc/nginx/conf.d/:ro
+      - ./docker/static/certs:/etc/nginx/ssl
+      # - ./docker/static/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      postgres:
-        condition: service_healthy
-    profiles:
-      - client
-      - frontend
-      - all
-    networks:
-      - localnetwork
+      - quadratic-api
+    # networks:
+    #   - host
+
+  # https-portal:
+  #   image: steveltn/https-portal:1
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   restart: always
+  #   env_file:
+  #     - quadratic-client/.env.local
+  #     - quadratic-client/.env.docker
+  #   # override env vars here
+  #   environment:
+  #     DOMAINS: >
+  #       quadratic.lvh.me,
+  #       quadratic-api.lvh.me -> http://quadratic-api:8000,
+  #       quadratic-multiplayer.lvh.me -> http://quadratic-multiplayer:3001/ws,
+  #       quadratic-localstack.lvh.me -> http://localstack:4566
+  #     STAGE: "local" # Use 'production' to use a LetsEncrypt signed SSL cert
+  #     FORCE_RENEW: "false"
+  #     WEBSOCKET: "true"
+
+  #     VITE_QUADRATIC_API_URL: http://0.0.0.0:8000
+  #     VITE_QUADRATIC_MULTIPLAYER_URL: ws://0.0.0.0:3001
+  #     VITE_QUADRATIC_CONNECTION_URL: http://0.0.0.0:3003
+  #   depends_on:
+  #     # - quadratic-client
+  #     - quadratic-api
+  #   volumes:
+  #     - ./docker/https-portal/data:/var/lib/https-portal
+  #     - ./docker/https-portal/vhosts:/var/www/vhosts
+  #     - ./docker/https-portal/quadratic.lvh.me.conf.erb:/var/lib/nginx-conf/quadratic.lvh.me.conf.erb:ro
+  #     - ./docker/https-portal/quadratic.lvh.me.ssl.conf.erb:/var/lib/nginx-conf/quadratic.lvh.me.ssl.conf.erb:ro
+
+  # quadratic-client:
+  #   build:
+  #     context: .
+  #     dockerfile: quadratic-client/Dockerfile
+  #   env_file:
+  #     - quadratic-client/.env.local
+  #     - quadratic-client/.env.docker
+  #   # override env vars here
+  #   environment:
+  #     VITE_QUADRATIC_API_URL: http://localhost:8000
+  #     VITE_QUADRATIC_MULTIPLAYER_URL: ws://localhost:3001
+  #     VITE_QUADRATIC_CONNECTION_URL: http://0.0.0.0:3003
+  #   restart: "always"
+  #   ports:
+  #     - "3000:3000"
+  #   command: "npm start --workspace=quadratic-client -- --host"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   profiles:
+  #     - client
+  #     - frontend
+  #     - all
 
   quadratic-api:
     build:
@@ -80,10 +112,13 @@ services:
     env_file:
       - quadratic-api/.env
       - quadratic-api/.env.docker
+    # override env vars here
+    environment:
+      AWS_S3_ENDPOINT: https://localhost/localstack
     restart: "always"
     ports:
       - "8000:8000"
-    command: "npm start --workspace=quadratic-api"
+    command: "npm run start:prod --workspace=quadratic-api"
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,7 +137,7 @@ services:
       - quadratic-multiplayer/.env.docker
     # override env vars here
     environment:
-      # QUADRATIC_API_URI: http://host.docker.internal:8000
+      QUADRATIC_API_URI: http://host.docker.internal:8000
       RUST_LOG: info
     restart: "always"
     ports:
@@ -119,7 +154,7 @@ services:
       - quadratic-multiplayer
       - all
     networks:
-      - localnetwork
+      - host
 
   quadratic-files:
     build:
@@ -147,6 +182,8 @@ services:
       - backend
       - quadratic-files
       - all
+    networks:
+      - host
 
   # quadratic-connection:
   #   build:
@@ -178,4 +215,4 @@ volumes:
     name: docker
 
 networks:
-  localnetwork:
+  host:
