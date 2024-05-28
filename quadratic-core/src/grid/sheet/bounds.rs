@@ -227,6 +227,9 @@ impl Sheet {
                 } else {
                     column_start.max(rect.min.x)
                 };
+                if x < rect.min.x || x > rect.max.x {
+                    return column_start;
+                }
                 while x >= rect.min.x && x <= rect.max.x {
                     let has_content = self.display_value(Pos { x, y: row });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
@@ -271,6 +274,9 @@ impl Sheet {
                 } else {
                     row_start.max(rect.min.y)
                 };
+                if y < rect.min.y || y > rect.max.y {
+                    return row_start;
+                }
                 while y >= rect.min.y && y <= rect.max.y {
                     let has_content = self.display_value(Pos { x: column, y });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
