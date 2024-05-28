@@ -123,19 +123,16 @@ export class Cursor extends Graphics {
       this.lineStyle(1, colors.cursorCell, 1, 0, true);
       this.beginFill(colors.cursorCell, FILL_ALPHA);
       cursor.multiCursor.forEach((cursor) => {
-        const { x, y, width, height } = sheet.getCellOffsets(cursor.x, cursor.y);
+        const { x, y, width, height } = sheet.getScreenRectangle(
+          cursor.x,
+          cursor.y,
+          cursor.width - 1,
+          cursor.height - 1
+        );
         this.drawRect(x, y, width, height);
       });
-      // this.startCell = sheet.getCellOffsets(cursor.originPosition.x, cursor.originPosition.y);
-      // this.endCell = sheet.getCellOffsets(cursor.terminalPosition.x, cursor.terminalPosition.y);
-      // this.cursorRectangle = new Rectangle(
-      //   this.startCell.x,
-      //   this.startCell.y,
-      //   this.endCell.x + this.endCell.width - this.startCell.x,
-      //   this.endCell.y + this.endCell.height - this.startCell.y
-      // );
-      // this.drawShape(this.cursorRectangle);
       this.endFill();
+      this.cursorRectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
     } else {
       this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
