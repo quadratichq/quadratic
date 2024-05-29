@@ -17,12 +17,15 @@ pub(crate) struct Config {
     pub(crate) port: String,
     pub(crate) file_check_s: i64,
     pub(crate) files_per_check: i64,
+    pub(crate) truncate_file_check_s: i64,
+    pub(crate) truncate_transaction_age_days: i64,
     pub(crate) environment: Environment,
 
     pub(crate) pubsub_host: String,
     pub(crate) pubsub_port: String,
     pub(crate) pubsub_password: String,
     pub(crate) pubsub_active_channels: String,
+    pub(crate) pubsub_processed_transactions_channel: String,
 
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,

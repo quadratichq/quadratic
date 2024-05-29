@@ -99,13 +99,13 @@ impl Spanned<AstNodeContents> {
 
 impl Formula {
     /// Evaluates a formula.
-    pub fn eval(&self, ctx: &mut Ctx<'_>) -> CodeResult<Value> {
-        self.ast.eval(ctx)?.into_non_error_value()
+    pub fn eval(&self, ctx: &mut Ctx<'_>, only_parse: bool) -> CodeResult<Value> {
+        self.ast.eval(ctx, only_parse)?.into_non_error_value()
     }
 }
 
 impl AstNode {
-    fn eval<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>) -> CodeResult {
+    fn eval<'ctx: 'a, 'a>(&'a self, ctx: &'a mut Ctx<'ctx>, only_parse: bool) -> CodeResult {
         let value = match &self.inner {
             AstNodeContents::Empty => CellValue::Blank.into(),
 
@@ -161,20 +161,20 @@ impl AstNode {
             AstNodeContents::FunctionCall { func, args } => {
                 let mut arg_values = vec![];
                 for arg in args {
-                    arg_values.push(arg.eval(&mut *ctx)?);
+                    arg_values.push(arg.eval(&mut *ctx, only_parse)?);
                 }
 
                 let func_name = &func.inner;
                 match functions::lookup_function(func_name) {
                     Some(f) => {
                         let args = FormulaFnArgs::new(arg_values, self.span, f.name);
-                        (f.eval)(&mut *ctx, args)?
+                        (f.eval)(&mut *ctx, only_parse, args)?
                     }
                     None => return Err(RunErrorMsg::BadFunctionName.with_span(func.span)),
                 }
             }
 
-            AstNodeContents::Paren(expr) => expr.eval(ctx)?.inner,
+            AstNodeContents::Paren(expr) => expr.eval(ctx, only_parse)?.inner,
 
             AstNodeContents::Array(a) => {
                 let is_empty = a.iter().flatten().next().is_none();
@@ -190,7 +190,7 @@ impl AstNode {
                         return Err(RunErrorMsg::NonRectangularArray.with_span(self.span));
                     }
                     for elem_expr in row {
-                        flat_array.push(elem_expr.eval(ctx)?.into_cell_value()?.inner);
+                        flat_array.push(elem_expr.eval(ctx, only_parse)?.into_cell_value()?.inner);
                     }
                 }
 

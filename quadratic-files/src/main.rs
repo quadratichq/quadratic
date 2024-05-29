@@ -10,6 +10,7 @@ mod server;
 mod state;
 #[cfg(test)]
 mod test_util;
+mod truncate;
 
 use error::Result;
 

@@ -169,10 +169,18 @@ macro_rules! get_or_create_room {
                 } else {
                     let url = &$self.settings.quadratic_api_uri;
                     let jwt = &$self.settings.m2m_auth_token;
-                    quadratic_rust_shared::quadratic_api::get_file_checkpoint(url, jwt, &$file_id)
-                        .await?
-                        .sequence_number
-                        .max($sequence_num)
+                    let response = quadratic_rust_shared::quadratic_api::get_file_checkpoint(
+                        url, jwt, &$file_id,
+                    )
+                    .await?
+                    .sequence_number
+                    .max($sequence_num);
+                    tracing::info!(
+                        "Retrieved sequence number {} for room {}",
+                        response,
+                        $file_id
+                    );
+                    response
                 }
             }
         };

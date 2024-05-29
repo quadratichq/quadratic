@@ -11,17 +11,17 @@ import { ParseFormulaReturnType, Span } from '../../../helpers/formulaNotation';
 import { StringId, getKey } from '../../../helpers/getKey';
 import { colors } from '../../../theme/colors';
 
-function extractCellsFromParseFormula(
+export function extractCellsFromParseFormula(
   parsedFormula: ParseFormulaReturnType,
   cell: Coordinate,
   sheet: string
 ): { cellId: CellRefId; span: Span; index: number }[] {
   return parsedFormula.cell_refs.map(({ cell_ref, span }, index) => {
     if (cell_ref.type === 'CellRange') {
-      const startX = pixiApp.highlightedCells.evalCoord(cell_ref.start.x, cell.x) + cell_ref.start.x.coord;
-      const startY = pixiApp.highlightedCells.evalCoord(cell_ref.start.y, cell.y) + cell_ref.start.y.coord;
-      const endX = pixiApp.highlightedCells.evalCoord(cell_ref.end.x, cell.x) + cell_ref.end.x.coord;
-      const endY = pixiApp.highlightedCells.evalCoord(cell_ref.end.y, cell.y) + cell_ref.end.y.coord;
+      const startX = pixiApp.cellHighlights.evalCoord(cell_ref.start.x, cell.x) + cell_ref.start.x.coord;
+      const startY = pixiApp.cellHighlights.evalCoord(cell_ref.start.y, cell.y) + cell_ref.start.y.coord;
+      const endX = pixiApp.cellHighlights.evalCoord(cell_ref.end.x, cell.x) + cell_ref.end.x.coord;
+      const endY = pixiApp.cellHighlights.evalCoord(cell_ref.end.y, cell.y) + cell_ref.end.y.coord;
 
       return {
         cellId: `${getKey(startX, startY)}:${getKey(endX, endY)}`,
@@ -29,8 +29,8 @@ function extractCellsFromParseFormula(
         index,
       };
     } else if (cell_ref.type === 'Cell') {
-      const x = pixiApp.highlightedCells.evalCoord(cell_ref.pos.x, cell.x) + cell_ref.pos.x.coord;
-      const y = pixiApp.highlightedCells.evalCoord(cell_ref.pos.y, cell.y) + cell_ref.pos.y.coord;
+      const x = pixiApp.cellHighlights.evalCoord(cell_ref.pos.x, cell.x) + cell_ref.pos.x.coord;
+      const y = pixiApp.cellHighlights.evalCoord(cell_ref.pos.y, cell.y) + cell_ref.pos.y.coord;
       return { cellId: getKey(x, y), span, index };
     } else {
       throw new Error('Unhandled cell_ref type in extractCellsFromParseFormula');
@@ -40,6 +40,22 @@ function extractCellsFromParseFormula(
 
 export type CellRefId = StringId | `${StringId}:${StringId}`;
 export type CellMatch = Map<CellRefId, monaco.Range>;
+
+export const createFormulaStyleHighlights = () => {
+  const id = 'useEditorCellHighlights';
+
+  if (!document.querySelector(id)) {
+    const style = document.createElement('style');
+    document.head.appendChild(style);
+    style.id = id;
+    style.type = 'text/css';
+    style.appendChild(
+      document.createTextNode(
+        colors.cellHighlightColor.map((color, i) => `.cell-reference-${i} { color: ${color} !important }`).join('')
+      )
+    );
+  }
+};
 
 export const useEditorCellHighlights = (
   isValidRef: boolean,
@@ -55,20 +71,7 @@ export const useEditorCellHighlights = (
   // the colors from the same colors used in pixi and stick them in the DOM
   useEffect(() => {
     if (language !== 'Formula') return;
-
-    const id = 'useEditorCellHighlights';
-
-    if (!document.querySelector(id)) {
-      const style = document.createElement('style');
-      document.head.appendChild(style);
-      style.id = id;
-      style.type = 'text/css';
-      style.appendChild(
-        document.createTextNode(
-          colors.cellHighlightColor.map((color, i) => `.cell-reference-${i} { color: ${color} !important }`).join('')
-        )
-      );
-    }
+    createFormulaStyleHighlights();
   }, [language]);
 
   useEffect(() => {
@@ -90,7 +93,7 @@ export const useEditorCellHighlights = (
       let parsed;
 
       if (language === 'Python') {
-        parsed = parsePython(cellsAccessed) as ParseFormulaReturnType;
+        parsed = parsePython(cellsAccessed);
       }
 
       if (language === 'Formula') {
@@ -102,7 +105,7 @@ export const useEditorCellHighlights = (
       }
 
       if (parsed) {
-        pixiApp.highlightedCells.fromFormula(
+        pixiApp.cellHighlights.fromFormula(
           parsed,
           editorInteractionState.selectedCell,
           editorInteractionState.selectedCellSheet
@@ -143,7 +146,7 @@ export const useEditorCellHighlights = (
           const editorCursorPosition = editor.getPosition();
 
           if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-            pixiApp.highlightedCells.setHighlightedCell(index);
+            pixiApp.cellHighlights.setHighlightedCell(index);
           }
         });
 

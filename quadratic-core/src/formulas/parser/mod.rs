@@ -12,7 +12,7 @@ use lexer::Token;
 use rules::SyntaxRule;
 
 use super::*;
-use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned};
+use crate::{grid::Grid, CodeResult, Pos, RunError, RunErrorMsg, Span, Spanned};
 
 pub fn parse_formula(source: &str, pos: Pos) -> CodeResult<ast::Formula> {
     Ok(Formula {
@@ -43,6 +43,24 @@ pub fn find_cell_references(source: &str, pos: Pos) -> Vec<Spanned<RangeRef>> {
     }
 
     ret
+}
+
+/// Parses and checks whether the formula has the correct arguments (which has
+/// to run eval with `only_parse = true`).
+pub fn parse_and_check_formula(formula_string: &str, x: i64, y: i64) -> bool {
+    // We are not running any calculations, so an empty Grid are fine for
+    // purposes of evaluating the formula for correctness. (Especially since we
+    // do not have the actual Grid when running this formula in RustClient.)
+    let pos = (x, y).into();
+    match parse_formula(formula_string, pos) {
+        Ok(parsed) => {
+            let grid = Grid::new();
+            let sheet_id = grid.sheet_ids()[0];
+            let mut ctx = Ctx::new(&grid, pos.to_sheet_pos(sheet_id));
+            parsed.eval(&mut ctx, true).is_ok()
+        }
+        Err(_) => false,
+    }
 }
 
 /// Replace internal cell references in a formula with A1 notation.
@@ -134,7 +152,7 @@ impl<'a> Parser<'a> {
         Some(self.tokens.get(self.cursor?)?.inner)
     }
     /// Returns the span of the current token. If there is no current token,
-    /// returns an empty span at the begining or end of the input appropriately.
+    /// returns an empty span at the beginning or end of the input appropriately.
     pub fn span(&self) -> Span {
         if let Some(idx) = self.cursor {
             if let Some(token) = self.tokens.get(idx) {
@@ -151,7 +169,7 @@ impl<'a> Parser<'a> {
             Span::empty(0)
         }
     }
-    /// Returns the source string of the curent token. If there is no current
+    /// Returns the source string of the current token. If there is no current
     /// token, returns an empty string.
     pub fn token_str(&self) -> &'a str {
         let Span { start, end } = self.span();
@@ -272,9 +290,9 @@ mod tests {
 
     #[test]
     fn test_replace_internal_cell_references() {
-        let src = "SUM(R[0]C[-1]) 
+        let src = "SUM(R[0]C[-1])
         + SUM(R[-1]C[0])";
-        let expected = "SUM(nA0) 
+        let expected = "SUM(nA0)
         + SUM(An1)";
 
         let replaced = replace_internal_cell_references(src, (0, 0).into());
@@ -283,12 +301,22 @@ mod tests {
 
     #[test]
     fn test_replace_a1_notation() {
-        let src = "SUM(nA0) 
+        let src = "SUM(nA0)
         + SUM(An1)";
-        let expected = "SUM(R[0]C[-1]) 
+        let expected = "SUM(R[0]C[-1])
         + SUM(R[-1]C[0])";
 
         let replaced = replace_a1_notation(src, (0, 0).into());
         assert_eq!(replaced, expected);
+    }
+
+    #[test]
+    fn check_formula() {
+        assert!(parse_and_check_formula("SUM(10)", 0, 0));
+        assert!(!parse_and_check_formula("SUM()", 0, 0));
+        assert!(!parse_and_check_formula("SUM(", 0, 0));
+        assert!(!parse_and_check_formula("NOT_A_FUNCTION()", 0, 0));
+        assert!(parse_and_check_formula("SUM(10, 20, 30)", 0, 0));
+        assert!(parse_and_check_formula("SUM(A1, A2, A3, A4)", 0, 0));
     }
 }
