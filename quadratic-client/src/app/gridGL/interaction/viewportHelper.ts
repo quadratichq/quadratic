@@ -66,7 +66,8 @@ export function moveViewport(options: {
 
   const sheet = sheets.sheet;
   const bounds = pixiApp.viewport.getVisibleBounds();
-  const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE : 0;
+  const zoom = pixiApp.viewport.scale.x;
+  const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE / zoom : 0;
 
   if (center) {
     const cell = sheet.getCellOffsets(center.x, center.y);
