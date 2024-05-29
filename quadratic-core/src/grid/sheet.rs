@@ -380,18 +380,16 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use bigdecimal::BigDecimal;
-    use chrono::Utc;
-    use std::{collections::HashSet, str::FromStr};
-
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{Bold, CodeRunResult, Italic, NumericFormat},
+        grid::{Bold, CodeCellLanguage, Italic, NumericFormat},
         selection::Selection,
         test_util::print_table,
-        SheetPos, Value,
+        CodeCellValue, SheetPos,
     };
+    use bigdecimal::BigDecimal;
+    use std::str::FromStr;
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -413,8 +411,6 @@ mod test {
         let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
         let selected = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let (grid_controller, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid_controller, sheet_id, selected);
 
         (grid_controller, sheet_id, selected)
     }
@@ -526,54 +522,39 @@ mod test {
     }
 
     #[test]
-    fn test_delete_cell_values() {
-        let (mut grid, sheet_id, selected) = test_setup_basic();
-        let selection = &Selection::rect(selected, sheet_id);
-        grid.delete_cells(selection, None);
-        let sheet = grid.sheet(sheet_id);
+    fn delete_cell_values() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
 
-        print_table(&grid, sheet_id, selected);
+        let rect = Rect::from_numbers(0, 0, 2, 2);
+        let selection = &Selection::rect(rect, sheet_id);
+        gc.delete_cells(selection, None);
 
-        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
-        values
-            .into_cell_values_vec()
-            .into_iter()
-            .for_each(|v| assert_eq!(v, CellValue::Blank));
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
+        assert!(sheet.cell_value(Pos { x: 0, y: 1 }).is_none());
+        assert!(sheet.cell_value(Pos { x: 1, y: 0 }).is_none());
+        assert!(sheet.cell_value(Pos { x: 1, y: 1 }).is_none());
     }
 
-    // TODO(ddimaria): use the code below as a template once formula cells are in place
-    #[ignore]
     #[test]
-    fn test_delete_cell_values_affects_dependent_cells() {
-        let (mut grid, sheet_id, selected) = test_setup_basic();
+    fn delete_cell_values_code() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(
+            Pos { x: 0, y: 0 },
+            CellValue::Code(CodeCellValue {
+                code: "test".to_string(),
+                language: CodeCellLanguage::Formula,
+            }),
+        );
+        gc.delete_cells(&Selection::pos(0, 0, sheet_id), None);
 
-        let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
-        let _ = CodeRun {
-            std_err: None,
-            std_out: None,
-            spill_error: false,
-            formatted_code_string: None,
-            cells_accessed: HashSet::new(),
-            last_modified: Utc::now(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(1)))),
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-        };
-
-        // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
-        print_table(&grid, sheet_id, view_rect);
-        let selection = Selection::rect(selected, sheet_id);
-        grid.delete_cells(&selection, None);
-        let sheet = grid.sheet(sheet_id);
-
-        print_table(&grid, sheet_id, view_rect);
-
-        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
-        values
-            .into_cell_values_vec()
-            .into_iter()
-            .for_each(|v| assert_eq!(v, CellValue::Blank));
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
     }
 
     // TODO(ddimaria): use the code below as a template once cell borders are in place

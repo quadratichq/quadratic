@@ -63,12 +63,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        self.set_numeric_format_selection(
-            selection,
-            NumericFormatKind::Currency,
-            Some(symbol),
-            cursor,
-        )?;
+        self.set_currency_selection(selection, symbol, cursor)?;
         Ok(())
     }
 

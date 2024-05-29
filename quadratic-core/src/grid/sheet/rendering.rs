@@ -459,7 +459,7 @@ mod tests {
     };
 
     #[test]
-    fn test_has_render_cells() {
+    fn has_render_cells() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);

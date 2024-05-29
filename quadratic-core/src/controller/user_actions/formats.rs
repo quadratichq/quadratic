@@ -99,6 +99,30 @@ impl GridController {
         Ok(())
     }
 
+    /// Changes the Selection to use a currency format and updates the decimals
+    /// to 2.
+    pub(crate) fn set_currency_selection(
+        &mut self,
+        selection: Selection,
+        symbol: String,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some(symbol),
+                })),
+                numeric_decimals: Some(Some(2)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
     pub(crate) fn set_numeric_format_selection(
         &mut self,
         selection: Selection,
@@ -273,7 +297,7 @@ mod test {
     fn set_numeric_format_currency() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_numeric_format_selection(
+        gc.set_currency_selection(
             Selection {
                 sheet_id,
                 x: 0,
@@ -283,8 +307,7 @@ mod test {
                 columns: None,
                 all: false,
             },
-            crate::grid::NumericFormatKind::Currency,
-            Some("€".to_string()),
+            "€".to_string(),
             None,
         )
         .unwrap();

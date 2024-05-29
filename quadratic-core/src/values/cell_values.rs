@@ -21,6 +21,20 @@ impl CellValues {
         }
     }
 
+    pub fn get_except_blank(&self, x: u32, y: u32) -> Option<&CellValue> {
+        assert!(x < self.w && y < self.h, "CellValues::get out of bounds");
+        self.columns
+            .get(x as usize)
+            .and_then(|col| col.get(&(y as u64)))
+            .and_then(|value| {
+                if value == &CellValue::Blank {
+                    None
+                } else {
+                    Some(value)
+                }
+            })
+    }
+
     pub fn get(&self, x: u32, y: u32) -> Option<&CellValue> {
         assert!(x < self.w && y < self.h, "CellValues::get out of bounds");
         self.columns
@@ -177,6 +191,18 @@ mod test {
         assert_eq!(cell_values.get(1, 0), None);
         cell_values.remove(0, 0);
         assert_eq!(cell_values.get(0, 0), None);
+    }
+
+    #[test]
+    fn get_except_blank() {
+        let mut cell_values = CellValues::new(2, 3);
+        cell_values.set(0, 0, CellValue::from("a"));
+        cell_values.set(1, 2, CellValue::Blank);
+        assert_eq!(
+            cell_values.get_except_blank(0, 0),
+            Some(&CellValue::from("a"))
+        );
+        assert_eq!(cell_values.get_except_blank(1, 2), None);
     }
 
     #[test]

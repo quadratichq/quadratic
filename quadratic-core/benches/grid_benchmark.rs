@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use quadratic_core::controller::GridController;
 use quadratic_core::grid::Grid;
+use quadratic_core::selection::Selection;
 use quadratic_core::{Pos, Rect, SheetPos, SheetRect};
 use std::time::Duration;
 
@@ -126,7 +127,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.delete_cells_rect(sheet_rect, None);
+                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -146,7 +147,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells_rect(sheet_rect, None);
+                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
                 gc
             },
             |mut gc| {
@@ -171,7 +172,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells_rect(sheet_rect, None);
+                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
                 gc.undo(None);
                 gc
             },
@@ -247,7 +248,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.clear_formatting(sheet_rect, None);
+                gc.clear_formatting(&Selection::sheet_rect(sheet_rect), None);
             },
             criterion::BatchSize::SmallInput,
         )

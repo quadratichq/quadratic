@@ -165,7 +165,6 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{RenderSize, SheetId, TextColor},
-        selection::Selection,
         Pos, Rect, SheetPos, SheetRect,
     };
 
@@ -217,28 +216,6 @@ mod test {
         gc.redo(None);
         assert_eq!(get(&gc, pos1), "blue");
         assert_eq!(get(&gc, pos2), "red");
-        assert_eq!(get(&gc, pos3), "red");
-
-        // delete and redo
-        let selection = Selection::sheet_rect(rect1);
-        gc.delete_cells(&selection, None);
-        assert_eq!(get(&gc, pos1), "blue");
-        assert_eq!(get(&gc, pos2), "red");
-        assert_eq!(get(&gc, pos3), "red");
-
-        gc.clear_formatting(&selection, None);
-        assert_eq!(get(&gc, pos1), "");
-        assert_eq!(get(&gc, pos2), "");
-        assert_eq!(get(&gc, pos3), "red");
-
-        gc.undo(None);
-        assert_eq!(get(&gc, pos1), "blue");
-        assert_eq!(get(&gc, pos2), "red");
-        assert_eq!(get(&gc, pos3), "red");
-
-        gc.redo(None);
-        assert_eq!(get(&gc, pos1), "");
-        assert_eq!(get(&gc, pos2), "");
         assert_eq!(get(&gc, pos3), "red");
 
         // ensure not found sheet_id fails silently
@@ -512,37 +489,6 @@ mod test {
             }),
             None,
         );
-    }
-
-    #[test]
-    fn test_remove_formatting() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
-            String::from("1.12345678"),
-            None,
-        );
-        gc.set_currency(
-            &SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id),
-            Some("$".to_string()),
-            None,
-        );
-        let selection = Selection::pos(0, 0, sheet_id);
-        gc.clear_formatting(&selection, None);
-        let cells = gc
-            .sheet(sheet_id)
-            .get_render_cells(Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 0, y: 0 }));
-        assert_eq!(cells.len(), 1);
-        assert_eq!(cells[0].value, "1.12345678");
-
-        // ensure not found sheet_id fails silently
-        let selection = Selection::pos(0, 0, SheetId::new());
-        gc.clear_formatting(&selection, None);
     }
 
     #[test]
