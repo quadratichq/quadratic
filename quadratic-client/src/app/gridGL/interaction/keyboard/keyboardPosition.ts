@@ -1,4 +1,5 @@
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { sheets } from '../../../grid/controller/Sheets';
 import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
@@ -315,6 +316,61 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
     event.preventDefault();
   };
 
+  const handleHomeKey = async () => {
+    if (event.metaKey || event.ctrlKey) {
+      setCursorPosition(0, 0);
+      moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
+    } else {
+      const bounds = sheet.getBounds(true);
+      if (!bounds) return;
+
+      const y = cursor.cursorPosition.y;
+      const x = await quadraticCore.findNextColumn({
+        sheetId: sheet.id,
+        columnStart: bounds.left,
+        row: y,
+        reverse: false,
+        withContent: true,
+      });
+
+      const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
+      if (hasContent) {
+        setCursorPosition(x, y);
+      }
+    }
+  };
+
+  const handleEndKey = async () => {
+    const bounds = sheet.getBounds(true);
+    if (!bounds) return;
+
+    if (event.metaKey || event.ctrlKey) {
+      const y = bounds.bottom;
+      const x = await quadraticCore.findNextColumn({
+        sheetId: sheet.id,
+        columnStart: bounds.right,
+        row: y,
+        reverse: true,
+        withContent: true,
+      });
+      setCursorPosition(x, y);
+    } else {
+      const y = cursor.cursorPosition.y;
+      const x = await quadraticCore.findNextColumn({
+        sheetId: sheet.id,
+        columnStart: bounds.right,
+        row: y,
+        reverse: true,
+        withContent: true,
+      });
+
+      const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
+      if (hasContent) {
+        setCursorPosition(x, y);
+      }
+    }
+  };
+
   if (event.key === 'ArrowUp') {
     moveCursor(0, -1);
     return true;
@@ -334,5 +390,26 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
     moveCursor(0, 1);
     return true;
   }
+
+  if (event.key === 'Home') {
+    handleHomeKey();
+    return true;
+  }
+
+  if (event.key === 'End') {
+    handleEndKey();
+    return true;
+  }
+
+  if (event.key === 'PageUp') {
+    moveViewport({ pageUp: true });
+    return true;
+  }
+
+  if (event.key === 'PageDown') {
+    moveViewport({ pageDown: true });
+    return true;
+  }
+
   return false;
 }

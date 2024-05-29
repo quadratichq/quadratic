@@ -50,24 +50,36 @@ export function ensureVisible(): void {
  * @param [options.app]
  * @param [options.center] cell coordinate to center viewport
  * @param [options.topLeft] cell coordinate to place at topLeft of viewport (adjusting for ruler if needed)
+ * @param [options.pageUp] move viewport up one page
+ * @param [options.pageDown] move viewport down one page
+ * @param [options.force] force viewport to move even if cell is already visible
  */
-export function moveViewport(options: { center?: Coordinate; topLeft?: Coordinate }): void {
-  const { center, topLeft } = options;
-  if (!center && !topLeft) return;
-  const sheet = sheets.sheet;
+export function moveViewport(options: {
+  center?: Coordinate;
+  topLeft?: Coordinate;
+  pageUp?: boolean;
+  pageDown?: boolean;
+  force?: boolean;
+}): void {
+  const { center, topLeft, pageUp, pageDown, force } = options;
+  if (!center && !topLeft && !pageUp && !pageDown) return;
 
+  const sheet = sheets.sheet;
   const bounds = pixiApp.viewport.getVisibleBounds();
+  const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE : 0;
+
   if (center) {
     const cell = sheet.getCellOffsets(center.x, center.y);
-    if (intersects.rectanglePoint(bounds, new Point(cell.x, cell.y))) return;
+    if (!force && intersects.rectanglePoint(bounds, new Point(cell.x, cell.y))) return;
     pixiApp.viewport.moveCenter(cell.x + cell.width / 2, cell.y + cell.height / 2);
-  }
-
-  if (topLeft) {
-    const adjust = pixiAppSettings.showHeadings ? HEADING_SIZE : 0;
+  } else if (topLeft) {
     const cell = sheet.getCellOffsets(topLeft.x, topLeft.y);
-    if (intersects.rectanglePoint(bounds, new Point(cell.x + adjust, cell.y + adjust))) return;
-    pixiApp.viewport.moveCorner(cell.x, cell.y);
+    if (!force && intersects.rectanglePoint(bounds, new Point(cell.x - adjust, cell.y - adjust))) return;
+    pixiApp.viewport.moveCorner(cell.x - adjust, cell.y - adjust);
+  } else if (pageUp) {
+    pixiApp.viewport.moveCorner(bounds.x, bounds.y - (bounds.height - adjust));
+  } else if (pageDown) {
+    pixiApp.viewport.moveCorner(bounds.x, bounds.y + (bounds.height - adjust));
   }
 
   pixiApp.viewportChanged();
