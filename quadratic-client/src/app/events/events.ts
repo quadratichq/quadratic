@@ -74,7 +74,7 @@ interface EventTypes {
   multiplayerFollow: () => void;
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
 
-  resizeHeadingColumn: (column: number) => void;
+  resizeHeadingColumn: (sheetId: string, column: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
 
