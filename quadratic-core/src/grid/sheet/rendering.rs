@@ -476,6 +476,13 @@ mod tests {
         sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
+        sheet.set_cell_value(
+            Pos { x: 2, y: 3 },
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: "1 + 1".to_string(),
+            }),
+        );
         sheet.set_code_run(
             Pos { x: 2, y: 3 },
             Some(CodeRun {

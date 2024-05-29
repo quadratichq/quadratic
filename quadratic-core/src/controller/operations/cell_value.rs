@@ -169,9 +169,9 @@ mod test {
     use crate::{
         cell_values::CellValues,
         controller::{operations::operation::Operation, GridController},
-        grid::SheetId,
+        grid::{CodeCellLanguage, SheetId},
         selection::Selection,
-        CellValue, SheetPos,
+        CellValue, Rect, SheetPos,
     };
 
     #[test]
@@ -296,7 +296,19 @@ mod test {
             sheet_id,
         };
         gc.set_cell_value(sheet_pos, "hello".to_string(), None);
-        let selection = Selection::pos(1, 2, sheet_id);
+
+        let sheet_pos_2 = SheetPos {
+            x: 2,
+            y: 2,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos_2,
+            CodeCellLanguage::Formula,
+            "5 + 5".to_string(),
+            None,
+        );
+        let selection = Selection::rect(Rect::from_numbers(1, 2, 2, 1), sheet_id);
         let operations = gc.delete_cells_operations(&selection);
         assert_eq!(operations.len(), 1);
         assert_eq!(
@@ -307,7 +319,10 @@ mod test {
                     y: 2,
                     sheet_id
                 },
-                values: CellValues::from_cell_value(CellValue::Blank)
+                values: CellValues::from_cell_value_vec(vec![vec![
+                    CellValue::Blank,
+                    CellValue::Blank
+                ]])
             }]
         );
     }

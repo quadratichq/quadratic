@@ -81,6 +81,21 @@ impl CellValues {
         c.set(0, 0, value);
         c
     }
+
+    #[cfg(test)]
+    /// Creates a CellValues from a 2D array of CellValue, including
+    /// CellValue::Blank (which is ignored in into)
+    pub fn from_cell_value_vec(values: Vec<Vec<CellValue>>) -> Self {
+        let w = values.iter().map(|col| col.len() as u32).max().unwrap_or(0);
+        let h = values.len() as u32;
+        let mut columns = vec![BTreeMap::new(); w as usize];
+        for (y, col) in values.into_iter().enumerate() {
+            for (x, value) in col.into_iter().enumerate() {
+                columns[x].insert(y as u64, value);
+            }
+        }
+        Self { columns, w, h }
+    }
 }
 
 /// Converts a 2D array of CellValue into CellValues
