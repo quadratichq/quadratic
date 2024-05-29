@@ -1,7 +1,4 @@
-use std::str::FromStr;
-
-use bigdecimal::BigDecimal;
-
+use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
@@ -9,8 +6,8 @@ use crate::{
     selection::Selection,
     CellValue, RunLengthEncoding, SheetPos, SheetRect,
 };
-
-use super::operation::Operation;
+use bigdecimal::BigDecimal;
+use std::str::FromStr;
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -310,7 +307,7 @@ mod test {
                     y: 2,
                     sheet_id
                 },
-                values: CellValues::from(CellValue::Blank)
+                values: CellValues::from_cell_value(CellValue::Blank)
             }]
         );
     }

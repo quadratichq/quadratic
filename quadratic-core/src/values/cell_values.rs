@@ -30,7 +30,7 @@ impl CellValues {
 
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
         if y >= self.h {
-            self.h = y;
+            self.h = y + 1;
         }
 
         // w can grow if too small
@@ -40,11 +40,6 @@ impl CellValues {
                 self.w += 1;
             }
         }
-        assert_eq!(
-            self.columns.len() as u32,
-            self.w,
-            "CellValues::set w mismatch"
-        );
         self.columns[x as usize].insert(y as u64, value);
     }
 
@@ -77,6 +72,14 @@ impl CellValues {
             col.iter()
                 .map(move |(y, value)| (x as u32, *y as u32, value))
         })
+    }
+
+    #[cfg(test)]
+    /// Creates a CellValues from a CellValue, including CellValue::Blank (which is ignored in into)
+    pub fn from_cell_value(value: CellValue) -> Self {
+        let mut c = Self::new(1, 1);
+        c.set(0, 0, value);
+        c
     }
 }
 
