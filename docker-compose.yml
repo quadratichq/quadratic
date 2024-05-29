@@ -81,29 +81,29 @@ services:
   #     - ./docker/https-portal/quadratic.lvh.me.conf.erb:/var/lib/nginx-conf/quadratic.lvh.me.conf.erb:ro
   #     - ./docker/https-portal/quadratic.lvh.me.ssl.conf.erb:/var/lib/nginx-conf/quadratic.lvh.me.ssl.conf.erb:ro
 
-  # quadratic-client:
-  #   build:
-  #     context: .
-  #     dockerfile: quadratic-client/Dockerfile
-  #   env_file:
-  #     - quadratic-client/.env.local
-  #     - quadratic-client/.env.docker
-  #   # override env vars here
-  #   environment:
-  #     VITE_QUADRATIC_API_URL: http://localhost:8000
-  #     VITE_QUADRATIC_MULTIPLAYER_URL: ws://localhost:3001
-  #     VITE_QUADRATIC_CONNECTION_URL: http://0.0.0.0:3003
-  #   restart: "always"
-  #   ports:
-  #     - "3000:3000"
-  #   command: "npm start --workspace=quadratic-client -- --host"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   profiles:
-  #     - client
-  #     - frontend
-  #     - all
+  quadratic-client:
+    build:
+      context: .
+      dockerfile: quadratic-client/Dockerfile
+    env_file:
+      - quadratic-client/.env.local
+      - quadratic-client/.env.docker
+    # override env vars here
+    environment:
+      VITE_QUADRATIC_API_URL: http://localhost:8000
+      VITE_QUADRATIC_MULTIPLAYER_URL: ws://localhost:3001
+      VITE_QUADRATIC_CONNECTION_URL: http://0.0.0.0:3003
+    restart: "always"
+    ports:
+      - "3000:3000"
+    command: "npm start --workspace=quadratic-client -- --host"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - client
+      - frontend
+      - all
 
   quadratic-api:
     build:
