@@ -256,6 +256,15 @@ export class MultiplayerServer {
 
       case 'Error':
         if (data.error_level === 'Error') {
+          // If the server is missing transactions, reload the page
+          if (typeof data.error != 'string' && 'MissingTransactions' in data.error) {
+            console.warn(
+              `[Multiplayer] Warn: Missing transactions, expected ${data.error.MissingTransactions[0]}, but got  ${data.error.MissingTransactions[1]}`
+            );
+            multiplayerClient.reload();
+            break;
+          }
+
           Sentry.captureException({
             message: `Error response from the multiplayer server: ${data.error}`,
             level: 'error',

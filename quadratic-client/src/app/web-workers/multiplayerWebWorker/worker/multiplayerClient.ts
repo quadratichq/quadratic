@@ -86,6 +86,12 @@ class MultiplayerClient {
       state: data,
     });
   }
+
+  reload() {
+    this.send({
+      type: 'multiplayerClientReload',
+    });
+  }
 }
 
 export const multiplayerClient = new MultiplayerClient();
