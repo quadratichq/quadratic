@@ -156,15 +156,20 @@ pub fn assert_cell_format_fill_color(
     );
 }
 
-/// Util to print a simple grid to assist in TDD
-pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: Rect) {
+// Util to print a simple grid to assist in TDD
+pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, rect: Rect) {
     let Some(sheet) = grid_controller.try_sheet(sheet_id) else {
         println!("Sheet not found");
         return;
     };
+    print_table_sheet(sheet, rect);
+}
+
+/// Util to print a simple grid to assist in TDD
+pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
     let mut vals = vec![];
     let mut builder = Builder::default();
-    let columns = (range.x_range())
+    let columns = (rect.x_range())
         .map(|i| i.to_string())
         .collect::<Vec<String>>();
     let mut blank = vec!["".to_string()];
@@ -176,9 +181,9 @@ pub fn print_table(grid_controller: &GridController, sheet_id: SheetId, range: R
     let mut count_y = 0;
 
     // convert the selected range in the sheet to tabled
-    range.y_range().for_each(|y| {
+    rect.y_range().for_each(|y| {
         vals.push(y.to_string());
-        range.x_range().for_each(|x| {
+        rect.x_range().for_each(|x| {
             let pos: Pos = Pos { x, y };
 
             if sheet.get_formatting_value::<Bold>(pos).is_some() {

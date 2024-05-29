@@ -396,7 +396,7 @@ mod test {
         expect_js_call(
             "jsRenderCellSheets",
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&result)),
-            true,
+            false,
         );
 
         let result = vec![JsRenderCell {

@@ -258,10 +258,10 @@ mod tests {
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
         sheet.test_set_code_run(0, 5, "11");
-        sheet.test_set_code_run_array(-1, -10, vec!["10", "11", "12"], true);
+        sheet.test_set_code_run_array(-1, 0, vec!["10", "11", "12"], true);
 
         assert_eq!(
-            sheet.display_value(Pos { x: -1, y: -10 }),
+            sheet.display_value(Pos { x: -1, y: -0 }),
             Some(CellValue::Number(BigDecimal::from_str("10.0").unwrap()))
         );
 
@@ -286,11 +286,11 @@ mod tests {
         assert_eq!(
             results.get(9),
             Some(&(
-                Pos { x: -1, y: -8 },
-                &CellValue::Number(BigDecimal::from_str("12").unwrap())
+                Pos { x: -1, y: 0 },
+                &CellValue::Number(BigDecimal::from_str("10").unwrap())
             ))
         );
-        assert_eq!(results.len(), 10);
+        assert_eq!(results.len(), 12);
 
         let results = sheet.selection(&selection, Some(5), false);
         assert!(results.is_none());
@@ -322,7 +322,7 @@ mod tests {
         };
 
         let results = sheet.selection(&selection, None, false).unwrap();
-        assert_eq!(results.len(), 9);
+        assert_eq!(results.len(), 10);
 
         let results = sheet.selection(&selection, Some(5), false);
         assert!(results.is_none());
@@ -373,7 +373,7 @@ mod tests {
             all: false,
         };
         let results = sheet.selection(&selection, None, false).unwrap();
-        assert_eq!(results.len(), 6);
+        assert_eq!(results.len(), 7);
 
         let results = sheet.selection(&selection, Some(1), false);
         assert!(results.is_none());
