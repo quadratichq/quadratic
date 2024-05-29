@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/CodeEditorPanels';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
 import { cn } from '@/shared/shadcn/utils';
@@ -87,15 +88,25 @@ export const CodeEditor = () => {
       else {
         const waitingForEditorClose = editorInteractionState.waitingForEditorClose;
         if (waitingForEditorClose) {
-          setEditorInteractionState((oldState) => ({
-            ...oldState,
-            selectedCell: waitingForEditorClose.selectedCell,
-            selectedCellSheet: waitingForEditorClose.selectedCellSheet,
-            mode: waitingForEditorClose.mode,
-            showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
-            showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
-            waitingForEditorClose: undefined,
-          }));
+          if (waitingForEditorClose.inlineEditor) {
+            pixiAppSettings.changeInput(true);
+            setEditorInteractionState((oldState) => ({
+              ...oldState,
+              waitingForEditorClose: undefined,
+              showCodeEditor: false,
+            }));
+          } else {
+            setEditorInteractionState((oldState) => ({
+              ...oldState,
+              selectedCell: waitingForEditorClose.selectedCell,
+              selectedCellSheet: waitingForEditorClose.selectedCellSheet,
+              mode: waitingForEditorClose.mode,
+              showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
+              showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
+              waitingForEditorClose: undefined,
+              initialCode: waitingForEditorClose.initialCode,
+            }));
+          }
         }
       }
     }
@@ -114,19 +125,18 @@ export const CodeEditor = () => {
           editorInteractionState.selectedCell.y
         ));
 
+      const initialCode = editorInteractionState.initialCode;
       if (codeCell) {
         setCodeString(codeCell.code_string);
         setCellsAccessed(codeCell.cells_accessed);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
-
-        if (!pushCodeCell) setEditorContent(codeCell.code_string);
-
+        if (!pushCodeCell) setEditorContent(initialCode ?? codeCell.code_string);
         const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
         setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
-        if (!pushCodeCell) setEditorContent('');
+        if (!pushCodeCell) setEditorContent(initialCode ?? '');
         setEvaluationResult(undefined);
         setOut(undefined);
       }
@@ -155,9 +165,11 @@ export const CodeEditor = () => {
     cellLocation.sheetId,
     cellLocation.x,
     cellLocation.y,
+    editorInteractionState.initialCode,
     editorInteractionState.selectedCell.x,
     editorInteractionState.selectedCell.y,
     editorInteractionState.selectedCellSheet,
+    setEditorInteractionState,
   ]);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
@@ -171,7 +183,7 @@ export const CodeEditor = () => {
 
   useEffect(() => {
     mixpanel.track('[CodeEditor].opened', { type: editorMode });
-    multiplayer.sendCellEdit('', 0, true);
+    multiplayer.sendCellEdit({ text: '', cursor: 0, codeEditor: true, inlineCodeEditor: false });
   }, [editorMode]);
 
   const closeEditor = useCallback(
@@ -183,8 +195,9 @@ export const CodeEditor = () => {
           ...oldState,
           editorEscapePressed: false,
           showCodeEditor: false,
+          initialCode: undefined,
         }));
-        pixiApp.highlightedCells.clear();
+        pixiApp.cellHighlights.clear();
         focusGrid();
         multiplayer.sendEndCellEdit();
       }
@@ -297,10 +310,14 @@ export const CodeEditor = () => {
         selectedCell: waitingForEditorClose.selectedCell,
         selectedCellSheet: waitingForEditorClose.selectedCellSheet,
         mode: waitingForEditorClose.mode,
-        showCodeEditor: !waitingForEditorClose.showCellTypeMenu,
+        showCodeEditor: !waitingForEditorClose.showCellTypeMenu && !waitingForEditorClose.inlineEditor,
         showCellTypeMenu: waitingForEditorClose.showCellTypeMenu,
         waitingForEditorClose: undefined,
+        initialCode: waitingForEditorClose.initialCode,
       }));
+      if (waitingForEditorClose.inlineEditor) {
+        pixiAppSettings.changeInput(true);
+      }
     } else {
       closeEditor(true);
     }
@@ -372,6 +389,7 @@ export const CodeEditor = () => {
             closeEditor={closeEditor}
             evaluationResult={evaluationResult}
             cellsAccessed={!unsaved ? cellsAccessed : []}
+            cellLocation={cellLocation}
           />
           {editorInteractionState.mode === 'Python' && (
             <ReturnTypeInspector

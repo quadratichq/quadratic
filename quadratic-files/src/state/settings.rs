@@ -9,6 +9,7 @@ pub(crate) struct Settings {
     pub(crate) m2m_auth_token: String,
     pub(crate) aws_client: Client,
     pub(crate) aws_s3_bucket_name: String,
+    pub(crate) pubsub_processed_transactions_channel: String,
 }
 
 impl Settings {
@@ -26,6 +27,9 @@ impl Settings {
             )
             .await,
             aws_s3_bucket_name: config.aws_s3_bucket_name.to_owned(),
+            pubsub_processed_transactions_channel: config
+                .pubsub_processed_transactions_channel
+                .to_owned(),
         }
     }
 }

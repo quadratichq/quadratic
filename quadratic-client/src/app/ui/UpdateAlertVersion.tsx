@@ -6,9 +6,9 @@ import { events } from '../events/events';
 import { FixedBottomAlert } from './components/PermissionOverlay';
 
 export const UpdateAlertVersion = () => {
-  const [showDialog, setShowDialog] = useState<false | 'recommended' | 'required'>(false);
+  const [showDialog, setShowDialog] = useState<false | 'recommended' | 'required' | 'force'>(false);
   useEffect(() => {
-    const needRefresh = (refresh: 'required' | 'recommended') => setShowDialog(refresh);
+    const needRefresh = (refresh: 'required' | 'recommended' | 'force') => setShowDialog(refresh);
     events.on('needRefresh', needRefresh);
     return () => {
       events.off('needRefresh', needRefresh);
@@ -16,6 +16,11 @@ export const UpdateAlertVersion = () => {
   });
 
   if (showDialog === false) return null;
+
+  if (showDialog === 'force') {
+    window.location.reload();
+    return null;
+  }
 
   return (
     <FixedBottomAlert>

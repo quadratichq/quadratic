@@ -1,3 +1,4 @@
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -7,10 +8,12 @@ import { pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 export function doubleClickCell(options: {
   column: number;
   row: number;
-  mode?: CodeCellLanguage;
+  language?: CodeCellLanguage;
   cell?: string;
 }): void {
-  const { mode, cell, column, row } = options;
+  if (inlineEditorHandler.isEditingFormula()) return;
+
+  const { language, cell, column, row } = options;
   const settings = pixiAppSettings;
 
   const hasPermission = hasPermissionToEditFile(settings.editorInteractionState.permissions);
@@ -19,7 +22,9 @@ export function doubleClickCell(options: {
 
   if (multiplayer.cellIsBeingEdited(column, row, sheets.sheet.id)) return;
 
-  if (mode) {
+  if (language) {
+    const formula = language === 'Formula';
+
     if (settings.editorInteractionState.showCodeEditor) {
       settings.setEditorInteractionState({
         ...settings.editorInteractionState,
@@ -28,21 +33,26 @@ export function doubleClickCell(options: {
         waitingForEditorClose: {
           selectedCell: { x: column, y: row },
           selectedCellSheet: sheets.sheet.id,
-          mode,
-          showCellTypeMenu: !mode,
+          mode: language,
+          showCellTypeMenu: !language,
+          inlineEditor: formula,
         },
       });
     } else {
-      settings.setEditorInteractionState({
-        ...settings.editorInteractionState,
-        showCellTypeMenu: false,
-        showCodeEditor: true,
-        selectedCell: { x: column, y: row },
-        selectedCellSheet: sheets.sheet.id,
-        mode,
-        editorEscapePressed: false,
-        waitingForEditorClose: undefined,
-      });
+      if (hasPermission && formula) {
+        settings.changeInput(true, cell);
+      } else {
+        settings.setEditorInteractionState({
+          ...settings.editorInteractionState,
+          showCellTypeMenu: false,
+          showCodeEditor: true,
+          selectedCell: { x: column, y: row },
+          selectedCellSheet: sheets.sheet.id,
+          mode: language,
+          editorEscapePressed: false,
+          waitingForEditorClose: undefined,
+        });
+      }
     }
   } else if (hasPermission) {
     settings.changeInput(true, cell);

@@ -52,6 +52,9 @@ pub(crate) enum FilesError {
     #[error("Transaction queue error: {0}")]
     TransactionQueue(String),
 
+    #[error("Error truncating files: {0}")]
+    Truncate(String),
+
     #[error("unknown error: {0}")]
     Unknown(String),
 }
