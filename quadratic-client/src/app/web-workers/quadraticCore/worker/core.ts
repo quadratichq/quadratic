@@ -545,17 +545,11 @@ class Core {
   }
 
   //#region Clipboard
-  copyToClipboard(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ): Promise<{ plainText: string; html: string }> {
+  copyToClipboard(selection: Selection): Promise<{ plainText: string; html: string }> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.copyToClipboard(sheetId, pointsToRect(x, y, width, height)));
+        resolve(this.gridController.copyToClipboard(JSON.stringify(selection, bigIntReplacer));
       });
     });
   }
@@ -812,9 +806,9 @@ class Core {
     this.gridController.applyOfflineUnsavedTransaction(transactionId, transactions);
   }
 
-  clearFormatting(sheetId: string, x: number, y: number, width: number, height: number, cursor?: string) {
+  clearFormatting(selection: Selection, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.clearFormatting(sheetId, pointsToRect(x, y, width, height), cursor);
+    this.gridController.clearFormatting(JSON.stringify(selection, bigIntReplacer), cursor);
   }
 
   rerunCodeCells(sheetId?: string, x?: number, y?: number, cursor?: string) {

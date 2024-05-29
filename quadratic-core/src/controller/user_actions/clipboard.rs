@@ -3,6 +3,7 @@ use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::{operations::clipboard::Clipboard, GridController};
 use crate::formulas::replace_a1_notation;
 use crate::grid::CodeCellLanguage;
+use crate::selection::Selection;
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use crate::{CellValue, Rect};
 use htmlescape;
@@ -20,8 +21,10 @@ pub enum PasteSpecial {
 // To decode the html, use https://codebeautify.org/html-decode-string
 
 impl GridController {
+    /// Checks whether the clipboard selection
+
     /// Copies clipboard to (plain_text, html).
-    pub fn copy_to_clipboard(&self, sheet_rect: SheetRect) -> (String, String) {
+    pub fn copy_to_clipboard(&self, selection: Selection) -> (String, String) {
         let mut cells = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");

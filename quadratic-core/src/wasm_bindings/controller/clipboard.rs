@@ -4,16 +4,18 @@ use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use crate::{
     controller::{user_actions::clipboard::PasteSpecial, GridController},
     grid::{js_types::JsClipboard, SheetId},
-    Pos, Rect,
+    selection::Selection,
+    Pos,
 };
 
 #[wasm_bindgen]
 impl GridController {
     /// Returns the clipboard [`JsClipboard`]
     #[wasm_bindgen(js_name = "copyToClipboard")]
-    pub fn js_copy_to_clipboard(&self, sheet_id: String, rect: &Rect) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let (plain_text, html) = self.copy_to_clipboard(rect.to_sheet_rect(sheet_id));
+    pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsValue, JsValue> {
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.check_clipboard_selection(&selection)?;
+        let (plain_text, html) = self.copy_to_clipboard(&selection);
         let output = JsClipboard { plain_text, html };
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
@@ -22,12 +24,11 @@ impl GridController {
     #[wasm_bindgen(js_name = "cutToClipboard")]
     pub fn js_cut_to_clipboard(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        let (plain_text, html) = self.cut_to_clipboard(rect.to_sheet_rect(sheet_id), cursor);
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let (plain_text, html) = self.cut_to_clipboard(&selection, cursor);
         let output = JsClipboard { plain_text, html };
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
