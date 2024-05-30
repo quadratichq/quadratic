@@ -3,7 +3,8 @@ use crate::color::Rgba;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::{operations::clipboard::Clipboard, GridController};
 use crate::formulas::replace_a1_notation;
-use crate::grid::{CellAlign, CellWrap, CodeCellLanguage};
+use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, GridBounds};
+use crate::selection::Selection;
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use crate::{CellValue, Rect};
 use htmlescape;
@@ -21,7 +22,72 @@ pub enum PasteSpecial {
 // To decode the html, use https://codebeautify.org/html-decode-string
 
 impl GridController {
-    /// Checks whether the clipboard selection
+    /// Gets a sheet_rect of the selection area. For selection.columns and
+    /// selection.rows, we find the minimum index, and return either that, or 0
+    /// if that index > 0. This ensures we're always at least copying from the
+    /// top or left of the sheet.
+    pub(crate) fn clipboard_selection(&self, selection: &Selection) -> Option<SheetRect> {
+        // not sure what to set this to
+        let ignore_formatting = false;
+
+        let sheet = self.try_sheet(selection.sheet_id)?;
+        if selection.all {
+            match sheet.bounds(false) {
+                GridBounds::Empty => None,
+                GridBounds::NonEmpty(rect) => Some(rect.to_sheet_rect(selection.sheet_id)),
+            }
+        } else if let Some(columns) = selection.columns.as_ref() {
+            if columns.len() == 0 {
+                return None;
+            }
+            let min_x = columns.iter().min().unwrap_or(&0).to_owned();
+            let max_x = columns.iter().max().unwrap_or(&0).to_owned();
+            let mut min_y = i64::MAX;
+            let mut max_y = i64::MIN;
+            for i in min_x..=max_x {
+                if let Some((min, max)) = sheet.column_bounds(i, ignore_formatting) {
+                    min_y = min_y.min(min);
+                    max_y = max_y.max(max);
+                }
+            }
+            if min_x == i64::MAX || min_y == i64::MAX {
+                None
+            } else {
+                Some(SheetRect {
+                    min: Pos { x: min_x, y: min_y },
+                    max: Pos { x: max_x, y: max_y },
+                    sheet_id: selection.sheet_id,
+                })
+            }
+        } else if let Some(rows) = selection.rows.as_ref() {
+            if rows.len() == 0 {
+                return None;
+            }
+            let min_y = rows.iter().min().unwrap_or(&0).to_owned();
+            let max_y = rows.iter().max().unwrap_or(&0).to_owned();
+            let mut min_x = i64::MAX;
+            let mut max_x = i64::MIN;
+            for i in min_y..=max_y {
+                if let Some((min, max)) = sheet.row_bounds(i, ignore_formatting) {
+                    min_x = min_x.min(min);
+                    max_x = max_x.max(max);
+                }
+            }
+            if min_y == i64::MAX || min_x == i64::MAX {
+                None
+            } else {
+                Some(SheetRect {
+                    min: Pos { x: min_x, y: min_y },
+                    max: Pos { x: max_x, y: max_y },
+                    sheet_id: selection.sheet_id,
+                })
+            }
+        } else if let Some(sheet_rect) = selection.largest_rect() {
+            Some(sheet_rect)
+        } else {
+            None
+        }
+    }
 
     /// Copies clipboard to (plain_text, html).
     pub fn copy_to_clipboard(&self, sheet_rect: SheetRect) -> (String, String) {
@@ -996,5 +1062,69 @@ mod test {
             sheet.display_value((0, 2).into()),
             Some(CellValue::Number(BigDecimal::from(100)))
         );
+    }
+
+    #[test]
+    fn clipboard_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let selection = Selection {
+            sheet_id,
+            ..Default::default()
+        };
+        assert_eq!(gc.clipboard_selection(&selection), None);
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
+        sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
+
+        let selection = Selection {
+            sheet_id,
+            rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
+            ..Default::default()
+        };
+        assert_eq!(
+            gc.clipboard_selection(&selection),
+            Some(SheetRect::from_numbers(-4, -4, 10, 10, sheet_id))
+        );
+
+        let selection = Selection {
+            sheet_id,
+            columns: Some(vec![-1, 0]),
+            ..Default::default()
+        };
+        assert_eq!(
+            gc.clipboard_selection(&selection),
+            Some(SheetRect::from_numbers(-1, -1, 2, 3, sheet_id))
+        );
+
+        let selection = Selection {
+            sheet_id,
+            columns: Some(vec![5, 6]),
+            ..Default::default()
+        };
+        assert_eq!(gc.clipboard_selection(&selection), None);
+
+        let selection = Selection {
+            sheet_id,
+            rows: Some(vec![-1, 0]),
+            ..Default::default()
+        };
+        assert_eq!(
+            gc.clipboard_selection(&selection),
+            Some(SheetRect {
+                min: Pos { x: -1, y: -1 },
+                max: Pos { x: 1, y: 0 },
+                sheet_id
+            })
+        );
+
+        let selection = Selection {
+            sheet_id,
+            rows: Some(vec![-10, -11]),
+            ..Default::default()
+        };
+        assert_eq!(gc.clipboard_selection(&selection), None);
     }
 }

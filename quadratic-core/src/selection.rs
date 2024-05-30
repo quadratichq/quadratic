@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{grid::SheetId, Rect, SheetRect};
+use crate::{grid::SheetId, Pos, Rect, SheetRect};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -74,6 +74,33 @@ impl Selection {
             1
         } else {
             0
+        }
+    }
+
+    /// Gets the encompassing rect for selection.rects. Returns None if there are no rects.
+    pub fn largest_rect(&self) -> Option<SheetRect> {
+        if let Some(rects) = self.rects.as_ref() {
+            let mut min_x = i64::MAX;
+            let mut max_x = i64::MIN;
+            let mut min_y = i64::MAX;
+            let mut max_y = i64::MIN;
+            rects.iter().for_each(|rect| {
+                min_x = min_x.min(rect.min.x);
+                max_x = max_x.max(rect.max.x);
+                min_y = min_y.min(rect.min.y);
+                max_y = max_y.max(rect.max.y);
+            });
+            if min_x != i64::MAX && min_y != i64::MAX {
+                Some(SheetRect {
+                    sheet_id: self.sheet_id,
+                    min: Pos { x: min_x, y: min_y },
+                    max: Pos { x: max_x, y: max_y },
+                })
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 }
@@ -212,6 +239,41 @@ mod test {
                 columns: None,
                 all: false
             }
+        );
+    }
+
+    #[test]
+    fn largest_rect() {
+        let sheet_id = SheetId::test();
+        let selection = Selection {
+            sheet_id,
+            all: true,
+            ..Default::default()
+        };
+        assert_eq!(selection.largest_rect(), None);
+
+        let selection = Selection {
+            sheet_id,
+            rows: Some(vec![1, 2, 3]),
+            ..Default::default()
+        };
+        assert_eq!(selection.largest_rect(), None);
+
+        let selection = Selection {
+            sheet_id,
+            columns: Some(vec![1, 2, 3]),
+            ..Default::default()
+        };
+        assert_eq!(selection.largest_rect(), None);
+
+        let selection = Selection {
+            sheet_id,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            ..Default::default()
+        };
+        assert_eq!(
+            selection.largest_rect(),
+            Some(SheetRect::from_numbers(1, 2, 3, 4, sheet_id))
         );
     }
 }
