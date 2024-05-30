@@ -63,6 +63,13 @@ impl Selection {
         self.rows.is_some() || self.columns.is_some() || self.all
     }
 
+    pub fn source(&self) -> Pos {
+        Pos {
+            x: self.x,
+            y: self.y,
+        }
+    }
+
     pub fn count(&self) -> usize {
         if let Some(ref rects) = self.rects {
             rects.iter().map(|r| r.count()).sum()

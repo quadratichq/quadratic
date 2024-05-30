@@ -212,6 +212,34 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
+
+    pub(crate) fn change_decimal_places_selection(
+        &mut self,
+        selection: Selection,
+        delta: u32,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return Err("Sheet not found".into());
+        };
+        let source = selection.source();
+        let is_percentage =
+            sheet.cell_numeric_format_kind(source.into()) == Some(NumericFormatKind::Percentage);
+        let source_decimals = sheet
+            .decimal_places(source.into(), is_percentage)
+            .unwrap_or(0);
+        let new_precision = i16::max(0, source_decimals + (delta as i16));
+        let formats = Formats::repeat(
+            FormatUpdate {
+                numeric_decimals: Some(Some(new_precision)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -499,6 +527,34 @@ mod test {
         assert_eq!(
             sheet.columns.get(&0).unwrap().fill_color.get(0),
             Some("blue".to_string())
+        );
+    }
+
+    #[test]
+    fn change_decimal_places_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // normal case
+        gc.change_decimal_places_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            2,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().numeric_decimals.get(0),
+            Some(2)
         );
     }
 }

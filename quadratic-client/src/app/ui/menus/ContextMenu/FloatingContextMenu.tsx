@@ -132,7 +132,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (inlineEditorHandler.cursorIsMoving) visibility = 'vanish';
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
-    if (!(cursor.multiCursor || showContextMenu)) visibility = 'vanish';
+    if (!(cursor.multiCursor || cursor.columnRow || showContextMenu)) visibility = 'vanish';
 
     // Hide if currently selecting
     if (pixiApp.pointer?.pointerDown?.active) visibility = 'vanish';

@@ -2,24 +2,27 @@ use anyhow::Result;
 use csv::Writer;
 
 use super::GridController;
-use crate::{grid::SheetId, Rect};
+use crate::selection::Selection;
 
 impl GridController {
     /// exports a CSV string from a selection on the grid.
     ///
     /// Returns a [`String`].
-    pub fn export_csv_selection(&self, sheet_id: SheetId, selection: &Rect) -> Result<String> {
-        // todo: handle this better
-        let Some(sheet) = self.try_sheet(sheet_id) else {
+    pub fn export_csv_selection(&self, selection: Selection) -> Result<String> {
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Ok("".to_string());
         };
+        let Some(rect) = sheet.clipboard_selection(&selection) else {
+            return Ok("".to_string());
+        };
+
         let values = sheet
-            .cell_values_in_rect(selection, false)?
+            .cell_values_in_rect(rect, false)?
             .into_cell_values_vec()
             .iter()
             .map(|record| record.to_string())
             .collect::<Vec<String>>();
-        let width = selection.width() as usize;
+        let width = rect.width() as usize;
         let mut writer = Writer::from_writer(vec![]);
 
         values.chunks(width).for_each(|row| {
@@ -36,7 +39,7 @@ impl GridController {
 mod tests {
 
     use super::*;
-    use crate::Rect;
+    use crate::{grid::SheetId, Rect};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -55,15 +58,18 @@ mod tests {
 
     #[test]
     fn exports_a_csv() {
-        let selected: Rect = Rect::new_span((0, 0).into(), (3, 3).into());
+        let selected = Selection {
+            rects: Some(vec![Rect::from_numbers(0, 0, 4, 4)]),
+            ..Default::default()
+        };
         let vals = vec![
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
         ];
-        let (grid_controller, sheet_id) = test_setup(&selected, &vals);
-        let sheet = grid_controller.sheet(sheet_id);
-        let result = grid_controller
-            .export_csv_selection(sheet.id, &selected)
-            .unwrap();
+        let gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+
+        let sheet = gc.sheet(sheet_id);
+        let result = gc.export_csv_selection(selected).unwrap();
         let expected = "1,2,3,4\n5,6,7,8\n9,10,11,12\n13,14,15,16\n";
 
         assert_eq!(&result, expected);

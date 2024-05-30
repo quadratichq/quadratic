@@ -184,21 +184,12 @@ impl GridController {
     #[wasm_bindgen(js_name = "changeDecimalPlaces")]
     pub fn js_change_decimal_places(
         &mut self,
-        sheet_id: String,
-        source: Pos,
-        rect: &Rect,
-        delta: isize,
+        selection: String,
+        delta: u32,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        self.change_decimal_places(
-            source.to_sheet_pos(sheet_id),
-            rect.to_sheet_rect(sheet_id),
-            delta,
-            cursor,
-        );
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.change_decimal_places_selection(selection, delta, cursor)?;
         Ok(())
     }
 

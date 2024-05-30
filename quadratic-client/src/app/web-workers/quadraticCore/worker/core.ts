@@ -643,11 +643,11 @@ class Core {
     });
   }
 
-  exportCsvSelection(sheetId: string, x: number, y: number, width: number, height: number): Promise<string> {
+  exportCsvSelection(selection: Selection): Promise<string> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.exportCsvSelection(sheetId, pointsToRect(x, y, width, height)));
+        resolve(this.gridController.exportCsvSelection(JSON.stringify(selection, bigIntReplacer)));
       });
     });
   }
