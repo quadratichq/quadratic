@@ -15,7 +15,7 @@ export class PointerDown {
 
   private positionRaw?: Point;
   private position?: Point;
-  private previousPosition?: { originPosition: Point; terminalPosition: Point };
+  private previousPosition?: Point;
   private pointerMoved = false;
   private doubleClickTimeout?: number;
 
@@ -50,11 +50,7 @@ export class PointerDown {
     if (this.doubleClickTimeout) {
       window.clearTimeout(this.doubleClickTimeout);
       this.doubleClickTimeout = undefined;
-      if (
-        this.previousPosition &&
-        column === this.previousPosition.originPosition.x &&
-        row === this.previousPosition.originPosition.y
-      ) {
+      if (this.previousPosition && column === this.previousPosition.x && row === this.previousPosition.y) {
         // ignore right click
         if (rightClick) {
           return;
@@ -94,13 +90,8 @@ export class PointerDown {
     this.active = true;
     this.position = new Point(column, row);
 
-    const previousPosition = {
-      originPosition: new Point(column, row),
-      terminalPosition: new Point(column, row),
-    };
-
     // Keep track of multiCursor previous position
-    this.previousPosition = previousPosition;
+    this.previousPosition = new Point(column, row);
 
     // Move cursor to mouse down position
     // For single click, hide multiCursor
@@ -148,10 +139,7 @@ export class PointerDown {
         cursorPosition: { x: this.position.x, y: this.position.y },
       });
       // update previousPosition
-      this.previousPosition = {
-        originPosition: new Point(this.position.x, this.position.y),
-        terminalPosition: new Point(this.position.x, this.position.y),
-      };
+      this.previousPosition = new Point(this.position.x, this.position.y);
       if (!inlineEditorHandler.isEditingFormula()) {
         pixiAppSettings.changeInput(false);
       }
@@ -165,12 +153,7 @@ export class PointerDown {
       const termY = this.position.y > row ? this.position.y : row;
 
       // determine if the cursor has moved from the previous event
-      const hasMoved = !(
-        this.previousPosition.originPosition.x === originX &&
-        this.previousPosition.originPosition.y === originY &&
-        this.previousPosition.terminalPosition.x === termX &&
-        this.previousPosition.terminalPosition.y === termY
-      );
+      const hasMoved = !(this.previousPosition.x === column && this.previousPosition.y === row);
 
       // only set state if changed
       // this reduces the number of hooks fired
@@ -186,10 +169,7 @@ export class PointerDown {
         }
 
         // update previousPosition
-        this.previousPosition = {
-          originPosition: new Point(originX, originY),
-          terminalPosition: new Point(termX, termY),
-        };
+        this.previousPosition = new Point(column, row);
       }
     }
   }

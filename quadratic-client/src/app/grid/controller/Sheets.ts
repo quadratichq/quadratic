@@ -2,6 +2,7 @@ import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { Sheet } from '../sheet/Sheet';
@@ -98,7 +99,24 @@ class Sheets {
     if (cursor.sheetId !== this.current) {
       this.current = cursor.sheetId;
     }
-    this.sheet.cursor.load(cursor);
+    // need to convert from old style multiCursor from Rust to new style
+    if ((cursor.multiCursor as any)?.originPosition) {
+      const multiCursor = cursor.multiCursor as any;
+      const convertedCursor = {
+        ...cursor,
+        multiCursor: [
+          new Rectangle(
+            multiCursor.originPosition.x,
+            multiCursor.originPosition.y,
+            multiCursor.terminalPosition.x - multiCursor.originPosition.x + 1,
+            multiCursor.terminalPosition.y - multiCursor.originPosition.y + 1
+          ),
+        ],
+      };
+      this.sheet.cursor.load(convertedCursor);
+    } else {
+      this.sheet.cursor.load(cursor);
+    }
   };
 
   // updates the SheetBar UI

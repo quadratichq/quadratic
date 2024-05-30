@@ -11,6 +11,10 @@ struct CoordinateTypescript {
     y: i64,
 }
 
+// TODO: MultiCursorTypescript needs to be converted into Rectangle[]. For now,
+// it works by converting origin and terminal into a single multiCursor
+// rectangle.
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct MultiCursorTypescript {

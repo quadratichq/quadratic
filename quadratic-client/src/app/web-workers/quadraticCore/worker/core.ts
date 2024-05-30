@@ -6,7 +6,6 @@
  */
 
 import { debugWebWorkers } from '@/app/debugFlags';
-import { Rectangle } from '@/app/gridGL/types/size';
 import { readFileAsArrayBuffer } from '@/app/helpers/files';
 import {
   CellAlign,
@@ -38,7 +37,7 @@ import { coreClient } from './coreClient';
 import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
-import { pointsToRect, rectangleToRect } from './rustConversions';
+import { pointsToRect } from './rustConversions';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -549,23 +548,16 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.copyToClipboard(JSON.stringify(selection, bigIntReplacer));
+        resolve(this.gridController.copyToClipboard(JSON.stringify(selection, bigIntReplacer)));
       });
     });
   }
 
-  cutToClipboard(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    cursor: string
-  ): Promise<{ plainText: string; html: string }> {
+  cutToClipboard(selection: Selection, cursor: string): Promise<{ plainText: string; html: string }> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.cutToClipboard(sheetId, pointsToRect(x, y, width, height), cursor));
+        resolve(this.gridController.cutToClipboard(JSON.stringify(selection, bigIntReplacer), cursor));
       });
     });
   }
@@ -838,22 +830,9 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
 
-  changeDecimals(
-    sheetId: string,
-    sourceX: number,
-    sourceY: number,
-    rectangle: Rectangle,
-    decimals: number,
-    cursor?: string
-  ) {
+  changeDecimals(selection: Selection, decimals: number, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.changeDecimalPlaces(
-      sheetId,
-      new Pos(sourceX, sourceY),
-      rectangleToRect(rectangle),
-      decimals,
-      cursor
-    );
+    this.gridController.changeDecimalPlaces(JSON.stringify(selection, bigIntReplacer), decimals, cursor);
   }
 
   setPercentage(selection: Selection, cursor?: string) {
