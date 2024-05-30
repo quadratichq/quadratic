@@ -253,7 +253,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
             setPrompt(event.target.value);
           }}
           onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && prompt.trim().length > 0) {
+            if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey) && prompt.trim().length > 0) {
               submitPrompt();
             }
           }}
