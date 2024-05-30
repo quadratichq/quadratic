@@ -32,22 +32,22 @@ services:
     volumes:
       - ./docker/localstack/cli:/aws
 
-  nginx:
-    restart: always
-    image: nginx:1-alpine
-    ports:
-      - 80:80
-      - 443:443
-      - 3000:80
-    volumes:
-      - ./docker/static/html:/usr/share/nginx/html
-      - ./docker/static/conf/:/etc/nginx/conf.d/:ro
-      - ./docker/static/certs:/etc/nginx/ssl
-      # - ./docker/static/default.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - quadratic-api
-    # networks:
-    #   - host
+  # nginx:
+  #   restart: always
+  #   image: nginx:1-alpine
+  #   ports:
+  #     - 80:80
+  #     - 443:443
+  #     - 3000:80
+  #   volumes:
+  #     - ./docker/static/html:/usr/share/nginx/html
+  #     - ./docker/static/conf/:/etc/nginx/conf.d/:ro
+  #     - ./docker/static/certs:/etc/nginx/ssl
+  #     # - ./docker/static/default.conf:/etc/nginx/conf.d/default.conf
+  #   depends_on:
+  #     - quadratic-api
+  #   # networks:
+  #   #   - host
 
   # https-portal:
   #   image: steveltn/https-portal:1
@@ -84,7 +84,7 @@ services:
   quadratic-client:
     build:
       context: .
-      dockerfile: quadratic-client/Dockerfile
+      dockerfile: client.Dockerfile
     env_file:
       - quadratic-client/.env.local
       - quadratic-client/.env.docker
@@ -96,7 +96,7 @@ services:
     restart: "always"
     ports:
       - "3000:3000"
-    command: "npm start --workspace=quadratic-client -- --host"
+    # command: "npm start --workspace=quadratic-client -- --host"
     depends_on:
       postgres:
         condition: service_healthy
