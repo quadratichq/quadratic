@@ -240,7 +240,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-3 pb-2"
+        className="z-10 flex gap-2 px-3 pb-2 pt-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -265,6 +265,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
 
               submitPrompt();
               event.preventDefault();
+              event.currentTarget.focus();
             }
           }}
           autoComplete="off"
