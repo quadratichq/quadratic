@@ -93,6 +93,29 @@ impl Format {
         self.fill_color = None;
         self.render_size = None;
     }
+
+    /// Combines formatting from a cell, column, or, and sheet (in that order)
+    pub fn combine(
+        cell: Option<&Format>,
+        column: Option<&Format>,
+        row: Option<&Format>,
+        sheet: Option<&Format>,
+    ) -> Format {
+        let mut format = Format::default();
+        if let Some(sheet) = sheet {
+            format.merge_update(&sheet.into());
+        }
+        if let Some(row) = row {
+            format.merge_update(&row.into());
+        }
+        if let Some(column) = column {
+            format.merge_update(&column.into());
+        }
+        if let Some(cell) = cell {
+            format.merge_update(&cell.into());
+        }
+        format
+    }
 }
 
 /// Converts a &Format to a FormatUpdate.
@@ -321,5 +344,57 @@ mod test {
         let undo = format.merge_update(&old);
         assert!(format.is_default());
         assert_eq!(undo, update);
+    }
+
+    #[test]
+    fn combine() {
+        let cell = Format {
+            bold: Some(false),
+            ..Default::default()
+        };
+        assert_eq!(
+            Format::combine(Some(&cell), None, None, None),
+            Format {
+                bold: Some(false),
+                ..Default::default()
+            }
+        );
+
+        let sheet = Format {
+            align: Some(CellAlign::Center),
+            ..Default::default()
+        };
+        let row = Format {
+            align: Some(CellAlign::Left),
+            ..Default::default()
+        };
+        let column = Format {
+            align: Some(CellAlign::Right),
+            ..Default::default()
+        };
+        let cell = Format::default();
+        assert_eq!(
+            Format::combine(Some(&cell), Some(&column), Some(&row), Some(&sheet)),
+            Format {
+                align: Some(CellAlign::Right),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            Format::combine(None, Some(&column), Some(&row), Some(&sheet)),
+            Format {
+                align: Some(CellAlign::Right),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            Format::combine(None, None, None, Some(&sheet)),
+            Format {
+                align: Some(CellAlign::Center),
+                ..Default::default()
+            }
+        );
+
+        assert_eq!(Format::combine(None, None, None, None), Format::default());
     }
 }

@@ -4,6 +4,7 @@ use crate::{
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders},
         code_run,
+        formats::Format,
         js_types::{
             JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
             JsRenderCodeCellState, JsRenderFill,
@@ -66,6 +67,23 @@ impl Sheet {
                     JsRenderCellSpecial::RunError
                 }),
             };
+        } else if let CellValue::Logical(logical) = value {
+            return JsRenderCell {
+                x,
+                y,
+                value: "".to_string(),
+                language,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(if logical {
+                    JsRenderCellSpecial::True
+                } else {
+                    JsRenderCellSpecial::False
+                }),
+            };
         }
 
         match column {
@@ -75,66 +93,52 @@ impl Sheet {
                 } else {
                     None
                 };
-                if matches!(value, CellValue::Logical(_)) {
-                    let special = match value {
-                        CellValue::Logical(true) => Some(JsRenderCellSpecial::True),
-                        CellValue::Logical(false) => Some(JsRenderCellSpecial::False),
-                        _ => None,
-                    };
-                    return JsRenderCell {
-                        x,
-                        y,
-                        value: "".to_string(),
-                        language,
-                        align,
-                        wrap: None,
-                        bold: None,
-                        italic: None,
-                        text_color: None,
-                        special,
-                    };
-                }
+                let format = Format::combine(
+                    None,
+                    self.formats_columns.get(&x),
+                    self.formats_rows.get(&y),
+                    self.format_all.as_ref(),
+                );
+                let align = format.align.or(align);
                 JsRenderCell {
                     x,
                     y,
                     value: value.to_display(None, None, None),
                     language,
                     align,
-                    wrap: None,
-                    bold: None,
-                    italic: None,
-                    text_color: None,
+                    wrap: format.wrap,
+                    bold: format.bold,
+                    italic: format.italic,
+                    text_color: format.text_color,
                     special: None,
                 }
             }
             Some(column) => {
-                let mut align: Option<CellAlign> = column.align.get(y);
-                let mut special = None;
-                let wrap = column.wrap.get(y);
-                let bold = column.bold.get(y);
-                let italic = column.italic.get(y);
-                let text_color = column.text_color.get(y);
+                let format = Format::combine(
+                    None,
+                    self.formats_columns.get(&x),
+                    self.formats_rows.get(&y),
+                    self.format_all.as_ref(),
+                );
+                let mut align: Option<CellAlign> = column.align.get(y).or(format.align);
+                let wrap = column.wrap.get(y).or(format.wrap);
+                let bold = column.bold.get(y).or(format.bold);
+                let italic = column.italic.get(y).or(format.italic);
+                let text_color = column.text_color.get(y).or(format.text_color);
                 let value = match &value {
                     CellValue::Number(_) => {
                         // get numeric_format and numeric_decimal to turn number into a string
-                        let numeric_format = column.numeric_format.get(y);
+                        let numeric_format = column.numeric_format.get(y).or(format.numeric_format);
                         let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                             numeric_format.kind == NumericFormatKind::Percentage
                         });
                         let numeric_decimals = self.decimal_places(Pos { x, y }, is_percentage);
-                        let numeric_commas = column.numeric_commas.get(y);
+                        let numeric_commas = column.numeric_commas.get(y).or(format.numeric_commas);
 
                         // if align is not set, set it to right only for numbers
-                        align = align.or(Some(CellAlign::Right));
+                        align = align.or(format.align).or(Some(CellAlign::Right));
 
                         value.to_display(numeric_format, numeric_decimals, numeric_commas)
-                    }
-                    CellValue::Logical(bool) => {
-                        special = match bool {
-                            true => Some(JsRenderCellSpecial::True),
-                            false => Some(JsRenderCellSpecial::False),
-                        };
-                        "".to_string()
                     }
                     _ => value.to_display(None, None, None),
                 };
@@ -148,7 +152,7 @@ impl Sheet {
                     bold,
                     italic,
                     text_color,
-                    special,
+                    special: None,
                 }
             }
         }
