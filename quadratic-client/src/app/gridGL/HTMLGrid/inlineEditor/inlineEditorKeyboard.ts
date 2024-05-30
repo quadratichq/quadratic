@@ -43,6 +43,7 @@ class InlineEditorKeyboard {
     else if (e.code === 'Tab') {
       inlineEditorHandler.close(e.shiftKey ? -1 : 1, 0, false);
       e.stopPropagation();
+      e.preventDefault();
     }
 
     // Horizontal arrow keys

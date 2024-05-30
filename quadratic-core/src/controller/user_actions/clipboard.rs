@@ -1,9 +1,9 @@
 use crate::cell_values::CellValues;
+use crate::color::Rgba;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::{operations::clipboard::Clipboard, GridController};
 use crate::formulas::replace_a1_notation;
-use crate::grid::CodeCellLanguage;
-use crate::selection::Selection;
+use crate::grid::{CellAlign, CellWrap, CodeCellLanguage};
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use crate::{CellValue, Rect};
 use htmlescape;
@@ -24,13 +24,12 @@ impl GridController {
     /// Checks whether the clipboard selection
 
     /// Copies clipboard to (plain_text, html).
-    pub fn copy_to_clipboard(&self, selection: Selection) -> (String, String) {
+    pub fn copy_to_clipboard(&self, sheet_rect: SheetRect) -> (String, String) {
         let mut cells = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
         let mut values = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
 
-        // todo: have function return an Option<(String, String)> and replace below with a question mark operator
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return (String::new(), String::new());
         };
@@ -49,7 +48,6 @@ impl GridController {
                     html.push_str("</td>");
                 }
 
-                html.push_str("<td>");
                 let pos = Pos { x, y };
 
                 // the CellValue at the cell that would be displayed in the cell (ie, including code_runs)
@@ -87,33 +85,95 @@ impl GridController {
                 }
 
                 // add styling for html (only used for pasting to other spreadsheets)
-                // todo: add text color, fill, etc.
-                let (bold, italic) =
+                let mut style = String::new();
+
+                let (bold, italic, text_color, fill_color) =
                     if let Some(format) = sheet.get_existing_cell_format_summary(pos) {
                         (
                             format.bold.is_some_and(|bold| bold),
                             format.italic.is_some_and(|italic| italic),
+                            format.text_color,
+                            format.fill_color,
                         )
                     } else {
-                        (false, false)
+                        (false, false, None, None)
                     };
 
-                if bold || italic {
-                    html.push_str("<span style={");
+                let cell_border = sheet.borders().per_cell.to_owned().get_cell_border(pos);
+
+                let cell_align = sheet.get_formatting_value::<CellAlign>(pos);
+
+                let cell_wrap = sheet.get_formatting_value::<CellWrap>(pos);
+
+                if bold
+                    || italic
+                    || text_color.is_some()
+                    || fill_color.is_some()
+                    || cell_border.is_some()
+                    || cell_align.is_some()
+                    || cell_wrap.is_some()
+                {
+                    style.push_str("style=\"");
+
                     if bold {
-                        html.push_str("font-weight:bold;");
+                        style.push_str("font-weight:bold;");
                     }
                     if italic {
-                        html.push_str("font-style:italic;");
+                        style.push_str("font-style:italic;");
                     }
-                    html.push_str("}>");
+                    if let Some(text_color) = text_color {
+                        if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {
+                            style.push_str(format!("color:{};", text_color.as_rgb_hex()).as_str());
+                        }
+                    }
+                    if let Some(fill_color) = fill_color {
+                        if let Ok(fill_color) = Rgba::from_css_str(fill_color.as_str()) {
+                            style.push_str(
+                                format!("background-color:{};", fill_color.as_rgb_hex()).as_str(),
+                            );
+                        }
+                    }
+                    if let Some(cell_border) = cell_border {
+                        for (side, border) in cell_border.borders.iter().enumerate() {
+                            let side = match side {
+                                0 => "-left",
+                                1 => "-top",
+                                2 => "-right",
+                                3 => "-bottom",
+                                _ => "",
+                            };
+                            if let Some(border) = border {
+                                style.push_str(
+                                    format!(
+                                        "border{}: {} {};",
+                                        side,
+                                        border.line.as_css_string(),
+                                        border.color.as_rgb_hex()
+                                    )
+                                    .as_str(),
+                                );
+                            }
+                        }
+                    }
+                    if let Some(cell_align) = cell_align {
+                        style.push_str(
+                            format!("text-align:{};", cell_align)
+                                .to_lowercase()
+                                .as_str(),
+                        );
+                    }
+                    if let Some(cell_wrap) = cell_wrap {
+                        style.push_str(cell_wrap.as_css_string());
+                    }
+
+                    style.push('"');
                 }
+
+                html.push_str(format!("<td {}>", style).as_str());
+
                 if let Some(value) = &simple_value {
                     plain_text.push_str(&value.to_string());
                     html.push_str(&value.to_string());
-                }
-                if bold || italic {
-                    html.push_str("</span>");
                 }
             }
         }
@@ -188,7 +248,7 @@ impl GridController {
             h: sheet_rect.height() as u32,
         };
 
-        html.push_str("</tr></tbody></table>");
+        html.push_str("</td></tr></tbody></table>");
         let mut final_html = String::from("<table data-quadratic=\"");
         let data = serde_json::to_string(&clipboard).unwrap();
         let encoded = htmlescape::encode_attribute(&data);
