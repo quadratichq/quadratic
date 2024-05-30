@@ -17,7 +17,7 @@ impl GridController {
         };
 
         let values = sheet
-            .cell_values_in_rect(rect, false)?
+            .cell_values_in_rect(&(rect.into()), false)?
             .into_cell_values_vec()
             .iter()
             .map(|record| record.to_string())
@@ -39,36 +39,31 @@ impl GridController {
 mod tests {
 
     use super::*;
-    use crate::{grid::SheetId, Rect};
-
-    fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
-        let mut grid_controller = GridController::test();
-        let sheet_id = grid_controller.grid.sheets()[0].id;
-        let mut count = 0;
-
-        for y in selection.y_range() {
-            for x in selection.x_range() {
-                grid_controller.set_cell_value((x, y, sheet_id).into(), vals[count].into(), None);
-                count += 1;
-            }
-        }
-
-        (grid_controller, sheet_id)
-    }
+    use crate::Rect;
 
     #[test]
     fn exports_a_csv() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
         let selected = Selection {
+            sheet_id,
             rects: Some(vec![Rect::from_numbers(0, 0, 4, 4)]),
             ..Default::default()
         };
         let vals = vec![
             "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
         ];
-        let gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
+        let mut count = 0;
 
-        let sheet = gc.sheet(sheet_id);
+        let sheet = gc.sheet_mut(sheet_id);
+        for y in 0..4 {
+            for x in 0..4 {
+                sheet.test_set_value(x, y, vals[count]);
+                count += 1;
+            }
+        }
+
         let result = gc.export_csv_selection(selected).unwrap();
         let expected = "1,2,3,4\n5,6,7,8\n9,10,11,12\n13,14,15,16\n";
 

@@ -14,7 +14,8 @@ impl GridController {
     #[wasm_bindgen(js_name = "copyToClipboard")]
     pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsValue, JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        let sheet_rect = self
+        let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
+        let sheet_rect = sheet
             .clipboard_selection(&selection)
             .ok_or("No SheetRect found")?;
         let (plain_text, html) = self.copy_to_clipboard(sheet_rect);
@@ -30,7 +31,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        let sheet_rect = self
+        let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
+        let sheet_rect = sheet
             .clipboard_selection(&selection)
             .ok_or("No SheetRect found")?;
         let (plain_text, html) = self.cut_to_clipboard(sheet_rect, cursor);

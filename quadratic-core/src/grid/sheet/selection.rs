@@ -260,7 +260,7 @@ impl Sheet {
                 Some(SheetRect {
                     min: Pos { x: min_x, y: min_y },
                     max: Pos { x: max_x, y: max_y },
-                    sheet_id: self.sheet_id,
+                    sheet_id: self.id,
                 })
             }
         } else if let Some(sheet_rect) = selection.largest_rect() {
@@ -276,7 +276,7 @@ mod tests {
     use crate::{
         grid::{CodeCellLanguage, Sheet},
         selection::Selection,
-        CellValue, CodeCellValue, Pos, Rect,
+        CellValue, CodeCellValue, Pos, Rect, SheetRect,
     };
     use bigdecimal::BigDecimal;
     use std::str::FromStr;
@@ -552,7 +552,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            gc.clipboard_selection(&selection),
+            sheet.clipboard_selection(&selection),
             Some(SheetRect::from_numbers(-4, -4, 10, 10, sheet_id))
         );
 
@@ -562,7 +562,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            gc.clipboard_selection(&selection),
+            sheet.clipboard_selection(&selection),
             Some(SheetRect::from_numbers(-1, -1, 2, 3, sheet_id))
         );
 
@@ -571,7 +571,7 @@ mod tests {
             columns: Some(vec![5, 6]),
             ..Default::default()
         };
-        assert_eq!(gc.clipboard_selection(&selection), None);
+        assert_eq!(sheet.clipboard_selection(&selection), None);
 
         let selection = Selection {
             sheet_id,
@@ -579,7 +579,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            gc.clipboard_selection(&selection),
+            sheet.clipboard_selection(&selection),
             Some(SheetRect {
                 min: Pos { x: -1, y: -1 },
                 max: Pos { x: 1, y: 0 },
@@ -592,6 +592,6 @@ mod tests {
             rows: Some(vec![-10, -11]),
             ..Default::default()
         };
-        assert_eq!(gc.clipboard_selection(&selection), None);
+        assert_eq!(sheet.clipboard_selection(&selection), None);
     }
 }
