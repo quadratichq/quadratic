@@ -16,20 +16,11 @@ def attempt_fix_await(code: str) -> str:
     code = re.sub(r"([^a-zA-Z0-9_]|^)c(?:ell)?(\([^\(\)]*\([^\)]*\)(?:[^\(\)]*|\([^\)]*\))*\))", r"\1cells\2", code) # captures c((x,y), ...) cell((x,y), ...)
     
     # Wrap known async functions with "(await <function-call>)" to improve the UX
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(c(?:ells?)?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code) # captures c( cell( cells(
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(cells\[[^\]]*\])", r"\1(await \2)", code)                         # captures cells[
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(getCells?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)   # captures get_cell( get_cells(
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(rel_cell\([^\)]*\))", r"\1(await \2)", code)                      # captures rel_cell(
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(rc\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)          # captures rc(
-
-    code = code.replace("await await c(", "await c(")
-    code = code.replace("await await cell(", "await cell(")
-    code = code.replace("await await cells(", "await cells(")
-    code = code.replace("await await cells[", "await cells[")
-    code = code.replace("await await getCell", "await getCell")
-    code = code.replace("await await getCells", "await getCells")
-    code = code.replace("await await rel_cell[", "await rel_cell(")
-    code = code.replace("await await rc[", "await rc(")
+    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(c(?:ells?)?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code) # captures c( cell( cells(
+    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(cells\[[^\]]*\])", r"\1(await \2)", code)                         # captures cells[
+    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(getCells?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)   # captures get_cell( get_cells(
+    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(rel_cell\([^\)]*\))", r"\1(await \2)", code)                      # captures rel_cell(
+    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(rc\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)          # captures rc(
 
     return code
 
