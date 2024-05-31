@@ -158,6 +158,38 @@ class CoreClient {
         });
         break;
 
+      case 'clientCoreGetFormatAll':
+        this.send({
+          type: 'coreClientGetFormatAll',
+          id: e.data.id,
+          format: await core.getFormatAll(e.data.sheetId),
+        });
+        break;
+
+      case 'clientCoreGetFormatColumn':
+        this.send({
+          type: 'coreClientGetFormatColumn',
+          id: e.data.id,
+          format: await core.getFormatColumn(e.data.sheetId, e.data.column),
+        });
+        break;
+
+      case 'clientCoreGetFormatRow':
+        this.send({
+          type: 'coreClientGetFormatRow',
+          id: e.data.id,
+          format: await core.getFormatRow(e.data.sheetId, e.data.row),
+        });
+        break;
+
+      case 'clientCoreGetFormatCell':
+        this.send({
+          type: 'coreClientGetFormatCell',
+          id: e.data.id,
+          format: await core.getFormatCell(e.data.sheetId, e.data.x, e.data.y),
+        });
+        break;
+
       case 'clientCoreInitMultiplayer':
         coreMultiplayer.init(e.ports[0]);
 

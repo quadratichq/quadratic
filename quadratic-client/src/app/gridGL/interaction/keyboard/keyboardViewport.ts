@@ -1,7 +1,5 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
 import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
@@ -102,16 +100,12 @@ export async function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    const cursor = sheets.sheet.cursor.getCursor();
-    const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y, true);
-    setBold(!(formatCell ? formatCell.bold === true : true));
+    setBold();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    const cursor = sheets.sheet.cursor.getCursor();
-    const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y, true);
-    setItalic(!(formatCell ? formatCell.italic === true : true));
+    setItalic();
     return true;
   }
 

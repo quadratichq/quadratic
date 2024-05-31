@@ -1,0 +1,12 @@
+{
+  "name": "quadratic-core",
+  "version": "1.0.0",
+  "description": "This contains the Rust code that powers Quadratic's client via WASM.",
+  "main": "index.js",
+  "scripts": {
+    "start": "cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
+    "performance": "cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'"
+    "build": "wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
+    "types": "cargo watch -x 'run --features js --bin export_types'"
+  }
+}

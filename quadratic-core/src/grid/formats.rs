@@ -8,7 +8,7 @@ use super::{CellAlign, CellWrap, NumericFormat, RenderSize};
 use crate::RunLengthEncoding;
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, ts_rs::TS)]
 pub struct Format {
     pub align: Option<CellAlign>,
     pub wrap: Option<CellWrap>,
@@ -216,6 +216,18 @@ impl FormatUpdate {
         update.fill_color = self.fill_color.clone().or(other.fill_color.clone());
         update.render_size = self.render_size.clone().or(other.render_size.clone());
         update
+    }
+
+    /// Returns whether this update will require a re-render for cells.
+    pub fn needs_render_cells(&self) -> bool {
+        self.align.is_some()
+            || self.wrap.is_some()
+            || self.numeric_format.is_some()
+            || self.numeric_decimals.is_some()
+            || self.numeric_commas.is_some()
+            || self.bold.is_some()
+            || self.italic.is_some()
+            || self.text_color.is_some()
     }
 }
 

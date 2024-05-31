@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::{grid::SheetId, ArraySize, QUADRANT_SIZE};
+use crate::{controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH}, grid::SheetId, ArraySize};
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
@@ -40,8 +40,8 @@ impl Pos {
     /// Returns which quadrant the cell position is in.
     pub fn quadrant(self) -> (i64, i64) {
         (
-            self.x.div_euclid(QUADRANT_SIZE as _),
-            self.y.div_euclid(QUADRANT_SIZE as _),
+            self.x.div_euclid(CELL_SHEET_WIDTH as _),
+            self.y.div_euclid(CELL_SHEET_HEIGHT as _),
         )
     }
 
@@ -466,7 +466,7 @@ impl SheetPos {
 
 #[cfg(test)]
 mod test {
-    use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect, QUADRANT_SIZE};
+    use crate::{controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH}, grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 
     #[test]
     fn test_to_sheet_pos() {
@@ -484,14 +484,10 @@ mod test {
 
     #[test]
     fn test_quadrant_size() {
-        let pos = Pos { x: 1, y: 2 };
-        assert_eq!(pos.quadrant(), (0, 0));
-        let quadrant_size = QUADRANT_SIZE as i64;
-        let pos = Pos {
-            x: quadrant_size + 1,
-            y: quadrant_size + 1,
-        };
-        assert_eq!(pos.quadrant(), (1, 1));
+        assert_eq!(Pos { x: 1, y: 2 }.quadrant(), (0, 0));
+        assert_eq!(Pos { x: -1, y: -2}.quadrant(), (-1, -1));
+        assert_eq!(Pos { x: CELL_SHEET_WIDTH as _, y: CELL_SHEET_HEIGHT as _ }.quadrant(), (1, 1));
+        assert_eq!(Pos { x: -2 * CELL_SHEET_WIDTH as i64, y: -2 * CELL_SHEET_HEIGHT as i64 }.quadrant(), (-2, -2));
     }
 
     #[test]

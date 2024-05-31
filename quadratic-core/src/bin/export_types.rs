@@ -1,5 +1,6 @@
 use std::fs::create_dir_all;
 
+use grid::formats::Format;
 use quadratic_core::{
     color::Rgba,
     controller::{
@@ -94,6 +95,7 @@ fn main() {
         TransactionName,
         JsGetCellResponse,
         SummarizeSelectionResult,
+        Format,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

@@ -8,6 +8,39 @@ use crate::{
 };
 
 impl Sheet {
+    pub fn format_all(&self) -> Format {
+        self.format_all.as_ref().unwrap_or(&Format::default()).clone()
+    }
+
+    pub fn format_column(&self, column: i64) -> Format {
+        self.formats_columns.get(&column).unwrap_or(&Format::default()).clone()
+    }
+
+    pub fn format_row(&self, row: i64) -> Format {
+        self.formats_rows.get(&row).unwrap_or(&Format::default()).clone()
+    }
+
+    pub fn format_cell(&self, x: i64, y: i64) -> Format {
+        if let Some(column) = self.get_column(x) {
+            Format {
+                align: column.align.get(y),
+                wrap: column.wrap.get(y),
+                numeric_format: column.numeric_format.get(y),
+                numeric_decimals: column.numeric_decimals.get(y),
+                numeric_commas: column.numeric_commas.get(y),
+                bold: column.bold.get(y),
+                italic: column.italic.get(y),
+                text_color: column.text_color.get(y),
+                fill_color: column.fill_color.get(y),
+                render_size: column.render_size.get(y),
+                ..Format::default()
+            }
+
+        } else {
+            Format::default()
+        }
+    }
+
     /// Sets the Format for all cells and returns Formats to undo that change.
     fn set_format_all(&mut self, update: &Formats) -> Formats {
         let mut old = Formats::default();
@@ -15,7 +48,11 @@ impl Sheet {
             .format_all
             .as_ref()
             .map_or(Format::default(), |f| f.clone());
+        let mut render_cells = false;
         if let Some(format_update) = update.iter_values().next() {
+            if format_update.needs_render_cells() {
+                render_cells = true;
+            }
             old.push(format_all.merge_update(format_update));
             if format_all.is_default() {
                 self.format_all = None;
@@ -26,7 +63,10 @@ impl Sheet {
             old.push(FormatUpdate::default());
         }
 
-        // todo: need to trigger client changes
+        // force a rerender of all impacted cells
+        if render_cells {
+            self.send_all_render_cells();
+        }
 
         old
     }
@@ -35,8 +75,12 @@ impl Sheet {
     fn set_formats_columns(&mut self, columns: &Vec<i64>, formats: &Formats) -> Formats {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
+        let mut render_cells = HashSet::new();
         columns.iter().for_each(|x| {
             if let Some(format_update) = formats_iter.next() {
+                if format_update.needs_render_cells() {
+                    render_cells.insert(*x);
+                }
                 let mut column_format = self
                     .formats_columns
                     .get(x)
@@ -51,7 +95,10 @@ impl Sheet {
             }
         });
 
-        // todo: need to trigger client changes
+        // force a rerender of all impacted cells
+        if !render_cells.is_empty() {
+            self.send_column_render_cells(render_cells.into_iter().collect());
+        }
 
         old_formats
     }
@@ -616,5 +663,71 @@ mod tests {
         );
 
         assert_eq!(old_formats, formats);
+    }
+
+    #[test]
+    fn get_format_all() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.format_all(), Format::default());
+        sheet.format_all = Some(Format {
+            bold: Some(true),
+            ..Default::default()
+        });
+        assert_eq!(
+            sheet.format_all(),
+            Format {
+                bold: Some(true),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn get_format_column() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.format_column(0), Format::default());
+        sheet.formats_columns.insert(0, Format {
+            bold: Some(true),
+            ..Default::default()
+        });
+        assert_eq!(
+            sheet.format_column(0),
+            Format {
+                bold: Some(true),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn get_format_row() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.format_row(0), Format::default());
+        sheet.formats_rows.insert(0, Format {
+            bold: Some(true),
+            ..Default::default()
+        });
+        assert_eq!(
+            sheet.format_row(0),
+            Format {
+                bold: Some(true),
+                ..Default::default()
+            }
+        );
+    }
+
+    #[test]
+    fn get_format_cell() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.format_cell(0, 0), Format::default());
+
+        sheet.set_formatting_value::<Bold>(Pos { x: 0, y: 0 }, Some(true));
+        assert_eq!(
+            sheet.format_cell(0, 0),
+            Format {
+                bold: Some(true),
+                ..Default::default()
+            }
+        );
     }
 }

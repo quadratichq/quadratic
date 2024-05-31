@@ -2,6 +2,7 @@ import {
   CellAlign,
   CellFormatSummary,
   CodeCellLanguage,
+  Format,
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
@@ -146,6 +147,58 @@ export interface CoreClientGetCellFormatSummary {
   type: 'coreClientGetCellFormatSummary';
   formatSummary: CellFormatSummary;
   id: number;
+}
+
+export interface ClientCoreGetFormatAll {
+  type: 'clientCoreGetFormatAll';
+  id: number;
+  sheetId: string;
+}
+
+export interface CoreClientGetFormatAll {
+  type: 'coreClientGetFormatAll';
+  id: number;
+  format?: Format;
+}
+
+export interface ClientCoreGetFormatColumn {
+  type: 'clientCoreGetFormatColumn';
+  id: number;
+  sheetId: string;
+  column: number;
+}
+
+export interface CoreClientGetFormatColumn {
+  type: 'coreClientGetFormatColumn';
+  id: number;
+  format?: Format;
+}
+
+export interface ClientCoreGetFormatRow {
+  type: 'clientCoreGetFormatRow';
+  id: number;
+  sheetId: string;
+  row: number;
+}
+
+export interface CoreClientGetFormatRow {
+  type: 'coreClientGetFormatRow';
+  id: number;
+  format?: Format;
+}
+
+export interface ClientCoreGetFormatCell {
+  type: 'clientCoreGetFormatCell';
+  id: number;
+  sheetId: string;
+  x: number;
+  y: number;
+}
+
+export interface CoreClientGetFormatCell {
+  type: 'coreClientGetFormatCell';
+  id: number;
+  format?: Format;
 }
 
 export interface ClientCoreSummarizeSelection {
@@ -787,7 +840,11 @@ export type ClientCoreMessage =
   | ClientCoreInitPython
   | ClientCoreImportExcel
   | ClientCoreCancelExecution
-  | ClientCoreMoveCells;
+  | ClientCoreMoveCells
+  | ClientCoreGetFormatAll
+  | ClientCoreGetFormatColumn
+  | ClientCoreGetFormatRow
+  | ClientCoreGetFormatCell;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -831,4 +888,8 @@ export type CoreClientMessage =
   | CoreClientImportExcel
   | CoreClientMultiplayerState
   | CoreClientOfflineTransactions
-  | CoreClientUndoRedo;
+  | CoreClientUndoRedo
+  | CoreClientGetFormatAll
+  | CoreClientGetFormatColumn
+  | CoreClientGetFormatRow
+  | CoreClientGetFormatCell;

@@ -14,6 +14,7 @@ import {
   CellAlign,
   CellFormatSummary,
   CodeCellLanguage,
+  Format,
   JsCodeCell,
   JsRenderCell,
   MinMax,
@@ -356,6 +357,66 @@ class QuadraticCore {
         resolve(message.formatSummary);
       };
       this.send(message);
+    });
+  }
+
+  getFormatAll(sheetId: string): Promise<Format | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
+        resolve(message.format);
+      };
+      this.send({
+        type: 'clientCoreGetFormatAll',
+        sheetId,
+        id,
+      });
+    });
+  }
+
+  getFormatColumn(sheetId: string, column: number): Promise<Format | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
+        resolve(message.format);
+      };
+      this.send({
+        type: 'clientCoreGetFormatColumn',
+        sheetId,
+        column,
+        id,
+      });
+    });
+  }
+
+  getFormatRow(sheetId: string, row: number): Promise<Format | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
+        resolve(message.format);
+      };
+      this.send({
+        type: 'clientCoreGetFormatRow',
+        sheetId,
+        row,
+        id,
+      });
+    });
+  }
+
+  getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
+        resolve(message.format);
+      };
+      this.send({
+        type: 'clientCoreGetFormatCell',
+        sheetId,
+        x,
+        y,
+        id,
+      });
     });
   }
 

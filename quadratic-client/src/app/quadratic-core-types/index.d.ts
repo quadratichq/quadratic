@@ -51,3 +51,4 @@ export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_with
 export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells";
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
 export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
+export interface Format { align: CellAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, }

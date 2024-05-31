@@ -29,9 +29,6 @@ import './formatMenuStyles.scss';
 import { useGetBorderMenu } from './useGetBorderMenu';
 
 export const FormatMenu = () => {
-  // todo!!!
-  const formatPrimaryCell = { bold: false, italic: false };
-
   // focus canvas after the format menu closes
   const onMenuChange = useCallback((event: MenuChangeEvent) => {
     if (!event.open) focusGrid();
@@ -48,10 +45,10 @@ export const FormatMenu = () => {
         </TopBarMenuItem>
       )}
     >
-      <MenuItem onClick={() => setBold(!(formatPrimaryCell?.bold === true))}>
+      <MenuItem onClick={() => setBold()}>
         <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FontBoldIcon} />
       </MenuItem>
-      <MenuItem onClick={() => setItalic(!(formatPrimaryCell?.italic === true))}>
+      <MenuItem onClick={() => setItalic()}>
         <MenuLineItem primary="Italic" secondary={KeyboardSymbols.Command + 'I'} Icon={FontItalicIcon} />
       </MenuItem>
       <SubMenu

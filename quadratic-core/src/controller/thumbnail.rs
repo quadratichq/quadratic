@@ -31,11 +31,6 @@ impl GridController {
             true
         } else if let Some(columns) = &selection.columns {
             columns.iter().any(|&column| {
-                dbg!(format!(
-                    "comparing {} to {}",
-                    column,
-                    sheet.offsets.thumbnail().max.x
-                ));
                 column >= 0 && column <= sheet.offsets.thumbnail().max.x
             })
         } else if let Some(rows) = &selection.rows {

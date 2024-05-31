@@ -208,4 +208,32 @@ impl GridController {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
         self.clear_format(selection, cursor)
     }
+
+    #[wasm_bindgen(js_name = "getFormatAll")]
+    pub fn js_get_format_all(&self, sheet_id: String) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
+        let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
+        serde_json::to_string(&sheet.format_all()).map_err(|_| JsValue::UNDEFINED)
+    }
+
+    #[wasm_bindgen(js_name = "getFormatColumn")]
+    pub fn js_get_format_column(&self, sheet_id: String, column: i32) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
+        let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
+        serde_json::to_string(&sheet.format_column(column as _)).map_err(|_| JsValue::UNDEFINED)
+    }
+
+    #[wasm_bindgen(js_name = "getFormatRow")]
+    pub fn js_get_format_row(&self, sheet_id: String, row: i32) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
+        let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
+        serde_json::to_string(&sheet.format_row(row as _)).map_err(|_| JsValue::UNDEFINED)
+    }
+
+    #[wasm_bindgen(js_name = "getFormatCell")]
+    pub fn js_get_format_cell(&self, sheet_id: String, x: i32, y: i32) -> Result<String, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
+        let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
+        serde_json::to_string(&sheet.format_cell(x as i64, y as i64)).map_err(|_| JsValue::UNDEFINED)
+    }
 }

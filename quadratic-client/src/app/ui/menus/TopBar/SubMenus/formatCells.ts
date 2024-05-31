@@ -1,4 +1,4 @@
-import { CellAlign } from '@/app/quadratic-core-types';
+import { CellAlign, Format, Selection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../../grid/controller/Sheets';
@@ -8,11 +8,30 @@ export const setFillColor = (color?: ColorResult) => {
   quadraticCore.setCellFillColor(sheets.getRustSelection(), color ? convertReactColorToString(color) : undefined);
 };
 
-export const setBold = (bold: boolean) => {
-  quadraticCore.setCellBold(sheets.getRustSelection(), bold, sheets.getCursorPosition());
+const getFormat = async (selection: Selection): Promise<Format | undefined> => {
+  if (selection.all) {
+    return await quadraticCore.getFormatAll(sheets.sheet.id);
+  } else if (selection.columns?.length) {
+    return await quadraticCore.getFormatColumn(sheets.sheet.id, Number(selection.columns[0]));
+  } else if (selection.rows?.length) {
+    return await quadraticCore.getFormatRow(sheets.sheet.id, Number(selection.rows[0]));
+  } else {
+    const cursor = sheets.sheet.cursor.getCursor();
+    return await quadraticCore.getFormatCell(sheets.sheet.id, cursor.x, cursor.y);
+  }
 };
 
-export const setItalic = (italic: boolean) => {
+export const setBold = async () => {
+  const selection = sheets.getRustSelection();
+  const format = await getFormat(selection);
+  const bold = !(format ? format.bold === true : true);
+  quadraticCore.setCellBold(selection, bold, sheets.getCursorPosition());
+};
+
+export const setItalic = async () => {
+  const selection = sheets.getRustSelection();
+  const format = await getFormat(selection);
+  const italic = !(format ? format.italic === true : true);
   quadraticCore.setCellItalic(sheets.getRustSelection(), italic, sheets.getCursorPosition());
 };
 

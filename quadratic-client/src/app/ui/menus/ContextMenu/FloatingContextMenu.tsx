@@ -47,7 +47,6 @@ import {
   textFormatSetExponential,
   textFormatSetPercentage,
 } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
@@ -291,35 +290,13 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton
-            size="small"
-            onClick={async () => {
-              const formatPrimaryCell = await quadraticCore.getCellFormatSummary(
-                sheets.sheet.id,
-                sheets.sheet.cursor.cursorPosition.x,
-                sheets.sheet.cursor.cursorPosition.y,
-                true
-              );
-              setBold(!formatPrimaryCell?.bold);
-            }}
-          >
+          <IconButton size="small" onClick={async () => setBold()}>
             <FontBoldIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton
-            size="small"
-            onClick={async () => {
-              const formatPrimaryCell = await quadraticCore.getCellFormatSummary(
-                sheets.sheet.id,
-                sheets.sheet.cursor.cursorPosition.x,
-                sheets.sheet.cursor.cursorPosition.y,
-                true
-              );
-              setItalic(!formatPrimaryCell?.italic);
-            }}
-          >
+          <IconButton size="small" onClick={() => setItalic()}>
             <FontItalicIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>

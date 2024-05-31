@@ -11,6 +11,7 @@ import {
   CellAlign,
   CellFormatSummary,
   CodeCellLanguage,
+  Format,
   JsCodeCell,
   JsCodeResult,
   JsGetCellResponse,
@@ -207,6 +208,62 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         resolve(this.gridController.getCellFormatSummary(sheetId, new Pos(x, y), withSheetInfo));
+      });
+    });
+  }
+
+  getFormatAll(sheetId: string): Promise<Format | undefined> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        const format = this.gridController.getFormatAll(sheetId);
+        if (format) {
+          resolve(JSON.parse(format));
+        } else {
+          resolve(undefined);
+        }
+      });
+    });
+  }
+
+  getFormatColumn(sheetId: string, column: number): Promise<Format | undefined> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        const format = this.gridController.getFormatColumn(sheetId, column);
+        if (format) {
+          resolve(JSON.parse(format));
+        } else {
+          resolve(undefined);
+        }
+      });
+    });
+  }
+
+  getFormatRow(sheetId: string, row: number): Promise<Format | undefined> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        const format = this.gridController.getFormatRow(sheetId, row);
+        if (format) {
+          resolve(JSON.parse(format));
+        } else {
+          resolve(undefined);
+        }
+      });
+    });
+  }
+
+  getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        const format = this.gridController.getFormatCell(sheetId, x, y);
+        if (format) {
+          resolve(JSON.parse(format));
+        } else {
+          resolve(undefined);
+        }
       });
     });
   }
