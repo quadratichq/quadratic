@@ -341,15 +341,16 @@ class QuadraticCore {
     });
   }
 
-  getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
+  getCellFormatSummary(sheetId: string, x: number, y: number, withSheetInfo: boolean): Promise<CellFormatSummary> {
     return new Promise((resolve) => {
       const id = this.id++;
       const message: ClientCoreGetCellFormatSummary = {
         type: 'clientCoreGetCellFormatSummary',
+        id,
         sheetId,
         x,
         y,
-        id,
+        withSheetInfo,
       };
       this.waitingForResponse[id] = (message: CoreClientGetCellFormatSummary) => {
         resolve(message.formatSummary);

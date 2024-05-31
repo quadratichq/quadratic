@@ -2,12 +2,14 @@
 //! handles when the cursorIsMoving outside of the inline formula edit box.
 
 import { sheets } from '@/app/grid/controller/Sheets';
+import { getSingleSelection } from '@/app/grid/sheet/selection';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
@@ -132,13 +134,29 @@ class InlineEditorKeyboard {
       e.preventDefault();
       e.stopPropagation();
       inlineEditorHandler.toggleItalics();
+      if (inlineEditorHandler.location) {
+        const selection = getSingleSelection(
+          inlineEditorHandler.location.sheetId,
+          inlineEditorHandler.location.x,
+          inlineEditorHandler.location.y
+        );
+        quadraticCore.setCellItalic(selection, !!inlineEditorHandler.temporaryItalic);
+      }
     }
 
     // toggle bold
     else if (e.code === 'KeyB' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       e.stopPropagation();
-      inlineEditorHandler.toggleBold();
+      if (inlineEditorHandler.location) {
+        inlineEditorHandler.toggleBold();
+        const selection = getSingleSelection(
+          inlineEditorHandler.location.sheetId,
+          inlineEditorHandler.location.x,
+          inlineEditorHandler.location.y
+        );
+        quadraticCore.setCellBold(selection, !!inlineEditorHandler.temporaryBold);
+      }
     }
 
     // trigger cell type menu

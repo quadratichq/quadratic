@@ -2,6 +2,7 @@ import { Sheet } from '@/app/grid/sheet/Sheet';
 import { SheetCursor } from '@/app/grid/sheet/SheetCursor';
 import { Rectangle } from 'pixi.js';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { getSingleSelection } from '../selection';
 
 let sheetCursor: SheetCursor;
 let sheet: Sheet;
@@ -14,13 +15,7 @@ beforeEach(() => {
 describe('SheetCursor.getRustSelection', () => {
   it('origin', () => {
     const selection = sheetCursor.getRustSelection();
-    expect(selection).toEqual({
-      sheet_id: { id: sheet.id },
-      all: false,
-      columns: null,
-      rects: [{ min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }],
-      rows: null,
-    });
+    expect(selection).toEqual(getSingleSelection(sheet.id, 0, 0));
   });
 
   it('single position', () => {

@@ -297,7 +297,8 @@ export const FloatingContextMenu = (props: Props) => {
               const formatPrimaryCell = await quadraticCore.getCellFormatSummary(
                 sheets.sheet.id,
                 sheets.sheet.cursor.cursorPosition.x,
-                sheets.sheet.cursor.cursorPosition.y
+                sheets.sheet.cursor.cursorPosition.y,
+                true
               );
               setBold(!formatPrimaryCell?.bold);
             }}
@@ -313,7 +314,8 @@ export const FloatingContextMenu = (props: Props) => {
               const formatPrimaryCell = await quadraticCore.getCellFormatSummary(
                 sheets.sheet.id,
                 sheets.sheet.cursor.cursorPosition.x,
-                sheets.sheet.cursor.cursorPosition.y
+                sheets.sheet.cursor.cursorPosition.y,
+                true
               );
               setItalic(!formatPrimaryCell?.italic);
             }}

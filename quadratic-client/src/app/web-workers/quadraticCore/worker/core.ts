@@ -202,11 +202,11 @@ class Core {
     });
   }
 
-  getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
+  getCellFormatSummary(sheetId: string, x: number, y: number, withSheetInfo: boolean): Promise<CellFormatSummary> {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.getCellFormatSummary(sheetId, new Pos(x, y)));
+        resolve(this.gridController.getCellFormatSummary(sheetId, new Pos(x, y), withSheetInfo));
       });
     });
   }

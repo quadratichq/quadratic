@@ -40,8 +40,8 @@ class InlineEditorHandler {
   cursorIsMoving = false;
 
   private formatSummary?: CellFormatSummary;
-  private temporaryBold: boolean | undefined;
-  private temporaryItalic: boolean | undefined;
+  temporaryBold: boolean | undefined;
+  temporaryItalic: boolean | undefined;
 
   // this is used to display the formula expand button
   private formulaExpandButton?: HTMLDivElement;
@@ -70,8 +70,8 @@ class InlineEditorHandler {
   // Resets state after editing is complete.
   private reset() {
     this.location = undefined;
-    this.temporaryBold = false;
-    this.temporaryItalic = false;
+    this.temporaryBold = undefined;
+    this.temporaryItalic = undefined;
     this.changeToFormula(false);
     this.height = 0;
     this.open = false;
@@ -194,7 +194,8 @@ class InlineEditorHandler {
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
-        this.location.y
+        this.location.y,
+        true
       );
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'

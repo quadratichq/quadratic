@@ -135,10 +135,11 @@ export interface CoreClientGetEditCell {
 
 export interface ClientCoreGetCellFormatSummary {
   type: 'clientCoreGetCellFormatSummary';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
-  id: number;
+  withSheetInfo: boolean;
 }
 
 export interface CoreClientGetCellFormatSummary {

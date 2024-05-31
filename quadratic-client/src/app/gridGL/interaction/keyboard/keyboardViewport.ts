@@ -103,14 +103,14 @@ export async function keyboardViewport(options: {
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
     const cursor = sheets.sheet.cursor.getCursor();
-    const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y);
+    const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y, true);
     setBold(!(formatCell ? formatCell.bold === true : true));
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
     const cursor = sheets.sheet.cursor.getCursor();
-    const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y);
+    const formatCell = await quadraticCore.getCellFormatSummary(sheets.sheet.id, cursor.x, cursor.y, true);
     setItalic(!(formatCell ? formatCell.italic === true : true));
     return true;
   }
