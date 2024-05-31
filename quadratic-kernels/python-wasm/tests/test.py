@@ -74,38 +74,45 @@ class TestTesting(IsolatedAsyncioTestCase):
         self.assertEqual(attempt_fix_await("1 + 1"), "1 + 1")
 
         # simple adding await
-        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = await cells(0, 0)")
-        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = await cell(0, 0)")
-        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = await c(0, 0)")
-        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = await rel_cell(0, 0)")
-        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = await rc(0, 0)")
+        self.assertEqual(attempt_fix_await("a = cells(0, 0)"), "a = (await cells(0, 0))")
+        self.assertEqual(attempt_fix_await("a = cell(0, 0)"), "a = (await cell(0, 0))")
+        self.assertEqual(attempt_fix_await("a = c(0, 0)"), "a = (await c(0, 0))")
+        self.assertEqual(attempt_fix_await("a = rel_cell(0, 0)"), "a = (await rel_cell(0, 0))")
+        self.assertEqual(attempt_fix_await("a = rc(0, 0)"), "a = (await rc(0, 0))")
         self.assertEqual(
-            attempt_fix_await("a = getCells(0, 0)"), "a = await getCells(0, 0)"
+            attempt_fix_await("a = getCells(0, 0)"), "a = (await getCells(0, 0))"
         )
 
         # simple already has await
         self.assertEqual(
-            attempt_fix_await("a = await cells(0, 0)"), "a = await cells(0, 0)"
+            attempt_fix_await("a = await cells(0, 0)"), "a = (await cells(0, 0))"
         )
         self.assertEqual(
-            attempt_fix_await("a = await cell(0, 0)"), "a = await cell(0, 0)"
+            attempt_fix_await("a = await cell(0, 0)"), "a = (await cell(0, 0))"
         )
-        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = await c(0, 0)")
+        self.assertEqual(attempt_fix_await("a = await c(0, 0)"), "a = (await c(0, 0))")
         self.assertEqual(
-            attempt_fix_await("a = await getCells(0, 0)"), "a = await getCells(0, 0)"
+            attempt_fix_await("a = await getCells(0, 0)"), "a = (await getCells(0, 0))"
         )
 
         # other
         self.assertEqual(attempt_fix_await("a = cac(0, 0)"), "a = cac(0, 0)")
-        self.assertEqual(attempt_fix_await("c(0, 0)"), "await c(0, 0)")
-        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int(await c(0,0))")
+        self.assertEqual(attempt_fix_await("c(0, 0)"), "(await c(0, 0))")
+        self.assertEqual(attempt_fix_await("int(c(0,0))"), "int((await c(0,0)))")
         self.assertEqual(
             attempt_fix_await("float((await c(2, -4)).value)"),
+            "float(((await c(2, -4))).value)",
+        )
+        self.assertEqual(
+            attempt_fix_await("float(c(2, -4).value)"),
             "float((await c(2, -4)).value)",
         )
         self.assertEqual(
-            attempt_fix_await("c(0, 0)\nc(0, 0)"), "await c(0, 0)\nawait c(0, 0)"
+            attempt_fix_await("cells((0,0), (0,10)).sum()"), "(await cells((0,0), (0,10))).sum()"
         )
+        self.assertEqual(
+            attempt_fix_await("c(0, 0)\nc(0, 0)"), "(await c(0, 0))\n(await c(0, 0))"
+        )        
 
 
 class TestImports(TestCase):
