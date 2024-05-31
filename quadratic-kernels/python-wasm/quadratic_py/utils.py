@@ -13,6 +13,7 @@ import pytz
 
 def attempt_fix_await(code: str) -> str:
     # Wrap known async functions with "(await <function-call>)" to improve the UX
+    code = re.sub(r"([^a-zA-Z0-9_]|^)c(?:ell)?(\([^\(\)]*\([^\)]*\)(?:[^\(\)]*|\([^\)]*\))*\))", r"\1cells\2", code) # captures c((x,y), ...) cell((x,y), ...)
     code = re.sub(r"([^a-zA-Z0-9_]|^)(c(?:ells?)?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code) # captures c( cell( cells(
     code = re.sub(r"([^a-zA-Z0-9_]|^)(cells\[[^\]]*\])", r"\1(await \2)", code)                         # captures cells[
     code = re.sub(r"([^a-zA-Z0-9_]|^)(getCells?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)   # captures get_cell( get_cells(
