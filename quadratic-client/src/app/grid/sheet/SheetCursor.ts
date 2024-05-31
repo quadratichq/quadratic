@@ -162,7 +162,7 @@ export class SheetCursor {
         min: { x: BigInt(rect.x), y: BigInt(rect.y) },
         max: { x: BigInt(rect.x + rect.width), y: BigInt(rect.y + rect.height) },
       }));
-    } else {
+    } else if (!this.columnRow) {
       rects = [
         {
           min: { x: BigInt(this.cursorPosition.x), y: BigInt(this.cursorPosition.y) },

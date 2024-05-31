@@ -83,7 +83,7 @@ impl GridController {
     ) {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
-                let old_formats = sheet.set_formats_selection(&selection, &formats);
+                let reverse_operations = sheet.set_formats_selection(&selection, &formats);
 
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
@@ -98,13 +98,9 @@ impl GridController {
                         formats,
                     });
 
-                transaction.reverse_operations.insert(
-                    0,
-                    Operation::SetCellFormatsSelection {
-                        selection,
-                        formats: old_formats,
-                    },
-                );
+                transaction
+                    .reverse_operations
+                    .splice(0..0, reverse_operations.iter().cloned());
             }
         }
     }

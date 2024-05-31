@@ -1,5 +1,5 @@
 use crate::{
-    grid::{CodeRunResult, GridBounds},
+    grid::{formats::Format, CodeRunResult, GridBounds},
     selection::Selection,
     CellValue, Pos, SheetRect, Value,
 };
@@ -263,6 +263,61 @@ impl Sheet {
                     sheet_id: self.id,
                 })
             }
+        } else if let Some(sheet_rect) = selection.largest_rect() {
+            Some(sheet_rect)
+        } else {
+            None
+        }
+    }
+
+    /// Gets a list of cells with formatting for a selection. Only cells with a
+    /// format are returned.
+    /// TODO: return &Format when we change how formats are stored internally.
+    pub fn format_selection(&self, selection: &Selection) -> Vec<(Pos, Format)> {
+        if selection.all {
+            if let GridBounds::NonEmpty(bounds) = self.format_bounds {
+                let mut vec = vec![];
+                for x in bounds.min.x..=bounds.max.x {
+                    if let Some(column) = self.columns.get(&x) {
+                        for y in bounds.min.y..=bounds.max.y {
+                            if let Some(format) = column.format(y) {
+                                vec.push((Pos { x, y }, format));
+                            }
+                        }
+                    }
+                }
+                vec
+            } else {
+                Vec::new()
+            }
+        } else if let Some(columns) = selection.columns.as_ref() {
+            let mut vec = vec![];
+            columns.iter().for_each(|x| {
+                if let Some(column) = self.get_column(*x) {
+                    if let Some(range) = column.format_range() {
+                        for y in range.start..=range.end {
+                            if let Some(format) = column.format(y) {
+                                vec.push((Pos { x: *x, y }, format));
+                            }
+                        }
+                    }
+                }
+            });
+            vec
+        } else if let Some(rows) = selection.rows.as_ref() {
+            let mut vec = vec![];
+            rows.iter().for_each(|row| {
+                /// todo: NO IDEA HOW TO DO THIS EFFICIENTLY ***
+                if let Some(row) = self.row_bounds(row, ignore_formatting) {
+                    let range = row.format_range();
+                    for x in range.min..=range.max {
+                        if let Some(format) = row.format(x) {
+                            vec.push((Pos { x, y: *row }, format));
+                        }
+                    }
+                }
+            });
+            vec
         } else if let Some(sheet_rect) = selection.largest_rect() {
             Some(sheet_rect)
         } else {

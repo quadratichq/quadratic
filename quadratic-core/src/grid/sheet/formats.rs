@@ -2,22 +2,35 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
-    grid::formats::{Format, FormatUpdate, Formats},
+    controller::operations::operation::Operation,
+    grid::{
+        formats::{Format, FormatUpdate, Formats},
+        Column,
+    },
     selection::Selection,
     Pos, Rect,
 };
 
 impl Sheet {
     pub fn format_all(&self) -> Format {
-        self.format_all.as_ref().unwrap_or(&Format::default()).clone()
+        self.format_all
+            .as_ref()
+            .unwrap_or(&Format::default())
+            .clone()
     }
 
     pub fn format_column(&self, column: i64) -> Format {
-        self.formats_columns.get(&column).unwrap_or(&Format::default()).clone()
+        self.formats_columns
+            .get(&column)
+            .unwrap_or(&Format::default())
+            .clone()
     }
 
     pub fn format_row(&self, row: i64) -> Format {
-        self.formats_rows.get(&row).unwrap_or(&Format::default()).clone()
+        self.formats_rows
+            .get(&row)
+            .unwrap_or(&Format::default())
+            .clone()
     }
 
     pub fn format_cell(&self, x: i64, y: i64) -> Format {
@@ -35,14 +48,26 @@ impl Sheet {
                 render_size: column.render_size.get(y),
                 ..Format::default()
             }
-
         } else {
             Format::default()
         }
     }
 
-    /// Sets the Format for all cells and returns Formats to undo that change.
-    fn set_format_all(&mut self, update: &Formats) -> Formats {
+    fn update_all_format_cell(
+        &mut self,
+        format_update: &FormatUpdate,
+        column: &mut Column,
+        y: i64,
+    ) {
+        let cell_format = column. format(y);
+    }
+
+    /// Sets the Format for all cells and returns a Vec<Operation> to undo the
+    /// operation. Note, changing the sheet's format also removes any set
+    /// formatting for the entire grid. For example, if you set everything to
+    /// bold, all cells that have bold set unset bold. The undo has the reverse
+    /// for these operations.
+    fn set_format_all(&mut self, update: &Formats) -> Vec<Operation> {
         let mut old = Formats::default();
         let mut format_all = self
             .format_all
@@ -63,12 +88,16 @@ impl Sheet {
             old.push(FormatUpdate::default());
         }
 
+        let mut cells_needing_change = HashSet::new();
+        // let cells = self.selection(&selection, None, true, )
+
         // force a rerender of all impacted cells
         if render_cells {
             self.send_all_render_cells();
         }
 
-        old
+        todo!();
+        vec![]
     }
 
     /// Sets the Formats for columns and returns existing Formats for columns.
@@ -107,8 +136,12 @@ impl Sheet {
     fn set_formats_rows(&mut self, rows: &Vec<i64>, formats: &Formats) -> Formats {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
+        let mut render_cells = HashSet::new();
         rows.iter().for_each(|y| {
             if let Some(format_update) = formats_iter.next() {
+                if format_update.needs_render_cells() {
+                    render_cells.insert(*y);
+                }
                 let mut row_format = self
                     .formats_rows
                     .get(y)
@@ -123,7 +156,10 @@ impl Sheet {
             }
         });
 
-        // todo: need to trigger client changes
+        // force a rerender of all impacted cells
+        if !render_cells.is_empty() {
+            self.send_row_render_cells(render_cells.into_iter().collect());
+        }
 
         old_formats
     }
@@ -214,17 +250,21 @@ impl Sheet {
         old_formats
     }
 
-    pub fn set_formats_selection(&mut self, selection: &Selection, formats: &Formats) -> Formats {
+    pub fn set_formats_selection(
+        &mut self,
+        selection: &Selection,
+        formats: &Formats,
+    ) -> Vec<Operation> {
         if selection.all {
             self.set_format_all(formats)
-        } else if let Some(columns) = selection.columns.as_ref() {
-            self.set_formats_columns(columns, formats)
-        } else if let Some(rows) = selection.rows.as_ref() {
-            self.set_formats_rows(rows, formats)
-        } else if let Some(rects) = selection.rects.as_ref() {
-            self.set_formats_rects(rects, formats)
+        // } else if let Some(columns) = selection.columns.as_ref() {
+        //     self.set_formats_columns(columns, formats)
+        // } else if let Some(rows) = selection.rows.as_ref() {
+        //     self.set_formats_rows(rows, formats)
+        // } else if let Some(rects) = selection.rects.as_ref() {
+        //     self.set_formats_rects(rects, formats)
         } else {
-            Formats::default()
+            vec![]
         }
     }
 }
@@ -389,7 +429,7 @@ mod tests {
             all: true,
             ..Default::default()
         };
-        let old_formats = sheet.set_formats_selection(&selection, &formats);
+        let reverse = sheet.set_formats_selection(&selection, &formats);
         assert_eq!(
             sheet.format_all,
             Some(Format {
@@ -405,15 +445,16 @@ mod tests {
             })
         );
 
-        let old_formats = sheet.set_formats_selection(
-            &Selection {
-                all: true,
-                ..Default::default()
-            },
-            &old_formats,
-        );
-        assert!(sheet.format_all.is_none());
-        assert_eq!(old_formats, formats);
+    todo!();
+    //     let old_formats = sheet.set_formats_selection(
+    //         &Selection {
+    //             all: true,
+    //             ..Default::default()
+    //         },
+    //         &old_formats,
+    //     );
+    //     assert!(sheet.format_all.is_none());
+    //     assert_eq!(old_formats, formats);
     }
 
     #[test]
@@ -443,10 +484,11 @@ mod tests {
             })
         );
 
-        let old_formats = sheet.set_format_all(&old_formats);
+        // let reverse = sheet.set_format_all(&old_formats);
         assert!(sheet.format_all.is_none());
 
-        assert_eq!(old_formats, formats);
+        todo!();
+        // assert_eq!(old_formats, formats);
     }
 
     #[test]
@@ -487,22 +529,23 @@ mod tests {
         );
         assert_eq!(sheet.formats_columns.get(&3), None);
 
-        let old_formats = sheet.set_formats_selection(&selection, &old_formats);
-        assert_eq!(sheet.formats_columns.get(&0), None);
-        assert_eq!(sheet.formats_columns.get(&1), None);
-        assert_eq!(sheet.formats_columns.get(&2), None);
-        assert_eq!(
-            old_formats,
-            Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(true)),
-                    ..FormatUpdate::default()
-                },
-                3
-            )
-        );
+        todo!();
+        // let reverse = sheet.set_formats_selection(&selection, &old_formats);
+        // assert_eq!(sheet.formats_columns.get(&0), None);
+        // assert_eq!(sheet.formats_columns.get(&1), None);
+        // assert_eq!(sheet.formats_columns.get(&2), None);
+        // assert_eq!(
+        //     old_formats,
+        //     Formats::repeat(
+        //         FormatUpdate {
+        //             bold: Some(Some(true)),
+        //             ..FormatUpdate::default()
+        //         },
+        //         3
+        //     )
+        // );
 
-        assert_eq!(old_formats, formats);
+        // assert_eq!(old_formats, formats);
     }
 
     #[test]
@@ -595,22 +638,23 @@ mod tests {
         );
         assert_eq!(sheet.formats_rows.get(&3), None);
 
-        let old_formats = sheet.set_formats_selection(&selection, &old_formats);
-        assert_eq!(sheet.formats_rows.get(&0), None);
-        assert_eq!(sheet.formats_rows.get(&1), None);
-        assert_eq!(sheet.formats_rows.get(&2), None);
-        assert_eq!(
-            old_formats,
-            Formats::repeat(
-                FormatUpdate {
-                    bold: Some(Some(true)),
-                    ..FormatUpdate::default()
-                },
-                3
-            )
-        );
+        todo!();
+        // let old_formats = sheet.set_formats_selection(&selection, &old_formats);
+        // assert_eq!(sheet.formats_rows.get(&0), None);
+        // assert_eq!(sheet.formats_rows.get(&1), None);
+        // assert_eq!(sheet.formats_rows.get(&2), None);
+        // assert_eq!(
+        //     old_formats,
+        //     Formats::repeat(
+        //         FormatUpdate {
+        //             bold: Some(Some(true)),
+        //             ..FormatUpdate::default()
+        //         },
+        //         3
+        //     )
+        // );
 
-        assert_eq!(old_formats, formats);
+        // assert_eq!(old_formats, formats);
     }
 
     #[test]
@@ -686,10 +730,13 @@ mod tests {
     fn get_format_column() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_column(0), Format::default());
-        sheet.formats_columns.insert(0, Format {
-            bold: Some(true),
-            ..Default::default()
-        });
+        sheet.formats_columns.insert(
+            0,
+            Format {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
         assert_eq!(
             sheet.format_column(0),
             Format {
@@ -703,10 +750,13 @@ mod tests {
     fn get_format_row() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_row(0), Format::default());
-        sheet.formats_rows.insert(0, Format {
-            bold: Some(true),
-            ..Default::default()
-        });
+        sheet.formats_rows.insert(
+            0,
+            Format {
+                bold: Some(true),
+                ..Default::default()
+            },
+        );
         assert_eq!(
             sheet.format_row(0),
             Format {
