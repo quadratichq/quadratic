@@ -244,54 +244,31 @@ impl Sheet {
     }
 
     /// Returns a summary of formatting in a region.
-    pub fn get_cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        match self.columns.get(&pos.x) {
-            None => CellFormatSummary {
-                bold: None,
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-            },
-            Some(column) => CellFormatSummary {
-                bold: column.bold.get(pos.y),
-                italic: column.italic.get(pos.y),
-                text_color: column.text_color.get(pos.y),
-                fill_color: column.fill_color.get(pos.y),
-                commas: column.numeric_commas.get(pos.y),
-            },
-        }
-    }
-
-    // returns CellFormatSummary only if a formatting exists
-    // TODL(ddimaria): this function is nearly a duplicate of get_cell_format_summary, talk
-    // with the team to see if we can consolidate
-    pub fn get_existing_cell_format_summary(&self, pos: Pos) -> Option<CellFormatSummary> {
-        match self.columns.get(&pos.x) {
-            Some(column) => {
-                let bold = column.bold.get(pos.y);
-                let italic = column.italic.get(pos.y);
-                let fill_color = column.fill_color.get(pos.y);
-                let text_color = column.text_color.get(pos.y);
-                let commas = column.numeric_commas.get(pos.y);
-
-                if bold.is_some()
-                    || italic.is_some()
-                    || fill_color.is_some()
-                    || text_color.is_some()
-                {
-                    Some(CellFormatSummary {
-                        bold,
-                        italic,
-                        fill_color,
-                        text_color,
-                        commas,
-                    })
-                } else {
-                    None
-                }
-            }
-            None => None,
+    pub fn cell_format_summary(&self, pos: Pos, include_sheet_info: bool) -> CellFormatSummary {
+        let cell = self.columns.get(&pos.x).map(|column| Format {
+            bold: column.bold.get(pos.y),
+            italic: column.italic.get(pos.y),
+            text_color: column.text_color.get(pos.y),
+            fill_color: column.fill_color.get(pos.y),
+            numeric_commas: column.numeric_commas.get(pos.y),
+            ..Default::default()
+        });
+        let format = if include_sheet_info {
+            Format::combine(
+                cell.as_ref(),
+                self.formats_columns.get(&pos.x),
+                self.formats_rows.get(&pos.y),
+                self.format_all.as_ref(),
+            )
+        } else {
+            cell.unwrap_or(Format::default())
+        };
+        CellFormatSummary {
+            bold: format.bold,
+            italic: format.italic,
+            text_color: format.text_color,
+            fill_color: format.fill_color,
+            commas: format.numeric_commas,
         }
     }
 
@@ -624,12 +601,12 @@ mod test {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
 
-        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
-        assert_eq!(None, existing_cell_format_summary);
+        let format_summary = sheet.cell_format_summary((2, 1).into(), false);
+        assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
         let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-        let value = sheet.get_cell_format_summary((2, 1).into());
+        let value = sheet.cell_format_summary((2, 1).into(), false);
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
             italic: None,
@@ -639,21 +616,21 @@ mod test {
         };
         assert_eq!(value, cell_format_summary);
 
-        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
+        let format_summary = sheet.cell_format_summary((2, 1).into(), false);
         assert_eq!(
-            Some(cell_format_summary.clone()),
-            existing_cell_format_summary
+            cell_format_summary.clone(),
+            format_summary
         );
 
         // now set a italic value
         let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
-        let value = sheet.get_cell_format_summary((2, 1).into());
+        let value = sheet.cell_format_summary((2, 1).into(), false);
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);
 
-        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
+        let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into(), false);
         assert_eq!(
-            Some(cell_format_summary.clone()),
+            cell_format_summary.clone(),
             existing_cell_format_summary
         );
     }

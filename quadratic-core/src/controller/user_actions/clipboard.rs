@@ -85,17 +85,11 @@ impl GridController {
                 // add styling for html (only used for pasting to other spreadsheets)
                 let mut style = String::new();
 
-                let (bold, italic, text_color, fill_color) =
-                    if let Some(format) = sheet.get_existing_cell_format_summary(pos) {
-                        (
-                            format.bold.is_some_and(|bold| bold),
-                            format.italic.is_some_and(|italic| italic),
-                            format.text_color,
-                            format.fill_color,
-                        )
-                    } else {
-                        (false, false, None, None)
-                    };
+                let summary = sheet.cell_format_summary(pos, false);
+                let bold = summary.bold.map(|b| b == true).unwrap_or(false);
+                let italic = summary.italic.map(|i| i == true).unwrap_or(false);
+                let text_color = summary.text_color;
+                let fill_color = summary.fill_color;
 
                 let cell_border = sheet.borders().per_cell.to_owned().get_cell_border(pos);
 
@@ -419,7 +413,7 @@ mod test {
             Some(CellValue::Text(String::from("1, 1")))
         );
         assert_eq!(
-            sheet.get_cell_format_summary(Pos { x: 1, y: 1 }),
+            sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
             CellFormatSummary {
                 bold: Some(true),
                 italic: None,
@@ -433,7 +427,7 @@ mod test {
             Some(CellValue::Number(BigDecimal::from(12)))
         );
         assert_eq!(
-            sheet.get_cell_format_summary(Pos { x: 3, y: 2 }),
+            sheet.cell_format_summary(Pos { x: 3, y: 2 }, false),
             CellFormatSummary {
                 bold: None,
                 italic: Some(true),
@@ -892,7 +886,7 @@ mod test {
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
         assert_eq!(sheet.display_value(Pos { x: 2, y: 2 }), None);
         assert_eq!(
-            sheet.get_cell_format_summary(Pos { x: 1, y: 1 }),
+            sheet.cell_format_summary(Pos { x: 1, y: 1 }, false),
             CellFormatSummary {
                 bold: Some(true),
                 italic: None,
@@ -902,7 +896,7 @@ mod test {
             }
         );
         assert_eq!(
-            sheet.get_cell_format_summary(Pos { x: 2, y: 2 }),
+            sheet.cell_format_summary(Pos { x: 2, y: 2 }, false),
             CellFormatSummary {
                 bold: None,
                 italic: Some(true),

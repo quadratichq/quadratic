@@ -1,4 +1,6 @@
-//! This is a replacement for CellFmtArray for use within Operation::SetFormatSelection
+//! This is a replacement for CellFmtArray for use within
+//! Operation::SetFormatSelection, and eventually to replace the Format db for
+//! the sheet.
 
 use std::ops::{Deref, DerefMut};
 
@@ -199,6 +201,21 @@ impl FormatUpdate {
 
     pub fn fill_changed(&self) -> bool {
         self.fill_color.is_some()
+    }
+
+    pub fn combine(&self, other: &FormatUpdate) -> FormatUpdate {
+        let mut update = FormatUpdate::default();
+        update.align = self.align.or(other.align);
+        update.wrap = self.wrap.or(other.wrap);
+        update.numeric_format = self.numeric_format.clone().or(other.numeric_format.clone());
+        update.numeric_decimals = self.numeric_decimals.or(other.numeric_decimals);
+        update.numeric_commas = self.numeric_commas.or(other.numeric_commas);
+        update.bold = self.bold.or(other.bold);
+        update.italic = self.italic.or(other.italic);
+        update.text_color = self.text_color.clone().or(other.text_color.clone());
+        update.fill_color = self.fill_color.clone().or(other.fill_color.clone());
+        update.render_size = self.render_size.clone().or(other.render_size.clone());
+        update
     }
 }
 

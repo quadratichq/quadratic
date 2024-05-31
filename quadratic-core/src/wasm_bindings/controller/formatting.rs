@@ -6,11 +6,16 @@ impl GridController {
     /// Returns a summary of the formatting in a region as a
     /// [`CellFormatSummary`].
     #[wasm_bindgen(js_name = "getCellFormatSummary")]
-    pub fn js_cell_format_summary(&self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
+    pub fn js_cell_format_summary(
+        &self,
+        sheet_id: String,
+        pos: &Pos,
+        include_sheet_info: bool,
+    ) -> Result<JsValue, JsValue> {
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return Result::Err("Sheet not found".into());
         };
-        let output: CellFormatSummary = sheet.get_cell_format_summary(*pos);
+        let output: CellFormatSummary = sheet.cell_format_summary(*pos, include_sheet_info);
         Ok(serde_wasm_bindgen::to_value(&output)?)
     }
 
