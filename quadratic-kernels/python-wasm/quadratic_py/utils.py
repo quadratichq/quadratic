@@ -13,14 +13,14 @@ import pytz
 
 def attempt_fix_await(code: str) -> str:
     # Convert c((x,y), ...) cell((x,y), ...) to cells((x,y), ...)
-    code = re.sub(r"([^a-zA-Z0-9_]|^)c(?:ell)?(\([^\(\)]*\([^\)]*\)(?:[^\(\)]*|\([^\)]*\))*\))", r"\1cells\2", code) # captures c((x,y), ...) cell((x,y), ...)
+    code = re.sub(r"(^|\W)c(?:ell)?(\([^\(\)]*\([^\)]*\)(?:[^\(\)]*|\([^\)]*\))*\))", r"\1cells\2", code) # captures c((x,y), ...) cell((x,y), ...)
     
     # Wrap known async functions with "(await <function-call>)" to improve the UX
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(c(?:ells?)?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code) # captures c( cell( cells(
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(cells\[[^\]]*\])", r"\1(await \2)", code)                         # captures cells[
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(getCells?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)   # captures get_cell( get_cells(
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(rel_cell\([^\)]*\))", r"\1(await \2)", code)                      # captures rel_cell(
-    code = re.sub(r"([^a-zA-Z0-9_]|^)(?:await )?(rc\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)          # captures rc(
+    code = re.sub(r"(^|\W)(?:await +)?(c(?:ells?)?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code) # captures c( cell( cells(
+    code = re.sub(r"(^|\W)(?:await +)?(cells\[[^\]]*\])", r"\1(await \2)", code)                         # captures cells[
+    code = re.sub(r"(^|\W)(?:await +)?(getCells?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)   # captures get_cell( get_cells(
+    code = re.sub(r"(^|\W)(?:await +)?(rel_cell\([^\)]*\))", r"\1(await \2)", code)                      # captures rel_cell(
+    code = re.sub(r"(^|\W)(?:await +)?(rc\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)          # captures rc(
 
     return code
 

@@ -112,7 +112,21 @@ class TestTesting(IsolatedAsyncioTestCase):
         )
         self.assertEqual(
             attempt_fix_await("c(0, 0)\nc(0, 0)"), "(await c(0, 0))\n(await c(0, 0))"
-        )        
+        )
+
+        # convert c((x,y), ...) cell((x,y), ...) to cells((x,y), ...)
+        self.assertEqual(
+            attempt_fix_await("c((0,0), (0,10), (10,10), (10,0)).sum()"), "(await cells((0,0), (0,10), (10,10), (10,0))).sum()"
+        )
+        self.assertEqual(
+            attempt_fix_await("cell((0,0), (0,10), (10,10), (10,0)).sum()"), "(await cells((0,0), (0,10), (10,10), (10,0))).sum()"
+        )
+        self.assertEqual(
+            attempt_fix_await("cells((0,0), (0,10), (10,10), (10,0)).sum()"), "(await cells((0,0), (0,10), (10,10), (10,0))).sum()"
+        )
+        self.assertEqual(
+            attempt_fix_await("gc((0,0), (0,10), (10,10), (10,0)).sum()"), "gc((0,0), (0,10), (10,10), (10,0)).sum()"
+        )
 
 
 class TestImports(TestCase):
