@@ -99,7 +99,6 @@ export class CellsFills extends Container {
       }
       if (this.metaFill.columns.length) {
         this.metaFill.columns.forEach(([column, color]) => {
-          console.log(column, color);
           const screen = this.sheet.offsets.getColumnPlacement(Number(column));
           const left = screen.position;
           const width = screen.size;
@@ -109,6 +108,20 @@ export class CellsFills extends Container {
 
           this.meta.beginFill(convertColorStringToTint(color));
           this.meta.drawRect(left, viewport.top, left + width, viewport.height);
+          this.meta.endFill();
+        });
+      }
+      if (this.metaFill.rows.length) {
+        this.metaFill.rows.forEach(([row, color]) => {
+          const screen = this.sheet.offsets.getRowPlacement(Number(row));
+          const top = screen.position;
+          const height = screen.size;
+
+          // only draw if the row is visible on the screen
+          if (top >= viewport.bottom || top + height <= viewport.top) return;
+
+          this.meta.beginFill(convertColorStringToTint(color));
+          this.meta.drawRect(viewport.left, top, viewport.width, top + height);
           this.meta.endFill();
         });
       }
