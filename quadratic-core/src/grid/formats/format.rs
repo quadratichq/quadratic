@@ -1,12 +1,8 @@
-//! This is a replacement for CellFmtArray for use within
-//! Operation::SetFormatSelection, and eventually to replace the Format db for
-//! the sheet.
+//! This stores a format for Operations and eventually for the entire sheet.
 
-use std::ops::{Deref, DerefMut};
-
-use super::{CellAlign, CellWrap, NumericFormat, RenderSize};
-use crate::RunLengthEncoding;
 use serde::{Deserialize, Serialize};
+use crate::grid::{CellAlign, CellWrap, NumericFormat, RenderSize};
+use super::format_update::FormatUpdate;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, ts_rs::TS)]
 pub struct Format {
@@ -36,8 +32,22 @@ impl Format {
             && self.render_size.is_none()
     }
 
+    /// Clears all formatting.
+    pub fn clear(&mut self) {
+        self.align = None;
+        self.wrap = None;
+        self.numeric_format = None;
+        self.numeric_decimals = None;
+        self.numeric_commas = None;
+        self.bold = None;
+        self.italic = None;
+        self.text_color = None;
+        self.fill_color = None;
+        self.render_size = None;
+    }
+
     /// Merges a FormatUpdate into this Format, returning a FormatUpdate to undo the change.
-    pub fn merge_update(&mut self, update: &FormatUpdate) -> FormatUpdate {
+    pub fn merge_update_into(&mut self, update: &FormatUpdate) -> FormatUpdate {
         let mut old = FormatUpdate::default();
         if let Some(align) = update.align {
             old.align = Some(self.align);
@@ -82,18 +92,50 @@ impl Format {
         old
     }
 
-    /// Clears all formatting.
-    pub fn clear(&mut self) {
-        self.align = None;
-        self.wrap = None;
-        self.numeric_format = None;
-        self.numeric_decimals = None;
-        self.numeric_commas = None;
-        self.bold = None;
-        self.italic = None;
-        self.text_color = None;
-        self.fill_color = None;
-        self.render_size = None;
+    /// Returns a FormatUpdate only if the current format needs to be cleared.
+    /// This does not change the self's format.
+    ///
+    /// This is used to clear formats for format changes in columns, rows, and
+    /// sheets. For example, if you set bold in a column, all cells with bold in
+    /// that column will remove their bold setting so that the column's format
+    /// takes precedence.
+    pub fn needs_to_clear_cell_format_for_parent(&self, update: &FormatUpdate) -> Option<FormatUpdate> {
+        let mut old = FormatUpdate::default();
+        if self.align.is_some() && update.align.is_some() {
+            old.align = Some(None);
+        }
+        if self.wrap.is_some() && update.wrap.is_some() {
+            old.wrap = Some(None);
+        }
+        if self.numeric_format.is_some() && update.numeric_format.is_some() {
+            old.numeric_format = Some(None);
+        }
+        if self.numeric_decimals.is_some() && update.numeric_decimals.is_some() {
+            old.numeric_decimals = Some(None);
+        }
+        if self.numeric_commas.is_some() && update.numeric_commas.is_some() {
+            old.numeric_commas = Some(None);
+        }
+        if self.bold.is_some() && update.bold.is_some() {
+            old.bold = Some(None);
+        }
+        if self.italic.is_some() && update.italic.is_some() {
+            old.italic = Some(None);
+        }
+        if self.text_color.is_some() && update.text_color.is_some() {
+            old.text_color = Some(None);
+        }
+        if self.fill_color.is_some() && update.fill_color.is_some() {
+            old.fill_color = Some(None);
+        }
+        if self.render_size.is_some() && update.render_size.is_some() {
+            old.render_size = Some(None);
+        }
+        if old.is_default() {
+            None
+        } else {
+            Some(old)
+        }
     }
 
     /// Combines formatting from a cell, column, or, and sheet (in that order)
@@ -105,16 +147,16 @@ impl Format {
     ) -> Format {
         let mut format = Format::default();
         if let Some(sheet) = sheet {
-            format.merge_update(&sheet.into());
+            format.merge_update_into(&sheet.into());
         }
         if let Some(row) = row {
-            format.merge_update(&row.into());
+            format.merge_update_into(&row.into());
         }
         if let Some(column) = column {
-            format.merge_update(&column.into());
+            format.merge_update_into(&column.into());
         }
         if let Some(cell) = cell {
-            format.merge_update(&cell.into());
+            format.merge_update_into(&cell.into());
         }
         format
     }
@@ -138,148 +180,9 @@ impl From<&Format> for FormatUpdate {
     }
 }
 
-/// Used to store changes from a Format to another Format.
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct FormatUpdate {
-    pub align: Option<Option<CellAlign>>,
-    pub wrap: Option<Option<CellWrap>>,
-    pub numeric_format: Option<Option<NumericFormat>>,
-    pub numeric_decimals: Option<Option<i16>>,
-    pub numeric_commas: Option<Option<bool>>,
-    pub bold: Option<Option<bool>>,
-    pub italic: Option<Option<bool>>,
-    pub text_color: Option<Option<String>>,
-    pub fill_color: Option<Option<String>>,
-    pub render_size: Option<Option<RenderSize>>,
-}
-
-impl FormatUpdate {
-    pub fn cleared() -> Self {
-        Self {
-            align: Some(None),
-            wrap: Some(None),
-            numeric_format: Some(None),
-            numeric_decimals: Some(None),
-            numeric_commas: Some(None),
-            bold: Some(None),
-            italic: Some(None),
-            text_color: Some(None),
-            fill_color: Some(None),
-            render_size: Some(None),
-        }
-    }
-
-    pub fn is_default(&self) -> bool {
-        self.align.is_none()
-            && self.wrap.is_none()
-            && self.numeric_format.is_none()
-            && self.numeric_decimals.is_none()
-            && self.numeric_commas.is_none()
-            && self.bold.is_none()
-            && self.italic.is_none()
-            && self.text_color.is_none()
-            && self.fill_color.is_none()
-            && self.render_size.is_none()
-    }
-
-    /// Whether we need to send a client html update.
-    pub fn html_changed(&self) -> bool {
-        self.render_size.is_some()
-    }
-
-    /// Whether we need to send a render cell update.
-    pub fn render_cells_changed(&self) -> bool {
-        self.align.is_some()
-            || self.wrap.is_some()
-            || self.numeric_format.is_some()
-            || self.numeric_decimals.is_some()
-            || self.numeric_commas.is_some()
-            || self.bold.is_some()
-            || self.italic.is_some()
-            || self.text_color.is_some()
-    }
-
-    pub fn fill_changed(&self) -> bool {
-        self.fill_color.is_some()
-    }
-
-    pub fn combine(&self, other: &FormatUpdate) -> FormatUpdate {
-        let mut update = FormatUpdate::default();
-        update.align = self.align.or(other.align);
-        update.wrap = self.wrap.or(other.wrap);
-        update.numeric_format = self.numeric_format.clone().or(other.numeric_format.clone());
-        update.numeric_decimals = self.numeric_decimals.or(other.numeric_decimals);
-        update.numeric_commas = self.numeric_commas.or(other.numeric_commas);
-        update.bold = self.bold.or(other.bold);
-        update.italic = self.italic.or(other.italic);
-        update.text_color = self.text_color.clone().or(other.text_color.clone());
-        update.fill_color = self.fill_color.clone().or(other.fill_color.clone());
-        update.render_size = self.render_size.clone().or(other.render_size.clone());
-        update
-    }
-
-    /// Returns whether this update will require a re-render for cells.
-    pub fn needs_render_cells(&self) -> bool {
-        self.align.is_some()
-            || self.wrap.is_some()
-            || self.numeric_format.is_some()
-            || self.numeric_decimals.is_some()
-            || self.numeric_commas.is_some()
-            || self.bold.is_some()
-            || self.italic.is_some()
-            || self.text_color.is_some()
-    }
-}
-
-/// Converts a FormatUpdate to a Format.
-impl From<&FormatUpdate> for Format {
-    fn from(update: &FormatUpdate) -> Self {
-        Self {
-            align: update.align.unwrap_or(None),
-            wrap: update.wrap.unwrap_or(None),
-            numeric_format: update.numeric_format.clone().unwrap_or(None),
-            numeric_decimals: update.numeric_decimals.unwrap_or(None),
-            numeric_commas: update.numeric_commas.unwrap_or(None),
-            bold: update.bold.unwrap_or(None),
-            italic: update.italic.unwrap_or(None),
-            text_color: update.text_color.clone().unwrap_or(None),
-            fill_color: update.fill_color.clone().unwrap_or(None),
-            render_size: update.render_size.clone().unwrap_or(None),
-        }
-    }
-}
-
-/// Used to store changes from a Format to another Format.
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-pub struct Formats {
-    pub formats: RunLengthEncoding<FormatUpdate>,
-}
-
-impl Formats {
-    pub fn repeat(update: FormatUpdate, count: usize) -> Self {
-        let mut formats = Formats::default();
-        formats.push_n(update, count);
-        formats
-    }
-}
-
-impl Deref for Formats {
-    type Target = RunLengthEncoding<FormatUpdate>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.formats
-    }
-}
-
-impl DerefMut for Formats {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.formats
-    }
-}
-
 #[cfg(test)]
 mod test {
-    use super::Format;
+    use super::*;
     use crate::grid::{CellAlign, CellWrap, NumericFormat, NumericFormatKind, RenderSize};
 
     #[test]
@@ -324,7 +227,62 @@ mod test {
     }
 
     #[test]
-    fn merge_update() {
+    fn needs_to_clear_cell_format_for_parent() {
+        let format = Format {
+            align: Some(CellAlign::Center),
+            wrap: Some(CellWrap::Wrap),
+            numeric_format: Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }),
+            numeric_decimals: Some(2),
+            numeric_commas: Some(true),
+            bold: Some(true),
+            italic: Some(true),
+            text_color: Some("red".to_string()),
+            fill_color: Some("blue".to_string()),
+            render_size: Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+        };
+
+        let update = FormatUpdate {
+            align: Some(Some(CellAlign::Left)),
+            wrap: Some(Some(CellWrap::Overflow)),
+            numeric_format: Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: Some("%".to_string()),
+            })),
+            numeric_decimals: Some(Some(3)),
+            numeric_commas: Some(Some(false)),
+            bold: Some(Some(false)),
+            italic: Some(Some(false)),
+            text_color: Some(Some("blue".to_string())),
+            fill_color: Some(Some("red".to_string())),
+            render_size: Some(Some(RenderSize {
+                w: "3".to_string(),
+                h: "4".to_string(),
+            })),
+        };
+
+        let clear_update = format.needs_to_clear_cell_format_for_parent(&update).unwrap();
+        assert_eq!(clear_update, FormatUpdate {
+            align: Some(None),
+            wrap: Some(None),
+            numeric_format: Some(None),
+            numeric_decimals: Some(None),
+            numeric_commas: Some(None),
+            bold: Some(None),
+            italic: Some(None),
+            text_color: Some(None),
+            fill_color: Some(None),
+            render_size: Some(None)
+        });
+    }
+
+    #[test]
+    fn merge_update_into() {
         let mut format = Format::default();
         let update = super::FormatUpdate {
             align: Some(Some(CellAlign::Center)),
@@ -345,7 +303,7 @@ mod test {
             })),
         };
 
-        let old = format.merge_update(&update);
+        let old = format.merge_update_into(&update);
 
         assert_eq!(format.align, Some(CellAlign::Center));
         assert_eq!(format.wrap, Some(CellWrap::Wrap));
@@ -370,7 +328,7 @@ mod test {
             })
         );
 
-        let undo = format.merge_update(&old);
+        let undo = format.merge_update_into(&old);
         assert!(format.is_default());
         assert_eq!(undo, update);
     }
@@ -425,5 +383,52 @@ mod test {
         );
 
         assert_eq!(Format::combine(None, None, None, None), Format::default());
+    }
+
+    #[test]
+    fn format_to_format_update() {
+        let format = Format {
+            align: Some(CellAlign::Center),
+            wrap: Some(CellWrap::Wrap),
+            numeric_format: Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }),
+            numeric_decimals: Some(2),
+            numeric_commas: Some(true),
+            bold: Some(true),
+            italic: Some(true),
+            text_color: Some("red".to_string()),
+            fill_color: Some("blue".to_string()),
+            render_size: Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+        };
+
+        let update: FormatUpdate = (&format).into();
+
+        assert_eq!(update.align, Some(Some(CellAlign::Center)));
+        assert_eq!(update.wrap, Some(Some(CellWrap::Wrap)));
+        assert_eq!(
+            update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string())
+            }))
+        );
+        assert_eq!(update.numeric_decimals, Some(Some(2)));
+        assert_eq!(update.numeric_commas, Some(Some(true)));
+        assert_eq!(update.bold, Some(Some(true)));
+        assert_eq!(update.italic, Some(Some(true)));
+        assert_eq!(update.text_color, Some(Some("red".to_string())));
+        assert_eq!(update.fill_color, Some(Some("blue".to_string())));
+        assert_eq!(
+            update.render_size,
+            Some(Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            }))
+        );
     }
 }

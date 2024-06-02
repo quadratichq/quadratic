@@ -1,6 +1,6 @@
 use std::fs::create_dir_all;
 
-use grid::formats::Format;
+use grid::formats::format::Format;
 use quadratic_core::{
     color::Rgba,
     controller::{

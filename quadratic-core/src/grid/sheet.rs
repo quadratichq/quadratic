@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use super::bounds::GridBounds;
 use super::column::Column;
-use super::formats::Format;
+use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;

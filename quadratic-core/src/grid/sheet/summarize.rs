@@ -57,9 +57,9 @@ mod tests {
     fn summarize_rects() {
         let mut sheet = Sheet::test();
 
-        sheet.test_set_value(1, 1, "12.12");
-        sheet.test_set_value(1, 2, "12313");
-        sheet.test_set_value(1, 3, "0");
+        sheet.test_set_value_number(1, 1, "12.12");
+        sheet.test_set_value_number(1, 2, "12313");
+        sheet.test_set_value_number(1, 3, "0");
 
         // span of 10 cells, 3 have numeric values
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
@@ -95,9 +95,9 @@ mod tests {
     #[test]
     fn summarize_rounding() {
         let mut sheet = Sheet::test();
-        sheet.test_set_value(1, 1, "9.1234567891");
-        sheet.test_set_value(1, 2, "12313");
-        sheet.test_set_value(1, 3, "0");
+        sheet.test_set_value_number(1, 1, "9.1234567891");
+        sheet.test_set_value_number(1, 2, "12313");
+        sheet.test_set_value_number(1, 3, "0");
         sheet.test_set_code_run_array(1, 4, vec!["1", "2", "3"], true);
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let selection = Selection {
@@ -130,7 +130,7 @@ mod tests {
             rects: None,
         };
         for i in 0..MAX_SUMMARIZE_SELECTION_SIZE + 1 {
-            sheet.test_set_value(100, 100 + i, "1");
+            sheet.test_set_value_number(100, 100 + i, "1");
         }
         let result = sheet.summarize_selection(selection, 9);
         assert!(result.is_none());
@@ -139,8 +139,8 @@ mod tests {
     #[test]
     fn summarize_trailing_zeros() {
         let mut sheet = Sheet::test();
-        sheet.test_set_value(-1, -1, "0.00100000000000");
-        sheet.test_set_value(-1, 0, "0.00500000000000");
+        sheet.test_set_value_number(-1, -1, "0.00100000000000");
+        sheet.test_set_value_number(-1, 0, "0.00500000000000");
         let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: 1 });
         let selection = Selection {
             sheet_id: sheet.id.clone(),
@@ -161,8 +161,8 @@ mod tests {
     fn summarize_columns() {
         let mut sheet = Sheet::test();
         for i in 0..10 {
-            sheet.test_set_value(1, i, "2");
-            sheet.test_set_value(-1, i, "2");
+            sheet.test_set_value_number(1, i, "2");
+            sheet.test_set_value_number(-1, i, "2");
         }
         sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "", "3"], true);
         let selection = Selection {
@@ -184,8 +184,8 @@ mod tests {
     fn summarize_rows() {
         let mut sheet = Sheet::test();
         for i in 0..10 {
-            sheet.test_set_value(i, 1, "2");
-            sheet.test_set_value(i, -1, "2");
+            sheet.test_set_value_number(i, 1, "2");
+            sheet.test_set_value_number(i, -1, "2");
         }
         sheet.test_set_code_run_array(-10, -1, vec!["1", "2", "", "3"], true);
         let selection = Selection {
@@ -208,7 +208,7 @@ mod tests {
         let mut sheet = Sheet::test();
         for i in 0..10 {
             for j in 0..10 {
-                sheet.test_set_value(i, j, "2");
+                sheet.test_set_value_number(i, j, "2");
             }
         }
         sheet.test_set_code_run_array(-20, -20, vec!["1", "2", "3"], false);

@@ -1,8 +1,9 @@
 use super::Sheet;
 
 impl Sheet {
+    /// Sets a test value in the sheet of &str converted to a BigDecimal.
     #[cfg(test)]
-    pub fn test_set_value(&mut self, x: i64, y: i64, s: &str) {
+    pub fn test_set_value_number(&mut self, x: i64, y: i64, s: &str) {
         use crate::{CellValue, Pos};
         use bigdecimal::BigDecimal;
         use std::str::FromStr;
@@ -16,9 +17,9 @@ impl Sheet {
         self.set_cell_value(Pos { x, y }, value);
     }
 
-    #[cfg(test)]
     /// Sets values in a rectangle starting at (x, y) with width w and height h.
     /// Rectangle is formed row first (so for x then for y).
+    #[cfg(test)]
     pub fn test_set_values(&mut self, x: i64, y: i64, w: i64, h: i64, s: Vec<&str>) {
         assert!(
             w * h == s.len() as i64,
@@ -26,45 +27,53 @@ impl Sheet {
         );
         for xx in 0..w {
             for yy in 0..h {
-                self.test_set_value(x + xx, y + yy, s[(yy * h + xx) as usize]);
+                self.test_set_value_number(x + xx, y + yy, s[(yy * h + xx) as usize]);
             }
         }
     }
 
     #[cfg(test)]
-    pub fn test_set_code_run(&mut self, x: i64, y: i64, s: &str) {
-        use crate::{
-            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
-            CellValue, Pos, Value,
-        };
-        use bigdecimal::BigDecimal;
-        use chrono::Utc;
-        use std::collections::HashSet;
+    pub fn test_set_format(&mut self, x: i64, y: i64, update: crate::grid::formats::format_update::FormatUpdate) {
+        self.set_format_cell(crate::grid::Pos { x, y }, &update, true);
+    }
 
+    /// Sets a code run and CellValue::Code with an empty code string, a single value result.
+    #[cfg(test)]
+    pub fn test_set_code_run_single(&mut self, x: i64, y: i64, value: crate::grid::CellValue) {
         self.set_cell_value(
-            Pos { x, y },
+            crate::Pos { x, y },
             crate::CellValue::Code(crate::CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: s.to_string(),
+                language: crate::grid::CodeCellLanguage::Formula,
+                code: "".to_string(),
             }),
         );
+
         self.set_code_run(
-            Pos { x, y },
-            Some(CodeRun {
+            crate::Pos { x, y },
+            Some(crate::grid::CodeRun {
                 std_out: None,
                 std_err: None,
                 formatted_code_string: None,
-                cells_accessed: HashSet::new(),
-                result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(0)))),
+                cells_accessed: std::collections::HashSet::new(),
+                result: crate::grid::CodeRunResult::Ok(crate::Value::Single(value)),
                 return_type: Some("number".into()),
                 line_number: None,
                 output_type: None,
                 spill_error: false,
-                last_modified: Utc::now(),
+                last_modified: chrono::Utc::now(),
             }),
         );
     }
 
+    /// Sets a code run and CellValue::Code with an empty code string and a single value BigDecimal::from_str(n) result.
+    #[cfg(test)]
+    pub fn test_set_code_run_number(&mut self, x: i64, y: i64, n: &str) {
+        use std::str::FromStr;
+
+        self.test_set_code_run_single(x, y, crate::grid::CellValue::Number(bigdecimal::BigDecimal::from_str(n).unwrap()));
+    }
+
+    /// Sets a code run array with code string of "" and an array output of the given values.
     #[cfg(test)]
     pub fn test_set_code_run_array(&mut self, x: i64, y: i64, n: Vec<&str>, vertical: bool) {
         use crate::{
@@ -122,6 +131,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use bigdecimal::BigDecimal;
 
     use crate::{grid::Sheet, CellValue, Pos};
@@ -129,12 +140,12 @@ mod tests {
     #[test]
     fn test_set_value() {
         let mut sheet = Sheet::test();
-        sheet.test_set_value(0, 0, "1");
+        sheet.test_set_value_number(0, 0, "1");
         assert_eq!(
             sheet.cell_value_ref(Pos { x: 0, y: 0 }),
             Some(&CellValue::Number(BigDecimal::from(1)))
         );
-        sheet.test_set_value(0, 0, "hello");
+        sheet.test_set_value_number(0, 0, "hello");
         assert_eq!(
             sheet.cell_value_ref(Pos { x: 0, y: 0 }),
             Some(&CellValue::Text("hello".to_string()))
@@ -218,12 +229,12 @@ mod tests {
     }
 
     #[test]
-    fn test_set_code_run() {
+    fn test_set_code_run_empty() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run(0, 0, "1");
+        sheet.test_set_code_run_number(0, 0, "11");
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from(0)))
+            Some(CellValue::Number(BigDecimal::from_str("11").unwrap()))
         );
     }
 }

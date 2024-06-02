@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cell_values::CellValues,
-    grid::{formats::Formats, formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
+    grid::{formats::formats::Formats, formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
     selection::Selection,
     SheetPos, SheetRect,
 };

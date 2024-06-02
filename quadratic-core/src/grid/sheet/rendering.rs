@@ -2,14 +2,10 @@ use code_run::CodeRunResult;
 
 use crate::{
     grid::{
-        borders::{get_render_horizontal_borders, get_render_vertical_borders},
-        code_run,
-        formats::Format,
-        js_types::{
+        borders::{get_render_horizontal_borders, get_render_vertical_borders}, code_run, formats::format::Format, js_types::{
             JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
             JsRenderCodeCellState, JsRenderFill,
-        },
-        CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
+        }, CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind
     },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
 };

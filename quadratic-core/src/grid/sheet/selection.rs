@@ -1,5 +1,5 @@
 use crate::{
-    grid::{formats::Format, CodeRunResult, GridBounds},
+    grid::{formats::format::Format, CodeRunResult, GridBounds},
     selection::Selection,
     CellValue, Pos, SheetRect, Value,
 };
@@ -274,9 +274,9 @@ impl Sheet {
     /// format are returned.
     /// TODO: return &Format when we change how formats are stored internally.
     pub fn format_selection(&self, selection: &Selection) -> Vec<(Pos, Format)> {
+        let mut vec = vec![];
         if selection.all {
             if let GridBounds::NonEmpty(bounds) = self.format_bounds {
-                let mut vec = vec![];
                 for x in bounds.min.x..=bounds.max.x {
                     if let Some(column) = self.columns.get(&x) {
                         for y in bounds.min.y..=bounds.max.y {
@@ -286,12 +286,9 @@ impl Sheet {
                         }
                     }
                 }
-                vec
-            } else {
-                Vec::new()
             }
         } else if let Some(columns) = selection.columns.as_ref() {
-            let mut vec = vec![];
+            vec = vec![];
             columns.iter().for_each(|x| {
                 if let Some(column) = self.get_column(*x) {
                     if let Some(range) = column.format_range() {
@@ -303,38 +300,44 @@ impl Sheet {
                     }
                 }
             });
-            vec
         } else if let Some(rows) = selection.rows.as_ref() {
-            let mut vec = vec![];
-            rows.iter().for_each(|row| {
-                /// todo: NO IDEA HOW TO DO THIS EFFICIENTLY ***
-                if let Some(row) = self.row_bounds(row, ignore_formatting) {
-                    let range = row.format_range();
-                    for x in range.min..=range.max {
-                        if let Some(format) = row.format(x) {
-                            vec.push((Pos { x, y: *row }, format));
+            self.columns.iter().for_each(|(x, column)| {
+                if let Some(range) = column.format_range() {
+                    rows.iter().for_each(|y| {
+                        if range.contains(y) {
+                            if let Some(format) = column.format(*y) {
+                                vec.push((Pos { x: *x, y: *y }, format));
+                            }
+                        }
+                    });
+                }
+            });
+        } else if let Some(rects) = selection.rects.as_ref() {
+            for rect in rects {
+                for x in rect.min.x..=rect.max.x {
+                    if let Some(column) = self.columns.get(&x) {
+                        for y in rect.min.y..=rect.max.y {
+                            if let Some(format) = column.format(y) {
+                                vec.push((Pos { x, y }, format));
+                            }
                         }
                     }
                 }
-            });
-            vec
-        } else if let Some(sheet_rect) = selection.largest_rect() {
-            Some(sheet_rect)
-        } else {
-            None
+            }
         }
+        vec
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        grid::{CodeCellLanguage, Sheet},
-        selection::Selection,
-        CellValue, CodeCellValue, Pos, Rect, SheetRect,
-    };
-    use bigdecimal::BigDecimal;
     use std::str::FromStr;
+
+    use bigdecimal::BigDecimal;
+
+    use crate::{grid::{formats::format_update::FormatUpdate, CodeCellLanguage}, CodeCellValue, Rect};
+
+    use super::*;
 
     #[test]
     fn selection_all() {
@@ -378,7 +381,7 @@ mod tests {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.test_set_code_run(0, 5, "11");
+        sheet.test_set_code_run_single(0, 5, CellValue::Number(BigDecimal::from_str("11").unwrap()));
         sheet.test_set_code_run_array(-1, 0, vec!["10", "11", "12"], true);
 
         assert_eq!(
@@ -648,5 +651,67 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(sheet.clipboard_selection(&selection), None);
+    }
+
+    #[test]
+    fn format_selection() {
+        let mut sheet = Sheet::test();
+        let sheet_id = sheet.id.clone();
+
+        let selection = Selection {
+            sheet_id,
+            ..Default::default()
+        };
+        assert_eq!(sheet.format_selection(&selection), vec![]);
+
+        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
+        sheet.test_set_format(0, 0, FormatUpdate { bold: Some(Some(true)), ..Default::default()});
+        sheet.test_set_format(1, 1, FormatUpdate { bold: Some(Some(false)), ..Default::default()});
+
+        let selection = Selection {
+            sheet_id,
+            rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.format_selection(&selection),
+            vec![(Pos { x: 0, y: 0 }, Format { bold: Some(true), ..Default::default()}), (Pos {x: 1, y: 1}, Format { bold: Some(false), ..Default::default()})]
+        );
+
+        // let selection = Selection {
+        //     sheet_id,
+        //     columns: Some(vec![0, 1]),
+        //     ..Default::default()
+        // };
+        // assert_eq!(
+        //     sheet.format_selection(&selection),
+        //     vec![
+        //         (Pos { x: 0, y: 0 }, Format::new("bold")),
+        //         (Pos { x: 1, y: 1 }, Format::new("italic"))
+        //     ]
+        // );
+
+        // let selection = Selection {
+        //     sheet_id,
+        //     rows: Some(vec![0, 1]),
+        //     ..Default::default()
+        // };
+        // assert_eq!(
+        //     sheet.format_selection(&selection),
+        //     vec![
+        //         (Pos { x: 0, y: 0 }, Format::new("bold")),
+        //         (Pos { x: 1, y: 1 }, Format::new("italic"))
+        //     ]
+        // );
+
+        // let selection = Selection {
+        //     sheet_id,
+        //     rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+        //     ..Default::default()
+        // };
+        // assert_eq!(
+        //     sheet.format_selection(&selection),
+        //     vec![(Pos { x: 0, y: 0 }, Format::new("bold"))]
+        // );
     }
 }

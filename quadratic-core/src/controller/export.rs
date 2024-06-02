@@ -59,7 +59,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         for y in 0..4 {
             for x in 0..4 {
-                sheet.test_set_value(x, y, vals[count]);
+                sheet.test_set_value_number(x, y, vals[count]);
                 count += 1;
             }
         }

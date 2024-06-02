@@ -1,5 +1,5 @@
 use crate::color::Rgba;
-use crate::grid::formats::Format;
+use crate::grid::formats::format::Format;
 use crate::grid::{
     block::SameValue,
     file::v1_5::schema::{self as current},

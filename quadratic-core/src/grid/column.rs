@@ -8,7 +8,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use smallvec::{smallvec, SmallVec};
 
-use super::formats::Format;
+use super::formats::format::Format;
 use super::formatting::*;
 use super::{Block, BlockContent, SameValue};
 use crate::{CellValue, IsBlank};
