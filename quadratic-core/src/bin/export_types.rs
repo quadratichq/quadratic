@@ -1,6 +1,6 @@
 use std::fs::create_dir_all;
 
-use grid::formats::format::Format;
+use grid::{formats::format::Format, js_types::JsSheetFill};
 use quadratic_core::{
     color::Rgba,
     controller::{
@@ -96,6 +96,7 @@ fn main() {
         JsGetCellResponse,
         SummarizeSelectionResult,
         Format,
+        JsSheetFill,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

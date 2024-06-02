@@ -65,7 +65,6 @@ export class CellsSheet extends Container {
 
   adjustOffsets() {
     this.cellsBorders.draw();
-    this.cellsFills.draw();
   }
 
   updateCellsArray() {

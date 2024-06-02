@@ -7,6 +7,7 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
@@ -47,6 +48,7 @@ interface EventTypes {
 
   sheetOffsets: (sheetId: string, column: number | undefined, row: number | undefined, size: number) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
+  sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;

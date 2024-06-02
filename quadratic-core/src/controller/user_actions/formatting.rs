@@ -231,55 +231,6 @@ mod test {
     }
 
     #[test]
-    fn test_render_fill() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_fill_color(
-            SheetRect {
-                min: crate::Pos { x: 1, y: 1 },
-                max: crate::Pos { x: 10, y: 10 },
-                sheet_id,
-            },
-            Some("blue".to_string()),
-            None,
-        );
-        gc.set_cell_fill_color(
-            SheetRect {
-                min: crate::Pos { x: 1, y: 15 },
-                max: crate::Pos { x: 10, y: 20 },
-                sheet_id,
-            },
-            Some("blue".to_string()),
-            None,
-        );
-        gc.set_cell_fill_color(
-            SheetRect {
-                min: crate::Pos { x: 1, y: 10 },
-                max: crate::Pos { x: 10, y: 15 },
-                sheet_id,
-            },
-            Some("blue".to_string()),
-            None,
-        );
-        let render_fills = gc.sheet(sheet_id).get_render_fills(Rect {
-            min: crate::Pos { x: -100, y: -100 },
-            max: crate::Pos { x: 100, y: 100 },
-        });
-        assert_eq!(10, render_fills.len());
-
-        // ensure not found sheet_id fails silently
-        gc.set_cell_fill_color(
-            SheetRect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 },
-                sheet_id: SheetId::new(),
-            },
-            Some("red".to_string()),
-            None,
-        );
-    }
-
-    #[test]
     fn test_change_decimal_places() {
         // setup
         let mut gc: GridController = GridController::test();

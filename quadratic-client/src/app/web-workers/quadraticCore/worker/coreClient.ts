@@ -12,6 +12,7 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -39,6 +40,7 @@ declare var self: WorkerGlobalScope &
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
+    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSetCursor: (cursor: string) => void;
     sendSheetOffsetsClient: (
       sheetId: string,
@@ -81,6 +83,7 @@ class CoreClient {
     self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
     self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
+    self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
     self.sendSetCursor = coreClient.sendSetCursor;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
@@ -512,6 +515,10 @@ class CoreClient {
 
   sendSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
     this.send({ type: 'coreClientSheetFills', sheetId, fills });
+  };
+
+  sendSheetMetaFills = (sheetId: string, fills: JsSheetFill) => {
+    this.send({ type: 'coreClientSheetMetaFills', sheetId, fills });
   };
 
   sendSheetInfoUpdate = (sheetInfo: SheetInfo) => {

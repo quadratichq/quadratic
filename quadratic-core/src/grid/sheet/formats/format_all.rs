@@ -34,10 +34,15 @@ impl Sheet {
     /// Sets the Format for all cells and returns a Vec<Operation> to undo the
     /// operation.
     ///
-    /// Changing the sheet's format also removes any set formatting for the
-    /// entire grid. For example, if you set everything to bold, all cells that
-    /// have bold set unset bold. The undo has the reverse for these operations
-    /// as well.
+    /// Changing the sheet's format also removes any set formatting for columns,
+    /// rows, and cells. For example, if you set everything to bold, all cells
+    /// that have bold set unset bold. The undo has the reverse for these
+    /// operations as well.
+    ///
+    /// Note: format.renderSize is not supported for format_all so we don't need
+    /// to watch for changes to html cells.
+    ///
+    /// Returns a Vec<Operation> to undo this operation.
     pub(crate) fn set_format_all(&mut self, update: &Formats) -> Vec<Operation> {
         let mut old = Formats::default();
         let mut format_all = self.format_all();
@@ -45,16 +50,36 @@ impl Sheet {
         // tracks whether we need to rerender all cells
         let mut render_cells = false;
 
+        // tracks whether we need to change the fills
+        let mut change_fills = false;
+        // let mut change_fill_cells = vec![];
+
         if let Some(format_update) = update.iter_values().next() {
+
+            // if there are no changes to the format_all, then we don't need to
+            // do anything
+            if format_update.is_default() {
+              return vec![];
+            }
+
+            // watch for changes that need to be sent to the client
             if format_update.needs_render_cells() {
                 render_cells = true;
             }
+            if format_update.needs_fill_update() {
+                change_fills = true;
+            }
+
+            // change the format_all and save the old format
             old.push(format_all.merge_update_into(format_update));
+
+            // remove the format_all if it's no longer needed
             if format_all.is_default() {
                 self.format_all = None;
             } else {
                 self.format_all = Some(format_all);
             }
+
             let mut ops = vec![];
             let selection_all = Selection { all: true, ..Default::default() };
             ops.push(Operation::SetCellFormatsSelection { selection: selection_all.clone(), formats: old });
@@ -62,6 +87,10 @@ impl Sheet {
             // force a rerender of all impacted cells
             if render_cells {
                 self.send_all_render_cells();
+            }
+
+            if change_fills {
+              self.send_sheet_fills();
             }
 
             // removes all individual cell formatting that conflicts with the all formatting

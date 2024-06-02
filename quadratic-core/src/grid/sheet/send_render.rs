@@ -146,6 +146,17 @@ impl Sheet {
         }
     }
 
+    /// Sends all sheet fills to the client, ie, fills for columns, rows, and
+    /// the entire sheet.
+    pub fn send_sheet_fills(&self) {
+        if cfg!(target_family = "wasm") | cfg!(test) {
+            let fills = self.get_sheet_fills();
+            if let Ok(fills) = serde_json::to_string(&fills) {
+                crate::wasm_bindings::js::jsSheetMetaFills(self.id.to_string(), fills);
+            }
+        }
+    }
+
     /// Sends all fills to the client. TODO: the fills should be sent in
     /// batches instead of for the entire sheet.
     pub fn send_fills(&self, fills: &HashSet<Pos>) {
@@ -165,7 +176,7 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use serial_test::serial;
-    use crate::{wasm_bindings::js::{clear_js_calls, expect_js_call_count}, CellValue};
+    use crate::{grid::formats::format::Format, wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count}, CellValue};
     use super::*;
 
     #[test]
@@ -218,5 +229,19 @@ mod test {
 
         sheet.send_row_render_cells(vec![CELL_SHEET_HEIGHT as i64 - 1, CELL_SHEET_HEIGHT as i64]);
         expect_js_call_count("jsRenderCellSheets", 2, true);
+    }
+
+    #[test]
+    #[serial]
+    fn send_sheet_fills() {
+        clear_js_calls();
+        let mut sheet = Sheet::test();
+        sheet.format_all = Some(Format {
+            fill_color: Some("red".to_string()),
+            ..Default::default()
+        });
+        sheet.send_sheet_fills();
+        let fills = sheet.get_sheet_fills();
+        expect_js_call("jsSheetMetaFills", format!("{},{}", sheet.id.to_string(), serde_json::to_string(&fills).unwrap()), true);
     }
 }

@@ -4,7 +4,7 @@ use crate::{
     grid::{
         borders::{get_render_horizontal_borders, get_render_vertical_borders}, code_run, formats::format::Format, js_types::{
             JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
-            JsRenderCodeCellState, JsRenderFill,
+            JsRenderCodeCellState, JsRenderFill, JsSheetFill,
         }, CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind
     },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
@@ -328,21 +328,30 @@ impl Sheet {
         }
         ret
     }
-    /// Returns data for rendering cell fill color.
-    pub fn get_render_fills(&self, region: Rect) -> Vec<JsRenderFill> {
-        let mut ret = vec![];
-        for (&x, column) in self.columns.range(region.x_range()) {
-            for block in column.fill_color.blocks_covering_range(region.y_range()) {
-                ret.push(JsRenderFill {
-                    x,
-                    y: block.y,
-                    w: 1,
-                    h: block.len() as u32,
-                    color: block.content().value.clone(),
-                });
+
+    /// Returns all fills for the rows, columns, and sheet. This does not return
+    /// individual cell formats.
+    pub fn get_sheet_fills(&self) -> JsSheetFill {
+        let columns = self.formats_columns.iter().filter_map(|(x, column)| {
+            if let Some(color) = column.fill_color.as_ref() {
+                Some((*x, color.clone()))
+            } else {
+                None
             }
+        }).collect();
+        let rows = self.formats_rows.iter().filter_map(|(y, row)| {
+            if let Some(color) = row.fill_color.as_ref() {
+                Some((*y, color.clone()))
+            } else {
+                None
+            }
+        }).collect();
+        let all = self.format_all().fill_color.map(|color| color.clone());
+        JsSheetFill {
+            columns,
+            rows,
+            all,
         }
-        ret
     }
 
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
@@ -450,8 +459,7 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell},
-            Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
+            formats::{format::Format, format_update::FormatUpdate, formats::Formats}, js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsSheetFill}, Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet
         },
         selection::Selection,
         wasm_bindings::js::{expect_js_call, hash_test},
@@ -922,5 +930,31 @@ mod tests {
             format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
             true,
         );
+    }
+
+    #[test]
+    fn get_sheet_fills() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.get_sheet_fills(), JsSheetFill::default());
+
+        sheet.format_all = Some(Format { fill_color: Some("red".to_string()), ..Default::default() });
+        assert_eq!(sheet.get_sheet_fills(), JsSheetFill {
+            all: Some("red".to_string()),
+            ..Default::default()
+        });
+
+        let mut sheet = Sheet::test();
+        sheet.set_formats_columns(&vec![1], &Formats::repeat(FormatUpdate { fill_color: Some(Some("blue".to_string())), ..Default::default() }, 1));
+        assert_eq!(sheet.get_sheet_fills(), JsSheetFill {
+            columns: vec![(1, "blue".to_string())],
+            ..Default::default()
+        });
+
+        sheet.set_formats_rows(&vec![-5], &Formats::repeat(FormatUpdate { fill_color: Some(Some("red".to_string())), ..Default::default() }, 1));
+        assert_eq!(sheet.get_sheet_fills(), JsSheetFill {
+            columns: vec![(1, "blue".to_string())],
+            rows: vec![(-5, "red".to_string())],
+            ..Default::default()
+        });
     }
 }

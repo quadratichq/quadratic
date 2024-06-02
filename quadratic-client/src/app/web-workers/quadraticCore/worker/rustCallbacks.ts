@@ -6,6 +6,7 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -30,6 +31,7 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
+    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
@@ -202,4 +204,9 @@ export const jsUpdateCodeCell = (
 
 export const jsUndoRedo = (undo: string, redo: string) => {
   self.sendUndoRedo(undo, redo);
+};
+
+export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
+  const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
+  self.sendSheetMetaFills(sheetId, sheetMetaFills);
 };

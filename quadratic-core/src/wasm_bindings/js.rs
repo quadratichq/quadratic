@@ -44,6 +44,8 @@ extern "C" {
     // todo: there should be a jsSheetFillUpdate instead of constantly passing back all sheet fills
     pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */);
 
+    pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */);
+
     pub fn jsAddSheet(sheetInfo: String /*SheetInfo*/, user: bool);
     pub fn jsDeleteSheet(sheetId: String, user: bool);
     pub fn jsRequestTransactions(sequence_num: u64);
@@ -248,6 +250,15 @@ pub fn jsSheetInfoUpdate(sheet: String /* JsSheetInfo */) {
 pub fn jsSheetFills(sheet_id: String, fills: String /* JsRenderFill */) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsSheetFills",
+        format!("{},{}", sheet_id, fills),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSheetMetaFills(sheet_id: String, fills: String /* JsSheetFill */) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSheetMetaFills",
         format!("{},{}", sheet_id, fills),
     ));
 }

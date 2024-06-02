@@ -98,6 +98,10 @@ impl FormatUpdate {
             || self.text_color.is_some()
     }
 
+    pub fn needs_fill_update(&self) -> bool {
+        self.fill_color.is_some()
+    }
+
     /// Returns a FormatUpdate that will clear a given update
     pub fn clear_update(&self) -> FormatUpdate {
         let mut clear = FormatUpdate::default();

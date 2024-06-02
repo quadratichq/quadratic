@@ -137,6 +137,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
       return;
+    } else if (e.data.type === 'coreClientSheetMetaFills') {
+      events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
+      return;
     }
 
     if (e.data.id !== undefined) {

@@ -9,6 +9,7 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
   MinMax,
   SearchOptions,
   Selection,
@@ -424,6 +425,12 @@ export interface CoreClientSheetFills {
   type: 'coreClientSheetFills';
   sheetId: string;
   fills: JsRenderFill[];
+}
+
+export interface CoreClientSheetMetaFills {
+  type: 'coreClientSheetMetaFills';
+  sheetId: string;
+  fills: JsSheetFill;
 }
 
 export interface ClientCoreRerunCodeCells {
@@ -892,4 +899,5 @@ export type CoreClientMessage =
   | CoreClientGetFormatAll
   | CoreClientGetFormatColumn
   | CoreClientGetFormatRow
-  | CoreClientGetFormatCell;
+  | CoreClientGetFormatCell
+  | CoreClientSheetMetaFills;

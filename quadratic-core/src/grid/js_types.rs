@@ -77,8 +77,7 @@ impl From<Pos> for JsRenderCell {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, ts_rs::TS)]
 pub struct JsRenderFill {
     pub x: i64,
     pub y: i64,
@@ -87,6 +86,14 @@ pub struct JsRenderFill {
 
     pub color: String,
 }
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, ts_rs::TS, PartialEq)]
+pub struct JsSheetFill {
+    pub columns: Vec<(i64, String)>,
+    pub rows: Vec<(i64, String)>,
+    pub all: Option<String>,
+}
+
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]

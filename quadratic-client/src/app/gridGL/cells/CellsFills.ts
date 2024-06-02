@@ -1,46 +1,81 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { JsRenderFill } from '@/app/quadratic-core-types';
-import { ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
+import { JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
+import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
+// todo: might want to add this to the update loop instead of listening for
+// viewport changes to avoid multiple calls to drawMeta
+
 interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
 
-export class CellsFills extends ParticleContainer {
+export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private fills: JsRenderFill[] = [];
+  private metaFill?: JsSheetFill;
+
+  private cells: ParticleContainer;
+  private meta: Graphics;
+  private metaHasContent = false;
 
   constructor(cellsSheet: CellsSheet) {
-    super(undefined, { vertices: true, tint: true }, undefined, true);
+    super();
     this.cellsSheet = cellsSheet;
+    this.cells = this.addChild(new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true));
+    this.meta = this.addChild(new Graphics());
+
     events.on('sheetFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
         this.fills = fills;
-        this.draw();
-        pixiApp.setViewportDirty();
+        this.drawCells();
+      }
+    });
+    events.on('sheetMetaFills', (sheetId, fills) => {
+      if (sheetId === this.cellsSheet.sheetId) {
+        if (this.isMetaEmpty(fills)) {
+          this.metaFill = undefined;
+          this.meta.clear();
+          pixiApp.setViewportDirty();
+        } else {
+          this.metaFill = fills;
+          this.drawMeta();
+        }
       }
     });
     events.on('sheetOffsets', (sheetId) => {
       if (sheetId === this.cellsSheet.sheetId) {
-        this.draw();
+        this.drawCells();
       }
     });
+
+    pixiApp.viewport.on('zoomed', this.drawMeta);
+    pixiApp.viewport.on('moved', this.drawMeta);
   }
 
-  get sheet(): Sheet {
+  cheapCull(viewBounds: Rectangle) {
+    this.cells.children.forEach(
+      (sprite) => (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds))
+    );
+  }
+
+  private isMetaEmpty(fill: JsSheetFill): boolean {
+    return !(fill.all || fill.columns.length || fill.rows.length);
+  }
+
+  private get sheet(): Sheet {
     const sheet = sheets.getById(this.cellsSheet.sheetId);
     if (!sheet) throw new Error(`Expected sheet to be defined in CellsFills.sheet`);
     return sheet;
   }
 
-  draw() {
-    this.removeChildren();
+  private drawCells() {
+    this.cells.removeChildren();
     this.fills.forEach((fill) => {
       const sprite = this.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = convertColorStringToTint(fill.color);
@@ -50,11 +85,34 @@ export class CellsFills extends ParticleContainer {
       sprite.height = screen.height;
       sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
     });
+    pixiApp.setViewportDirty();
   }
 
-  cheapCull(viewBounds: Rectangle) {
-    this.children.forEach(
-      (sprite) => (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds))
-    );
-  }
+  private drawMeta = () => {
+    if (this.metaFill) {
+      this.meta.clear();
+      const viewport = pixiApp.viewport.getVisibleBounds();
+      if (this.metaFill.all) {
+        this.meta.beginFill(convertColorStringToTint(this.metaFill.all));
+        this.meta.drawRect(viewport.left, viewport.top, viewport.width, viewport.height);
+        this.meta.endFill();
+      }
+      if (this.metaFill.columns.length) {
+        this.metaFill.columns.forEach(([column, color]) => {
+          console.log(column, color);
+          const screen = this.sheet.offsets.getColumnPlacement(Number(column));
+          const left = screen.position;
+          const width = screen.size;
+
+          // only draw if the column is visible on the screen
+          if (left >= viewport.right || left + width <= viewport.left) return;
+
+          this.meta.beginFill(convertColorStringToTint(color));
+          this.meta.drawRect(left, viewport.top, left + width, viewport.height);
+          this.meta.endFill();
+        });
+      }
+      pixiApp.setViewportDirty();
+    }
+  };
 }

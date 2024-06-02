@@ -12,37 +12,56 @@ impl Sheet {
 
     /// Sets the Formats for columns and returns existing Formats for columns.
     ///
-    /// Changing the column's format also removes any set formatting for the
-    /// entire grid. For example, if you set everything to bold, all cells that
-    /// have bold set unset bold. The undo has the reverse for these operations
-    /// as well.
+    /// Changing the column's format also removes any set formatting for cells
+    /// within that column. For example, if you set a column to bold, all cells
+    /// that have bold set within that column will remove their bold setting.
+    /// The undo has the reverse for these operations as well as the column
+    /// undo.
+    ///
+    /// Note, changing format.renderSize is not supported on columns so we don't
+    /// need to update html cells.
     ///
     /// Returns the reverse operations.
     pub fn set_formats_columns(&mut self, columns: &Vec<i64>, formats: &Formats) -> Vec<Operation> {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
+
+        // tracks which column of cells need to be rerendered
         let mut render_cells = HashSet::new();
 
-        // individual cells that need to be cleared
+        // tracks whether we need to update fills for the column or cells
+        let mut render_column_fills = HashSet::new();
+        // let mut render_fills = HashSet::new();
+
+        // individual cells that need to be cleared to accommodate the new column format
         let mut clear_format_cells: HashMap<Pos, FormatUpdate> = HashMap::new();
 
         columns.iter().for_each(|x| {
+            // gets the format change for this column
             if let Some(format_update) = formats_iter.next() {
+                // don't need to do anything if there are no changes
                 if !format_update.is_default() {
                     if format_update.needs_render_cells() {
                         render_cells.insert(*x);
                     }
 
+                    if format_update.needs_fill_update() {
+                        render_column_fills.insert(*x);
+                    }
+
                     // update the column format and save the old format
                     let mut column_format = self.format_column(*x);
                     old_formats.push(column_format.merge_update_into(format_update));
+
+                    // remove the column format if it's no longer needed
                     if column_format.is_default() {
                         self.formats_columns.remove(x);
                     } else {
                         self.formats_columns.insert(*x, column_format);
                     }
 
-                    // track all cells within the columns that have the format set
+                    // track all cells within the columns that need to have
+                    // their format updated to remove the conflicting format
                     self.format_selection(&Selection { columns: Some(vec![*x]), ..Default::default() }).iter().for_each(|(pos, format)| {
                         if let Some(clear) = format.needs_to_clear_cell_format_for_parent(&format_update) {
                             if let Some(existing) = clear_format_cells.get_mut(pos) {
@@ -73,7 +92,6 @@ impl Sheet {
             ops.push(Operation::SetCellFormatsSelection { selection: Selection { rects: Some(rects), ..Default::default() }, formats });
         }
 
-
         // force a rerender of all impacted cells
         if !render_cells.is_empty() {
             self.send_column_render_cells(render_cells.into_iter().collect());
@@ -89,7 +107,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_format_column() {
+    fn format_column() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_column(0), Format::default());
         sheet.formats_columns.insert(
