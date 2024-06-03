@@ -8,6 +8,7 @@ mod config;
 mod connection;
 mod error;
 mod header;
+mod proxy;
 mod server;
 mod sql;
 mod state;

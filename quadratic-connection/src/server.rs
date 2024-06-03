@@ -28,8 +28,11 @@ use crate::{
     auth::get_middleware,
     config::config,
     error::{ConnectionError, Result},
-    sql::mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
-    sql::postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
+    proxy::server::serve as serve_proxy,
+    sql::{
+        mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
+        postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
+    },
     state::State,
 };
 
@@ -58,7 +61,7 @@ impl TestResponse {
 pub(crate) fn app(state: State) -> Router {
     let cors = CorsLayer::new()
         // allow requests from any origin
-        .allow_methods([Method::GET, Method::POST])
+        .allow_methods([Method::GET, Method::POST, Method::CONNECT])
         .allow_origin(Any)
         .allow_headers([CONTENT_TYPE, AUTHORIZATION, ACCEPT, ORIGIN])
         .expose_headers(Any);
@@ -78,6 +81,8 @@ pub(crate) fn app(state: State) -> Router {
         .route("/mysql/test", post(test_mysql))
         .route("/mysql/query", post(query_mysql))
         .route("/mysql/schema/:id", get(schema_mysql))
+        // proxy
+        // .route("/proxy", any(proxy))
         //
         // auth middleware
         .route_layer(auth)
@@ -88,7 +93,7 @@ pub(crate) fn app(state: State) -> Router {
         // state, repeated, but required
         .layer(Extension(state))
         //
-        // unprotected routes
+        // unprotected routes without state
         .route("/health", get(healthcheck))
         //
         // cors
@@ -125,12 +130,7 @@ pub(crate) async fn serve() -> Result<()> {
         .local_addr()
         .map_err(|e| ConnectionError::InternalServer(e.to_string()))?;
 
-    tracing::info!(
-        "listening on {local_addr}, environment={}",
-        config.environment
-    );
-
-    // in a separate thread, log stats
+    // log stats in a separate thread
     tokio::spawn({
         async move {
             let mut interval = time::interval(Duration::from_secs(HEALTHCHECK_INTERVAL_S));
@@ -148,6 +148,19 @@ pub(crate) async fn serve() -> Result<()> {
         }
     });
 
+    // start the proxy server in a separate thread
+    tokio::task::spawn(async move {
+        if let Err(error) = serve_proxy(&config.host, 3004).await {
+            tracing::error!("Error starting proxy: {:?}", error);
+        }
+    });
+
+    tracing::info!(
+        "listening on {local_addr}, environment={}",
+        config.environment
+    );
+
+    // serve the application
     axum::serve(listener, app).await.map_err(|e| {
         tracing::warn!("{e}");
         ConnectionError::InternalServer(e.to_string())

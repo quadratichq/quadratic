@@ -20,7 +20,7 @@ pub enum ConnectionError {
     #[error("Authentication error: {0}")]
     Authentication(String),
 
-    #[error("Internal server error: {0}")]
+    #[error("Config error: {0}")]
     Config(String),
 
     #[error("Connection error: {0}")]
@@ -31,6 +31,9 @@ pub enum ConnectionError {
 
     #[error("Internal token: {0}")]
     InvalidToken(String),
+
+    #[error("Proxy error: {0}")]
+    Proxy(String),
 
     #[error("Query error: {0}")]
     Query(String),

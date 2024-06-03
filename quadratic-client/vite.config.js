@@ -39,6 +39,7 @@ export default defineConfig(() => {
       port: 3000,
     },
     resolve: {
+      preserveSymlinks: true,
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
