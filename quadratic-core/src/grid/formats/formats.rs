@@ -30,3 +30,18 @@ impl DerefMut for Formats {
         &mut self.formats
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn repeat() {
+        let update = FormatUpdate::default();
+        let formats = Formats::repeat(update.clone(), 3);
+        assert_eq!(formats.size(), 3);
+        assert_eq!(formats.get_at(0), Some(&update));
+        assert_eq!(formats.get_at(1), Some(&update));
+        assert_eq!(formats.get_at(2), Some(&update));
+    }
+}
