@@ -223,7 +223,7 @@ pub fn jsRenderCellSheets(
     // we use a hash of cells to avoid storing too large test data
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRenderCellSheets",
-        format!("{},{},{},{}", sheet_id, hash_x, hash_y, hash_test(&cells)),
+        format!("{},{},{},{}", sheet_id, hash_x, hash_y, hash_test(&cells))
     ));
 }
 

@@ -68,7 +68,9 @@ mod test {
     use super::*;
     use crate::{grid::RenderSize, wasm_bindings::js::{expect_js_call, hash_test}, CellValue};
 
+
     #[test]
+    #[serial]
     fn set_formats_rects() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(

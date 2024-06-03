@@ -463,6 +463,7 @@ mod tests {
     use std::collections::HashSet;
 
     use chrono::Utc;
+    use serial_test::serial;
 
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
@@ -887,6 +888,7 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
     fn render_bool_on_code_run() {
         let mut gc = GridController::test();

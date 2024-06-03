@@ -204,10 +204,22 @@ mod test {
     use super::*;
     use crate::{
         grid::formats::format::Format,
-        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
+        wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
         CellValue,
     };
     use serial_test::serial;
+
+    fn expect_render_cell_sheet(sheet: &Sheet, hash_x: i64, hash_y: i64, clear: bool) {
+        let rect = Rect::from_numbers(
+            hash_x * CELL_SHEET_WIDTH as i64,
+            hash_y * CELL_SHEET_HEIGHT as i64,
+            CELL_SHEET_WIDTH as i64,
+            CELL_SHEET_HEIGHT as i64,
+        );
+        let cells = serde_json::to_string(&sheet.get_render_cells(rect)).unwrap();
+        let args = format!("{},{},{},{}", sheet.id.to_string(), hash_x, hash_y, hash_test(&cells));
+        expect_js_call("jsRenderCellSheets", args, clear);
+    }
 
     #[test]
     #[serial]
@@ -219,7 +231,7 @@ mod test {
         let mut positions = HashSet::new();
         positions.insert(Pos { x: 1, y: 2 });
         sheet.send_render_cells(&positions);
-        expect_js_call_count("jsRenderCellSheets", 1, true);
+        expect_render_cell_sheet(&sheet, 0, 0, true);
     }
 
     #[test]
@@ -236,7 +248,8 @@ mod test {
         );
         sheet.calculate_bounds();
         sheet.send_all_render_cells();
-        expect_js_call_count("jsRenderCellSheets", 2, true);
+        expect_render_cell_sheet(&sheet, 0, 0, false);
+        expect_render_cell_sheet(&sheet, 1, 0, true);
     }
 
     #[test]
@@ -253,10 +266,11 @@ mod test {
         );
         sheet.calculate_bounds();
         sheet.send_column_render_cells(vec![CELL_SHEET_WIDTH as i64 - 1]);
-        expect_js_call_count("jsRenderCellSheets", 1, true);
+        expect_render_cell_sheet(&sheet, 0, 0, true);
 
         sheet.send_column_render_cells(vec![CELL_SHEET_WIDTH as i64 - 1, CELL_SHEET_WIDTH as i64]);
-        expect_js_call_count("jsRenderCellSheets", 2, true);
+        expect_render_cell_sheet(&sheet, 0, 0, false);
+        expect_render_cell_sheet(&sheet, 1, 0, true);
     }
 
     #[test]
@@ -273,10 +287,11 @@ mod test {
         );
         sheet.calculate_bounds();
         sheet.send_row_render_cells(vec![CELL_SHEET_HEIGHT as i64 - 1]);
-        expect_js_call_count("jsRenderCellSheets", 1, true);
+        expect_render_cell_sheet(&sheet, 0, 0, true);
 
         sheet.send_row_render_cells(vec![CELL_SHEET_HEIGHT as i64 - 1, CELL_SHEET_HEIGHT as i64]);
-        expect_js_call_count("jsRenderCellSheets", 2, true);
+        expect_render_cell_sheet(&sheet, 0, 0, false);
+        expect_render_cell_sheet(&sheet, 0, 1, true);
     }
 
     #[test]
