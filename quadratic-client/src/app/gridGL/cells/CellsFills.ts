@@ -38,6 +38,7 @@ export class CellsFills extends Container {
     });
     events.on('sheetMetaFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
+        console.log(fills);
         if (this.isMetaEmpty(fills)) {
           this.metaFill = undefined;
           this.meta.clear();
@@ -107,7 +108,7 @@ export class CellsFills extends Container {
           if (left >= viewport.right || left + width <= viewport.left) return;
 
           this.meta.beginFill(convertColorStringToTint(color));
-          this.meta.drawRect(left, viewport.top, left + width, viewport.height);
+          this.meta.drawRect(left, viewport.top, width, viewport.height);
           this.meta.endFill();
         });
       }
@@ -121,7 +122,7 @@ export class CellsFills extends Container {
           if (top >= viewport.bottom || top + height <= viewport.top) return;
 
           this.meta.beginFill(convertColorStringToTint(color));
-          this.meta.drawRect(viewport.left, top, viewport.width, top + height);
+          this.meta.drawRect(viewport.left, top, viewport.width, height);
           this.meta.endFill();
         });
       }

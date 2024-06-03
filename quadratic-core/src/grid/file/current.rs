@@ -337,7 +337,7 @@ fn import_format(format: &current::Format) -> Format {
 fn import_formats(format: &Vec<(i64, current::Format)>) -> BTreeMap<i64, Format> {
     format
         .iter()
-        .map(|(y, format)| (*y, import_format(format)))
+        .map(|(i, format)| (*i, import_format(format)))
         .collect()
 }
 
@@ -354,8 +354,11 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     order: sheet.order.to_owned(),
                     offsets: SheetOffsets::import(&sheet.offsets),
                     columns: import_column_builder(&sheet.columns)?,
+
                     // borders set after sheet is loaded
+                    // todo: borders need to be refactored
                     borders: SheetBorders::new(),
+
                     code_runs: import_code_cell_builder(&sheet)?,
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,

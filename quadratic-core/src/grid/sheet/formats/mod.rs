@@ -64,8 +64,8 @@ impl Sheet {
             self.set_format_all(formats)
         } else if let Some(columns) = selection.columns.as_ref() {
             self.set_formats_columns(columns, formats)
-        // } else if let Some(rows) = selection.rows.as_ref() {
-        //     self.set_formats_rows(rows, formats)
+        } else if let Some(rows) = selection.rows.as_ref() {
+            self.set_formats_rows(rows, formats)
         } else if let Some(rects) = selection.rects.as_ref() {
             self.set_formats_rects(rects, formats)
         } else {

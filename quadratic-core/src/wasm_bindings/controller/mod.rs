@@ -78,6 +78,8 @@ impl GridController {
                                     );
                                 }
                             }
+                            // sends all sheet fills to the client
+                            sheet.send_sheet_fills();
                         }
                     });
                 }
