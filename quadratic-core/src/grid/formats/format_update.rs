@@ -86,22 +86,6 @@ impl FormatUpdate {
         update
     }
 
-    /// Returns whether this update will require a re-render for cells.
-    pub fn needs_render_cells(&self) -> bool {
-        self.align.is_some()
-            || self.wrap.is_some()
-            || self.numeric_format.is_some()
-            || self.numeric_decimals.is_some()
-            || self.numeric_commas.is_some()
-            || self.bold.is_some()
-            || self.italic.is_some()
-            || self.text_color.is_some()
-    }
-
-    pub fn needs_fill_update(&self) -> bool {
-        self.fill_color.is_some()
-    }
-
     /// Returns a FormatUpdate that will clear a given update
     pub fn clear_update(&self) -> FormatUpdate {
         let mut clear = FormatUpdate::default();
@@ -161,6 +145,237 @@ impl From<&FormatUpdate> for Format {
 mod tests {
     use super::*;
     use crate::grid::NumericFormatKind;
+
+    #[test]
+    fn is_default() {
+        let format = FormatUpdate::default();
+        assert!(format.is_default());
+
+        let format = FormatUpdate {
+            bold: Some(None),
+            ..Default::default()
+        };
+        assert!(!format.is_default());
+    }
+
+    #[test]
+    fn cleared() {
+        assert_eq!(
+            FormatUpdate::cleared(),
+            FormatUpdate {
+                align: Some(None),
+                wrap: Some(None),
+                numeric_format: Some(None),
+                numeric_decimals: Some(None),
+                numeric_commas: Some(None),
+                bold: Some(None),
+                italic: Some(None),
+                text_color: Some(None),
+                fill_color: Some(None),
+                render_size: Some(None)
+            }
+        );
+    }
+
+    #[test]
+    fn html_changed() {
+        let format = FormatUpdate {
+            render_size: Some(Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            })),
+            ..Default::default()
+        };
+        assert!(format.html_changed());
+
+        let format = FormatUpdate {
+            render_size: Some(None),
+            ..Default::default()
+        };
+        assert!(format.html_changed());
+
+        let format = FormatUpdate::default();
+        assert!(!format.html_changed());
+    }
+
+    #[test]
+    fn render_cells_changed() {
+        let format = FormatUpdate {
+            align: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            align: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            wrap: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            numeric_format: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            numeric_commas: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            text_color: Some(None),
+            ..Default::default()
+        };
+        assert!(format.render_cells_changed());
+
+        let format = FormatUpdate {
+            fill_color: Some(None),
+            ..Default::default()
+        };
+        assert!(!format.render_cells_changed());
+
+        let format = FormatUpdate {
+            render_size: Some(None),
+            ..Default::default()
+        };
+        assert!(!format.render_cells_changed());
+
+        let format = FormatUpdate::default();
+        assert!(!format.render_cells_changed());
+    }
+
+    #[test]
+    fn fill_changed() {
+        let format = FormatUpdate {
+            fill_color: Some(None),
+            ..Default::default()
+        };
+        assert!(format.fill_changed());
+
+        let format = FormatUpdate {
+            fill_color: Some(None),
+            ..Default::default()
+        };
+        assert!(format.fill_changed());
+
+        let format = FormatUpdate {
+            align: Some(None),
+            ..Default::default()
+        };
+        assert!(!format.fill_changed());
+
+        let format = FormatUpdate::default();
+        assert!(!format.fill_changed());
+    }
+
+    #[test]
+    fn combine() {
+        let format1 = FormatUpdate {
+            align: Some(Some(CellAlign::Center)),
+            wrap: Some(Some(CellWrap::Overflow)),
+            numeric_format: Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: None,
+            })),
+            numeric_decimals: Some(Some(2)),
+            numeric_commas: Some(Some(true)),
+            bold: Some(Some(true)),
+            italic: Some(Some(true)),
+            text_color: Some(Some("red".to_string())),
+            fill_color: Some(Some("blue".to_string())),
+            render_size: Some(Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            })),
+        };
+
+        let format2 = FormatUpdate {
+            wrap: Some(Some(CellWrap::Clip)),
+            numeric_format: Some(Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            })),
+            numeric_decimals: Some(Some(3)),
+            numeric_commas: Some(Some(false)),
+            bold: Some(Some(false)),
+            italic: Some(Some(false)),
+            text_color: Some(Some("blue".to_string())),
+            fill_color: Some(Some("red".to_string())),
+            render_size: Some(Some(RenderSize {
+                w: "3".to_string(),
+                h: "4".to_string(),
+            })),
+            ..Default::default()
+        };
+
+        let combined = format1.combine(&format2);
+
+        assert_eq!(combined.align, Some(Some(CellAlign::Center)));
+        assert_eq!(combined.wrap, Some(Some(CellWrap::Overflow)));
+        assert_eq!(
+            combined.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: None
+            }))
+        );
+        assert_eq!(combined.numeric_decimals, Some(Some(2)));
+        assert_eq!(combined.numeric_commas, Some(Some(true)));
+        assert_eq!(combined.bold, Some(Some(true)));
+        assert_eq!(combined.italic, Some(Some(true)));
+        assert_eq!(combined.text_color, Some(Some("red".to_string())));
+        assert_eq!(combined.fill_color, Some(Some("blue".to_string())));
+        assert_eq!(
+            combined.render_size,
+            Some(Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            }))
+        );
+    }
+
+    #[test]
+    fn clear_update() {
+        let format = FormatUpdate {
+            align: Some(Some(CellAlign::Center)),
+            numeric_format: Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: None,
+            })),
+            numeric_decimals: Some(Some(2)),
+            numeric_commas: Some(Some(true)),
+            bold: Some(Some(true)),
+            italic: Some(Some(true)),
+            text_color: Some(Some("red".to_string())),
+            fill_color: Some(Some("blue".to_string())),
+            render_size: Some(Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            })),
+            ..Default::default()
+        };
+
+        let cleared = format.clear_update();
+
+        assert_eq!(cleared.align, Some(None));
+        assert_eq!(cleared.wrap, None);
+        assert_eq!(cleared.numeric_format, Some(None));
+        assert_eq!(cleared.numeric_decimals, Some(None));
+        assert_eq!(cleared.numeric_commas, Some(None));
+        assert_eq!(cleared.bold, Some(None));
+        assert_eq!(cleared.italic, Some(None));
+        assert_eq!(cleared.text_color, Some(None));
+        assert_eq!(cleared.fill_color, Some(None));
+        assert_eq!(cleared.render_size, Some(None));
+    }
 
     #[test]
     fn format_update_to_format() {

@@ -1,8 +1,11 @@
 use crate::{
-    controller::operations::operation::Operation, grid::{
+    controller::operations::operation::Operation,
+    grid::{
         formats::{format::Format, format_update::FormatUpdate, formats::Formats},
         Sheet,
-    }, selection::Selection, Pos, Rect
+    },
+    selection::Selection,
+    Pos, Rect,
 };
 
 impl Sheet {
@@ -44,16 +47,20 @@ impl Sheet {
 
     /// Finds any cells that overlap with the update a return a list of positions.
     pub(crate) fn find_overlapping_format_cells(&self, update: &FormatUpdate) -> Vec<Pos> {
-        self.format_selection(&Selection { sheet_id: self.id, all: true, ..Default::default() })
-            .iter()
-            .filter_map(|(pos, format)| {
-                if Sheet::undo_format_update(update, format).is_some() {
-                    Some(*pos)
-                } else {
-                    None
-                }
-            })
-            .collect()
+        self.format_selection(&Selection {
+            sheet_id: self.id,
+            all: true,
+            ..Default::default()
+        })
+        .iter()
+        .filter_map(|(pos, format)| {
+            if Sheet::undo_format_update(update, format).is_some() {
+                Some(*pos)
+            } else {
+                None
+            }
+        })
+        .collect()
     }
 
     /// Sets the Format for all cells and returns a Vec<Operation> to undo the
@@ -87,10 +94,10 @@ impl Sheet {
             }
 
             // watch for changes that need to be sent to the client
-            if format_update.needs_render_cells() {
+            if format_update.render_cells_changed() {
                 render_cells = true;
             }
-            if format_update.needs_fill_update() {
+            if format_update.fill_changed() {
                 change_fills = true;
             }
 
@@ -184,11 +191,14 @@ impl Sheet {
             let cells = self.find_overlapping_format_cells(format_update);
             if !cells.is_empty() {
                 let mut formats = Formats::default();
-                let rects = cells.iter().map(|pos| {
-                    let old = self.set_format_cell(*pos, &format_clear, false);
-                    formats.push(old);
-                    Rect::single_pos(*pos)
-                }).collect();
+                let rects = cells
+                    .iter()
+                    .map(|pos| {
+                        let old = self.set_format_cell(*pos, &format_clear, false);
+                        formats.push(old);
+                        Rect::single_pos(*pos)
+                    })
+                    .collect();
                 ops.push(Operation::SetCellFormatsSelection {
                     selection: Selection {
                         sheet_id: self.id,
@@ -285,8 +295,22 @@ mod tests {
     #[test]
     fn find_overlapping_format_cells() {
         let mut sheet = Sheet::test();
-        sheet.set_format_cell(Pos { x: 0, y: 0 }, &FormatUpdate { bold: Some(Some(true)), ..Default::default() }, false);
-        sheet.set_format_cell(Pos { x: 1, y: 1 }, &FormatUpdate { bold: Some(Some(true)), ..Default::default() }, false);
+        sheet.set_format_cell(
+            Pos { x: 0, y: 0 },
+            &FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+            false,
+        );
+        sheet.set_format_cell(
+            Pos { x: 1, y: 1 },
+            &FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+            false,
+        );
         sheet.calculate_bounds();
 
         let update = FormatUpdate {
@@ -387,26 +411,85 @@ mod tests {
 
         assert_eq!(reverse.len(), 3);
         assert_eq!(
-            reverse[0], Operation::SetCellFormatsSelection { selection: Selection { sheet_id: sheet.id, all: true, ..Default::default() }, formats: Formats::repeat(FormatUpdate { bold: Some(None), ..Default::default() }, 1) }
+            reverse[0],
+            Operation::SetCellFormatsSelection {
+                selection: Selection {
+                    sheet_id: sheet.id,
+                    all: true,
+                    ..Default::default()
+                },
+                formats: Formats::repeat(
+                    FormatUpdate {
+                        bold: Some(None),
+                        ..Default::default()
+                    },
+                    1
+                )
+            }
         );
         assert_eq!(
             reverse[1],
-            Operation::SetCellFormatsSelection { selection: Selection { sheet_id: sheet.id, columns: Some(vec![0]), ..Default::default() }, formats: Formats::repeat(FormatUpdate { bold: Some(None), ..Default::default() }, 1) }
+            Operation::SetCellFormatsSelection {
+                selection: Selection {
+                    sheet_id: sheet.id,
+                    columns: Some(vec![0]),
+                    ..Default::default()
+                },
+                formats: Formats::repeat(
+                    FormatUpdate {
+                        bold: Some(None),
+                        ..Default::default()
+                    },
+                    1
+                )
+            }
         );
         assert_eq!(
             reverse[2],
-            Operation::SetCellFormatsSelection { selection: Selection { sheet_id: sheet.id, rows: Some(vec![0]), ..Default::default() }, formats: Formats::repeat(FormatUpdate { bold: Some(None), ..Default::default() }, 1) }
+            Operation::SetCellFormatsSelection {
+                selection: Selection {
+                    sheet_id: sheet.id,
+                    rows: Some(vec![0]),
+                    ..Default::default()
+                },
+                formats: Formats::repeat(
+                    FormatUpdate {
+                        bold: Some(None),
+                        ..Default::default()
+                    },
+                    1
+                )
+            }
         );
     }
 
     #[test]
     fn set_format_all_remove_cell() {
         let mut sheet = Sheet::test();
-        sheet.set_format_cell(Pos { x: 0, y: 0 }, &FormatUpdate { italic: Some(Some(true)), ..Default::default() }, false);
+        sheet.set_format_cell(
+            Pos { x: 0, y: 0 },
+            &FormatUpdate {
+                italic: Some(Some(true)),
+                ..Default::default()
+            },
+            false,
+        );
         sheet.calculate_bounds();
-        assert_eq!(sheet.format_cell(0, 0), Format { italic: Some(true), ..Default::default() });
+        assert_eq!(
+            sheet.format_cell(0, 0),
+            Format {
+                italic: Some(true),
+                ..Default::default()
+            }
+        );
 
-        sheet.set_format_all(&Formats::repeat(FormatUpdate { italic: Some(None), ..Default::default() }, 1));
+        sheet.set_format_all(&Formats::repeat(
+            FormatUpdate {
+                italic: Some(None),
+                ..Default::default()
+            },
+            1,
+        ));
         assert_eq!(sheet.format_cell(0, 0), Format::default());
     }
 }

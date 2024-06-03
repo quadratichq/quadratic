@@ -190,7 +190,7 @@ mod test {
 
     #[test]
     fn is_default() {
-        let format = super::Format::default();
+        let format = Format::default();
         assert!(format.is_default());
     }
 

@@ -93,10 +93,7 @@ impl GridController {
 
                 transaction
                     .forward_operations
-                    .push(Operation::SetCellFormatsSelection {
-                        selection: selection.clone(),
-                        formats,
-                    });
+                    .push(Operation::SetCellFormatsSelection { selection, formats });
 
                 transaction
                     .reverse_operations
