@@ -47,17 +47,19 @@ pub struct Sheet {
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
 
-    // Column/Row, and All formatting
+    // Column/Row, and All formatting. The second tuple stores the timestamp for
+    // the fill_color, which is used to determine the z-order for overlapping
+    // column and row fills.
     #[serde(
         skip_serializing_if = "BTreeMap::is_empty",
         with = "crate::util::btreemap_serde"
     )]
-    pub formats_columns: BTreeMap<i64, Format>,
+    pub formats_columns: BTreeMap<i64, (Format, i64)>,
     #[serde(
         skip_serializing_if = "BTreeMap::is_empty",
         with = "crate::util::btreemap_serde"
     )]
-    pub formats_rows: BTreeMap<i64, Format>,
+    pub formats_rows: BTreeMap<i64, (Format, i64)>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format_all: Option<Format>,
@@ -256,8 +258,8 @@ impl Sheet {
         let format = if include_sheet_info {
             Format::combine(
                 cell.as_ref(),
-                self.formats_columns.get(&pos.x),
-                self.formats_rows.get(&pos.y),
+                self.try_format_column(pos.x).as_ref(),
+                self.try_format_row(pos.y).as_ref(),
                 self.format_all.as_ref(),
             )
         } else {

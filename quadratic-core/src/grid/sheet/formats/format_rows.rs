@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
+use chrono::Utc;
+
 use crate::{
     controller::operations::operation::Operation,
     grid::{
@@ -15,8 +17,12 @@ impl Sheet {
     pub fn format_row(&self, row: i64) -> Format {
         self.formats_rows
             .get(&row)
-            .unwrap_or(&Format::default())
-            .clone()
+            .map_or(Format::default(), |f| f.0.clone())
+    }
+
+    /// Tries to get a format for a row, returning None if not set.
+    pub fn try_format_row(&self, row: i64) -> Option<Format> {
+        self.formats_rows.get(&row).map(|f| f.0.clone())
     }
 
     /// Sets the Formats for rows and returns existing Formats for rows.
@@ -67,7 +73,8 @@ impl Sheet {
                     if row_format.is_default() {
                         self.formats_rows.remove(x);
                     } else {
-                        self.formats_rows.insert(*x, row_format);
+                        self.formats_rows
+                            .insert(*x, (row_format, Utc::now().timestamp()));
                     }
 
                     // track all cells within the columns that need to have
@@ -159,10 +166,13 @@ mod tests {
         assert_eq!(sheet.format_row(0), Format::default());
         sheet.formats_rows.insert(
             0,
-            Format {
-                bold: Some(true),
-                ..Default::default()
-            },
+            (
+                Format {
+                    bold: Some(true),
+                    ..Default::default()
+                },
+                0,
+            ),
         );
         assert_eq!(
             sheet.format_row(0),
@@ -186,25 +196,25 @@ mod tests {
         let rows = vec![0, 1, 2];
         let reverse = sheet.set_formats_rows(&rows, &formats);
         assert_eq!(
-            sheet.formats_rows.get(&0),
-            Some(&Format {
+            sheet.format_row(0),
+            Format {
                 bold: Some(true),
                 ..Format::default()
-            })
+            }
         );
         assert_eq!(
-            sheet.formats_rows.get(&1),
-            Some(&Format {
+            sheet.format_row(1),
+            Format {
                 bold: Some(true),
                 ..Format::default()
-            })
+            }
         );
         assert_eq!(
-            sheet.formats_rows.get(&2),
-            Some(&Format {
+            sheet.format_row(2),
+            Format {
                 bold: Some(true),
                 ..Format::default()
-            })
+            }
         );
         assert_eq!(sheet.formats_rows.get(&3), None);
 
@@ -351,5 +361,28 @@ mod tests {
         );
 
         assert_eq!(reverse.len(), 2);
+    }
+
+    #[test]
+    fn timestamp() {
+        let mut sheet = Sheet::test();
+        let formats = Formats::repeat(
+            FormatUpdate {
+                bold: Some(Some(true)),
+                ..FormatUpdate::default()
+            },
+            3,
+        );
+        let rows = vec![0, 1, 2];
+        let reverse = sheet.set_formats_rows(&rows, &formats);
+        assert_eq!(
+            sheet.formats_rows.get(&0).unwrap().1,
+            sheet.formats_rows.get(&1).unwrap().1
+        );
+        assert_eq!(
+            sheet.formats_rows.get(&1).unwrap().1,
+            sheet.formats_rows.get(&2).unwrap().1
+        );
+        assert_eq!(reverse.len(), 1);
     }
 }

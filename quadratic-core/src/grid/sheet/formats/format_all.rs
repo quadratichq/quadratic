@@ -21,7 +21,7 @@ impl Sheet {
     pub(crate) fn find_overlapping_format_columns(&self, update: &FormatUpdate) -> Vec<i64> {
         self.formats_columns
             .iter()
-            .filter_map(|(column, column_format)| {
+            .filter_map(|(column, (column_format, _))| {
                 if Sheet::undo_format_update(update, column_format).is_some() {
                     Some(*column)
                 } else {
@@ -35,7 +35,7 @@ impl Sheet {
     pub(crate) fn find_overlapping_format_rows(&self, update: &FormatUpdate) -> Vec<i64> {
         self.formats_rows
             .iter()
-            .filter_map(|(row, row_format)| {
+            .filter_map(|(row, (row_format, _))| {
                 if Sheet::undo_format_update(update, row_format).is_some() {
                     Some(*row)
                 } else {
@@ -245,17 +245,23 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.formats_columns.insert(
             0,
-            Format {
-                bold: Some(false),
-                ..Default::default()
-            },
+            (
+                Format {
+                    bold: Some(false),
+                    ..Default::default()
+                },
+                0,
+            ),
         );
         sheet.formats_columns.insert(
             -2,
-            Format {
-                bold: Some(true),
-                ..Default::default()
-            },
+            (
+                Format {
+                    bold: Some(true),
+                    ..Default::default()
+                },
+                0,
+            ),
         );
 
         let update = FormatUpdate {
@@ -271,17 +277,23 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.formats_rows.insert(
             0,
-            Format {
-                bold: Some(false),
-                ..Default::default()
-            },
+            (
+                Format {
+                    bold: Some(false),
+                    ..Default::default()
+                },
+                0,
+            ),
         );
         sheet.formats_rows.insert(
             -2,
-            Format {
-                bold: Some(true),
-                ..Default::default()
-            },
+            (
+                Format {
+                    bold: Some(true),
+                    ..Default::default()
+                },
+                0,
+            ),
         );
 
         let update = FormatUpdate {
@@ -373,17 +385,23 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.formats_columns.insert(
             0,
-            Format {
-                bold: Some(true),
-                ..Default::default()
-            },
+            (
+                Format {
+                    bold: Some(true),
+                    ..Default::default()
+                },
+                0,
+            ),
         );
         sheet.formats_rows.insert(
             0,
-            Format {
-                bold: Some(false),
-                ..Default::default()
-            },
+            (
+                Format {
+                    bold: Some(false),
+                    ..Default::default()
+                },
+                0,
+            ),
         );
 
         let formats = Formats::repeat(

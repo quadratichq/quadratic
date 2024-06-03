@@ -1,3 +1,5 @@
+use chrono::Utc;
+
 use crate::{
     controller::operations::operation::Operation,
     grid::{
@@ -14,8 +16,12 @@ impl Sheet {
     pub fn format_column(&self, column: i64) -> Format {
         self.formats_columns
             .get(&column)
-            .unwrap_or(&Format::default())
-            .clone()
+            .map_or(Format::default(), |f| f.0.clone())
+    }
+
+    /// Tries to get a format for a column, returning None if not set.
+    pub fn try_format_column(&self, column: i64) -> Option<Format> {
+        self.formats_columns.get(&column).map(|f| f.0.clone())
     }
 
     /// Sets the Formats for columns and returns existing Formats for columns.
@@ -71,7 +77,8 @@ impl Sheet {
                     if column_format.is_default() {
                         self.formats_columns.remove(x);
                     } else {
-                        self.formats_columns.insert(*x, column_format);
+                        self.formats_columns
+                            .insert(*x, (column_format, Utc::now().timestamp()));
                     }
 
                     // track all cells within the columns that need to have
@@ -163,10 +170,13 @@ mod tests {
         assert_eq!(sheet.format_column(0), Format::default());
         sheet.formats_columns.insert(
             0,
-            Format {
-                bold: Some(true),
-                ..Default::default()
-            },
+            (
+                Format {
+                    bold: Some(true),
+                    ..Default::default()
+                },
+                0,
+            ),
         );
         assert_eq!(
             sheet.format_column(0),
@@ -174,6 +184,29 @@ mod tests {
                 bold: Some(true),
                 ..Default::default()
             }
+        );
+    }
+
+    #[test]
+    fn try_format_column() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.try_format_column(0), None);
+        sheet.formats_columns.insert(
+            0,
+            (
+                Format {
+                    bold: Some(true),
+                    ..Default::default()
+                },
+                0,
+            ),
+        );
+        assert_eq!(
+            sheet.try_format_column(0),
+            Some(Format {
+                bold: Some(true),
+                ..Default::default()
+            })
         );
     }
 
@@ -190,25 +223,25 @@ mod tests {
         let columns = vec![0, 1, 2];
         let reverse = sheet.set_formats_columns(&columns, &formats);
         assert_eq!(
-            sheet.formats_columns.get(&0),
-            Some(&Format {
+            sheet.format_column(0),
+            Format {
                 bold: Some(true),
                 ..Format::default()
-            })
+            }
         );
         assert_eq!(
-            sheet.formats_columns.get(&1),
-            Some(&Format {
+            sheet.format_column(1),
+            Format {
                 bold: Some(true),
                 ..Format::default()
-            })
+            }
         );
         assert_eq!(
-            sheet.formats_columns.get(&2),
-            Some(&Format {
+            sheet.format_column(2),
+            Format {
                 bold: Some(true),
                 ..Format::default()
-            })
+            }
         );
         assert_eq!(sheet.formats_columns.get(&3), None);
 
@@ -355,5 +388,28 @@ mod tests {
         );
 
         assert_eq!(reverse.len(), 2);
+    }
+
+    #[test]
+    fn timestamp() {
+        let mut sheet = Sheet::test();
+        let formats = Formats::repeat(
+            FormatUpdate {
+                bold: Some(Some(true)),
+                ..FormatUpdate::default()
+            },
+            3,
+        );
+        let columns = vec![0, 1, 2];
+        let reverse = sheet.set_formats_columns(&columns, &formats);
+        assert_eq!(
+            sheet.formats_columns.get(&0).unwrap().1,
+            sheet.formats_columns.get(&1).unwrap().1
+        );
+        assert_eq!(
+            sheet.formats_columns.get(&1).unwrap().1,
+            sheet.formats_columns.get(&2).unwrap().1
+        );
+        assert_eq!(reverse.len(), 1);
     }
 }

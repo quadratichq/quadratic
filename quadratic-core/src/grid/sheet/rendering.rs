@@ -95,8 +95,8 @@ impl Sheet {
                 };
                 let format = Format::combine(
                     None,
-                    self.formats_columns.get(&x),
-                    self.formats_rows.get(&y),
+                    self.try_format_column(x).as_ref(),
+                    self.try_format_row(y).as_ref(),
                     self.format_all.as_ref(),
                 );
                 let align = format.align.or(align);
@@ -116,8 +116,8 @@ impl Sheet {
             Some(column) => {
                 let format = Format::combine(
                     None,
-                    self.formats_columns.get(&x),
-                    self.formats_rows.get(&y),
+                    self.try_format_column(x).as_ref(),
+                    self.try_format_row(y).as_ref(),
                     self.format_all.as_ref(),
                 );
                 let mut align: Option<CellAlign> = column.align.get(y).or(format.align);
@@ -339,9 +339,9 @@ impl Sheet {
         let columns = self
             .formats_columns
             .iter()
-            .filter_map(|(x, column)| {
-                if let Some(color) = column.fill_color.as_ref() {
-                    Some((*x, color.clone()))
+            .filter_map(|(x, (format, timestamp))| {
+                if let Some(color) = format.fill_color.as_ref() {
+                    Some((*x, (color.clone(), *timestamp)))
                 } else {
                     None
                 }
@@ -350,9 +350,9 @@ impl Sheet {
         let rows = self
             .formats_rows
             .iter()
-            .filter_map(|(y, row)| {
-                if let Some(color) = row.fill_color.as_ref() {
-                    Some((*y, color.clone()))
+            .filter_map(|(y, (format, timestamp))| {
+                if let Some(color) = format.fill_color.as_ref() {
+                    Some((*y, (color.clone(), *timestamp)))
                 } else {
                     None
                 }
@@ -974,13 +974,9 @@ mod tests {
                 1,
             ),
         );
-        assert_eq!(
-            sheet.get_sheet_fills(),
-            JsSheetFill {
-                columns: vec![(1, "blue".to_string())],
-                ..Default::default()
-            }
-        );
+        let fills = sheet.get_sheet_fills();
+        assert_eq!(fills.columns.len(), 1);
+        assert_eq!(fills.columns[0].1 .0, "blue".to_string());
 
         sheet.set_formats_rows(
             &vec![-5],
@@ -992,13 +988,11 @@ mod tests {
                 1,
             ),
         );
-        assert_eq!(
-            sheet.get_sheet_fills(),
-            JsSheetFill {
-                columns: vec![(1, "blue".to_string())],
-                rows: vec![(-5, "red".to_string())],
-                ..Default::default()
-            }
-        );
+
+        let fills = sheet.get_sheet_fills();
+        assert_eq!(fills.columns.len(), 1);
+        assert_eq!(fills.columns[0].1 .0, "blue".to_string());
+        assert_eq!(fills.rows.len(), 1);
+        assert_eq!(fills.rows[0].1 .0, "red".to_string());
     }
 }

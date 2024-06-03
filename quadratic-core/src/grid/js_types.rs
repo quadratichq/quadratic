@@ -89,8 +89,8 @@ pub struct JsRenderFill {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, ts_rs::TS, PartialEq)]
 pub struct JsSheetFill {
-    pub columns: Vec<(i64, String)>,
-    pub rows: Vec<(i64, String)>,
+    pub columns: Vec<(i64, (String, i64))>,
+    pub rows: Vec<(i64, (String, i64))>,
     pub all: Option<String>,
 }
 

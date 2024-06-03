@@ -334,10 +334,10 @@ fn import_format(format: &current::Format) -> Format {
     }
 }
 
-fn import_formats(format: &Vec<(i64, current::Format)>) -> BTreeMap<i64, Format> {
+fn import_formats(format: &Vec<(i64, (current::Format, i64))>) -> BTreeMap<i64, (Format, i64)> {
     format
         .iter()
-        .map(|(i, format)| (*i, import_format(format)))
+        .map(|(i, (format, timestamp))| (*i, (import_format(format), *timestamp)))
         .collect()
 }
 
@@ -660,12 +660,12 @@ fn export_format(format: &Format) -> Option<current::Format> {
     }
 }
 
-fn export_formats(formats: &BTreeMap<i64, Format>) -> Vec<(i64, current::Format)> {
+fn export_formats(formats: &BTreeMap<i64, (Format, i64)>) -> Vec<(i64, (current::Format, i64))> {
     formats
         .iter()
-        .filter_map(|(y, format)| {
+        .filter_map(|(y, (format, timestamp))| {
             let f = export_format(format)?;
-            Some((*y, f))
+            Some((*y, (f, timestamp.to_owned())))
         })
         .collect()
 }
