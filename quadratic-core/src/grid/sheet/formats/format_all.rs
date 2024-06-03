@@ -287,6 +287,7 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.set_format_cell(Pos { x: 0, y: 0 }, &FormatUpdate { bold: Some(Some(true)), ..Default::default() }, false);
         sheet.set_format_cell(Pos { x: 1, y: 1 }, &FormatUpdate { bold: Some(Some(true)), ..Default::default() }, false);
+        sheet.calculate_bounds();
 
         let update = FormatUpdate {
             bold: Some(Some(true)),
@@ -402,6 +403,7 @@ mod tests {
     fn set_format_all_remove_cell() {
         let mut sheet = Sheet::test();
         sheet.set_format_cell(Pos { x: 0, y: 0 }, &FormatUpdate { italic: Some(Some(true)), ..Default::default() }, false);
+        sheet.calculate_bounds();
         assert_eq!(sheet.format_cell(0, 0), Format { italic: Some(true), ..Default::default() });
 
         sheet.set_format_all(&Formats::repeat(FormatUpdate { italic: Some(None), ..Default::default() }, 1));

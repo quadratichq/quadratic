@@ -104,6 +104,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::serial;
+
     use crate::{
         grid::{js_types::JsRenderCell, CellAlign},
         wasm_bindings::js::{expect_js_call, hash_test},
@@ -115,13 +117,7 @@ mod tests {
     fn format_cell() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_cell(0, 0), Format::default());
-        sheet.formats_columns.insert(
-            0,
-            Format {
-                bold: Some(true),
-                ..Default::default()
-            },
-        );
+        sheet.set_format_cell(Pos { x: 0, y: 0 }, &FormatUpdate { bold: Some(Some(true)), ..Default::default() }, false);
         assert_eq!(
             sheet.format_cell(0, 0),
             Format {
@@ -131,6 +127,7 @@ mod tests {
         );
     }
 
+    #[serial]
     #[test]
     fn set_format_cell() {
         let mut sheet = Sheet::test();

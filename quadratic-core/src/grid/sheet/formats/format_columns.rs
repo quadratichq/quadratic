@@ -37,9 +37,11 @@ impl Sheet {
         // tracks which column of cells need to be rerendered
         let mut render_columns = HashSet::new();
 
-        // tracks whether we need to update fills for the column or cells
-        let mut render_column_fills = HashSet::new();
-        // let mut render_fills = HashSet::new();
+        // tracks whether we need to update fills for the column
+        let mut render_column_fills = false;
+
+        // tracks whether we need to update fills for the cells
+        let mut render_fills = HashSet::new();
 
         // individual cells that need to be cleared to accommodate the new column format
         let mut clear_format_cells: HashMap<Pos, FormatUpdate> = HashMap::new();
@@ -54,7 +56,7 @@ impl Sheet {
                     }
 
                     if format_update.needs_fill_update() {
-                        render_column_fills.insert(*x);
+                        render_column_fills = true;
                     }
 
                     // update the column format and save the old format
@@ -80,6 +82,9 @@ impl Sheet {
                         if let Some(clear) =
                             format.needs_to_clear_cell_format_for_parent(&format_update)
                         {
+                            if clear.needs_fill_update() {
+                                render_fills.insert(*pos);
+                            }
                             if let Some(existing) = clear_format_cells.get_mut(pos) {
                                 existing.combine(&clear);
                             } else {
@@ -127,14 +132,26 @@ impl Sheet {
             self.send_column_render_cells(render_columns.into_iter().collect());
         }
 
+        // force a rerender of all column, row, and sheet fills
+        if render_column_fills {
+            self.send_sheet_fills();
+        }
+
+        // send any update cell fills
+        if !render_fills.is_empty() {
+            self.send_fills(&render_fills);
+        }
+
         ops
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use serial_test::serial;
+
     use super::*;
-    use crate::grid::formats::format_update::FormatUpdate;
+    use crate::{grid::formats::format_update::FormatUpdate, wasm_bindings::js::expect_js_call};
 
     #[test]
     fn format_column() {
@@ -251,5 +268,36 @@ mod tests {
         };
         sheet.set_formats_selection(&reverse_selection, &reverse_formats);
         assert_eq!(sheet.format_cell(0, 0), Format { bold: Some(false), ..Default::default() });
+    }
+
+    #[serial]
+    #[test]
+    fn set_format_columns_fills() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_format(0, 0, FormatUpdate { fill_color: Some(Some("red".to_string())), ..Default::default() });
+        sheet.calculate_bounds();
+        assert_eq!(sheet.format_cell(0, 0).fill_color, Some("red".to_string()));
+
+        let reverse = sheet.set_formats_columns(
+            &vec![0],
+            &Formats::repeat(
+                FormatUpdate {
+                    fill_color: Some(Some("blue".to_string())),
+                    ..FormatUpdate::default()
+                },
+                1,
+            ),
+        );
+
+        // cell format is cleared because of the column format change
+        assert_eq!(sheet.format_cell(0, 0).fill_color, None);
+
+        // ensure fills are sent to the client
+        let meta_fills = sheet.get_sheet_fills();
+        expect_js_call("jsSheetMetaFills", format!("{},{}", sheet.id, serde_json::to_string(&meta_fills).unwrap()), false);
+        let fills = sheet.get_all_render_fills();
+        expect_js_call("jsSheetFills", format!("{},{}", sheet.id, serde_json::to_string(&fills).unwrap()), true);
+
+        assert_eq!(reverse.len(), 2);
     }
 }

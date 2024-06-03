@@ -690,7 +690,7 @@ mod tests {
 
         let selection = Selection {
             sheet_id,
-            rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+            rects: Some(vec![Rect::from_numbers(0, 0, 2, 2)]),
             ..Default::default()
         };
         assert_eq!(
@@ -722,31 +722,21 @@ mod tests {
             sheet.format_selection(&selection),
             vec![
                 (Pos { x: 0, y: 0 }, Format { bold: Some(true), ..Default::default()}),
-                (Pos { x: 1, y: 1 }, Format { bold: Some(true), ..Default::default()}),
+                (Pos { x: 1, y: 1 }, Format { bold: Some(false), ..Default::default()}),
             ]
         );
 
-        // let selection = Selection {
-        //     sheet_id,
-        //     rows: Some(vec![0, 1]),
-        //     ..Default::default()
-        // };
-        // assert_eq!(
-        //     sheet.format_selection(&selection),
-        //     vec![
-        //         (Pos { x: 0, y: 0 }, Format::new("bold")),
-        //         (Pos { x: 1, y: 1 }, Format::new("italic"))
-        //     ]
-        // );
-
-        // let selection = Selection {
-        //     sheet_id,
-        //     rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
-        //     ..Default::default()
-        // };
-        // assert_eq!(
-        //     sheet.format_selection(&selection),
-        //     vec![(Pos { x: 0, y: 0 }, Format::new("bold"))]
-        // );
+        let selection = Selection {
+            sheet_id,
+            rows: Some(vec![0, 1]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.format_selection(&selection),
+            vec![
+                (Pos { x: 0, y: 0 }, Format { bold: Some(true), ..Default::default()}),
+                (Pos { x: 1, y: 1 }, Format { bold: Some(false), ..Default::default()}),
+            ]
+        );
     }
 }
