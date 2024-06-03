@@ -15,6 +15,13 @@ interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
 
+interface ColumnRow {
+  row?: number;
+  column?: number
+  color: string;
+  timestamp: number;
+}
+
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
   private fills: JsRenderFill[] = [];
@@ -38,6 +45,7 @@ export class CellsFills extends Container {
     });
     events.on('sheetMetaFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
+        console.log(fills)
         if (this.isMetaEmpty(fills)) {
           this.metaFill = undefined;
           this.meta.clear();
@@ -97,34 +105,38 @@ export class CellsFills extends Container {
         this.meta.drawRect(viewport.left, viewport.top, viewport.width, viewport.height);
         this.meta.endFill();
       }
-      if (this.metaFill.columns.length) {
-        this.metaFill.columns.forEach(([column, color]) => {
-          const screen = this.sheet.offsets.getColumnPlacement(Number(column));
+
+      // combine the column and row fills and sort them by their timestamp so
+      // they are drawn in the correct order
+      const columns: ColumnRow[] = this.metaFill.columns.map(entry => ({ column: Number(entry[0]), row: undefined, color: entry[1][0], timestamp: Number(entry[1][1]) }));
+      const rows: ColumnRow[] = this.metaFill.rows.map(entry => ({ column: undefined, row: Number(entry[0]), color: entry[1][0], timestamp: Number(entry[1][1]) }));
+      const fills = [...columns, ...rows].sort((a, b) => (a.timestamp - b.timestamp));
+
+      fills.forEach(fill => {
+        if (fill.column !== undefined) {
+          const screen = this.sheet.offsets.getColumnPlacement(Number(fill.column));
           const left = screen.position;
           const width = screen.size;
 
           // only draw if the column is visible on the screen
           if (left >= viewport.right || left + width <= viewport.left) return;
 
-          this.meta.beginFill(convertColorStringToTint(color));
+          this.meta.beginFill(convertColorStringToTint(fill.color));
           this.meta.drawRect(left, viewport.top, width, viewport.height);
           this.meta.endFill();
-        });
-      }
-      if (this.metaFill.rows.length) {
-        this.metaFill.rows.forEach(([row, color]) => {
-          const screen = this.sheet.offsets.getRowPlacement(Number(row));
+        } else if (fill.row !== undefined) {
+          const screen = this.sheet.offsets.getRowPlacement(fill.row);
           const top = screen.position;
           const height = screen.size;
 
           // only draw if the row is visible on the screen
           if (top >= viewport.bottom || top + height <= viewport.top) return;
 
-          this.meta.beginFill(convertColorStringToTint(color));
+          this.meta.beginFill(convertColorStringToTint(fill.color));
           this.meta.drawRect(viewport.left, top, viewport.width, height);
           this.meta.endFill();
-        });
-      }
+        }
+      });
       pixiApp.setViewportDirty();
     }
   };
