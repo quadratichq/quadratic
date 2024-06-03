@@ -1,8 +1,8 @@
 //! This is used to update a format. Only the fields that are Some(_) will be updated.
 
-use serde::{Deserialize, Serialize};
-use crate::grid::{CellAlign, CellWrap, NumericFormat, RenderSize};
 use super::format::Format;
+use crate::grid::{CellAlign, CellWrap, NumericFormat, RenderSize};
+use serde::{Deserialize, Serialize};
 
 /// Used to store changes from a Format to another Format.
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
@@ -159,35 +159,53 @@ impl From<&FormatUpdate> for Format {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::NumericFormatKind;
     use super::*;
+    use crate::grid::NumericFormatKind;
 
     #[test]
     fn format_update_to_format() {
         let update = FormatUpdate {
             align: Some(Some(CellAlign::Center)),
             wrap: Some(Some(CellWrap::Overflow)),
-            numeric_format: Some(Some(NumericFormat { kind: NumericFormatKind::Currency, symbol: None })),
+            numeric_format: Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: None,
+            })),
             numeric_decimals: Some(Some(2)),
             numeric_commas: Some(Some(true)),
             bold: Some(Some(true)),
             italic: Some(Some(true)),
             text_color: Some(Some("red".to_string())),
             fill_color: Some(Some("blue".to_string())),
-            render_size: Some(Some(RenderSize { w: "1".to_string(), h: "2".to_string() })),
+            render_size: Some(Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            })),
         };
 
         let format: Format = (&update).into();
 
         assert_eq!(format.align, Some(CellAlign::Center));
         assert_eq!(format.wrap, Some(CellWrap::Overflow));
-        assert_eq!(format.numeric_format, Some(NumericFormat { kind: NumericFormatKind::Currency, symbol: None }));
+        assert_eq!(
+            format.numeric_format,
+            Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: None
+            })
+        );
         assert_eq!(format.numeric_decimals, Some(2));
         assert_eq!(format.numeric_commas, Some(true));
         assert_eq!(format.bold, Some(true));
         assert_eq!(format.italic, Some(true));
         assert_eq!(format.text_color, Some("red".to_string()));
         assert_eq!(format.fill_color, Some("blue".to_string()));
-        assert_eq!(format.render_size, Some(RenderSize { w: "1".to_string(), h: "2".to_string()}));
+        assert_eq!(
+            format.render_size,
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            })
+        );
     }
 }

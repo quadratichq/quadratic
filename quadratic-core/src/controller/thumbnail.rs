@@ -30,9 +30,9 @@ impl GridController {
         if selection.all {
             true
         } else if let Some(columns) = &selection.columns {
-            columns.iter().any(|&column| {
-                column >= 0 && column <= sheet.offsets.thumbnail().max.x
-            })
+            columns
+                .iter()
+                .any(|&column| column >= 0 && column <= sheet.offsets.thumbnail().max.x)
         } else if let Some(rows) = &selection.rows {
             rows.iter()
                 .any(|&row| row >= 0 && row <= sheet.offsets.thumbnail().max.y)

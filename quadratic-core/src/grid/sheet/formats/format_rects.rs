@@ -1,6 +1,14 @@
 use std::collections::HashSet;
 
-use crate::{controller::operations::operation::Operation, grid::{formats::{format_update::FormatUpdate, formats::Formats}, Sheet}, selection::Selection, Pos, Rect};
+use crate::{
+    controller::operations::operation::Operation,
+    grid::{
+        formats::{format_update::FormatUpdate, formats::Formats},
+        Sheet,
+    },
+    selection::Selection,
+    Pos, Rect,
+};
 
 impl Sheet {
     /// Sets the Formats for Vec<Rect> and returns operations to reverse the change.
@@ -42,14 +50,20 @@ impl Sheet {
         self.send_html_output(&html);
         self.send_fills(&fills);
 
-        vec![Operation::SetCellFormatsSelection { selection: Selection { rects: Some(rects.clone()), ..Default::default()}, formats: old_formats }]
+        vec![Operation::SetCellFormatsSelection {
+            selection: Selection {
+                rects: Some(rects.clone()),
+                ..Default::default()
+            },
+            formats: old_formats,
+        }]
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::wasm_bindings::js::{expect_js_call, hash_test};
     use super::*;
+    use crate::wasm_bindings::js::{expect_js_call, hash_test};
 
     #[test]
     fn set_formats_selection_rect() {
@@ -64,18 +78,9 @@ mod test {
         let rect = Rect::from_numbers(0, 0, 2, 2);
         let old_formats = sheet.set_formats_rects(&vec![rect], &formats);
         assert_eq!(old_formats.len(), 1);
-        assert_eq!(
-            sheet.format_cell(0,0).bold,
-            Some(true)
-        );
-        assert_eq!(
-            sheet.format_cell(1, 1).bold,
-            Some(true)
-        );
-        assert_eq!(
-            sheet.format_cell(2, 2).bold,
-            None
-        );
+        assert_eq!(sheet.format_cell(0, 0).bold, Some(true));
+        assert_eq!(sheet.format_cell(1, 1).bold, Some(true));
+        assert_eq!(sheet.format_cell(2, 2).bold, None);
 
         let cells =
             serde_json::to_string(&sheet.get_render_cells(Rect::from_numbers(0, 0, 2, 2))).unwrap();

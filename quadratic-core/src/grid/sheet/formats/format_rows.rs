@@ -1,6 +1,9 @@
 use std::collections::HashSet;
 
-use crate::grid::{formats::{format::Format, formats::Formats}, Sheet};
+use crate::grid::{
+    formats::{format::Format, formats::Formats},
+    Sheet,
+};
 
 impl Sheet {
     /// Gets a format for a row, returning Format::default if not set.
@@ -46,8 +49,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::formats::format_update::FormatUpdate;
     use super::*;
+    use crate::grid::formats::format_update::FormatUpdate;
 
     #[test]
     fn get_format_row() {

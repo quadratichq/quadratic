@@ -1,6 +1,8 @@
 use super::Sheet;
 use crate::{
-    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH}, grid::GridBounds, Pos, Rect
+    controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
+    grid::GridBounds,
+    Pos, Rect,
 };
 use std::collections::HashSet;
 
@@ -47,14 +49,28 @@ impl Sheet {
             match self.bounds(true) {
                 GridBounds::Empty => {}
                 GridBounds::NonEmpty(bounds) => {
-                    for y in (bounds.min.y..=bounds.max.y + CELL_SHEET_HEIGHT as i64).step_by(CELL_SHEET_HEIGHT as usize) {
-                        for x in (bounds.min.x..=bounds.max.x + CELL_SHEET_WIDTH as i64).step_by(CELL_SHEET_WIDTH as usize) {
+                    for y in (bounds.min.y..=bounds.max.y + CELL_SHEET_HEIGHT as i64)
+                        .step_by(CELL_SHEET_HEIGHT as usize)
+                    {
+                        for x in (bounds.min.x..=bounds.max.x + CELL_SHEET_WIDTH as i64)
+                            .step_by(CELL_SHEET_WIDTH as usize)
+                        {
                             let quadrant = Pos { x, y }.quadrant();
-                            let rect = Rect::from_numbers(quadrant.0 * CELL_SHEET_WIDTH as i64, quadrant.1 * CELL_SHEET_HEIGHT as i64, CELL_SHEET_WIDTH as i64, CELL_SHEET_HEIGHT as i64);
+                            let rect = Rect::from_numbers(
+                                quadrant.0 * CELL_SHEET_WIDTH as i64,
+                                quadrant.1 * CELL_SHEET_HEIGHT as i64,
+                                CELL_SHEET_WIDTH as i64,
+                                CELL_SHEET_HEIGHT as i64,
+                            );
                             let render_cells = self.get_render_cells(rect);
                             if !render_cells.is_empty() {
                                 if let Ok(cells) = serde_json::to_string(&render_cells) {
-                                    crate::wasm_bindings::js::jsRenderCellSheets(self.id.to_string(), quadrant.0, quadrant.1, cells);
+                                    crate::wasm_bindings::js::jsRenderCellSheets(
+                                        self.id.to_string(),
+                                        quadrant.0,
+                                        quadrant.1,
+                                        cells,
+                                    );
                                 }
                             }
                         }
@@ -70,9 +86,14 @@ impl Sheet {
             let mut render_hash = HashSet::new();
             columns.iter().for_each(|column| {
                 if let Some(bounds) = self.column_bounds(*column, true) {
-                    for y in (bounds.0..=bounds.1 + CELL_SHEET_HEIGHT as i64).step_by(CELL_SHEET_HEIGHT as usize) {
+                    for y in (bounds.0..=bounds.1 + CELL_SHEET_HEIGHT as i64)
+                        .step_by(CELL_SHEET_HEIGHT as usize)
+                    {
                         let quadrant = Pos { x: *column, y }.quadrant();
-                        render_hash.insert(Pos { x: quadrant.0, y: quadrant.1 });
+                        render_hash.insert(Pos {
+                            x: quadrant.0,
+                            y: quadrant.1,
+                        });
                     }
                 }
             });
@@ -105,8 +126,13 @@ impl Sheet {
             let mut render_hash = HashSet::new();
             rows.iter().for_each(|row| {
                 if let Some(bounds) = self.row_bounds(*row, true) {
-                    for x in (bounds.0..=bounds.1 + CELL_SHEET_WIDTH as i64).step_by(CELL_SHEET_WIDTH as usize) {
-                        render_hash.insert(Pos { x: x / CELL_SHEET_WIDTH as i64, y: row / CELL_SHEET_HEIGHT as i64 });
+                    for x in (bounds.0..=bounds.1 + CELL_SHEET_WIDTH as i64)
+                        .step_by(CELL_SHEET_WIDTH as usize)
+                    {
+                        render_hash.insert(Pos {
+                            x: x / CELL_SHEET_WIDTH as i64,
+                            y: row / CELL_SHEET_HEIGHT as i64,
+                        });
                     }
                 }
             });
@@ -175,9 +201,13 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use serial_test::serial;
-    use crate::{grid::formats::format::Format, wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count}, CellValue};
     use super::*;
+    use crate::{
+        grid::formats::format::Format,
+        wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
+        CellValue,
+    };
+    use serial_test::serial;
 
     #[test]
     #[serial]
@@ -197,7 +227,13 @@ mod test {
     fn send_all_render_cells() {
         clear_js_calls();
         let mut sheet = Sheet::test();
-        sheet.test_set_values(CELL_SHEET_WIDTH as i64 - 1, 1, 3, 3, vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"]);
+        sheet.test_set_values(
+            CELL_SHEET_WIDTH as i64 - 1,
+            1,
+            3,
+            3,
+            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+        );
         sheet.calculate_bounds();
         sheet.send_all_render_cells();
         expect_js_call_count("jsRenderCellSheets", 2, true);
@@ -208,7 +244,13 @@ mod test {
     fn send_column_render_cells() {
         clear_js_calls();
         let mut sheet = Sheet::test();
-        sheet.test_set_values(CELL_SHEET_WIDTH as i64 - 1, 1, 3, 3, vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"]);
+        sheet.test_set_values(
+            CELL_SHEET_WIDTH as i64 - 1,
+            1,
+            3,
+            3,
+            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+        );
         sheet.calculate_bounds();
         sheet.send_column_render_cells(vec![CELL_SHEET_WIDTH as i64 - 1]);
         expect_js_call_count("jsRenderCellSheets", 1, true);
@@ -222,7 +264,13 @@ mod test {
     fn send_row_render_cells() {
         clear_js_calls();
         let mut sheet = Sheet::test();
-        sheet.test_set_values(1, CELL_SHEET_HEIGHT as i64 - 1, 3, 3, vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"]);
+        sheet.test_set_values(
+            1,
+            CELL_SHEET_HEIGHT as i64 - 1,
+            3,
+            3,
+            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+        );
         sheet.calculate_bounds();
         sheet.send_row_render_cells(vec![CELL_SHEET_HEIGHT as i64 - 1]);
         expect_js_call_count("jsRenderCellSheets", 1, true);
@@ -242,6 +290,14 @@ mod test {
         });
         sheet.send_sheet_fills();
         let fills = sheet.get_sheet_fills();
-        expect_js_call("jsSheetMetaFills", format!("{},{}", sheet.id.to_string(), serde_json::to_string(&fills).unwrap()), true);
+        expect_js_call(
+            "jsSheetMetaFills",
+            format!(
+                "{},{}",
+                sheet.id.to_string(),
+                serde_json::to_string(&fills).unwrap()
+            ),
+            true,
+        );
     }
 }

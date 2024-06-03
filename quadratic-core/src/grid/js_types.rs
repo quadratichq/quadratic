@@ -94,7 +94,6 @@ pub struct JsSheetFill {
     pub all: Option<String>,
 }
 
-
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderBorders {

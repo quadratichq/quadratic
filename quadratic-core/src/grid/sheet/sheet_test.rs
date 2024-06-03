@@ -33,7 +33,12 @@ impl Sheet {
     }
 
     #[cfg(test)]
-    pub fn test_set_format(&mut self, x: i64, y: i64, update: crate::grid::formats::format_update::FormatUpdate) {
+    pub fn test_set_format(
+        &mut self,
+        x: i64,
+        y: i64,
+        update: crate::grid::formats::format_update::FormatUpdate,
+    ) {
         self.set_format_cell(crate::grid::Pos { x, y }, &update, true);
     }
 
@@ -70,7 +75,11 @@ impl Sheet {
     pub fn test_set_code_run_number(&mut self, x: i64, y: i64, n: &str) {
         use std::str::FromStr;
 
-        self.test_set_code_run_single(x, y, crate::grid::CellValue::Number(bigdecimal::BigDecimal::from_str(n).unwrap()));
+        self.test_set_code_run_single(
+            x,
+            y,
+            crate::grid::CellValue::Number(bigdecimal::BigDecimal::from_str(n).unwrap()),
+        );
     }
 
     /// Sets a code run array with code string of "" and an array output of the given values.

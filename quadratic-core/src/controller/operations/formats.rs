@@ -1,6 +1,8 @@
 use super::operation::Operation;
 use crate::{
-    controller::GridController, grid::formats::{format_update::FormatUpdate, formats::Formats}, selection::Selection
+    controller::GridController,
+    grid::formats::{format_update::FormatUpdate, formats::Formats},
+    selection::Selection,
 };
 
 impl GridController {
@@ -17,8 +19,8 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::Rect;
     use super::*;
+    use crate::Rect;
 
     #[test]
     fn clear_format_selection_operations() {

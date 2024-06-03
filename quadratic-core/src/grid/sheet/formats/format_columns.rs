@@ -1,8 +1,16 @@
+use crate::{
+    controller::operations::operation::Operation,
+    grid::{
+        formats::{format::Format, format_update::FormatUpdate, formats::Formats},
+        Sheet,
+    },
+    selection::Selection,
+    Pos, Rect,
+};
 use std::collections::{HashMap, HashSet};
-use crate::{controller::operations::operation::Operation, grid::{formats::{format::Format, format_update::FormatUpdate, formats::Formats}, Sheet}, selection::Selection, Pos, Rect};
 
 impl Sheet {
-  /// Gets a format for a column, returning Format::default if not set.
+    /// Gets a format for a column, returning Format::default if not set.
     pub fn format_column(&self, column: i64) -> Format {
         self.formats_columns
             .get(&column)
@@ -22,12 +30,12 @@ impl Sheet {
     /// need to update html cells.
     ///
     /// Returns the reverse operations.
-    pub fn set_formats_columns(&mut self, columns: &Vec<i64>, formats: &Formats) -> Vec<Operation> {
+    pub(crate) fn set_formats_columns(&mut self, columns: &Vec<i64>, formats: &Formats) -> Vec<Operation> {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
 
         // tracks which column of cells need to be rerendered
-        let mut render_cells = HashSet::new();
+        let mut render_columns = HashSet::new();
 
         // tracks whether we need to update fills for the column or cells
         let mut render_column_fills = HashSet::new();
@@ -42,7 +50,7 @@ impl Sheet {
                 // don't need to do anything if there are no changes
                 if !format_update.is_default() {
                     if format_update.needs_render_cells() {
-                        render_cells.insert(*x);
+                        render_columns.insert(*x);
                     }
 
                     if format_update.needs_fill_update() {
@@ -62,8 +70,16 @@ impl Sheet {
 
                     // track all cells within the columns that need to have
                     // their format updated to remove the conflicting format
-                    self.format_selection(&Selection { columns: Some(vec![*x]), ..Default::default() }).iter().for_each(|(pos, format)| {
-                        if let Some(clear) = format.needs_to_clear_cell_format_for_parent(&format_update) {
+                    self.format_selection(&Selection {
+                        sheet_id: self.id,
+                        columns: Some(vec![*x]),
+                        ..Default::default()
+                    })
+                    .iter()
+                    .for_each(|(pos, format)| {
+                        if let Some(clear) =
+                            format.needs_to_clear_cell_format_for_parent(&format_update)
+                        {
                             if let Some(existing) = clear_format_cells.get_mut(pos) {
                                 existing.combine(&clear);
                             } else {
@@ -77,8 +93,14 @@ impl Sheet {
 
         // adds operations to revert changes to the columns
         let mut ops = vec![];
-        ops.push(Operation::SetCellFormatsSelection { selection: Selection { columns: Some(columns.clone()), ..Default::default() }, formats: old_formats });
-
+        ops.push(Operation::SetCellFormatsSelection {
+            selection: Selection {
+                sheet_id: self.id,
+                columns: Some(columns.clone()),
+                ..Default::default()
+            },
+            formats: old_formats,
+        });
 
         // changes individual cells and adds operations to revert changes to the
         // cells impacted by the changes to the columns
@@ -86,25 +108,33 @@ impl Sheet {
             let mut rects = vec![];
             let mut formats = Formats::default();
             for (pos, update) in clear_format_cells.iter() {
+                let old = self.set_format_cell(*pos, &update, false);
                 rects.push(Rect::single_pos(*pos));
-                formats.push(update.clone());
+                formats.push(old);
             }
-            ops.push(Operation::SetCellFormatsSelection { selection: Selection { rects: Some(rects), ..Default::default() }, formats });
+            ops.push(Operation::SetCellFormatsSelection {
+                selection: Selection {
+                    sheet_id: self.id,
+                    rects: Some(rects),
+                    ..Default::default()
+                },
+                formats,
+            });
         }
 
         // force a rerender of all impacted cells
-        if !render_cells.is_empty() {
-            self.send_column_render_cells(render_cells.into_iter().collect());
+        if !render_columns.is_empty() {
+            self.send_column_render_cells(render_columns.into_iter().collect());
         }
 
         ops
     }
-  }
+}
 
 #[cfg(test)]
 mod tests {
-    use crate::grid::formats::format_update::FormatUpdate;
     use super::*;
+    use crate::grid::formats::format_update::FormatUpdate;
 
     #[test]
     fn format_column() {
@@ -127,64 +157,6 @@ mod tests {
     }
 
     #[test]
-    fn set_format_selection_columns() {
-        let mut sheet = Sheet::test();
-        let formats = Formats::repeat(
-            FormatUpdate {
-                bold: Some(Some(true)),
-                ..FormatUpdate::default()
-            },
-            3,
-        );
-        let selection = Selection {
-            columns: Some(vec![0, 1, 2]),
-            ..Default::default()
-        };
-        let undo = sheet.set_formats_selection(&selection, &formats);
-        assert_eq!(undo.len(), 2);
-        assert_eq!(
-            sheet.formats_columns.get(&0),
-            Some(&Format {
-                bold: Some(true),
-                ..Format::default()
-            })
-        );
-        assert_eq!(
-            sheet.formats_columns.get(&1),
-            Some(&Format {
-                bold: Some(true),
-                ..Format::default()
-            })
-        );
-        assert_eq!(
-            sheet.formats_columns.get(&2),
-            Some(&Format {
-                bold: Some(true),
-                ..Format::default()
-            })
-        );
-        assert_eq!(sheet.formats_columns.get(&3), None);
-
-        todo!();
-        // let reverse = sheet.set_formats_selection(&selection, &old_formats);
-        // assert_eq!(sheet.formats_columns.get(&0), None);
-        // assert_eq!(sheet.formats_columns.get(&1), None);
-        // assert_eq!(sheet.formats_columns.get(&2), None);
-        // assert_eq!(
-        //     old_formats,
-        //     Formats::repeat(
-        //         FormatUpdate {
-        //             bold: Some(Some(true)),
-        //             ..FormatUpdate::default()
-        //         },
-        //         3
-        //     )
-        // );
-
-        // assert_eq!(old_formats, formats);
-    }
-
-    #[test]
     fn set_format_columns() {
         let mut sheet = Sheet::test();
         let formats = Formats::repeat(
@@ -194,8 +166,8 @@ mod tests {
             },
             3,
         );
-        let undo = sheet.set_formats_columns(&vec![0, 1, 2], &formats);
-        assert_eq!(undo.len(), 2);
+        let columns = vec![0, 1, 2];
+        let reverse = sheet.set_formats_columns(&columns, &formats);
         assert_eq!(
             sheet.formats_columns.get(&0),
             Some(&Format {
@@ -219,21 +191,65 @@ mod tests {
         );
         assert_eq!(sheet.formats_columns.get(&3), None);
 
-        // let undo = sheet.set_formats_columns(&vec![0, 1, 2], &old_formats);
-        // assert_eq!(sheet.formats_columns.get(&0), None);
-        // assert_eq!(sheet.formats_columns.get(&1), None);
-        // assert_eq!(sheet.formats_columns.get(&2), None);
-        // assert_eq!(
-        //     old_formats,
-        //     Formats::repeat(
-        //         FormatUpdate {
-        //             bold: Some(Some(true)),
-        //             ..FormatUpdate::default()
-        //         },
-        //         3
-        //     )
-        // );
+        assert_eq!(reverse.len(), 1);
+        let reverse_formats = match reverse[0] {
+            Operation::SetCellFormatsSelection { ref formats, ref selection } => {
+                assert_eq!(selection, &Selection { sheet_id: sheet.id, columns: Some(columns.clone()), ..Default::default() });
+                assert_eq!(
+                    formats,
+                    &Formats::repeat(
+                        FormatUpdate {
+                            bold: Some(None),
+                            ..FormatUpdate::default()
+                        },
+                        3
+                    )
+                );
+                formats.clone()
+            },
+            _ => panic!("Expected SetCellFormatsSelection")
+        };
+        sheet.set_formats_columns(&columns, &reverse_formats);
+        assert_eq!(sheet.formats_columns.get(&0), None);
+        assert_eq!(sheet.formats_columns.get(&1), None);
+        assert_eq!(sheet.formats_columns.get(&2), None);
+    }
 
-        // assert_eq!(old_formats, formats);
+    #[test]
+    fn set_format_columns_remove_cell_formatting() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_format(0, 0, FormatUpdate { bold: Some(Some(false)), ..Default::default() });
+        let formats = Formats::repeat(
+            FormatUpdate {
+                bold: Some(Some(true)),
+                ..FormatUpdate::default()
+            },
+            3,
+        );
+        let columns = vec![0, 1, 2];
+        let reverse = sheet.set_formats_columns(&columns, &formats);
+        assert_eq!(sheet.format_cell(0, 0), Format::default());
+        assert_eq!(sheet.format_column(0).bold, Some(true));
+        assert_eq!(reverse.len(), 2);
+
+        let (reverse_selection, reverse_formats) = match reverse[1] {
+            Operation::SetCellFormatsSelection { ref formats, ref selection } => {
+                assert_eq!(selection, &Selection { sheet_id: sheet.id, rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]), ..Default::default() });
+                assert_eq!(
+                    formats,
+                    &Formats::repeat(
+                        FormatUpdate {
+                            bold: Some(Some(false)),
+                            ..FormatUpdate::default()
+                        },
+                        1
+                    )
+                );
+                (selection.clone(), formats.clone())
+            },
+            _ => panic!("Expected SetCellFormatsSelection")
+        };
+        sheet.set_formats_selection(&reverse_selection, &reverse_formats);
+        assert_eq!(sheet.format_cell(0, 0), Format { bold: Some(false), ..Default::default() });
     }
 }

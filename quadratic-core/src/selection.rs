@@ -20,6 +20,18 @@ pub struct Selection {
 }
 
 impl Selection {
+    pub fn all() -> Self {
+        Selection {
+            sheet_id: SheetId::default(),
+            x: 0,
+            y: 0,
+            rects: None,
+            rows: None,
+            columns: None,
+            all: true,
+        }
+    }
+
     /// Creates a selection via a single sheet rect
     pub fn sheet_rect(sheet_rect: SheetRect) -> Self {
         Selection {
@@ -281,6 +293,23 @@ mod test {
         assert_eq!(
             selection.largest_rect(),
             Some(SheetRect::from_numbers(1, 2, 3, 4, sheet_id))
+        );
+    }
+
+    #[test]
+    fn all() {
+        let selection = Selection::all();
+        assert_eq!(
+            selection,
+            Selection {
+                sheet_id: SheetId::default(),
+                x: 0,
+                y: 0,
+                rects: None,
+                rows: None,
+                columns: None,
+                all: true
+            }
         );
     }
 }

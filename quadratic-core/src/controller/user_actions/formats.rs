@@ -10,7 +10,8 @@ use crate::{
         GridController,
     },
     grid::{
-        formats::{format_update::FormatUpdate, formats::Formats}, CellAlign, CellWrap, NumericFormat, NumericFormatKind
+        formats::{format_update::FormatUpdate, formats::Formats},
+        CellAlign, CellWrap, NumericFormat, NumericFormatKind,
     },
     selection::Selection,
 };

@@ -1,17 +1,22 @@
 use super::Sheet;
 use crate::{
-    controller::operations::operation::Operation, grid::formats::{format::Format, format_update::FormatUpdate, formats::Formats}, selection::Selection
+    controller::operations::operation::Operation,
+    grid::formats::{format::Format, format_update::FormatUpdate, formats::Formats},
+    selection::Selection,
 };
 
 pub mod format_all;
-pub mod format_columns;
-pub mod format_rows;
-pub mod format_rects;
 pub mod format_cell;
+pub mod format_columns;
+pub mod format_rects;
+pub mod format_rows;
 
 impl Sheet {
     /// This returns a FormatUpdate to undo a change to Format from a FormatUpdate.
-    pub(crate) fn undo_format_update(update: &FormatUpdate, format: &Format) -> Option<FormatUpdate> {
+    pub(crate) fn undo_format_update(
+        update: &FormatUpdate,
+        format: &Format,
+    ) -> Option<FormatUpdate> {
         let mut undo = FormatUpdate::default();
         if update.align.is_some() {
             undo.align = Some(format.align);
@@ -61,8 +66,8 @@ impl Sheet {
             self.set_formats_columns(columns, formats)
         // } else if let Some(rows) = selection.rows.as_ref() {
         //     self.set_formats_rows(rows, formats)
-        // } else if let Some(rects) = selection.rects.as_ref() {
-        //     self.set_formats_rects(selection, rects, formats)
+        } else if let Some(rects) = selection.rects.as_ref() {
+            self.set_formats_rects(rects, formats)
         } else {
             vec![]
         }

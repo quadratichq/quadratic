@@ -617,10 +617,7 @@ mod test {
         assert_eq!(value, cell_format_summary);
 
         let format_summary = sheet.cell_format_summary((2, 1).into(), false);
-        assert_eq!(
-            cell_format_summary.clone(),
-            format_summary
-        );
+        assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
         let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
@@ -629,10 +626,7 @@ mod test {
         assert_eq!(value, cell_format_summary);
 
         let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into(), false);
-        assert_eq!(
-            cell_format_summary.clone(),
-            existing_cell_format_summary
-        );
+        assert_eq!(cell_format_summary.clone(), existing_cell_format_summary);
     }
 
     #[test]

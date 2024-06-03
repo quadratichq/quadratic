@@ -35,6 +35,10 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
     pub fn get_at(&self, i: usize) -> Option<&T> {
         self.iter_values().nth(i)
     }
+
+    pub fn size(&self) -> usize {
+        self.0.iter().map(|(_, len)| len).sum()
+    }
 }
 impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
@@ -48,9 +52,11 @@ impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn push_n() {
-        let mut rle = super::RunLengthEncoding::new();
+        let mut rle = RunLengthEncoding::new();
         rle.push_n(1, 0);
         assert_eq!(rle.0, vec![]);
         rle.push_n(1, 1);
@@ -61,5 +67,21 @@ mod tests {
         assert_eq!(rle.0, vec![(1, 3), (2, 1)]);
         rle.push_n(2, 2);
         assert_eq!(rle.0, vec![(1, 3), (2, 3)]);
+    }
+
+    #[test]
+    fn size() {
+        let mut rle = RunLengthEncoding::new();
+        assert_eq!(rle.size(), 0);
+        rle.push_n(1, 0);
+        assert_eq!(rle.size(), 0);
+        rle.push_n(1, 1);
+        assert_eq!(rle.size(), 1);
+        rle.push_n(1, 2);
+        assert_eq!(rle.size(), 3);
+        rle.push_n(2, 1);
+        assert_eq!(rle.size(), 4);
+        rle.push_n(2, 2);
+        assert_eq!(rle.size(), 6);
     }
 }

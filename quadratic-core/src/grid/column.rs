@@ -414,10 +414,17 @@ mod test {
     fn format() {
         let mut cd: Column = Column::new(0);
 
-        cd.align.set_range(Range { start: 0, end: 10 }, CellAlign::Center);
-        cd.wrap.set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
-        cd.numeric_format
-            .set_range(Range { start: 0, end: 10 }, NumericFormat { kind: NumericFormatKind::Percentage, symbol: None });
+        cd.align
+            .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
+        cd.wrap
+            .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
+        cd.numeric_format.set_range(
+            Range { start: 0, end: 10 },
+            NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            },
+        );
         cd.numeric_decimals
             .set_range(Range { start: 0, end: 10 }, 2);
         cd.numeric_commas
@@ -428,30 +435,54 @@ mod test {
             .set_range(Range { start: 0, end: 10 }, "red".to_string());
         cd.fill_color
             .set_range(Range { start: 0, end: 10 }, "blue".to_string());
-        cd.render_size
-            .set_range(Range { start: 0, end: 10 }, RenderSize { w: "1".to_string(), h: "2".to_string() });
+        cd.render_size.set_range(
+            Range { start: 0, end: 10 },
+            RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            },
+        );
 
         let format = cd.format(0).unwrap();
         assert_eq!(format.align, Some(CellAlign::Center));
         assert_eq!(format.wrap, Some(CellWrap::Wrap));
-        assert_eq!(format.numeric_format, Some(NumericFormat { kind: NumericFormatKind::Percentage, symbol: None }));
+        assert_eq!(
+            format.numeric_format,
+            Some(NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None
+            })
+        );
         assert_eq!(format.numeric_decimals, Some(2));
         assert_eq!(format.numeric_commas, Some(true));
         assert_eq!(format.bold, Some(true));
         assert_eq!(format.italic, Some(true));
         assert_eq!(format.text_color, Some("red".to_string()));
         assert_eq!(format.fill_color, Some("blue".to_string()));
-        assert_eq!(format.render_size, Some(RenderSize { w: "1".to_string(), h: "2".to_string() }));
+        assert_eq!(
+            format.render_size,
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            })
+        );
     }
 
     #[test]
     fn format_range() {
         let mut cd: Column = Column::new(0);
 
-        cd.align.set_range(Range { start: 0, end: 10 }, CellAlign::Center);
-        cd.wrap.set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
-        cd.numeric_format
-            .set_range(Range { start: 0, end: 10 }, NumericFormat { kind: NumericFormatKind::Percentage, symbol: None });
+        cd.align
+            .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
+        cd.wrap
+            .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
+        cd.numeric_format.set_range(
+            Range { start: 0, end: 10 },
+            NumericFormat {
+                kind: NumericFormatKind::Percentage,
+                symbol: None,
+            },
+        );
         cd.numeric_decimals
             .set_range(Range { start: 0, end: 10 }, 2);
         cd.numeric_commas
@@ -462,8 +493,13 @@ mod test {
             .set_range(Range { start: 0, end: 10 }, "red".to_string());
         cd.fill_color
             .set_range(Range { start: 0, end: 10 }, "blue".to_string());
-        cd.render_size
-            .set_range(Range { start: 0, end: 10 }, RenderSize { w: "1".to_string(), h: "2".to_string() });
+        cd.render_size.set_range(
+            Range { start: 0, end: 10 },
+            RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            },
+        );
 
         let range = cd.format_range().unwrap();
         assert_eq!(range.start, 0);

@@ -1,34 +1,45 @@
 use std::collections::HashSet;
 
-use crate::{grid::{formats::{format::Format, format_update::FormatUpdate}, Sheet}, Pos};
+use crate::{
+    grid::{
+        formats::{format::Format, format_update::FormatUpdate},
+        Sheet,
+    },
+    Pos,
+};
 
 impl Sheet {
     /// Gets a format for a cell, returning Format::default if not set.
     pub fn format_cell(&self, x: i64, y: i64) -> Format {
-      if let Some(column) = self.get_column(x) {
-          Format {
-              align: column.align.get(y),
-              wrap: column.wrap.get(y),
-              numeric_format: column.numeric_format.get(y),
-              numeric_decimals: column.numeric_decimals.get(y),
-              numeric_commas: column.numeric_commas.get(y),
-              bold: column.bold.get(y),
-              italic: column.italic.get(y),
-              text_color: column.text_color.get(y),
-              fill_color: column.fill_color.get(y),
-              render_size: column.render_size.get(y),
-              ..Format::default()
-          }
-      } else {
-          Format::default()
-      }
+        if let Some(column) = self.get_column(x) {
+            Format {
+                align: column.align.get(y),
+                wrap: column.wrap.get(y),
+                numeric_format: column.numeric_format.get(y),
+                numeric_decimals: column.numeric_decimals.get(y),
+                numeric_commas: column.numeric_commas.get(y),
+                bold: column.bold.get(y),
+                italic: column.italic.get(y),
+                text_color: column.text_color.get(y),
+                fill_color: column.fill_color.get(y),
+                render_size: column.render_size.get(y),
+                ..Format::default()
+            }
+        } else {
+            Format::default()
+        }
     }
 
     /// Sets a cell's format based on a FormatUpdate. Returns FormatUpdate, which is
     /// used to undo the change.
     /// * send_client - if true, send the changes to the client
     /// TODO: this will be replaced by the new column.format.
-    pub fn set_format_cell(&mut self, pos: Pos, update: &FormatUpdate, send_client: bool) -> FormatUpdate {
+    pub fn set_format_cell(
+        &mut self,
+        pos: Pos,
+        update: &FormatUpdate,
+        send_client: bool,
+    ) -> FormatUpdate {
         let mut old_format = FormatUpdate::default();
         let column = self.get_or_create_column(pos.x);
         let y = pos.y;
@@ -93,7 +104,10 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::{grid::{js_types::JsRenderCell, CellAlign}, wasm_bindings::js::{expect_js_call, hash_test}};
+    use crate::{
+        grid::{js_types::JsRenderCell, CellAlign},
+        wasm_bindings::js::{expect_js_call, hash_test},
+    };
 
     use super::*;
 
@@ -127,8 +141,20 @@ mod tests {
         sheet.test_set_value_number(0, 0, "5");
         let pos = Pos { x: 0, y: 0 };
         let old_format = sheet.set_format_cell(pos, &update, true);
-        assert_eq!(sheet.format_cell(0, 0), Format { bold: Some(true), ..Default::default() });
-        assert_eq!(old_format, FormatUpdate { bold: Some(None), ..Default::default() });
+        assert_eq!(
+            sheet.format_cell(0, 0),
+            Format {
+                bold: Some(true),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            old_format,
+            FormatUpdate {
+                bold: Some(None),
+                ..Default::default()
+            }
+        );
 
         let cells = serde_json::to_string(&vec![JsRenderCell {
             x: pos.x,
@@ -137,7 +163,8 @@ mod tests {
             align: Some(CellAlign::Right),
             bold: Some(true),
             ..Default::default()
-        }]).unwrap();
+        }])
+        .unwrap();
         let args = format!("{},{},{},{}", sheet.id, 0, 0, hash_test(&cells));
         expect_js_call("jsRenderCellSheets", args, true);
 
@@ -149,7 +176,8 @@ mod tests {
             value: "5".to_string(),
             align: Some(CellAlign::Right),
             ..Default::default()
-        }]).unwrap();
+        }])
+        .unwrap();
         let args = format!("{},{},{},{}", sheet.id, 0, 0, hash_test(&cells));
         expect_js_call("jsRenderCellSheets", args, true);
     }

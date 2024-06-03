@@ -335,7 +335,10 @@ mod tests {
 
     use bigdecimal::BigDecimal;
 
-    use crate::{grid::{formats::format_update::FormatUpdate, CodeCellLanguage}, CodeCellValue, Rect};
+    use crate::{
+        grid::{formats::format_update::FormatUpdate, CodeCellLanguage},
+        CodeCellValue, Rect,
+    };
 
     use super::*;
 
@@ -381,7 +384,11 @@ mod tests {
             3,
             vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
         );
-        sheet.test_set_code_run_single(0, 5, CellValue::Number(BigDecimal::from_str("11").unwrap()));
+        sheet.test_set_code_run_single(
+            0,
+            5,
+            CellValue::Number(BigDecimal::from_str("11").unwrap()),
+        );
         sheet.test_set_code_run_array(-1, 0, vec!["10", "11", "12"], true);
 
         assert_eq!(
@@ -664,9 +671,22 @@ mod tests {
         };
         assert_eq!(sheet.format_selection(&selection), vec![]);
 
-        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
-        sheet.test_set_format(0, 0, FormatUpdate { bold: Some(Some(true)), ..Default::default()});
-        sheet.test_set_format(1, 1, FormatUpdate { bold: Some(Some(false)), ..Default::default()});
+        sheet.test_set_format(
+            0,
+            0,
+            FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+        );
+        sheet.test_set_format(
+            1,
+            1,
+            FormatUpdate {
+                bold: Some(Some(false)),
+                ..Default::default()
+            },
+        );
 
         let selection = Selection {
             sheet_id,
@@ -675,21 +695,36 @@ mod tests {
         };
         assert_eq!(
             sheet.format_selection(&selection),
-            vec![(Pos { x: 0, y: 0 }, Format { bold: Some(true), ..Default::default()}), (Pos {x: 1, y: 1}, Format { bold: Some(false), ..Default::default()})]
+            vec![
+                (
+                    Pos { x: 0, y: 0 },
+                    Format {
+                        bold: Some(true),
+                        ..Default::default()
+                    }
+                ),
+                (
+                    Pos { x: 1, y: 1 },
+                    Format {
+                        bold: Some(false),
+                        ..Default::default()
+                    }
+                )
+            ]
         );
 
-        // let selection = Selection {
-        //     sheet_id,
-        //     columns: Some(vec![0, 1]),
-        //     ..Default::default()
-        // };
-        // assert_eq!(
-        //     sheet.format_selection(&selection),
-        //     vec![
-        //         (Pos { x: 0, y: 0 }, Format::new("bold")),
-        //         (Pos { x: 1, y: 1 }, Format::new("italic"))
-        //     ]
-        // );
+        let selection = Selection {
+            sheet_id,
+            columns: Some(vec![0, 1]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.format_selection(&selection),
+            vec![
+                (Pos { x: 0, y: 0 }, Format { bold: Some(true), ..Default::default()}),
+                (Pos { x: 1, y: 1 }, Format { bold: Some(true), ..Default::default()}),
+            ]
+        );
 
         // let selection = Selection {
         //     sheet_id,

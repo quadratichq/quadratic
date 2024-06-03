@@ -1,8 +1,8 @@
 //! This stores a format for Operations and eventually for the entire sheet.
 
-use serde::{Deserialize, Serialize};
-use crate::grid::{CellAlign, CellWrap, NumericFormat, RenderSize};
 use super::format_update::FormatUpdate;
+use crate::grid::{CellAlign, CellWrap, NumericFormat, RenderSize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq, ts_rs::TS)]
 pub struct Format {
@@ -99,7 +99,10 @@ impl Format {
     /// sheets. For example, if you set bold in a column, all cells with bold in
     /// that column will remove their bold setting so that the column's format
     /// takes precedence.
-    pub fn needs_to_clear_cell_format_for_parent(&self, update: &FormatUpdate) -> Option<FormatUpdate> {
+    pub fn needs_to_clear_cell_format_for_parent(
+        &self,
+        update: &FormatUpdate,
+    ) -> Option<FormatUpdate> {
         let mut old = FormatUpdate::default();
         if self.align.is_some() && update.align.is_some() {
             old.align = Some(None);
@@ -266,19 +269,24 @@ mod test {
             })),
         };
 
-        let clear_update = format.needs_to_clear_cell_format_for_parent(&update).unwrap();
-        assert_eq!(clear_update, FormatUpdate {
-            align: Some(None),
-            wrap: Some(None),
-            numeric_format: Some(None),
-            numeric_decimals: Some(None),
-            numeric_commas: Some(None),
-            bold: Some(None),
-            italic: Some(None),
-            text_color: Some(None),
-            fill_color: Some(None),
-            render_size: Some(None)
-        });
+        let clear_update = format
+            .needs_to_clear_cell_format_for_parent(&update)
+            .unwrap();
+        assert_eq!(
+            clear_update,
+            FormatUpdate {
+                align: Some(None),
+                wrap: Some(None),
+                numeric_format: Some(None),
+                numeric_decimals: Some(None),
+                numeric_commas: Some(None),
+                bold: Some(None),
+                italic: Some(None),
+                text_color: Some(None),
+                fill_color: Some(None),
+                render_size: Some(None)
+            }
+        );
     }
 
     #[test]

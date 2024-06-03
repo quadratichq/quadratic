@@ -1,7 +1,7 @@
-use std::ops::{Deref, DerefMut};
+use super::format_update::FormatUpdate;
 use crate::RunLengthEncoding;
 use serde::{Deserialize, Serialize};
-use super::format_update::FormatUpdate;
+use std::ops::{Deref, DerefMut};
 
 /// Used to store changes from a Format to another Format.
 #[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
