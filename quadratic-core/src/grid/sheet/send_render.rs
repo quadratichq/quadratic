@@ -217,7 +217,13 @@ mod test {
             CELL_SHEET_HEIGHT as i64,
         );
         let cells = serde_json::to_string(&sheet.get_render_cells(rect)).unwrap();
-        let args = format!("{},{},{},{}", sheet.id.to_string(), hash_x, hash_y, hash_test(&cells));
+        let args = format!(
+            "{},{},{},{}",
+            sheet.id.to_string(),
+            hash_x,
+            hash_y,
+            hash_test(&cells)
+        );
         expect_js_call("jsRenderCellSheets", args, clear);
     }
 

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     controller::operations::operation::Operation,
     grid::{
@@ -83,8 +85,8 @@ impl Sheet {
         let mut render_cells = false;
 
         // tracks whether we need to change the fills
-        let mut change_fills = false;
-        // let mut change_fill_cells = vec![];
+        let mut change_sheet_fills = false;
+        let mut change_cell_fills = HashSet::new();
 
         if let Some(format_update) = update.iter_values().next() {
             // if there are no changes to the format_all, then we don't need to
@@ -98,7 +100,7 @@ impl Sheet {
                 render_cells = true;
             }
             if format_update.fill_changed() {
-                change_fills = true;
+                change_sheet_fills = true;
             }
 
             // change the format_all and save the old format
@@ -121,40 +123,6 @@ impl Sheet {
                 selection: selection_all.clone(),
                 formats: old,
             });
-
-            // force a rerender of all impacted cells
-            if render_cells {
-                self.send_all_render_cells();
-            }
-
-            if change_fills {
-                self.send_sheet_fills();
-            }
-
-            // removes all individual cell formatting that conflicts with the all formatting
-            let mut old = Formats::default();
-            let rects: Vec<Rect> = self
-                .format_selection(&selection_all)
-                .iter()
-                .filter_map(|(pos, format)| {
-                    if let Some(undo) = Self::undo_format_update(format_update, format) {
-                        old.push(undo);
-                        Some(Rect::single_pos(*pos))
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            if old.size() > 0 {
-                ops.push(Operation::SetCellFormatsSelection {
-                    selection: Selection {
-                        sheet_id: self.id,
-                        rects: Some(rects),
-                        ..Default::default()
-                    },
-                    formats: old,
-                });
-            }
 
             let format_clear = format_update.clear_update();
 
@@ -188,6 +156,7 @@ impl Sheet {
                 });
             }
 
+            // removes all individual cell formatting that conflicts with the all formatting
             let cells = self.find_overlapping_format_cells(format_update);
             if !cells.is_empty() {
                 let mut formats = Formats::default();
@@ -195,6 +164,9 @@ impl Sheet {
                     .iter()
                     .map(|pos| {
                         let old = self.set_format_cell(*pos, &format_clear, false);
+                        if format_clear.fill_changed() {
+                            change_cell_fills.insert(*pos);
+                        }
                         formats.push(old);
                         Rect::single_pos(*pos)
                     })
@@ -207,6 +179,17 @@ impl Sheet {
                     },
                     formats,
                 });
+            }
+
+            if change_sheet_fills {
+                self.send_sheet_fills();
+            }
+
+            self.send_fills(&change_cell_fills);
+
+            // force a rerender of all impacted cells
+            if render_cells {
+                self.send_all_render_cells();
             }
 
             ops
@@ -487,7 +470,7 @@ mod tests {
         sheet.set_format_cell(
             Pos { x: 0, y: 0 },
             &FormatUpdate {
-                italic: Some(Some(true)),
+                fill_color: Some(Some("red".to_string())),
                 ..Default::default()
             },
             false,
@@ -496,14 +479,14 @@ mod tests {
         assert_eq!(
             sheet.format_cell(0, 0),
             Format {
-                italic: Some(true),
+                fill_color: Some("red".to_string()),
                 ..Default::default()
             }
         );
 
         sheet.set_format_all(&Formats::repeat(
             FormatUpdate {
-                italic: Some(None),
+                fill_color: Some(None),
                 ..Default::default()
             },
             1,

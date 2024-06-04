@@ -117,7 +117,14 @@ mod tests {
     fn format_cell() {
         let mut sheet = Sheet::test();
         assert_eq!(sheet.format_cell(0, 0), Format::default());
-        sheet.set_format_cell(Pos { x: 0, y: 0 }, &FormatUpdate { bold: Some(Some(true)), ..Default::default() }, false);
+        sheet.set_format_cell(
+            Pos { x: 0, y: 0 },
+            &FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+            false,
+        );
         assert_eq!(
             sheet.format_cell(0, 0),
             Format {

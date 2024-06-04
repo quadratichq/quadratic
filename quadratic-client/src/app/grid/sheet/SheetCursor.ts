@@ -160,7 +160,7 @@ export class SheetCursor {
     if (this.multiCursor) {
       rects = this.multiCursor.map((rect) => ({
         min: { x: BigInt(rect.x), y: BigInt(rect.y) },
-        max: { x: BigInt(rect.x + rect.width), y: BigInt(rect.y + rect.height) },
+        max: { x: BigInt(rect.x + rect.width - 1), y: BigInt(rect.y + rect.height - 1) },
       }));
     } else if (!this.columnRow) {
       rects = [

@@ -66,8 +66,11 @@ mod test {
     use serial_test::serial;
 
     use super::*;
-    use crate::{grid::RenderSize, wasm_bindings::js::{expect_js_call, hash_test}, CellValue};
-
+    use crate::{
+        grid::{formats::format::Format, RenderSize},
+        wasm_bindings::js::{expect_js_call, hash_test},
+        CellValue,
+    };
 
     #[test]
     #[serial]
@@ -87,20 +90,23 @@ mod test {
         assert_eq!(sheet.format_cell(2, 2).bold, None);
 
         assert_eq!(reverse.len(), 1);
-        assert_eq!(reverse[0], Operation::SetCellFormatsSelection {
-            selection: Selection {
-                sheet_id: sheet.id,
-                rects: Some(vec![rect]),
-                ..Default::default()
-            },
-            formats: Formats::repeat(
-                FormatUpdate {
-                    bold: Some(None),
+        assert_eq!(
+            reverse[0],
+            Operation::SetCellFormatsSelection {
+                selection: Selection {
+                    sheet_id: sheet.id,
+                    rects: Some(vec![rect]),
                     ..Default::default()
                 },
-                4,
-            ),
-        });
+                formats: Formats::repeat(
+                    FormatUpdate {
+                        bold: Some(None),
+                        ..Default::default()
+                    },
+                    4,
+                ),
+            }
+        );
 
         let cells =
             serde_json::to_string(&sheet.get_render_cells(Rect::from_numbers(0, 0, 2, 2))).unwrap();
@@ -131,5 +137,70 @@ mod test {
             serde_json::to_string(&expected).unwrap(),
             true,
         );
+    }
+
+    #[test]
+    fn set_format_rects_none() {
+        let mut sheet = Sheet::test();
+        let formats = Formats::repeat(
+            FormatUpdate {
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+            4,
+        );
+        let rect = Rect::from_numbers(0, 0, 2, 2);
+        let reverse = sheet.set_formats_rects(&vec![rect], &formats);
+        assert_eq!(
+            sheet.format_cell(0, 0),
+            Format {
+                fill_color: Some("red".to_string()),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            sheet.format_cell(1, 1),
+            Format {
+                fill_color: Some("red".to_string()),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            sheet.format_cell(2, 2),
+            Format {
+                fill_color: None,
+                ..Default::default()
+            }
+        );
+
+        assert_eq!(reverse.len(), 1);
+        assert_eq!(
+            reverse[0],
+            Operation::SetCellFormatsSelection {
+                selection: Selection {
+                    sheet_id: sheet.id,
+                    rects: Some(vec![rect]),
+                    ..Default::default()
+                },
+                formats: Formats::repeat(
+                    FormatUpdate {
+                        fill_color: Some(None),
+                        ..Default::default()
+                    },
+                    4
+                ),
+            }
+        );
+
+        let formats = Formats::repeat(
+            FormatUpdate {
+                fill_color: Some(None),
+                ..Default::default()
+            },
+            4,
+        );
+        sheet.set_formats_rects(&vec![rect], &formats);
+        assert_eq!(sheet.format_cell(0, 0), Format::default());
+        assert_eq!(sheet.format_cell(1, 1), Format::default());
     }
 }

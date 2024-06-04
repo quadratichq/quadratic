@@ -24,28 +24,26 @@ interface ColumnRow {
 
 export class CellsFills extends Container {
   private cellsSheet: CellsSheet;
-  private fills: JsRenderFill[] = [];
+  private cells: JsRenderFill[] = [];
   private metaFill?: JsSheetFill;
 
-  private cells: ParticleContainer;
+  private cellsContainer: ParticleContainer;
   private meta: Graphics;
-  private metaHasContent = false;
 
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
-    this.cells = this.addChild(new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true));
     this.meta = this.addChild(new Graphics());
+    this.cellsContainer = this.addChild(new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true));
 
     events.on('sheetFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
-        this.fills = fills;
+        this.cells = fills;
         this.drawCells();
       }
     });
     events.on('sheetMetaFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
-        console.log(fills)
         if (this.isMetaEmpty(fills)) {
           this.metaFill = undefined;
           this.meta.clear();
@@ -67,7 +65,7 @@ export class CellsFills extends Container {
   }
 
   cheapCull(viewBounds: Rectangle) {
-    this.cells.children.forEach(
+    this.cellsContainer.children.forEach(
       (sprite) => (sprite.visible = intersects.rectangleRectangle(viewBounds, (sprite as SpriteBounds).viewBounds))
     );
   }
@@ -83,9 +81,9 @@ export class CellsFills extends Container {
   }
 
   private drawCells() {
-    this.cells.removeChildren();
-    this.fills.forEach((fill) => {
-      const sprite = this.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
+    this.cellsContainer.removeChildren();
+    this.cells.forEach((fill) => {
+      const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
       sprite.tint = convertColorStringToTint(fill.color);
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);
       sprite.position.set(screen.x, screen.y);
