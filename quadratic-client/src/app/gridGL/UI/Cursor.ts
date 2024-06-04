@@ -1,6 +1,5 @@
 //! Draws the cursor, code cursor, and selection to the screen.
 
-import { intersects } from '@/app/gridGL/helpers/intersects';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { Graphics, Rectangle } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../actions';
@@ -8,6 +7,7 @@ import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
+import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
 
 export const CURSOR_THICKNESS = 2;
 export const FILL_ALPHA = 0.1;
@@ -43,6 +43,7 @@ export class Cursor extends Graphics {
     this.cursorRectangle = new Rectangle();
   }
 
+  // draws cursor for current user
   private drawCursor() {
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
@@ -120,18 +121,7 @@ export class Cursor extends Graphics {
     const { cursor } = sheet;
 
     if (cursor.multiCursor) {
-      this.lineStyle(1, colors.cursorCell, 1, 0, true);
-      this.beginFill(colors.cursorCell, FILL_ALPHA);
-      cursor.multiCursor.forEach((cursor) => {
-        const { x, y, width, height } = sheet.getScreenRectangle(
-          cursor.x,
-          cursor.y,
-          cursor.width - 1,
-          cursor.height - 1
-        );
-        this.drawRect(x, y, width, height);
-      });
-      this.endFill();
+      drawMultiCursor(this, colors.cursorCell, FILL_ALPHA, cursor.multiCursor);
       this.cursorRectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
     } else {
       this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
@@ -143,87 +133,6 @@ export class Cursor extends Graphics {
         this.endCell.height - this.startCell.height
       );
     }
-  }
-
-  private drawCursorHole() {
-    const sheet = sheets.sheet;
-    const cursor = sheet.cursor.getCursor();
-    const visible = pixiApp.viewport.getVisibleBounds();
-    const hole = sheet.getCellOffsets(cursor.x, cursor.y);
-
-    // need to ensure the hole is contained by the screen rect, otherwise we get
-    // weird visual artifacts.
-    if (!intersects.rectangleRectangle(hole, visible)) return;
-    this.beginHole();
-    const x1 = hole.x < visible.left ? visible.left : hole.left;
-    const x2 = hole.right > visible.right ? visible.right : hole.right;
-    const y1 = hole.y < visible.top ? visible.top : hole.top;
-    const y2 = hole.bottom > visible.bottom ? visible.bottom : hole.bottom;
-    this.drawRect(x1, y1, x2 - x1, y2 - y1);
-    this.endHole();
-  }
-
-  private drawCursorOutline() {
-    const sheet = sheets.sheet;
-    const cursor = sheet.cursor.getCursor();
-    const outline = sheet.getCellOffsets(cursor.x, cursor.y);
-    this.lineStyle(1, colors.cursorCell, 1, 0, true);
-    this.drawRect(outline.x, outline.y, outline.width, outline.height);
-  }
-
-  private drawColumnRowCursor() {
-    const sheet = sheets.sheet;
-    const cursor = sheet.cursor;
-    const columnRow = cursor.columnRow;
-    if (!columnRow) return;
-
-    this.lineStyle();
-    this.beginFill(colors.cursorCell, FILL_ALPHA);
-    const bounds = pixiApp.viewport.getVisibleBounds();
-    if (columnRow.all) {
-      this.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
-      this.drawCursorHole();
-    } else if (columnRow.columns) {
-      let minX = Infinity,
-        maxX = -Infinity;
-      columnRow.columns.forEach((column) => {
-        const { x, width } = sheet.getCellOffsets(column, 0);
-        minX = Math.min(minX, x);
-        maxX = Math.max(maxX, x + width);
-        this.drawRect(x, bounds.y, width, bounds.height);
-        if (column === cursor.cursorPosition.x) {
-          this.drawCursorHole();
-        }
-      });
-
-      // draw outline
-      this.lineStyle(1, colors.cursorCell, 1, 0, true);
-      this.moveTo(minX, bounds.top);
-      this.lineTo(minX, bounds.bottom);
-      this.moveTo(maxX, bounds.top);
-      this.lineTo(maxX, bounds.bottom);
-    } else if (columnRow.rows) {
-      let minY = Infinity,
-        maxY = -Infinity;
-      columnRow.rows.forEach((row) => {
-        const { y, height } = sheet.getCellOffsets(0, row);
-        minY = Math.min(minY, y);
-        maxY = Math.max(maxY, y + height);
-        this.drawRect(bounds.x, y, bounds.width, height);
-        if (row === cursor.cursorPosition.y) {
-          this.drawCursorHole();
-        }
-      });
-
-      // draw outline
-      this.lineStyle(1, colors.cursorCell, 1, 0, true);
-      this.moveTo(bounds.left, minY);
-      this.lineTo(bounds.right, minY);
-      this.moveTo(bounds.left, maxY);
-      this.lineTo(bounds.right, maxY);
-    }
-    this.endFill();
-    this.drawCursorOutline();
   }
 
   private drawCursorIndicator() {
@@ -305,7 +214,10 @@ export class Cursor extends Graphics {
 
       if (!pixiAppSettings.input.show) {
         this.drawMultiCursor();
-        this.drawColumnRowCursor();
+        const columnRow = sheets.sheet.cursor.columnRow;
+        if (columnRow) {
+          drawColumnRowCursor({ g: this, columnRow, color: colors.cursorCell, alpha: FILL_ALPHA, cursorPosition: sheets.sheet.cursor.cursorPosition });
+        }
         if (!columnRow) {
           this.drawCursorIndicator();
         }

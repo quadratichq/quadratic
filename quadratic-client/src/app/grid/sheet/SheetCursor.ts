@@ -12,7 +12,7 @@ import { Coordinate } from '../../gridGL/types/size';
 import { Sheet } from './Sheet';
 
 // Select column and/or row for the entire sheet.
-interface ColumnRowCursor {
+export interface ColumnRowCursor {
   columns?: number[];
   rows?: number[];
   all?: true;
@@ -118,18 +118,7 @@ export class SheetCursor {
 
   // gets a stringified selection string for multiplayer
   getMultiplayerSelection(): string {
-    // TODO
-    return '';
-    // const cursor = this.cursorPosition;
-    // const rectangle = this.multiCursor
-    //   ? new Rectangle(
-    //       this.multiCursor.originPosition.x,
-    //       this.multiCursor.originPosition.y,
-    //       this.multiCursor.terminalPosition.x - this.multiCursor.originPosition.x,
-    //       this.multiCursor.terminalPosition.y - this.multiCursor.originPosition.y
-    //     )
-    //   : undefined;
-    // return JSON.stringify({ cursor, rectangle });
+    return JSON.stringify({ cursorPosition: this.cursorPosition, multiCursor: this.multiCursor, columnRow: this.columnRow });
   }
 
   changeBoxCells(boxCells: boolean) {

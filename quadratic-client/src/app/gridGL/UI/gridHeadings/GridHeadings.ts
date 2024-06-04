@@ -154,6 +154,10 @@ export class GridHeadings extends Container {
 
     // if we're selecting rows, then show all columns as selected
     else if (sheets.sheet.cursor.columnRow?.rows) {
+      this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
+      this.headingsGraphics.drawRect(viewport.left, viewport.top, viewport.screenWidthInWorldPixels, cellHeight);
+      this.headingsGraphics.endFill();
+
       // keep these in case we change our mind
       // const headingTop = viewport.top + cellHeight;
       // this.headingsGraphics.lineStyle(SELECTION_IN_COLUMN_OR_ROW_WIDTH / viewport.scale.x);
