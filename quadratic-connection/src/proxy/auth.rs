@@ -9,12 +9,11 @@ pub(crate) async fn check_auth(request: Request<Incoming>) -> Result<Request<Inc
     let jwks = get_const_jwks().await;
     let token = request
         .headers()
-        .get(&AUTHORIZATION)
-        .and_then(|header| Some(header.to_str().unwrap_or_default().replace("Bearer ", "")));
+        .get(&AUTHORIZATION).map(|header| header.to_str().unwrap_or_default().replace("Bearer ", ""));
 
     // we don't need any of the claims information, just validate the token
     if let Some(token) = token {
-        authorize::<Claims>(&jwks, &token, false, true)?;
+        authorize::<Claims>(jwks, &token, false, true)?;
     }
 
     Ok(request)

@@ -46,11 +46,11 @@ static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
 pub(crate) async fn get_const_jwks() -> &'static JwkSet {
     JWKS.get_or_init(|| async {
         let config = config().expect("Invalid config");
-        let jwks = get_jwks(&config.auth0_jwks_uri)
-            .await
-            .expect("Unable to get JWKS");
+        
 
-        jwks
+        get_jwks(&config.auth0_jwks_uri)
+            .await
+            .expect("Unable to get JWKS")
     })
     .await
 }

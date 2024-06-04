@@ -44,7 +44,7 @@ pub(crate) async fn query(
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
-    let connection = get_connection(&*state, &claims, &sql_query.connection_id)
+    let connection = get_connection(&state, &claims, &sql_query.connection_id)
         .await?
         .0;
     query_generic::<MySqlConnection>(connection, state, sql_query).await
@@ -56,7 +56,7 @@ pub(crate) async fn schema(
     state: Extension<State>,
     claims: Claims,
 ) -> Result<Json<Schema>> {
-    let (connection, api_connection) = get_connection(&*state, &claims, &id).await?;
+    let (connection, api_connection) = get_connection(&state, &claims, &id).await?;
     let pool = connection.connect().await?;
     let database_schema = connection.schema(pool).await?;
     let schema = Schema {
