@@ -126,10 +126,10 @@ impl Connection for PostgresConnection {
                 .push(SchemaColumn {
                     name: row.get::<String, usize>(3),
                     r#type: row.get::<String, usize>(4),
-                    is_nullable: match row.get::<String, usize>(5).to_lowercase().as_str() {
-                        "yes" => true,
-                        _ => false,
-                    },
+                    is_nullable: matches!(
+                        row.get::<String, usize>(5).to_lowercase().as_str(),
+                        "yes"
+                    ),
                 });
         }
 
@@ -178,7 +178,7 @@ impl Connection for PostgresConnection {
                     PgTypeKind::Enum(_) => {
                         let value = row
                             .try_get_raw(index)
-                            .and_then(|value| Ok(value.as_str().unwrap_or_default().to_string()));
+                            .map(|value| value.as_str().unwrap_or_default().to_string());
 
                         if let Ok(value) = value {
                             return ArrowType::Utf8(value);

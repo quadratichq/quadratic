@@ -258,7 +258,7 @@ pub trait Connection {
         let file = Vec::new();
         let cols = transposed
             .into_iter()
-            .map(|col| ArrowType::to_array_ref(col))
+            .map(ArrowType::to_array_ref)
             .collect::<Vec<ArrayRef>>();
 
         // headings

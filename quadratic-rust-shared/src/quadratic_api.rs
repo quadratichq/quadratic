@@ -88,7 +88,7 @@ pub async fn get_file_checkpoint(
     file_id: &Uuid,
 ) -> Result<LastCheckpoint> {
     let url = format!("{base_url}/v0/internal/file/{file_id}/checkpoint");
-    let client = get_client(&url, &jwt);
+    let client = get_client(&url, jwt);
     let response = client.send().await?;
 
     handle_response(&response)?;
@@ -156,7 +156,7 @@ pub async fn get_connection(
     connection_id: &Uuid,
 ) -> Result<Connection> {
     let url = format!("{base_url}/v0/internal/user/{user_id}/connections/{connection_id}");
-    let client = get_client(&url, &jwt);
+    let client = get_client(&url, jwt);
     let response = client.send().await?;
 
     handle_response(&response)?;

@@ -122,10 +122,10 @@ impl Connection for MySqlConnection {
                 .push(SchemaColumn {
                     name: row.get::<String, usize>(3),
                     r#type: row.get::<String, usize>(4),
-                    is_nullable: match row.get::<String, usize>(5).to_lowercase().as_str() {
-                        "yes" => true,
-                        _ => false,
-                    },
+                    is_nullable: matches!(
+                        row.get::<String, usize>(5).to_lowercase().as_str(),
+                        "yes"
+                    ),
                 });
         }
 
