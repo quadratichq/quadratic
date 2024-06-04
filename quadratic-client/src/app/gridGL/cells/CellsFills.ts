@@ -71,6 +71,14 @@ export class CellsFills extends Container {
     );
   }
 
+  private getColor(color: string): number {
+    if (color === 'blank') {
+      return colors.gridBackground;
+    } else {
+      return convertColorStringToTint(color);
+    }
+  }
+
   private isMetaEmpty(fill: JsSheetFill): boolean {
     return !(fill.all || fill.columns.length || fill.rows.length);
   }
@@ -85,11 +93,7 @@ export class CellsFills extends Container {
     this.cellsContainer.removeChildren();
     this.cells.forEach((fill) => {
       const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
-      if (fill.color === 'blank') {
-        sprite.tint = colors.gridBackground;
-      } else {
-        sprite.tint = convertColorStringToTint(fill.color);
-      }
+      sprite.tint = this.getColor(fill.color);
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);
       sprite.position.set(screen.x, screen.y);
       sprite.width = screen.width;
@@ -104,7 +108,7 @@ export class CellsFills extends Container {
       this.meta.clear();
       const viewport = pixiApp.viewport.getVisibleBounds();
       if (this.metaFill.all) {
-        this.meta.beginFill(convertColorStringToTint(this.metaFill.all));
+        this.meta.beginFill(this.getColor(this.metaFill.all));
         this.meta.drawRect(viewport.left, viewport.top, viewport.width, viewport.height);
         this.meta.endFill();
       }
@@ -124,7 +128,7 @@ export class CellsFills extends Container {
           // only draw if the column is visible on the screen
           if (left >= viewport.right || left + width <= viewport.left) return;
 
-          this.meta.beginFill(convertColorStringToTint(fill.color));
+          this.meta.beginFill(this.getColor(fill.color));
           this.meta.drawRect(left, viewport.top, width, viewport.height);
           this.meta.endFill();
         } else if (fill.row !== undefined) {
@@ -135,7 +139,7 @@ export class CellsFills extends Container {
           // only draw if the row is visible on the screen
           if (top >= viewport.bottom || top + height <= viewport.top) return;
 
-          this.meta.beginFill(convertColorStringToTint(fill.color));
+          this.meta.beginFill(this.getColor(fill.color));
           this.meta.drawRect(viewport.left, top, viewport.width, height);
           this.meta.endFill();
         }
