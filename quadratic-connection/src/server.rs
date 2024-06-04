@@ -48,7 +48,7 @@ pub(crate) async fn get_const_jwks() -> &'static JwkSet {
         let config = config().expect("Invalid config");
         let jwks = get_jwks(&config.auth0_jwks_uri)
             .await
-            .expect("Invalid JWKS");
+            .expect("Unable to get JWKS");
 
         jwks
     })
