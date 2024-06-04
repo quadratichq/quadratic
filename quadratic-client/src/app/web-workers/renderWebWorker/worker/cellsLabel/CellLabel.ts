@@ -331,7 +331,10 @@ export class CellLabel {
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
 
     // keep track of the min/max x/y values for the viewRectangle
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
 
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
