@@ -44,7 +44,7 @@ export async function selectColumns(columns: number[]) {
       });
     }
   } else {
-    cursor.changePosition({ columnRow: { columns } });
+    cursor.changePosition({ columnRow: { columns }, cursorPosition: { x: columns[0], y: cursor.cursorPosition.y } });
   }
 }
 
@@ -67,6 +67,6 @@ export async function selectRows(rows: number[]): Promise<void> {
       });
     }
   } else {
-    cursor.changePosition({ columnRow: { rows } });
+    cursor.changePosition({ columnRow: { rows }, cursorPosition: { x: cursor.cursorPosition.x, y: rows[0] } });
   }
 }

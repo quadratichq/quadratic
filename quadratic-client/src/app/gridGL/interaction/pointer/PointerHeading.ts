@@ -127,7 +127,6 @@ export class PointerHeading {
         if (intersects.column !== undefined) {
           let x1 = cursor.cursorPosition.x;
           let x2 = intersects.column;
-
           selectColumns(fillArray(x1, x2));
           pixiApp.cursor.dirty = true;
         } else if (intersects.row !== undefined) {
