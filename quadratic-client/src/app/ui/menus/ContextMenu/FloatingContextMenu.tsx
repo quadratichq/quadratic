@@ -34,6 +34,7 @@ import {
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
+  clearFillColor,
   clearFormattingAndBorders,
   removeCellNumericFormat,
   setAlignment,
@@ -368,7 +369,7 @@ export const FloatingContextMenu = (props: Props) => {
             }}
             onClear={() => {
               fillColorRef.current?.closeMenu();
-              setFillColor(undefined);
+              clearFillColor();
               focusGrid();
             }}
           />

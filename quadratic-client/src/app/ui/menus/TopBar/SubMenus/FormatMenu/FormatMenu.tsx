@@ -18,6 +18,7 @@ import { QColorPicker } from '../../../../components/qColorPicker';
 import { MenuLineItem } from '../../MenuLineItem';
 import { TopBarMenuItem } from '../../TopBarMenuItem';
 import {
+  clearFillColor,
   clearFormattingAndBorders,
   setAlignment,
   setBold,
@@ -76,7 +77,7 @@ export const FormatMenu = () => {
         id="FillColorMenuID"
         label={<MenuLineItem primary="Fill color" Icon={PaintBucketIcon} />}
       >
-        <QColorPicker onChangeComplete={setFillColor} onClear={() => setFillColor()} />
+        <QColorPicker onChangeComplete={setFillColor} onClear={clearFillColor} />
       </SubMenu>
 
       <SubMenu label={<MenuLineItem primary="Border" Icon={BorderNoneIcon} />}>{borders}</SubMenu>

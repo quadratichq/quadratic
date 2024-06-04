@@ -7,6 +7,7 @@ import { convertColorStringToTint } from '../../helpers/convertColor';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
+import { colors } from '@/app/theme/colors';
 
 // todo: might want to add this to the update loop instead of listening for
 // viewport changes to avoid multiple calls to drawMeta
@@ -84,7 +85,11 @@ export class CellsFills extends Container {
     this.cellsContainer.removeChildren();
     this.cells.forEach((fill) => {
       const sprite = this.cellsContainer.addChild(new Sprite(Texture.WHITE)) as SpriteBounds;
-      sprite.tint = convertColorStringToTint(fill.color);
+      if (fill.color === 'blank') {
+        sprite.tint = colors.gridBackground;
+      } else {
+        sprite.tint = convertColorStringToTint(fill.color);
+      }
       const screen = this.sheet.getScreenRectangle(Number(fill.x), Number(fill.y), fill.w - 1, fill.h - 1);
       sprite.position.set(screen.x, screen.y);
       sprite.width = screen.width;

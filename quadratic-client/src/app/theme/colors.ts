@@ -17,6 +17,8 @@ export const colors = {
   // todo: this should be changed
   movingCells: 0x6cd4ff,
 
+  gridBackground: 0xffffff,
+
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
   headerSelectedBackgroundColor: 0xe7f7ff,
