@@ -9,6 +9,7 @@ use tokio::{io::copy_bidirectional, net::TcpStream};
 
 use crate::error::{ConnectionError, Result};
 
+/// Upgrade the connection in a separate thread
 pub(crate) async fn upgrade(req: Request<Body>) -> Result<Response> {
     tracing::info!(?req);
 
@@ -24,12 +25,10 @@ pub(crate) async fn upgrade(req: Request<Body>) -> Result<Response> {
 
         Ok(Response::new(Body::empty()))
     } else {
-        tracing::warn!("CONNECT host is not socket addr: {:?}", req.uri());
+        let error = format!("CONNECT host is not socket addr: {:?}", req.uri());
+        let response = (StatusCode::BAD_REQUEST, error.to_owned());
 
-        let response = (
-            StatusCode::BAD_REQUEST,
-            "CONNECT must be to a socket address",
-        );
+        tracing::warn!(error);
 
         Ok(response.into_response())
     }
