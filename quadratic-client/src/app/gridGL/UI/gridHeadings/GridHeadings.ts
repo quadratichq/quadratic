@@ -399,9 +399,11 @@ export class GridHeadings extends Container {
   intersectsHeadingGridLine(
     world: Point
   ): { start: number; column?: number; row?: number; width?: number; height?: number } | undefined {
+    if (!this.columnRect || !this.rowRect) return;
+
     const offsets = sheets.sheet.offsets;
     const tolerance = GRID_HEADING_RESIZE_TOLERANCE / pixiApp.viewport.scale.x;
-    if (!this.columnRect || !this.rowRect) return;
+
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
         if (Math.abs(world.x - line.x) < tolerance) {
@@ -411,16 +413,13 @@ export class GridHeadings extends Container {
       }
     }
 
-    // todo: disabled until we support wrapping
-    /*
     if (intersects.rectanglePoint(this.rowRect, world)) {
       for (const line of this.gridLinesRows) {
         if (Math.abs(world.y - line.y) < tolerance) {
-          const start = offsets.getRowPlacement(sheetId, line.row);
+          const start = offsets.getRowPlacement(line.row);
           return { start: start.position, row: line.row, height: line.height };
         }
       }
     }
-    */
   }
 }

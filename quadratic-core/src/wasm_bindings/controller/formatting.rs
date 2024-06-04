@@ -46,6 +46,24 @@ impl GridController {
         Ok(())
     }
 
+    /// Sets cell align formatting given as an optional [`CellVerticalAlign`].
+    #[wasm_bindgen(js_name = "setCellVerticalAlign")]
+    pub fn js_set_cell_vertical_align(
+        &mut self,
+        sheet_id: String,
+        rect: &Rect,
+        vertical_align: JsValue,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            return Result::Err("Invalid sheet id".into());
+        };
+        if let Ok(value) = serde_wasm_bindgen::from_value(vertical_align) {
+            self.set_cell_vertical_align(rect.to_sheet_rect(sheet_id), value, cursor);
+        }
+        Ok(())
+    }
+
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
     #[wasm_bindgen(js_name = "setCellWrap")]
     pub fn js_set_cell_wrap(

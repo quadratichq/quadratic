@@ -342,6 +342,16 @@ export class CellsTextHash {
     return max;
   }
 
+  getCellsContentMaxHeight(row: number): number {
+    let max = 0;
+    this.labels.forEach((label) => {
+      if (label.location.y === row) {
+        max = Math.max(max, label.textHeight);
+      }
+    });
+    return max;
+  }
+
   totalMemory(): number {
     if (this.loaded) {
       return this.labelMeshes.totalMemory();

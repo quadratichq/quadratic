@@ -54,6 +54,7 @@ fn main() {
         formulas::CellRefCoord,
         grid::GridBounds,
         grid::CellAlign,
+        grid::CellVerticalAlign,
         grid::CellWrap,
         grid::NumericFormat,
         grid::NumericFormatKind,

@@ -2,6 +2,8 @@ import { Rectangle } from '@/app/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   JsCodeCell,
   JsHtmlOutput,
@@ -301,6 +303,28 @@ export interface ClientCoreSetCellAlign {
   width: number;
   height: number;
   align?: CellAlign;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellVerticalAlign {
+  type: 'clientCoreSetCellVerticalAlign';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  verticalAlign?: CellVerticalAlign;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellWrap {
+  type: 'clientCoreSetCellWrap';
+  sheetId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  wrap?: CellWrap;
   cursor?: string;
 }
 
@@ -827,6 +851,8 @@ export type ClientCoreMessage =
   | ClientCoreSetCellFillColor
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellAlign
+  | ClientCoreSetCellVerticalAlign
+  | ClientCoreSetCellWrap
   | ClientCoreSetCurrency
   | ClientCoreSetPercentage
   | ClientCoreSetExponential

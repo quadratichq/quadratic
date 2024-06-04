@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -77,7 +77,7 @@ export class PointerHeading {
         event.preventDefault();
         return true;
       } else if (this.clicked && headingResize.row !== undefined) {
-        this.onDoubleClickRow(headingResize.row);
+        this.autoResizeRow(headingResize.row);
         event.preventDefault();
         return true;
       }
@@ -248,6 +248,9 @@ export class PointerHeading {
         if (transientResize) {
           quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
         }
+        if (headingResizing.column !== undefined) {
+          // pixiApp.update
+        }
         this.resizing = undefined;
 
         // fixes a bug where the viewport may still be decelerating
@@ -274,7 +277,45 @@ export class PointerHeading {
     }
   }
 
-  private onDoubleClickRow(row: number): void {
-    // todo when rows have wrapping...
+  async autoResizeRow(row: number) {
+    const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+    const size = Math.max(maxHeight, CELL_HEIGHT);
+    const sheetId = sheets.sheet.id;
+    const originalSize = sheets.sheet.getCellOffsets(0, row);
+    if (originalSize.height !== size) {
+      quadraticCore.commitSingleResize(sheetId, undefined, row, size);
+    }
   }
+
+  // async autoResizeWrappedRows(column: number) {
+  // const sheet = sheets.sheet;
+  // const bounds = await quadraticCore.getColumnsBounds(sheet.id, column, column, true);
+  // if (!bounds) return;
+  // const { min, max } = bounds;
+
+  // for (let row = min; row <= max; row++) {
+  //   const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+  //   const size = Math.max(maxHeight, CELL_HEIGHT);
+  //   const sheetId = sheets.sheet.id;
+  //   const originalSize = sheets.sheet.getCellOffsets(0, row);
+  //   if (originalSize.height !== size) {
+  //     quadraticCore.commitSingleResize(sheetId, undefined, row, size);
+  //   }
+  // }
+
+  // console.log(bounds);
+  // const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+  // let size: number;
+  // if (maxHeight === 0) {
+  //   size = CELL_HEIGHT;
+  // } else {
+  //   const contentSizePlusMargin = maxHeight;
+  //   size = Math.max(contentSizePlusMargin, CELL_HEIGHT);
+  // }
+  // const sheetId = sheets.sheet.id;
+  // const originalSize = sheets.sheet.getCellOffsets(0, row);
+  // if (originalSize.height !== size) {
+  //   quadraticCore.commitSingleResize(sheetId, undefined, row, size);
+  // }
+  // }
 }

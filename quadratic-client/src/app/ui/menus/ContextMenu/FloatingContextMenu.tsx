@@ -19,6 +19,7 @@ import {
   DecimalIncreaseIcon,
   DollarIcon,
   DotsHorizontalIcon,
+  ExpandMoreIcon,
   FontBoldIcon,
   FontItalicIcon,
   FunctionIcon,
@@ -28,19 +29,27 @@ import {
   TextAlignCenterIcon,
   TextAlignLeftIcon,
   TextAlignRightIcon,
+  TextClipIcon,
   TextColorIcon,
   TextNoneIcon,
+  TextOverflowIcon,
+  TextVerticalAlignBottomIcon,
+  TextVerticalAlignMiddleIcon,
+  TextVerticalAlignTopIcon,
+  WrapTextIcon,
 } from '@/app/ui/icons';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
   clearFormattingAndBorders,
   removeCellNumericFormat,
-  setAlignment,
   setBold,
   setFillColor,
+  setHorizontalAlignment,
   setItalic,
   setTextColor,
+  setVerticalAlignment,
+  setWrap,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
@@ -72,6 +81,7 @@ export const FloatingContextMenu = (props: Props) => {
   const borders = useGetBorderMenu();
   const { name: fileName } = useFileContext();
 
+  const textHorizontalAlign = useRef<MenuInstance>(null);
   const textColorRef = useRef<MenuInstance>(null);
   const fillColorRef = useRef<MenuInstance>(null);
 
@@ -341,21 +351,98 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDividerVertical />
 
-        <TooltipHint title="Align left">
-          <IconButton size="small" onClick={() => setAlignment('left')}>
-            <TextAlignLeftIcon fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-        <TooltipHint title="Align center">
-          <IconButton size="small" onClick={() => setAlignment('center')}>
-            <TextAlignCenterIcon fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-        <TooltipHint title="Align right">
-          <IconButton size="small" onClick={() => setAlignment('right')}>
-            <TextAlignRightIcon fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
+        <Menu
+          className="text-submenu"
+          instanceRef={textHorizontalAlign}
+          menuButton={
+            <div>
+              <TooltipHint title="Horizontal align">
+                <IconButton size="small">
+                  <TextAlignLeftIcon fontSize={iconSize} />
+                  <ExpandMoreIcon fontSize={iconSize} />
+                </IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
+          <TooltipHint title="Align left">
+            <IconButton size="small" onClick={() => setHorizontalAlignment('left')}>
+              <TextAlignLeftIcon fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+          <TooltipHint title="Align center">
+            <IconButton size="small" onClick={() => setHorizontalAlignment('center')}>
+              <TextAlignCenterIcon fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+          <TooltipHint title="Align right">
+            <IconButton size="small" onClick={() => setHorizontalAlignment('right')}>
+              <TextAlignRightIcon fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+        </Menu>
+
+        <Menu
+          className="text-submenu"
+          instanceRef={textHorizontalAlign}
+          menuButton={
+            <div>
+              <TooltipHint title="Vertical align">
+                <IconButton size="small">
+                  <TextVerticalAlignTopIcon fontSize={iconSize} />
+                  <ExpandMoreIcon fontSize={iconSize} />
+                </IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
+          <TooltipHint title="Top align">
+            <IconButton size="small" onClick={() => setVerticalAlignment('top')}>
+              <TextVerticalAlignTopIcon fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+          <TooltipHint title="Middle align">
+            <IconButton size="small" onClick={() => setVerticalAlignment('middle')}>
+              <TextVerticalAlignMiddleIcon fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+          <TooltipHint title="Bottom align">
+            <IconButton size="small" onClick={() => setVerticalAlignment('bottom')}>
+              <TextVerticalAlignBottomIcon fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+        </Menu>
+
+        <Menu
+          className="text-wrapping-submenu"
+          instanceRef={textHorizontalAlign}
+          menuButton={
+            <div>
+              <TooltipHint title="Text wrap">
+                <IconButton size="small">
+                  <WrapTextIcon fontSize={iconSize} />
+                  <ExpandMoreIcon fontSize={iconSize} />
+                </IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
+          <TooltipHint title="Overflow">
+            <IconButton size="small" onClick={() => setWrap(undefined)}>
+              <TextOverflowIcon />
+            </IconButton>
+          </TooltipHint>
+          <TooltipHint title="Wrap">
+            <IconButton size="small" onClick={() => setWrap('wrap')}>
+              <WrapTextIcon fontSize={iconSize} />
+            </IconButton>
+          </TooltipHint>
+          <TooltipHint title="Clip">
+            <IconButton size="small" onClick={() => setWrap('clip')}>
+              <TextClipIcon />
+            </IconButton>
+          </TooltipHint>
+        </Menu>
 
         <MenuDividerVertical />
 

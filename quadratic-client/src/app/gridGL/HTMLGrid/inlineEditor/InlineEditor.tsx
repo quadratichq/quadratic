@@ -8,6 +8,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { SubtitlesOutlined } from '@mui/icons-material';
 import { Tooltip } from '@mui/material';
 import { useCallback } from 'react';
+import './inlineEditorStyles.scss';
 
 export const InlineEditor = () => {
   const ref = useCallback((div: HTMLDivElement) => {

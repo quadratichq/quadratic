@@ -7,8 +7,14 @@ import {
   TextAlignCenterIcon,
   TextAlignLeftIcon,
   TextAlignRightIcon,
+  TextClipIcon,
   TextColorIcon,
   TextNoneIcon,
+  TextOverflowIcon,
+  TextVerticalAlignBottomIcon,
+  TextVerticalAlignMiddleIcon,
+  TextVerticalAlignTopIcon,
+  WrapTextIcon,
 } from '@/app/ui/icons';
 import { Menu, MenuChangeEvent, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
 import { useCallback } from 'react';
@@ -19,11 +25,13 @@ import { MenuLineItem } from '../../MenuLineItem';
 import { TopBarMenuItem } from '../../TopBarMenuItem';
 import {
   clearFormattingAndBorders,
-  setAlignment,
   setBold,
   setFillColor,
+  setHorizontalAlignment,
   setItalic,
   setTextColor,
+  setVerticalAlignment,
+  setWrap,
 } from '../formatCells';
 import './formatMenuStyles.scss';
 import { useGetBorderMenu } from './useGetBorderMenu';
@@ -63,14 +71,36 @@ export const FormatMenu = () => {
       </SubMenu>
 
       <MenuDivider />
-      <MenuItem onClick={() => setAlignment('left')}>
+      <MenuItem onClick={() => setHorizontalAlignment('left')}>
         <MenuLineItem primary="Left" Icon={TextAlignLeftIcon} secondary="" />
       </MenuItem>
-      <MenuItem onClick={() => setAlignment('center')}>
+      <MenuItem onClick={() => setHorizontalAlignment('center')}>
         <MenuLineItem primary="Center" Icon={TextAlignRightIcon} />
       </MenuItem>
-      <MenuItem onClick={() => setAlignment('right')}>
+      <MenuItem onClick={() => setHorizontalAlignment('right')}>
         <MenuLineItem primary="Right" Icon={TextAlignCenterIcon} />
+      </MenuItem>
+
+      <MenuDivider />
+      <MenuItem onClick={() => setVerticalAlignment('top')}>
+        <MenuLineItem primary="Top" Icon={TextVerticalAlignTopIcon} secondary="" />
+      </MenuItem>
+      <MenuItem onClick={() => setVerticalAlignment('middle')}>
+        <MenuLineItem primary="Middle" Icon={TextVerticalAlignMiddleIcon} />
+      </MenuItem>
+      <MenuItem onClick={() => setVerticalAlignment('bottom')}>
+        <MenuLineItem primary="Bottom" Icon={TextVerticalAlignBottomIcon} />
+      </MenuItem>
+
+      <MenuDivider />
+      <MenuItem onClick={() => setWrap(undefined)}>
+        <MenuLineItem primary="Overflow" Icon={TextOverflowIcon} secondary="" />
+      </MenuItem>
+      <MenuItem onClick={() => setWrap('wrap')}>
+        <MenuLineItem primary="Wrap" Icon={WrapTextIcon} />
+      </MenuItem>
+      <MenuItem onClick={() => setWrap('clip')}>
+        <MenuLineItem primary="Clip" Icon={TextClipIcon} />
       </MenuItem>
 
       <MenuDivider />

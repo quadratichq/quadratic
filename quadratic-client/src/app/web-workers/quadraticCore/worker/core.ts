@@ -11,6 +11,8 @@ import { readFileAsArrayBuffer } from '@/app/helpers/files';
 import {
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   JsCodeCell,
   JsCodeResult,
@@ -579,6 +581,34 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellAlign(sheetId, pointsToRect(x, y, width, height), align, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellVerticalAlign(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    verticalAlign?: CellVerticalAlign,
+    cursor?: string
+  ) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellVerticalAlign(sheetId, pointsToRect(x, y, width, height), verticalAlign, cursor);
+        resolve(undefined);
+      });
+    });
+  }
+
+  setCellWrap(sheetId: string, x: number, y: number, width: number, height: number, wrap?: CellWrap, cursor?: string) {
+    return new Promise((resolve) => {
+      this.clientQueue.push(() => {
+        if (!this.gridController) throw new Error('Expected gridController to be defined');
+        this.gridController.setCellWrap(sheetId, pointsToRect(x, y, width, height), wrap, cursor);
         resolve(undefined);
       });
     });

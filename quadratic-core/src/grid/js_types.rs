@@ -2,7 +2,7 @@ use std::ops::{BitOr, BitOrAssign};
 
 use serde::{Deserialize, Serialize};
 
-use super::formatting::{BoolSummary, CellAlign, CellWrap};
+use super::formatting::{BoolSummary, CellAlign, CellVerticalAlign, CellWrap};
 use super::CodeCellLanguage;
 use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
@@ -33,6 +33,8 @@ pub struct JsRenderCell {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub align: Option<CellAlign>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub vertical_align: Option<CellVerticalAlign>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub wrap: Option<CellWrap>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,
@@ -53,6 +55,7 @@ impl JsRenderCell {
             value: value.to_string(),
             language,
             align: Some(CellAlign::Right),
+            vertical_align: Some(CellVerticalAlign::Top),
             wrap: None,
             bold: None,
             italic: None,
@@ -70,6 +73,7 @@ impl From<Pos> for JsRenderCell {
             value: "".to_string(),
             language: None,
             align: None,
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,

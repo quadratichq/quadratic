@@ -363,6 +363,30 @@ class CoreClient {
         );
         break;
 
+      case 'clientCoreSetCellVerticalAlign':
+        await core.setCellVerticalAlign(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.verticalAlign,
+          e.data.cursor
+        );
+        break;
+
+      case 'clientCoreSetCellWrap':
+        await core.setCellWrap(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.wrap,
+          e.data.cursor
+        );
+        break;
+
       case 'clientCoreCopyToClipboard':
         const result = await core.copyToClipboard(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
         this.send({ type: 'coreClientCopyToClipboard', id: e.data.id, ...result });

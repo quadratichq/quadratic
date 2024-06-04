@@ -4,12 +4,24 @@ import {
   TextAlignCenterIcon,
   TextAlignLeftIcon,
   TextAlignRightIcon,
+  TextClipIcon,
+  TextOverflowIcon,
+  TextVerticalAlignBottomIcon,
+  TextVerticalAlignMiddleIcon,
+  TextVerticalAlignTopIcon,
+  WrapTextIcon,
 } from '@/app/ui/icons';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { setAlignment, setBold, setItalic } from '../../TopBar/SubMenus/formatCells';
+import {
+  setBold,
+  setHorizontalAlignment,
+  setItalic,
+  setVerticalAlignment,
+  setWrap,
+} from '../../TopBar/SubMenus/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
@@ -63,7 +75,13 @@ const commands: CommandGroup = {
       label: 'Left align',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setAlignment('left')} />;
+        return (
+          <CommandPaletteListItem
+            {...props}
+            icon={<TextAlignLeftIcon />}
+            action={() => setHorizontalAlignment('left')}
+          />
+        );
       },
     },
     {
@@ -71,7 +89,11 @@ const commands: CommandGroup = {
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
         return (
-          <CommandPaletteListItem {...props} icon={<TextAlignCenterIcon />} action={() => setAlignment('center')} />
+          <CommandPaletteListItem
+            {...props}
+            icon={<TextAlignCenterIcon />}
+            action={() => setHorizontalAlignment('center')}
+          />
         );
       },
     },
@@ -79,7 +101,73 @@ const commands: CommandGroup = {
       label: 'Right align',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setAlignment('right')} />;
+        return (
+          <CommandPaletteListItem
+            {...props}
+            icon={<TextAlignRightIcon />}
+            action={() => setHorizontalAlignment('right')}
+          />
+        );
+      },
+    },
+    {
+      label: 'Align top',
+      isAvailable: hasPermissionToEditFile,
+      Component: (props) => {
+        return (
+          <CommandPaletteListItem
+            {...props}
+            icon={<TextVerticalAlignTopIcon />}
+            action={() => setVerticalAlignment('top')}
+          />
+        );
+      },
+    },
+    {
+      label: 'Align middle',
+      isAvailable: hasPermissionToEditFile,
+      Component: (props) => {
+        return (
+          <CommandPaletteListItem
+            {...props}
+            icon={<TextVerticalAlignMiddleIcon />}
+            action={() => setVerticalAlignment('middle')}
+          />
+        );
+      },
+    },
+    {
+      label: 'Align bottom',
+      isAvailable: hasPermissionToEditFile,
+      Component: (props) => {
+        return (
+          <CommandPaletteListItem
+            {...props}
+            icon={<TextVerticalAlignBottomIcon />}
+            action={() => setVerticalAlignment('bottom')}
+          />
+        );
+      },
+    },
+    {
+      label: 'Text overflow',
+      isAvailable: hasPermissionToEditFile,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} icon={<TextOverflowIcon />} action={() => setWrap(undefined)} />;
+      },
+    },
+    {
+      label: 'Text wrap',
+      isAvailable: hasPermissionToEditFile,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} icon={<WrapTextIcon />} action={() => setWrap('wrap')} />;
+      },
+    },
+    {
+      label: 'Text clip',
+      isAvailable: hasPermissionToEditFile,
+      Component: (props) => {
+        return <CommandPaletteListItem {...props} icon={<TextClipIcon />} action={() => setWrap('clip')} />;
       },
     },
   ],

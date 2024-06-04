@@ -58,6 +58,10 @@ class RenderClient {
         this.sendColumnMaxWidth(e.data.id, renderText.columnMaxWidth(e.data.sheetId, e.data.column));
         return;
 
+      case 'clientRenderRowMaxHeight':
+        this.sendRowMaxHeight(e.data.id, renderText.rowMaxHeight(e.data.sheetId, e.data.row));
+        return;
+
       default:
         console.warn('[renderClient] Unhandled message type', e.data);
     }
@@ -103,6 +107,10 @@ class RenderClient {
 
   sendColumnMaxWidth(id: number, maxWidth: number) {
     this.send({ type: 'renderClientColumnMaxWidth', maxWidth, id });
+  }
+
+  sendRowMaxHeight(id: number, maxHeight: number) {
+    this.send({ type: 'renderClientRowMaxHeight', maxHeight, id });
   }
 }
 

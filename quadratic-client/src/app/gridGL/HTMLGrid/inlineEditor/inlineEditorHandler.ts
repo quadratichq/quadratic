@@ -14,7 +14,7 @@ import { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { CellFormatSummary } from '@/app/quadratic-core-types';
+import { CellFormatSummary, JsRenderCell } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -29,17 +29,18 @@ class InlineEditorHandler {
   private div?: HTMLDivElement;
 
   private cellOffsets?: Rectangle;
-  private height = 0;
   private open = false;
   private showing = false;
 
   width = 0;
+  height = 0;
   location?: SheetPosTS;
   formula = false;
 
   cursorIsMoving = false;
 
   private formatSummary?: CellFormatSummary;
+  private renderCell?: JsRenderCell;
   private temporaryBold: boolean | undefined;
   private temporaryItalic: boolean | undefined;
 
@@ -60,8 +61,14 @@ class InlineEditorHandler {
       if (this.open) {
         this.div?.style.setProperty('left', this.cellOffsets.x + CURSOR_THICKNESS + 'px');
         this.div?.style.setProperty('top', this.cellOffsets.y + 2 + 'px');
-        this.height = this.cellOffsets.height - 4;
-        this.width = inlineEditorMonaco.resize(this.cellOffsets.width - CURSOR_THICKNESS * 2, this.height);
+        const textWrap = this.renderCell?.wrap === 'wrap';
+        const { width, height } = inlineEditorMonaco.resize(
+          this.cellOffsets.width - CURSOR_THICKNESS * 2,
+          this.cellOffsets.height - 4,
+          textWrap
+        );
+        this.width = width;
+        this.height = height;
         pixiApp.cursor.dirty = true;
       }
     }
@@ -195,6 +202,9 @@ class InlineEditorHandler {
         this.location.x,
         this.location.y
       );
+      this.renderCell = await quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y);
+      const textAlign = this.renderCell?.align || 'left';
+      this.div.className = `cell-edit-text-${textAlign}`;
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
@@ -281,7 +291,14 @@ class InlineEditorHandler {
       this.changeToFormula(false);
     }
 
-    this.width = inlineEditorMonaco.resize(this.cellOffsets.width - CURSOR_THICKNESS * 2, this.height);
+    const textWrap = this.renderCell?.wrap === 'wrap';
+    const { width, height } = inlineEditorMonaco.resize(
+      this.cellOffsets.width - CURSOR_THICKNESS * 2,
+      this.height,
+      textWrap
+    );
+    this.width = width;
+    this.height = height;
     pixiApp.cursor.dirty = true;
 
     if (this.formula) {

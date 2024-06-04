@@ -18,6 +18,7 @@ const CURSOR_CELL_DEFAULT_VALUE: CursorCell = { x: 0, y: 0, width: 0, height: 0 
 
 // adds a bit of padding when editing a cell w/CellInput
 export const CELL_INPUT_PADDING = CURSOR_THICKNESS * 2;
+const CELL_EDIT_VERTICAL_PADDING = 4;
 
 // outside border when editing the cell
 const CURSOR_INPUT_ALPHA = 0.333;
@@ -64,11 +65,12 @@ export class Cursor extends Graphics {
     // showInput changes after cellEdit is removed from DOM
     const cellEdit = document.querySelector('#cell-edit') as HTMLDivElement;
     if (showInput) {
-      if (cellEdit && cellEdit.offsetWidth + CELL_INPUT_PADDING > width) {
+      if (cellEdit) {
         width = Math.max(cellEdit.offsetWidth + CELL_INPUT_PADDING, width);
+        height = Math.max(cellEdit.offsetHeight + CELL_EDIT_VERTICAL_PADDING, height);
       } else {
         // we have to wait until react renders #cell-edit to properly calculate the width
-        setTimeout(() => (this.dirty = true), 0);
+        setTimeout(() => (this.dirty = true), 1000);
       }
     } else {
       if (
@@ -186,6 +188,7 @@ export class Cursor extends Graphics {
       color = colors.cellColorUserFormula;
       offsets = sheets.sheet.getCellOffsets(inlineShowing.x, inlineShowing.y);
       offsets.width = inlineEditorHandler.width + CURSOR_THICKNESS * 2;
+      offsets.height = inlineEditorHandler.height;
     } else {
       const { editorInteractionState } = pixiAppSettings;
       const cell = editorInteractionState.selectedCell;

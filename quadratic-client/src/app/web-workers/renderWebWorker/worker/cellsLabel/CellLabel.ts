@@ -10,8 +10,9 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
 import { CellAlign, JsRenderCell } from '@/app/quadratic-core-types';
-import { CellAlignment } from '@/app/schemas';
+import { CellAlignment, CellVerticalAlignment, CellWrap } from '@/app/schemas';
 import { colors } from '@/app/theme/colors';
+import { CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
 import { Point, Rectangle } from 'pixi.js';
 import { RenderBitmapChar } from '../../renderBitmapFonts';
@@ -53,6 +54,7 @@ export class CellLabel {
   fontSize: number;
   tint?: number;
   maxWidth: number;
+  cellHeight: number;
   roundPixels?: boolean;
   location: Coordinate;
   AABB: Rectangle;
@@ -62,7 +64,8 @@ export class CellLabel {
 
   // used by ContainerBitmapText rendering
   chars: CharRenderData[] = [];
-  lineAlignOffsets: number[] = [];
+  horizontalAlignOffsets: number[] = [];
+  verticalAlignOffsets: number = 0;
   align?: 'left' | 'right' | 'justify' | 'center';
   letterSpacing: number;
   bold: boolean;
@@ -75,6 +78,8 @@ export class CellLabel {
   overflowLeft?: number;
 
   alignment: CellAlignment;
+  verticalAlignment: CellVerticalAlignment;
+  wrapping: CellWrap;
 
   dirty = true;
 
@@ -97,6 +102,7 @@ export class CellLabel {
     this.fontSize = fontSize;
     this.roundPixels = true;
     this.maxWidth = 0;
+    this.cellHeight = 0;
     this.letterSpacing = 0;
     const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
     const isChart = cell?.special === 'Chart';
@@ -121,12 +127,23 @@ export class CellLabel {
     this.italic = !!cell?.italic || isError || isChart;
     this.updateFontName();
     this.alignment = cell.align;
+    this.align = cell.align ?? 'left';
+    this.verticalAlignment = cell.verticalAlign ?? 'top';
+    this.wrapping = cell.wrap === 'overflow' ? undefined : cell.wrap;
+    this.updateCellLimits();
   }
 
   updateFontName() {
     const bold = this.bold ? 'Bold' : '';
     const italic = this.italic ? 'Italic' : '';
     this.fontName = `OpenSans${bold || italic ? '-' : ''}${bold}${italic}`;
+  }
+
+  updateCellLimits() {
+    this.clipLeft = this.wrapping === 'clip' && this.align !== 'left' ? this.AABB.x : undefined;
+    this.clipRight = this.wrapping === 'clip' && this.align !== 'right' ? this.AABB.x + this.AABB.width : undefined;
+    this.maxWidth = this.wrapping === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : 0;
+    this.cellHeight = this.AABB.height;
   }
 
   changeBold(bold?: boolean) {
@@ -143,6 +160,7 @@ export class CellLabel {
 
   changeAlign(align?: CellAlign) {
     this.alignment = align ?? 'left';
+    this.align = align ?? 'left';
     this.calculatePosition();
   }
 
@@ -186,9 +204,11 @@ export class CellLabel {
   }
 
   private calculatePosition(): void {
+    this.updateCellLimits();
+
     this.overflowLeft = 0;
     this.overflowRight = 0;
-    let alignment = this.alignment ?? 'left';
+    let alignment = this.align ?? 'left';
     if (alignment === 'right') {
       const actualLeft = this.AABB.x + this.AABB.width - this.textWidth - OPEN_SANS_FIX.x * 2;
       if (actualLeft < this.AABB.x) {
@@ -226,7 +246,8 @@ export class CellLabel {
     const lineSpaces = [];
     const text = this.text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
     const charsInput = splitTextToCharacters(text);
-    const maxWidth = (this.maxWidth * data.size) / this.fontSize;
+    const scale = this.fontSize / data.size;
+    const maxWidth = this.maxWidth / scale;
     let prevCharCode = null;
     let lastLineWidth = 0;
     let maxLineWidth = 0;
@@ -273,25 +294,32 @@ export class CellLabel {
         position: new Point(pos.x + charData.xOffset + this.letterSpacing / 2, pos.y + charData.yOffset),
       };
       this.chars.push(charRenderData);
-      lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.origWidth);
       pos.x += charData.xAdvance + this.letterSpacing;
       maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.textureHeight);
       prevCharCode = charCode;
-      if (lastBreakPos !== -1 && maxWidth > 0 && pos.x > maxWidth) {
-        ++spacesRemoved;
-        removeItems(this.chars, 1 + lastBreakPos - spacesRemoved, 1 + i - lastBreakPos);
-        i = lastBreakPos;
-        lastBreakPos = -1;
+      if (maxWidth > 0 && pos.x > maxWidth) {
+        const start = lastBreakPos === -1 ? i : 1 + lastBreakPos - spacesRemoved;
+        const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
+        removeItems(this.chars, start, count);
+
+        lastBreakWidth = lastBreakPos === -1 ? lastLineWidth : lastBreakWidth;
         lineWidths.push(lastBreakWidth);
         lineSpaces.push(this.chars.length > 0 ? this.chars[this.chars.length - 1].prevSpaces : 0);
         maxLineWidth = Math.max(maxLineWidth, lastBreakWidth);
+
+        i = lastBreakPos === -1 ? i - 1 : lastBreakPos;
+        lastBreakPos = -1;
+
         line++;
         pos.x = 0;
         pos.y += data.lineHeight;
         prevCharCode = null;
         spaceCount = 0;
+      } else {
+        lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.origWidth);
       }
     }
+
     const lastChar = charsInput[i];
     if (lastChar !== '\r' && lastChar !== '\n') {
       if (/(?:\s)/.test(lastChar)) {
@@ -301,7 +329,11 @@ export class CellLabel {
       maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
       lineSpaces.push(-1);
     }
-    this.lineAlignOffsets = [];
+
+    this.textWidth = maxLineWidth * scale;
+    this.textHeight = (pos.y + data.lineHeight) * scale;
+
+    this.horizontalAlignOffsets = [];
     for (let i = 0; i <= line; i++) {
       let alignOffset = 0;
       if (this.align === 'right') {
@@ -311,12 +343,15 @@ export class CellLabel {
       } else if (this.align === 'justify') {
         alignOffset = lineSpaces[i] < 0 ? 0 : (maxLineWidth - lineWidths[i]) / lineSpaces[i];
       }
-      this.lineAlignOffsets.push(alignOffset);
+      this.horizontalAlignOffsets.push(alignOffset);
     }
 
-    const scale = this.fontSize / data.size;
-    this.textWidth = maxLineWidth * scale;
-    this.textHeight = (pos.y + data.lineHeight) * scale;
+    this.verticalAlignOffsets =
+      this.verticalAlignment === 'bottom'
+        ? (this.cellHeight - this.textHeight) / scale
+        : this.verticalAlignment === 'middle'
+        ? (this.cellHeight - this.textHeight) / 2 / scale
+        : 0;
 
     this.calculatePosition();
   }
@@ -325,19 +360,23 @@ export class CellLabel {
   updateLabelMesh(labelMeshes: LabelMeshes) {
     if (!this.visible) return;
 
+    this.updateCellLimits();
+
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
     const scale = this.fontSize / data.size;
     const color = this.tint ? convertTintToArray(this.tint) : undefined;
     for (let i = 0; i < this.chars.length; i++) {
       const char = this.chars[i];
-      let offset =
-        char.position.x + this.lineAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
+      let horizontalOffset =
+        char.position.x + this.horizontalAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
+      let verticalOffset = char.position.y + this.verticalAlignOffsets;
       if (this.roundPixels) {
-        offset = Math.round(offset);
+        horizontalOffset = Math.round(horizontalOffset);
+        verticalOffset = Math.round(verticalOffset);
       }
-      const xPos = this.position.x + offset * scale + OPEN_SANS_FIX.x;
-      const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
+      const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
+      const yPos = this.position.y + verticalOffset * scale + OPEN_SANS_FIX.y;
       const labelMesh = labelMeshes.get(char.labelMeshId);
       const textureFrame = char.charData.frame;
       const textureUvs = char.charData.uvs;

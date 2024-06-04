@@ -77,10 +77,23 @@ export interface ClientRenderColumnMaxWidth {
   column: number;
 }
 
+export interface ClientRenderRowMaxHeight {
+  type: 'clientRenderRowMaxHeight';
+  id: number;
+  sheetId: string;
+  row: number;
+}
+
 export interface RenderClientColumnMaxWidth {
   type: 'renderClientColumnMaxWidth';
   id: number;
   maxWidth: number;
+}
+
+export interface RenderClientRowMaxHeight {
+  type: 'renderClientRowMaxHeight';
+  id: number;
+  maxHeight: number;
 }
 
 export type RenderClientMessage =
@@ -89,11 +102,13 @@ export type RenderClientMessage =
   | RenderClientFirstRenderComplete
   | RenderClientUnload
   | RenderClientFinalizeCellsTextHash
-  | RenderClientColumnMaxWidth;
+  | RenderClientColumnMaxWidth
+  | RenderClientRowMaxHeight;
 
 export type ClientRenderMessage =
   | ClientRenderInit
   | ClientRenderViewport
   | ClientRenderSheetOffsetsTransient
   | ClientRenderShowLabel
-  | ClientRenderColumnMaxWidth;
+  | ClientRenderColumnMaxWidth
+  | ClientRenderRowMaxHeight;

@@ -322,10 +322,10 @@ export class PixiApp {
     this.cellsSheets.adjustOffsetsBorders(options.sheetId);
     htmlCellsHandler.updateOffsets([sheets.sheet.id]);
     if (sheets.sheet.id === options.sheetId) {
-      pixiApp.gridLines.dirty = true;
-      pixiApp.cursor.dirty = true;
+      this.gridLines.dirty = true;
+      this.cursor.dirty = true;
       this.cellHighlights.dirty = true;
-      pixiApp.headings.dirty = true;
+      this.headings.dirty = true;
       this.multiplayerCursor.dirty = true;
     }
   }

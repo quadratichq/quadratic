@@ -1,5 +1,13 @@
 import { events } from '@/app/events/events';
-import { CellAlign, CellFormatSummary, GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import {
+  CellAlign,
+  CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
+  GridBounds,
+  SheetBounds,
+  SheetInfo,
+} from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -102,6 +110,14 @@ export class Sheet {
 
   setCellAlign(rectangle: Rectangle, align?: CellAlign): void {
     quadraticCore.setCellAlign(this.id, rectangle, align, sheets.getCursorPosition());
+  }
+
+  setCellVerticalAlign(rectangle: Rectangle, verticalAlign?: CellVerticalAlign): void {
+    quadraticCore.setCellVerticalAlign(this.id, rectangle, verticalAlign, sheets.getCursorPosition());
+  }
+
+  setCellWrap(rectangle: Rectangle, wrap?: CellWrap): void {
+    quadraticCore.setCellWrap(this.id, rectangle, wrap, sheets.getCursorPosition());
   }
 
   setCurrency(rectangle: Rectangle, symbol: string = '$') {

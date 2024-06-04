@@ -187,7 +187,7 @@ export class CellsLabels {
       this.cellsTextHash.forEach((hash) => {
         if (hash.hashY === rowHash) {
           if (hash.adjustHeadings({ row, delta })) {
-            if (!!hashesToUpdate.has(hash)) {
+            if (!hashesToUpdate.has(hash)) {
               hashesToUpdateViewRectangle.delete(hash);
               hashesToUpdate.set(hash, this.hashDistanceSquared(hash, viewport));
             }
@@ -422,6 +422,17 @@ export class CellsLabels {
     this.cellsTextHash.forEach((hash) => {
       if (hash.hashX === hashX) {
         max = Math.max(max, hash.getCellsContentMaxWidth(column));
+      }
+    });
+    return max;
+  }
+
+  rowMaxHeight(row: number): number {
+    const hashY = Math.floor(row / sheetHashHeight);
+    let max = 0;
+    this.cellsTextHash.forEach((hash) => {
+      if (hash.hashY === hashY) {
+        max = Math.max(max, hash.getCellsContentMaxHeight(row));
       }
     });
     return max;

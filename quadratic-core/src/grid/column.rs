@@ -17,6 +17,7 @@ pub struct Column {
     pub x: i64,
     pub values: BTreeMap<i64, CellValue>,
     pub align: ColumnData<SameValue<CellAlign>>,
+    pub vertical_align: ColumnData<SameValue<CellVerticalAlign>>,
     pub wrap: ColumnData<SameValue<CellWrap>>,
     pub numeric_format: ColumnData<SameValue<NumericFormat>>,
     pub numeric_decimals: ColumnData<SameValue<i16>>,

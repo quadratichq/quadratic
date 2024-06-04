@@ -13,6 +13,8 @@ import {
   BorderStyle,
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   JsCodeCell,
   JsRenderCell,
@@ -483,6 +485,32 @@ class QuadraticCore {
       width: rectangle.width,
       height: rectangle.height,
       align,
+      cursor,
+    });
+  }
+
+  setCellVerticalAlign(sheetId: string, rectangle: Rectangle, verticalAlign?: CellVerticalAlign, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellVerticalAlign',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      verticalAlign,
+      cursor,
+    });
+  }
+
+  setCellWrap(sheetId: string, rectangle: Rectangle, wrap?: CellWrap, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellWrap',
+      sheetId,
+      x: rectangle.x,
+      y: rectangle.y,
+      width: rectangle.width,
+      height: rectangle.height,
+      wrap,
       cursor,
     });
   }

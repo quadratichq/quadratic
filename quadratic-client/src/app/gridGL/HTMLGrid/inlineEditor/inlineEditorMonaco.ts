@@ -82,7 +82,7 @@ class InlineEditorMonaco {
   };
 
   // Resizes the Monaco editor and returns the width.
-  resize(minWidth: number, height: number): number {
+  resize(width: number, height: number, textWrap: boolean): { width: number; height: number } {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
     }
@@ -94,9 +94,11 @@ class InlineEditorMonaco {
     if (!textarea) {
       throw new Error('Expected textarea to be defined in layout');
     }
-    const width = Math.max(textarea.scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, minWidth);
+    width = textWrap ? width : Math.max(textarea.scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, width);
+    height = Math.max(textarea.scrollHeight, height);
     this.editor.layout({ width, height });
-    return width;
+    this.editor.updateOptions({ wordWrap: textWrap ? 'on' : 'off' });
+    return { width, height };
   }
 
   removeSelection() {
@@ -240,6 +242,8 @@ class InlineEditorMonaco {
       hideCursorInOverviewRuler: true,
       overviewRulerBorder: false,
       wordWrap: 'off',
+      wrappingStrategy: 'advanced',
+      wordBreak: 'keepAll',
       occurrencesHighlight: false,
       wordBasedSuggestions: false,
       find: {
@@ -259,6 +263,7 @@ class InlineEditorMonaco {
         horizontal: 'hidden',
         vertical: 'hidden',
         alwaysConsumeMouseWheel: false,
+        verticalScrollbarSize: 0,
       },
       theme: 'inline-editor',
       stickyScroll: { enabled: false },

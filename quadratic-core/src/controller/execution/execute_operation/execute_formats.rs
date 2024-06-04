@@ -18,6 +18,12 @@ impl GridController {
                 CellFmtArray::Align(align) => CellFmtArray::Align(
                     self.set_cell_formats_for_type::<CellAlign>(&sheet_rect, align),
                 ),
+                CellFmtArray::VerticalAlign(vertical_align) => CellFmtArray::VerticalAlign(
+                    self.set_cell_formats_for_type::<CellVerticalAlign>(
+                        &sheet_rect,
+                        vertical_align,
+                    ),
+                ),
                 CellFmtArray::Wrap(wrap) => CellFmtArray::Wrap(
                     self.set_cell_formats_for_type::<CellWrap>(&sheet_rect, wrap),
                 ),
