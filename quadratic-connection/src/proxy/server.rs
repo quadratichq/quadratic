@@ -13,7 +13,7 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use super::proxy::upgrade;
+use super::tunnel::upgrade;
 use crate::{
     error::{ConnectionError, Result},
     proxy::auth::check_auth,
