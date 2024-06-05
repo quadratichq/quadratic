@@ -13,7 +13,6 @@ const drawCursorOutline = (g: Graphics, color: number) => {
   g.drawRect(outline.x, outline.y, outline.width, outline.height);
 }
 
-
 // Draws a cursor hole for use in multiCursor and columnRowCursor
 export const drawCursorHole = (g: Graphics, cursorPosition: Coordinate) => {
   const sheet = sheets.sheet;
@@ -90,14 +89,9 @@ export const drawMultiCursor = (g: Graphics, color: number, alpha: number, recta
     const sheet = sheets.sheet;
     g.lineStyle(1, color, 1, 0, true);
     g.beginFill(color, alpha);
-    rectangles.forEach((rectangle) => {
-      const { x, y, width, height } = sheet.getScreenRectangle(
-        rectangle.x,
-        rectangle.y,
-        rectangle.width - 1,
-        rectangle.height - 1
-      );
-      g.drawRect(x, y, width, height);
+    rectangles.forEach((rectangle, index) => {
+      const rect = sheet.getScreenRectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1);
+      g.drawShape(rect);
     });
     g.endFill();
 }

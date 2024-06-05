@@ -74,7 +74,7 @@ export class Cursor extends Graphics {
         setTimeout(() => (this.dirty = true), 0);
       }
     } else {
-      if (!cursor.multiCursor || cursor.multiCursor.length === 1) {
+      if (!cursor.multiCursor) {
         indicatorOffset = indicatorSize / 2 + indicatorPadding;
       }
     }
@@ -120,11 +120,16 @@ export class Cursor extends Graphics {
     const sheet = sheets.sheet;
     const { cursor } = sheet;
 
+    this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
     if (cursor.multiCursor) {
       drawMultiCursor(this, colors.cursorCell, FILL_ALPHA, cursor.multiCursor);
+
+      // endCell is only interesting for one multiCursor since we use it to draw
+      // the indicator, which is only active for one multiCursor
+      const multiCursor = cursor.multiCursor[0];
+      this.endCell = sheet.getCellOffsets(multiCursor.right - 1, multiCursor.bottom - 1);
       this.cursorRectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
     } else {
-      this.startCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.cursorRectangle = new Rectangle(
         this.startCell.x,
@@ -204,6 +209,7 @@ export class Cursor extends Graphics {
   // visible bounds on the screen, not to the selection size.
   update(viewportDirty: boolean) {
     const columnRow = !!sheets.sheet.cursor.columnRow;
+    const multiCursor = sheets.sheet.cursor.multiCursor;
     if (this.dirty || (viewportDirty && columnRow)) {
       this.dirty = false;
       this.clear();
@@ -218,7 +224,7 @@ export class Cursor extends Graphics {
         if (columnRow) {
           drawColumnRowCursor({ g: this, columnRow, color: colors.cursorCell, alpha: FILL_ALPHA, cursorPosition: sheets.sheet.cursor.cursorPosition });
         }
-        if (!columnRow) {
+        if (!columnRow && (!multiCursor || multiCursor.length === 1)) {
           this.drawCursorIndicator();
         }
       }

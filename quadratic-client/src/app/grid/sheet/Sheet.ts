@@ -5,7 +5,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { Coordinate } from '../../gridGL/types/size';
 import { sheets } from '../controller/Sheets';
-import { SheetCursor } from './SheetCursor';
+import { RectangleLike, SheetCursor } from './SheetCursor';
 
 export class Sheet {
   id: string;
@@ -110,10 +110,17 @@ export class Sheet {
   }
 
   // @returns screen rectangle for a column/row rectangle
-  getScreenRectangle(column: number, row: number, width: number, height: number): Rectangle {
-    const topLeft = this.getCellOffsets(column, row);
-    const bottomRight = this.getCellOffsets(column + width, row + height);
+  getScreenRectangle(column: number | RectangleLike, row?: number, width?: number, height?: number): Rectangle {
+    if (typeof column === 'object') {
+      row = column.y;
+      width = column.width;
+      height = column.height;
+      column = column.x;
+    }
+    const topLeft = this.getCellOffsets(column, row!);
+    const bottomRight = this.getCellOffsets(column + width!, row! + height!);
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
+
   }
 
   updateSheetOffsets(column: number | undefined, row: number | undefined, size: number) {
