@@ -62,6 +62,7 @@ import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import './floatingMenuStyles.scss';
 
 interface Props {
   container?: HTMLDivElement;
@@ -414,7 +415,7 @@ export const FloatingContextMenu = (props: Props) => {
         </Menu>
 
         <Menu
-          className="text-wrapping-submenu"
+          className="text-submenu"
           instanceRef={textHorizontalAlign}
           menuButton={
             <div>
@@ -429,7 +430,7 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <TooltipHint title="Overflow">
             <IconButton size="small" onClick={() => setWrap(undefined)}>
-              <TextOverflowIcon />
+              <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
             </IconButton>
           </TooltipHint>
           <TooltipHint title="Wrap">
@@ -439,7 +440,7 @@ export const FloatingContextMenu = (props: Props) => {
           </TooltipHint>
           <TooltipHint title="Clip">
             <IconButton size="small" onClick={() => setWrap('clip')}>
-              <TextClipIcon />
+              <TextClipIcon style={{ width: '20px', height: '20px' }} />
             </IconButton>
           </TooltipHint>
         </Menu>
