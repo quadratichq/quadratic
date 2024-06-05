@@ -36,7 +36,7 @@ export interface MultiplayerUser extends MultiplayerUserServer {
   index: number;
   colorString: string;
   parsedCodeRunning: SheetPosTS[];
-  parsedSelection?: { cursorPosition: Coordinate; multiCursor?: RectangleLike[], columnRow?: ColumnRowCursor };
+  parsedSelection?: { cursorPosition: Coordinate; multiCursor?: RectangleLike[]; columnRow?: ColumnRowCursor };
 }
 
 export interface Version {

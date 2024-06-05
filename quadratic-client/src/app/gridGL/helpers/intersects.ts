@@ -19,7 +19,10 @@ function bottom(rectangle: RectangleLike): number {
 
 function rectanglePoint(rectangle: RectangleLike, point: Point): boolean {
   return (
-    point.x >= left(rectangle) && point.x <= right(rectangle) && point.y >= top(rectangle) && point.y <= bottom(rectangle)
+    point.x >= left(rectangle) &&
+    point.x <= right(rectangle) &&
+    point.y >= top(rectangle) &&
+    point.y <= bottom(rectangle)
   );
 }
 

@@ -68,7 +68,9 @@ export class UIMultiPlayerCursor extends Graphics {
   update(viewportDirty: boolean) {
     // we need to update the multiplayer cursor if a player has selected a row,
     // column, or the sheet, and the viewport has changed
-    const dirtySheet = viewportDirty ? [...multiplayer.users].some(([_, player]) => player.parsedSelection?.columnRow) : false;
+    const dirtySheet = viewportDirty
+      ? [...multiplayer.users].some(([_, player]) => player.parsedSelection?.columnRow)
+      : false;
 
     if (dirtySheet || this.dirty) {
       this.dirty = false;
@@ -87,8 +89,14 @@ export class UIMultiPlayerCursor extends Graphics {
 
           const columnRow = player.parsedSelection.columnRow;
           if (columnRow) {
-            drawColumnRowCursor({ g: this, color, alpha: FILL_ALPHA, cursorPosition: player.parsedSelection.cursorPosition, columnRow });
-          }  else if (player.parsedSelection.multiCursor) {
+            drawColumnRowCursor({
+              g: this,
+              color,
+              alpha: FILL_ALPHA,
+              cursorPosition: player.parsedSelection.cursorPosition,
+              columnRow,
+            });
+          } else if (player.parsedSelection.multiCursor) {
             drawMultiCursor(this, color, FILL_ALPHA, player.parsedSelection.multiCursor);
           }
         }

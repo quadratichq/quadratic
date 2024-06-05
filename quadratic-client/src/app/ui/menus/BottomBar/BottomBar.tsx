@@ -31,7 +31,7 @@ export const BottomBar = () => {
       if (cursor.multiCursor && cursor.multiCursor.length === 1) {
         const multiCursor = cursor.multiCursor[0];
         setMultiCursorPositionString(
-          `(${multiCursor.left}, ${multiCursor.top}), (${multiCursor.right}, ${multiCursor.bottom})`
+          `(${multiCursor.left}, ${multiCursor.top}), (${multiCursor.right - 1}, ${multiCursor.bottom - 1})`
         );
       } else {
         setMultiCursorPositionString('');

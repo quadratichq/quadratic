@@ -126,7 +126,12 @@ export class GridHeadings extends Container {
       cursor.multiCursor.forEach((rectangle) => {
         const start = offsets.getColumnPlacement(rectangle.left);
         const end = offsets.getColumnPlacement(rectangle.right - 1);
-        this.headingsGraphics.drawRect(start.position, viewport.top, end.position + end.size - start.position, cellHeight);
+        this.headingsGraphics.drawRect(
+          start.position,
+          viewport.top,
+          end.position + end.size - start.position,
+          cellHeight
+        );
         for (let x = rectangle.left; x < rectangle.right; x++) {
           selectedColumns.add(x);
         }
@@ -177,7 +182,7 @@ export class GridHeadings extends Container {
     this.gridLinesColumns = [];
 
     // keep track of last label to ensure we don't overlap
-    let lastLabel: { left: number, right: number, selected: boolean } | undefined = undefined;
+    let lastLabel: { left: number; right: number; selected: boolean } | undefined = undefined;
 
     for (let x = leftOffset; x <= rightOffset; x += currentWidth) {
       currentWidth = offsets.getColumnWidth(column);
@@ -197,7 +202,6 @@ export class GridHeadings extends Container {
 
         // only show labels that will fit (unless grid lines are hidden)
         if (currentWidth > charactersWidth || pixiApp.gridLines.alpha < 0.25) {
-
           // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
           let xPosition = x + currentWidth / 2;
           const left = xPosition - charactersWidth / 2;
@@ -207,9 +211,15 @@ export class GridHeadings extends Container {
           // selected but we are selected. We also leave first and last
           // selections, unless there is only two selections, in which case we
           // leave only the first.
-          let intersectsLast = lastLabel && intersects.lineLineOneDimension(lastLabel.left, lastLabel.right, left, right);
+          let intersectsLast =
+            lastLabel && intersects.lineLineOneDimension(lastLabel.left, lastLabel.right, left, right);
           const selectedColumns = Array.isArray(this.selectedColumns) ? [...this.selectedColumns] : [];
-          if (intersectsLast && selected && ((!selectedColumns.includes(column - 1) || !selectedColumns.includes(column + 1))) && (selectedColumns.includes(column - 2) || selectedColumns.includes(column + 2))) {
+          if (
+            intersectsLast &&
+            selected &&
+            (!selectedColumns.includes(column - 1) || !selectedColumns.includes(column + 1)) &&
+            (selectedColumns.includes(column - 2) || selectedColumns.includes(column + 2))
+          ) {
             this.labels.removeLast();
             intersectsLast = false;
           }
@@ -282,7 +292,7 @@ export class GridHeadings extends Container {
     // if we're selecting columns, then show all rows as selected
     if (cursor.columnRow?.columns) {
       this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
-      this.headingsGraphics.drawRect(bounds.left, bounds.top,this.rowWidth, bounds.height);
+      this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, bounds.height);
       this.headingsGraphics.endFill();
       return 'all';
     }
@@ -294,7 +304,12 @@ export class GridHeadings extends Container {
       cursor.multiCursor.forEach((rectangle) => {
         const start = offsets.getRowPlacement(rectangle.top);
         const end = offsets.getRowPlacement(rectangle.bottom - 1);
-        this.headingsGraphics.drawRect(bounds.left, start.position, this.rowWidth, end.position + end.size - start.position);
+        this.headingsGraphics.drawRect(
+          bounds.left,
+          start.position,
+          this.rowWidth,
+          end.position + end.size - start.position
+        );
         for (let y = rectangle.top; y < rectangle.bottom; y++) {
           selectedRows.add(y);
         }
@@ -321,9 +336,9 @@ export class GridHeadings extends Container {
     const bounds = viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
     const cellHeight = CELL_HEIGHT / scale;
+
     const gridAlpha = calculateAlphaForGridLines(scale);
     const showA1Notation = pixiAppSettings.showA1Notation;
-    const halfCharacterHeight = this.characterSize.height / 2 / scale;
 
     const start = offsets.getYPlacement(bounds.top);
     const end = offsets.getYPlacement(bounds.bottom);
@@ -332,7 +347,7 @@ export class GridHeadings extends Container {
 
     // labelWidth uses the constant for number of digits--this ensures the mod factor doesn't change when panning
     let mod = 0;
-    if (this.characterSize.height > CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT) {
+    if (this.characterSize.height > CELL_HEIGHT * scale * LABEL_MAXIMUM_HEIGHT_PERCENT) {
       const skipNumbers = Math.ceil((cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / this.characterSize.height);
       mod = this.findIntervalY(skipNumbers);
     }
@@ -343,7 +358,9 @@ export class GridHeadings extends Container {
     this.gridLinesColumns = [];
 
     // keep track of last label to ensure we don't overlap
-    let lastLabel: { top: number, bottom: number, selected: boolean } | undefined = undefined;
+    let lastLabel: { top: number; bottom: number; selected: boolean } | undefined = undefined;
+
+    const halfCharacterHeight = this.characterSize.height / scale;
 
     for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
       currentHeight = offsets.getRowHeight(row);
@@ -359,22 +376,26 @@ export class GridHeadings extends Container {
 
       // only show the label if selected or mod calculation
       if (selected || mod === 0 || row % mod === 0) {
-
         // only show labels that will fit (unless grid lines are hidden)
-        if (currentHeight > halfCharacterHeight * 2 || pixiApp.gridLines.alpha < 0.25) {
-
+        // if (currentHeight > halfCharacterHeight * 2 || pixiApp.gridLines.alpha < 0.25) {
           // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
           let yPosition = y + currentHeight / 2;
           const top = yPosition - halfCharacterHeight / 2;
           const bottom = yPosition + halfCharacterHeight / 2;
 
-          // we remove the last label if we're intersecting and it was not
+          // We remove the last label if we're intersecting and it was not
           // selected but we are selected. We also leave first and last
           // selections, unless there is only two selections, in which case we
           // leave only the first.
-          let intersectsLast = lastLabel && intersects.lineLineOneDimension(lastLabel.top, lastLabel.bottom, top, bottom);
-          const selectedColumns = Array.isArray(this.selectedColumns) ? [...this.selectedColumns] : [];
-          if (intersectsLast && selected && ((!selectedColumns.includes(row - 1) || !selectedColumns.includes(row + 1))) && (selectedColumns.includes(row - 2) || selectedColumns.includes(row + 2))) {
+          let intersectsLast =
+            lastLabel && intersects.lineLineOneDimension(lastLabel.top, lastLabel.bottom, top, bottom);
+          const selectedRows = Array.isArray(this.selectedRows) ? [...this.selectedRows] : [];
+          if (
+            intersectsLast &&
+            selected &&
+            (!selectedRows.includes(row - 1) || !selectedRows.includes(row + 1)) &&
+            (selectedRows.includes(row - 2) || selectedRows.includes(row + 2))
+          ) {
             this.labels.removeLast();
             intersectsLast = false;
           }
@@ -385,7 +406,7 @@ export class GridHeadings extends Container {
             this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
             lastLabel = { top, bottom, selected };
           }
-        }
+        // }
       }
       row++;
     }
@@ -394,67 +415,6 @@ export class GridHeadings extends Container {
   private drawVertical() {
     this.drawVerticalBar();
     this.verticalLabels();
-
-    // let mod = 0;
-    // if (this.characterSize.height > CELL_HEIGHT * viewport.scale.y * LABEL_MAXIMUM_HEIGHT_PERCENT) {
-    //   const skipNumbers = Math.ceil((cellHeight * (1 - LABEL_MAXIMUM_HEIGHT_PERCENT)) / this.characterSize.height);
-    //   mod = this.findIntervalY(skipNumbers);
-    // }
-
-    // const x = bounds.left + this.rowWidth / 2;
-    // let row = start.index;
-    // let currentHeight = 0;
-    // this.gridLinesRows = [];
-    // for (let y = topOffset; y <= bottomOffset; y += currentHeight) {
-    //   currentHeight = offsets.getRowHeight(row);
-    //   if (gridAlpha !== 0) {
-    //     this.headingsGraphics.lineStyle(1, colors.gridLines, 0.25 * gridAlpha, 0.5, true);
-    //     this.headingsGraphics.moveTo(bounds.left, y);
-    //     this.headingsGraphics.lineTo(bounds.left + this.rowWidth, y);
-    //     this.gridLinesRows.push({ row: row - 1, y, height: offsets.getRowHeight(row - 1) });
-    //   }
-
-    //   // show first and last selected numbers unless last selected number overlaps first selected number
-    //   const selected =
-    //     this.selectedRows[0] === row ||
-    //     (this.selectedRows.length > 1 &&
-    //       this.selectedRows[this.selectedRows.length - 1] === row &&
-    //       !intersects.lineLineOneDimension(
-    //         ySelectedStartLine1D.start,
-    //         ySelectedStartLine1D.end,
-    //         ySelectedEndLine1D.start,
-    //         ySelectedEndLine1D.end
-    //       ));
-
-    //   // only show the label if selected or mod calculation
-    //   if (selected || mod === 0 || row % mod === 0) {
-    //     // only show labels if height is large enough
-    //     // if (currentHeight > halfCharacterHeight * 2 || this.app.gridLines.alpha === 0) {
-
-    //     // don't show numbers if it overlaps with the selected value (eg, allows digit 1 to show if it overlaps digit 0)
-    //     let yPosition = y + currentHeight / 2;
-    //     const top = yPosition - halfCharacterHeight;
-    //     const bottom = yPosition + halfCharacterHeight;
-    //     if (
-    //       selected ||
-    //       !(
-    //         intersects.lineLineOneDimension(ySelectedStartLine1D.start, ySelectedStartLine1D.end, top, bottom) ||
-    //         intersects.lineLineOneDimension(ySelectedEndLine1D.start, ySelectedEndLine1D.end, top, bottom)
-    //       )
-    //     ) {
-    //       const text = showA1Notation ? getRowA1Notation(row) : row.toString();
-    //       this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
-    //     }
-    //   }
-    //   row++;
-
-    //   // uncomment this code for a target to find the ROW_DIGIT_OFFSET for centering the row numbers
-    //   // graphics.lineStyle(1, 0, 0.5)
-    //   // graphics.moveTo(bounds.left, y)
-    //   // graphics.lineTo(bounds.left + rowWidth, y)
-    //   // graphics.moveTo(bounds.left + rowWidth / 2, y)
-    //   // graphics.lineTo(bounds.left + rowWidth / 2, y + CELL_HEIGHT)
-    // }
   }
 
   private drawCorner(): void {

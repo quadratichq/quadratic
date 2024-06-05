@@ -11,7 +11,7 @@ const drawCursorOutline = (g: Graphics, color: number) => {
   const outline = sheet.getCellOffsets(cursor.x, cursor.y);
   g.lineStyle(1, color, 1, 0, true);
   g.drawRect(outline.x, outline.y, outline.width, outline.height);
-}
+};
 
 // Draws a cursor hole for use in multiCursor and columnRowCursor
 export const drawCursorHole = (g: Graphics, cursorPosition: Coordinate) => {
@@ -29,10 +29,16 @@ export const drawCursorHole = (g: Graphics, cursorPosition: Coordinate) => {
   const y2 = hole.bottom > visible.bottom ? visible.bottom : hole.bottom;
   g.drawRect(x1, y1, x2 - x1, y2 - y1);
   g.endHole();
-}
+};
 
 // this is generic so it can be used by UIMultiplayerCursor
-export const drawColumnRowCursor = (options: { g: Graphics, cursorPosition: Coordinate, columnRow: ColumnRowCursor, color: number, alpha: number }) => {
+export const drawColumnRowCursor = (options: {
+  g: Graphics;
+  cursorPosition: Coordinate;
+  columnRow: ColumnRowCursor;
+  color: number;
+  alpha: number;
+}) => {
   const { g, cursorPosition, columnRow, color, alpha } = options;
   const sheet = sheets.sheet;
 
@@ -83,15 +89,15 @@ export const drawColumnRowCursor = (options: { g: Graphics, cursorPosition: Coor
   }
   g.endFill();
   drawCursorOutline(g, color);
-}
+};
 
 export const drawMultiCursor = (g: Graphics, color: number, alpha: number, rectangles: RectangleLike[]) => {
-    const sheet = sheets.sheet;
-    g.lineStyle(1, color, 1, 0, true);
-    g.beginFill(color, alpha);
-    rectangles.forEach((rectangle, index) => {
-      const rect = sheet.getScreenRectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1);
-      g.drawShape(rect);
-    });
-    g.endFill();
-}
+  const sheet = sheets.sheet;
+  g.lineStyle(1, color, 1, 0, true);
+  g.beginFill(color, alpha);
+  rectangles.forEach((rectangle, index) => {
+    const rect = sheet.getScreenRectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1);
+    g.drawShape(rect);
+  });
+  g.endFill();
+};

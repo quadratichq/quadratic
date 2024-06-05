@@ -120,7 +120,6 @@ export class Sheet {
     const topLeft = this.getCellOffsets(column, row!);
     const bottomRight = this.getCellOffsets(column + width!, row! + height!);
     return new Rectangle(topLeft.left, topLeft.top, bottomRight.right - topLeft.left, bottomRight.bottom - topLeft.top);
-
   }
 
   updateSheetOffsets(column: number | undefined, row: number | undefined, size: number) {

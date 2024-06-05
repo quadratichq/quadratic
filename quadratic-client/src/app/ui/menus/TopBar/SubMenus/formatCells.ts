@@ -9,8 +9,8 @@ export const setFillColor = (color?: ColorResult) => {
 };
 
 export const clearFillColor = () => {
-  quadraticCore.setCellFillColor(sheets.getRustSelection(), "blank");
-}
+  quadraticCore.setCellFillColor(sheets.getRustSelection(), 'blank');
+};
 
 const getFormat = async (selection: Selection): Promise<Format | undefined> => {
   if (selection.all) {

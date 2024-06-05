@@ -9,7 +9,7 @@ export function convertReactColorToString(color: ColorResult): string {
 }
 
 export function convertColorStringToTint(color: string): number {
-  if (color === "blank") {
+  if (color === 'blank') {
     return colors.gridBackground;
   }
   try {
@@ -55,7 +55,7 @@ export function convertTintToArray(color: number): [number, number, number, numb
 }
 
 export function convertColorStringToHex(color: string): string {
-  if (color === "blank") {
+  if (color === 'blank') {
     return convertTintToHex(colors.gridBackground);
   }
   try {

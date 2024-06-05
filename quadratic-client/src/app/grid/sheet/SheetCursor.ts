@@ -118,7 +118,11 @@ export class SheetCursor {
 
   // gets a stringified selection string for multiplayer
   getMultiplayerSelection(): string {
-    return JSON.stringify({ cursorPosition: this.cursorPosition, multiCursor: this.multiCursor, columnRow: this.columnRow });
+    return JSON.stringify({
+      cursorPosition: this.cursorPosition,
+      multiCursor: this.multiCursor,
+      columnRow: this.columnRow,
+    });
   }
 
   changeBoxCells(boxCells: boolean) {

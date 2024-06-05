@@ -166,7 +166,6 @@ export class PointerDown {
 
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
-
       // hide multi cursor when only selecting one cell
       if (cursor.multiCursor && cursor.multiCursor.length === 1) {
         cursor.changePosition({

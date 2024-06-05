@@ -222,7 +222,13 @@ export class Cursor extends Graphics {
         this.drawMultiCursor();
         const columnRow = sheets.sheet.cursor.columnRow;
         if (columnRow) {
-          drawColumnRowCursor({ g: this, columnRow, color: colors.cursorCell, alpha: FILL_ALPHA, cursorPosition: sheets.sheet.cursor.cursorPosition });
+          drawColumnRowCursor({
+            g: this,
+            columnRow,
+            color: colors.cursorCell,
+            alpha: FILL_ALPHA,
+            cursorPosition: sheets.sheet.cursor.cursorPosition,
+          });
         }
         if (!columnRow && (!multiCursor || multiCursor.length === 1)) {
           this.drawCursorIndicator();

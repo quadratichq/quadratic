@@ -18,7 +18,7 @@ interface SpriteBounds extends Sprite {
 
 interface ColumnRow {
   row?: number;
-  column?: number
+  column?: number;
   color: string;
   timestamp: number;
 }
@@ -35,7 +35,9 @@ export class CellsFills extends Container {
     super();
     this.cellsSheet = cellsSheet;
     this.meta = this.addChild(new Graphics());
-    this.cellsContainer = this.addChild(new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true));
+    this.cellsContainer = this.addChild(
+      new ParticleContainer(undefined, { vertices: true, tint: true }, undefined, true)
+    );
 
     events.on('sheetFills', (sheetId, fills) => {
       if (sheetId === this.cellsSheet.sheetId) {
@@ -115,11 +117,21 @@ export class CellsFills extends Container {
 
       // combine the column and row fills and sort them by their timestamp so
       // they are drawn in the correct order
-      const columns: ColumnRow[] = this.metaFill.columns.map(entry => ({ column: Number(entry[0]), row: undefined, color: entry[1][0], timestamp: Number(entry[1][1]) }));
-      const rows: ColumnRow[] = this.metaFill.rows.map(entry => ({ column: undefined, row: Number(entry[0]), color: entry[1][0], timestamp: Number(entry[1][1]) }));
-      const fills = [...columns, ...rows].sort((a, b) => (a.timestamp - b.timestamp));
+      const columns: ColumnRow[] = this.metaFill.columns.map((entry) => ({
+        column: Number(entry[0]),
+        row: undefined,
+        color: entry[1][0],
+        timestamp: Number(entry[1][1]),
+      }));
+      const rows: ColumnRow[] = this.metaFill.rows.map((entry) => ({
+        column: undefined,
+        row: Number(entry[0]),
+        color: entry[1][0],
+        timestamp: Number(entry[1][1]),
+      }));
+      const fills = [...columns, ...rows].sort((a, b) => a.timestamp - b.timestamp);
 
-      fills.forEach(fill => {
+      fills.forEach((fill) => {
         if (fill.column !== undefined) {
           const screen = this.sheet.offsets.getColumnPlacement(Number(fill.column));
           const left = screen.position;
