@@ -267,11 +267,13 @@ export class CellLabel {
         spaceCount++;
       }
       if (char === '\r' || char === '\n') {
+        spacesRemoved++;
+        lastBreakPos = -1;
         lineWidths.push(lastLineWidth);
         lineSpaces.push(-1);
         maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
-        ++line;
-        ++spacesRemoved;
+
+        line++;
         pos.x = 0;
         pos.y += data.lineHeight;
         prevCharCode = null;
@@ -298,7 +300,7 @@ export class CellLabel {
       maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.textureHeight);
       prevCharCode = charCode;
       if (maxWidth > 0 && pos.x > maxWidth) {
-        const start = lastBreakPos === -1 ? i : 1 + lastBreakPos - spacesRemoved;
+        const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
         const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
         removeItems(this.chars, start, count);
 
