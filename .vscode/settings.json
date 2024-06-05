@@ -52,7 +52,7 @@
     "source.organizeImports": "explicit"
   },
   "[rust]": {
-    "editor.defaultFormatter": "rust-lang.rust-analyzer"
+    "editor.defaultFormatter": null
   },
   "rust-analyzer.linkedProjects": [
     "./Cargo.toml",
