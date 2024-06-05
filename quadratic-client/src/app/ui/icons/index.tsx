@@ -308,18 +308,18 @@ export const SheetGoToIcon = (props: SvgIconProps) => (
 export const TextOverflowIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="48" height="48" fill="white" fill-opacity="0.01" />
-      <path d="M8 10V38" stroke="black" stroke-width="4" stroke-linecap="round" />
-      <path d="M24 4V16" stroke="black" stroke-width="4" stroke-linecap="round" />
-      <path d="M16 24H42" stroke="black" stroke-width="4" stroke-linecap="round" />
+      <rect width="48" height="48" fill="white" fillOpacity="0.01" />
+      <path d="M8 10V38" stroke="black" strokeWidth="4" strokeLinecap="round" />
+      <path d="M24 4V16" stroke="black" strokeWidth="4" strokeLinecap="round" />
+      <path d="M16 24H42" stroke="black" strokeWidth="4" strokeLinecap="round" />
       <path
         d="M37.0561 19.0113L42.0929 24.0255L37.0561 29.123"
         stroke="black"
-        stroke-width="4"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <path d="M24 32V44" stroke="black" stroke-width="4" stroke-linecap="round" />
+      <path d="M24 32V44" stroke="black" strokeWidth="4" strokeLinecap="round" />
     </svg>
   </SvgIcon>
 );
@@ -327,10 +327,10 @@ export const TextOverflowIcon = (props: SvgIconProps) => (
 export const TextClipIcon = (props: SvgIconProps) => (
   <SvgIcon {...props}>
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect width="48" height="48" fill="white" fill-opacity="0.01" />
-      <path d="M8 8V40" stroke="black" stroke-width="4" stroke-linecap="round" />
-      <path d="M40 8V40" stroke="black" stroke-width="4" stroke-linecap="round" />
-      <path d="M20.0522 24.0083H40.0002" stroke="black" stroke-width="4" stroke-linecap="round" />
+      <rect width="48" height="48" fill="white" fillOpacity="0.01" />
+      <path d="M8 8V40" stroke="black" strokeWidth="4" strokeLinecap="round" />
+      <path d="M40 8V40" stroke="black" strokeWidth="4" strokeLinecap="round" />
+      <path d="M20.0522 24.0083H40.0002" stroke="black" strokeWidth="4" strokeLinecap="round" />
     </svg>
   </SvgIcon>
 );
