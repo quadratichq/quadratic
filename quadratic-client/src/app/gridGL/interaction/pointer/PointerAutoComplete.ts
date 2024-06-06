@@ -1,3 +1,4 @@
+import { events } from '@/app/events/events';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point, Rectangle } from 'pixi.js';
@@ -36,9 +37,10 @@ export class PointerAutoComplete {
     // handle dragging from the corner
     if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       this.active = true;
+      events.emit('cellMoving', true);
       this.selection = cursor.multiCursor
         ? cursor.multiCursor[0]
-        : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 0, 0);
+        : new Rectangle(cursor.cursorPosition.x, cursor.cursorPosition.y, 1, 1);
       this.screenSelection = sheet.getScreenRectangle(
         this.selection.left,
         this.selection.top,
@@ -54,6 +56,7 @@ export class PointerAutoComplete {
 
   private reset(): void {
     if (this.active) {
+      events.emit('cellMoving', false);
       this.stateHorizontal = undefined;
       this.stateVertical = undefined;
       this.endCell = undefined;
@@ -80,70 +83,89 @@ export class PointerAutoComplete {
     } else {
       this.cursor = 'crosshair';
 
-      // handle dragging from the corner
-      // if (intersects.rectanglePoint(pixiApp.cursor.indicator, world)) {
       if (this.active) {
         const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
-        const { selection, screenSelection } = this;
+        let { selection, screenSelection } = this;
         if (!selection || !screenSelection) {
           throw new Error('Expected selection and screenSelection to be defined');
         }
+
         this.endCell = { x: column, y: row };
-        const rectangle = new Rectangle(selection.x, selection.y, selection.width, selection.height);
+        const boxCellsRectangle = selection.clone();
         const deleteRectangles = [];
-        if (row === selection.top && selection.top === selection.bottom) {
+
+        // Note: there is weirdness as to the rectangle size because the cell in
+        // which the cursor is hovering is where we want to expand/shrink to.
+        // This is why there +1s are needed.
+
+        // Handle changes in rows
+
+        // if at bottom or single height then don't do anything
+        if (row === selection.bottom - 1 || (row === selection.top && selection.top === selection.bottom)) {
           this.toVertical = undefined;
           this.stateVertical = undefined;
-        } else if (row >= selection.top && row < selection.bottom) {
-          this.stateVertical = 'shrink';
-          this.toVertical = row;
-          rectangle.height = row - selection.top;
-          deleteRectangles.push(new Rectangle(selection.x, row + 1, selection.width, selection.bottom - row - 1));
-        } else if (row < selection.top) {
-          this.stateVertical = 'expandUp';
-          this.toVertical = row;
-          rectangle.y = row;
-          rectangle.height = selection.bottom - row;
-        } else if (row > selection.bottom) {
-          this.stateVertical = 'expandDown';
-          this.toVertical = row;
-          rectangle.height = row - selection.y;
-        } else {
-          this.stateVertical = undefined;
-          this.toVertical = undefined;
+          boxCellsRectangle.height = selection.height - 1;
         }
 
-        if (column === selection.left && selection.left === selection.right) {
+        // if at top or between top and bottom then we shrink
+        else if (row >= selection.top && row + 1 < selection.bottom) {
+          this.stateVertical = 'shrink';
+          this.toVertical = row;
+          boxCellsRectangle.height = row - selection.top;
+          deleteRectangles.push(new Rectangle(selection.x, row + 1, selection.width - 1, selection.bottom - row - 2));
+        }
+
+        // if above top, then we expand up
+        else if (row < selection.top) {
+          this.stateVertical = 'expandUp';
+          this.toVertical = row;
+          boxCellsRectangle.y = row;
+          boxCellsRectangle.height = selection.bottom - row - 1;
+        }
+
+        // if below bottom, then we expand down
+        else if (row > selection.bottom) {
+          this.stateVertical = 'expandDown';
+          this.toVertical = row;
+          boxCellsRectangle.height = row - selection.y;
+        }
+
+        // Handle changes in column
+
+        // if at right or single width then don't do anything
+        if (column === selection.right - 1 || (column === selection.left && selection.left === selection.right)) {
           this.toHorizontal = undefined;
           this.stateHorizontal = undefined;
-        } else if (column >= selection.left && column < selection.right) {
+          boxCellsRectangle.width = selection.width - 1;
+        }
+
+        // if at left or between left and right then we shrink
+        else if (column >= selection.left && column + 1 < selection.right) {
           this.stateHorizontal = 'shrink';
           this.toHorizontal = column;
-          rectangle.width = column - selection.left;
-          if (this.stateVertical === 'shrink') {
-            deleteRectangles.push(
-              new Rectangle(column + 1, selection.y, selection.right - column - 1, row - selection.y)
-            );
-          } else {
-            deleteRectangles.push(
-              new Rectangle(column + 1, selection.y, selection.right - column - 1, selection.height)
-            );
-          }
-        } else if (column < selection.left) {
+          boxCellsRectangle.width = column - selection.left;
+          deleteRectangles.push(
+            new Rectangle(column + 1, selection.y, selection.right - column - 2, row - selection.y)
+          );
+        }
+
+        // if to the left of the selection then we expand left
+        else if (column < selection.left) {
           this.stateHorizontal = 'expandLeft';
           this.toHorizontal = column;
-          rectangle.x = column;
-          rectangle.width = selection.right - column;
-        } else if (column > selection.right) {
+          boxCellsRectangle.x = column;
+          boxCellsRectangle.width = selection.right - column - 1;
+        }
+
+        // if to the right of the selection then we expand right
+        else if (column >= selection.right) {
           this.stateHorizontal = 'expandRight';
           this.toHorizontal = column;
-          rectangle.width = column - selection.x;
-        } else {
-          this.stateHorizontal = undefined;
-          this.toHorizontal = undefined;
+          boxCellsRectangle.width = column - selection.x;
         }
+
         pixiApp.boxCells.populate({
-          gridRectangle: rectangle,
+          gridRectangle: boxCellsRectangle,
           horizontalDelete: this.stateHorizontal === 'shrink',
           verticalDelete: this.stateVertical === 'shrink',
           deleteRectangles,
@@ -173,8 +195,8 @@ export class PointerAutoComplete {
         ? this.toHorizontal
         : selection.right;
 
-    const width = bottom - top;
-    const height = right - left;
+    const width = right - left;
+    const height = bottom - top;
 
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
@@ -183,42 +205,43 @@ export class PointerAutoComplete {
       cursor.changePosition({});
     } else {
       sheet.cursor.changePosition({
-        multiCursor: [new Rectangle(left, top, right - left, bottom - top)],
+        multiCursor: [new Rectangle(left, top, width + 1, height + 1)],
         ensureVisible: false,
       });
     }
   }
 
-  private async apply(): Promise<void> {
-    if (!this.selection) return;
-
-    const sheet = sheets.sheet;
-
-    if (this.endCell) {
-      const bounds = new Bounds();
-      bounds.addRectangle(this.selection);
-      bounds.addCoordinate(this.endCell);
-      let fullBounds = bounds.toRectangle();
-
-      if (fullBounds) {
-        if (this.stateHorizontal === 'shrink') {
-          fullBounds.width = this.endCell.x - this.selection.x;
-        }
-
-        if (this.stateVertical === 'shrink') {
-          fullBounds.height = this.endCell.y - this.selection.y;
-        }
-        quadraticCore.autocomplete(sheet.id, this.selection, fullBounds);
-      }
-    }
-
-    this.setSelection();
-    this.reset();
-  }
-
   pointerUp(): boolean {
     if (this.active) {
-      this.apply();
+      if (!this.selection) return true;
+
+      const sheet = sheets.sheet;
+
+      if (this.endCell) {
+        const bounds = new Bounds();
+        bounds.addRectangle(this.selection);
+        bounds.addCoordinate(this.endCell);
+        let fullBounds = bounds.toRectangle();
+
+        if (fullBounds) {
+          if (this.stateHorizontal === 'shrink') {
+            fullBounds.width = this.endCell.x - this.selection.x;
+          } else if (this.stateHorizontal === 'expandLeft') {
+            fullBounds.x -= 1;
+          } else if (this.stateHorizontal === 'expandRight') {
+            fullBounds.width += 1;
+          }
+
+          if (this.stateVertical === 'shrink') {
+            fullBounds.height = this.endCell.y - this.selection.y;
+          }
+          console.log(this.selection.toString(), fullBounds.toString());
+          quadraticCore.autocomplete(sheet.id, this.selection, fullBounds);
+        }
+      }
+
+      this.setSelection();
+      this.reset();
       return true;
     }
     return false;
