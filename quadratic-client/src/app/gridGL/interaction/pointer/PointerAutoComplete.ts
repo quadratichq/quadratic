@@ -4,7 +4,6 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 import { sheets } from '../../../grid/controller/Sheets';
-import { Bounds } from '../../../grid/sheet/Bounds';
 import { intersects } from '../../helpers/intersects';
 import { pixiApp } from '../../pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
@@ -124,7 +123,7 @@ export class PointerAutoComplete {
         }
 
         // if below bottom, then we expand down
-        else if (row > selection.bottom) {
+        else if (row >= selection.bottom) {
           this.stateVertical = 'expandDown';
           this.toVertical = row;
           boxCellsRectangle.height = row - selection.y;
@@ -177,40 +176,6 @@ export class PointerAutoComplete {
     }
   }
 
-  private setSelection(): void {
-    const { selection } = this;
-    if (!selection) return;
-
-    const top = this.toVertical !== undefined && this.stateVertical === 'expandUp' ? this.toVertical : selection.top;
-    const bottom =
-      this.toVertical !== undefined && this.stateVertical && ['expandDown', 'shrink'].includes(this.stateVertical)
-        ? this.toVertical
-        : selection.bottom;
-    const left =
-      this.toHorizontal !== undefined && this.stateHorizontal === 'expandLeft' ? this.toHorizontal : selection.left;
-    const right =
-      this.toHorizontal !== undefined &&
-      this.stateHorizontal &&
-      ['expandRight', 'shrink'].includes(this.stateHorizontal)
-        ? this.toHorizontal
-        : selection.right;
-
-    const width = right - left;
-    const height = bottom - top;
-
-    const sheet = sheets.sheet;
-    const cursor = sheet.cursor;
-
-    if (width === 1 && height === 1) {
-      cursor.changePosition({});
-    } else {
-      sheet.cursor.changePosition({
-        multiCursor: [new Rectangle(left, top, width + 1, height + 1)],
-        ensureVisible: false,
-      });
-    }
-  }
-
   pointerUp(): boolean {
     if (this.active) {
       if (!this.selection) return true;
@@ -218,29 +183,67 @@ export class PointerAutoComplete {
       const sheet = sheets.sheet;
 
       if (this.endCell) {
-        const bounds = new Bounds();
-        bounds.addRectangle(this.selection);
-        bounds.addCoordinate(this.endCell);
-        let fullBounds = bounds.toRectangle();
+        const newRectangle = this.selection.clone();
+        switch (this.stateHorizontal) {
+          case 'shrink':
+            newRectangle.width = this.endCell.x - this.selection.x + 1;
+            break;
 
-        if (fullBounds) {
-          if (this.stateHorizontal === 'shrink') {
-            fullBounds.width = this.endCell.x - this.selection.x;
-          } else if (this.stateHorizontal === 'expandLeft') {
-            fullBounds.x -= 1;
-          } else if (this.stateHorizontal === 'expandRight') {
-            fullBounds.width += 1;
-          }
+          case 'expandRight':
+            newRectangle.width = this.endCell.x - this.selection.x + 1;
+            break;
 
-          if (this.stateVertical === 'shrink') {
-            fullBounds.height = this.endCell.y - this.selection.y;
-          }
-          console.log(this.selection.toString(), fullBounds.toString());
-          quadraticCore.autocomplete(sheet.id, this.selection, fullBounds);
+          case 'expandLeft':
+            newRectangle.x = this.endCell.x;
+            newRectangle.width += this.selection.left - this.endCell.x;
+            break;
+        }
+
+        switch (this.stateVertical) {
+          case 'shrink':
+            newRectangle.height = this.endCell.y - this.selection.y + 1;
+            break;
+
+          case 'expandDown':
+            newRectangle.height = this.endCell.y - this.selection.y + 1;
+            break;
+
+          case 'expandUp':
+            newRectangle.y = this.endCell.y;
+            newRectangle.height += this.selection.top - this.endCell.y;
+            break;
+        }
+
+        if (
+          newRectangle.x !== this.selection.x ||
+          newRectangle.y !== this.selection.y ||
+          newRectangle.width !== this.selection.width ||
+          newRectangle.height !== this.selection.height
+        ) {
+          quadraticCore.autocomplete(
+            sheet.id,
+            this.selection.left,
+            this.selection.top,
+            this.selection.right - 1,
+            this.selection.bottom - 1,
+            newRectangle.left,
+            newRectangle.top,
+            newRectangle.right - 1,
+            newRectangle.bottom - 1
+          );
+        }
+
+        // update the selection
+        const cursor = sheets.sheet.cursor;
+        if (newRectangle.width === 1 && newRectangle.height === 1) {
+          cursor.changePosition({});
+        } else {
+          sheet.cursor.changePosition({
+            multiCursor: [newRectangle],
+            ensureVisible: false,
+          });
         }
       }
-
-      this.setSelection();
       this.reset();
       return true;
     }

@@ -14,8 +14,12 @@ export const rectangleToRect = (rectangle: Rectangle | RectangleData): RectInter
   );
 };
 
-export const pointsToRect = (x: number, y: number, width: number, height: number): RectInternal => {
+export const numbersToRect = (x: number, y: number, width: number, height: number): RectInternal => {
   return new RectInternal(new Pos(x, y), new Pos(x + width, y + height));
+};
+
+export const pointsToRect = (x1: number, y1: number, x2: number, y2: number): RectInternal => {
+  return new RectInternal(new Pos(x1, y1), new Pos(x2, y2));
 };
 
 export const posToRect = (x: number, y: number): RectInternal => {

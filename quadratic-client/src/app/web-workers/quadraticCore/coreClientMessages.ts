@@ -466,14 +466,14 @@ export interface ClientCoreSetCellRenderResize {
 export interface ClientCoreAutocomplete {
   type: 'clientCoreAutocomplete';
   sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fullX: number;
-  fullY: number;
-  fullWidth: number;
-  fullHeight: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  fullX1: number;
+  fullY1: number;
+  fullX2: number;
+  fullY2: number;
   cursor: string;
 }
 

@@ -383,14 +383,14 @@ class CoreClient {
       case 'clientCoreAutocomplete':
         await core.autocomplete(
           e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.fullX,
-          e.data.fullY,
-          e.data.fullWidth,
-          e.data.fullHeight,
+          e.data.x1,
+          e.data.y1,
+          e.data.x2,
+          e.data.y2,
+          e.data.fullX1,
+          e.data.fullY1,
+          e.data.fullX2,
+          e.data.fullY2,
           e.data.cursor
         );
         break;

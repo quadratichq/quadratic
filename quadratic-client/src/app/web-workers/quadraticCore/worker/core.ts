@@ -38,7 +38,7 @@ import { coreClient } from './coreClient';
 import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
-import { pointsToRect } from './rustConversions';
+import { numbersToRect, pointsToRect } from './rustConversions';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -149,7 +149,7 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getGridBounds');
         const cells = this.gridController.getRenderCells(
           data.sheetId,
-          pointsToRect(data.x, data.y, data.width, data.height)
+          numbersToRect(data.x, data.y, data.width, data.height)
         );
         resolve(JSON.parse(cells));
       });
@@ -585,7 +585,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.hasRenderCells(sheetId, pointsToRect(x, y, width, height)));
+        resolve(this.gridController.hasRenderCells(sheetId, numbersToRect(x, y, width, height)));
       });
     });
   }
@@ -652,7 +652,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setRegionBorders(sheetId, pointsToRect(x, y, width, height), border, style, cursor);
+        this.gridController.setRegionBorders(sheetId, numbersToRect(x, y, width, height), border, style, cursor);
         resolve(undefined);
       });
     });
@@ -664,7 +664,7 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.setCellRenderSize(
           sheetId,
-          pointsToRect(x, y, 1, 1),
+          numbersToRect(x, y, 1, 1),
           width.toString(),
           height.toString(),
           cursor
@@ -676,14 +676,14 @@ class Core {
 
   autocomplete(
     sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    fullX: number,
-    fullY: number,
-    fullWidth: number,
-    fullHeight: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    fullX1: number,
+    fullY1: number,
+    fullX2: number,
+    fullY2: number,
     cursor: string
   ) {
     return new Promise((resolve) => {
@@ -691,8 +691,8 @@ class Core {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         this.gridController.autocomplete(
           sheetId,
-          pointsToRect(x, y, width, height),
-          pointsToRect(fullX, fullY, fullWidth, fullHeight),
+          pointsToRect(x1, y1, x2, y2),
+          pointsToRect(fullX1, fullY1, fullX2, fullY2),
           cursor
         );
         resolve(undefined);

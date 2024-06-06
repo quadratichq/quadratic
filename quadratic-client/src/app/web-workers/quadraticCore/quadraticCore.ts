@@ -742,18 +742,28 @@ class QuadraticCore {
     });
   }
 
-  autocomplete(sheetId: string, selection: Rectangle, fullBounds: Rectangle) {
+  autocomplete(
+    sheetId: string,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    fullX1: number,
+    fullY1: number,
+    fullX2: number,
+    fullY2: number
+  ) {
     this.send({
       type: 'clientCoreAutocomplete',
       sheetId,
-      x: selection.x,
-      y: selection.y,
-      width: selection.width,
-      height: selection.height,
-      fullX: fullBounds.x,
-      fullY: fullBounds.y,
-      fullWidth: fullBounds.width,
-      fullHeight: fullBounds.height,
+      x1,
+      y1,
+      x2,
+      y2,
+      fullX1,
+      fullY1,
+      fullX2,
+      fullY2,
       cursor: sheets.getCursorPosition(),
     });
   }
