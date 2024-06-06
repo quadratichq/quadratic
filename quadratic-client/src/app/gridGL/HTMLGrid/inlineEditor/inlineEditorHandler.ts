@@ -61,15 +61,7 @@ class InlineEditorHandler {
       if (this.open) {
         this.div?.style.setProperty('left', this.cellOffsets.x + CURSOR_THICKNESS + 'px');
         this.div?.style.setProperty('top', this.cellOffsets.y + 2 + 'px');
-        const textWrap = this.renderCell?.wrap === 'wrap';
-        const { width, height } = inlineEditorMonaco.resize(
-          this.cellOffsets.width - CURSOR_THICKNESS * 2,
-          this.cellOffsets.height - 4,
-          textWrap
-        );
-        this.width = width;
-        this.height = height;
-        pixiApp.cursor.dirty = true;
+        this.updateMonacoCellLayout();
       }
     }
   };
@@ -197,14 +189,14 @@ class InlineEditorHandler {
         }
       }
       inlineEditorMonaco.set(value);
+
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
         this.location.y
       );
       this.renderCell = await quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y);
-      const textAlign = this.renderCell?.align || 'left';
-      this.div.className = `cell-edit-text-${textAlign}`;
+
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
@@ -291,20 +283,28 @@ class InlineEditorHandler {
       this.changeToFormula(false);
     }
 
-    const textWrap = this.renderCell?.wrap === 'wrap';
-    const { width, height } = inlineEditorMonaco.resize(
-      this.cellOffsets.width - CURSOR_THICKNESS * 2,
-      this.height,
-      textWrap
-    );
-    this.width = width;
-    this.height = height;
-    pixiApp.cursor.dirty = true;
+    this.updateMonacoCellLayout();
 
     if (this.formula) {
       inlineEditorFormula.cellHighlights(this.location, value.slice(1));
     }
     this.sendMultiplayerUpdate();
+  };
+
+  updateMonacoCellLayout = () => {
+    // this will get called upon opening (before variables are set), and after every cursor movement
+    if (!this.div || !this.cellOffsets || !this.location) return;
+
+    const { width, height } = inlineEditorMonaco.resize(
+      this.cellOffsets.width - CURSOR_THICKNESS * 2,
+      this.cellOffsets.height - 4,
+      this.renderCell?.align ?? 'left',
+      this.renderCell?.verticalAlign ?? 'top',
+      this.renderCell?.wrap ?? 'overflow'
+    );
+    this.width = width;
+    this.height = height;
+    pixiApp.cursor.dirty = true;
   };
 
   // Toggle between normal editor and formula editor.

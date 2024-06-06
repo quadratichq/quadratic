@@ -3,6 +3,7 @@
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
+import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
 import * as monaco from 'monaco-editor';
@@ -82,7 +83,13 @@ class InlineEditorMonaco {
   };
 
   // Resizes the Monaco editor and returns the width.
-  resize(width: number, height: number, textWrap: boolean): { width: number; height: number } {
+  resize(
+    width: number,
+    height: number,
+    textAlign: CellAlign,
+    verticalAlign: CellVerticalAlign,
+    textWrap: CellWrap
+  ): { width: number; height: number } {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
     }
@@ -94,10 +101,29 @@ class InlineEditorMonaco {
     if (!textarea) {
       throw new Error('Expected textarea to be defined in layout');
     }
+
+    // horizontal text alignment
+    domNode.dataset.textAlign = textAlign;
+
+    // vertical text alignment
+    let paddingTop = 0;
+    if (verticalAlign === 'middle') {
+      paddingTop = Math.max(0, (height - textarea.scrollHeight) / 2);
+    } else if (verticalAlign === 'bottom') {
+      paddingTop = Math.max(0, height - textarea.scrollHeight);
+    }
+
+    // set text wrap and padding for vertical text alignment
+    this.editor.updateOptions({
+      wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+      padding: { top: paddingTop, bottom: 0 },
+    });
+
+    // set width and height
     width = textWrap ? width : Math.max(textarea.scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, width);
     height = Math.max(textarea.scrollHeight, height);
     this.editor.layout({ width, height });
-    this.editor.updateOptions({ wordWrap: textWrap ? 'on' : 'off' });
+
     return { width, height };
   }
 
