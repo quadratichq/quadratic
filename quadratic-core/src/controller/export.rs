@@ -16,13 +16,14 @@ impl GridController {
         let Some((bounds, values)) = sheet.selection_with_bounds(&selection, false, true) else {
             return Ok("".to_string());
         };
-
         let mut writer = Writer::from_writer(vec![]);
         let mut iter = values.iter();
         for y in bounds.min.y..=bounds.max.y {
             let mut line = vec![];
             for x in bounds.min.x..=bounds.max.x {
-                if selection.pos_in_selection(&selection, Pos { x, y }) {
+                // we need to ignore unselected columns or rows
+                if selection.rects.is_some() || selection.pos_in_selection(&selection, Pos { x, y })
+                {
                     if let Some((_, value)) = iter.peeking_next(|(pos, _)| pos.x == x && pos.y == y)
                     {
                         line.push(value.to_string());
