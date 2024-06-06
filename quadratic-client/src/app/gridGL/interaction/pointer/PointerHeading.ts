@@ -17,6 +17,7 @@ const MINIMUM_COLUMN_SIZE = 20;
 // minimum cell when resizing in 1 character
 const MIN_CELL_WIDTH = 10;
 
+// Returns an array with all numbers inclusive of start to end
 function fillArray(start: number, end: number): number[] {
   const result = [];
   if (start > end) {
@@ -123,19 +124,73 @@ export class PointerHeading {
 
       const cursor = sheets.sheet.cursor;
 
-      if (event.shiftKey) {
+      // Selects multiple columns or rows. If ctrl/meta is pressed w/o shift,
+      // then it add or removes the clicked column or row. If shift is pressed,
+      // then it selects all columns or rows between the last clicked column or
+      // row and the current one.
+      if (event.ctrlKey || event.metaKey) {
+        if (intersects.column !== undefined) {
+          let column = intersects.column;
+          const columns = cursor.columnRow?.columns || [];
+          if (event.shiftKey) {
+            if (columns.length === 0) {
+              selectColumns([column]);
+            } else {
+              const lastColumn = columns[columns.length - 1];
+              if (lastColumn < column) {
+                selectColumns([...columns, ...fillArray(lastColumn + 1, column)]);
+              } else {
+                selectColumns([...columns, ...fillArray(column, lastColumn - 1)]);
+              }
+            }
+          } else {
+            if (columns.includes(column)) {
+              selectColumns(columns.filter(c => c !== column));
+            } else {
+              selectColumns([...columns, column])
+            }
+          }
+        } else if (intersects.row !== undefined) {
+          let row = intersects.row;
+          const rows = cursor.columnRow?.rows || [];
+          if (event.shiftKey) {
+            if (rows.length === 0) {
+              selectRows([row]);
+            } else {
+              const lastRow = rows[rows.length - 1];
+              if (lastRow < row) {
+                selectRows([...rows, ...fillArray(lastRow + 1, row)]);
+              } else {
+                selectRows([...rows, ...fillArray(row, lastRow - 1)]);
+              }
+            }
+          } else {
+            if (rows.includes(row)) {
+              selectRows(rows.filter(c => c !== row));
+            } else {
+              selectRows([...rows, row])
+            }
+          }
+        }
+      }
+
+      // If a column/row is not selected, then it selects that column/row.
+      // Otherwise it selects between the last selected column/row and the
+      // current one.
+      else if (event.shiftKey) {
         if (intersects.column !== undefined) {
           let x1 = cursor.cursorPosition.x;
           let x2 = intersects.column;
-          selectColumns(fillArray(x1, x2));
-          pixiApp.cursor.dirty = true;
+          selectColumns(fillArray(x1, x2), x1);
         } else if (intersects.row !== undefined) {
           let y1 = cursor.cursorPosition.y;
           let y2 = intersects.row;
-          selectRows(fillArray(y1, y2));
-          pixiApp.cursor.dirty = true;
+          selectRows(fillArray(y1, y2), y1);
         }
-      } else {
+      }
+
+      // Otherwise, it selects the column/row.
+      else {
         if (intersects.column !== undefined) {
           selectColumns([intersects.column]);
         } else if (intersects.row !== undefined) {

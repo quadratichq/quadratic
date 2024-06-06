@@ -51,9 +51,6 @@
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
   },
-  "[rust]": {
-    "editor.defaultFormatter": null
-  },
   "rust-analyzer.linkedProjects": [
     "./Cargo.toml",
     "./quadratic-files/Cargo.toml",
