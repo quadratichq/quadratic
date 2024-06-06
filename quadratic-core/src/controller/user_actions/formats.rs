@@ -10,7 +10,7 @@ use crate::{
         GridController,
     },
     grid::{
-        formats::{format_update::FormatUpdate, formats::Formats},
+        formats::{format_update::FormatUpdate, Formats},
         CellAlign, CellWrap, NumericFormat, NumericFormatKind,
     },
     selection::Selection,
@@ -224,10 +224,8 @@ impl GridController {
         };
         let source = selection.source();
         let is_percentage =
-            sheet.cell_numeric_format_kind(source.into()) == Some(NumericFormatKind::Percentage);
-        let source_decimals = sheet
-            .decimal_places(source.into(), is_percentage)
-            .unwrap_or(0);
+            sheet.cell_numeric_format_kind(source) == Some(NumericFormatKind::Percentage);
+        let source_decimals = sheet.decimal_places(source, is_percentage).unwrap_or(0);
         let new_precision = i16::max(0, source_decimals + (delta as i16));
         let formats = Formats::repeat(
             FormatUpdate {

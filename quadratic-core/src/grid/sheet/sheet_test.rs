@@ -101,7 +101,7 @@ impl Sheet {
         let mut array = Array::new_empty(array_size);
         for (i, s) in n.iter().enumerate() {
             if !s.is_empty() {
-                let value = if let Ok(bd) = BigDecimal::from_str(*s) {
+                let value = if let Ok(bd) = BigDecimal::from_str(s) {
                     CellValue::Number(bd)
                 } else {
                     CellValue::Text(s.to_string())

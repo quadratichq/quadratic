@@ -33,7 +33,7 @@ impl Sheet {
         let check_code =
             |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
 
-        if selection.all == true {
+        if selection.all {
             for (x, column) in self.columns.iter() {
                 count += column.values.len() as i64;
                 if count >= max_count.unwrap_or(i64::MAX) {
@@ -218,7 +218,7 @@ impl Sheet {
                 GridBounds::NonEmpty(rect) => Some(rect.to_sheet_rect(selection.sheet_id)),
             }
         } else if let Some(columns) = selection.columns.as_ref() {
-            if columns.len() == 0 {
+            if columns.is_empty() {
                 return None;
             }
             let min_x = columns.iter().min().unwrap_or(&0).to_owned();
@@ -241,7 +241,7 @@ impl Sheet {
                 })
             }
         } else if let Some(rows) = selection.rows.as_ref() {
-            if rows.len() == 0 {
+            if rows.is_empty() {
                 return None;
             }
             let min_y = rows.iter().min().unwrap_or(&0).to_owned();
@@ -263,10 +263,8 @@ impl Sheet {
                     sheet_id: self.id,
                 })
             }
-        } else if let Some(sheet_rect) = selection.largest_rect() {
-            Some(sheet_rect)
         } else {
-            None
+            selection.largest_rect()
         }
     }
 
@@ -409,7 +407,7 @@ mod tests {
         let results = sheet.selection(&selection, None, false).unwrap();
         assert_eq!(results.len(), 10);
         assert_eq!(
-            results.get(0),
+            results.first(),
             Some(&(
                 Pos { x: 0, y: 0 },
                 &CellValue::Number(BigDecimal::from_str("1").unwrap())
@@ -600,7 +598,7 @@ mod tests {
     #[test]
     fn clipboard_selection() {
         let mut sheet = Sheet::test();
-        let sheet_id = sheet.id.clone();
+        let sheet_id = sheet.id;
 
         let selection = Selection {
             sheet_id,
@@ -663,7 +661,7 @@ mod tests {
     #[test]
     fn format_selection() {
         let mut sheet = Sheet::test();
-        let sheet_id = sheet.id.clone();
+        let sheet_id = sheet.id;
 
         let selection = Selection {
             sheet_id,
@@ -721,8 +719,20 @@ mod tests {
         assert_eq!(
             sheet.format_selection(&selection),
             vec![
-                (Pos { x: 0, y: 0 }, Format { bold: Some(true), ..Default::default()}),
-                (Pos { x: 1, y: 1 }, Format { bold: Some(false), ..Default::default()}),
+                (
+                    Pos { x: 0, y: 0 },
+                    Format {
+                        bold: Some(true),
+                        ..Default::default()
+                    }
+                ),
+                (
+                    Pos { x: 1, y: 1 },
+                    Format {
+                        bold: Some(false),
+                        ..Default::default()
+                    }
+                ),
             ]
         );
 
@@ -734,8 +744,20 @@ mod tests {
         assert_eq!(
             sheet.format_selection(&selection),
             vec![
-                (Pos { x: 0, y: 0 }, Format { bold: Some(true), ..Default::default()}),
-                (Pos { x: 1, y: 1 }, Format { bold: Some(false), ..Default::default()}),
+                (
+                    Pos { x: 0, y: 0 },
+                    Format {
+                        bold: Some(true),
+                        ..Default::default()
+                    }
+                ),
+                (
+                    Pos { x: 1, y: 1 },
+                    Format {
+                        bold: Some(false),
+                        ..Default::default()
+                    }
+                ),
             ]
         );
     }

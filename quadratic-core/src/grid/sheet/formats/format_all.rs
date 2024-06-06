@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     controller::operations::operation::Operation,
     grid::{
-        formats::{format::Format, format_update::FormatUpdate, formats::Formats},
+        formats::{format::Format, format_update::FormatUpdate, Formats},
         Sheet,
     },
     selection::Selection,
@@ -129,10 +129,10 @@ impl Sheet {
             // removes all related column formatting so the all format can be applied
             let columns = self.find_overlapping_format_columns(format_update);
             if !columns.is_empty() {
-                let formats = Formats::repeat(format_clear.clone(), columns.len() as usize);
+                let formats = Formats::repeat(format_clear.clone(), columns.len());
                 self.set_formats_columns(&columns, &formats);
                 ops.push(Operation::SetCellFormatsSelection {
-                    formats: Formats::repeat(format_clear.clone(), columns.len() as usize),
+                    formats: Formats::repeat(format_clear.clone(), columns.len()),
                     selection: Selection {
                         sheet_id: self.id,
                         columns: Some(columns),
@@ -144,10 +144,10 @@ impl Sheet {
             // remove all related row formatting so the all format can be applied
             let rows = self.find_overlapping_format_rows(format_update);
             if !rows.is_empty() {
-                let formats = Formats::repeat(format_clear.clone(), rows.len() as usize);
+                let formats = Formats::repeat(format_clear.clone(), rows.len());
                 self.set_formats_rows(&rows, &formats);
                 ops.push(Operation::SetCellFormatsSelection {
-                    formats: Formats::repeat(format_clear.clone(), rows.len() as usize),
+                    formats: Formats::repeat(format_clear.clone(), rows.len()),
                     selection: Selection {
                         sheet_id: self.id,
                         rows: Some(rows),

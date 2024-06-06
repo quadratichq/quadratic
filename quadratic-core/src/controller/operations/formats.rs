@@ -1,7 +1,7 @@
 use super::operation::Operation;
 use crate::{
     controller::GridController,
-    grid::formats::{format_update::FormatUpdate, formats::Formats},
+    grid::formats::{format_update::FormatUpdate, Formats},
     selection::Selection,
 };
 

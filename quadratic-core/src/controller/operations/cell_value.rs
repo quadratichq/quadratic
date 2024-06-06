@@ -117,7 +117,7 @@ impl GridController {
         let mut ops = vec![];
         if let Some(sheet) = self.try_sheet(selection.sheet_id) {
             // Find all cells with values.
-            if let Some(values) = sheet.selection(&selection, None, true) {
+            if let Some(values) = sheet.selection(selection, None, true) {
                 // Find the minimum x and y values of the selection, which will
                 // populate CellValues.
                 let mut min_x = i64::MAX;

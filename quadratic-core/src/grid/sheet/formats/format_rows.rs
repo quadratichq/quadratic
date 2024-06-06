@@ -5,7 +5,7 @@ use chrono::Utc;
 use crate::{
     controller::operations::operation::Operation,
     grid::{
-        formats::{format::Format, format_update::FormatUpdate, formats::Formats},
+        formats::{format::Format, format_update::FormatUpdate, Formats},
         Sheet,
     },
     selection::Selection,
@@ -36,7 +36,7 @@ impl Sheet {
     /// need to update html cells.
     ///
     /// Returns the reverse operations.
-    pub fn set_formats_rows(&mut self, rows: &Vec<i64>, formats: &Formats) -> Vec<Operation> {
+    pub fn set_formats_rows(&mut self, rows: &[i64], formats: &Formats) -> Vec<Operation> {
         let mut old_formats = Formats::default();
         let mut formats_iter = formats.iter_values();
 
@@ -87,7 +87,7 @@ impl Sheet {
                     .iter()
                     .for_each(|(pos, format)| {
                         if let Some(clear) =
-                            format.needs_to_clear_cell_format_for_parent(&format_update)
+                            format.needs_to_clear_cell_format_for_parent(format_update)
                         {
                             if clear.fill_changed() {
                                 render_fills.insert(*pos);
@@ -108,7 +108,7 @@ impl Sheet {
         ops.push(Operation::SetCellFormatsSelection {
             selection: Selection {
                 sheet_id: self.id,
-                rows: Some(rows.clone()),
+                rows: Some(rows.to_vec()),
                 ..Default::default()
             },
             formats: old_formats,
@@ -120,7 +120,7 @@ impl Sheet {
             let mut rects = vec![];
             let mut formats = Formats::default();
             for (pos, update) in clear_format_cells.iter() {
-                let old = self.set_format_cell(*pos, &update, false);
+                let old = self.set_format_cell(*pos, update, false);
                 rects.push(Rect::single_pos(*pos));
                 formats.push(old);
             }
@@ -329,7 +329,7 @@ mod tests {
         assert_eq!(sheet.format_cell(0, 0).fill_color, Some("red".to_string()));
 
         let reverse = sheet.set_formats_rows(
-            &vec![0],
+            &[0],
             &Formats::repeat(
                 FormatUpdate {
                     fill_color: Some(Some("blue".to_string())),

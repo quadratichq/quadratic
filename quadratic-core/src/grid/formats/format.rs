@@ -58,8 +58,8 @@ impl Format {
             self.wrap = wrap;
         }
         if let Some(numeric_format) = update.numeric_format.as_ref() {
-            old.numeric_format = Some(self.numeric_format.as_ref().map(|n| n.clone()));
-            self.numeric_format = numeric_format.clone();
+            old.numeric_format = Some(self.numeric_format.clone());
+            self.numeric_format.clone_from(numeric_format);
         }
         if let Some(numeric_decimals) = update.numeric_decimals {
             old.numeric_decimals = Some(self.numeric_decimals);
@@ -79,15 +79,15 @@ impl Format {
         }
         if let Some(text_color) = update.text_color.as_ref() {
             old.text_color = Some(self.text_color.clone());
-            self.text_color = text_color.clone();
+            self.text_color.clone_from(text_color);
         }
         if let Some(fill_color) = update.fill_color.as_ref() {
             old.fill_color = Some(self.fill_color.clone());
-            self.fill_color = fill_color.clone();
+            self.fill_color.clone_from(fill_color);
         }
         if let Some(render_size) = update.render_size.as_ref() {
             old.render_size = Some(self.render_size.clone());
-            self.render_size = render_size.clone();
+            self.render_size.clone_from(render_size);
         }
         old
     }

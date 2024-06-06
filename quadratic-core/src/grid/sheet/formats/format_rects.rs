@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::{
     controller::operations::operation::Operation,
     grid::{
-        formats::{format_update::FormatUpdate, formats::Formats},
+        formats::{format_update::FormatUpdate, Formats},
         Sheet,
     },
     selection::Selection,
@@ -13,7 +13,7 @@ use crate::{
 impl Sheet {
     /// Sets the Formats for Vec<Rect> and returns operations to reverse the change.
     // (crate)
-    pub fn set_formats_rects(&mut self, rects: &Vec<Rect>, formats: &Formats) -> Vec<Operation> {
+    pub fn set_formats_rects(&mut self, rects: &[Rect], formats: &Formats) -> Vec<Operation> {
         let mut formats_iter = formats.iter_values();
 
         // tracks client changes
@@ -53,7 +53,7 @@ impl Sheet {
         vec![Operation::SetCellFormatsSelection {
             selection: Selection {
                 sheet_id: self.id,
-                rects: Some(rects.clone()),
+                rects: Some(rects.to_vec()),
                 ..Default::default()
             },
             formats: old_formats,
@@ -84,7 +84,7 @@ mod test {
             4,
         );
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let reverse = sheet.set_formats_rects(&vec![rect], &formats);
+        let reverse = sheet.set_formats_rects(&[rect], &formats);
         assert_eq!(sheet.format_cell(0, 0).bold, Some(true));
         assert_eq!(sheet.format_cell(1, 1).bold, Some(true));
         assert_eq!(sheet.format_cell(2, 2).bold, None);
@@ -130,7 +130,7 @@ mod test {
             },
             1,
         );
-        sheet.set_formats_rects(&vec![Rect::single_pos(pos)], &formats);
+        sheet.set_formats_rects(&[Rect::single_pos(pos)], &formats);
         let expected = sheet.get_single_html_output(pos).unwrap();
         expect_js_call(
             "jsUpdateHtml",
@@ -150,7 +150,7 @@ mod test {
             4,
         );
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let reverse = sheet.set_formats_rects(&vec![rect], &formats);
+        let reverse = sheet.set_formats_rects(&[rect], &formats);
         assert_eq!(
             sheet.format_cell(0, 0),
             Format {
@@ -199,7 +199,7 @@ mod test {
             },
             4,
         );
-        sheet.set_formats_rects(&vec![rect], &formats);
+        sheet.set_formats_rects(&[rect], &formats);
         assert_eq!(sheet.format_cell(0, 0), Format::default());
         assert_eq!(sheet.format_cell(1, 1), Format::default());
     }

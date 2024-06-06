@@ -334,7 +334,7 @@ fn import_format(format: &current::Format) -> Format {
     }
 }
 
-fn import_formats(format: &Vec<(i64, (current::Format, i64))>) -> BTreeMap<i64, (Format, i64)> {
+fn import_formats(format: &[(i64, (current::Format, i64))]) -> BTreeMap<i64, (Format, i64)> {
     format
         .iter()
         .map(|(i, (format, timestamp))| (*i, (import_format(format), *timestamp)))
@@ -363,7 +363,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
 
-                    format_all: sheet.formats_all.as_ref().map(|f| import_format(&f)),
+                    format_all: sheet.formats_all.as_ref().map(import_format),
                     formats_columns: import_formats(&sheet.formats_columns),
                     formats_rows: import_formats(&sheet.formats_rows),
                 };
@@ -686,11 +686,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                 offsets: sheet.offsets.export(),
                 columns: export_column_builder(sheet),
                 borders: export_borders_builder(sheet),
-                formats_all: sheet
-                    .format_all
-                    .as_ref()
-                    .map(|f| export_format(&f))
-                    .flatten(),
+                formats_all: sheet.format_all.as_ref().and_then(export_format),
                 formats_columns: export_formats(&sheet.formats_columns),
                 formats_rows: export_formats(&sheet.formats_rows),
                 code_runs: sheet

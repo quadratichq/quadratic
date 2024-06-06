@@ -340,25 +340,23 @@ impl Sheet {
             .formats_columns
             .iter()
             .filter_map(|(x, (format, timestamp))| {
-                if let Some(color) = format.fill_color.as_ref() {
-                    Some((*x, (color.clone(), *timestamp)))
-                } else {
-                    None
-                }
+                format
+                    .fill_color
+                    .as_ref()
+                    .map(|color| (*x, (color.clone(), *timestamp)))
             })
             .collect();
         let rows = self
             .formats_rows
             .iter()
             .filter_map(|(y, (format, timestamp))| {
-                if let Some(color) = format.fill_color.as_ref() {
-                    Some((*y, (color.clone(), *timestamp)))
-                } else {
-                    None
-                }
+                format
+                    .fill_color
+                    .as_ref()
+                    .map(|color| (*y, (color.clone(), *timestamp)))
             })
             .collect();
-        let all = self.format_all().fill_color.map(|color| color.clone());
+        let all = self.format_all().fill_color.clone();
         JsSheetFill { columns, rows, all }
     }
 
@@ -468,7 +466,7 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
-            formats::{format::Format, format_update::FormatUpdate, formats::Formats},
+            formats::{format::Format, format_update::FormatUpdate, Formats},
             js_types::{
                 JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsSheetFill,
             },
@@ -965,7 +963,7 @@ mod tests {
 
         let mut sheet = Sheet::test();
         sheet.set_formats_columns(
-            &vec![1],
+            &[1],
             &Formats::repeat(
                 FormatUpdate {
                     fill_color: Some(Some("blue".to_string())),
@@ -979,7 +977,7 @@ mod tests {
         assert_eq!(fills.columns[0].1 .0, "blue".to_string());
 
         sheet.set_formats_rows(
-            &vec![-5],
+            &[-5],
             &Formats::repeat(
                 FormatUpdate {
                     fill_color: Some(Some("red".to_string())),

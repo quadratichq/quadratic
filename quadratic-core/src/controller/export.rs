@@ -22,7 +22,7 @@ impl GridController {
             .iter()
             .map(|record| record.to_string())
             .collect::<Vec<String>>();
-        let width = rect.width() as usize;
+        let width = rect.width();
         let mut writer = Writer::from_writer(vec![]);
 
         values.chunks(width).for_each(|row| {

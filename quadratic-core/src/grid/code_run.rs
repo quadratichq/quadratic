@@ -52,7 +52,7 @@ impl CodeRun {
             match &self.result {
                 CodeRunResult::Ok(value) => match value {
                     Value::Single(v) => Some(v),
-                    Value::Array(a) => Some(a.get(x, y).map(|v| v).ok()?),
+                    Value::Array(a) => Some(a.get(x, y).ok()?),
                 },
                 CodeRunResult::Err(_) => None,
             }

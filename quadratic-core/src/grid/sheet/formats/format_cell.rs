@@ -23,7 +23,6 @@ impl Sheet {
                 text_color: column.text_color.get(y),
                 fill_color: column.fill_color.get(y),
                 render_size: column.render_size.get(y),
-                ..Format::default()
             }
         } else {
             Format::default()

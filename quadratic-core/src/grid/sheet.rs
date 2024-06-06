@@ -263,7 +263,7 @@ impl Sheet {
                 self.format_all.as_ref(),
             )
         } else {
-            cell.unwrap_or(Format::default())
+            cell.unwrap_or_default()
         };
         CellFormatSummary {
             bold: format.bold,

@@ -72,18 +72,18 @@ impl FormatUpdate {
     }
 
     pub fn combine(&self, other: &FormatUpdate) -> FormatUpdate {
-        let mut update = FormatUpdate::default();
-        update.align = self.align.or(other.align);
-        update.wrap = self.wrap.or(other.wrap);
-        update.numeric_format = self.numeric_format.clone().or(other.numeric_format.clone());
-        update.numeric_decimals = self.numeric_decimals.or(other.numeric_decimals);
-        update.numeric_commas = self.numeric_commas.or(other.numeric_commas);
-        update.bold = self.bold.or(other.bold);
-        update.italic = self.italic.or(other.italic);
-        update.text_color = self.text_color.clone().or(other.text_color.clone());
-        update.fill_color = self.fill_color.clone().or(other.fill_color.clone());
-        update.render_size = self.render_size.clone().or(other.render_size.clone());
-        update
+        FormatUpdate {
+            align: self.align.or(other.align),
+            wrap: self.wrap.or(other.wrap),
+            numeric_format: self.numeric_format.clone().or(other.numeric_format.clone()),
+            numeric_decimals: self.numeric_decimals.or(other.numeric_decimals),
+            numeric_commas: self.numeric_commas.or(other.numeric_commas),
+            bold: self.bold.or(other.bold),
+            italic: self.italic.or(other.italic),
+            text_color: self.text_color.clone().or(other.text_color.clone()),
+            fill_color: self.fill_color.clone().or(other.fill_color.clone()),
+            render_size: self.render_size.clone().or(other.render_size.clone()),
+        }
     }
 
     /// Returns a FormatUpdate that will clear a given update

@@ -1,7 +1,7 @@
 use super::Sheet;
 use crate::{
     controller::operations::operation::Operation,
-    grid::formats::{format::Format, format_update::FormatUpdate, formats::Formats},
+    grid::formats::{format::Format, format_update::FormatUpdate, Formats},
     selection::Selection,
 };
 

@@ -217,13 +217,7 @@ mod test {
             CELL_SHEET_HEIGHT as i64,
         );
         let cells = serde_json::to_string(&sheet.get_render_cells(rect)).unwrap();
-        let args = format!(
-            "{},{},{},{}",
-            sheet.id.to_string(),
-            hash_x,
-            hash_y,
-            hash_test(&cells)
-        );
+        let args = format!("{},{},{},{}", sheet.id, hash_x, hash_y, hash_test(&cells));
         expect_js_call("jsRenderCellSheets", args, clear);
     }
 
@@ -313,11 +307,7 @@ mod test {
         let fills = sheet.get_sheet_fills();
         expect_js_call(
             "jsSheetMetaFills",
-            format!(
-                "{},{}",
-                sheet.id.to_string(),
-                serde_json::to_string(&fills).unwrap()
-            ),
+            format!("{},{}", sheet.id, serde_json::to_string(&fills).unwrap()),
             true,
         );
     }

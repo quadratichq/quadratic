@@ -64,7 +64,7 @@ mod tests {
         // span of 10 cells, 3 have numeric values
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let selection = Selection {
-            sheet_id: sheet.id.clone(),
+            sheet_id: sheet.id,
             x: 0,
             y: 0,
             all: false,
@@ -80,7 +80,7 @@ mod tests {
         // returns zeros for an empty selection
         let rect = Rect::new_span(Pos { x: 100, y: 100 }, Pos { x: 1000, y: 105 });
         let selection = Selection {
-            sheet_id: sheet.id.clone(),
+            sheet_id: sheet.id,
             x: 0,
             y: 0,
             all: false,
@@ -101,7 +101,7 @@ mod tests {
         sheet.test_set_code_run_array(1, 4, vec!["1", "2", "3"], true);
         let rect = Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 10 });
         let selection = Selection {
-            sheet_id: sheet.id.clone(),
+            sheet_id: sheet.id,
             x: 0,
             y: 0,
             all: false,
@@ -121,7 +121,7 @@ mod tests {
 
         // returns none if selection is too large (MAX_SUMMARIZE_SELECTION_SIZE)
         let selection = Selection {
-            sheet_id: sheet.id.clone(),
+            sheet_id: sheet.id,
             x: 0,
             y: 0,
             all: true,
@@ -143,7 +143,7 @@ mod tests {
         sheet.test_set_value_number(-1, 0, "0.00500000000000");
         let rect = Rect::new_span(Pos { x: -1, y: -1 }, Pos { x: -1, y: 1 });
         let selection = Selection {
-            sheet_id: sheet.id.clone(),
+            sheet_id: sheet.id,
             x: 0,
             y: 0,
             all: false,
@@ -166,7 +166,7 @@ mod tests {
         }
         sheet.test_set_code_run_array(-1, -10, vec!["1", "2", "", "3"], true);
         let selection = Selection {
-            sheet_id: sheet.id.clone(),
+            sheet_id: sheet.id,
             x: 0,
             y: 0,
             all: false,
@@ -189,7 +189,7 @@ mod tests {
         }
         sheet.test_set_code_run_array(-10, -1, vec!["1", "2", "", "3"], true);
         let selection = Selection {
-            sheet_id: sheet.id.clone(),
+            sheet_id: sheet.id,
             x: 0,
             y: 0,
             all: false,
@@ -213,7 +213,7 @@ mod tests {
         }
         sheet.test_set_code_run_array(-20, -20, vec!["1", "2", "3"], false);
         let selection = Selection {
-            sheet_id: sheet.id.clone(),
+            sheet_id: sheet.id,
             x: 0,
             y: 0,
             all: true,

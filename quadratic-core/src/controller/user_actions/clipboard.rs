@@ -86,8 +86,8 @@ impl GridController {
                 let mut style = String::new();
 
                 let summary = sheet.cell_format_summary(pos, false);
-                let bold = summary.bold.map(|b| b == true).unwrap_or(false);
-                let italic = summary.italic.map(|i| i == true).unwrap_or(false);
+                let bold = summary.bold.unwrap_or(false);
+                let italic = summary.italic.unwrap_or(false);
                 let text_color = summary.text_color;
                 let fill_color = summary.fill_color;
 
