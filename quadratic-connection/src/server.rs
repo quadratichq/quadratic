@@ -125,7 +125,6 @@ pub(crate) fn app(state: State) -> Router {
 /// Start the server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
-    std::env::set_var("RUST_LOG", "quadratic_connection=debug,reqwest=trace");
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()

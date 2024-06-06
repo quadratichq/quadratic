@@ -25,15 +25,14 @@ pub(crate) async fn axum_to_reqwest(
     let mut headers = reqwest::header::HeaderMap::with_capacity(req.headers().len());
     let headers_to_ignore = vec!["host", PROXY_HEADER, "authorization"];
 
-    for header in req
+    for (name, value) in req
         .headers()
         .into_iter()
-        .filter(|h| !headers_to_ignore.contains(&h.0.as_str()))
+        .filter(|(name, _)| !headers_to_ignore.contains(&name.as_str()))
     {
-        let name =
-            reqwest::header::HeaderName::from_bytes(header.0.as_ref()).map_err(proxy_error)?;
+        let name = reqwest::header::HeaderName::from_bytes(name.as_ref()).map_err(proxy_error)?;
         let value =
-            reqwest::header::HeaderValue::from_bytes(header.1.as_ref()).map_err(proxy_error)?;
+            reqwest::header::HeaderValue::from_bytes(value.as_ref()).map_err(proxy_error)?;
         headers.insert(name, value);
     }
 
@@ -77,7 +76,7 @@ pub(crate) async fn proxy_browser(
         .get(PROXY_HEADER)
         .ok_or_else(|| ConnectionError::Proxy("No proxy header found".to_string()))?
         .to_str()
-        .map_err(|e| ConnectionError::Proxy(format!("Error parsing proxy header: {e}")))?;
+        .map_err(proxy_error)?;
 
     let request_builder = axum_to_reqwest(url, req, client).await?;
     let reqwest_response = request_builder.send().await.map_err(proxy_error)?;
