@@ -58,16 +58,18 @@ export class CellLabel {
   location: Coordinate;
   AABB: Rectangle;
 
-  clipLeft: number | undefined;
-  clipRight: number | undefined;
+  clipLeft?: number;
+  clipRight?: number;
+  clipTop?: number;
+  clipBottom?: number;
 
   // used by ContainerBitmapText rendering
   chars: CharRenderData[] = [];
   horizontalAlignOffsets: number[] = [];
-  verticalAlignOffsets: number = 0;
-  align?: CellAlign | 'justify';
+
+  align: CellAlign | 'justify';
   verticalAlignment: CellVerticalAlign;
-  wrapping?: CellWrap;
+  wrapping: CellWrap;
 
   letterSpacing: number;
   bold: boolean;
@@ -78,6 +80,8 @@ export class CellLabel {
 
   overflowRight?: number;
   overflowLeft?: number;
+  overflowTop?: number;
+  overflowBottom?: number;
 
   dirty = true;
 
@@ -126,7 +130,7 @@ export class CellLabel {
     this.updateFontName();
     this.align = cell.align ?? 'left';
     this.verticalAlignment = cell.verticalAlign ?? 'top';
-    this.wrapping = cell.wrap === 'overflow' ? undefined : cell.wrap;
+    this.wrapping = cell.wrap ?? 'overflow';
     this.updateCellLimits();
   }
 
@@ -139,6 +143,8 @@ export class CellLabel {
   updateCellLimits() {
     this.clipLeft = this.wrapping === 'clip' && this.align !== 'left' ? this.AABB.x : undefined;
     this.clipRight = this.wrapping === 'clip' && this.align !== 'right' ? this.AABB.x + this.AABB.width : undefined;
+    this.clipTop = this.AABB.top;
+    this.clipBottom = this.AABB.bottom;
     this.maxWidth = this.wrapping === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : 0;
     this.cellHeight = this.AABB.height;
   }
@@ -199,6 +205,40 @@ export class CellLabel {
     return false;
   }
 
+  checkTopClip(nextBottom: number): boolean | 'same' {
+    if (this.overflowTop && this.AABB.top - this.overflowTop < nextBottom) {
+      if (this.clipTop !== nextBottom) {
+        this.clipTop = nextBottom;
+        return true;
+      } else {
+        return 'same';
+      }
+    } else {
+      if (this.clipTop !== undefined) {
+        this.clipTop = undefined;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  checkBottomClip(nextTop: number): boolean | 'same' {
+    if (this.overflowBottom && this.AABB.bottom + this.overflowBottom > nextTop) {
+      if (this.clipBottom !== nextTop) {
+        this.clipBottom = nextTop;
+        return true;
+      } else {
+        return 'same';
+      }
+    } else {
+      if (this.clipBottom !== undefined) {
+        this.clipBottom = undefined;
+        return true;
+      }
+    }
+    return false;
+  }
+
   private calculatePosition(): void {
     this.updateCellLimits();
 
@@ -227,6 +267,32 @@ export class CellLabel {
         this.overflowRight = actualRight - this.AABB.right;
       }
       this.position = new Point(this.AABB.x, this.AABB.y);
+    }
+
+    this.overflowTop = 0;
+    this.overflowBottom = 0;
+    let verticalAlignment = this.verticalAlignment ?? 'top';
+    if (verticalAlignment === 'bottom') {
+      const actualTop = this.AABB.y + this.AABB.height - this.textHeight;
+      if (actualTop < this.AABB.y) {
+        this.overflowTop = this.AABB.y - actualTop;
+      }
+      this.position.y = actualTop;
+    } else if (verticalAlignment === 'middle') {
+      const actualTop = this.AABB.y + this.AABB.height / 2 - this.textHeight / 2;
+      const actualBottom = actualTop + this.textHeight;
+      if (actualTop < this.AABB.y) {
+        this.overflowTop = this.AABB.y - actualTop;
+      }
+      if (actualBottom > this.AABB.bottom) {
+        this.overflowBottom = actualBottom - this.AABB.bottom;
+      }
+      this.position.y = actualTop;
+    } else if (verticalAlignment === 'top') {
+      const actualBottom = this.AABB.y + this.textHeight;
+      if (actualBottom > this.AABB.bottom) {
+        this.overflowBottom = actualBottom - this.AABB.bottom;
+      }
     }
   }
 
@@ -344,13 +410,6 @@ export class CellLabel {
       this.horizontalAlignOffsets.push(alignOffset);
     }
 
-    this.verticalAlignOffsets =
-      this.verticalAlignment === 'bottom'
-        ? (this.cellHeight - this.textHeight) / scale
-        : this.verticalAlignment === 'middle'
-        ? (this.cellHeight - this.textHeight) / 2 / scale
-        : 0;
-
     this.calculatePosition();
   }
 
@@ -368,13 +427,11 @@ export class CellLabel {
       const char = this.chars[i];
       let horizontalOffset =
         char.position.x + this.horizontalAlignOffsets[char.line] * (this.align === 'justify' ? char.prevSpaces : 1);
-      let verticalOffset = char.position.y + this.verticalAlignOffsets;
       if (this.roundPixels) {
         horizontalOffset = Math.round(horizontalOffset);
-        verticalOffset = Math.round(verticalOffset);
       }
       const xPos = this.position.x + horizontalOffset * scale + OPEN_SANS_FIX.x;
-      const yPos = this.position.y + verticalOffset * scale + OPEN_SANS_FIX.y;
+      const yPos = this.position.y + char.position.y * scale + OPEN_SANS_FIX.y;
       const labelMesh = labelMeshes.get(char.labelMeshId);
       const textureFrame = char.charData.frame;
       const textureUvs = char.charData.uvs;
@@ -383,7 +440,9 @@ export class CellLabel {
       // remove letters that are outside the clipping bounds
       if (
         (this.clipRight !== undefined && xPos + textureFrame.width * scale >= this.clipRight) ||
-        (this.clipLeft !== undefined && xPos <= this.clipLeft)
+        (this.clipLeft !== undefined && xPos <= this.clipLeft) ||
+        (this.clipTop !== undefined && yPos <= this.clipTop) ||
+        (this.clipBottom !== undefined && yPos + textureFrame.height * scale >= this.clipBottom)
       ) {
         // this removes extra characters from the mesh after a clip
         buffer.reduceSize(6);

@@ -152,6 +152,26 @@ export class CellsLabels {
     return hash;
   }
 
+  findAboveHash(column: number, row: number): CellsTextHash | undefined {
+    if (!this.bounds) return;
+    let hash = this.getCellsHash(column, row);
+    while (!hash && row >= this.bounds.y) {
+      row--;
+      hash = this.getCellsHash(column, row);
+    }
+    return hash;
+  }
+
+  findBelowHash(column: number, row: number): CellsTextHash | undefined {
+    if (!this.bounds) return;
+    let hash = this.getCellsHash(column, row);
+    while (!hash && row <= this.bounds.y + this.bounds.height) {
+      row++;
+      hash = this.getCellsHash(column, row);
+    }
+    return hash;
+  }
+
   private updateHeadings(): boolean {
     if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
     // make a copy so new dirty markings are properly handled
