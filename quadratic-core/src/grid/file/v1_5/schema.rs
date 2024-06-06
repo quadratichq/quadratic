@@ -141,6 +141,12 @@ pub type RenderSize = v1_4::RenderSize;
 pub struct Column {
     pub values: HashMap<String, CellValue>,
     pub align: HashMap<String, ColumnRepeat<CellAlign>>,
+
+    // The following skips are necessary since we're adding it mid-version. Next
+    // version we should remove them.
+    #[serde(skip_serializing_if = "HashMap::is_empty", default)]
+    pub vertical_align: HashMap<String, ColumnRepeat<CellVerticalAlign>>,
+
     pub wrap: HashMap<String, ColumnRepeat<CellWrap>>,
     pub numeric_format: HashMap<String, ColumnRepeat<NumericFormat>>,
     pub numeric_decimals: HashMap<String, ColumnRepeat<i16>>,
@@ -206,6 +212,13 @@ pub enum CellAlign {
     Left,
     Center,
     Right,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CellVerticalAlign {
+    Top,
+    Middle,
+    Bottom,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

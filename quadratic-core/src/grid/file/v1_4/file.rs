@@ -69,6 +69,7 @@ fn upgrade_column(sheet: &v1_4::Sheet, x: &i64, column: &v1_4::Column) -> (i64, 
                     (k.clone(), value)
                 })
                 .collect(),
+            vertical_align: HashMap::new(),
             wrap: column
                 .wrap
                 .iter()
