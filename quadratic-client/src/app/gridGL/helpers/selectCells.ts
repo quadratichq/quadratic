@@ -66,7 +66,12 @@ export async function selectRows(rows: number[], row = rows[rows.length - 1]) {
   const columnRow = cursor.columnRow;
 
   // if second selection of same [row] then select content within row
-  if (columnRow?.rows && columnRow.rows.length === 1 && columnRow.rows[0] === rows[0] && columnRow.rows[0] === rows[rows.length - 1]) {
+  if (
+    columnRow?.rows &&
+    columnRow.rows.length === 1 &&
+    columnRow.rows[0] === rows[0] &&
+    columnRow.rows[0] === rows[rows.length - 1]
+  ) {
     const bounds = await quadraticCore.getRowsBounds(sheet.id, rows[0], rows[0], true);
     if (bounds) {
       sheet.cursor.changePosition({

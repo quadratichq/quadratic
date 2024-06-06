@@ -378,34 +378,33 @@ export class GridHeadings extends Container {
       if (selected || mod === 0 || row % mod === 0) {
         // only show labels that will fit (unless grid lines are hidden)
         // if (currentHeight > halfCharacterHeight * 2 || pixiApp.gridLines.alpha < 0.25) {
-          // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
-          let yPosition = y + currentHeight / 2;
-          const top = yPosition - halfCharacterHeight / 2;
-          const bottom = yPosition + halfCharacterHeight / 2;
+        // don't show numbers if it overlaps with the selected value (eg, hides 0 if selected 1 overlaps it)
+        let yPosition = y + currentHeight / 2;
+        const top = yPosition - halfCharacterHeight / 2;
+        const bottom = yPosition + halfCharacterHeight / 2;
 
-          // We remove the last label if we're intersecting and it was not
-          // selected but we are selected. We also leave first and last
-          // selections, unless there is only two selections, in which case we
-          // leave only the first.
-          let intersectsLast =
-            lastLabel && intersects.lineLineOneDimension(lastLabel.top, lastLabel.bottom, top, bottom);
-          const selectedRows = Array.isArray(this.selectedRows) ? [...this.selectedRows] : [];
-          if (
-            intersectsLast &&
-            selected &&
-            (!selectedRows.includes(row - 1) || !selectedRows.includes(row + 1)) &&
-            (selectedRows.includes(row - 2) || selectedRows.includes(row + 2))
-          ) {
-            this.labels.removeLast();
-            intersectsLast = false;
-          }
+        // We remove the last label if we're intersecting and it was not
+        // selected but we are selected. We also leave first and last
+        // selections, unless there is only two selections, in which case we
+        // leave only the first.
+        let intersectsLast = lastLabel && intersects.lineLineOneDimension(lastLabel.top, lastLabel.bottom, top, bottom);
+        const selectedRows = Array.isArray(this.selectedRows) ? [...this.selectedRows] : [];
+        if (
+          intersectsLast &&
+          selected &&
+          (!selectedRows.includes(row - 1) || !selectedRows.includes(row + 1)) &&
+          (selectedRows.includes(row - 2) || selectedRows.includes(row + 2))
+        ) {
+          this.labels.removeLast();
+          intersectsLast = false;
+        }
 
-          // show only when selected or not intersects one of the selected numbers
-          if (!intersectsLast) {
-            const text = showA1Notation ? getColumnA1Notation(row) : row.toString();
-            this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
-            lastLabel = { top, bottom, selected };
-          }
+        // show only when selected or not intersects one of the selected numbers
+        if (!intersectsLast) {
+          const text = showA1Notation ? getColumnA1Notation(row) : row.toString();
+          this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
+          lastLabel = { top, bottom, selected };
+        }
         // }
       }
       row++;

@@ -145,9 +145,9 @@ export class PointerHeading {
             }
           } else {
             if (columns.includes(column)) {
-              selectColumns(columns.filter(c => c !== column));
+              selectColumns(columns.filter((c) => c !== column));
             } else {
-              selectColumns([...columns, column])
+              selectColumns([...columns, column]);
             }
           }
         } else if (intersects.row !== undefined) {
@@ -166,9 +166,9 @@ export class PointerHeading {
             }
           } else {
             if (rows.includes(row)) {
-              selectRows(rows.filter(c => c !== row));
+              selectRows(rows.filter((c) => c !== row));
             } else {
-              selectRows([...rows, row])
+              selectRows([...rows, row]);
             }
           }
         }
