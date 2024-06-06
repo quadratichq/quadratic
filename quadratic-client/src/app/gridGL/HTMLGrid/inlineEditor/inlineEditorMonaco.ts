@@ -83,13 +83,13 @@ class InlineEditorMonaco {
   };
 
   // Resizes the Monaco editor and returns the width.
-  resize(
+  resize = (
     width: number,
     height: number,
     textAlign: CellAlign,
     verticalAlign: CellVerticalAlign,
     textWrap: CellWrap
-  ): { width: number; height: number } {
+  ): { width: number; height: number } => {
     if (!this.editor) {
       throw new Error('Expected editor to be defined in layout');
     }
@@ -102,30 +102,39 @@ class InlineEditorMonaco {
       throw new Error('Expected textarea to be defined in layout');
     }
 
+    // configure editor options and default layout
+    this.editor.updateOptions({
+      wordWrap: textWrap === 'wrap' ? 'on' : 'off',
+      padding: { top: 0, bottom: 0 },
+    });
+    this.editor.layout({ width, height });
+
     // horizontal text alignment
     domNode.dataset.textAlign = textAlign;
+
+    const scrollWidth = textarea.scrollWidth;
+    const contentHeight = this.editor.getContentHeight();
 
     // vertical text alignment
     let paddingTop = 0;
     if (verticalAlign === 'middle') {
-      paddingTop = Math.max(0, (height - textarea.scrollHeight) / 2);
+      paddingTop = Math.max((height - contentHeight) / 2, 0);
     } else if (verticalAlign === 'bottom') {
-      paddingTop = Math.max(0, height - textarea.scrollHeight);
+      paddingTop = Math.max(height - contentHeight, 0);
     }
 
     // set text wrap and padding for vertical text alignment
     this.editor.updateOptions({
-      wordWrap: textWrap === 'wrap' ? 'on' : 'off',
       padding: { top: paddingTop, bottom: 0 },
     });
 
-    // set width and height
-    width = textWrap ? width : Math.max(textarea.scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, width);
-    height = Math.max(textarea.scrollHeight, height);
+    // set final width and height
+    width = textWrap === 'wrap' ? width : Math.max(scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, width);
+    height = textWrap === 'wrap' ? Math.max(contentHeight, height) : height;
     this.editor.layout({ width, height });
 
     return { width, height };
-  }
+  };
 
   removeSelection() {
     if (!this.editor) {

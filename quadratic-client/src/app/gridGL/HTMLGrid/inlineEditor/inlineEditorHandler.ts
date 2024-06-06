@@ -292,7 +292,6 @@ class InlineEditorHandler {
   };
 
   updateMonacoCellLayout = () => {
-    // this will get called upon opening (before variables are set), and after every cursor movement
     if (!this.div || !this.cellOffsets || !this.location) return;
 
     const { width, height } = inlineEditorMonaco.resize(

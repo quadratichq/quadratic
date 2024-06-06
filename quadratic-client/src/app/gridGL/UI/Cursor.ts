@@ -70,7 +70,7 @@ export class Cursor extends Graphics {
         height = Math.max(cellEdit.offsetHeight + CELL_EDIT_VERTICAL_PADDING, height);
       } else {
         // we have to wait until react renders #cell-edit to properly calculate the width
-        setTimeout(() => (this.dirty = true), 1000);
+        setTimeout(() => (this.dirty = true), 0);
       }
     } else {
       if (

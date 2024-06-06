@@ -44,11 +44,11 @@ impl GridFile {
             GridFile::V1_5 { grid } => v1_5::file::upgrade(grid),
             GridFile::V1_4 { grid } => v1_4::file::upgrade(grid)
                 .and_then(v1_5::file::upgrade)
-                .map_err(|_| anyhow!("Failed to upgrade from v1.4 to v1.5 (on the way to v1.6)")),
+                .map_err(|_| anyhow!("Failed to upgrade from v1.4 to v1.6")),
             GridFile::V1_3 { grid } => v1_3::file::upgrade(grid)
                 .and_then(v1_4::file::upgrade)
                 .and_then(v1_5::file::upgrade)
-                .map_err(|_| anyhow!("Failed to upgrade from v1.3 to v1.4 (on the way to v1.6)")),
+                .map_err(|_| anyhow!("Failed to upgrade from v1.3 to v1.6")),
         }
     }
 }

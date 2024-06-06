@@ -65,7 +65,10 @@ export class CellLabel {
   chars: CharRenderData[] = [];
   horizontalAlignOffsets: number[] = [];
   verticalAlignOffsets: number = 0;
-  align?: 'left' | 'right' | 'justify' | 'center';
+  align?: CellAlign | 'justify';
+  verticalAlignment: CellVerticalAlign;
+  wrapping?: CellWrap;
+
   letterSpacing: number;
   bold: boolean;
   italic: boolean;
@@ -75,9 +78,6 @@ export class CellLabel {
 
   overflowRight?: number;
   overflowLeft?: number;
-
-  verticalAlignment: CellVerticalAlign;
-  wrapping?: CellWrap;
 
   dirty = true;
 
@@ -324,8 +324,8 @@ export class CellLabel {
         lastLineWidth = lastBreakWidth;
       }
       lineWidths.push(lastLineWidth);
-      maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
       lineSpaces.push(-1);
+      maxLineWidth = Math.max(maxLineWidth, lastLineWidth);
     }
 
     this.textWidth = maxLineWidth * scale;
