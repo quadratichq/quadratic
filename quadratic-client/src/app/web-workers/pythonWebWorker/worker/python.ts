@@ -15,6 +15,45 @@ function isEmpty(value: [string, outputType] | string | null | undefined) {
   return value == null || (typeof value === 'string' && value.trim().length === 0);
 }
 
+// eslint-disable-next-line no-restricted-globals
+self['XMLHttpRequest'] = new Proxy(XMLHttpRequest, {
+  construct: function (target, args) {
+    const xhr = new target();
+
+    xhr.open = new Proxy(xhr.open, {
+      apply: function (
+        target,
+        thisArg,
+        args: [
+          method: string,
+          url: string | URL,
+          async: boolean,
+          username?: string | null | undefined,
+          password?: string | null | undefined
+        ]
+      ) {
+        Object.defineProperty(xhr, '__url', { value: args[1].toString(), writable: true });
+        args[1] = 'http://127.0.0.1:3004/browser';
+        return target.apply(thisArg, args);
+      },
+    });
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === XMLHttpRequest.OPENED) {
+        xhr.setRequestHeader('Proxy', (xhr as any).__url);
+        // console.log(xhr.getAllResponseHeaders());
+      }
+      // After complition of XHR request
+      if (xhr.readyState === 4) {
+        if (xhr.status === 401) {
+        }
+      }
+    };
+
+    return xhr;
+  },
+});
+
 class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];

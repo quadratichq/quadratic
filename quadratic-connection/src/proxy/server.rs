@@ -1,9 +1,16 @@
 use std::iter::once;
 
-use axum::{body::Body, extract::Request, response::IntoResponse, routing::get, Router};
-use http::header::AUTHORIZATION;
+use axum::{
+    body::Body,
+    extract::Request,
+    response::IntoResponse,
+    routing::{any, get},
+    Router,
+};
+use http::{header::AUTHORIZATION, HeaderName};
 use hyper::{body::Incoming, server::conn::http1, Method};
 use hyper_util::{rt::TokioIo, service::TowerToHyperService};
+use reqwest::{redirect::Policy, Client};
 use tower::{Service, ServiceBuilder, ServiceExt};
 use tower_http::{
     auth::AsyncRequireAuthorizationLayer,
@@ -16,15 +23,43 @@ use tower_http::{
 use super::tunnel::upgrade;
 use crate::{
     error::{ConnectionError, Result},
-    proxy::auth::check_auth,
+    proxy::{auth::check_auth, browser::proxy_browser, proxy_error},
 };
 
 pub(crate) async fn serve(host: &str, port: u16) -> Result<()> {
-    let router_service = Router::new().route("/", get(|| async { "This is ignored" }));
+    let client = Client::builder()
+        .cookie_store(true)
+        .redirect(Policy::limited(5))
+        .build()
+        .map_err(proxy_error)?;
+
+    let router_service = Router::new()
+        .route("/", get(|| async { "This is ignored" }))
+        .route("/browser", any(proxy_browser))
+        .with_state(client);
 
     let tower_service = tower::service_fn(move |req: Request<_>| {
         let router_service = router_service.clone();
         let request = req.map(Body::new);
+
+        // // hack to see if we can force an upgrade
+        // *request.method_mut() = Method::CONNECT;
+        // *request.uri_mut() = "tokio.rs:443".parse().map_err(proxy_error)?;
+
+        // request
+        //     .headers_mut()
+        //     .insert(HOST, HeaderValue::from_str("tokio.rs:443").map_err(proxy_error)?)
+        //     .map_err(proxy_error)?;
+
+        // request
+        //     .headers_mut()
+        //     .insert(CONNECTION, HeaderValue::from_str("keep-alive").map_err(proxy_error)?)
+        //     .map_err(proxy_error)?;
+
+        // request.headers_mut().insert(
+        //     "proxy-connection",
+        //     HeaderValue::from_str("keep-alive").map_err(proxy_error)?,
+        // );
 
         async move {
             if request.method() == Method::CONNECT {
@@ -55,7 +90,7 @@ pub(crate) async fn serve(host: &str, port: u16) -> Result<()> {
         // allow requests from any origin
         .allow_methods(Any)
         .allow_origin(Any)
-        .allow_headers([AUTHORIZATION])
+        .allow_headers([AUTHORIZATION, HeaderName::from_static("proxy")])
         .expose_headers(Any);
 
     loop {
