@@ -8,12 +8,18 @@ pub mod current;
 mod v1_3;
 mod v1_4;
 mod v1_5;
+mod v1_6;
 
-pub static CURRENT_VERSION: &str = "1.5";
+pub static CURRENT_VERSION: &str = "1.6";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.6")]
+    V1_6 {
+        #[serde(flatten)]
+        grid: v1_6::schema::GridSchema,
+    },
     #[serde(rename = "1.5")]
     V1_5 {
         #[serde(flatten)]
@@ -32,19 +38,17 @@ enum GridFile {
 }
 
 impl GridFile {
-    fn into_latest(self) -> Result<v1_5::schema::GridSchema> {
+    fn into_latest(self) -> Result<v1_6::schema::GridSchema> {
         match self {
-            GridFile::V1_5 { grid } => Ok(grid),
-            GridFile::V1_4 { grid } => v1_4::file::upgrade(grid),
-            GridFile::V1_3 { grid } => {
-                if let Ok(v1_4) = v1_3::file::upgrade(grid) {
-                    v1_4::file::upgrade(v1_4)
-                } else {
-                    Err(anyhow!(
-                        "Failed to upgrade from v1.3 to v1.4 (on the way to v1.5"
-                    ))
-                }
-            }
+            GridFile::V1_6 { grid } => Ok(grid),
+            GridFile::V1_5 { grid } => v1_5::file::upgrade(grid),
+            GridFile::V1_4 { grid } => v1_4::file::upgrade(grid)
+                .and_then(v1_5::file::upgrade)
+                .map_err(|_| anyhow!("Failed to upgrade from v1.4 to v1.5 (on the way to v1.6)")),
+            GridFile::V1_3 { grid } => v1_3::file::upgrade(grid)
+                .and_then(v1_4::file::upgrade)
+                .and_then(v1_5::file::upgrade)
+                .map_err(|_| anyhow!("Failed to upgrade from v1.3 to v1.4 (on the way to v1.6)")),
         }
     }
 }
@@ -204,14 +208,14 @@ mod tests {
         let _exported = export(&mut imported).unwrap();
     }
 
-    const V1_5_FILE: &str =
-        include_str!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
+    const V1_6_FILE: &str =
+        include_str!("../../../../quadratic-rust-shared/data/grid/v1_6_simple.grid");
 
     #[test]
     fn imports_and_exports_a_current_grid() {
-        let mut imported = import(V1_5_FILE).unwrap();
+        let mut imported = import(V1_6_FILE).unwrap();
         let exported = export(&mut imported).unwrap();
-        assert_eq!(V1_5_FILE, exported);
+        assert_eq!(V1_6_FILE, exported);
     }
 
     #[test]

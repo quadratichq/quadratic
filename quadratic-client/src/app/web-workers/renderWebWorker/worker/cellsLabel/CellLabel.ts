@@ -9,8 +9,7 @@
 
 import { Coordinate } from '@/app/gridGL/types/size';
 import { convertColorStringToTint, convertTintToArray } from '@/app/helpers/convertColor';
-import { CellAlign, JsRenderCell } from '@/app/quadratic-core-types';
-import { CellAlignment, CellVerticalAlignment, CellWrap } from '@/app/schemas';
+import { CellAlign, CellVerticalAlign, CellWrap, JsRenderCell } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { CELL_TEXT_MARGIN_LEFT } from '@/shared/constants/gridConstants';
 import { removeItems } from '@pixi/utils';
@@ -77,9 +76,8 @@ export class CellLabel {
   overflowRight?: number;
   overflowLeft?: number;
 
-  alignment: CellAlignment;
-  verticalAlignment: CellVerticalAlignment;
-  wrapping: CellWrap;
+  verticalAlignment: CellVerticalAlign;
+  wrapping?: CellWrap;
 
   dirty = true;
 
@@ -126,7 +124,6 @@ export class CellLabel {
     this.bold = !!cell?.bold;
     this.italic = !!cell?.italic || isError || isChart;
     this.updateFontName();
-    this.alignment = cell.align;
     this.align = cell.align ?? 'left';
     this.verticalAlignment = cell.verticalAlign ?? 'top';
     this.wrapping = cell.wrap === 'overflow' ? undefined : cell.wrap;
@@ -159,7 +156,6 @@ export class CellLabel {
   }
 
   changeAlign(align?: CellAlign) {
-    this.alignment = align ?? 'left';
     this.align = align ?? 'left';
     this.calculatePosition();
   }

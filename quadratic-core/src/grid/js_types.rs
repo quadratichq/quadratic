@@ -55,7 +55,7 @@ impl JsRenderCell {
             value: value.to_string(),
             language,
             align: Some(CellAlign::Right),
-            vertical_align: Some(CellVerticalAlign::Top),
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,

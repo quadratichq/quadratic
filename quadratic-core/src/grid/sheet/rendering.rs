@@ -457,7 +457,8 @@ mod tests {
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{
             js_types::{JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell},
-            Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
+            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
+            Italic, RenderSize, Sheet,
         },
         wasm_bindings::js::{expect_js_call, hash_test},
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
@@ -521,6 +522,11 @@ mod tests {
         let _ = sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
         let _ =
             sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
+        let _ = sheet.set_formatting_value::<CellVerticalAlign>(
+            Pos { x: 1, y: 2 },
+            Some(CellVerticalAlign::Middle),
+        );
+        let _ = sheet.set_formatting_value::<CellWrap>(Pos { x: 1, y: 2 }, Some(CellWrap::Wrap));
         let _ = sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
         let _ = sheet.set_formatting_value::<Italic>(Pos { x: 1, y: 3 }, Some(true));
         let _ = sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
@@ -560,8 +566,8 @@ mod tests {
                 value: "test".to_string(),
                 language: None,
                 align: Some(CellAlign::Center),
-                vertical_align: None,
-                wrap: None,
+                vertical_align: Some(CellVerticalAlign::Middle),
+                wrap: Some(CellWrap::Wrap),
                 bold: Some(true),
                 italic: None,
                 text_color: None,

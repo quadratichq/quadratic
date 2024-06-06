@@ -1,11 +1,11 @@
 use crate::color::Rgba;
 use crate::grid::{
     block::SameValue,
-    file::v1_5::schema::{self as current},
+    file::v1_6::schema::{self as current},
     formatting::RenderSize,
     generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellAlign, CellBorderLine,
-    CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData, Grid, GridBounds,
-    NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
+    CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult, Column, ColumnData,
+    Grid, GridBounds, NumericFormat, NumericFormatKind, Sheet, SheetBorders, SheetId,
 };
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, CodeCellValue, Pos, Rect, Value};
@@ -35,6 +35,26 @@ fn set_column_format_align(
                     current::CellAlign::Left => CellAlign::Left,
                     current::CellAlign::Center => CellAlign::Center,
                     current::CellAlign::Right => CellAlign::Right,
+                }),
+            );
+        }
+    }
+}
+
+fn set_column_format_vertical_align(
+    column_data: &mut ColumnData<SameValue<CellVerticalAlign>>,
+    column: &HashMap<String, current::ColumnRepeat<current::CellVerticalAlign>>,
+) {
+    for (y, format) in column.iter() {
+        // there's probably a better way to do this...
+        let y = (*y).parse::<i64>().unwrap();
+        for y in y..(y + format.len as i64) {
+            column_data.set(
+                y,
+                Some(match format.value {
+                    current::CellVerticalAlign::Top => CellVerticalAlign::Top,
+                    current::CellVerticalAlign::Middle => CellVerticalAlign::Middle,
+                    current::CellVerticalAlign::Bottom => CellVerticalAlign::Bottom,
                 }),
             );
         }
@@ -149,6 +169,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
         .map(|(x, column)| {
             let mut col = Column::new(*x);
             set_column_format_align(&mut col.align, &column.align);
+            set_column_format_vertical_align(&mut col.vertical_align, &column.vertical_align);
             set_column_format_wrap(&mut col.wrap, &column.wrap);
             set_column_format_i16(&mut col.numeric_decimals, &column.numeric_decimals);
             set_column_format_numeric_format(&mut col.numeric_format, &column.numeric_format);
@@ -442,6 +463,27 @@ fn export_column_data_align(
         .collect()
 }
 
+fn export_column_data_vertical_align(
+    column_data: &ColumnData<SameValue<CellVerticalAlign>>,
+) -> HashMap<String, current::ColumnRepeat<current::CellVerticalAlign>> {
+    column_data
+        .blocks()
+        .map(|block| {
+            (
+                block.y.to_string(),
+                current::ColumnRepeat {
+                    value: match block.content.value {
+                        CellVerticalAlign::Top => current::CellVerticalAlign::Top,
+                        CellVerticalAlign::Middle => current::CellVerticalAlign::Middle,
+                        CellVerticalAlign::Bottom => current::CellVerticalAlign::Bottom,
+                    },
+                    len: block.len() as u32,
+                },
+            )
+        })
+        .collect()
+}
+
 fn export_column_data_wrap(
     column_data: &ColumnData<SameValue<CellWrap>>,
 ) -> HashMap<String, current::ColumnRepeat<current::CellWrap>> {
@@ -472,6 +514,7 @@ fn export_column_builder(sheet: &Sheet) -> Vec<(i64, current::Column)> {
                 *x,
                 current::Column {
                     align: export_column_data_align(&column.align),
+                    vertical_align: export_column_data_vertical_align(&column.vertical_align),
                     wrap: export_column_data_wrap(&column.wrap),
                     numeric_decimals: export_column_data_i16(&column.numeric_decimals),
                     numeric_format: export_column_data_numeric_format(&column.numeric_format),

@@ -1,7 +1,7 @@
+import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
-import { CellAlignment, CellVerticalAlignment, CellWrap } from '../../../../schemas';
 
 export const setFillColor = (color?: ColorResult): void => {
   const rectangle = sheets.sheet.cursor.getRectangle();
@@ -23,17 +23,17 @@ export const setTextColor = (rgb?: ColorResult): void => {
   sheets.sheet.setCellTextColor(rectangle, rgb ? convertReactColorToString(rgb) : undefined);
 };
 
-export const setHorizontalAlignment = (alignment: CellAlignment): void => {
+export const setHorizontalAlignment = (align: CellAlign): void => {
   const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setCellAlign(rectangle, alignment);
+  sheets.sheet.setCellAlign(rectangle, align);
 };
 
-export const setVerticalAlignment = (verticalAlignment: CellVerticalAlignment): void => {
+export const setVerticalAlignment = (verticalAlignment: CellVerticalAlign): void => {
   const rectangle = sheets.sheet.cursor.getRectangle();
   sheets.sheet.setCellVerticalAlign(rectangle, verticalAlignment);
 };
 
-export const setWrap = (wrap: CellWrap): void => {
+export const setWrap = (wrap?: CellWrap): void => {
   const rectangle = sheets.sheet.cursor.getRectangle();
   sheets.sheet.setCellWrap(rectangle, wrap);
 };
