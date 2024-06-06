@@ -5,11 +5,11 @@ import { sheets } from '../../../../grid/controller/Sheets';
 import { convertReactColorToString } from '../../../../helpers/convertColor';
 
 export const setFillColor = (color?: ColorResult) => {
-  quadraticCore.setCellFillColor(sheets.getRustSelection(), color ? convertReactColorToString(color) : undefined);
+  quadraticCore.setCellFillColor(sheets.getRustSelection(), color ? convertReactColorToString(color) : undefined, sheets.getCursorPosition());
 };
 
 export const clearFillColor = () => {
-  quadraticCore.setCellFillColor(sheets.getRustSelection(), 'blank');
+  quadraticCore.setCellFillColor(sheets.getRustSelection(), 'blank', sheets.getCursorPosition());
 };
 
 const getFormat = async (selection: Selection): Promise<Format | undefined> => {

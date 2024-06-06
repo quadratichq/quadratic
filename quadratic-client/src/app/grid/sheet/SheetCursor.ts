@@ -70,7 +70,8 @@ export class SheetCursor {
       sheetId: this.sheetId,
       keyboardMovePosition: this.keyboardMovePosition,
       cursorPosition: this.cursorPosition,
-      multiCursor: this.multiCursor,
+      multiCursor: this.multiCursor?.map((rect) => ({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })),
+      columnRow: this.columnRow,
     };
   }
 
@@ -78,6 +79,7 @@ export class SheetCursor {
     this.keyboardMovePosition = value.keyboardMovePosition;
     this.cursorPosition = value.cursorPosition;
     this.multiCursor = value.multiCursor?.map((rect) => new Rectangle(rect.x, rect.y, rect.width, rect.height));
+    this.columnRow = value.columnRow;
     multiplayer.sendSelection(this.getMultiplayerSelection());
     pixiApp.cursor.dirty = true;
   }
