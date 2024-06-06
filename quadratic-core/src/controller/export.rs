@@ -1,8 +1,9 @@
 use anyhow::Result;
 use csv::Writer;
+use itertools::PeekingNext;
 
 use super::GridController;
-use crate::selection::Selection;
+use crate::{selection::Selection, Pos};
 
 impl GridController {
     /// exports a CSV string from a selection on the grid.
@@ -12,22 +13,28 @@ impl GridController {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Ok("".to_string());
         };
-        let Some(rect) = sheet.clipboard_selection(&selection) else {
+        let Some((bounds, values)) = sheet.selection_with_bounds(&selection, false, true) else {
             return Ok("".to_string());
         };
 
-        let values = sheet
-            .cell_values_in_rect(&(rect.into()), false)?
-            .into_cell_values_vec()
-            .iter()
-            .map(|record| record.to_string())
-            .collect::<Vec<String>>();
-        let width = rect.width();
         let mut writer = Writer::from_writer(vec![]);
-
-        values.chunks(width).for_each(|row| {
-            writer.write_record(row).unwrap_or_default();
-        });
+        let mut iter = values.iter();
+        for y in bounds.min.y..=bounds.max.y {
+            let mut line = vec![];
+            for x in bounds.min.x..=bounds.max.x {
+                if selection.pos_in_selection(&selection, Pos { x, y }) {
+                    if let Some((_, value)) = iter.peeking_next(|(pos, _)| pos.x == x && pos.y == y)
+                    {
+                        line.push(value.to_string());
+                    } else {
+                        line.push("".to_string());
+                    }
+                }
+            }
+            if !line.is_empty() {
+                writer.write_record(line)?;
+            }
+        }
 
         let output = String::from_utf8(writer.into_inner()?)?;
 

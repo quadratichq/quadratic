@@ -231,6 +231,28 @@ impl Rect {
     }
 }
 
+/// Creates a bounding rect from a list of positions
+impl From<Vec<Pos>> for Rect {
+    fn from(positions: Vec<Pos>) -> Self {
+        let mut min_x = i64::MAX;
+        let mut min_y = i64::MAX;
+        let mut max_x = i64::MIN;
+        let mut max_y = i64::MIN;
+
+        for pos in positions {
+            min_x = min_x.min(pos.x);
+            min_y = min_y.min(pos.y);
+            max_x = max_x.max(pos.x);
+            max_y = max_y.max(pos.y);
+        }
+
+        Rect {
+            min: Pos { x: min_x, y: min_y },
+            max: Pos { x: max_x, y: max_y },
+        }
+    }
+}
+
 impl From<SheetRect> for Rect {
     fn from(sheet_rect: SheetRect) -> Self {
         Rect {
@@ -797,5 +819,16 @@ mod test {
     fn count() {
         let rect = Rect::from_numbers(1, 2, 3, 4);
         assert_eq!(rect.count(), 12);
+    }
+
+    #[test]
+    fn rect_from_positions() {
+        use super::*;
+        let positions = vec![Pos { x: 1, y: 1 }, Pos { x: 2, y: 2 }];
+        let bounds = Rect::from(positions);
+        assert_eq!(bounds.min.x, 1);
+        assert_eq!(bounds.min.y, 1);
+        assert_eq!(bounds.max.x, 2);
+        assert_eq!(bounds.max.y, 2);
     }
 }

@@ -1,7 +1,7 @@
 use crate::{
     grid::{formats::format::Format, CodeRunResult, GridBounds},
     selection::Selection,
-    CellValue, Pos, SheetRect, Value,
+    CellValue, Pos, Rect, SheetRect, Value,
 };
 
 use super::Sheet;
@@ -15,6 +15,7 @@ impl Sheet {
     /// 4. Rects
     /// If the selection is empty or the count > max_count then it returns None.
     /// It ignores CellValue::Blank, and CellValue::Code (since it uses the CodeRun instead).
+    ///
     /// Note: if the Code has an error, then it will not be part of the result (for now).
     pub fn selection(
         &self,
@@ -204,13 +205,37 @@ impl Sheet {
         Some(vec)
     }
 
+    /// Gets a selection with bounds. This is useful for dealing with a
+    /// rectangular selection. If sort is true, then values are sorted
+    /// ascending, by y and then x.
+    pub(crate) fn selection_with_bounds(
+        &self,
+        selection: &Selection,
+        skip_code_runs: bool,
+        sort: bool,
+    ) -> Option<(Rect, Vec<(Pos, &CellValue)>)> {
+        let mut values = self.selection(selection, None, skip_code_runs)?;
+        let bounds: Vec<Pos> = values.iter().map(|(pos, _)| *pos).collect();
+        if sort {
+            values.sort_by(|(a, _), (b, _)| {
+                if a.y < b.y {
+                    return std::cmp::Ordering::Less;
+                }
+                if a.y > b.y {
+                    return std::cmp::Ordering::Greater;
+                }
+                a.x.cmp(&b.x)
+            });
+        }
+        Some((bounds.into(), values))
+    }
+
     /// Gets a sheet_rect of the selection area. For selection.columns and
     /// selection.rows, we find the minimum index, and return either that, or 0
     /// if that index > 0. This ensures we're always at least copying from the
     /// top or left of the sheet.
     pub(crate) fn clipboard_selection(&self, selection: &Selection) -> Option<SheetRect> {
-        // not sure what to set this to
-        let ignore_formatting = false;
+        let ignore_formatting = true;
 
         if selection.all {
             match self.bounds(false) {
