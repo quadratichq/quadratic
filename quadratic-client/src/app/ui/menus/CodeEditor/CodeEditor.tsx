@@ -4,7 +4,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { Coordinate, SheetPosTS } from '@/app/gridGL/types/size';
 import { JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -13,6 +12,7 @@ import { useRecoilState } from 'recoil';
 // import { Diagnostic } from 'vscode-languageserver-types';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/CodeEditorPanels';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
 import { cn } from '@/shared/shadcn/utils';
@@ -24,9 +24,8 @@ import { focusGrid } from '../../../helpers/focusGrid';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
-import { CodeEditorProvider } from './CodeEditorContext';
 import { CodeEditorHeader } from './CodeEditorHeader';
-import { Console } from './Console';
+import { CodeEditorPanel } from './CodeEditorPanel';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
@@ -38,25 +37,26 @@ export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const mode = getLanguage(editorMode);
+  const {
+    consoleOutput: [out, setOut],
+    spillError: [, setSpillError],
+    codeString: [codeString, setCodeString],
+    editorContent: [editorContent, setEditorContent],
+    evaluationResult: [evaluationResult, setEvaluationResult],
+  } = useCodeEditor();
 
   const { pythonState } = usePythonState();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // update code cell
-  const [codeString, setCodeString] = useState('');
-
   // code info
-  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
-  const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | undefined>(undefined);
-  const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
 
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
-  const [editorContent, setEditorContent] = useState<string | undefined>(codeString);
+
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
   // const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
 
-  // used to trigger vanilla changes to code editor
+  // Trigger vanilla changes to code editor
   useEffect(() => {
     events.emit('codeEditor');
   }, [
@@ -133,8 +133,8 @@ export const CodeEditor = () => {
         setCellsAccessed(codeCell.cells_accessed);
         setOut({ stdOut: codeCell.std_out ?? undefined, stdErr: codeCell.std_err ?? undefined });
         if (!pushCodeCell) setEditorContent(initialCode ?? codeCell.code_string);
-        const evaluationResult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
-        setEvaluationResult({ ...evaluationResult, ...codeCell.return_info });
+        const evalresult = codeCell.evaluation_result ? JSON.parse(codeCell.evaluation_result) : {};
+        setEvaluationResult({ ...evalresult, ...codeCell.return_info });
         setSpillError(codeCell.spill_error?.map((c: Pos) => ({ x: Number(c.x), y: Number(c.y) } as Coordinate)));
       } else {
         setCodeString('');
@@ -172,6 +172,11 @@ export const CodeEditor = () => {
     editorInteractionState.selectedCell.y,
     editorInteractionState.selectedCellSheet,
     setEditorInteractionState,
+    setEvaluationResult,
+    setCodeString,
+    setEditorContent,
+    setOut,
+    setSpillError,
   ]);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
@@ -330,100 +335,91 @@ export const CodeEditor = () => {
   }
 
   return (
-    <CodeEditorProvider>
+    <div
+      ref={containerRef}
+      className={cn('relative flex bg-background', codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col')}
+      style={{
+        width: `${
+          codeEditorPanelData.editorWidth +
+          (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
+        }px`,
+        borderLeft: '1px solid black',
+      }}
+    >
       <div
-        ref={containerRef}
-        className={cn('relative flex bg-background', codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col')}
+        id="QuadraticCodeEditorID"
+        className={cn('flex flex-col', codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1')}
         style={{
-          width: `${
-            codeEditorPanelData.editorWidth +
-            (codeEditorPanelData.panelPosition === 'left' ? codeEditorPanelData.panelWidth : 0)
-          }px`,
-          borderLeft: '1px solid black',
+          width: `${codeEditorPanelData.editorWidth}px`,
+          height:
+            codeEditorPanelData.panelPosition === 'left' ? '100%' : `${codeEditorPanelData.editorHeightPercentage}%`,
+        }}
+        onKeyDownCapture={onKeyDownEditor}
+        onPointerEnter={() => {
+          // todo: handle multiplayer code editor here
+          multiplayer.sendMouseMove();
         }}
       >
-        <div
-          id="QuadraticCodeEditorID"
-          className={cn('flex flex-col', codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1')}
-          style={{
-            width: `${codeEditorPanelData.editorWidth}px`,
-            height:
-              codeEditorPanelData.panelPosition === 'left' ? '100%' : `${codeEditorPanelData.editorHeightPercentage}%`,
-          }}
-          onKeyDownCapture={onKeyDownEditor}
-          onPointerEnter={() => {
-            // todo: handle multiplayer code editor here
-            multiplayer.sendMouseMove();
-          }}
-        >
-          {showSaveChangesAlert && (
-            <SaveChangesAlert
-              onCancel={() => {
-                setShowSaveChangesAlert(!showSaveChangesAlert);
-                setEditorInteractionState((old) => ({
-                  ...old,
-                  editorEscapePressed: false,
-                  waitingForEditorClose: undefined,
-                }));
-              }}
-              onSave={() => {
-                saveAndRunCell();
-                afterDialog();
-              }}
-              onDiscard={() => {
-                afterDialog();
-              }}
-            />
-          )}
-
-          <CodeEditorHeader
-            cellLocation={cellLocation}
-            unsaved={unsaved}
-            saveAndRunCell={saveAndRunCell}
-            cancelPython={cancelPython}
-            closeEditor={() => closeEditor(false)}
+        {showSaveChangesAlert && (
+          <SaveChangesAlert
+            onCancel={() => {
+              setShowSaveChangesAlert(!showSaveChangesAlert);
+              setEditorInteractionState((old) => ({
+                ...old,
+                editorEscapePressed: false,
+                waitingForEditorClose: undefined,
+              }));
+            }}
+            onSave={() => {
+              saveAndRunCell();
+              afterDialog();
+            }}
+            onDiscard={() => {
+              afterDialog();
+            }}
           />
-          <CodeEditorBody
-            editorContent={editorContent}
-            setEditorContent={setEditorContent}
-            closeEditor={closeEditor}
+        )}
+
+        <CodeEditorHeader
+          cellLocation={cellLocation}
+          unsaved={unsaved}
+          saveAndRunCell={saveAndRunCell}
+          cancelPython={cancelPython}
+          closeEditor={() => closeEditor(false)}
+        />
+        <CodeEditorBody
+          editorContent={editorContent}
+          setEditorContent={setEditorContent}
+          closeEditor={closeEditor}
+          evaluationResult={evaluationResult}
+          cellsAccessed={!unsaved ? cellsAccessed : []}
+        />
+
+        {editorInteractionState.mode !== 'Formula' && (
+          <ReturnTypeInspector
             evaluationResult={evaluationResult}
-            cellsAccessed={!unsaved ? cellsAccessed : []}
+            show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
           />
-
-          {editorInteractionState.mode !== 'Formula' && (
-            <ReturnTypeInspector
-              evaluationResult={evaluationResult}
-              show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
-            />
-          )}
-        </div>
-
-        <div
-          className={cn(
-            codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
-            'relative flex flex-col bg-background'
-          )}
-          style={{
-            width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
-            height:
-              codeEditorPanelData.panelPosition === 'left'
-                ? '100%'
-                : `${100 - codeEditorPanelData.editorHeightPercentage}%`,
-          }}
-        >
-          <Console
-            consoleOutput={out}
-            editorMode={editorMode}
-            editorContent={editorContent}
-            evaluationResult={evaluationResult}
-            spillError={spillError}
-            codeEditorPanelData={codeEditorPanelData}
-          />
-        </div>
-
-        <CodeEditorPanels containerRef={containerRef} codeEditorPanelData={codeEditorPanelData} />
+        )}
       </div>
-    </CodeEditorProvider>
+
+      <div
+        className={cn(
+          codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
+          'relative flex flex-col bg-background'
+        )}
+        style={{
+          width: codeEditorPanelData.panelPosition === 'left' ? `${codeEditorPanelData.panelWidth}px` : '100%',
+          height:
+            codeEditorPanelData.panelPosition === 'left'
+              ? '100%'
+              : `${100 - codeEditorPanelData.editorHeightPercentage}%`,
+        }}
+      >
+        <CodeEditorPanel containerRef={containerRef} codeEditorPanelData={codeEditorPanelData} />
+      </div>
+
+      <CodeEditorPanels containerRef={containerRef} codeEditorPanelData={codeEditorPanelData} />
+    </div>
   );
 };

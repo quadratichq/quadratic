@@ -1,3 +1,4 @@
+import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
@@ -70,7 +71,11 @@ export default function QuadraticUI() {
           <QuadraticGrid />
           {!presentationMode && <SheetBar />}
         </FileUploadWrapper>
-        {editorInteractionState.showCodeEditor && <CodeEditor />}
+        {editorInteractionState.showCodeEditor && (
+          <CodeEditorProvider>
+            <CodeEditor />
+          </CodeEditorProvider>
+        )}
         <Following follow={follow} />
         <div
           style={{

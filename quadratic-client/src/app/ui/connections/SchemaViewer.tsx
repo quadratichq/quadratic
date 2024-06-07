@@ -28,6 +28,7 @@ export const SchemaViewer = () => {
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [data, setData] = useState<SchemaData | null>(null);
 
+  // TODO: (connections) fetch this data when the document loads
   const fetchData = () => {
     setLoadState('loading');
     connectionClient.schemas.get('postgres', 'a31864f1-34ac-4653-9801-bf8ecb31b7b2').then((newSchemaData) => {

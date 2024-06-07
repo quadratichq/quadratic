@@ -1,37 +1,47 @@
-import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/routes/index';
 import { apiClient } from '@/shared/api/apiClient';
+import { Type } from '@/shared/components/Type';
+import { ROUTES } from '@/shared/constants/routes';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';
 import { Avatar, CircularProgress, IconButton } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useRecoilValue } from 'recoil';
 import { CodeBlockParser } from './AICodeBlockParser';
 import './AiAssistant.css';
 import { QuadraticDocs } from './QuadraticDocs';
 
-// todo: fix types
-
-interface Props {
-  editorMode: EditorInteractionState['mode'];
-  evalResult?: any; // TODO(ddimaria): fix type
-  editorContent: string | undefined;
-  isActive: boolean;
-}
-
-type Message = {
+export type AiMessage = {
   role: 'user' | 'system' | 'assistant';
   content: string;
 };
 
-export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
-  const evalResultObj = evalResult;
-  const stdErr = evalResultObj?.std_err;
+export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const {
+    aiAssistant: {
+      prompt: [prompt, setPrompt],
+      loading: [loading, setLoading],
+      messages: [messages, setMessages],
+      controllerRef,
+      // textareaRef,
+    },
+    editorContent: [editorContent],
+  } = useCodeEditor();
+  const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
+  const { mode } = useRecoilValue(editorInteractionStateAtom);
+  const cellType = mode; // TODO: (connections) turn this into a proper string for the cell type, e.g. "Connection:Postgres"
+
+  // TODO: (connections) something was wrong with the types here, this needs to be std_err
+  const stdErr = ''; // evaluationResult?.std_err;
 
   // TODO: Improve these messages. Pass current location and more docs.
   // store in a separate location for different cells
@@ -40,7 +50,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
       role: 'system',
       content:
         'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        editorMode,
+        cellType,
     },
     {
       role: 'system',
@@ -54,38 +64,28 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
       role: 'system',
       content: 'If the code was recently run here is the std error:' + stdErr,
     },
-  ] as Message[];
+  ] as AiMessage[];
 
-  const [prompt, setPrompt] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const controller = useRef<AbortController>();
-  const { loggedInUser: user } = useRootRouteLoaderData();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Focus the input when the tab comes into focus
+  // Focus the input when relevant & the tab comes into focus
   useEffect(() => {
-    if (isActive) {
+    if (autoFocus) {
       window.requestAnimationFrame(() => {
-        const textarea = textareaRef.current;
-        if (textarea) {
-          textarea.focus();
-        }
+        textareaRef.current?.focus();
       });
     }
-  }, [isActive]);
+  }, [autoFocus]);
 
   const abortPrompt = () => {
-    controller.current?.abort();
+    controllerRef.current?.abort();
     setLoading(false);
   };
 
   const submitPrompt = async () => {
     if (loading) return;
-    controller.current = new AbortController();
+    controllerRef.current = new AbortController();
     setLoading(true);
     const token = await authClient.getTokenOrRedirect();
-    const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
+    const updatedMessages = [...messages, { role: 'user', content: prompt }] as AiMessage[];
     const request_body = {
       model: 'gpt-4-32k',
       messages: [...systemMessages, ...updatedMessages],
@@ -95,7 +95,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
 
     await fetch(`${apiClient.getApiUrl()}/ai/chat/stream`, {
       method: 'POST',
-      signal: controller.current.signal,
+      signal: controllerRef.current.signal,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -132,7 +132,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         let responseMessage = {
           role: 'assistant',
           content: '',
-        } as Message;
+        } as AiMessage;
         setMessages((old) => [...old, responseMessage]);
 
         return reader?.read().then(function processResult(result): any {
@@ -176,10 +176,24 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
     setLoading(false);
   };
 
-  const display_message = messages.filter((message, index) => message.role !== 'system');
+  const displayMessages = messages.filter((message, index) => message.role !== 'system');
 
+  // If we're not auth'd, don't let them use this thing
+  if (!isAuthenticated) {
+    return (
+      <Type className="px-3 text-muted-foreground">
+        You must{' '}
+        <a href={ROUTES.LOGIN} className="underline hover:text-primary">
+          log in to Quadratic
+        </a>{' '}
+        to use the AI assistant.
+      </Type>
+    );
+  }
+
+  // This component is designed to fill the entire height of its parent container
   return (
-    <>
+    <div className="grid h-full grid-rows-[1fr_auto]">
       <div
         className="overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
@@ -196,7 +210,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         data-enable-grammarly="false"
       >
         <div id="ai-streaming-output">
-          {display_message.map((message, index) => (
+          {displayMessages.map((message, index) => (
             <div
               key={index}
               style={{
@@ -249,10 +263,10 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           ref={textareaRef}
           id="prompt-input"
           value={prompt}
-          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
+          onChange={(event) => {
             setPrompt(event.target.value);
           }}
-          onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+          onKeyDown={(event) => {
             if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && prompt.trim().length > 0) {
               submitPrompt();
             }
@@ -293,6 +307,6 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
           )}
         </div>
       </form>
-    </>
+    </div>
   );
 };
