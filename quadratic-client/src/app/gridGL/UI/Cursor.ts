@@ -112,7 +112,6 @@ export class Cursor extends Graphics {
       this.drawRect(x, y, width, height);
       this.cursorRectangle = undefined;
     } else {
-      console.log(width, height, x, y);
       this.cursorRectangle = new Rectangle(x, y, width, height);
     }
   }
@@ -140,8 +139,8 @@ export class Cursor extends Graphics {
       this.cursorRectangle = new Rectangle(
         this.startCell.x,
         this.startCell.y,
-        this.endCell.width - this.startCell.width,
-        this.endCell.height - this.startCell.height
+        this.endCell.x + this.endCell.width - this.startCell.x,
+        this.endCell.y + this.endCell.height - this.startCell.y
       );
     }
   }
