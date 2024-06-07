@@ -338,7 +338,6 @@ export class GridHeadings extends Container {
     const cellHeight = CELL_HEIGHT / scale;
 
     const gridAlpha = calculateAlphaForGridLines(scale);
-    const showA1Notation = pixiAppSettings.showA1Notation;
 
     const start = offsets.getYPlacement(bounds.top);
     const end = offsets.getYPlacement(bounds.bottom);
@@ -401,7 +400,7 @@ export class GridHeadings extends Container {
 
         // show only when selected or not intersects one of the selected numbers
         if (!intersectsLast) {
-          const text = showA1Notation ? getColumnA1Notation(row) : row.toString();
+          const text = row.toString();
           this.labels.add({ text, x: x + ROW_DIGIT_OFFSET.x, y: yPosition + ROW_DIGIT_OFFSET.y });
           lastLabel = { top, bottom, selected };
         }
