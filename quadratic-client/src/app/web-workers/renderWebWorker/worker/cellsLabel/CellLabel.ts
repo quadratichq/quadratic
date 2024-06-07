@@ -68,7 +68,7 @@ export class CellLabel {
   horizontalAlignOffsets: number[] = [];
 
   align: CellAlign | 'justify';
-  verticalAlignment: CellVerticalAlign;
+  verticalAlign: CellVerticalAlign;
   wrapping: CellWrap;
 
   letterSpacing: number;
@@ -129,7 +129,7 @@ export class CellLabel {
     this.italic = !!cell?.italic || isError || isChart;
     this.updateFontName();
     this.align = cell.align ?? 'left';
-    this.verticalAlignment = cell.verticalAlign ?? 'top';
+    this.verticalAlign = cell.verticalAlign ?? 'top';
     this.wrapping = cell.wrap ?? 'overflow';
     this.updateCellLimits();
   }
@@ -141,8 +141,8 @@ export class CellLabel {
   }
 
   updateCellLimits() {
-    this.clipLeft = this.wrapping === 'clip' && this.align !== 'left' ? this.AABB.x : undefined;
-    this.clipRight = this.wrapping === 'clip' && this.align !== 'right' ? this.AABB.x + this.AABB.width : undefined;
+    this.clipLeft = this.wrapping === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.clipRight = this.wrapping === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
     this.clipTop = this.AABB.top;
     this.clipBottom = this.AABB.bottom;
     this.maxWidth = this.wrapping === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : 0;
@@ -246,50 +246,49 @@ export class CellLabel {
     this.overflowRight = 0;
     let alignment = this.align ?? 'left';
     if (alignment === 'right') {
-      const actualLeft = this.AABB.x + this.AABB.width - this.textWidth - OPEN_SANS_FIX.x * 2;
-      if (actualLeft < this.AABB.x) {
-        this.overflowLeft = this.AABB.x - actualLeft;
+      const actualLeft = this.AABB.right - this.textWidth - OPEN_SANS_FIX.x * 2;
+      if (actualLeft < this.AABB.left) {
+        this.overflowLeft = this.AABB.left - actualLeft;
       }
-      this.position = new Point(actualLeft, this.AABB.y);
+      this.position = new Point(actualLeft, this.AABB.top);
     } else if (alignment === 'center') {
-      const actualLeft = this.AABB.x + this.AABB.width / 2 - this.textWidth / 2 - OPEN_SANS_FIX.x;
+      const actualLeft = this.AABB.left + (this.AABB.width - this.textWidth) / 2 - OPEN_SANS_FIX.x;
       const actualRight = actualLeft + this.textWidth;
-      if (actualLeft < this.AABB.x) {
-        this.overflowLeft = this.AABB.x - actualLeft;
+      if (actualLeft < this.AABB.left) {
+        this.overflowLeft = this.AABB.left - actualLeft;
       }
       if (actualRight > this.AABB.right) {
         this.overflowRight = actualRight - this.AABB.right;
       }
-      this.position = new Point(actualLeft, this.AABB.y);
+      this.position = new Point(actualLeft, this.AABB.top);
     } else if (alignment === 'left') {
-      const actualRight = this.AABB.x + this.textWidth;
+      const actualRight = this.AABB.left + this.textWidth;
       if (actualRight > this.AABB.right) {
         this.overflowRight = actualRight - this.AABB.right;
       }
-      this.position = new Point(this.AABB.x, this.AABB.y);
+      this.position = new Point(this.AABB.left, this.AABB.top);
     }
 
     this.overflowTop = 0;
     this.overflowBottom = 0;
-    let verticalAlignment = this.verticalAlignment ?? 'top';
-    if (verticalAlignment === 'bottom') {
-      const actualTop = this.AABB.y + this.AABB.height - this.textHeight;
-      if (actualTop < this.AABB.y) {
-        this.overflowTop = this.AABB.y - actualTop;
+    if (this.verticalAlign === 'bottom') {
+      const actualTop = this.AABB.bottom - this.textHeight;
+      if (actualTop < this.AABB.top) {
+        this.overflowTop = this.AABB.top - actualTop;
       }
       this.position.y = actualTop;
-    } else if (verticalAlignment === 'middle') {
-      const actualTop = this.AABB.y + this.AABB.height / 2 - this.textHeight / 2;
+    } else if (this.verticalAlign === 'middle') {
+      const actualTop = this.AABB.top + (this.AABB.height - this.textHeight) / 2;
       const actualBottom = actualTop + this.textHeight;
-      if (actualTop < this.AABB.y) {
-        this.overflowTop = this.AABB.y - actualTop;
+      if (actualTop < this.AABB.top) {
+        this.overflowTop = this.AABB.top - actualTop;
       }
       if (actualBottom > this.AABB.bottom) {
         this.overflowBottom = actualBottom - this.AABB.bottom;
       }
-      this.position.y = actualTop;
-    } else if (verticalAlignment === 'top') {
-      const actualBottom = this.AABB.y + this.textHeight;
+      this.position.y = Math.max(actualTop, this.AABB.top);
+    } else if (this.verticalAlign === 'top') {
+      const actualBottom = this.AABB.top + this.textHeight;
       if (actualBottom > this.AABB.bottom) {
         this.overflowBottom = actualBottom - this.AABB.bottom;
       }

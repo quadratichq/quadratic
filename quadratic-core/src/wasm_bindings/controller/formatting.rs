@@ -46,7 +46,7 @@ impl GridController {
         Ok(())
     }
 
-    /// Sets cell align formatting given as an optional [`CellVerticalAlign`].
+    /// Sets cell vertical align formatting given as an optional [`CellVerticalAlign`].
     #[wasm_bindgen(js_name = "setCellVerticalAlign")]
     pub fn js_set_cell_vertical_align(
         &mut self,

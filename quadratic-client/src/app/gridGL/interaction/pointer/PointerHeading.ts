@@ -248,9 +248,6 @@ export class PointerHeading {
         if (transientResize) {
           quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
         }
-        if (headingResizing.column !== undefined) {
-          // pixiApp.update
-        }
         this.resizing = undefined;
 
         // fixes a bug where the viewport may still be decelerating
@@ -286,36 +283,4 @@ export class PointerHeading {
       quadraticCore.commitSingleResize(sheetId, undefined, row, size);
     }
   }
-
-  // async autoResizeWrappedRows(column: number) {
-  // const sheet = sheets.sheet;
-  // const bounds = await quadraticCore.getColumnsBounds(sheet.id, column, column, true);
-  // if (!bounds) return;
-  // const { min, max } = bounds;
-
-  // for (let row = min; row <= max; row++) {
-  //   const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
-  //   const size = Math.max(maxHeight, CELL_HEIGHT);
-  //   const sheetId = sheets.sheet.id;
-  //   const originalSize = sheets.sheet.getCellOffsets(0, row);
-  //   if (originalSize.height !== size) {
-  //     quadraticCore.commitSingleResize(sheetId, undefined, row, size);
-  //   }
-  // }
-
-  // console.log(bounds);
-  // const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
-  // let size: number;
-  // if (maxHeight === 0) {
-  //   size = CELL_HEIGHT;
-  // } else {
-  //   const contentSizePlusMargin = maxHeight;
-  //   size = Math.max(contentSizePlusMargin, CELL_HEIGHT);
-  // }
-  // const sheetId = sheets.sheet.id;
-  // const originalSize = sheets.sheet.getCellOffsets(0, row);
-  // if (originalSize.height !== size) {
-  //   quadraticCore.commitSingleResize(sheetId, undefined, row, size);
-  // }
-  // }
 }
