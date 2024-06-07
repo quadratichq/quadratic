@@ -127,7 +127,7 @@ class InlineEditorFormula {
         let coords = '';
         cursor.multiCursor.forEach((c, i) => {
           const start = getA1Notation(c.left, c.top);
-          const end = getA1Notation(c.right, c.bottom);
+          const end = getA1Notation(c.right - 1, c.bottom - 1);
           coords += `${start}:${end}${i !== cursor.multiCursor!.length - 1 ? ',' : ''}`;
         });
         this.insertInsertingCells(`${sheet}${coords}`);

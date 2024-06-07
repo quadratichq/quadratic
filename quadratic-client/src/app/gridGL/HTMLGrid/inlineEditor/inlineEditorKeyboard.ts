@@ -175,7 +175,8 @@ class InlineEditorKeyboard {
     // Fallback for all other keys (used to end cursorIsMoving and return
     // control to the formula box)
     else {
-      if (inlineEditorHandler.cursorIsMoving) {
+      // need to ignore meta and control to allow for multi-selection
+      if (!['Meta', 'Control'].includes(e.key) && inlineEditorHandler.cursorIsMoving) {
         inlineEditorFormula.endInsertingCells();
         this.resetKeyboardPosition();
         if (sheets.sheet.id !== inlineEditorHandler.location?.sheetId) {

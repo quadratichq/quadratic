@@ -115,6 +115,7 @@ export class PointerDown {
         this.previousPosition = new Point(column, row);
 
         this.pointerMoved = false;
+        event.stopPropagation();
         return;
       }
     }
