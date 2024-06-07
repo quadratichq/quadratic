@@ -4,6 +4,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { PanMode, pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { rectToSheetRect } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
@@ -57,14 +58,6 @@ export class PointerCellMoving {
       return true;
     }
     return false;
-  }
-
-  // Completes the move
-  private completeMove() {
-    if (this.state !== 'move' || !this.moving) {
-      throw new Error('Expected moving to be defined in completeMove');
-    }
-    quadraticCore.moveCells(sheets.getRustSelection(), this.moving.toColumn, this.moving.toRow, sheets.sheet.id);
   }
 
   private reset() {
@@ -207,7 +200,18 @@ export class PointerCellMoving {
 
   pointerUp(): boolean {
     if (this.state === 'move') {
-      this.completeMove();
+      if (this.moving) {
+        const rectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
+        quadraticCore.moveCells(
+          rectToSheetRect(
+            new Rectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1),
+            sheets.sheet.id
+          ),
+          this.moving.toColumn,
+          this.moving.toRow,
+          sheets.sheet.id
+        );
+      }
       this.reset();
       return true;
     }

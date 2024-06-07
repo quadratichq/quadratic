@@ -16,6 +16,7 @@ import {
   SheetBounds,
   SheetInfo,
   SheetPos,
+  SheetRect,
   SummarizeSelectionResult,
   TransactionName,
 } from '@/app/quadratic-core-types';
@@ -783,7 +784,7 @@ export interface CoreClientUndoRedo {
 
 export interface ClientCoreMoveCells {
   type: 'clientCoreMoveCells';
-  source: Selection;
+  source: SheetRect;
   targetSheetId: string;
   targetX: number;
   targetY: number;

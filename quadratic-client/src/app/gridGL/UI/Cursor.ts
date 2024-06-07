@@ -112,6 +112,7 @@ export class Cursor extends Graphics {
       this.drawRect(x, y, width, height);
       this.cursorRectangle = undefined;
     } else {
+      console.log(width, height, x, y);
       this.cursorRectangle = new Rectangle(x, y, width, height);
     }
   }
@@ -128,7 +129,12 @@ export class Cursor extends Graphics {
       // the indicator, which is only active for one multiCursor
       const multiCursor = cursor.multiCursor[0];
       this.endCell = sheet.getCellOffsets(multiCursor.right - 1, multiCursor.bottom - 1);
-      this.cursorRectangle = sheets.sheet.cursor.getLargestMultiCursorRectangle();
+      this.cursorRectangle = new Rectangle(
+        this.startCell.x,
+        this.startCell.y,
+        this.endCell.x + this.endCell.width - this.startCell.x,
+        this.endCell.y + this.endCell.height - this.startCell.y
+      );
     } else {
       this.endCell = sheet.getCellOffsets(cursor.cursorPosition.x, cursor.cursorPosition.y);
       this.cursorRectangle = new Rectangle(

@@ -22,6 +22,7 @@ import {
   SearchOptions,
   Selection,
   SheetPos,
+  SheetRect,
   SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
 import { Rectangle } from 'pixi.js';
@@ -782,7 +783,7 @@ class QuadraticCore {
     });
   }
 
-  moveCells(source: Selection, targetX: number, targetY: number, targetSheetId: string) {
+  moveCells(source: SheetRect, targetX: number, targetY: number, targetSheetId: string) {
     this.send({
       type: 'clientCoreMoveCells',
       source,

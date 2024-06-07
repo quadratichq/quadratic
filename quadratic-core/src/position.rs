@@ -1,5 +1,5 @@
-use std::fmt;
 use std::ops::Range;
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
@@ -293,6 +293,14 @@ impl From<(i64, i64, SheetId)> for SheetPos {
     }
 }
 
+impl FromStr for SheetPos {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str::<SheetPos>(s).map_err(|e| e.to_string())
+    }
+}
+
 /// Used for referencing a range during computation.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -481,6 +489,14 @@ impl From<(i64, i64, i64, i64, SheetId)> for SheetRect {
             },
             sheet_id,
         }
+    }
+}
+
+impl FromStr for SheetRect {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str::<SheetRect>(s).map_err(|e| e.to_string())
     }
 }
 
@@ -830,5 +846,18 @@ mod test {
         assert_eq!(bounds.min.y, 1);
         assert_eq!(bounds.max.x, 2);
         assert_eq!(bounds.max.y, 2);
+    }
+
+    #[test]
+    fn sheet_pos_from_str() {
+        let sheet_id = SheetId::new();
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        let sheet_pos_str = serde_json::to_string(&sheet_pos).unwrap();
+        let parsed_sheet_pos: SheetPos = sheet_pos_str.parse().unwrap();
+        assert_eq!(parsed_sheet_pos, sheet_pos);
     }
 }

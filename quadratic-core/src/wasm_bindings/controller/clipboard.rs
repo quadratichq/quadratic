@@ -5,7 +5,7 @@ use crate::{
     controller::{user_actions::clipboard::PasteSpecial, GridController},
     grid::{js_types::JsClipboard, SheetId},
     selection::Selection,
-    Pos,
+    Pos, SheetPos, SheetRect,
 };
 
 #[wasm_bindgen]
@@ -75,12 +75,12 @@ impl GridController {
     #[wasm_bindgen(js_name = "moveCells")]
     pub fn js_move_cells(
         &mut self,
-        source: JsValue,
-        dest: JsValue,
+        source: String,
+        dest: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let source = serde_wasm_bindgen::from_value(source).map_err(|e| e.to_string())?;
-        let dest = serde_wasm_bindgen::from_value(dest).map_err(|e| e.to_string())?;
+        let source = SheetRect::from_str(&source)?;
+        let dest = SheetPos::from_str(&dest)?;
         self.move_cells(source, dest, cursor);
         Ok(())
     }

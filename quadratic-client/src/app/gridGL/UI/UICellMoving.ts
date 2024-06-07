@@ -28,7 +28,7 @@ export class UICellMoving extends Container {
     this.graphics.lineStyle(1, colors.movingCells, MOVING_THICKNESS);
     const offsets = sheets.sheet.offsets;
     const start = offsets.getCellOffsets(moving.toColumn, moving.toRow);
-    const end = offsets.getCellOffsets(moving.toColumn + moving.width, moving.toRow + moving.height);
+    const end = offsets.getCellOffsets(moving.toColumn + moving.width - 1, moving.toRow + moving.height - 1);
     this.graphics.drawRect(start.x, start.y, end.x + end.w - start.x, end.y + end.h - start.y);
   }
 

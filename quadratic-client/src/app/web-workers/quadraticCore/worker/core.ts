@@ -914,7 +914,11 @@ class Core {
       y: BigInt(message.targetY),
       sheet_id: { id: message.targetSheetId },
     };
-    this.gridController.moveCells(JSON.stringify(message.source, bigIntReplacer), dest, message.cursor);
+    this.gridController.moveCells(
+      JSON.stringify(message.source, bigIntReplacer),
+      JSON.stringify(dest, bigIntReplacer),
+      message.cursor
+    );
   }
 }
 
