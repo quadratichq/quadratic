@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -73,6 +74,9 @@ export class PointerHeading {
     const { headings, viewport } = pixiApp;
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
+
+    // exit out of inline editor
+    inlineEditorHandler.closeIfOpen();
 
     const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
     const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);

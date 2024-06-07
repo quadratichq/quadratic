@@ -323,6 +323,12 @@ class InlineEditorHandler {
     this.updateFont();
   };
 
+  closeIfOpen() {
+    if (this.open) {
+      this.close(0, 0, false);
+    }
+  }
+
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
