@@ -12,7 +12,7 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    grid::SheetId,
+    grid::{js_types::JsRowHeight, SheetId},
     Pos, Rect,
 };
 
@@ -49,7 +49,7 @@ impl GridController {
             }
 
             self.execute_operation(transaction);
-            if transaction.waiting_for_async.is_some() {
+            if transaction.has_async {
                 self.transactions.add_async_transaction(transaction);
                 break;
             }
@@ -140,6 +140,56 @@ impl GridController {
         }
 
         self.after_calculation_async(&mut transaction, result)?;
+        self.finalize_transaction(&mut transaction);
+        Ok(())
+    }
+
+    pub fn auto_resize_wrapped_row_heights(
+        &self,
+        sheet_id: &SheetId,
+        wrapped_cells: &Vec<Pos>,
+        transaction: &mut PendingTransaction,
+    ) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        if let Ok(wrapped_cells) = serde_json::to_string(wrapped_cells) {
+            crate::wasm_bindings::js::jsGetWrappedRowHeights(
+                sheet_id.to_string(),
+                wrapped_cells,
+                transaction.id.to_string(),
+            );
+
+            transaction.has_async = true;
+        }
+    }
+
+    pub fn complete_auto_resize_wrapped_row_heights(
+        &mut self,
+        row_heights: Vec<JsRowHeight>,
+        transaction_id: Uuid,
+    ) -> Result<()> {
+        let mut transaction = self
+            .transactions
+            .remove_awaiting_async(transaction_id)
+            .unwrap();
+
+        row_heights.iter().for_each(|row_height| {
+            let sheet_id = transaction.sheet_id.unwrap();
+            let row = row_height.row as i64;
+            let new_size = row_height.height;
+            transaction.operations.push_back(Operation::ResizeRow {
+                sheet_id,
+                row,
+                new_size,
+                client_resized: false,
+            });
+        });
+
+        transaction.has_async = false;
+
+        self.start_transaction(&mut transaction);
         self.finalize_transaction(&mut transaction);
         Ok(())
     }

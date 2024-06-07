@@ -57,9 +57,13 @@ impl GridController {
                 match &attr {
                     CellFmtArray::RenderSize(_) => self.send_html_output_rect(&sheet_rect),
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
+                    CellFmtArray::Wrap(_) => {
+                        self.send_updated_bounds_rect(&sheet_rect, true);
+                        self.send_render_cells(&sheet_rect, transaction, true);
+                    }
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
-                        self.send_render_cells(&sheet_rect);
+                        self.send_render_cells(&sheet_rect, transaction, false);
                     }
                 };
             }

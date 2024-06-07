@@ -88,6 +88,9 @@ extern "C" {
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
 
     pub fn jsUndoRedo(undo: bool, redo: bool);
+
+    // wrapped_cells: Vec<Pos>
+    pub fn jsGetWrappedRowHeights(sheet_id: String, wrapped_cells: String, transaction_id: String);
 }
 
 #[cfg(test)]
@@ -459,5 +462,18 @@ pub fn jsUndoRedo(undo: bool, redo: bool) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsUndoRedo",
         format!("{},{}", undo, redo),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsGetWrappedRowHeights(
+    sheet_id: String,
+    wrapped_cells: String, /*Vec<Pos>*/
+    transaction_id: String,
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsGetWrappedRowHeights",
+        format!("{},{},{}", sheet_id, wrapped_cells, transaction_id),
     ));
 }

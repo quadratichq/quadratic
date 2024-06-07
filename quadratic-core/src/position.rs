@@ -1,10 +1,11 @@
-use std::fmt;
 use std::ops::Range;
+use std::{collections::HashSet, fmt};
 
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
+use crate::controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{grid::SheetId, ArraySize, QUADRANT_SIZE};
 
 /// Cell position {x, y}.
@@ -404,6 +405,28 @@ impl SheetRect {
             y: self.min.y,
             sheet_id: self.sheet_id,
         }
+    }
+
+    pub fn to_rect(&self) -> Rect {
+        Rect {
+            min: self.min,
+            max: self.max,
+        }
+    }
+
+    pub fn to_hashes(&self) -> HashSet<Pos> {
+        let mut hashes = HashSet::new();
+        for y in self.y_range() {
+            let y_hash = (y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i64;
+            for x in self.x_range() {
+                let x_hash = (x as f64 / CELL_SHEET_WIDTH as f64).floor() as i64;
+                hashes.insert(Pos {
+                    x: x_hash,
+                    y: y_hash,
+                });
+            }
+        }
+        hashes
     }
 }
 impl fmt::Display for SheetRect {

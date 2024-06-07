@@ -9,8 +9,10 @@
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { JsRenderCell, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
-import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { Pos, SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
+import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore.js';
+import { CELL_HEIGHT } from '@/shared/constants/gridConstants.js';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
 import { renderText } from '../renderText';
@@ -445,5 +447,42 @@ export class CellsLabels {
       }
     });
     return max;
+  }
+
+  async getWrappedRowHeights(cells: string, transactionId: string) {
+    const wrappedCells: Pos[] = JSON.parse(cells);
+
+    // wait for all dirty hashes to finish updating
+    const promises: Promise<void>[] = [];
+    wrappedCells.forEach((wrappedCell) => {
+      const { x, y } = wrappedCell;
+      const cellsHash = this.getCellsHash(Number(x), Number(y));
+      if (cellsHash?.dirty) {
+        const promise = new Promise<void>(async (resolve) => {
+          await cellsHash.update();
+          resolve();
+        });
+        promises.push(promise);
+      }
+    });
+    await Promise.all(promises);
+
+    const rowHeights: JsRowHeight[] = [];
+    const seenRows = new Set<number>();
+    wrappedCells.forEach((wrappedCell) => {
+      const { y } = wrappedCell;
+      const row = Number(y);
+      if (seenRows.has(row)) return;
+      seenRows.add(row);
+
+      const maxContentHeight = this.rowMaxHeight(row);
+      const targetHeight = Math.max(maxContentHeight, CELL_HEIGHT);
+      const currentHeight = this.sheetOffsets.getRowHeight(row);
+      if (targetHeight !== currentHeight) {
+        rowHeights.push({ row, height: targetHeight });
+      }
+    });
+
+    renderCore.receiveWrappedRowHeights(rowHeights, transactionId);
   }
 }

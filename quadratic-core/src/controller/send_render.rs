@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
@@ -14,29 +12,25 @@ use super::{
 
 impl GridController {
     /// Sends the modified cell sheets to the render web worker
-    pub fn send_render_cells(&self, sheet_rect: &SheetRect) {
+    pub fn send_render_cells(
+        &self,
+        sheet_rect: &SheetRect,
+        transaction: &mut PendingTransaction,
+        force_wrap: bool,
+    ) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
         // calculate the hashes that were updated
-        let mut modified = HashSet::new();
-        for y in sheet_rect.y_range() {
-            let y_hash = (y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i64;
-            for x in sheet_rect.x_range() {
-                let x_hash = (x as f64 / CELL_SHEET_WIDTH as f64).floor() as i64;
-                modified.insert(Pos {
-                    x: x_hash,
-                    y: y_hash,
-                });
-            }
-        }
-        // send the modified cells to the render web worker
-        modified.iter().for_each(|modified| {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+        let hashes = sheet_rect.to_hashes();
+
+        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+            // send the modified cells to the render web worker
+            hashes.iter().for_each(|hash| {
                 let rect = Rect::from_numbers(
-                    modified.x * CELL_SHEET_WIDTH as i64,
-                    modified.y * CELL_SHEET_HEIGHT as i64,
+                    hash.x * CELL_SHEET_WIDTH as i64,
+                    hash.y * CELL_SHEET_HEIGHT as i64,
                     CELL_SHEET_WIDTH as i64,
                     CELL_SHEET_HEIGHT as i64,
                 );
@@ -44,13 +38,30 @@ impl GridController {
                 if let Ok(cells) = serde_json::to_string(&render_cells) {
                     crate::wasm_bindings::js::jsRenderCellSheets(
                         sheet_rect.sheet_id.to_string(),
-                        modified.x,
-                        modified.y,
+                        hash.x,
+                        hash.y,
                         cells,
                     );
                 }
+            });
+
+            if transaction.is_user() {
+                let rect = sheet_rect.to_rect();
+                if force_wrap {
+                    let cells: Vec<Pos> = rect
+                        .y_range()
+                        .flat_map(|y| rect.x_range().map(move |x| Pos { x, y }))
+                        .collect();
+                    self.auto_resize_wrapped_row_heights(&sheet_rect.sheet_id, &cells, transaction);
+                } else if let Some(wrapped_cells) = sheet.get_wrapped_cells(rect) {
+                    self.auto_resize_wrapped_row_heights(
+                        &sheet_rect.sheet_id,
+                        &wrapped_cells,
+                        transaction,
+                    );
+                }
             }
-        });
+        }
     }
 
     /// Sends the modified fills to the client

@@ -6,10 +6,11 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRenderCell } from '@/app/quadratic-core-types';
+import { JsRenderCell, JsRowHeight } from '@/app/quadratic-core-types';
 import {
   CoreRenderCells,
   CoreRenderMessage,
+  RenderCoreReceiveWrappedRowHeights,
   RenderCoreRequestRenderCells,
 } from '@/app/web-workers/quadraticCore/coreRenderMessages';
 import { renderText } from './renderText';
@@ -61,10 +62,27 @@ class RenderCore {
         renderText.sheetBoundsUpdate(e.data.sheetBounds);
         break;
 
+      case 'coreRenderGetWrappedRowHeights':
+        renderText.getWrappedRowHeights(e.data.sheetId, e.data.wrappedCells, e.data.transactionId);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }
   };
+
+  receiveWrappedRowHeights(rowHeights: JsRowHeight[], transactionId: string) {
+    if (!this.renderCorePort) {
+      console.warn('Expected renderCorePort to be defined in RenderCore.receiveWrappedRowHeights');
+      return;
+    }
+    const message: RenderCoreReceiveWrappedRowHeights = {
+      type: 'renderCoreReceiveWrappedRowHeights',
+      rowHeights,
+      transactionId,
+    };
+    this.renderCorePort.postMessage(message);
+  }
 
   /*********************
    * Core API requests *

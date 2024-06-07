@@ -3,7 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    Pos, Rect, SheetPos,
+    Pos, SheetPos, SheetRect,
 };
 
 impl GridController {
@@ -41,9 +41,15 @@ impl GridController {
             );
 
             if transaction.is_user_undo_redo() {
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                    x: column,
+                    y: 0,
+                    sheet_id,
+                });
+
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     if let Some(column_bounds) = sheet.column_bounds(column, true) {
-                        let rect = Rect {
+                        let sheet_rect = SheetRect {
                             min: Pos {
                                 x: column,
                                 y: column_bounds.0,
@@ -52,18 +58,11 @@ impl GridController {
                                 x: column,
                                 y: column_bounds.1,
                             },
+                            sheet_id,
                         };
-                        if sheet.has_wrapped_cells_in_rect(rect.clone()) {
-                            self.send_render_cells(&rect.to_sheet_rect(sheet_id));
-                        }
+                        self.send_render_cells(&sheet_rect, transaction, false);
                     }
                 }
-
-                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                    x: column,
-                    y: 0,
-                    sheet_id,
-                });
             }
 
             if (cfg!(target_family = "wasm") || cfg!(test))

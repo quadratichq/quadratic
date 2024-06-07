@@ -18,6 +18,7 @@ import {
   JsCodeResult,
   JsGetCellResponse,
   JsRenderCell,
+  JsRowHeight,
   MinMax,
   SearchOptions,
   SheetPos,
@@ -960,6 +961,11 @@ class Core {
       sheet_id: { id: message.targetSheetId },
     };
     this.gridController.moveCells(source, dest, message.cursor);
+  }
+
+  receiveWrappedRowHeights(rowHeights: JsRowHeight[], transactionId: string) {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    this.gridController.receiveWrappedRowHeights(JSON.stringify(rowHeights), transactionId);
   }
 }
 

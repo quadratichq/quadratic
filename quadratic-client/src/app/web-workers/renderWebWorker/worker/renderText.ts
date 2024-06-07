@@ -164,6 +164,12 @@ class RenderText {
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.rowMaxHeight');
     return cellsLabels.rowMaxHeight(row);
   }
+
+  getWrappedRowHeights(sheetId: string, wrappedCells: string, transactionId: string) {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.getWrappedRowHeights');
+    cellsLabels.getWrappedRowHeights(wrappedCells, transactionId);
+  }
 }
 
 export const renderText = new RenderText();
