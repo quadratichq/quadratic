@@ -374,20 +374,28 @@ export const FloatingContextMenu = (props: Props) => {
             }}
           />
         </Menu>
-        <Menu
-          menuButton={
-            <div>
-              <TooltipHint title="Borders">
-                <IconButton size="small">
-                  <BorderAllIcon fontSize={iconSize} />
-                </IconButton>
-              </TooltipHint>
-            </div>
-          }
-        >
-          {borders}
-        </Menu>
-
+        {!borders ? <TooltipHint title="Borders">
+          <span>
+            <IconButton size="small" disabled={true}>
+              <BorderAllIcon fontSize={iconSize} />
+            </IconButton>
+          </span>
+        </TooltipHint> :
+          <Menu
+            menuButton={
+              <div>
+                <TooltipHint title="Borders">
+                  <span>
+                    <IconButton size="small">
+                      <BorderAllIcon fontSize={iconSize} />
+                    </IconButton>
+                  </span>
+                </TooltipHint>
+              </div>
+            }
+          >
+            {borders}
+          </Menu>}
         <MenuDividerVertical />
 
         <TooltipHint title="Format automatically">
