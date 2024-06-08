@@ -1,12 +1,12 @@
 use std::fs::create_dir_all;
 
+use controller::operations::clipboard::PasteSpecial;
 use grid::{formats::format::Format, js_types::JsSheetFill};
 use quadratic_core::{
     color::Rgba,
     controller::{
         active_transactions::transaction_name::TransactionName,
         execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
-        user_actions::clipboard::PasteSpecial,
     },
     grid::{
         js_types::{

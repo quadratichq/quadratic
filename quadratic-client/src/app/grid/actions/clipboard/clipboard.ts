@@ -52,7 +52,6 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
     console.warn('clipboardData is not defined');
     return;
   }
-  const cursor = sheets.sheet.cursor.getCursor();
   let html: string | undefined;
   let plainText: string | undefined;
 
@@ -65,8 +64,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
   if (plainText || html) {
     quadraticCore.pasteFromClipboard({
       sheetId: sheets.sheet.id,
-      x: cursor.x,
-      y: cursor.y,
+      selection: sheets.sheet.cursor.getRustSelection(),
       plainText,
       html,
       special: 'None',
@@ -149,7 +147,6 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
 export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
-  const target = sheets.sheet.cursor.getCursor();
   if (fullClipboardSupport()) {
     const clipboardData = await navigator.clipboard.read();
 
@@ -170,8 +167,7 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
     }
     quadraticCore.pasteFromClipboard({
       sheetId: sheets.sheet.id,
-      x: target.x,
-      y: target.y,
+      selection: sheets.sheet.cursor.getRustSelection(),
       plainText,
       html,
       special,
@@ -185,8 +181,7 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
     if (html) {
       quadraticCore.pasteFromClipboard({
         sheetId: sheets.sheet.id,
-        x: target.x,
-        y: target.y,
+        selection: sheets.sheet.cursor.getRustSelection(),
         plainText: undefined,
         html,
         special,

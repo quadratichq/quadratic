@@ -3,9 +3,9 @@ use crate::controller::{operations::operation::Operation, GridController};
 use crate::{
     grid::{
         formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
-        NumericCommas, NumericDecimals, NumericFormat, RenderSize, TextColor,
+        NumericDecimals, NumericFormat, RenderSize, TextColor,
     },
-    Pos, RunLengthEncoding, SheetPos, SheetRect,
+    RunLengthEncoding, SheetPos, SheetRect,
 };
 
 impl GridController {
@@ -67,55 +67,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return vec![];
         };
-        let mut cell_formats = vec![
-            CellFmtArray::Align(RunLengthEncoding::new()),
-            CellFmtArray::Wrap(RunLengthEncoding::new()),
-            CellFmtArray::NumericFormat(RunLengthEncoding::new()),
-            CellFmtArray::NumericDecimals(RunLengthEncoding::new()),
-            CellFmtArray::NumericCommas(RunLengthEncoding::new()),
-            CellFmtArray::Bold(RunLengthEncoding::new()),
-            CellFmtArray::Italic(RunLengthEncoding::new()),
-            CellFmtArray::TextColor(RunLengthEncoding::new()),
-            CellFmtArray::FillColor(RunLengthEncoding::new()),
-        ];
-        for y in sheet_rect.y_range() {
-            for x in sheet_rect.x_range() {
-                let pos = Pos { x, y };
-                cell_formats.iter_mut().for_each(|array| match array {
-                    CellFmtArray::Align(array) => {
-                        array.push(sheet.get_formatting_value::<CellAlign>(pos));
-                    }
-                    CellFmtArray::Wrap(array) => {
-                        array.push(sheet.get_formatting_value::<CellWrap>(pos));
-                    }
-                    CellFmtArray::NumericFormat(array) => {
-                        array.push(sheet.get_formatting_value::<NumericFormat>(pos));
-                    }
-                    CellFmtArray::NumericDecimals(array) => {
-                        array.push(sheet.get_formatting_value::<NumericDecimals>(pos));
-                    }
-                    CellFmtArray::NumericCommas(array) => {
-                        array.push(sheet.get_formatting_value::<NumericCommas>(pos));
-                    }
-                    CellFmtArray::Bold(array) => {
-                        array.push(sheet.get_formatting_value::<Bold>(pos));
-                    }
-                    CellFmtArray::Italic(array) => {
-                        array.push(sheet.get_formatting_value::<Italic>(pos));
-                    }
-                    CellFmtArray::TextColor(array) => {
-                        array.push(sheet.get_formatting_value::<TextColor>(pos));
-                    }
-                    CellFmtArray::FillColor(array) => {
-                        array.push(sheet.get_formatting_value::<FillColor>(pos));
-                    }
-                    CellFmtArray::RenderSize(array) => {
-                        array.push(sheet.get_formatting_value::<RenderSize>(pos));
-                    }
-                });
-            }
-        }
-        cell_formats
+        sheet.get_all_cell_formats(sheet_rect)
     }
 
     pub fn set_cell_render_size(

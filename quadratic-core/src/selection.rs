@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{grid::SheetId, Pos, Rect, SheetRect};
+use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -123,6 +123,15 @@ impl Selection {
             rects.iter().any(|rect| rect.contains(pos))
         } else {
             false
+        }
+    }
+
+    /// Gets the origin.
+    pub fn origin(&self) -> SheetPos {
+        SheetPos {
+            x: self.x,
+            y: self.y,
+            sheet_id: self.sheet_id,
         }
     }
 }
@@ -332,5 +341,24 @@ mod test {
         };
         assert!(selection.pos_in_selection(&selection, Pos { x: 1, y: 2 }));
         assert!(!selection.pos_in_selection(&selection, Pos { x: 4, y: 4 }));
+    }
+
+    #[test]
+    fn origin() {
+        let sheet_id = SheetId::test();
+        let selection = Selection {
+            sheet_id,
+            x: 1,
+            y: 2,
+            ..Default::default()
+        };
+        assert_eq!(
+            selection.origin(),
+            SheetPos {
+                x: 1,
+                y: 2,
+                sheet_id
+            }
+        );
     }
 }

@@ -696,8 +696,7 @@ class QuadraticCore {
 
   pasteFromClipboard(options: {
     sheetId: string;
-    x: number;
-    y: number;
+    selection: Selection;
     plainText: string | undefined;
     html: string | undefined;
     special: PasteSpecial;

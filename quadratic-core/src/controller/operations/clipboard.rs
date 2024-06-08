@@ -1,7 +1,7 @@
 use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
-    controller::{user_actions::clipboard::PasteSpecial, GridController},
+    controller::GridController,
     formulas::replace_internal_cell_references,
     grid::{
         formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders,
@@ -14,6 +14,24 @@ use anyhow::{Error, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
+pub enum PasteSpecial {
+    None,
+    Values,
+    Formats,
+}
+
+/// This is used to track the origin of copies from column, row, or all
+/// selection. In order to paste a column, row, or all, we need to know the
+/// origin of the copy. For example, this is used to copy and paste a column
+/// on top of another column, or a sheet on top of another sheet.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClipboardOrigin {
+    pub column: Option<i64>,
+    pub row: Option<i64>,
+    pub all: Option<(i64, i64)>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Clipboard {
     pub w: u32,
@@ -25,17 +43,22 @@ pub struct Clipboard {
 
     pub formats: Vec<CellFmtArray>,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
+
+    pub origin: Option<ClipboardOrigin>,
 }
 
 impl GridController {
     pub fn cut_to_clipboard_operations(
         &mut self,
-        sheet_rect: SheetRect,
-    ) -> (Vec<Operation>, String, String) {
-        let copy = self.copy_to_clipboard(sheet_rect);
-        let selection = Selection::sheet_rect(sheet_rect);
-        let operations = self.delete_values_and_formatting_operations(&selection);
-        (operations, copy.0, copy.1)
+        selection: &Selection,
+    ) -> Result<(Vec<Operation>, String, String), String> {
+        let sheet = self
+            .try_sheet(selection.sheet_id)
+            .ok_or("Unable to find Sheet")?;
+
+        let (plain_text, html) = sheet.copy_to_clipboard(selection)?;
+        let operations = self.delete_values_and_formatting_operations(selection);
+        Ok((operations, plain_text, html))
     }
 
     /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
@@ -72,7 +95,7 @@ impl GridController {
 
     fn set_clipboard_cells(
         &mut self,
-        start_pos: SheetPos,
+        selection: &Selection,
         clipboard: Clipboard,
         special: PasteSpecial,
     ) -> Vec<Operation> {
@@ -81,13 +104,33 @@ impl GridController {
 
         let mut ops = vec![];
 
+        let mut start_pos = Pos {
+            x: selection.x,
+            y: selection.y,
+        };
+        // adjust start_pos based on ClipboardOrigin special cases
+        if let Some(clipboard_origin) = clipboard.origin.as_ref() {
+            if clipboard_origin.all.is_some() && selection.all {
+                if let Some(column) = clipboard_origin.column {
+                    start_pos.x = column;
+                }
+                if let Some(row) = clipboard_origin.row {
+                    start_pos.y = row;
+                }
+            } else if selection.rows.is_some() {
+                start_pos.y = clipboard_origin.row.unwrap_or(start_pos.y);
+            } else if clipboard_origin.column.is_some() {
+                start_pos.x = clipboard_origin.column.unwrap_or(start_pos.x);
+            }
+        }
+
         match special {
             PasteSpecial::None => {
                 let (values, code) =
                     GridController::cell_values_from_clipboard_cells(&clipboard, special);
                 if let Some(values) = values {
                     ops.push(Operation::SetCellValues {
-                        sheet_pos: start_pos,
+                        sheet_pos: start_pos.to_sheet_pos(selection.sheet_id),
                         values: values.clone(),
                     });
                 }
@@ -96,7 +139,7 @@ impl GridController {
                     let sheet_pos = SheetPos {
                         x: start_pos.x + *x as i64,
                         y: start_pos.y + *y as i64,
-                        sheet_id: start_pos.sheet_id,
+                        sheet_id: selection.sheet_id,
                     };
                     ops.push(Operation::ComputeCode { sheet_pos });
                 });
@@ -106,7 +149,7 @@ impl GridController {
                     GridController::cell_values_from_clipboard_cells(&clipboard, special);
                 if let Some(values) = values {
                     ops.push(Operation::SetCellValues {
-                        sheet_pos: start_pos,
+                        sheet_pos: start_pos.to_sheet_pos(selection.sheet_id),
                         values: values.clone(),
                     });
                 }
@@ -120,7 +163,7 @@ impl GridController {
                 x: start_pos.x + (clipboard.w as i64) - 1,
                 y: start_pos.y + (clipboard.h as i64) - 1,
             },
-            sheet_id: start_pos.sheet_id,
+            sheet_id: selection.sheet_id,
         };
 
         // paste formats and borders unless pasting only values
@@ -132,7 +175,7 @@ impl GridController {
                 });
             });
 
-            if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 // add borders to the sheet
                 borders.iter().for_each(|(x, y, cell_borders)| {
                     if let Some(cell_borders) = cell_borders {
@@ -226,11 +269,16 @@ impl GridController {
     // todo: parse table structure to provide better pasting experience from other spreadsheets
     pub fn paste_html_operations(
         &mut self,
-        dest_pos: SheetPos,
+        selection: &Selection,
         html: String,
         special: PasteSpecial,
     ) -> Result<Vec<Operation>> {
         let error = |e, msg| Error::msg(format!("Clipboard Paste {:?}: {:?}", msg, e));
+
+        let dest_pos = Pos {
+            x: selection.x,
+            y: selection.y,
+        };
 
         // use regex to find data-quadratic
         match Regex::new(r#"data-quadratic="(.*)"><tbody"#) {
@@ -266,7 +314,7 @@ impl GridController {
                     }
                 }
 
-                Ok(self.set_clipboard_cells(dest_pos, clipboard, special))
+                Ok(self.set_clipboard_cells(selection, clipboard, special))
             }
         }
     }

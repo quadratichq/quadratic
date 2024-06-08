@@ -352,15 +352,7 @@ class CoreClient {
         break;
 
       case 'clientCorePasteFromClipboard':
-        await core.pasteFromClipboard(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.plainText,
-          e.data.html,
-          e.data.special,
-          e.data.cursor
-        );
+        await core.pasteFromClipboard(e.data.selection, e.data.plainText, e.data.html, e.data.special, e.data.cursor);
         break;
 
       case 'clientCoreSetRegionBorders':

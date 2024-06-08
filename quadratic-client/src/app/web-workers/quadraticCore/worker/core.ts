@@ -620,9 +620,7 @@ class Core {
   }
 
   pasteFromClipboard(
-    sheetId: string,
-    x: number,
-    y: number,
+    selection: Selection,
     plainText: string | undefined,
     html: string | undefined,
     special: string,
@@ -631,7 +629,13 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.pasteFromClipboard(sheetId, new Pos(x, y), plainText, html, special, cursor);
+        this.gridController.pasteFromClipboard(
+          JSON.stringify(selection, bigIntReplacer),
+          plainText,
+          html,
+          special,
+          cursor
+        );
         resolve(undefined);
       });
     });

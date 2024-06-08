@@ -20,6 +20,7 @@ use crate::{Array, CellValue, IsBlank, Pos, Rect};
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
+pub mod clipboard;
 pub mod code;
 pub mod formats;
 pub mod formatting;

@@ -2,10 +2,10 @@ use std::str::FromStr;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
 use crate::{
-    controller::{user_actions::clipboard::PasteSpecial, GridController},
-    grid::{js_types::JsClipboard, SheetId},
+    controller::{operations::clipboard::PasteSpecial, GridController},
+    grid::js_types::JsClipboard,
     selection::Selection,
-    Pos, SheetPos, SheetRect,
+    SheetPos, SheetRect,
 };
 
 #[wasm_bindgen]
@@ -15,10 +15,7 @@ impl GridController {
     pub fn js_copy_to_clipboard(&self, selection: String) -> Result<JsValue, JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
         let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
-        let sheet_rect = sheet
-            .clipboard_selection(&selection)
-            .ok_or("No SheetRect found")?;
-        let (plain_text, html) = self.copy_to_clipboard(sheet_rect);
+        let (plain_text, html) = sheet.copy_to_clipboard(&selection)?;
         let output = JsClipboard { plain_text, html };
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
@@ -31,11 +28,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
-        let sheet_rect = sheet
-            .clipboard_selection(&selection)
-            .ok_or("No SheetRect found")?;
-        let (plain_text, html) = self.cut_to_clipboard(sheet_rect, cursor);
+        let (plain_text, html) = self.cut_to_clipboard(&selection, cursor)?;
         let output = JsClipboard { plain_text, html };
         Ok(serde_wasm_bindgen::to_value(&output).map_err(|e| e.to_string())?)
     }
@@ -43,8 +36,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "pasteFromClipboard")]
     pub fn js_paste_from_clipboard(
         &mut self,
-        sheet_id: String,
-        dest_pos: Pos,
+        selection: String,
         plain_text: Option<String>,
         html: Option<String>,
         special: String,
@@ -59,16 +51,8 @@ impl GridController {
         } else {
             return Err(JsValue::from_str("Invalid special"));
         };
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Ok(());
-        };
-        self.paste_from_clipboard(
-            dest_pos.to_sheet_pos(sheet_id),
-            plain_text,
-            html,
-            special,
-            cursor,
-        );
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        self.paste_from_clipboard(selection, plain_text, html, special, cursor);
         Ok(())
     }
 

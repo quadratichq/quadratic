@@ -253,6 +253,12 @@ impl From<Vec<Pos>> for Rect {
     }
 }
 
+impl From<Pos> for Rect {
+    fn from(pos: Pos) -> Self {
+        Rect { min: pos, max: pos }
+    }
+}
+
 impl From<SheetRect> for Rect {
     fn from(sheet_rect: SheetRect) -> Self {
         Rect {
@@ -859,5 +865,13 @@ mod test {
         let sheet_pos_str = serde_json::to_string(&sheet_pos).unwrap();
         let parsed_sheet_pos: SheetPos = sheet_pos_str.parse().unwrap();
         assert_eq!(parsed_sheet_pos, sheet_pos);
+    }
+
+    #[test]
+    fn rect_from_pos() {
+        let pos = Pos { x: 1, y: 2 };
+        let rect: Rect = pos.into();
+        assert_eq!(rect.min, pos);
+        assert_eq!(rect.max, pos);
     }
 }

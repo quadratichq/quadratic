@@ -624,9 +624,7 @@ export interface CoreClientCutToClipboard {
 
 export interface ClientCorePasteFromClipboard {
   type: 'clientCorePasteFromClipboard';
-  sheetId: string;
-  x: number;
-  y: number;
+  selection: Selection;
   plainText?: string;
   html?: string;
   special: string;
