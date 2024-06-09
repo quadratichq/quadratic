@@ -144,20 +144,20 @@ impl GridController {
         Ok(())
     }
 
-    pub fn auto_resize_wrapped_row_heights(
+    pub fn start_auto_resize_row_heights(
         &self,
         sheet_id: &SheetId,
-        wrapped_cells: &Vec<Pos>,
+        cells: &Vec<Pos>,
         transaction: &mut PendingTransaction,
     ) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        if let Ok(wrapped_cells) = serde_json::to_string(wrapped_cells) {
-            crate::wasm_bindings::js::jsGetWrappedRowHeights(
+        if let Ok(cells) = serde_json::to_string(cells) {
+            crate::wasm_bindings::js::jsRequestRowHeights(
                 sheet_id.to_string(),
-                wrapped_cells,
+                cells,
                 transaction.id.to_string(),
             );
 
@@ -165,7 +165,7 @@ impl GridController {
         }
     }
 
-    pub fn complete_auto_resize_wrapped_row_heights(
+    pub fn complete_auto_resize_row_heights(
         &mut self,
         row_heights: Vec<JsRowHeight>,
         transaction_id: Uuid,
@@ -188,7 +188,6 @@ impl GridController {
         });
 
         transaction.has_async = false;
-
         self.start_transaction(&mut transaction);
         self.finalize_transaction(&mut transaction);
         Ok(())

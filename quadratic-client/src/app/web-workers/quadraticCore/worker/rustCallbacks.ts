@@ -74,7 +74,7 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
-    getWrappedRowHeights: (sheet_id: string, wrappedCells: string, transactionId: string) => void;
+    sendRequestRowHeights: (sheet_id: string, cells: string, transactionId: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -221,6 +221,6 @@ export const jsUndoRedo = (undo: string, redo: string) => {
   self.sendUndoRedo(undo, redo);
 };
 
-export const jsGetWrappedRowHeights = (sheetId: string, wrappedCells: string, transactionId: string) => {
-  self.getWrappedRowHeights(sheetId, wrappedCells, transactionId);
+export const jsRequestRowHeights = (sheetId: string, cells: string, transactionId: string) => {
+  self.sendRequestRowHeights(sheetId, cells, transactionId);
 };

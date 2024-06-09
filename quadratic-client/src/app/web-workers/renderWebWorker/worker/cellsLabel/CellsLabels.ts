@@ -154,26 +154,6 @@ export class CellsLabels {
     return hash;
   }
 
-  findAboveHash(column: number, row: number): CellsTextHash | undefined {
-    if (!this.bounds) return;
-    let hash = this.getCellsHash(column, row);
-    while (!hash && row >= this.bounds.y) {
-      row--;
-      hash = this.getCellsHash(column, row);
-    }
-    return hash;
-  }
-
-  findBelowHash(column: number, row: number): CellsTextHash | undefined {
-    if (!this.bounds) return;
-    let hash = this.getCellsHash(column, row);
-    while (!hash && row <= this.bounds.y + this.bounds.height) {
-      row++;
-      hash = this.getCellsHash(column, row);
-    }
-    return hash;
-  }
-
   private updateHeadings(): boolean {
     if (!this.dirtyColumnHeadings.size && !this.dirtyRowHeadings.size) return false;
     // make a copy so new dirty markings are properly handled
@@ -191,7 +171,7 @@ export class CellsLabels {
     dirtyColumnHeadings.forEach((delta, column) => {
       const columnHash = Math.floor(column / sheetHashWidth);
       this.cellsTextHash.forEach((hash) => {
-        if (hash.hashX === columnHash) {
+        if (hash.hashX >= columnHash) {
           if (hash.adjustHeadings({ column, delta })) {
             if (!hashesToUpdate.has(hash)) {
               hashesToUpdateViewRectangle.delete(hash);
@@ -207,7 +187,7 @@ export class CellsLabels {
     dirtyRowHeadings.forEach((delta, row) => {
       const rowHash = Math.floor(row / sheetHashHeight);
       this.cellsTextHash.forEach((hash) => {
-        if (hash.hashY === rowHash) {
+        if (hash.hashY >= rowHash) {
           if (hash.adjustHeadings({ row, delta })) {
             if (!hashesToUpdate.has(hash)) {
               hashesToUpdateViewRectangle.delete(hash);
@@ -414,7 +394,6 @@ export class CellsLabels {
       delta = this.sheetOffsets.getRowHeight(row) - size;
       this.sheetOffsets.setRowHeight(row, size);
     }
-
     if (delta) {
       this.adjustHeadings(delta, column, row);
     }
@@ -449,40 +428,41 @@ export class CellsLabels {
     return max;
   }
 
-  async getWrappedRowHeights(cells: string, transactionId: string) {
-    const wrappedCells: Pos[] = JSON.parse(cells);
+  async requestRowHeights(cellsString: string, transactionId: string) {
+    const cells: Pos[] = JSON.parse(cellsString);
 
-    // wait for all dirty hashes to finish updating
-    const promises: Promise<void>[] = [];
-    wrappedCells.forEach((wrappedCell) => {
-      const { x, y } = wrappedCell;
-      const cellsHash = this.getCellsHash(Number(x), Number(y));
-      if (cellsHash?.dirty) {
-        const promise = new Promise<void>(async (resolve) => {
-          await cellsHash.update();
-          resolve();
-        });
-        promises.push(promise);
+    const seenHashes = new Set<string>();
+    const updatePromises: Promise<void>[] = cells.map(async (cell) => {
+      const { x, y } = cell;
+      const hash = this.getCellsHash(Number(x), Number(y), true);
+      if (!hash) return;
+
+      const hashKey = this.getHashKey(hash.hashX, hash.hashY);
+      if (seenHashes.has(hashKey)) return;
+      seenHashes.add(hashKey);
+
+      if (hash.dirty || hash.dirtyBuffers) {
+        await hash.update();
       }
     });
-    await Promise.all(promises);
+    await Promise.all(updatePromises);
 
     const rowHeights: JsRowHeight[] = [];
     const seenRows = new Set<number>();
-    wrappedCells.forEach((wrappedCell) => {
-      const { y } = wrappedCell;
-      const row = Number(y);
+    cells.forEach((cell) => {
+      const row = Number(cell.y);
+
       if (seenRows.has(row)) return;
       seenRows.add(row);
 
-      const maxContentHeight = this.rowMaxHeight(row);
-      const targetHeight = Math.max(maxContentHeight, CELL_HEIGHT);
       const currentHeight = this.sheetOffsets.getRowHeight(row);
-      if (targetHeight !== currentHeight) {
-        rowHeights.push({ row, height: targetHeight });
+      const maxContentHeight = this.rowMaxHeight(row);
+      const height = Math.max(maxContentHeight, CELL_HEIGHT);
+      if (height !== currentHeight) {
+        rowHeights.push({ row, height });
       }
     });
 
-    renderCore.receiveWrappedRowHeights(rowHeights, transactionId);
+    renderCore.responseRowHeights(rowHeights, transactionId);
   }
 }

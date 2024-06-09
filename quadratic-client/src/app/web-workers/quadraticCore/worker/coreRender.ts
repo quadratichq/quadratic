@@ -24,8 +24,8 @@ declare var self: WorkerGlobalScope &
       size: number
     ) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
-    getWrappedRowHeights: (sheet_id: string, wrappedCells: string, transactionId: string) => void;
-    receiveWrappedRowHeights: (rowHeights: JsRowHeight[], transactionId: string) => void;
+    sendRequestRowHeights: (sheet_id: string, cells: string, transactionId: string) => void;
+    handleResponseRowHeights: (rowHeights: JsRowHeight[], transactionId: string) => void;
   };
 
 class CoreRender {
@@ -45,8 +45,8 @@ class CoreRender {
         this.getRenderCells(e.data);
         break;
 
-      case 'renderCoreReceiveWrappedRowHeights':
-        this.receiveWrappedRowHeights(e.data.rowHeights, e.data.transactionId);
+      case 'renderCoreResponseRowHeights':
+        this.handleResponseRowHeights(e.data.rowHeights, e.data.transactionId);
         break;
 
       default:
@@ -101,12 +101,12 @@ class CoreRender {
     this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds });
   };
 
-  getWrappedRowHeights = (sheetId: string, wrappedCells: string, transactionId: string) => {
-    this.send({ type: 'coreRenderGetWrappedRowHeights', sheetId, wrappedCells, transactionId });
+  sendRequestRowHeights = (sheetId: string, cells: string, transactionId: string) => {
+    this.send({ type: 'coreRenderRequestRowHeights', sheetId, cells, transactionId });
   };
 
-  receiveWrappedRowHeights = (rowHeights: JsRowHeight[], transactionId: string) => {
-    core.receiveWrappedRowHeights(rowHeights, transactionId);
+  handleResponseRowHeights = (rowHeights: JsRowHeight[], transactionId: string) => {
+    core.responseRowHeights(rowHeights, transactionId);
   };
 }
 
@@ -119,5 +119,5 @@ self.sendDeleteSheetRender = coreRender.sendDeleteSheet;
 self.sendSheetOffsetsRender = coreRender.sendSheetOffsets;
 self.sendSheetInfoUpdateRender = coreRender.sendSheetInfoUpdate;
 self.sendSheetBoundsUpdateRender = coreRender.sendSheetBoundsUpdate;
-self.getWrappedRowHeights = coreRender.getWrappedRowHeights;
-self.receiveWrappedRowHeights = coreRender.receiveWrappedRowHeights;
+self.sendRequestRowHeights = coreRender.sendRequestRowHeights;
+self.handleResponseRowHeights = coreRender.handleResponseRowHeights;

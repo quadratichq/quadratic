@@ -222,6 +222,12 @@ impl Rect {
             max: Pos { x: max_x, y: max_y },
         }
     }
+
+    pub fn to_cells(&self) -> Vec<Pos> {
+        self.y_range()
+            .flat_map(|y| self.x_range().map(move |x| Pos { x, y }))
+            .collect()
+    }
 }
 
 impl From<SheetRect> for Rect {
@@ -414,7 +420,7 @@ impl SheetRect {
         }
     }
 
-    pub fn to_hashes(&self) -> HashSet<Pos> {
+    pub fn to_hashes(&self) -> Vec<Pos> {
         let mut hashes = HashSet::new();
         for y in self.y_range() {
             let y_hash = (y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i64;
@@ -426,7 +432,13 @@ impl SheetRect {
                 });
             }
         }
-        hashes
+        hashes.into_iter().collect()
+    }
+
+    pub fn to_cells(&self) -> Vec<Pos> {
+        self.y_range()
+            .flat_map(|y| self.x_range().map(move |x| Pos { x, y }))
+            .collect()
     }
 }
 impl fmt::Display for SheetRect {

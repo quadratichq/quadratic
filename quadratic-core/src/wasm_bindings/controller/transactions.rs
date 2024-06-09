@@ -75,11 +75,11 @@ impl GridController {
         )?)
     }
 
-    #[wasm_bindgen(js_name = "receiveWrappedRowHeights")]
-    pub fn js_receive_wrapped_row_heights(&mut self, row_heights: String, transaction_id: String) {
+    #[wasm_bindgen(js_name = "responseRowHeights")]
+    pub fn js_response_row_heights(&mut self, row_heights: String, transaction_id: String) {
         if let Ok(row_heights) = serde_json::from_str::<Vec<JsRowHeight>>(&row_heights) {
             if let Ok(transaction_id) = Uuid::parse_str(&transaction_id) {
-                let _ = self.complete_auto_resize_wrapped_row_heights(row_heights, transaction_id);
+                let _ = self.complete_auto_resize_row_heights(row_heights, transaction_id);
             }
         }
     }

@@ -58,8 +58,6 @@ export class CellsTextHash {
   // keep track of what neighbors we've clipped
   leftClip: TrackClip[] = [];
   rightClip: TrackClip[] = [];
-  topClip: TrackClip[] = [];
-  bottomClip: TrackClip[] = [];
 
   constructor(cellsLabels: CellsLabels, hashX: number, hashY: number) {
     this.cellsLabels = cellsLabels;
@@ -162,9 +160,7 @@ export class CellsTextHash {
     if (!bounds) return new Set();
     const clipLeft: TrackClip[] = [];
     const clipRight: TrackClip[] = [];
-    const clipTop: TrackClip[] = [];
-    const clipBottom: TrackClip[] = [];
-    this.labels.forEach((cellLabel) => this.checkClip(cellLabel, clipLeft, clipRight, clipTop, clipBottom));
+    this.labels.forEach((cellLabel) => this.checkClip(cellLabel, clipLeft, clipRight));
 
     const updatedHashes = new Set<CellsTextHash>();
 
@@ -195,47 +191,13 @@ export class CellsTextHash {
         }
       }
     });
-    this.topClip.forEach((clip) => {
-      if (
-        !clipTop.find(
-          (c) => c.column === clip.column && c.row === clip.row && c.hashX === clip.hashX && c.hashY === clip.hashY
-        )
-      ) {
-        const hash = this.cellsLabels.getCellsHash(clip.hashX, clip.hashY, false);
-        if (hash) {
-          updatedHashes.add(hash);
-          hash.dirtyBuffers = true;
-        }
-      }
-    });
-    this.bottomClip.forEach((clip) => {
-      if (
-        !clipBottom.find(
-          (c) => c.column === clip.column && c.row === clip.row && c.hashX === clip.hashX && c.hashY === clip.hashY
-        )
-      ) {
-        const hash = this.cellsLabels.getCellsHash(clip.hashX, clip.hashY, false);
-        if (hash) {
-          updatedHashes.add(hash);
-          hash.dirtyBuffers = true;
-        }
-      }
-    });
     this.leftClip = clipLeft;
     this.rightClip = clipRight;
-    this.topClip = clipTop;
-    this.bottomClip = clipBottom;
 
     return updatedHashes;
   }
 
-  private checkClip(
-    label: CellLabel,
-    leftClip: TrackClip[],
-    rightClip: TrackClip[],
-    topClip: TrackClip[],
-    bottomClip: TrackClip[]
-  ) {
+  private checkClip(label: CellLabel, leftClip: TrackClip[], rightClip: TrackClip[]) {
     const bounds = this.cellsLabels.bounds;
     if (!bounds) return;
     let column = label.location.x - 1;
@@ -252,9 +214,7 @@ export class CellsTextHash {
         const clipRightResult = neighborLabel.checkRightClip(label.AABB.left);
         if (clipRightResult && currentHash !== this) {
           leftClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-          if (clipRightResult !== 'same') {
-            currentHash.dirty = true;
-          }
+          currentHash.dirtyBuffers = true;
         }
         label.checkLeftClip(neighborLabel.AABB.right);
         break;
@@ -275,61 +235,12 @@ export class CellsTextHash {
         const clipLeftResult = neighborLabel.checkLeftClip(label.AABB.right);
         if (clipLeftResult && currentHash !== this) {
           rightClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-          if (clipLeftResult !== 'same') {
-            currentHash.dirty = true;
-          }
+          currentHash.dirtyBuffers = true;
         }
         label.checkRightClip(neighborLabel.AABB.left);
         return;
       }
       column++;
-    }
-
-    currentHash = this;
-    column = label.location.x;
-    row = label.location.y - 1;
-    while (row <= bounds.y) {
-      if (row < currentHash.AABB.y) {
-        // find hash above current hash (skip over empty hashes)
-        currentHash = this.cellsLabels.findAboveHash(column, row);
-        if (!currentHash) break;
-      }
-      const neighborLabel = currentHash.getLabel(column, row);
-      if (neighborLabel) {
-        const clipBottomResult = neighborLabel.checkBottomClip(label.AABB.top);
-        if (clipBottomResult && currentHash !== this) {
-          topClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-          if (clipBottomResult !== 'same') {
-            currentHash.dirty = true;
-          }
-        }
-        label.checkTopClip(neighborLabel.AABB.bottom);
-        break;
-      }
-      row--;
-    }
-
-    currentHash = this;
-    row = label.location.y + 1;
-    while (row <= bounds.y + bounds.height) {
-      if (row > currentHash.AABB.bottom) {
-        // find hash below current hash (skip over empty hashes)
-        currentHash = this.cellsLabels.findBelowHash(column, row);
-        if (!currentHash) return;
-      }
-      const neighborLabel = currentHash.getLabel(column, row);
-      if (neighborLabel) {
-        const clipTopResult = neighborLabel.checkTopClip(label.AABB.bottom);
-        if (clipTopResult && currentHash !== this) {
-          bottomClip.push({ row, column, hashX: currentHash.hashX, hashY: currentHash.hashY });
-          if (clipTopResult !== 'same') {
-            currentHash.dirty = true;
-          }
-        }
-        label.checkBottomClip(neighborLabel.AABB.top);
-        return;
-      }
-      row++;
     }
   }
 

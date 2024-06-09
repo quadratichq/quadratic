@@ -52,16 +52,21 @@ export class CellLabel {
 
   fontSize: number;
   tint?: number;
-  maxWidth: number;
-  cellHeight: number;
+  maxWidth?: number;
   roundPixels?: boolean;
   location: Coordinate;
   AABB: Rectangle;
 
   clipLeft?: number;
   clipRight?: number;
-  clipTop?: number;
-  clipBottom?: number;
+
+  cellClipLeft?: number;
+  cellClipRight?: number;
+  cellClipTop?: number;
+  cellClipBottom?: number;
+
+  nextLeft?: number;
+  nextRight?: number;
 
   // used by ContainerBitmapText rendering
   chars: CharRenderData[] = [];
@@ -103,8 +108,6 @@ export class CellLabel {
     this.text = this.getText(cell);
     this.fontSize = fontSize;
     this.roundPixels = true;
-    this.maxWidth = 0;
-    this.cellHeight = 0;
     this.letterSpacing = 0;
     const isError = cell?.special === 'SpillError' || cell?.special === 'RunError';
     const isChart = cell?.special === 'Chart';
@@ -141,12 +144,11 @@ export class CellLabel {
   }
 
   updateCellLimits() {
-    this.clipLeft = this.wrapping === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
-    this.clipRight = this.wrapping === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
-    this.clipTop = this.AABB.top;
-    this.clipBottom = this.AABB.bottom;
-    this.maxWidth = this.wrapping === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : 0;
-    this.cellHeight = this.AABB.height;
+    this.cellClipLeft = this.wrapping === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipRight = this.wrapping === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
+    this.cellClipTop = this.AABB.top;
+    this.cellClipBottom = this.AABB.bottom;
+    this.maxWidth = this.wrapping === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
   }
 
   changeBold(bold?: boolean) {
@@ -171,70 +173,28 @@ export class CellLabel {
     this.dirty = true;
   }
 
-  checkLeftClip(nextRight: number): boolean | 'same' {
+  checkLeftClip(nextRight: number): boolean {
     if (this.overflowLeft && this.AABB.left - this.overflowLeft < nextRight) {
-      if (this.clipLeft !== nextRight) {
-        this.clipLeft = nextRight;
-        return true;
-      } else {
-        return 'same';
-      }
-    } else {
-      if (this.clipLeft !== undefined) {
-        this.clipLeft = undefined;
+      if (this.nextRight !== nextRight) {
+        this.nextRight = nextRight;
         return true;
       }
+    } else if (this.nextRight !== undefined) {
+      this.nextRight = undefined;
+      return true;
     }
     return false;
   }
 
-  checkRightClip(nextLeft: number): boolean | 'same' {
+  checkRightClip(nextLeft: number): boolean {
     if (this.overflowRight && this.AABB.right + this.overflowRight > nextLeft) {
-      if (this.clipRight !== nextLeft) {
-        this.clipRight = nextLeft;
-        return true;
-      } else {
-        return 'same';
-      }
-    } else {
-      if (this.clipRight !== undefined) {
-        this.clipRight = undefined;
+      if (this.nextLeft !== nextLeft) {
+        this.nextLeft = nextLeft;
         return true;
       }
-    }
-    return false;
-  }
-
-  checkTopClip(nextBottom: number): boolean | 'same' {
-    if (this.overflowTop && this.AABB.top - this.overflowTop < nextBottom) {
-      if (this.clipTop !== nextBottom) {
-        this.clipTop = nextBottom;
-        return true;
-      } else {
-        return 'same';
-      }
-    } else {
-      if (this.clipTop !== undefined) {
-        this.clipTop = undefined;
-        return true;
-      }
-    }
-    return false;
-  }
-
-  checkBottomClip(nextTop: number): boolean | 'same' {
-    if (this.overflowBottom && this.AABB.bottom + this.overflowBottom > nextTop) {
-      if (this.clipBottom !== nextTop) {
-        this.clipBottom = nextTop;
-        return true;
-      } else {
-        return 'same';
-      }
-    } else {
-      if (this.clipBottom !== undefined) {
-        this.clipBottom = undefined;
-        return true;
-      }
+    } else if (this.nextLeft !== undefined) {
+      this.nextLeft = undefined;
+      return true;
     }
     return false;
   }
@@ -278,7 +238,7 @@ export class CellLabel {
       }
       this.position.y = actualTop;
     } else if (this.verticalAlign === 'middle') {
-      const actualTop = this.AABB.top + (this.AABB.height - this.textHeight) / 2;
+      const actualTop = Math.max(this.AABB.top, this.AABB.top + (this.AABB.height - this.textHeight) / 2);
       const actualBottom = actualTop + this.textHeight;
       if (actualTop < this.AABB.top) {
         this.overflowTop = this.AABB.top - actualTop;
@@ -286,7 +246,7 @@ export class CellLabel {
       if (actualBottom > this.AABB.bottom) {
         this.overflowBottom = actualBottom - this.AABB.bottom;
       }
-      this.position.y = Math.max(actualTop, this.AABB.top);
+      this.position.y = actualTop;
     } else if (this.verticalAlign === 'top') {
       const actualBottom = this.AABB.top + this.textHeight;
       if (actualBottom > this.AABB.bottom) {
@@ -308,7 +268,7 @@ export class CellLabel {
     const text = this.text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
     const charsInput = splitTextToCharacters(text);
     const scale = this.fontSize / data.size;
-    const maxWidth = this.maxWidth / scale;
+    const maxWidth = this.maxWidth;
     let prevCharCode = null;
     let lastLineWidth = 0;
     let maxLineWidth = 0;
@@ -360,7 +320,7 @@ export class CellLabel {
       pos.x += charData.xAdvance + this.letterSpacing;
       maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.textureHeight);
       prevCharCode = charCode;
-      if (maxWidth > 0 && pos.x > maxWidth) {
+      if (maxWidth !== undefined && pos.x > maxWidth / scale) {
         const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
         const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
         removeItems(this.chars, start, count);
@@ -416,8 +376,6 @@ export class CellLabel {
   updateLabelMesh(labelMeshes: LabelMeshes) {
     if (!this.visible) return;
 
-    this.updateCellLimits();
-
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');
     const scale = this.fontSize / data.size;
@@ -435,13 +393,15 @@ export class CellLabel {
       const textureFrame = char.charData.frame;
       const textureUvs = char.charData.uvs;
       const buffer = labelMesh.getBuffer();
+      const clipLeft = Math.max(this.cellClipLeft ?? -Infinity, this.nextRight ?? -Infinity);
+      const clipRight = Math.min(this.cellClipRight ?? Infinity, this.nextLeft ?? Infinity);
 
       // remove letters that are outside the clipping bounds
       if (
-        (this.clipRight !== undefined && xPos + textureFrame.width * scale >= this.clipRight) ||
-        (this.clipLeft !== undefined && xPos <= this.clipLeft) ||
-        (this.clipTop !== undefined && yPos <= this.clipTop) ||
-        (this.clipBottom !== undefined && yPos + textureFrame.height * scale >= this.clipBottom)
+        xPos <= clipLeft ||
+        xPos + textureFrame.width * scale >= clipRight ||
+        (this.cellClipTop !== undefined && yPos <= this.cellClipTop) ||
+        (this.cellClipBottom !== undefined && yPos + textureFrame.height * scale >= this.cellClipBottom)
       ) {
         // this removes extra characters from the mesh after a clip
         buffer.reduceSize(6);

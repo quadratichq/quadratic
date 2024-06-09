@@ -10,8 +10,8 @@ import { JsRenderCell, JsRowHeight } from '@/app/quadratic-core-types';
 import {
   CoreRenderCells,
   CoreRenderMessage,
-  RenderCoreReceiveWrappedRowHeights,
   RenderCoreRequestRenderCells,
+  RenderCoreResponseRowHeights,
 } from '@/app/web-workers/quadraticCore/coreRenderMessages';
 import { renderText } from './renderText';
 
@@ -62,8 +62,8 @@ class RenderCore {
         renderText.sheetBoundsUpdate(e.data.sheetBounds);
         break;
 
-      case 'coreRenderGetWrappedRowHeights':
-        renderText.getWrappedRowHeights(e.data.sheetId, e.data.wrappedCells, e.data.transactionId);
+      case 'coreRenderRequestRowHeights':
+        renderText.requestRowHeights(e.data.sheetId, e.data.cells, e.data.transactionId);
         break;
 
       default:
@@ -71,13 +71,13 @@ class RenderCore {
     }
   };
 
-  receiveWrappedRowHeights(rowHeights: JsRowHeight[], transactionId: string) {
+  responseRowHeights(rowHeights: JsRowHeight[], transactionId: string) {
     if (!this.renderCorePort) {
-      console.warn('Expected renderCorePort to be defined in RenderCore.receiveWrappedRowHeights');
+      console.warn('Expected renderCorePort to be defined in RenderCore.responseRowHeights');
       return;
     }
-    const message: RenderCoreReceiveWrappedRowHeights = {
-      type: 'renderCoreReceiveWrappedRowHeights',
+    const message: RenderCoreResponseRowHeights = {
+      type: 'renderCoreResponseRowHeights',
       rowHeights,
       transactionId,
     };

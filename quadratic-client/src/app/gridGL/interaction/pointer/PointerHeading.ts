@@ -187,12 +187,6 @@ export class PointerHeading {
             gridLines.dirty = true;
             cursor.dirty = true;
             headings.dirty = true;
-
-            pixiApp.adjustHeadings({
-              sheetId: sheets.sheet.id,
-              column: this.resizing.column,
-              delta: size - this.resizing.lastSize,
-            });
           }
           this.resizing.lastSize = size;
 
@@ -217,16 +211,10 @@ export class PointerHeading {
           const delta = this.resizing.height ? this.resizing.lastSize - this.resizing.height : undefined;
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, undefined, this.resizing.row, delta);
+            gridLines.dirty = true;
+            cursor.dirty = true;
+            headings.dirty = true;
           }
-          gridLines.dirty = true;
-          cursor.dirty = true;
-          headings.dirty = true;
-
-          pixiApp.adjustHeadings({
-            sheetId: sheets.sheet.id,
-            row: this.resizing.row,
-            delta: size - this.resizing.lastSize,
-          });
           this.resizing.lastSize = size;
         }
       }
@@ -242,8 +230,7 @@ export class PointerHeading {
     }, DOUBLE_CLICK_TIME);
     if (this.active) {
       this.active = false;
-      const { resizing: headingResizing } = this;
-      if (headingResizing) {
+      if (this.resizing) {
         const transientResize = sheets.sheet.offsets.getResizeToApply();
         if (transientResize) {
           quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);

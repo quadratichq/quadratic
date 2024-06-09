@@ -89,8 +89,8 @@ extern "C" {
 
     pub fn jsUndoRedo(undo: bool, redo: bool);
 
-    // wrapped_cells: Vec<Pos>
-    pub fn jsGetWrappedRowHeights(sheet_id: String, wrapped_cells: String, transaction_id: String);
+    // cells: Vec<Pos>
+    pub fn jsRequestRowHeights(sheet_id: String, cells: String, transaction_id: String);
 }
 
 #[cfg(test)]
@@ -467,13 +467,13 @@ pub fn jsUndoRedo(undo: bool, redo: bool) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsGetWrappedRowHeights(
+pub fn jsRequestRowHeights(
     sheet_id: String,
-    wrapped_cells: String, /*Vec<Pos>*/
+    cells: String, /*Vec<Pos>*/
     transaction_id: String,
 ) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
-        "jsGetWrappedRowHeights",
-        format!("{},{},{}", sheet_id, wrapped_cells, transaction_id),
+        "jsRequestRowHeights",
+        format!("{},{},{}", sheet_id, cells, transaction_id),
     ));
 }

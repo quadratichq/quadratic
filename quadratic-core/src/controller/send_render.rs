@@ -1,7 +1,7 @@
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    Pos, Rect, SheetPos, SheetRect,
+    Rect, SheetPos, SheetRect,
 };
 
 use super::{
@@ -45,20 +45,15 @@ impl GridController {
                 }
             });
 
+            // auto resize row heights for wrapped cells
             if transaction.is_user() {
-                let rect = sheet_rect.to_rect();
-                if force_wrap {
-                    let cells: Vec<Pos> = rect
-                        .y_range()
-                        .flat_map(|y| rect.x_range().map(move |x| Pos { x, y }))
-                        .collect();
-                    self.auto_resize_wrapped_row_heights(&sheet_rect.sheet_id, &cells, transaction);
-                } else if let Some(wrapped_cells) = sheet.get_wrapped_cells(rect) {
-                    self.auto_resize_wrapped_row_heights(
-                        &sheet_rect.sheet_id,
-                        &wrapped_cells,
-                        transaction,
-                    );
+                let cells = if force_wrap {
+                    Some(sheet_rect.to_cells())
+                } else {
+                    sheet.get_wrapped_cells(sheet_rect.to_rect())
+                };
+                if let Some(cells) = cells {
+                    self.start_auto_resize_row_heights(&sheet_rect.sheet_id, &cells, transaction);
                 }
             }
         }

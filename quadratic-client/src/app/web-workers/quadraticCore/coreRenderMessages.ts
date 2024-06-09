@@ -14,8 +14,8 @@ export interface RenderCoreRequestRenderCells {
   height: number;
 }
 
-export interface RenderCoreReceiveWrappedRowHeights {
-  type: 'renderCoreReceiveWrappedRowHeights';
+export interface RenderCoreResponseRowHeights {
+  type: 'renderCoreResponseRowHeights';
   rowHeights: JsRowHeight[];
   transactionId: string;
 }
@@ -72,10 +72,10 @@ export interface CoreRenderSheetBoundsUpdate {
   sheetBounds: SheetBounds;
 }
 
-export interface CoreRenderGetWrappedRowHeights {
-  type: 'coreRenderGetWrappedRowHeights';
+export interface CoreRenderRequestRowHeights {
+  type: 'coreRenderRequestRowHeights';
   sheetId: string;
-  wrappedCells: string;
+  cells: string;
   transactionId: string;
 }
 
@@ -88,6 +88,6 @@ export type CoreRenderMessage =
   | CoreRenderSheetOffsets
   | CoreRenderSheetInfoUpdate
   | CoreRenderSheetBoundsUpdate
-  | CoreRenderGetWrappedRowHeights;
+  | CoreRenderRequestRowHeights;
 
-export type RenderCoreMessage = RenderCoreRequestRenderCells | RenderCoreReceiveWrappedRowHeights;
+export type RenderCoreMessage = RenderCoreRequestRenderCells | RenderCoreResponseRowHeights;
