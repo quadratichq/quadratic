@@ -108,19 +108,18 @@ impl GridController {
             x: selection.x,
             y: selection.y,
         };
+
         // adjust start_pos based on ClipboardOrigin special cases
         if let Some(clipboard_origin) = clipboard.origin.as_ref() {
-            if clipboard_origin.all.is_some() && selection.all {
-                if let Some(column) = clipboard_origin.column {
-                    start_pos.x = column;
-                }
-                if let Some(row) = clipboard_origin.row {
-                    start_pos.y = row;
+            if selection.all {
+                if let Some((x, y)) = clipboard_origin.all {
+                    start_pos.x = x;
+                    start_pos.y = y;
                 }
             } else if selection.rows.is_some() {
-                start_pos.y = clipboard_origin.row.unwrap_or(start_pos.y);
-            } else if clipboard_origin.column.is_some() {
                 start_pos.x = clipboard_origin.column.unwrap_or(start_pos.x);
+            } else if selection.columns.is_some() {
+                start_pos.y = clipboard_origin.row.unwrap_or(start_pos.y);
             }
         }
 
@@ -326,7 +325,16 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::controller::{operations::operation::Operation, GridController};
+    use crate::{
+        controller::{
+            active_transactions::transaction_name::TransactionName,
+            operations::operation::Operation, GridController,
+        },
+        selection::Selection,
+        CellValue,
+    };
+
+    use super::PasteSpecial;
 
     #[test]
     fn move_cell_operations() {
@@ -337,5 +345,121 @@ mod test {
         let operations = gc.move_cells_operations(source, dest);
         assert_eq!(operations.len(), 1);
         assert_eq!(operations[0], Operation::MoveCells { source, dest });
+    }
+
+    #[test]
+    fn paste_clipboard_cells_columns() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_values(0, 5, 1, 5, vec!["1", "2", "3", "4", "5"]);
+        let (_, html) = sheet
+            .copy_to_clipboard(&Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                columns: Some(vec![0]),
+                ..Default::default()
+            })
+            .unwrap();
+        let operations = gc
+            .paste_html_operations(
+                &Selection {
+                    sheet_id,
+                    x: 5,
+                    y: 0,
+                    columns: Some(vec![5]),
+                    ..Default::default()
+                },
+                html,
+                PasteSpecial::None,
+            )
+            .unwrap();
+        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value_ref((5, 5).into()),
+            Some(&CellValue::Number(1.into()))
+        );
+    }
+
+    #[test]
+    fn paste_clipboard_cells_rows() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_values(5, 2, 5, 1, vec!["1", "2", "3", "4", "5"]);
+        let (_, html) = sheet
+            .copy_to_clipboard(&Selection {
+                sheet_id,
+                x: 0,
+                y: 2,
+                rows: Some(vec![2]),
+                ..Default::default()
+            })
+            .unwrap();
+        let operations = gc
+            .paste_html_operations(
+                &Selection {
+                    sheet_id,
+                    x: 1,
+                    y: 5,
+                    rows: Some(vec![5]),
+                    ..Default::default()
+                },
+                html,
+                PasteSpecial::None,
+            )
+            .unwrap();
+        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value_ref((5, 5).into()),
+            Some(&CellValue::Number(1.into()))
+        );
+    }
+
+    #[test]
+    fn paste_clipboard_cells_all() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_values(3, 3, 2, 2, vec!["1", "2", "3", "4"]);
+        sheet.calculate_bounds();
+        
+        let (_, html) = sheet
+            .copy_to_clipboard(&Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                all: true,
+                ..Default::default()
+            })
+            .unwrap();
+        gc.add_sheet(None);
+
+        let sheet_id = gc.sheet_ids()[1];
+        let operations = gc
+            .paste_html_operations(
+                &Selection {
+                    sheet_id,
+                    x: 1,
+                    y: 1,
+                    all: true,
+                    ..Default::default()
+                },
+                html,
+                PasteSpecial::None,
+            )
+            .unwrap();
+        gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.cell_value_ref((3, 3).into()),
+            Some(&CellValue::Number(1.into()))
+        );
     }
 }

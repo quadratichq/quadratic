@@ -27,7 +27,7 @@ impl Sheet {
         );
         for xx in 0..w {
             for yy in 0..h {
-                self.test_set_value_number(x + xx, y + yy, s[(yy * h + xx) as usize]);
+                self.test_set_value_number(x + xx, y + yy, s[(yy * w + xx) as usize]);
             }
         }
     }
@@ -198,6 +198,20 @@ mod tests {
         assert_eq!(
             sheet.cell_value_ref(Pos { x: -9, y: -9 }),
             Some(&CellValue::Text("d".to_string()))
+        );
+
+        sheet.test_set_values(-10, -10, 1, 3, vec!["a", "b", "c"]);
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: -10, y: -10 }),
+            Some(&CellValue::Text("a".to_string()))
+        );
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: -10, y: -9 }),
+            Some(&CellValue::Text("b".to_string()))
+        );
+        assert_eq!(
+            sheet.cell_value_ref(Pos { x: -10, y: -8 }),
+            Some(&CellValue::Text("c".to_string()))
         );
     }
 

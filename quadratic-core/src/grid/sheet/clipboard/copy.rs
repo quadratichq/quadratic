@@ -226,18 +226,20 @@ impl Sheet {
                     row: None,
                 })
             } else if selection.columns.is_some() {
-                Some(ClipboardOrigin {
-                    all: None,
-                    column: Some(sheet_rect.min.x),
-                    row: None,
-                })
-            } else
-            /* // if selection.rows.is_some() */
-            {
+                // we need the row origin when columns are selected
                 Some(ClipboardOrigin {
                     all: None,
                     column: None,
                     row: Some(sheet_rect.min.y),
+                })
+            } else
+            /* // if selection.rows.is_some() */
+            {
+                // we need the column origin when rows are selected
+                Some(ClipboardOrigin {
+                    all: None,
+                    column: Some(sheet_rect.min.x),
+                    row: None,
                 })
             }
         } else {
