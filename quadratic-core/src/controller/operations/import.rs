@@ -3,7 +3,7 @@ use std::io::Cursor;
 use anyhow::{anyhow, bail, Result};
 
 use crate::{
-    cell_values::CellValues, controller::GridController, grid::SheetId, CellValue, Pos, SheetPos,
+    cell_values::CellValues, controller::GridController, grid::{Sheet, SheetId}, CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -136,8 +136,10 @@ impl GridController {
             ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
         let sheets = workbook.sheet_names().to_owned();
 
+        let order = *** START HERE ***
         for sheet_name in sheets {
             // add the sheet
+            let sheet = Sheet::new(SheetId::new(), sheet_name.to_owned(), )
             let add_sheet_operations = self.add_sheet_operations(Some(sheet_name.to_owned()));
 
             if let Operation::AddSheet { sheet } = &add_sheet_operations[0] {

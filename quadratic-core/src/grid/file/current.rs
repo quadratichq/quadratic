@@ -196,7 +196,7 @@ fn import_column_builder(columns: &[(i64, current::Column)]) -> Result<BTreeMap<
         .collect::<Result<BTreeMap<i64, Column>>>()
 }
 
-fn import_borders_builder(sheet: &mut Sheet, current_sheet: &mut current::Sheet) {
+fn import_borders_builder(sheet: &mut Sheet, current_sheet: &current::Sheet) {
     current_sheet.borders.iter().for_each(|(x, cell_borders)| {
         cell_borders.iter().for_each(|(y, cell_borders)| {
             cell_borders.iter().enumerate().for_each(|(index, border)| {
@@ -341,36 +341,38 @@ fn import_formats(format: &[(i64, (current::Format, i64))]) -> BTreeMap<i64, (Fo
         .collect()
 }
 
+pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
+    let mut new_sheet = Sheet {
+        id: SheetId::from_str(&sheet.id.id)?,
+        name: sheet.name.to_owned(),
+        color: sheet.color.to_owned(),
+        order: sheet.order.to_owned(),
+        offsets: SheetOffsets::import(&sheet.offsets),
+        columns: import_column_builder(&sheet.columns)?,
+
+        // borders set after sheet is loaded
+        // todo: borders need to be refactored
+        borders: SheetBorders::new(),
+
+        code_runs: import_code_cell_builder(&sheet)?,
+        data_bounds: GridBounds::Empty,
+        format_bounds: GridBounds::Empty,
+
+        format_all: sheet.formats_all.as_ref().map(import_format),
+        formats_columns: import_formats(&sheet.formats_columns),
+        formats_rows: import_formats(&sheet.formats_rows),
+    };
+    new_sheet.recalculate_bounds();
+    import_borders_builder(&mut new_sheet, &sheet);
+    Ok(new_sheet)
+}
+
 pub fn import(file: current::GridSchema) -> Result<Grid> {
     Ok(Grid {
         sheets: file
             .sheets
             .into_iter()
-            .map(|mut sheet| {
-                let mut new_sheet = Sheet {
-                    id: SheetId::from_str(&sheet.id.id)?,
-                    name: sheet.name.to_owned(),
-                    color: sheet.color.to_owned(),
-                    order: sheet.order.to_owned(),
-                    offsets: SheetOffsets::import(&sheet.offsets),
-                    columns: import_column_builder(&sheet.columns)?,
-
-                    // borders set after sheet is loaded
-                    // todo: borders need to be refactored
-                    borders: SheetBorders::new(),
-
-                    code_runs: import_code_cell_builder(&sheet)?,
-                    data_bounds: GridBounds::Empty,
-                    format_bounds: GridBounds::Empty,
-
-                    format_all: sheet.formats_all.as_ref().map(import_format),
-                    formats_columns: import_formats(&sheet.formats_columns),
-                    formats_rows: import_formats(&sheet.formats_rows),
-                };
-                new_sheet.recalculate_bounds();
-                import_borders_builder(&mut new_sheet, &mut sheet);
-                Ok(new_sheet)
-            })
+            .map(|sheet| import_sheet(&sheet))
             .collect::<Result<_>>()?,
     })
 }
@@ -670,82 +672,84 @@ fn export_formats(formats: &BTreeMap<i64, (Format, i64)>) -> Vec<(i64, (current:
         .collect()
 }
 
+pub fn export_sheet(sheet: &Sheet) -> current::Sheet {
+    current::Sheet {
+        id: current::Id {
+            id: sheet.id.to_string(),
+        },
+        name: sheet.name.to_owned(),
+        color: sheet.color.to_owned(),
+        order: sheet.order.to_owned(),
+        offsets: sheet.offsets.export(),
+        columns: export_column_builder(sheet),
+        borders: export_borders_builder(sheet),
+        formats_all: sheet.format_all.as_ref().and_then(export_format),
+        formats_columns: export_formats(&sheet.formats_columns),
+        formats_rows: export_formats(&sheet.formats_rows),
+        code_runs: sheet
+            .code_runs
+            .iter()
+            .map(|(pos, code_run)| {
+                let result = match &code_run.result {
+                    CodeRunResult::Ok(output) => current::CodeRunResult::Ok(match output {
+                        Value::Single(cell_value) => {
+                            current::OutputValue::Single(current::OutputValueValue {
+                                type_field: cell_value.type_name().into(),
+                                value: cell_value.to_string(),
+                            })
+                        }
+                        Value::Array(array) => current::OutputValue::Array(current::OutputArray {
+                            size: current::OutputSize {
+                                w: array.width() as i64,
+                                h: array.height() as i64,
+                            },
+                            values: array
+                                .rows()
+                                .flat_map(|row| {
+                                    row.iter().map(|cell| current::OutputValueValue {
+                                        type_field: cell.type_name().into(),
+                                        value: cell.to_string(),
+                                    })
+                                })
+                                .collect(),
+                        }),
+                    }),
+                    CodeRunResult::Err(error) => {
+                        current::CodeRunResult::Err(current::RunError::from_grid_run_error(error))
+                    }
+                };
+
+                (
+                    current::Pos::from(*pos),
+                    current::CodeRun {
+                        formatted_code_string: code_run.formatted_code_string.clone(),
+                        last_modified: Some(code_run.last_modified),
+                        std_out: code_run.std_out.clone(),
+                        std_err: code_run.std_err.clone(),
+                        spill_error: code_run.spill_error,
+                        cells_accessed: code_run
+                            .cells_accessed
+                            .iter()
+                            .map(|sheet_rect| current::SheetRect::from(*sheet_rect))
+                            .collect(),
+                        result,
+                        return_type: code_run.return_type.clone(),
+                        line_number: code_run.line_number,
+                        output_type: code_run.output_type.clone(),
+                    },
+                )
+            })
+            .collect(),
+    }
+}
+
 pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
         sheets: grid
             .sheets()
             .iter()
-            .map(|sheet| current::Sheet {
-                id: current::Id {
-                    id: sheet.id.to_string(),
-                },
-                name: sheet.name.to_owned(),
-                color: sheet.color.to_owned(),
-                order: sheet.order.to_owned(),
-                offsets: sheet.offsets.export(),
-                columns: export_column_builder(sheet),
-                borders: export_borders_builder(sheet),
-                formats_all: sheet.format_all.as_ref().and_then(export_format),
-                formats_columns: export_formats(&sheet.formats_columns),
-                formats_rows: export_formats(&sheet.formats_rows),
-                code_runs: sheet
-                    .code_runs
-                    .iter()
-                    .map(|(pos, code_run)| {
-                        let result = match &code_run.result {
-                            CodeRunResult::Ok(output) => current::CodeRunResult::Ok(match output {
-                                Value::Single(cell_value) => {
-                                    current::OutputValue::Single(current::OutputValueValue {
-                                        type_field: cell_value.type_name().into(),
-                                        value: cell_value.to_string(),
-                                    })
-                                }
-                                Value::Array(array) => {
-                                    current::OutputValue::Array(current::OutputArray {
-                                        size: current::OutputSize {
-                                            w: array.width() as i64,
-                                            h: array.height() as i64,
-                                        },
-                                        values: array
-                                            .rows()
-                                            .flat_map(|row| {
-                                                row.iter().map(|cell| current::OutputValueValue {
-                                                    type_field: cell.type_name().into(),
-                                                    value: cell.to_string(),
-                                                })
-                                            })
-                                            .collect(),
-                                    })
-                                }
-                            }),
-                            CodeRunResult::Err(error) => current::CodeRunResult::Err(
-                                current::RunError::from_grid_run_error(error),
-                            ),
-                        };
-
-                        (
-                            current::Pos::from(*pos),
-                            current::CodeRun {
-                                formatted_code_string: code_run.formatted_code_string.clone(),
-                                last_modified: Some(code_run.last_modified),
-                                std_out: code_run.std_out.clone(),
-                                std_err: code_run.std_err.clone(),
-                                spill_error: code_run.spill_error,
-                                cells_accessed: code_run
-                                    .cells_accessed
-                                    .iter()
-                                    .map(|sheet_rect| current::SheetRect::from(*sheet_rect))
-                                    .collect(),
-                                result,
-                                return_type: code_run.return_type.clone(),
-                                line_number: code_run.line_number,
-                                output_type: code_run.output_type.clone(),
-                            },
-                        )
-                    })
-                    .collect(),
-            })
+            .map(|sheet| export_sheet(sheet))
             .collect(),
     })
 }

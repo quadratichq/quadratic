@@ -854,9 +854,16 @@ class Core {
     }
   }
 
-  applyOfflineUnsavedTransaction(transactionId: string, transactions: string) {
+  // Returns true if the transaction was applied successfully.
+  applyOfflineUnsavedTransaction(transactionId: string, transactions: string): boolean {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.applyOfflineUnsavedTransaction(transactionId, transactions);
+    try {
+      this.gridController.applyOfflineUnsavedTransaction(transactionId, transactions);
+      return true;
+    } catch (error: any) {
+      console.log(error);
+      return false;
+    }
   }
 
   clearFormatting(selection: Selection, cursor?: string) {

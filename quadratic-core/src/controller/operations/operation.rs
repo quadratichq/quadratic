@@ -41,12 +41,20 @@ pub enum Operation {
 
     // Sheet metadata operations
 
-    // TODO: we should use the SheetSchema format + version in grid/file/current.rs
-    // instead of the actual Sheet. That way we can change the Sheet struct
-    // without breaking offline.
+    // This operation is deprecated in favor of AddSheetSchema. It is kept here
+    // to ensure Offline operations continue to work. It should be removed in
+    // the future.
     AddSheet {
         sheet: Sheet,
     },
+
+    // This replaces the deprecated AddSheet operation. It uses the schema
+    // instead of the actual Sheet to ensure compatibility with future Sheet
+    // changes. We will continue to add new schema versions as needed.
+    AddSheetSchema {
+        v1_5: Option<crate::grid::file::v1_5::schema::Sheet>,
+    },
+
     DuplicateSheet {
         sheet_id: SheetId,
         new_sheet_id: SheetId,
@@ -184,6 +192,9 @@ impl fmt::Display for Operation {
             }
             Operation::MoveCells { source, dest } => {
                 write!(fmt, "MoveCells {{ source: {} dest: {} }}", source, dest)
+            }
+            Operation::AddSheetSchema { v1_5 } => {
+                write!(fmt, "AddSheetSchema {{ v1_5: {:?} }}", v1_5)
             }
         }
     }

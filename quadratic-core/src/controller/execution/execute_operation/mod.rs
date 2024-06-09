@@ -31,6 +31,8 @@ impl GridController {
                 Operation::MoveCells { .. } => self.execute_move_cells(transaction, op),
 
                 Operation::AddSheet { .. } => self.execute_add_sheet(transaction, op),
+                Operation::AddSheetSchema { .. } => self.execute_add_sheet_schema(transaction, op),
+
                 Operation::DeleteSheet { .. } => self.execute_delete_sheet(transaction, op),
                 Operation::ReorderSheet { .. } => self.execute_reorder_sheet(transaction, op),
                 Operation::SetSheetName { .. } => self.execute_set_sheet_name(transaction, op),
