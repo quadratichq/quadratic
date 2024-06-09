@@ -84,6 +84,26 @@ export class SheetCursor {
     pixiApp.cursor.dirty = true;
   }
 
+  loadFromSelection(selection: Selection) {
+    this.cursorPosition = { x: Number(selection.x), y: Number(selection.y) };
+    this.multiCursor = selection.rects?.map(
+      (rect) =>
+        new Rectangle(
+          Number(rect.min.x),
+          Number(rect.min.y),
+          Number(rect.max.x) - Number(rect.min.x) + 1,
+          Number(rect.max.y) - Number(rect.min.y) + 1
+        )
+    );
+    this.columnRow = {
+      columns: selection.columns?.map((x) => Number(x)),
+      rows: selection.rows?.map((y) => Number(y)),
+      all: selection.all === true ? true : undefined,
+    };
+    multiplayer.sendSelection(this.getMultiplayerSelection());
+    pixiApp.cursor.dirty = true;
+  }
+
   changePosition(
     options: {
       multiCursor?: Rectangle[];

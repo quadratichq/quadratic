@@ -111,15 +111,19 @@ impl GridController {
 
         // adjust start_pos based on ClipboardOrigin special cases
         if let Some(clipboard_origin) = clipboard.origin.as_ref() {
-            if selection.all {
-                if let Some((x, y)) = clipboard_origin.all {
-                    start_pos.x = x;
-                    start_pos.y = y;
-                }
-            } else if selection.rows.is_some() {
-                start_pos.x = clipboard_origin.column.unwrap_or(start_pos.x);
-            } else if selection.columns.is_some() {
-                start_pos.y = clipboard_origin.row.unwrap_or(start_pos.y);
+            // we paste the entire sheet over the existing sheet
+            if let Some((x, y)) = clipboard_origin.all {
+                // clear the sheet first
+                ops.extend(self.clear_format_selection_operations(selection));
+
+                // set the start_pos to the origin of the clipboard for the
+                // copied sheet
+                start_pos.x = x;
+                start_pos.y = y;
+            } else if let Some(column_origin) = clipboard_origin.column {
+                start_pos.x = column_origin;
+            } else if let Some(row_origin) = clipboard_origin.row {
+                start_pos.y = row_origin;
             }
         }
 
@@ -217,8 +221,44 @@ impl GridController {
                 });
             }
         }
-        if !selection.has_sheet_selection() {
-            ops.push(Operation::SetCursor { sheet_rect });
+
+        // set the cursor based on the type of paste
+        if clipboard.origin.as_ref().is_some_and(|o| o.all.is_some()) {
+            ops.push(Operation::SetCursorSelection {
+                selection: Selection {
+                    sheet_id: selection.sheet_id,
+                    all: true,
+                    ..Default::default()
+                },
+            });
+        } else if clipboard
+            .origin
+            .as_ref()
+            .is_some_and(|o| o.column.is_some())
+        {
+            ops.push(Operation::SetCursorSelection {
+                selection: Selection {
+                    sheet_id: selection.sheet_id,
+                    columns: Some(vec![start_pos.x]),
+                    ..Default::default()
+                },
+            });
+        } else if clipboard.origin.as_ref().is_some_and(|o| o.row.is_some()) {
+            ops.push(Operation::SetCursorSelection {
+                selection: Selection {
+                    sheet_id: selection.sheet_id,
+                    rows: Some(vec![start_pos.y]),
+                    ..Default::default()
+                },
+            });
+        } else {
+            ops.push(Operation::SetCursorSelection {
+                selection: Selection {
+                    sheet_id: selection.sheet_id,
+                    rects: Some(vec![sheet_rect.into()]),
+                    ..Default::default()
+                },
+            });
         }
         ops
     }

@@ -13,6 +13,7 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -42,6 +43,7 @@ declare var self: WorkerGlobalScope &
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
     sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSetCursor: (cursor: string) => void;
+    sendSetCursorSelection: (selection: Selection) => void;
     sendSheetOffsetsClient: (
       sheetId: string,
       column: bigint | undefined,
@@ -86,6 +88,7 @@ class CoreClient {
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
     self.sendSetCursor = coreClient.sendSetCursor;
+    self.sendSetCursorSelection = coreClient.sendSetCursorSelection;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
@@ -519,6 +522,10 @@ class CoreClient {
 
   sendSetCursor = (cursor: string) => {
     this.send({ type: 'coreClientSetCursor', cursor });
+  };
+
+  sendSetCursorSelection = (selection: Selection) => {
+    this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
   sendSheetOffsets = (

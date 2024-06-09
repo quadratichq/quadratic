@@ -98,9 +98,15 @@ pub enum Operation {
         client_resized: bool,
     },
 
-    // used for User transactions to set cursor (eg, Paste)
+    // Deprecated in favor of SetCursorSelection. This operation remains to
+    // support offline operations for now.
     SetCursor {
         sheet_rect: SheetRect,
+    },
+
+    // used for User transactions to set cursor (eg, Paste)
+    SetCursorSelection {
+        selection: Selection,
     },
 
     MoveCells {
@@ -179,6 +185,9 @@ impl fmt::Display for Operation {
             Operation::SetBorders { .. } => write!(fmt, "SetBorders {{ todo }}"),
             Operation::SetCursor { sheet_rect } => {
                 write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)
+            }
+            Operation::SetCursorSelection { selection } => {
+                write!(fmt, "SetCursorSelection {{ selection: {:?} }}", selection)
             }
             Operation::DuplicateSheet {
                 sheet_id,

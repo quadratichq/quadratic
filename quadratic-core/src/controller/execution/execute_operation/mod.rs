@@ -43,6 +43,9 @@ impl GridController {
                 Operation::ResizeRow { .. } => self.execute_resize_row(transaction, op),
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
+                Operation::SetCursorSelection { .. } => {
+                    self.execute_set_cursor_selection(transaction, op)
+                }
             }
 
             if cfg!(target_family = "wasm") && !transaction.is_server() {

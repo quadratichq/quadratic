@@ -141,6 +141,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSheetMetaFills') {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
       return;
+    } else if (e.data.type === 'coreClientSetCursorSelection') {
+      events.emit('setCursor', undefined, e.data.selection);
+      return;
     }
 
     if (e.data.id !== undefined) {

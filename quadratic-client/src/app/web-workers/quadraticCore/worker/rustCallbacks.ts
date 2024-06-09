@@ -7,6 +7,7 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -38,6 +39,7 @@ declare var self: WorkerGlobalScope &
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
+    sendSetCursorSelection: (selection: Selection) => void;
     requestTransactions: (sequenceNum: number) => void;
     sendSheetOffsetsClient: (
       sheetId: string,
@@ -146,6 +148,11 @@ export const jsRequestTransactions = (sequenceNum: bigint) => {
 
 export const jsSetCursor = (cursor: string) => {
   self.sendSetCursor(cursor);
+};
+
+export const jsSetCursorSelection = (selectionStringified: string) => {
+  const selection = JSON.parse(selectionStringified) as Selection;
+  self.sendSetCursorSelection(selection);
 };
 
 export const jsHtmlOutput = (htmlStringified: string) => {

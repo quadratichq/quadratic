@@ -789,6 +789,11 @@ export interface ClientCoreMoveCells {
   cursor: string;
 }
 
+export interface CoreClientSetCursorSelection {
+  type: 'coreClientSetCursorSelection';
+  selection: Selection;
+}
+
 //#endregion
 
 export type ClientCoreMessage =
@@ -899,4 +904,5 @@ export type CoreClientMessage =
   | CoreClientGetFormatColumn
   | CoreClientGetFormatRow
   | CoreClientGetFormatCell
-  | CoreClientSheetMetaFills;
+  | CoreClientSheetMetaFills
+  | CoreClientSetCursorSelection;

@@ -8,6 +8,7 @@ import {
   JsRenderCodeCell,
   JsRenderFill,
   JsSheetFill,
+  Selection,
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
@@ -39,7 +40,7 @@ interface EventTypes {
   changeSheet: () => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (cursor: string) => void;
+  setCursor: (cursor?: string, selection?: Selection) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
   changeInput: (input: boolean, initialValue?: string) => void;

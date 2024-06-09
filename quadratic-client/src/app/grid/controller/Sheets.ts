@@ -94,28 +94,34 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
-  private setCursor = (cursorStringified: string) => {
-    const cursor: SheetCursorSave = JSON.parse(cursorStringified);
-    if (cursor.sheetId !== this.current) {
-      this.current = cursor.sheetId;
-    }
-    // need to convert from old style multiCursor from Rust to new style
-    if ((cursor.multiCursor as any)?.originPosition) {
-      const multiCursor = cursor.multiCursor as any;
-      const convertedCursor = {
-        ...cursor,
-        multiCursor: [
-          new Rectangle(
-            multiCursor.originPosition.x,
-            multiCursor.originPosition.y,
-            multiCursor.terminalPosition.x - multiCursor.originPosition.x + 1,
-            multiCursor.terminalPosition.y - multiCursor.originPosition.y + 1
-          ),
-        ],
-      };
-      this.sheet.cursor.load(convertedCursor);
+  private setCursor = (cursorStringified?: string, selection?: Selection) => {
+    if (selection !== undefined) {
+      this.sheet.cursor.loadFromSelection(selection);
+    } else if (cursorStringified !== undefined) {
+      const cursor: SheetCursorSave = JSON.parse(cursorStringified);
+      if (cursor.sheetId !== this.current) {
+        this.current = cursor.sheetId;
+      }
+      // need to convert from old style multiCursor from Rust to new style
+      if ((cursor.multiCursor as any)?.originPosition) {
+        const multiCursor = cursor.multiCursor as any;
+        const convertedCursor = {
+          ...cursor,
+          multiCursor: [
+            new Rectangle(
+              multiCursor.originPosition.x,
+              multiCursor.originPosition.y,
+              multiCursor.terminalPosition.x - multiCursor.originPosition.x + 1,
+              multiCursor.terminalPosition.y - multiCursor.originPosition.y + 1
+            ),
+          ],
+        };
+        this.sheet.cursor.load(convertedCursor);
+      } else {
+        this.sheet.cursor.load(cursor);
+      }
     } else {
-      this.sheet.cursor.load(cursor);
+      throw new Error('Expected setCursor in Sheets.ts to have cursorStringified or selection defined');
     }
   };
 

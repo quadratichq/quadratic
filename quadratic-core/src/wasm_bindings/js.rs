@@ -58,6 +58,7 @@ extern "C" {
     );
     pub fn jsOffsetsModified(sheet_id: String, column: Option<i64>, row: Option<i64>, size: f64);
     pub fn jsSetCursor(cursor: String);
+    pub fn jsSetCursorSelection(selection: String);
     pub fn jsUpdateHtml(html: String /*JsHtmlOutput*/);
     pub fn jsClearHtml(sheet_id: String, x: i64, y: i64);
     pub fn jsHtmlOutput(html: String /*Vec<JsHtmlOutput>*/);
@@ -223,7 +224,7 @@ pub fn jsRenderCellSheets(
     // we use a hash of cells to avoid storing too large test data
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRenderCellSheets",
-        format!("{},{},{},{}", sheet_id, hash_x, hash_y, hash_test(&cells))
+        format!("{},{},{},{}", sheet_id, hash_x, hash_y, hash_test(&cells)),
     ));
 }
 
@@ -324,6 +325,15 @@ pub fn jsSetCursor(cursor: String) {
         .lock()
         .unwrap()
         .push(TestFunction::new("jsSetCursor", cursor));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSetCursorSelection(selection: String) {
+    TEST_ARRAY
+        .lock()
+        .unwrap()
+        .push(TestFunction::new("jsSetCursorSelection", selection));
 }
 
 #[cfg(test)]
