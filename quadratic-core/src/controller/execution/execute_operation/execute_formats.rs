@@ -59,11 +59,12 @@ impl GridController {
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
                     CellFmtArray::Wrap(_) => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
-                        self.send_render_cells(&sheet_rect, transaction, true);
+                        self.send_render_cells(&sheet_rect);
+                        self.start_auto_resize_row_heights(transaction, &sheet_rect, true)
                     }
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
-                        self.send_render_cells(&sheet_rect, transaction, false);
+                        self.send_render_cells(&sheet_rect);
                     }
                 };
             }

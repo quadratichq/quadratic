@@ -12,12 +12,7 @@ use super::{
 
 impl GridController {
     /// Sends the modified cell sheets to the render web worker
-    pub fn send_render_cells(
-        &self,
-        sheet_rect: &SheetRect,
-        transaction: &mut PendingTransaction,
-        force_resize: bool,
-    ) {
+    pub fn send_render_cells(&self, sheet_rect: &SheetRect) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
@@ -44,17 +39,6 @@ impl GridController {
                     );
                 }
             });
-
-            if !cfg!(test) && transaction.is_user() {
-                let cells = if force_resize {
-                    Some(sheet_rect.to_cells())
-                } else {
-                    sheet.get_wrapped_cells(sheet_rect.to_rect())
-                };
-                if let Some(cells) = cells {
-                    self.start_auto_resize_row_heights(&sheet_rect.sheet_id, &cells, transaction);
-                }
-            }
         }
     }
 

@@ -60,7 +60,8 @@ impl GridController {
                             },
                             sheet_id,
                         };
-                        self.send_render_cells(&sheet_rect, transaction, false);
+                        self.send_render_cells(&sheet_rect);
+                        self.start_auto_resize_row_heights(transaction, &sheet_rect, false);
                     }
                 }
             }

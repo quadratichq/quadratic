@@ -160,7 +160,7 @@ impl GridController {
                 }
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
-            self.send_render_cells(&sheet_rect, transaction, false);
+            self.send_render_cells(&sheet_rect);
         }
     }
 
