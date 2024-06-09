@@ -148,7 +148,7 @@ impl GridController {
         &self,
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
-        force_resize: bool,
+        all_cells: bool,
     ) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
@@ -157,7 +157,7 @@ impl GridController {
         if transaction.is_user() {
             let sheet_id = sheet_rect.sheet_id;
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                let cells = if force_resize {
+                let cells = if all_cells {
                     Some(sheet_rect.to_cells())
                 } else {
                     sheet.get_wrapped_cells(sheet_rect.to_rect())

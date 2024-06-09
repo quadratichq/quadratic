@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRenderCell, JsRowHeight } from '@/app/quadratic-core-types';
+import { JsRenderCell, Pos } from '@/app/quadratic-core-types';
 import {
   CoreRenderCells,
   CoreRenderMessage,
@@ -63,7 +63,7 @@ class RenderCore {
         break;
 
       case 'coreRenderRequestRowHeights':
-        renderText.requestRowHeights(e.data.sheetId, e.data.cells, e.data.transactionId);
+        this.getRowHeights(e.data.sheetId, e.data.cells, e.data.transactionId);
         break;
 
       default:
@@ -71,11 +71,14 @@ class RenderCore {
     }
   };
 
-  responseRowHeights(rowHeights: JsRowHeight[], transactionId: string) {
+  async getRowHeights(sheetId: string, cellsString: string, transactionId: string) {
     if (!this.renderCorePort) {
       console.warn('Expected renderCorePort to be defined in RenderCore.responseRowHeights');
       return;
     }
+
+    const cells: Pos[] = JSON.parse(cellsString);
+    const rowHeights = await renderText.getRowHeights(sheetId, cells);
     const message: RenderCoreResponseRowHeights = {
       type: 'renderCoreResponseRowHeights',
       rowHeights,

@@ -9,9 +9,8 @@
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
-import { Pos, SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
-import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore.js';
+import { JsRenderCell, JsRowHeight, Pos, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants.js';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../../renderBitmapFonts';
@@ -428,9 +427,7 @@ export class CellsLabels {
     return max;
   }
 
-  async requestRowHeights(cellsString: string, transactionId: string) {
-    const cells: Pos[] = JSON.parse(cellsString);
-
+  async getRowHeights(cells: Pos[]): Promise<JsRowHeight[]> {
     const seenHashes = new Set<string>();
     const updatePromises: Promise<void>[] = cells.map(async (cell) => {
       const { x, y } = cell;
@@ -441,7 +438,8 @@ export class CellsLabels {
       if (seenHashes.has(hashKey)) return;
       seenHashes.add(hashKey);
 
-      if (hash.dirty || hash.dirtyBuffers) {
+      // update hash if hash.dirty has JsRenderCells
+      if (hash.dirty instanceof Array) {
         await hash.update();
       }
     });
@@ -463,6 +461,6 @@ export class CellsLabels {
       }
     });
 
-    renderCore.responseRowHeights(rowHeights, transactionId);
+    return rowHeights;
   }
 }
