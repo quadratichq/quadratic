@@ -149,6 +149,16 @@ pub enum CellAlign {
     Right,
 }
 
+impl CellAlign {
+    pub fn as_css_string(&self) -> &'static str {
+        match self {
+            CellAlign::Center => "text-align: center;",
+            CellAlign::Left => "text-align: left;",
+            CellAlign::Right => "text-align: right;",
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
@@ -156,6 +166,16 @@ pub enum CellVerticalAlign {
     Top,
     Middle,
     Bottom,
+}
+
+impl CellVerticalAlign {
+    pub fn as_css_string(&self) -> &'static str {
+        match self {
+            CellVerticalAlign::Top => "vertical-align: top;",
+            CellVerticalAlign::Middle => "vertical-align: middle;",
+            CellVerticalAlign::Bottom => "vertical-align: bottom;",
+        }
+    }
 }
 
 #[derive(

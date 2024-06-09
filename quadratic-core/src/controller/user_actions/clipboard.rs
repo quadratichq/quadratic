@@ -3,7 +3,7 @@ use crate::color::Rgba;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::{operations::clipboard::Clipboard, GridController};
 use crate::formulas::replace_a1_notation;
-use crate::grid::{CellAlign, CellWrap, CodeCellLanguage};
+use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage};
 use crate::{grid::get_cell_borders_in_rect, Pos, SheetPos, SheetRect};
 use crate::{CellValue, Rect};
 use htmlescape;
@@ -102,6 +102,8 @@ impl GridController {
 
                 let cell_align = sheet.get_formatting_value::<CellAlign>(pos);
 
+                let cell_vertical_align = sheet.get_formatting_value::<CellVerticalAlign>(pos);
+
                 let cell_wrap = sheet.get_formatting_value::<CellWrap>(pos);
 
                 if bold
@@ -110,6 +112,7 @@ impl GridController {
                     || fill_color.is_some()
                     || cell_border.is_some()
                     || cell_align.is_some()
+                    || cell_vertical_align.is_some()
                     || cell_wrap.is_some()
                 {
                     style.push_str("style=\"");
@@ -155,11 +158,10 @@ impl GridController {
                         }
                     }
                     if let Some(cell_align) = cell_align {
-                        style.push_str(
-                            format!("text-align:{};", cell_align)
-                                .to_lowercase()
-                                .as_str(),
-                        );
+                        style.push_str(&cell_align.as_css_string());
+                    }
+                    if let Some(cell_vertical_align) = cell_vertical_align {
+                        style.push_str(&cell_vertical_align.as_css_string());
                     }
                     if let Some(cell_wrap) = cell_wrap {
                         style.push_str(cell_wrap.as_css_string());
