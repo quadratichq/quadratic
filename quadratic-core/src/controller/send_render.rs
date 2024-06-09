@@ -16,7 +16,7 @@ impl GridController {
         &self,
         sheet_rect: &SheetRect,
         transaction: &mut PendingTransaction,
-        force_wrap: bool,
+        force_resize: bool,
     ) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
@@ -45,9 +45,8 @@ impl GridController {
                 }
             });
 
-            // auto resize row heights for wrapped cells
-            if transaction.is_user() {
-                let cells = if force_wrap {
+            if !cfg!(test) && transaction.is_user() {
+                let cells = if force_resize {
                     Some(sheet_rect.to_cells())
                 } else {
                     sheet.get_wrapped_cells(sheet_rect.to_rect())
