@@ -2,14 +2,15 @@ use std::time::Duration;
 
 use axum::{
     body::Body,
-    extract::{Request, State},
+    extract::Request,
     response::{IntoResponse, Response},
+    Extension,
 };
 use http::{HeaderName, HeaderValue};
 use reqwest::{Client, Method, RequestBuilder};
 
-use crate::error::{ConnectionError, Result};
-use crate::proxy::proxy_error;
+use crate::error::{proxy_error, ConnectionError, Result};
+use crate::state::State;
 
 const REQUEST_TIMEOUT_SEC: u64 = 15;
 const PROXY_HEADER: &str = "proxy";
@@ -65,8 +66,8 @@ pub(crate) fn reqwest_to_axum(reqwest_response: reqwest::Response) -> Result<Res
     Ok(response)
 }
 
-pub(crate) async fn proxy_browser(
-    State(client): State<Client>,
+pub(crate) async fn proxy(
+    state: Extension<State>,
     req: Request<Body>,
 ) -> Result<impl IntoResponse> {
     tracing::info!(?req);
@@ -78,7 +79,7 @@ pub(crate) async fn proxy_browser(
         .to_str()
         .map_err(proxy_error)?;
 
-    let request_builder = axum_to_reqwest(url, req, client).await?;
+    let request_builder = axum_to_reqwest(url, req, state.client.clone()).await?;
     let reqwest_response = request_builder.send().await.map_err(proxy_error)?;
 
     let response = reqwest_to_axum(reqwest_response)?;

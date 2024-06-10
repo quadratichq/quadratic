@@ -530,19 +530,18 @@ class CoreClient {
         return;
 
       default:
-        console.warn('[coreClient] Unhandled message type', e.data);
+        if (e.data.id !== undefined) {
+          // handle responses from requests to quadratic-core
+          if (this.waitingForResponse[e.data.id]) {
+            this.waitingForResponse[e.data.id](e.data);
+            delete this.waitingForResponse[e.data.id];
+          } else {
+            console.warn('No resolve for message in quadraticCore', e.data.id);
+          }
+        } else {
+          console.warn('[coreClient] Unhandled message type', e.data);
+        }
     }
-
-    if (e.data.id !== undefined) {
-      // handle responses from requests to quadratic-core
-      if (this.waitingForResponse[e.data.id]) {
-        this.waitingForResponse[e.data.id](e.data);
-        delete this.waitingForResponse[e.data.id];
-      } else {
-        console.warn('No resolve for message in quadraticCore', e.data.id);
-      }
-    }
-    console.warn('[coreClient] Unhandled message type', e.data);
   };
 
   sendImportProgress = (

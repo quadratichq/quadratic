@@ -19,7 +19,7 @@ use crate::state::State;
 
 pub(crate) async fn new_state() -> State {
     let config = config().unwrap();
-    State::new(&config, None)
+    State::new(&config, None).unwrap()
 }
 
 /// TODO(ddimaria): remove once API is setup to return connections

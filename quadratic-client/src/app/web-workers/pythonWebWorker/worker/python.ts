@@ -8,51 +8,14 @@ import { pythonClient } from './pythonClient';
 import { pythonCore } from './pythonCore';
 
 const TRY_AGAIN_TIMEOUT = 500;
-
 const IS_TEST = typeof process !== 'undefined' && process.env.NODE_ENV === 'test';
+
+// eslint-disable-next-line no-restricted-globals
+const SELF = self;
 
 function isEmpty(value: [string, outputType] | string | null | undefined) {
   return value == null || (typeof value === 'string' && value.trim().length === 0);
 }
-
-// eslint-disable-next-line no-restricted-globals
-self['XMLHttpRequest'] = new Proxy(XMLHttpRequest, {
-  construct: function (target, args) {
-    const xhr = new target();
-
-    xhr.open = new Proxy(xhr.open, {
-      apply: function (
-        target,
-        thisArg,
-        args: [
-          method: string,
-          url: string | URL,
-          async: boolean,
-          username?: string | null | undefined,
-          password?: string | null | undefined
-        ]
-      ) {
-        Object.defineProperty(xhr, '__url', { value: args[1].toString(), writable: true });
-        args[1] = 'http://127.0.0.1:3004/browser';
-        return target.apply(thisArg, args);
-      },
-    });
-
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState === XMLHttpRequest.OPENED) {
-        xhr.setRequestHeader('Proxy', (xhr as any).__url);
-        // console.log(xhr.getAllResponseHeaders());
-      }
-      // After complition of XHR request
-      if (xhr.readyState === 4) {
-        if (xhr.status === 401) {
-        }
-      }
-    };
-
-    return xhr;
-  },
-});
 
 class Python {
   private pyodide: PyodideInterface | undefined;
@@ -96,6 +59,47 @@ class Python {
   };
 
   init = async () => {
+    const jwt = await pythonClient.getJwt();
+
+    // patch XMLHttpRequest to send requests to the proxy
+    SELF['XMLHttpRequest'] = new Proxy(XMLHttpRequest, {
+      construct: function (target, args) {
+        const xhr = new target();
+
+        xhr.open = new Proxy(xhr.open, {
+          apply: function (
+            target,
+            thisArg,
+            args: [
+              method: string,
+              url: string | URL,
+              async: boolean,
+              username?: string | null | undefined,
+              password?: string | null | undefined
+            ]
+          ) {
+            Object.defineProperty(xhr, '__url', { value: args[1].toString(), writable: true });
+            args[1] = `${pythonClient.env.VITE_QUADRATIC_CONNECTION_URL}/proxy`;
+            return target.apply(thisArg, args);
+          },
+        });
+
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === XMLHttpRequest.OPENED) {
+            xhr.setRequestHeader('Proxy', (xhr as any).__url);
+            xhr.setRequestHeader('Authorization', `Bearer ${jwt}`);
+          }
+          // After complition of XHR request
+          if (xhr.readyState === 4) {
+            if (xhr.status === 401) {
+            }
+          }
+        };
+
+        return xhr;
+      },
+    });
+
     this.pyodide = await loadPyodide({
       stdout: () => {},
       indexURL: IS_TEST ? 'public/pyodide' : '/pyodide',
