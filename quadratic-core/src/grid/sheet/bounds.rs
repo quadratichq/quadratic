@@ -207,7 +207,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or column_start
+    /// Returns the found column or column_start or bounds_rect_min/bounds_rect_max  
     pub fn find_next_column(
         &self,
         column_start: i64,
@@ -227,6 +227,9 @@ impl Sheet {
                 } else {
                     column_start.max(rect.min.x)
                 };
+                if x < rect.min.x || x > rect.max.x {
+                    return column_start;
+                }
                 while x >= rect.min.x && x <= rect.max.x {
                     let has_content = self.display_value(Pos { x, y: row });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
@@ -238,7 +241,11 @@ impl Sheet {
                     }
                     x += if reverse { -1 } else { 1 };
                 }
-                x
+                if x < rect.min.x {
+                    rect.min.x
+                } else {
+                    rect.max.x
+                }
             }
         }
     }
@@ -247,7 +254,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or row_start
+    /// Returns the found column or row_start or bounds_rect_min/bounds_rect_max
     pub fn find_next_row(
         &self,
         row_start: i64,
@@ -267,6 +274,9 @@ impl Sheet {
                 } else {
                     row_start.max(rect.min.y)
                 };
+                if y < rect.min.y || y > rect.max.y {
+                    return row_start;
+                }
                 while y >= rect.min.y && y <= rect.max.y {
                     let has_content = self.display_value(Pos { x: column, y });
                     if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
@@ -278,7 +288,11 @@ impl Sheet {
                     }
                     y += if reverse { -1 } else { 1 };
                 }
-                y
+                if y < rect.min.y {
+                    rect.min.y
+                } else {
+                    rect.max.y
+                }
             }
         }
     }
@@ -462,26 +476,34 @@ mod test {
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.find_next_column(-1, 2, false, true), 1);
+        assert_eq!(sheet.find_next_column(-1, 2, true, true), -1);
+        assert_eq!(sheet.find_next_column(3, 2, false, true), 3);
         assert_eq!(sheet.find_next_column(3, 2, true, true), 1);
         assert_eq!(sheet.find_next_column(2, 2, false, true), 2);
+        assert_eq!(sheet.find_next_column(2, 2, true, true), 1);
+        assert_eq!(sheet.find_next_column(0, 2, false, true), 1);
         assert_eq!(sheet.find_next_column(0, 2, true, true), 0);
-        assert_eq!(sheet.find_next_column(1, 2, false, false), 2);
-        assert_eq!(sheet.find_next_column(1, 2, true, false), 0);
+        assert_eq!(sheet.find_next_column(1, 2, false, false), 1);
+        assert_eq!(sheet.find_next_column(1, 2, true, false), 1);
     }
 
     #[test]
     fn test_find_next_row() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(Pos { y: 1, x: 2 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
         sheet.recalculate_bounds();
 
         assert_eq!(sheet.find_next_row(-1, 2, false, true), 1);
+        assert_eq!(sheet.find_next_row(-1, 2, true, true), -1);
+        assert_eq!(sheet.find_next_row(3, 2, false, true), 3);
         assert_eq!(sheet.find_next_row(3, 2, true, true), 1);
         assert_eq!(sheet.find_next_row(2, 2, false, true), 2);
+        assert_eq!(sheet.find_next_row(2, 2, true, true), 1);
+        assert_eq!(sheet.find_next_row(0, 2, false, true), 1);
         assert_eq!(sheet.find_next_row(0, 2, true, true), 0);
-        assert_eq!(sheet.find_next_row(1, 2, false, false), 2);
-        assert_eq!(sheet.find_next_row(1, 2, true, false), 0);
+        assert_eq!(sheet.find_next_row(1, 2, false, false), 1);
+        assert_eq!(sheet.find_next_row(1, 2, true, false), 1);
     }
 
     #[test]

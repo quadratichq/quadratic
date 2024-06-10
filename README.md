@@ -3,11 +3,11 @@
 
 ## ![quadratic icon small](https://user-images.githubusercontent.com/3479421/162039117-02f85f2c-e382-4ed8-ac39-64efab17a144.svg) **_The infinite multiplayer spreadsheet, with Python, SQL, and AI_**
 
-Modern multiplayer spreadsheet with Python, AI, and SQL built-in. 
+Modern multiplayer spreadsheet with Python, AI, and SQL built-in.
 
-Built with Rust + WASM + WebGL to run seamlessly at 60+ FPS in the browser.  
+Built with Rust + WASM + WebGL to run seamlessly at 60+ FPS in the browser.
 
-Get from data to insight more effectively as a team. 
+Get from data to insight more effectively as a team.
 
 <img width="1552" alt="Quadratic in a standalone macOS window; users are working together on a spreadsheet to measure the life expectancy in Canada." src="https://github.com/quadratichq/quadratic/assets/146771258/35724976-5d2b-46f9-b9e9-3fe19468b1af">
 
@@ -48,8 +48,8 @@ _Quadratic is in Beta._
 - [x] Undo / Redo (issue [#42](https://github.com/quadratichq/quadratic/issues/42))
 - [x] Multiplayer Support
 - [x] Charts and Graphs
-- [x] Teams support 
-- [ ] JS support 
+- [x] Teams support
+- [ ] JS support
 - [ ] SQL Database Support
 - [ ] AI Auto Complete
 

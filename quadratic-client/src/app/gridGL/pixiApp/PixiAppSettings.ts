@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { EditorInteractionState, editorInteractionStateDefault } from '../../atoms/editorInteractionStateAtom';
@@ -103,7 +104,10 @@ class PixiAppSettings {
   }
 
   get showA1Notation(): boolean {
-    if (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'Formula') {
+    if (
+      (this.editorInteractionState.showCodeEditor && this.editorInteractionState.mode === 'Formula') ||
+      inlineEditorHandler.isEditingFormula()
+    ) {
       return true;
     }
     return this.settings.showA1Notation;
@@ -152,7 +156,7 @@ class PixiAppSettings {
     this.setDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
-    events.emit('changeInput', input);
+    events.emit('changeInput', input, initialValue);
   }
 
   changePanMode(mode: PanMode): void {

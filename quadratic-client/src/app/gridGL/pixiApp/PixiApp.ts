@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
+import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -26,7 +27,6 @@ import { ensureVisible } from '../interaction/viewportHelper';
 import { pixiAppSettings } from './PixiAppSettings';
 import { Update } from './Update';
 import { Viewport } from './Viewport';
-import { HighlightedCells } from './highlightedCells';
 import './pixiApp.css';
 import { urlParams } from './urlParams/urlParams';
 
@@ -43,12 +43,12 @@ export class PixiApp {
 
   // todo: UI should be pulled out and separated into its own class
 
-  highlightedCells = new HighlightedCells();
   canvas!: HTMLCanvasElement;
   viewport!: Viewport;
   gridLines!: GridLines;
   axesLines!: AxesLines;
   cursor!: Cursor;
+  cellHighlights!: CellHighlights;
   multiplayerCursor!: UIMultiPlayerCursor;
   cellMoving!: UICellMoving;
   headings!: GridHeadings;
@@ -140,6 +140,7 @@ export class PixiApp {
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
+    this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.headings = this.viewportContents.addChild(new GridHeadings());
 
@@ -175,6 +176,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.cellsSheets?.cull(this.viewport.getVisibleBounds());
     sheets.sheet.cursor.viewport = this.viewport.lastViewport!;
     multiplayer.sendViewport(this.saveMultiplayerViewport());
@@ -212,6 +214,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.render();
   };
 
@@ -220,6 +223,7 @@ export class PixiApp {
     this.gridLines.visible = options?.gridLines ?? false;
     this.axesLines.visible = false;
     this.cursor.visible = false;
+    this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
     this.headings.visible = false;
     this.boxCells.visible = false;
@@ -235,6 +239,7 @@ export class PixiApp {
     this.gridLines.visible = true;
     this.axesLines.visible = true;
     this.cursor.visible = true;
+    this.cellHighlights.visible = true;
     this.multiplayerCursor.visible = true;
     this.headings.visible = true;
     this.boxCells.visible = true;
@@ -271,6 +276,7 @@ export class PixiApp {
     this.axesLines.dirty = true;
     this.headings.dirty = true;
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.multiplayerCursor.dirty = true;
     this.boxCells.reset();
     this.paused = false;
@@ -302,13 +308,12 @@ export class PixiApp {
     }
   ): void {
     this.cursor.dirty = true;
+    this.cellHighlights.dirty = true;
     this.headings.dirty = true;
     if (!pixiAppSettings.showCellTypeOutlines) {
       this.cellsSheets.updateCellsArray();
     }
     if (options.ensureVisible) ensureVisible();
-
-    // triggers useGetBorderMenu clearSelection()
     events.emit('cursorPosition');
   }
 
@@ -319,6 +324,7 @@ export class PixiApp {
     if (sheets.sheet.id === options.sheetId) {
       pixiApp.gridLines.dirty = true;
       pixiApp.cursor.dirty = true;
+      this.cellHighlights.dirty = true;
       pixiApp.headings.dirty = true;
       this.multiplayerCursor.dirty = true;
     }

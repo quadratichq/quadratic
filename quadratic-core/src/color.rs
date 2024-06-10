@@ -63,13 +63,21 @@ impl Rgba {
         })
     }
     pub fn as_string(&self) -> String {
-        let mut s = String::with_capacity(1 + 3 * 2);
+        let mut s = String::with_capacity(1 + 4 * 2);
         write!(&mut s, "#").unwrap();
         write!(&mut s, "{:02x}", self.red).unwrap();
         write!(&mut s, "{:02x}", self.green).unwrap();
         write!(&mut s, "{:02x}", self.blue).unwrap();
         write!(&mut s, "{:02x}", self.alpha).unwrap();
         s
+    }
+    pub fn as_rgb_hex(&self) -> String {
+        let s = self.as_string();
+        if s.len() < 8 {
+            s
+        } else {
+            s[0..7].to_string()
+        }
     }
 }
 

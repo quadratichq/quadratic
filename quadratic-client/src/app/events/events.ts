@@ -21,7 +21,7 @@ import {
 import EventEmitter from 'eventemitter3';
 
 interface EventTypes {
-  needRefresh: (state: 'required' | 'recommended') => void;
+  needRefresh: (state: 'required' | 'recommended' | 'force') => void;
 
   search: (found?: SheetPosTS[], current?: number) => void;
   hoverCell: (cell?: JsRenderCodeCell | EditingCell) => void;
@@ -41,7 +41,7 @@ interface EventTypes {
   setCursor: (cursor: string) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
-  changeInput: (input: boolean) => void;
+  changeInput: (input: boolean, initialValue?: string) => void;
   headingSize: (width: number, height: number) => void;
   gridSettings: () => void;
 
@@ -74,7 +74,7 @@ interface EventTypes {
   multiplayerFollow: () => void;
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
 
-  resizeHeadingColumn: (column: number) => void;
+  resizeHeadingColumn: (sheetId: string, column: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
 

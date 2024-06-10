@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getColumnA1Notation, getRowA1Notation } from '../getA1Notation';
+import { getA1Notation, getColumnA1Notation, getRowA1Notation } from '../getA1Notation';
 
 describe('A1 notation translation', () => {
   it('gets column (based on tests in quadratic-core)', () => {
@@ -69,5 +69,10 @@ describe('A1 notation translation', () => {
   it('gets row (negative)', () => {
     expect(getRowA1Notation(-1)).toBe('n1');
     expect(getRowA1Notation(-100)).toBe('n100');
+  });
+
+  it('gets both column and row', () => {
+    expect(getA1Notation(0, 0)).toBe('A0');
+    expect(getA1Notation(1, 1)).toBe('B1');
   });
 });

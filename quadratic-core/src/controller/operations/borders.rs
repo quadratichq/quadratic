@@ -1,6 +1,6 @@
 use crate::{
     controller::GridController,
-    grid::{generate_borders, BorderSelection, BorderStyle},
+    grid::{generate_borders, get_rect_borders, BorderSelection, BorderStyle},
     SheetRect,
 };
 
@@ -16,7 +16,13 @@ impl GridController {
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return vec![];
         };
-        let borders = generate_borders(sheet, &sheet_rect.into(), selections, style);
+        let cur_borders = get_rect_borders(sheet, &sheet_rect.into());
+        let new_borders = generate_borders(sheet, &sheet_rect.into(), selections.clone(), style);
+        let borders = if cur_borders.render_lookup == new_borders.render_lookup {
+            generate_borders(sheet, &sheet_rect.into(), selections.clone(), None)
+        } else {
+            new_borders
+        };
         vec![Operation::SetBorders {
             sheet_rect,
             borders,

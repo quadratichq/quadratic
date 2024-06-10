@@ -37,7 +37,7 @@ export class UrlParamsDev {
         this.loadSheets();
         this.loadCode();
       } catch (e) {
-        console.warn('Unable to parse URL param ?state=');
+        console.warn('Unable to parse URL param ?state=', e);
       }
     }
     this.setupListeners();
