@@ -196,7 +196,7 @@ export class PointerHeading {
           }
           this.resizing.lastSize = size;
 
-          events.emit('resizeHeadingColumn', this.resizing.column);
+          events.emit('resizeHeadingColumn', sheets.sheet.id, this.resizing.column);
         }
       } else if (this.resizing.row !== undefined) {
         let size: number;
