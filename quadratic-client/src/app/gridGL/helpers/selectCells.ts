@@ -45,7 +45,10 @@ export async function selectColumns(columns: number[], column = columns[columns.
     if (bounds) {
       cursor.changePosition({
         cursorPosition: { x: columns[0], y: bounds.min },
-        multiCursor: [new Rectangle(columns[0], bounds.min, columns[0], bounds.max)],
+        multiCursor:
+          bounds.min !== bounds.max
+            ? [new Rectangle(columns[0], bounds.min, 1, bounds.max - bounds.min + 1)]
+            : undefined,
       });
     } else {
       cursor.changePosition({
@@ -76,7 +79,8 @@ export async function selectRows(rows: number[], row = rows[rows.length - 1]) {
     if (bounds) {
       sheet.cursor.changePosition({
         cursorPosition: { x: bounds.min, y: rows[0] },
-        multiCursor: [new Rectangle(bounds.min, rows[0], bounds.max, rows[0])],
+        multiCursor:
+          bounds.min !== bounds.max ? [new Rectangle(bounds.min, rows[0], bounds.max - bounds.min + 1, 1)] : undefined,
       });
     } else {
       sheet.cursor.changePosition({
