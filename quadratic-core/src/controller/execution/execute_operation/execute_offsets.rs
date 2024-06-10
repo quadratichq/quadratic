@@ -40,7 +40,7 @@ impl GridController {
                 },
             );
 
-            if transaction.is_user_undo_redo() {
+            if !transaction.is_server() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: column,
                     y: 0,
@@ -66,16 +66,16 @@ impl GridController {
                 }
             }
 
-            if (cfg!(target_family = "wasm") || cfg!(test))
-                && !client_resized
-                && !transaction.is_server()
-            {
-                crate::wasm_bindings::js::jsOffsetsModified(
-                    sheet_id.to_string(),
-                    Some(column),
-                    None,
-                    new_size,
-                );
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                // send resize operation to js if multiplayer or not client resized
+                if transaction.is_multiplayer() || (!client_resized && !transaction.is_server()) {
+                    crate::wasm_bindings::js::jsOffsetsModified(
+                        sheet_id.to_string(),
+                        Some(column),
+                        None,
+                        new_size,
+                    );
+                }
             }
         }
     }
@@ -110,21 +110,36 @@ impl GridController {
                 },
             );
 
-            if transaction.is_user_undo_redo() {
+            if !transaction.is_server() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: 0,
                     y: row,
                     sheet_id,
                 });
+
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    if let Some(row_bounds) = sheet.row_bounds(row, true) {
+                        let sheet_rect = SheetRect {
+                            min: Pos {
+                                x: row_bounds.0,
+                                y: row,
+                            },
+                            max: Pos {
+                                x: row_bounds.1,
+                                y: row,
+                            },
+                            sheet_id,
+                        };
+                        self.send_render_cells(&sheet_rect);
+                    }
+                }
             }
 
-            if (cfg!(target_family = "wasm") || cfg!(test))
-                && !client_resized
-                && !transaction.is_server()
-            {
-                if let Some(sheet) = self.try_sheet(sheet_id) {
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                // send resize operation to js if multiplayer or not client resized
+                if transaction.is_multiplayer() || (!client_resized && !transaction.is_server()) {
                     crate::wasm_bindings::js::jsOffsetsModified(
-                        sheet.id.to_string(),
+                        sheet_id.to_string(),
                         None,
                         Some(row),
                         new_size,

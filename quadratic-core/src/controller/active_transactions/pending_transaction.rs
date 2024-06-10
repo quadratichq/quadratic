@@ -165,6 +165,10 @@ impl PendingTransaction {
     pub fn is_user_undo_redo(&self) -> bool {
         self.is_user() || self.is_undo_redo()
     }
+
+    pub fn is_multiplayer(&self) -> bool {
+        matches!(self.transaction_type, TransactionType::Multiplayer)
+    }
 }
 
 #[cfg(test)]
