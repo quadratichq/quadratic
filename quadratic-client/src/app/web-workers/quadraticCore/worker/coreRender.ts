@@ -106,7 +106,7 @@ class CoreRender {
   };
 
   handleResponseRowHeights = (rowHeights: JsRowHeight[], transactionId: string) => {
-    core.responseRowHeights(rowHeights, transactionId);
+    core.receiveRowHeights(rowHeights, transactionId);
   };
 }
 

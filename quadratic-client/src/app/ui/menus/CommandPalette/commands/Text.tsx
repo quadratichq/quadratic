@@ -15,13 +15,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import {
-  setBold,
-  setHorizontalAlignment,
-  setItalic,
-  setVerticalAlignment,
-  setWrap,
-} from '../../TopBar/SubMenus/formatCells';
+import { setBold, setHorizontalAlign, setItalic, setVerticalAlign, setWrap } from '../../TopBar/SubMenus/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
@@ -76,11 +70,7 @@ const commands: CommandGroup = {
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
         return (
-          <CommandPaletteListItem
-            {...props}
-            icon={<TextAlignLeftIcon />}
-            action={() => setHorizontalAlignment('left')}
-          />
+          <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setHorizontalAlign('left')} />
         );
       },
     },
@@ -92,7 +82,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<TextAlignCenterIcon />}
-            action={() => setHorizontalAlignment('center')}
+            action={() => setHorizontalAlign('center')}
           />
         );
       },
@@ -102,11 +92,7 @@ const commands: CommandGroup = {
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
         return (
-          <CommandPaletteListItem
-            {...props}
-            icon={<TextAlignRightIcon />}
-            action={() => setHorizontalAlignment('right')}
-          />
+          <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setHorizontalAlign('right')} />
         );
       },
     },
@@ -118,7 +104,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<TextVerticalAlignTopIcon />}
-            action={() => setVerticalAlignment('top')}
+            action={() => setVerticalAlign('top')}
           />
         );
       },
@@ -131,7 +117,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<TextVerticalAlignMiddleIcon />}
-            action={() => setVerticalAlignment('middle')}
+            action={() => setVerticalAlign('middle')}
           />
         );
       },
@@ -144,7 +130,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<TextVerticalAlignBottomIcon />}
-            action={() => setVerticalAlignment('bottom')}
+            action={() => setVerticalAlign('bottom')}
           />
         );
       },

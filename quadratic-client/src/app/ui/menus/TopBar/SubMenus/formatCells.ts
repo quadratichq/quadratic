@@ -23,14 +23,14 @@ export const setTextColor = (rgb?: ColorResult): void => {
   sheets.sheet.setCellTextColor(rectangle, rgb ? convertReactColorToString(rgb) : undefined);
 };
 
-export const setHorizontalAlignment = (align: CellAlign): void => {
+export const setHorizontalAlign = (align: CellAlign): void => {
   const rectangle = sheets.sheet.cursor.getRectangle();
   sheets.sheet.setCellAlign(rectangle, align);
 };
 
-export const setVerticalAlignment = (verticalAlignment: CellVerticalAlign): void => {
+export const setVerticalAlign = (verticalAlign: CellVerticalAlign): void => {
   const rectangle = sheets.sheet.cursor.getRectangle();
-  sheets.sheet.setCellVerticalAlign(rectangle, verticalAlignment);
+  sheets.sheet.setCellVerticalAlign(rectangle, verticalAlign);
 };
 
 export const setWrap = (wrap?: CellWrap): void => {

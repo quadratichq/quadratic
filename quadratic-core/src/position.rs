@@ -806,4 +806,56 @@ mod test {
             }
         );
     }
+
+    #[test]
+    fn test_sheet_rect_to_rect() {
+        let sheet_id = SheetId::new();
+        let sheet_rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
+        assert_eq!(sheet_rect.to_rect(), Rect::from_numbers(1, 2, 3, 4));
+    }
+
+    #[test]
+    fn test_sheet_rect_to_hashes() {
+        let sheet_id = SheetId::new();
+        let sheet_rect = SheetRect::from_numbers(1, 2, 30, 60, sheet_id);
+        let mut hashes = sheet_rect.to_hashes();
+        hashes.sort();
+        assert_eq!(
+            hashes,
+            [
+                Pos { x: 0, y: 0 },
+                Pos { x: 0, y: 1 },
+                Pos { x: 0, y: 2 },
+                Pos { x: 1, y: 0 },
+                Pos { x: 1, y: 1 },
+                Pos { x: 1, y: 2 },
+                Pos { x: 2, y: 0 },
+                Pos { x: 2, y: 1 },
+                Pos { x: 2, y: 2 }
+            ]
+        );
+    }
+
+    #[test]
+    fn test_sheet_rect_to_cells() {
+        let sheet_id = SheetId::new();
+        let sheet_rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
+        assert_eq!(
+            sheet_rect.to_cells(),
+            [
+                Pos { x: 1, y: 2 },
+                Pos { x: 2, y: 2 },
+                Pos { x: 3, y: 2 },
+                Pos { x: 1, y: 3 },
+                Pos { x: 2, y: 3 },
+                Pos { x: 3, y: 3 },
+                Pos { x: 1, y: 4 },
+                Pos { x: 2, y: 4 },
+                Pos { x: 3, y: 4 },
+                Pos { x: 1, y: 5 },
+                Pos { x: 2, y: 5 },
+                Pos { x: 3, y: 5 }
+            ]
+        );
+    }
 }

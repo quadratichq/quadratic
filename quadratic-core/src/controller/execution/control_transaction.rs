@@ -155,23 +155,19 @@ impl GridController {
         }
 
         if transaction.is_user() {
-            let sheet_id = sheet_rect.sheet_id;
-            if let Some(sheet) = self.try_sheet(sheet_id) {
+            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
                 let cells = if all_cells {
-                    Some(sheet_rect.to_cells())
+                    sheet_rect.to_cells()
                 } else {
                     sheet.get_wrapped_cells(sheet_rect.to_rect())
                 };
-                if let Some(cells) = cells {
-                    if let Ok(cells) = serde_json::to_string(&cells) {
-                        crate::wasm_bindings::js::jsRequestRowHeights(
-                            sheet_id.to_string(),
-                            cells,
-                            transaction.id.to_string(),
-                        );
-
-                        transaction.has_async = true;
-                    }
+                if let Ok(cells) = serde_json::to_string(&cells) {
+                    crate::wasm_bindings::js::jsRequestRowHeights(
+                        sheet_rect.sheet_id.to_string(),
+                        cells,
+                        transaction.id.to_string(),
+                    );
+                    transaction.has_async = true;
                 }
             }
         }

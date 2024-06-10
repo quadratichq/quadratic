@@ -963,9 +963,9 @@ class Core {
     this.gridController.moveCells(source, dest, message.cursor);
   }
 
-  responseRowHeights(rowHeights: JsRowHeight[], transactionId: string) {
+  receiveRowHeights(rowHeights: JsRowHeight[], transactionId: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.responseRowHeights(JSON.stringify(rowHeights), transactionId);
+    this.gridController.receiveRowHeights(JSON.stringify(rowHeights), transactionId);
   }
 }
 

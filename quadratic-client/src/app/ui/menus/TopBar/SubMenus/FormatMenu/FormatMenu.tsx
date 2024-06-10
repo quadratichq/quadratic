@@ -27,10 +27,10 @@ import {
   clearFormattingAndBorders,
   setBold,
   setFillColor,
-  setHorizontalAlignment,
+  setHorizontalAlign,
   setItalic,
   setTextColor,
-  setVerticalAlignment,
+  setVerticalAlign,
   setWrap,
 } from '../formatCells';
 import './formatMenuStyles.scss';
@@ -71,24 +71,24 @@ export const FormatMenu = () => {
       </SubMenu>
 
       <MenuDivider />
-      <MenuItem onClick={() => setHorizontalAlignment('left')}>
+      <MenuItem onClick={() => setHorizontalAlign('left')}>
         <MenuLineItem primary="Left" Icon={TextAlignLeftIcon} secondary="" />
       </MenuItem>
-      <MenuItem onClick={() => setHorizontalAlignment('center')}>
+      <MenuItem onClick={() => setHorizontalAlign('center')}>
         <MenuLineItem primary="Center" Icon={TextAlignRightIcon} />
       </MenuItem>
-      <MenuItem onClick={() => setHorizontalAlignment('right')}>
+      <MenuItem onClick={() => setHorizontalAlign('right')}>
         <MenuLineItem primary="Right" Icon={TextAlignCenterIcon} />
       </MenuItem>
 
       <MenuDivider />
-      <MenuItem onClick={() => setVerticalAlignment('top')}>
+      <MenuItem onClick={() => setVerticalAlign('top')}>
         <MenuLineItem primary="Top" Icon={TextVerticalAlignTopIcon} secondary="" />
       </MenuItem>
-      <MenuItem onClick={() => setVerticalAlignment('middle')}>
+      <MenuItem onClick={() => setVerticalAlign('middle')}>
         <MenuLineItem primary="Middle" Icon={TextVerticalAlignMiddleIcon} />
       </MenuItem>
-      <MenuItem onClick={() => setVerticalAlignment('bottom')}>
+      <MenuItem onClick={() => setVerticalAlign('bottom')}>
         <MenuLineItem primary="Bottom" Icon={TextVerticalAlignBottomIcon} />
       </MenuItem>
 

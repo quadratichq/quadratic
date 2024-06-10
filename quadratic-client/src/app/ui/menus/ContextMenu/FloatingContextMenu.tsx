@@ -45,10 +45,10 @@ import {
   removeCellNumericFormat,
   setBold,
   setFillColor,
-  setHorizontalAlignment,
+  setHorizontalAlign,
   setItalic,
   setTextColor,
-  setVerticalAlignment,
+  setVerticalAlign,
   setWrap,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
@@ -366,17 +366,17 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Align left">
-              <IconButton size="small" onClick={() => setHorizontalAlignment('left')}>
+              <IconButton size="small" onClick={() => setHorizontalAlign('left')}>
                 <TextAlignLeftIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Align center">
-              <IconButton size="small" onClick={() => setHorizontalAlignment('center')}>
+              <IconButton size="small" onClick={() => setHorizontalAlign('center')}>
                 <TextAlignCenterIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Align right">
-              <IconButton size="small" onClick={() => setHorizontalAlignment('right')}>
+              <IconButton size="small" onClick={() => setHorizontalAlign('right')}>
                 <TextAlignRightIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
@@ -398,17 +398,17 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Top align">
-              <IconButton size="small" onClick={() => setVerticalAlignment('top')}>
+              <IconButton size="small" onClick={() => setVerticalAlign('top')}>
                 <TextVerticalAlignTopIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Middle align">
-              <IconButton size="small" onClick={() => setVerticalAlignment('middle')}>
+              <IconButton size="small" onClick={() => setVerticalAlign('middle')}>
                 <TextVerticalAlignMiddleIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Bottom align">
-              <IconButton size="small" onClick={() => setVerticalAlignment('bottom')}>
+              <IconButton size="small" onClick={() => setVerticalAlign('bottom')}>
                 <TextVerticalAlignBottomIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>

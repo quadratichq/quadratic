@@ -29,7 +29,7 @@ impl Sheet {
     }
 
     // returns true if any cell in the rect has wrapped text
-    pub fn get_wrapped_cells(&self, rect: Rect) -> Option<Vec<Pos>> {
+    pub fn get_wrapped_cells(&self, rect: Rect) -> Vec<Pos> {
         let mut wrapped_cells = Vec::<Pos>::new();
         rect.to_cells().iter().for_each(|pos| {
             let cell_wrap = self.get_formatting_value::<CellWrap>(*pos);
@@ -37,6 +37,6 @@ impl Sheet {
                 wrapped_cells.push(*pos);
             }
         });
-        Some(wrapped_cells).filter(|v| !v.is_empty())
+        wrapped_cells
     }
 }

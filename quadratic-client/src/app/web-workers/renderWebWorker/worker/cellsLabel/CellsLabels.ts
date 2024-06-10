@@ -438,7 +438,7 @@ export class CellsLabels {
       if (seenHashes.has(hashKey)) return;
       seenHashes.add(hashKey);
 
-      // update hash if hash.dirty has JsRenderCells
+      // update hash if hash.dirty has pending JsRenderCells update
       if (hash.dirty instanceof Array) {
         await hash.update();
       }

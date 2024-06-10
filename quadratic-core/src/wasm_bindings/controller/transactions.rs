@@ -75,12 +75,23 @@ impl GridController {
         )?)
     }
 
-    #[wasm_bindgen(js_name = "responseRowHeights")]
-    pub fn js_response_row_heights(&mut self, row_heights: String, transaction_id: String) {
-        if let Ok(row_heights) = serde_json::from_str::<Vec<JsRowHeight>>(&row_heights) {
-            if let Ok(transaction_id) = Uuid::parse_str(&transaction_id) {
-                let _ = self.complete_auto_resize_row_heights(row_heights, transaction_id);
-            }
-        }
+    #[wasm_bindgen(js_name = "receiveRowHeights")]
+    pub fn js_receive_row_heights(
+        &mut self,
+        row_heights: String,
+        transaction_id: String,
+    ) -> Result<JsValue, JsValue> {
+        let row_heights = match serde_json::from_str::<Vec<JsRowHeight>>(&row_heights) {
+            Ok(row_heights) => row_heights,
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid row heights: {}", e))),
+        };
+        let transaction_id = match Uuid::parse_str(&transaction_id) {
+            Ok(transaction_id) => transaction_id,
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
+        };
+
+        Ok(serde_wasm_bindgen::to_value(
+            &self.complete_auto_resize_row_heights(row_heights, transaction_id),
+        )?)
     }
 }
