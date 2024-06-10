@@ -75,6 +75,7 @@ interface EventTypes {
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
 
   resizeHeadingColumn: (sheetId: string, column: number) => void;
+  resizeHeadingRow: (sheetId: string, row: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
 

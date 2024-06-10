@@ -187,9 +187,9 @@ export class PointerHeading {
             gridLines.dirty = true;
             cursor.dirty = true;
             headings.dirty = true;
+            pixiApp.adjustHeadings(sheets.sheet.id);
           }
           this.resizing.lastSize = size;
-
           events.emit('resizeHeadingColumn', sheets.sheet.id, this.resizing.column);
         }
       } else if (this.resizing.row !== undefined) {
@@ -214,8 +214,10 @@ export class PointerHeading {
             gridLines.dirty = true;
             cursor.dirty = true;
             headings.dirty = true;
+            pixiApp.adjustHeadings(sheets.sheet.id);
           }
           this.resizing.lastSize = size;
+          events.emit('resizeHeadingRow', sheets.sheet.id, this.resizing.row);
         }
       }
     }

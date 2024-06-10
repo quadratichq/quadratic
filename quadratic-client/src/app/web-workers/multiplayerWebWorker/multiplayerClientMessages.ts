@@ -88,7 +88,6 @@ export type MultiplayerClientMessage =
   | MultiplayerClientState
   | MultiplayerClientUserUpdate
   | MultiplayerClientUsersInRoom
-  | MultiplayerClientUserUpdate
   | MultiplayerClientReload;
 
 export type ClientMultiplayerMessage =

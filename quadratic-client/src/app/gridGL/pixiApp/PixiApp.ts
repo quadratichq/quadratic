@@ -317,11 +317,11 @@ export class PixiApp {
     events.emit('cursorPosition');
   }
 
-  adjustHeadings(options: { sheetId: string; delta: number; row?: number; column?: number }): void {
-    this.cellsSheets.adjustHeadings(options);
-    this.cellsSheets.adjustOffsetsBorders(options.sheetId);
+  adjustHeadings(sheetId: string): void {
+    this.cellsSheets.adjustHeadings(sheetId);
+    this.cellsSheets.adjustOffsetsBorders(sheetId);
     htmlCellsHandler.updateOffsets([sheets.sheet.id]);
-    if (sheets.sheet.id === options.sheetId) {
+    if (sheets.sheet.id === sheetId) {
       this.gridLines.dirty = true;
       this.cursor.dirty = true;
       this.cellHighlights.dirty = true;
