@@ -49,8 +49,23 @@ class InlineEditorHandler {
   constructor() {
     events.on('changeInput', this.changeInput);
     events.on('changeSheet', this.changeSheet);
+    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('resizeHeadingColumn', this.sheetOffsets);
     createFormulaStyleHighlights();
   }
+
+  private sheetOffsets = (sheetId: string) => {
+    if (this.location?.sheetId === sheetId) {
+      this.cellOffsets = sheets.sheet.getCellOffsets(this.location.x, this.location.y);
+      if (this.open) {
+        this.div?.style.setProperty('left', this.cellOffsets.x + CURSOR_THICKNESS + 'px');
+        this.div?.style.setProperty('top', this.cellOffsets.y + 2 + 'px');
+        this.height = this.cellOffsets.height - 4;
+        this.width = inlineEditorMonaco.resize(this.cellOffsets.width - CURSOR_THICKNESS * 2, this.height);
+        pixiApp.cursor.dirty = true;
+      }
+    }
+  };
 
   // Resets state after editing is complete.
   private reset() {

@@ -100,7 +100,7 @@ pub fn get_cell_borders_in_rect(sheet: &Sheet, rect: Rect) -> Vec<(i64, i64, Opt
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct SheetBorders {
     pub per_cell: IdSpaceBorders,
-    pub(super) render_lookup: GridSpaceBorders,
+    pub render_lookup: GridSpaceBorders,
 }
 
 impl SheetBorders {
@@ -130,6 +130,10 @@ impl SheetBorders {
         let mut sheet_borders = SheetBorders::default();
         let cloned_id_space = self.per_cell.clone_rect(rect);
         sheet_borders.per_cell.replace_rect(&cloned_id_space, rect);
+        let cloned_render_lookup = self.render_lookup.clone_rect(rect);
+        sheet_borders
+            .render_lookup
+            .replace_rect(&cloned_render_lookup, rect);
         sheet_borders
     }
 }
