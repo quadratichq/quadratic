@@ -150,7 +150,7 @@ impl GridController {
         sheet_rect: &SheetRect,
         all_cells: bool,
     ) {
-        if !cfg!(target_family = "wasm") && !cfg!(test) {
+        if !cfg!(target_family = "wasm") || cfg!(test) {
             return;
         }
 
