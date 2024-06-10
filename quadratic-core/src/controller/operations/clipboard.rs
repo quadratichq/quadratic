@@ -109,21 +109,44 @@ impl GridController {
             y: selection.y,
         };
 
+        let mut cursor: Option<Operation> = None;
+
+        // clear the sheet first
+        ops.extend(self.clear_format_selection_operations(selection));
+
         // adjust start_pos based on ClipboardOrigin special cases
         if let Some(clipboard_origin) = clipboard.origin.as_ref() {
             // we paste the entire sheet over the existing sheet
             if let Some((x, y)) = clipboard_origin.all {
-                // clear the sheet first
-                ops.extend(self.clear_format_selection_operations(selection));
-
                 // set the start_pos to the origin of the clipboard for the
                 // copied sheet
                 start_pos.x = x;
                 start_pos.y = y;
             } else if let Some(column_origin) = clipboard_origin.column {
+                ops.extend(self.clear_format_selection_operations(selection));
                 start_pos.x = column_origin;
+                cursor = Some(Operation::SetCursorSelection {
+                    selection: Selection {
+                        x: selection.x,
+                        y: selection.y,
+                        sheet_id: selection.sheet_id,
+                        columns: None,
+                        rows: Some(vec![selection.y]),
+                        ..Default::default()
+                    },
+                });
             } else if let Some(row_origin) = clipboard_origin.row {
                 start_pos.y = row_origin;
+                cursor = Some(Operation::SetCursorSelection {
+                    selection: Selection {
+                        x: selection.x,
+                        y: selection.y,
+                        sheet_id: selection.sheet_id,
+                        columns: Some(vec![selection.x]),
+                        rows: None,
+                        ..Default::default()
+                    },
+                });
             }
         }
 
@@ -226,34 +249,20 @@ impl GridController {
         if clipboard.origin.as_ref().is_some_and(|o| o.all.is_some()) {
             ops.push(Operation::SetCursorSelection {
                 selection: Selection {
+                    x: selection.x,
+                    y: selection.y,
                     sheet_id: selection.sheet_id,
                     all: true,
                     ..Default::default()
                 },
             });
-        } else if clipboard
-            .origin
-            .as_ref()
-            .is_some_and(|o| o.column.is_some())
-        {
-            ops.push(Operation::SetCursorSelection {
-                selection: Selection {
-                    sheet_id: selection.sheet_id,
-                    columns: Some(vec![start_pos.x]),
-                    ..Default::default()
-                },
-            });
-        } else if clipboard.origin.as_ref().is_some_and(|o| o.row.is_some()) {
-            ops.push(Operation::SetCursorSelection {
-                selection: Selection {
-                    sheet_id: selection.sheet_id,
-                    rows: Some(vec![start_pos.y]),
-                    ..Default::default()
-                },
-            });
+        } else if let Some(cursor) = cursor {
+            ops.push(cursor);
         } else {
             ops.push(Operation::SetCursorSelection {
                 selection: Selection {
+                    x: selection.x,
+                    y: selection.y,
                     sheet_id: selection.sheet_id,
                     rects: Some(vec![sheet_rect.into()]),
                     ..Default::default()
