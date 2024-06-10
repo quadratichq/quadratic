@@ -1,6 +1,7 @@
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { ResizeControl } from '@/app/ui/menus/CodeEditor/ResizeControl';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/shadcn/ui/collapsible';
@@ -14,12 +15,8 @@ const MAX_HEIGHT_PERCENT = 80;
 const TWO_PANEL_PERCENTS = [50, 50];
 const THREE_PANEL_PERCENTS = [34, 33, 33];
 
-interface Props {
-  containerRef: React.RefObject<HTMLDivElement>;
-}
-
-export function CodeEditorPanelSide(props: Props) {
-  const { containerRef } = props;
+export function CodeEditorPanelSide() {
+  const { containerRef } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const isConnection = codeCellIsAConnection(editorInteractionState.mode);
   const [panelHeightPercentages, setPanelHeightPercentages] = useState(

@@ -20,6 +20,7 @@ type Context = {
     { stdOut?: string; stdErr?: string } | undefined,
     React.Dispatch<React.SetStateAction<{ stdOut?: string; stdErr?: string } | undefined>>
   ];
+  containerRef: React.RefObject<HTMLDivElement>;
   editorContent: [string | undefined, React.Dispatch<React.SetStateAction<string | undefined>>];
   evaluationResult: [EvaluationResult | undefined, React.Dispatch<React.SetStateAction<EvaluationResult | undefined>>];
   editorRef: React.MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>;
@@ -38,6 +39,7 @@ const CodeEditorContext = createContext<Context>({
   },
   codeString: ['', () => {}],
   consoleOutput: [undefined, () => {}],
+  containerRef: { current: null },
   editorContent: [undefined, () => {}],
   evaluationResult: [undefined, () => {}],
   editorRef: { current: null },
@@ -49,7 +51,7 @@ const CodeEditorContext = createContext<Context>({
 
 export const CodeEditorProvider = ({ children }: { children: React.ReactElement }) => {
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
-
+  const containerRef = useRef<HTMLDivElement>(null);
   const panelBottomActiveTab = useState<PanelTab>('console');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
@@ -91,6 +93,7 @@ export const CodeEditorProvider = ({ children }: { children: React.ReactElement 
       value={{
         aiAssistant,
         consoleOutput,
+        containerRef,
         codeString,
         editorRef,
         editorContent,

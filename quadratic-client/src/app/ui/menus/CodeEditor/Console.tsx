@@ -10,7 +10,8 @@ export function Console() {
     spillError: [spillError],
   } = useCodeEditor();
   const { mode } = useRecoilValue(editorInteractionStateAtom);
-  let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+  const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
+
   return (
     <div
       contentEditable={hasOutput}

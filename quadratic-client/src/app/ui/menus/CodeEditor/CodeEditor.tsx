@@ -6,7 +6,7 @@ import { JsCodeCell, JsRenderCodeCell, Pos, SheetRect } from '@/app/quadratic-co
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
@@ -39,14 +39,13 @@ export const CodeEditor = () => {
   const mode = getLanguage(editorMode);
   const {
     consoleOutput: [out, setOut],
+    containerRef,
     spillError: [, setSpillError],
     codeString: [codeString, setCodeString],
     editorContent: [editorContent, setEditorContent],
     evaluationResult: [evaluationResult, setEvaluationResult],
   } = useCodeEditor();
-
   const { pythonState } = usePythonState();
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // code info
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
@@ -416,10 +415,10 @@ export const CodeEditor = () => {
               : `${100 - codeEditorPanelData.editorHeightPercentage}%`,
         }}
       >
-        <CodeEditorPanel containerRef={containerRef} codeEditorPanelData={codeEditorPanelData} />
+        <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} />
       </div>
 
-      <CodeEditorPanels containerRef={containerRef} codeEditorPanelData={codeEditorPanelData} />
+      <CodeEditorPanels codeEditorPanelData={codeEditorPanelData} />
     </div>
   );
 };

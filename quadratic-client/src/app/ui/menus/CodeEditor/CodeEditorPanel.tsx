@@ -7,15 +7,11 @@ import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
 
 interface Props {
-  containerRef: React.RefObject<HTMLDivElement>;
-
   codeEditorPanelData: CodeEditorPanelData;
 }
 
 export function CodeEditorPanel(props: Props) {
   const {
-    containerRef,
-
     codeEditorPanelData: { panelPosition, setPanelPosition },
   } = props;
 
@@ -37,7 +33,7 @@ export function CodeEditorPanel(props: Props) {
         </TooltipHint>
       </div>
 
-      {panelPosition === 'left' && <CodeEditorPanelSide containerRef={containerRef} />}
+      {panelPosition === 'left' && <CodeEditorPanelSide />}
 
       {panelPosition === 'bottom' && <CodeEditorPanelBottom />}
     </>

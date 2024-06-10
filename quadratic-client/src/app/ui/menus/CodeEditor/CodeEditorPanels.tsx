@@ -1,20 +1,20 @@
+import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { ResizeControl } from '@/app/ui/menus/CodeEditor/ResizeControl';
 import {
   CodeEditorPanelData,
   MIN_WIDTH_PANEL,
   MIN_WIDTH_VISIBLE_GRID,
 } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
-import { RefObject } from 'react';
 
 interface Props {
-  containerRef: RefObject<HTMLDivElement>;
   codeEditorPanelData: CodeEditorPanelData;
 }
 
 const MIN_WIDTH_EDITOR = 350;
 
 export const CodeEditorPanels = (props: Props) => {
-  const { containerRef, codeEditorPanelData } = props;
+  const { containerRef } = useCodeEditor();
+  const { codeEditorPanelData } = props;
 
   return (
     <>
