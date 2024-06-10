@@ -358,7 +358,7 @@ export const FloatingContextMenu = (props: Props) => {
               <TooltipHint title="Horizontal align">
                 <IconButton size="small">
                   <TextAlignLeftIcon fontSize={iconSize} />
-                  <ExpandMoreIcon fontSize={iconSize} />
+                  <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -390,7 +390,7 @@ export const FloatingContextMenu = (props: Props) => {
               <TooltipHint title="Vertical align">
                 <IconButton size="small">
                   <TextVerticalAlignTopIcon fontSize={iconSize} />
-                  <ExpandMoreIcon fontSize={iconSize} />
+                  <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
               </TooltipHint>
             </div>
@@ -422,7 +422,7 @@ export const FloatingContextMenu = (props: Props) => {
               <TooltipHint title="Text wrap">
                 <IconButton size="small">
                   <WrapTextIcon fontSize={iconSize} />
-                  <ExpandMoreIcon fontSize={iconSize} />
+                  <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
               </TooltipHint>
             </div>

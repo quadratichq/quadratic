@@ -85,8 +85,6 @@ export class CellLabel {
 
   overflowRight?: number;
   overflowLeft?: number;
-  overflowTop?: number;
-  overflowBottom?: number;
 
   dirty = true;
 
@@ -228,31 +226,6 @@ export class CellLabel {
       }
       this.position = new Point(this.AABB.left, this.AABB.top);
     }
-
-    this.overflowTop = 0;
-    this.overflowBottom = 0;
-    if (this.verticalAlign === 'bottom') {
-      const actualTop = this.AABB.bottom - this.textHeight;
-      if (actualTop < this.AABB.top) {
-        this.overflowTop = this.AABB.top - actualTop;
-      }
-      this.position.y = actualTop;
-    } else if (this.verticalAlign === 'middle') {
-      const actualTop = Math.max(this.AABB.top, this.AABB.top + (this.AABB.height - this.textHeight) / 2);
-      const actualBottom = actualTop + this.textHeight;
-      if (actualTop < this.AABB.top) {
-        this.overflowTop = this.AABB.top - actualTop;
-      }
-      if (actualBottom > this.AABB.bottom) {
-        this.overflowBottom = actualBottom - this.AABB.bottom;
-      }
-      this.position.y = actualTop;
-    } else if (this.verticalAlign === 'top') {
-      const actualBottom = this.AABB.top + this.textHeight;
-      if (actualBottom > this.AABB.bottom) {
-        this.overflowBottom = actualBottom - this.AABB.bottom;
-      }
-    }
   }
 
   /** Calculates the text glyphs and positions */
@@ -272,6 +245,7 @@ export class CellLabel {
     let prevCharCode = null;
     let lastLineWidth = 0;
     let maxLineWidth = 0;
+    let textHeight = 0;
     let line = 0;
     let lastBreakPos = -1;
     let lastBreakWidth = 0;
@@ -340,6 +314,7 @@ export class CellLabel {
         spaceCount = 0;
       } else {
         lastLineWidth = charRenderData.position.x + Math.max(charData.xAdvance, charData.origWidth);
+        textHeight = Math.max(textHeight, charRenderData.position.y + charData.textureHeight);
       }
     }
 
@@ -354,7 +329,7 @@ export class CellLabel {
     }
 
     this.textWidth = maxLineWidth * scale;
-    this.textHeight = (pos.y + data.lineHeight) * scale;
+    this.textHeight = textHeight * scale;
 
     this.horizontalAlignOffsets = [];
     for (let i = 0; i <= line; i++) {

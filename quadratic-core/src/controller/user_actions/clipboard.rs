@@ -158,10 +158,10 @@ impl GridController {
                         }
                     }
                     if let Some(cell_align) = cell_align {
-                        style.push_str(&cell_align.as_css_string());
+                        style.push_str(cell_align.as_css_string());
                     }
                     if let Some(cell_vertical_align) = cell_vertical_align {
-                        style.push_str(&cell_vertical_align.as_css_string());
+                        style.push_str(cell_vertical_align.as_css_string());
                     }
                     if let Some(cell_wrap) = cell_wrap {
                         style.push_str(cell_wrap.as_css_string());
