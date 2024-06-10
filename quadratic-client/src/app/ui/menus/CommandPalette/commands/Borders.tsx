@@ -56,10 +56,15 @@ export const BordersHook = (): CommandGroup => {
       //   { label: 'Borders: Style double', icon: <BorderDouble />, changeBordersArgs: { type: BorderType.double } },
       // ].map(generateListItem),
     ],
-  }
+  };
 };
 
-function generateListItem(borders: UseBordersResults, label: string, changeBordersArgs: ChangeBorder, icon: JSX.Element | undefined) {
+function generateListItem(
+  borders: UseBordersResults,
+  label: string,
+  changeBordersArgs: ChangeBorder,
+  icon: JSX.Element | undefined
+) {
   const item: CommandGroup['commands'][0] = {
     label,
     isAvailable: hasPermissionToEditFile,
