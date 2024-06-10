@@ -249,7 +249,25 @@ export class CellsTextHash {
     this.labelMeshes.prepare();
 
     // populate labelMeshes webGL buffers
-    this.labels.forEach((cellLabel) => cellLabel.updateLabelMesh(this.labelMeshes));
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    this.labels.forEach((cellLabel) => {
+      const bounds = cellLabel.updateLabelMesh(this.labelMeshes);
+      if (bounds) {
+        minX = Math.min(minX, bounds.minX);
+        minY = Math.min(minY, bounds.minY);
+        maxX = Math.max(maxX, bounds.maxX);
+        maxY = Math.max(maxY, bounds.maxY);
+      }
+    });
+    if (minX !== Infinity && minY !== Infinity) {
+      this.viewRectangle.x = minX;
+      this.viewRectangle.y = minY;
+      this.viewRectangle.width = maxX - minX;
+      this.viewRectangle.height = maxY - minY;
+    }
 
     // prepares the client's CellsTextHash for new content
     renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
