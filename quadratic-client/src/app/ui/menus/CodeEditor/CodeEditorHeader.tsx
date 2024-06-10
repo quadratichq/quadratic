@@ -150,16 +150,7 @@ export const CodeEditorHeader = (props: Props) => {
         )}
         {hasPermission && <CodeEditorRefButton />}
         {hasPermission && language === 'Python' && <SnippetsPopover />}
-        {hasPermission && (
-          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-            <span>
-              <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
-                <Stop />
-              </IconButton>
-            </span>
-          </TooltipHint>
-        )}
-        {hasPermission && (
+        {hasPermission && (!isRunningComputation ?
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
             <span>
               <IconButton
@@ -167,9 +158,15 @@ export const CodeEditorHeader = (props: Props) => {
                 size="small"
                 color="primary"
                 onClick={saveAndRunCell}
-                disabled={!!isRunningComputation}
               >
                 <PlayArrow />
+              </IconButton>
+            </span>
+          </TooltipHint> :
+          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
+            <span>
+              <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
+                <Stop />
               </IconButton>
             </span>
           </TooltipHint>

@@ -36,8 +36,9 @@ export const CodeEditorRefButton = () => {
       <TooltipHint title={`Insert ${relative ? 'relative ' : ''}cell reference`} placement="bottom">
          <span>
            <IconButton
-             disabled={disabled}
-             size="small"
+            disabled={disabled}
+            size="small"
+            color="primary"
              onClick={() => insertCellRef(editorInteractionState, relative)}
            >
              <AddLocationAltIcon fontSize="small" />
