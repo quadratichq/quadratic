@@ -20,9 +20,9 @@ export const CodeEditorRefButton = () => {
     const checkDisabled = () => {
       setDisabled(
         editorInteractionState.selectedCell.x === sheets.sheet.cursor.originPosition.x &&
-          editorInteractionState.selectedCell.y === sheets.sheet.cursor.originPosition.y &&
-          editorInteractionState.selectedCellSheet === sheets.sheet.id &&
-          !sheets.sheet.cursor.multiCursor
+        editorInteractionState.selectedCell.y === sheets.sheet.cursor.originPosition.y &&
+        editorInteractionState.selectedCellSheet === sheets.sheet.id &&
+        !sheets.sheet.cursor.multiCursor
       );
     };
     events.on('cursorPosition', checkDisabled);
@@ -31,9 +31,11 @@ export const CodeEditorRefButton = () => {
     };
   });
 
+  const tooltip = !disabled ? <>Insert {relative ? 'relative ' : ''}cell reference</> : <>Select cells on the grid to insert cell reference.</>;
+
   return (
     <div className="flex items-center code-editor-ref-button">
-      <TooltipHint title={`Insert ${relative ? 'relative ' : ''}cell reference`} placement="bottom">
+      <TooltipHint title={tooltip} placement="bottom">
          <span>
            <IconButton
             disabled={disabled}
@@ -56,8 +58,8 @@ export const CodeEditorRefButton = () => {
           </IconButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuCheckboxItem checked={!relative} onClick={() => setRelative(false) }>Insert absolute cell references</DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem checked={relative} onClick={() => setRelative(true) }>Insert relative cell references</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={!relative} onClick={() => setRelative(false) }>Absolute cell reference</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={relative} onClick={() => setRelative(true) }>Relative cell reference</DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
