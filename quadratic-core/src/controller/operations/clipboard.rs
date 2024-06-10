@@ -184,7 +184,7 @@ impl GridController {
         }
 
         let sheet_rect = SheetRect {
-            min: start_pos.into(),
+            min: start_pos,
             max: Pos {
                 x: start_pos.x + (clipboard.w as i64) - 1,
                 y: start_pos.y + (clipboard.h as i64) - 1,
@@ -353,10 +353,8 @@ impl GridController {
                         match cell {
                             CellValue::Code(code_cell) => {
                                 if matches!(code_cell.language, CodeCellLanguage::Formula) {
-                                    code_cell.code = replace_internal_cell_references(
-                                        &code_cell.code,
-                                        dest_pos.into(),
-                                    );
+                                    code_cell.code =
+                                        replace_internal_cell_references(&code_cell.code, dest_pos);
                                 }
                             }
                             _ => { /* noop */ }

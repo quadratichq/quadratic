@@ -14,7 +14,7 @@ impl Sheet {
     /// Returns the copied SheetRect, plain text, and html.
     pub fn copy_to_clipboard(&self, selection: &Selection) -> Result<(String, String), String> {
         let sheet_rect = self
-            .clipboard_selection(&selection)
+            .clipboard_selection(selection)
             .ok_or("Unable to find SheetRect in selection")?;
 
         let mut cells = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);

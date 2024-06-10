@@ -44,7 +44,7 @@ impl GridController {
 
                 Operation::SetCursor { .. } => self.execute_set_cursor(transaction, op),
                 Operation::SetCursorSelection { .. } => {
-                    self.execute_set_cursor_selection(transaction, op)
+                    self.execute_set_cursor_selection(transaction, op);
                 }
             }
 

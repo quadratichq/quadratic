@@ -7,6 +7,7 @@
     "start": "cargo watch -s 'wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "performance": "cargo watch -s 'wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "build": "wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
+    "lint": "cargo clippy --all-targets --all-features -- -D warnings",
     "types": "cargo watch -x 'run --features js --bin export_types'"
   }
 }

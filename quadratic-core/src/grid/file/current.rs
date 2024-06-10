@@ -354,7 +354,7 @@ pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
         // todo: borders need to be refactored
         borders: SheetBorders::new(),
 
-        code_runs: import_code_cell_builder(&sheet)?,
+        code_runs: import_code_cell_builder(sheet)?,
         data_bounds: GridBounds::Empty,
         format_bounds: GridBounds::Empty,
 
@@ -363,7 +363,7 @@ pub fn import_sheet(sheet: &current::Sheet) -> Result<Sheet> {
         formats_rows: import_formats(&sheet.formats_rows),
     };
     new_sheet.recalculate_bounds();
-    import_borders_builder(&mut new_sheet, &sheet);
+    import_borders_builder(&mut new_sheet, sheet);
     Ok(new_sheet)
 }
 
@@ -746,10 +746,6 @@ pub fn export_sheet(sheet: &Sheet) -> current::Sheet {
 pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
-        sheets: grid
-            .sheets()
-            .iter()
-            .map(|sheet| export_sheet(sheet))
-            .collect(),
+        sheets: grid.sheets().iter().map(export_sheet).collect(),
     })
 }
