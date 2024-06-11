@@ -251,7 +251,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-3 pb-2"
+        className="z-10 flex gap-2 px-3 pb-2 pt-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -264,8 +264,19 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
             setPrompt(event.target.value);
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && prompt.trim().length > 0) {
+            if (event.key === 'Enter') {
+              if (event.ctrlKey || event.shiftKey) {
+                return;
+              }
+
+              if (prompt.trim().length === 0) {
+                event.preventDefault();
+                return;
+              }
+
               submitPrompt();
+              event.preventDefault();
+              event.currentTarget.focus();
             }
           }}
           autoComplete="off"

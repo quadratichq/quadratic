@@ -34,11 +34,27 @@ export interface ClientPythonCoreChannel {
   type: 'clientPythonCoreChannel';
 }
 
+export interface ClientPythonInit {
+  type: 'clientPythonInit';
+  env: ImportMetaEnv;
+}
+
 export interface PythonClientInit {
   type: 'pythonClientInit';
   version: string;
 }
 
-export type PythonClientMessage = PythonClientLoadError | PythonClientState | PythonClientInit;
+export interface ClientPythonGetJwt {
+  type: 'clientPythonGetJwt';
+  id: number;
+  jwt: string;
+}
 
-export type ClientPythonMessage = ClientPythonCoreChannel;
+export interface PythonClientGetJwt {
+  type: 'pythonClientGetJwt';
+  id: number;
+}
+
+export type PythonClientMessage = PythonClientLoadError | PythonClientState | PythonClientInit | PythonClientGetJwt;
+
+export type ClientPythonMessage = ClientPythonInit | ClientPythonCoreChannel | ClientPythonGetJwt;

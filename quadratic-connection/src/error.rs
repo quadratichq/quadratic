@@ -48,6 +48,10 @@ pub enum ConnectionError {
     Unknown(String),
 }
 
+pub(crate) fn proxy_error(e: impl ToString) -> ConnectionError {
+    ConnectionError::Proxy(e.to_string())
+}
+
 fn clean_errors(error: impl ToString) -> String {
     let mut cleaned = error.to_string();
     let remove = vec!["error returned from database: "];
@@ -108,6 +112,7 @@ impl IntoResponse for ConnectionError {
             }
             ConnectionError::Query(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
             ConnectionError::Connection(error) => (StatusCode::NOT_FOUND, clean_errors(error)),
+            ConnectionError::Proxy(error) => (StatusCode::BAD_REQUEST, clean_errors(error)),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown".into()),
         };
 

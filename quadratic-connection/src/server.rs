@@ -9,17 +9,19 @@ use axum::{
         Method, StatusCode,
     },
     response::IntoResponse,
-    routing::{get, post},
+    routing::{any, get, post},
     Extension, Json, Router,
 };
+use http::HeaderName;
 use jsonwebtoken::jwk::JwkSet;
 use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::sql::Connection;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{iter::once, time::Duration};
 use tokio::{sync::OnceCell, time};
 use tower_http::{
     cors::{Any, CorsLayer},
+    sensitive_headers::SetSensitiveHeadersLayer,
     trace::{DefaultMakeSpan, TraceLayer},
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -29,7 +31,7 @@ use crate::{
     auth::get_middleware,
     config::config,
     error::{ConnectionError, Result},
-    proxy::server::serve as serve_proxy,
+    proxy::proxy,
     sql::{
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
@@ -46,7 +48,6 @@ static JWKS: OnceCell<JwkSet> = OnceCell::const_new();
 pub(crate) async fn get_const_jwks() -> &'static JwkSet {
     JWKS.get_or_init(|| async {
         let config = config().expect("Invalid config");
-        
 
         get_jwks(&config.auth0_jwks_uri)
             .await
@@ -75,19 +76,25 @@ impl TestResponse {
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
-pub(crate) fn app(state: State) -> Router {
+pub(crate) fn app(state: State) -> Result<Router> {
     let cors = CorsLayer::new()
         // allow requests from any origin
         .allow_methods([Method::GET, Method::POST, Method::CONNECT])
         .allow_origin(Any)
-        .allow_headers([CONTENT_TYPE, AUTHORIZATION, ACCEPT, ORIGIN])
+        .allow_headers([
+            CONTENT_TYPE,
+            AUTHORIZATION,
+            ACCEPT,
+            ORIGIN,
+            HeaderName::from_static("proxy"),
+        ])
         .expose_headers(Any);
 
     let auth = get_middleware(state.clone());
 
     // Routes apply in reverse order, so placing a route before the middleware
     // usurps the middleware.
-    Router::new()
+    let app = Router::new()
         // protected routes
         //
         // postgres
@@ -98,8 +105,9 @@ pub(crate) fn app(state: State) -> Router {
         .route("/mysql/test", post(test_mysql))
         .route("/mysql/query", post(query_mysql))
         .route("/mysql/schema/:id", get(schema_mysql))
+        //
         // proxy
-        // .route("/proxy", any(proxy))
+        .route("/proxy", any(proxy))
         //
         // auth middleware
         .route_layer(auth)
@@ -113,6 +121,9 @@ pub(crate) fn app(state: State) -> Router {
         // unprotected routes without state
         .route("/health", get(healthcheck))
         //
+        // don't show authorization header in logs
+        .layer(SetSensitiveHeadersLayer::new(once(AUTHORIZATION)))
+        //
         // cors
         .layer(cors)
         //
@@ -120,7 +131,9 @@ pub(crate) fn app(state: State) -> Router {
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        )
+        );
+
+    Ok(app)
 }
 
 /// Start the server.  This is the entrypoint for the application.
@@ -136,8 +149,8 @@ pub(crate) async fn serve() -> Result<()> {
 
     let config = config()?;
     let jwks = get_const_jwks().await;
-    let state = State::new(&config, Some(jwks.clone()));
-    let app = app(state.clone());
+    let state = State::new(&config, Some(jwks.clone()))?;
+    let app = app(state.clone())?;
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", config.host, config.port))
         .await
@@ -162,13 +175,6 @@ pub(crate) async fn serve() -> Result<()> {
                     tracing::info!("Stats: {}", stats);
                 }
             }
-        }
-    });
-
-    // start the proxy server in a separate thread
-    tokio::task::spawn(async move {
-        if let Err(error) = serve_proxy(&config.host, 3004).await {
-            tracing::error!("Error starting proxy: {:?}", error);
         }
     });
 
@@ -213,7 +219,7 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn responds_with_a_200_ok_for_a_healthcheck() {
         let state = new_state().await;
-        let app = app(state);
+        let app = app(state).unwrap();
 
         let response = app
             .oneshot(

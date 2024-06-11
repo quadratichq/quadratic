@@ -1,7 +1,8 @@
 import { events } from '@/app/events/events';
+import { authClient } from '@/auth';
 import mixpanel from 'mixpanel-browser';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
-import { ClientPythonMessage, PythonClientMessage, PythonStateType } from './pythonClientMessages';
+import { ClientPythonMessage, PythonClientGetJwt, PythonClientMessage, PythonStateType } from './pythonClientMessages';
 
 class PythonWebWorker {
   state: PythonStateType = 'loading';
@@ -22,11 +23,19 @@ class PythonWebWorker {
       case 'pythonClientInit':
         this.state = 'ready';
         events.emit('pythonInit', message.data.version);
+        this.send({ type: 'clientPythonInit', env: import.meta.env });
         break;
 
       case 'pythonClientState':
         this.state = message.data.state;
         events.emit('pythonState', message.data.state, message.data.current, message.data.awaitingExecution);
+        break;
+
+      case 'pythonClientGetJwt':
+        authClient.getTokenOrRedirect().then((jwt) => {
+          const data = message.data as PythonClientGetJwt;
+          this.send({ type: 'clientPythonGetJwt', id: data.id, jwt });
+        });
         break;
 
       default:

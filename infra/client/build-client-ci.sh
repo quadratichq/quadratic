@@ -31,6 +31,8 @@ wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-cor
 echo 'Exporting TS/Rust types...'
 cargo run --bin export_types
 
+cd ..
+
 echo 'Building quadratic-rust-client...'
 npm run build --workspace=quadratic-rust-client
 

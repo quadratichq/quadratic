@@ -151,6 +151,16 @@ pub enum CellWrap {
     Clip,
 }
 
+impl CellWrap {
+    pub fn as_css_string(&self) -> &'static str {
+        match self {
+            CellWrap::Overflow => "overflow: visible; white-space: nowrap;",
+            CellWrap::Wrap => "overflow: hidden; white-space: normal; word-wrap: break-word;",
+            CellWrap::Clip => "overflow: hidden; white-space: clip;",
+        }
+    }
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct NumericFormat {
