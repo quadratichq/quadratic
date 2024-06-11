@@ -1,3 +1,4 @@
+import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
@@ -7,7 +8,6 @@ import QuadraticGrid from '../gridGL/QuadraticGrid';
 import { pixiApp } from '../gridGL/pixiApp/PixiApp';
 import { focusGrid } from '../helpers/focusGrid';
 import { isEmbed } from '../helpers/isEmbed';
-import CodeEditor from '../ui/menus/CodeEditor';
 import TopBar from '../ui/menus/TopBar';
 import { UpdateAlertVersion } from './UpdateAlertVersion';
 import { useFileContext } from './components/FileProvider';
@@ -70,7 +70,7 @@ export default function QuadraticUI() {
           <QuadraticGrid />
           {!presentationMode && <SheetBar />}
         </FileUploadWrapper>
-        {editorInteractionState.showCodeEditor && <CodeEditor />}
+        {editorInteractionState.showCodeEditor && <CodeEditorProvider />}
         <Following follow={follow} />
         <div
           style={{

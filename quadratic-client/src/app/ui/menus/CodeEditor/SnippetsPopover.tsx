@@ -24,7 +24,9 @@ import snippets from './snippets';
 
 export function SnippetsPopover() {
   const { editorRef } = useCodeEditor();
-  const { showSnippetsPopover, setShowSnippetsPopover } = useCodeEditor();
+  const {
+    showSnippetsPopover: [showSnippetsPopover, setShowSnippetsPopover],
+  } = useCodeEditor();
   const theme = useTheme();
 
   useEffect(() => {

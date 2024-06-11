@@ -2,19 +2,20 @@ import { colors } from '../../../theme/colors';
 import './ResizeControl.css';
 
 interface ResizeControlProps {
+  disabled?: boolean;
   position: 'HORIZONTAL' | 'VERTICAL';
   setState: (mouseEvent: globalThis.MouseEvent) => void;
   style?: React.CSSProperties;
 }
 
-export function ResizeControl({ setState, position, style }: ResizeControlProps) {
+export function ResizeControl({ disabled, setState, position, style }: ResizeControlProps) {
   if (!style) {
     style = {};
   }
 
   return (
     <div
-      className={`resize-control resize-control--position-${position}`}
+      className={`resize-control resize-control--position-${position} ${disabled ? 'resize-control--disabled' : ''}`}
       data-position={position}
       style={{
         ...style,
@@ -23,6 +24,8 @@ export function ResizeControl({ setState, position, style }: ResizeControlProps)
         '--resize-control-background': colors.mediumGray,
       }}
       onMouseDown={(e) => {
+        if (disabled) return;
+
         // set drag style via class
         const target = e.currentTarget;
         target.classList.add('resize-control--is-dragging');
