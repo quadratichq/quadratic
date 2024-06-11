@@ -45,6 +45,7 @@ pub struct Clipboard {
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
 
     pub origin: Option<ClipboardOrigin>,
+    pub selection: Option<Selection>,
 }
 
 impl GridController {
@@ -109,7 +110,15 @@ impl GridController {
             y: selection.y,
         };
 
-        let mut cursor: Option<Operation> = None;
+        let mut cursor: Option<Operation> = if let (Some(selection), Some(clipboard_origin)) =
+            (clipboard.selection, clipboard.origin)
+        {
+            Some(Operation::SetCursorSelection {
+                selection: selection.translate(clipboard_origin),
+            })
+        } else {
+            None
+        };
 
         // clear the sheet first
         ops.extend(self.clear_format_selection_operations(selection));

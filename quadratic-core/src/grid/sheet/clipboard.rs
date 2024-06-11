@@ -253,6 +253,7 @@ impl Sheet {
             w: sheet_rect.width() as u32,
             h: sheet_rect.height() as u32,
             origin,
+            selection: Some(selection.clone()),
         };
 
         html.push_str("</td></tr></tbody></table>");

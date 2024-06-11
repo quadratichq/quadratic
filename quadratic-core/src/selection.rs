@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
+use crate::{
+    controller::operations::clipboard::ClipboardOrigin, grid::SheetId, Pos, Rect, SheetPos,
+    SheetRect,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -133,6 +136,11 @@ impl Selection {
             y: self.y,
             sheet_id: self.sheet_id,
         }
+    }
+
+    // Translates the selection by a clipboard origin.
+    pub fn translate(&self, origin: ClipboardOrigin) -> Selection {
+        if
     }
 }
 
