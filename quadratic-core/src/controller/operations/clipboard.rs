@@ -110,11 +110,9 @@ impl GridController {
             y: selection.y,
         };
 
-        let mut cursor: Option<Operation> = if let (Some(selection), Some(clipboard_origin)) =
-            (clipboard.selection, clipboard.origin)
-        {
+        let cursor: Option<Operation> = if let Some(selection) = clipboard.selection.as_ref() {
             Some(Operation::SetCursorSelection {
-                selection: selection.translate(clipboard_origin),
+                selection: selection.translate(start_pos),
             })
         } else {
             None
@@ -134,28 +132,28 @@ impl GridController {
             } else if let Some(column_origin) = clipboard_origin.column {
                 ops.extend(self.clear_format_selection_operations(selection));
                 start_pos.x = column_origin;
-                cursor = Some(Operation::SetCursorSelection {
-                    selection: Selection {
-                        x: selection.x,
-                        y: selection.y,
-                        sheet_id: selection.sheet_id,
-                        columns: None,
-                        rows: Some(vec![selection.y]),
-                        ..Default::default()
-                    },
-                });
+                // cursor = Some(Operation::SetCursorSelection {
+                //     selection: Selection {
+                //         x: selection.x,
+                //         y: selection.y,
+                //         sheet_id: selection.sheet_id,
+                //         columns: None,
+                //         rows: Some(vec![selection.y]),
+                //         ..Default::default()
+                //     },
+                // });
             } else if let Some(row_origin) = clipboard_origin.row {
                 start_pos.y = row_origin;
-                cursor = Some(Operation::SetCursorSelection {
-                    selection: Selection {
-                        x: selection.x,
-                        y: selection.y,
-                        sheet_id: selection.sheet_id,
-                        columns: Some(vec![selection.x]),
-                        rows: None,
-                        ..Default::default()
-                    },
-                });
+                // cursor = Some(Operation::SetCursorSelection {
+                //     selection: Selection {
+                //         x: selection.x,
+                //         y: selection.y,
+                //         sheet_id: selection.sheet_id,
+                //         columns: Some(vec![selection.x]),
+                //         rows: None,
+                //         ..Default::default()
+                //     },
+                // });
             }
         }
 

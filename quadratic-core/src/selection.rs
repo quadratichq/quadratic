@@ -1,9 +1,6 @@
 use std::str::FromStr;
 
-use crate::{
-    controller::operations::clipboard::ClipboardOrigin, grid::SheetId, Pos, Rect, SheetPos,
-    SheetRect,
-};
+use crate::{grid::SheetId, Pos, Rect, SheetPos, SheetRect};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -139,8 +136,34 @@ impl Selection {
     }
 
     // Translates the selection by a clipboard origin.
-    pub fn translate(&self, origin: ClipboardOrigin) -> Selection {
-        if
+    pub fn translate(&self, pos: Pos) -> Selection {
+        Selection {
+            x: self.x + pos.x,
+            y: self.y + pos.y,
+            columns: self
+                .columns
+                .as_ref()
+                .map(|c| c.iter().map(|x| x + pos.x).collect()),
+            rows: self
+                .rows
+                .as_ref()
+                .map(|r| r.iter().map(|y| y + pos.y).collect()),
+            rects: self.rects.as_ref().map(|r| {
+                r.iter()
+                    .map(|rect| Rect {
+                        min: Pos {
+                            x: rect.min.x + pos.x,
+                            y: rect.min.y + pos.y,
+                        },
+                        max: Pos {
+                            x: rect.max.x + pos.x,
+                            y: rect.max.y + pos.y,
+                        },
+                    })
+                    .collect()
+            }),
+            ..self.clone()
+        }
     }
 }
 
@@ -366,6 +389,31 @@ mod test {
                 x: 1,
                 y: 2,
                 sheet_id
+            }
+        );
+    }
+
+    #[test]
+    fn translate() {
+        let sheet_id = SheetId::test();
+        let selection = Selection {
+            sheet_id,
+            x: 1,
+            y: 2,
+            columns: Some(vec![1, 2, 3]),
+            rows: Some(vec![4, 5, 6]),
+            ..Default::default()
+        };
+        let translated = selection.translate(Pos { x: 2, y: 3 });
+        assert_eq!(
+            translated,
+            Selection {
+                sheet_id,
+                x: 1 + 2,
+                y: 2 + 3,
+                columns: Some(vec![1 + 2, 2 + 2, 3 + 2]),
+                rows: Some(vec![4 + 3, 5 + 3, 6 + 3]),
+                ..Default::default()
             }
         );
     }
