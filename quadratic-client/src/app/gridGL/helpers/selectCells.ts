@@ -1,3 +1,9 @@
+import {
+  getVisibleLeftColumn,
+  getVisibleTopRow,
+  isColumnVisible,
+  isRowVisible,
+} from '@/app/gridGL/interaction/viewportHelper';
 import { Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 
@@ -24,7 +30,12 @@ export function selectAllCells() {
   }
 }
 
-// Selects columns. Cursor position is set to the last column selected or the passed column.
+/**
+ * Selects columns. Cursor position is set to the last column selected or the
+ * passed column.
+ * @param column if column is set, then that column is used as the cursor
+ * position, otherwise it uses the last entry in columns
+ */
 export async function selectColumns(columns: number[], column = columns[columns.length - 1]) {
   // remove duplicates
   columns = columns.filter((item, pos) => columns.indexOf(item) === pos);
@@ -37,7 +48,15 @@ export async function selectColumns(columns: number[], column = columns[columns.
     return;
   }
 
-  cursor.changePosition({ columnRow: { columns }, cursorPosition: { x: column, y: cursor.cursorPosition.y } });
+  // Find a row to select based on viewport. 1. if 0 is visible, use that; 2. if
+  // not use, the first row from the top of the viewport.
+  let row: number;
+  if (isRowVisible(0)) {
+    row = 0;
+  } else {
+    row = getVisibleTopRow();
+  }
+  cursor.changePosition({ columnRow: { columns }, cursorPosition: { x: column, y: row } });
 }
 
 export async function selectRows(rows: number[], row = rows[rows.length - 1]) {
@@ -52,5 +71,14 @@ export async function selectRows(rows: number[], row = rows[rows.length - 1]) {
     return;
   }
 
-  cursor.changePosition({ columnRow: { rows }, cursorPosition: { x: cursor.cursorPosition.x, y: row } });
+  // Find a column to select based on viewport. 1. if 0 is visible, use that; 2. if
+  // not use, the first column from the left of the viewport.
+  let column: number;
+  if (isColumnVisible(0)) {
+    column = 0;
+  } else {
+    column = getVisibleLeftColumn();
+  }
+
+  cursor.changePosition({ columnRow: { rows }, cursorPosition: { x: column, y: row } });
 }

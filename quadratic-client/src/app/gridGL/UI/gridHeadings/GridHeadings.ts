@@ -246,8 +246,6 @@ export class GridHeadings extends Container {
 
     const viewport = pixiApp.viewport;
     const bounds = viewport.getVisibleBounds();
-    const scale = viewport.scaled;
-    const cellHeight = CELL_HEIGHT / scale;
     const offsets = sheets.sheet.offsets;
     const cursor = sheets.sheet.cursor;
 
@@ -265,10 +263,10 @@ export class GridHeadings extends Container {
 
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
-    this.columnRect = new Rectangle(bounds.left, bounds.top, bounds.width, cellHeight);
+    this.columnRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
     this.headingsGraphics.drawShape(this.columnRect);
     this.headingsGraphics.endFill();
-    this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.bottom);
+    this.rowRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
 
     // fill the entire viewport if all cells are selected
     if (cursor.columnRow?.all) {
@@ -448,10 +446,7 @@ export class GridHeadings extends Container {
       return;
     }
     this.dirty = false;
-    // const { selectedColumns, selectedRows } = this.createSelectedArrays();
     this.labels.clear();
-    // this.selectedColumns = selectedColumns;
-    // this.selectedRows = selectedRows;
 
     this.headingsGraphics.clear();
 

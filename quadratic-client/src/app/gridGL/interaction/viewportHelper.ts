@@ -6,15 +6,72 @@ import { pixiApp } from '../pixiApp/PixiApp';
 import { pixiAppSettings } from '../pixiApp/PixiAppSettings';
 import { Coordinate } from '../types/size';
 
-export function isVisible() {
+export function getVisibleTopRow(): number {
+  const viewport = pixiApp.viewport.getVisibleBounds();
+  const top = viewport.top + pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+  const placement = sheets.sheet.offsets.getYPlacement(top);
+
+  // if the top row is partially visible, then return the next row
+  if (placement.position >= top) {
+    return placement.index;
+  } else {
+    return placement.index + 1;
+  }
+}
+
+export function getVisibleLeftColumn(): number {
+  const viewport = pixiApp.viewport.getVisibleBounds();
+  const left = viewport.left + pixiApp.headings.headingSize.width / pixiApp.viewport.scale.x;
+  const placement = sheets.sheet.offsets.getXPlacement(left);
+  console.log(placement.position, left);
+  // if the left column is partially visible, then return the next column
+  if (placement.position >= left) {
+    return placement.index;
+  } else {
+    return placement.index + 1;
+  }
+}
+
+export function isRowVisible(row: number): boolean {
+  const { viewport, headings } = pixiApp;
+  const sheet = sheets.sheet;
+  const headingSize = headings.headingSize;
+
+  const offset = sheet.offsets.getRowPlacement(row);
+
+  if (offset.position < viewport.top + headingSize.height / viewport.scale.y) {
+    return false;
+  } else if (offset.position + offset.size > viewport.bottom) {
+    return false;
+  }
+  return true;
+}
+
+export function isColumnVisible(column: number): boolean {
+  const { viewport, headings } = pixiApp;
+  const sheet = sheets.sheet;
+  const headingSize = headings.headingSize;
+
+  const offset = sheet.offsets.getColumnPlacement(column);
+
+  if (offset.position + headingSize.width < viewport.left) {
+    return false;
+  } else if (offset.position > viewport.right) {
+    return false;
+  }
+  return true;
+}
+
+// Makes a cell visible in the viewport
+export function cellVisible(
+  column = sheets.sheet.cursor.cursorPosition.x,
+  row = sheets.sheet.cursor.cursorPosition.y
+): boolean {
   // returns true if the cursor is visible in the viewport
   const { viewport, headings } = pixiApp;
   const sheet = sheets.sheet;
-  const { cursor } = sheet;
   const headingSize = headings.headingSize;
 
-  const column = cursor.keyboardMovePosition.x;
-  const row = cursor.keyboardMovePosition.y;
   const cell = sheet.getCellOffsets(column, row);
   let is_off_screen = false;
 
@@ -39,7 +96,7 @@ export function isVisible() {
 
 // Ensures the cursor is always visible
 export function ensureVisible(): void {
-  if (!isVisible()) {
+  if (!cellVisible()) {
     pixiApp.viewportChanged();
   }
 }
