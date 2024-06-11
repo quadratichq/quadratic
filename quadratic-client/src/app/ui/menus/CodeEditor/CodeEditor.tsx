@@ -399,6 +399,7 @@ export const CodeEditor = () => {
           closeEditor={closeEditor}
           evaluationResult={evaluationResult}
           cellsAccessed={!unsaved ? cellsAccessed : []}
+          cellLocation={cellLocation}
         />
 
         {editorInteractionState.mode !== 'Formula' && (
