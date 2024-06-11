@@ -44,12 +44,15 @@ export const CodeEditor = () => {
     codeString: [codeString, setCodeString],
     editorContent: [editorContent, setEditorContent],
     evaluationResult: [evaluationResult, setEvaluationResult],
+    panelBottomActiveTab: [, setPanelBottomActiveTab],
+    aiAssistant: {
+      messages: [, setAiMessages],
+    },
   } = useCodeEditor();
   const { pythonState } = usePythonState();
 
   // code info
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
-
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
 
   // TODO(ddimaria): leave this as we're looking to add this back in once improved
@@ -58,11 +61,15 @@ export const CodeEditor = () => {
   // Trigger vanilla changes to code editor
   useEffect(() => {
     events.emit('codeEditor');
+    setPanelBottomActiveTab('console');
+    setAiMessages([]);
   }, [
     showCodeEditor,
     editorInteractionState.selectedCell.x,
     editorInteractionState.selectedCell.y,
     editorInteractionState.mode,
+    setPanelBottomActiveTab,
+    setAiMessages,
   ]);
 
   const cellLocation: SheetPosTS = useMemo(() => {

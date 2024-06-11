@@ -1,12 +1,11 @@
-import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { Coordinate } from '@/app/gridGL/types/size';
 import { AiMessage } from '@/app/ui/menus/CodeEditor/AiAssistant';
+import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { PanelTab } from '@/app/ui/menus/CodeEditor/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { useRecoilValue } from 'recoil';
+import React, { createContext, useContext, useRef, useState } from 'react';
 
 type Context = {
   aiAssistant: {
@@ -49,8 +48,7 @@ const CodeEditorContext = createContext<Context>({
   spillError: [undefined, () => {}],
 });
 
-export const CodeEditorProvider = ({ children }: { children: React.ReactElement }) => {
-  const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
+export const CodeEditorProvider = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const panelBottomActiveTab = useState<PanelTab>('console');
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -72,22 +70,6 @@ export const CodeEditorProvider = ({ children }: { children: React.ReactElement 
     controllerRef: useRef<AbortController>(null),
   };
 
-  // When the cell being referenced in the code editor changes, we want to reset some state
-  const [, setPanelBottomActiveTab] = panelBottomActiveTab;
-  const {
-    messages: [, setAiMessages],
-  } = aiAssistant;
-  useEffect(() => {
-    setPanelBottomActiveTab('console');
-    setAiMessages([]);
-  }, [
-    editorInteractionState.selectedCell.x,
-    editorInteractionState.selectedCell.y,
-    editorInteractionState.mode,
-    setPanelBottomActiveTab,
-    setAiMessages,
-  ]);
-
   return (
     <CodeEditorContext.Provider
       value={{
@@ -104,7 +86,7 @@ export const CodeEditorProvider = ({ children }: { children: React.ReactElement 
         spillError,
       }}
     >
-      {children}
+      <CodeEditor />
     </CodeEditorContext.Provider>
   );
 };

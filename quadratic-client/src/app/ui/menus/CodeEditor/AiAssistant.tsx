@@ -32,16 +32,13 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
       loading: [loading, setLoading],
       messages: [messages, setMessages],
       controllerRef,
-      // textareaRef,
     },
+    consoleOutput: [consoleOutput],
     editorContent: [editorContent],
   } = useCodeEditor();
   const { isAuthenticated, loggedInUser: user } = useRootRouteLoaderData();
   const { mode } = useRecoilValue(editorInteractionStateAtom);
   const cellType = mode; // TODO: (connections) turn this into a proper string for the cell type, e.g. "Connection:Postgres"
-
-  // TODO: (connections) something was wrong with the types here, this needs to be std_err
-  const stdErr = ''; // evaluationResult?.std_err;
 
   // TODO: Improve these messages. Pass current location and more docs.
   // store in a separate location for different cells
@@ -62,7 +59,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     },
     {
       role: 'system',
-      content: 'If the code was recently run here is the std error:' + stdErr,
+      content: 'If the code was recently run here is the std error:' + (consoleOutput?.stdErr ?? ''),
     },
   ] as AiMessage[];
 
