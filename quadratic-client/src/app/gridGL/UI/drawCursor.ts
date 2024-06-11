@@ -1,9 +1,9 @@
-import { Graphics } from 'pixi.js';
-import { Coordinate } from '../types/size';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '../pixiApp/PixiApp';
-import { intersects } from '../helpers/intersects';
 import { ColumnRowCursor, RectangleLike } from '@/app/grid/sheet/SheetCursor';
+import { Graphics } from 'pixi.js';
+import { intersects } from '../helpers/intersects';
+import { pixiApp } from '../pixiApp/PixiApp';
+import { Coordinate } from '../types/size';
 
 const drawCursorOutline = (g: Graphics, color: number) => {
   const sheet = sheets.sheet;
@@ -48,44 +48,47 @@ export const drawColumnRowCursor = (options: {
   if (columnRow.all) {
     g.drawRect(bounds.x, bounds.y, bounds.width, bounds.height);
     drawCursorHole(g, cursorPosition);
-  } else if (columnRow.columns) {
-    let minX = Infinity,
-      maxX = -Infinity;
-    columnRow.columns.forEach((column) => {
-      const { x, width } = sheet.getCellOffsets(column, 0);
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x + width);
-      g.drawRect(x, bounds.y, width, bounds.height);
-      if (column === cursorPosition.x) {
-        drawCursorHole(g, cursorPosition);
-      }
-    });
+  } else {
+    if (columnRow.columns) {
+      let minX = Infinity,
+        maxX = -Infinity;
+      columnRow.columns.forEach((column) => {
+        const { x, width } = sheet.getCellOffsets(column, 0);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x + width);
+        g.drawRect(x, bounds.y, width, bounds.height);
+        if (column === cursorPosition.x) {
+          drawCursorHole(g, cursorPosition);
+        }
+      });
 
-    // draw outline
-    g.lineStyle(1, color, 1, 0, true);
-    g.moveTo(minX, bounds.top);
-    g.lineTo(minX, bounds.bottom);
-    g.moveTo(maxX, bounds.top);
-    g.lineTo(maxX, bounds.bottom);
-  } else if (columnRow.rows) {
-    let minY = Infinity,
-      maxY = -Infinity;
-    columnRow.rows.forEach((row) => {
-      const { y, height } = sheet.getCellOffsets(0, row);
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y + height);
-      g.drawRect(bounds.x, y, bounds.width, height);
-      if (row === cursorPosition.y) {
-        drawCursorHole(g, cursorPosition);
-      }
-    });
+      // draw outline
+      g.lineStyle(1, color, 1, 0, true);
+      g.moveTo(minX, bounds.top);
+      g.lineTo(minX, bounds.bottom);
+      g.moveTo(maxX, bounds.top);
+      g.lineTo(maxX, bounds.bottom);
+    }
+    if (columnRow.rows) {
+      let minY = Infinity,
+        maxY = -Infinity;
+      columnRow.rows.forEach((row) => {
+        const { y, height } = sheet.getCellOffsets(0, row);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y + height);
+        g.drawRect(bounds.x, y, bounds.width, height);
+        if (row === cursorPosition.y) {
+          drawCursorHole(g, cursorPosition);
+        }
+      });
 
-    // draw outline
-    g.lineStyle(1, color, 1, 0, true);
-    g.moveTo(bounds.left, minY);
-    g.lineTo(bounds.right, minY);
-    g.moveTo(bounds.left, maxY);
-    g.lineTo(bounds.right, maxY);
+      // draw outline
+      g.lineStyle(1, color, 1, 0, true);
+      g.moveTo(bounds.left, minY);
+      g.lineTo(bounds.right, minY);
+      g.moveTo(bounds.left, maxY);
+      g.lineTo(bounds.right, maxY);
+    }
   }
   g.endFill();
   drawCursorOutline(g, color);

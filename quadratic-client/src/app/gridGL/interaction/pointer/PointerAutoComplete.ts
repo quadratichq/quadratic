@@ -236,9 +236,10 @@ export class PointerAutoComplete {
         // update the selection
         const cursor = sheets.sheet.cursor;
         if (newRectangle.width === 1 && newRectangle.height === 1) {
-          cursor.changePosition({});
+          cursor.changePosition({ columnRow: null, multiCursor: null });
         } else {
           sheet.cursor.changePosition({
+            columnRow: null,
             multiCursor: [newRectangle],
             ensureVisible: false,
           });

@@ -201,7 +201,8 @@ class InlineEditorKeyboard {
     const position = { x: location.x, y: location.y };
     editingSheet.cursor.changePosition({
       cursorPosition: position,
-      multiCursor: undefined,
+      multiCursor: null,
+      columnRow: null,
       keyboardMovePosition: position,
     });
     if (sheets.sheet.id !== location.sheetId) {

@@ -85,6 +85,7 @@ export class PointerDown {
           const multiCursor = [...cursor.multiCursor];
           multiCursor[multiCursor.length - 1] = newRectangle;
           cursor.changePosition({
+            columnRow: event.metaKey || event.ctrlKey ? undefined : null,
             keyboardMovePosition: { x: column, y: row },
             multiCursor,
           });
@@ -132,11 +133,16 @@ export class PointerDown {
     cursor.changePosition({
       keyboardMovePosition: { x: column, y: row },
       cursorPosition: { x: column, y: row },
+      multiCursor:
+        (event.metaKey || event.ctrlKey) && cursor.multiCursor
+          ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1)
+          : null,
+      columnRow: event.metaKey || event.ctrlKey ? cursor.columnRow : null,
     });
     this.pointerMoved = false;
   }
 
-  pointerMove(world: Point): void {
+  pointerMove(world: Point, event: PointerEvent): void {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return;
 
     if (!this.active) return;
@@ -165,11 +171,14 @@ export class PointerDown {
     // calculate mouse move position
     const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
 
+    const columnRow = event.metaKey || event.ctrlKey ? undefined : null;
+
     // cursor start and end in the same cell
     if (column === this.position.x && row === this.position.y) {
       // hide multi cursor when only selecting one cell
       if (cursor.multiCursor && cursor.multiCursor.length === 1) {
         cursor.changePosition({
+          columnRow,
           keyboardMovePosition: { x: this.position.x, y: this.position.y },
           cursorPosition: { x: this.position.x, y: this.position.y },
         });
@@ -197,6 +206,7 @@ export class PointerDown {
         const multiCursor = cursor.multiCursor ? cursor.multiCursor.slice(0, cursor.multiCursor.length - 1) : [];
         multiCursor.push(new Rectangle(originX, originY, termX - originX + 1, termY - originY + 1));
         cursor.changePosition({
+          columnRow,
           keyboardMovePosition: { x: column, y: row },
           cursorPosition: { x: this.position.x, y: this.position.y },
           multiCursor,

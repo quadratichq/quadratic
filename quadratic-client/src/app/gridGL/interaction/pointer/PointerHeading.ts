@@ -138,20 +138,24 @@ export class PointerHeading {
           const columns = cursor.columnRow?.columns || [];
           if (event.shiftKey) {
             if (columns.length === 0) {
-              selectColumns([column]);
+              selectColumns([column], undefined, true);
             } else {
               const lastColumn = columns[columns.length - 1];
               if (lastColumn < column) {
-                selectColumns([...columns, ...fillArray(lastColumn + 1, column)]);
+                selectColumns([...columns, ...fillArray(lastColumn + 1, column)], undefined, true);
               } else {
-                selectColumns([...columns, ...fillArray(column, lastColumn - 1)]);
+                selectColumns([...columns, ...fillArray(column, lastColumn - 1)], undefined, true);
               }
             }
           } else {
             if (columns.includes(column)) {
-              selectColumns(columns.filter((c) => c !== column));
+              selectColumns(
+                columns.filter((c) => c !== column),
+                undefined,
+                true
+              );
             } else {
-              selectColumns([...columns, column]);
+              selectColumns([...columns, column], undefined, true);
             }
           }
         } else if (intersects.row !== undefined) {
@@ -159,20 +163,24 @@ export class PointerHeading {
           const rows = cursor.columnRow?.rows || [];
           if (event.shiftKey) {
             if (rows.length === 0) {
-              selectRows([row]);
+              selectRows([row], undefined, true);
             } else {
               const lastRow = rows[rows.length - 1];
               if (lastRow < row) {
-                selectRows([...rows, ...fillArray(lastRow + 1, row)]);
+                selectRows([...rows, ...fillArray(lastRow + 1, row)], undefined, true);
               } else {
-                selectRows([...rows, ...fillArray(row, lastRow - 1)]);
+                selectRows([...rows, ...fillArray(row, lastRow - 1)], undefined, true);
               }
             }
           } else {
             if (rows.includes(row)) {
-              selectRows(rows.filter((c) => c !== row));
+              selectRows(
+                rows.filter((c) => c !== row),
+                undefined,
+                true
+              );
             } else {
-              selectRows([...rows, row]);
+              selectRows([...rows, row], undefined, true);
             }
           }
         }

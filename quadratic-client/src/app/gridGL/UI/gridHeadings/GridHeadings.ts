@@ -261,6 +261,7 @@ export class GridHeadings extends Container {
       (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     this.rowWidth = Math.max(this.rowWidth, CELL_HEIGHT / viewport.scale.x);
 
+    // draw background of vertical bar
     this.headingsGraphics.lineStyle(0);
     this.headingsGraphics.beginFill(colors.headerBackgroundColor);
     this.columnRect = new Rectangle(bounds.left, bounds.top, this.rowWidth, bounds.height);
@@ -273,7 +274,6 @@ export class GridHeadings extends Container {
       this.headingsGraphics.beginFill(colors.headerSelectedRowColumnBackgroundColor);
       this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, bounds.height);
       this.headingsGraphics.endFill();
-      return 'all';
     }
 
     // dark fill headings if there is a columnRow selection
@@ -284,7 +284,6 @@ export class GridHeadings extends Container {
         this.headingsGraphics.drawRect(bounds.left, offset.position, this.rowWidth, offset.size);
       });
       this.headingsGraphics.endFill();
-      return cursor.columnRow.rows;
     }
 
     // if we're selecting columns, then show all rows as selected
@@ -292,11 +291,10 @@ export class GridHeadings extends Container {
       this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
       this.headingsGraphics.drawRect(bounds.left, bounds.top, this.rowWidth, bounds.height);
       this.headingsGraphics.endFill();
-      return 'all';
     }
 
     // selected cells based on multiCursor
-    else if (cursor.multiCursor) {
+    if (cursor.multiCursor) {
       const selectedRows = new Set<number>();
       this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
       cursor.multiCursor.forEach((rectangle) => {
@@ -317,7 +315,7 @@ export class GridHeadings extends Container {
     }
 
     // otherwise selected cursor is cursorPosition
-    else {
+    if (!cursor.multiCursor && !cursor.columnRow) {
       const offset = offsets.getRowPlacement(cursor.cursorPosition.y);
       this.headingsGraphics.beginFill(colors.headerSelectedBackgroundColor);
       this.headingsGraphics.drawRect(bounds.left, offset.position, this.rowWidth, offset.size);

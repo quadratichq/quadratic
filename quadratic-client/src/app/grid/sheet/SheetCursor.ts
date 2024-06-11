@@ -104,10 +104,12 @@ export class SheetCursor {
     pixiApp.cursor.dirty = true;
   }
 
+  // Changes the cursor position. If multiCursor or columnRow is set to null,
+  // then it will be cleared.
   changePosition(
     options: {
-      multiCursor?: Rectangle[];
-      columnRow?: ColumnRowCursor;
+      multiCursor?: Rectangle[] | null;
+      columnRow?: ColumnRowCursor | null;
       cursorPosition?: Coordinate;
       keyboardMovePosition?: Coordinate;
       ensureVisible?: boolean;
@@ -116,14 +118,16 @@ export class SheetCursor {
   ) {
     if (options.columnRow) {
       this.columnRow = options.columnRow;
-      this.multiCursor = undefined;
-    } else if (options.multiCursor) {
-      this.multiCursor = options.multiCursor;
-      this.columnRow = undefined;
-    } else {
-      this.multiCursor = undefined;
+    } else if (options.columnRow === null) {
       this.columnRow = undefined;
     }
+
+    if (options.multiCursor) {
+      this.multiCursor = options.multiCursor;
+    } else if (options.multiCursor === null) {
+      this.multiCursor = undefined;
+    }
+
     if (options.cursorPosition) {
       this.cursorPosition = options.cursorPosition;
       this.keyboardMovePosition = options.keyboardMovePosition ?? this.cursorPosition;

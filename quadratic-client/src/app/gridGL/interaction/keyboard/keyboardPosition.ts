@@ -266,6 +266,7 @@ function handleShiftKey(deltaX: number, deltaY: number) {
   lastMultiCursor.width = Math.abs(newMovePosition.x - downPosition.x) + 1;
   lastMultiCursor.height = Math.abs(newMovePosition.y - downPosition.y) + 1;
   cursor.changePosition({
+    columnRow: null,
     multiCursor,
     keyboardMovePosition: newMovePosition,
   });
@@ -278,6 +279,8 @@ function handleNormal(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
   const newPos = { x: cursor.cursorPosition.x + deltaX, y: cursor.cursorPosition.y + deltaY };
   cursor.changePosition({
+    columnRow: null,
+    multiCursor: null,
     keyboardMovePosition: newPos,
     cursorPosition: newPos,
   });

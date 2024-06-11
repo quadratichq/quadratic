@@ -16,17 +16,19 @@ export function selectAllCells() {
     const bounds = sheet.getBounds(true);
     if (bounds) {
       cursor.changePosition({
+        columnRow: null,
         multiCursor: [new Rectangle(bounds.left, bounds.top, bounds.right, bounds.bottom)],
         cursorPosition: { x: bounds.left, y: bounds.top },
       });
     } else {
       cursor.changePosition({
-        multiCursor: undefined,
+        columnRow: null,
+        multiCursor: null,
         cursorPosition: { x: 0, y: 0 },
       });
     }
   } else {
-    cursor.changePosition({ columnRow: { all: true } });
+    cursor.changePosition({ columnRow: { all: true }, multiCursor: null });
   }
 }
 
@@ -36,15 +38,18 @@ export function selectAllCells() {
  * @param column if column is set, then that column is used as the cursor
  * position, otherwise it uses the last entry in columns
  */
-export async function selectColumns(columns: number[], column = columns[columns.length - 1]) {
+export async function selectColumns(columns: number[], column = columns[columns.length - 1], keepExisting = false) {
   // remove duplicates
   columns = columns.filter((item, pos) => columns.indexOf(item) === pos);
 
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
 
+  const multiCursor = keepExisting ? cursor?.multiCursor : null;
+  const rows = keepExisting ? cursor.columnRow?.rows : undefined;
+
   if (columns.length === 0) {
-    cursor.changePosition({ columnRow: undefined });
+    cursor.changePosition({ columnRow: rows ? { rows } : null, multiCursor });
     return;
   }
 
@@ -56,18 +61,21 @@ export async function selectColumns(columns: number[], column = columns[columns.
   } else {
     row = getVisibleTopRow();
   }
-  cursor.changePosition({ columnRow: { columns }, cursorPosition: { x: column, y: row } });
+  cursor.changePosition({ columnRow: { columns, rows }, cursorPosition: { x: column, y: row }, multiCursor });
 }
 
-export async function selectRows(rows: number[], row = rows[rows.length - 1]) {
+export async function selectRows(rows: number[], row = rows[rows.length - 1], keepExisting = false) {
   // remove duplicates
   rows = rows.filter((item, pos) => rows.indexOf(item) === pos);
 
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
 
+  const multiCursor = keepExisting ? cursor.multiCursor : null;
+  const columns = keepExisting ? cursor.columnRow?.columns : undefined;
+
   if (rows.length === 0) {
-    cursor.changePosition({ columnRow: undefined });
+    cursor.changePosition({ columnRow: columns ? { columns } : null, multiCursor });
     return;
   }
 
@@ -80,5 +88,5 @@ export async function selectRows(rows: number[], row = rows[rows.length - 1]) {
     column = getVisibleLeftColumn();
   }
 
-  cursor.changePosition({ columnRow: { rows }, cursorPosition: { x: column, y: row } });
+  cursor.changePosition({ columnRow: { rows, columns }, cursorPosition: { x: column, y: row }, multiCursor });
 }

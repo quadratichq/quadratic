@@ -385,6 +385,8 @@ class InlineEditorHandler {
     if (deltaX || deltaY) {
       const position = sheets.sheet.cursor.cursorPosition;
       sheets.sheet.cursor.changePosition({
+        multiCursor: null,
+        columnRow: null,
         cursorPosition: {
           x: position.x + deltaX,
           y: position.y + deltaY,
