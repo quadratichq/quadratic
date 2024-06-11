@@ -31,7 +31,7 @@ export default defineConfig(() => {
   return {
     build: {
       outDir: '../build',
-      sourcemap: process.env.VERCEL_ENV !== 'preview', // Source map generation must be turned on
+      sourcemap: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true', // Source map generation must be turned on
     },
     publicDir: './public',
     assetsInclude: ['**/*.py'],
@@ -39,7 +39,7 @@ export default defineConfig(() => {
       port: 3000,
     },
     resolve: {
-      preserveSymlinks: process.env.VERCEL_ENV !== 'preview',
+      preserveSymlinks: process.env.VERCEL_ENV !== 'preview' || process.env.VITEST !== 'true',
       alias: {
         '@': path.resolve(__dirname, './src'),
       },

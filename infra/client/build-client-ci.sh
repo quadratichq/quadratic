@@ -38,4 +38,4 @@ npm run build --workspace=quadratic-rust-client
 
 echo 'Building front-end...'
 npm ci
-npm run build --workspace=quadratic-client
+npm run build:prod --workspace=quadratic-client
