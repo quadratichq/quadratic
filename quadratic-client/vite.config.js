@@ -39,7 +39,7 @@ export default defineConfig(() => {
       port: 3000,
     },
     resolve: {
-      preserveSymlinks: true,
+      preserveSymlinks: process.env.VERCEL_ENV !== 'preview',
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
