@@ -209,7 +209,7 @@ where
                             map_local_result(Utc.timestamp_millis_opt((*v).into()))?.format(format)
                         }
                         TimeUnit::Second => {
-                            map_local_result(Utc.timestamp_opt((*v).into(), 0))?.format(format)
+                            map_local_result(Utc.timestamp_millis_opt((*v).into()))?.format(format)
                         }
                     };
 
