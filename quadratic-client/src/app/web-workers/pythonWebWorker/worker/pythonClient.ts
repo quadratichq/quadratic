@@ -10,6 +10,11 @@ import { pythonCore } from './pythonCore';
 
 declare var self: WorkerGlobalScope & typeof globalThis & {};
 
+// Any public functions need to be added to the python.test.ts mock:
+//
+// ```ts
+// vi.mock('./pythonClient.ts', () => {
+// ```
 class PythonClient {
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
