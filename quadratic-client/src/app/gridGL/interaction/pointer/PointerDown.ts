@@ -102,7 +102,7 @@ export class PointerDown {
     if (!this.active && (event.metaKey || event.ctrlKey)) {
       const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
-        const multiCursor = cursor.multiCursor ?? [];
+        const multiCursor = cursor.multiCursor ?? [new Rectangle(cursorPosition.x, cursorPosition.y, 1, 1)];
         multiCursor.push(new Rectangle(column, row, 1, 1));
         cursor.changePosition({
           cursorPosition: { x: column, y: row },
