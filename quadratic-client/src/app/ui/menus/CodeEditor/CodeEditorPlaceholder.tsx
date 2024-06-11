@@ -12,7 +12,10 @@ export function CodeEditorPlaceholder({
 }) {
   const [showPlaceholder, setShowPlaceholder] = useLocalStorage<boolean>('showCodeEditorPlaceholder', true);
   const [shouldRunEffect, setShouldRunEffect] = useState<boolean>(false);
-  const { editorRef, setShowSnippetsPopover } = useCodeEditor();
+  const {
+    editorRef,
+    showSnippetsPopover: [, setShowSnippetsPopover],
+  } = useCodeEditor();
 
   // When the user chooses to autofill the editor with a predefined snippet,
   // focus the editor and set the initial cursor position

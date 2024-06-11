@@ -10,6 +10,11 @@ const codeCellsById = {
 export type CodeCellIds = keyof typeof codeCellsById;
 // type CodeCell = (typeof codeCellsById)[CodeCellIds];
 
+export const codeCellIsAConnection = (language?: CodeCellLanguage) => {
+  const cell = getCodeCell(language);
+  return cell && 'type' in cell && cell.type === 'connection';
+};
+
 export const getCodeCell = (language?: CodeCellLanguage) => {
   let id: CodeCellIds | undefined = undefined;
   if (typeof language === 'string') {
