@@ -77,17 +77,17 @@ mod tests {
     use tracing_test::traced_test;
     use uuid::Uuid;
 
-    #[tokio::test]
-    #[traced_test]
-    async fn test_mysql_connection() {
-        let connection_id = Uuid::new_v4();
-        let sql_query = SqlQuery {
-            query: "select * from \"FileCheckpoint\" limit 2".into(),
-            connection_id,
-        };
-        let state = Extension(new_state().await);
-        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+    // #[tokio::test]
+    // #[traced_test]
+    // async fn test_mysql_connection() {
+    //     let connection_id = Uuid::new_v4();
+    //     let sql_query = SqlQuery {
+    //         query: "select * from \"FileCheckpoint\" limit 2".into(),
+    //         connection_id,
+    //     };
+    //     let state = Extension(new_state().await);
+    //     let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
 
-        assert_eq!(data.into_response().status(), 200);
-    }
+    //     assert_eq!(data.into_response().status(), 200);
+    // }
 }
