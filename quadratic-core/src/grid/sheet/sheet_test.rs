@@ -8,6 +8,9 @@ impl Sheet {
         use bigdecimal::BigDecimal;
         use std::str::FromStr;
 
+        if s.is_empty() {
+            return;
+        }
         let value = if let Ok(bd) = BigDecimal::from_str(s) {
             CellValue::Number(bd)
         } else {
@@ -27,7 +30,10 @@ impl Sheet {
         );
         for xx in 0..w {
             for yy in 0..h {
-                self.test_set_value_number(x + xx, y + yy, s[(yy * w + xx) as usize]);
+                let value = s[(yy * w + xx) as usize];
+                if !value.is_empty() {
+                    self.test_set_value_number(x + xx, y + yy, value);
+                }
             }
         }
     }
@@ -259,5 +265,12 @@ mod tests {
             sheet.display_value(Pos { x: 0, y: 0 }),
             Some(CellValue::Number(BigDecimal::from_str("11").unwrap()))
         );
+    }
+
+    #[test]
+    fn test_set_cell_number_empty() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_value_number(0, 0, "");
+        assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
     }
 }

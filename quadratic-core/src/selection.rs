@@ -112,14 +112,14 @@ impl Selection {
     }
 
     /// Returns whether a position is located inside a selection.
-    pub fn pos_in_selection(&self, selection: &Selection, pos: Pos) -> bool {
-        if selection.all {
+    pub fn pos_in_selection(&self, pos: Pos) -> bool {
+        if self.all {
             true
-        } else if let Some(columns) = selection.columns.as_ref() {
+        } else if let Some(columns) = self.columns.as_ref() {
             columns.contains(&pos.x)
-        } else if let Some(rows) = selection.rows.as_ref() {
+        } else if let Some(rows) = self.rows.as_ref() {
             rows.contains(&pos.y)
-        } else if let Some(rects) = selection.rects.as_ref() {
+        } else if let Some(rects) = self.rects.as_ref() {
             rects.iter().any(|rect| rect.contains(pos))
         } else {
             false
@@ -347,31 +347,31 @@ mod test {
             all: true,
             ..Default::default()
         };
-        assert!(selection.pos_in_selection(&selection, Pos { x: 0, y: 0 }));
+        assert!(selection.pos_in_selection(Pos { x: 0, y: 0 }));
 
         let selection = Selection {
             sheet_id,
             rows: Some(vec![1, 2, 3]),
             ..Default::default()
         };
-        assert!(selection.pos_in_selection(&selection, Pos { x: 0, y: 1 }));
-        assert!(!selection.pos_in_selection(&selection, Pos { x: 0, y: 4 }));
+        assert!(selection.pos_in_selection(Pos { x: 0, y: 1 }));
+        assert!(!selection.pos_in_selection(Pos { x: 0, y: 4 }));
 
         let selection = Selection {
             sheet_id,
             columns: Some(vec![1, 2, 3]),
             ..Default::default()
         };
-        assert!(selection.pos_in_selection(&selection, Pos { x: 2, y: 0 }));
-        assert!(!selection.pos_in_selection(&selection, Pos { x: 4, y: 0 }));
+        assert!(selection.pos_in_selection(Pos { x: 2, y: 0 }));
+        assert!(!selection.pos_in_selection(Pos { x: 4, y: 0 }));
 
         let selection = Selection {
             sheet_id,
             rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
             ..Default::default()
         };
-        assert!(selection.pos_in_selection(&selection, Pos { x: 1, y: 2 }));
-        assert!(!selection.pos_in_selection(&selection, Pos { x: 4, y: 4 }));
+        assert!(selection.pos_in_selection(Pos { x: 1, y: 2 }));
+        assert!(!selection.pos_in_selection(Pos { x: 4, y: 4 }));
     }
 
     #[test]
