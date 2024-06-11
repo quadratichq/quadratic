@@ -69,6 +69,7 @@ impl GridController {
                         let new_has_wrap =
                             wrap.iter_values().any(|val| val == &Some(CellWrap::Wrap));
 
+                        // auto resize row heights when text wrapping changes
                         if old_has_wrap || new_has_wrap {
                             self.start_auto_resize_row_heights(transaction, &sheet_rect, true);
                         }

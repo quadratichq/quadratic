@@ -1,4 +1,5 @@
 use crate::color::Rgba;
+use crate::grid::resize::{Resize, ResizeMap};
 use crate::grid::{
     block::SameValue,
     file::v1_5::schema::{self as current},
@@ -317,6 +318,21 @@ fn import_code_cell_builder(sheet: &current::Sheet) -> Result<IndexMap<Pos, Code
     Ok(code_runs)
 }
 
+pub fn import_rows_size(row_sizes: &[(i64, current::Resize)]) -> Result<ResizeMap> {
+    row_sizes
+        .iter()
+        .try_fold(ResizeMap::default(), |mut sizes, (y, size)| {
+            sizes.set_resize(
+                *y,
+                match size {
+                    current::Resize::Auto => Resize::Auto,
+                    current::Resize::Manual => Resize::Manual,
+                },
+            );
+            Ok(sizes)
+        })
+}
+
 pub fn import(file: current::GridSchema) -> Result<Grid> {
     Ok(Grid {
         sheets: file
@@ -335,6 +351,7 @@ pub fn import(file: current::GridSchema) -> Result<Grid> {
                     code_runs: import_code_cell_builder(&sheet)?,
                     data_bounds: GridBounds::Empty,
                     format_bounds: GridBounds::Empty,
+                    rows_resize: import_rows_size(&sheet.rows_resize)?,
                 };
                 new_sheet.recalculate_bounds();
                 import_borders_builder(&mut new_sheet, &mut sheet);
@@ -608,6 +625,22 @@ fn export_borders_builder(sheet: &Sheet) -> current::Borders {
         .collect()
 }
 
+pub fn export_rows_size(sheet: &Sheet) -> Vec<(i64, current::Resize)> {
+    sheet
+        .rows_resize
+        .iter_resize()
+        .map(|(y, size)| {
+            (
+                y,
+                match size {
+                    Resize::Auto => current::Resize::Auto,
+                    Resize::Manual => current::Resize::Manual,
+                },
+            )
+        })
+        .collect()
+}
+
 pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
     Ok(current::GridSchema {
         version: Some(CURRENT_VERSION.into()),
@@ -680,6 +713,7 @@ pub fn export(grid: &mut Grid) -> Result<current::GridSchema> {
                         )
                     })
                     .collect(),
+                rows_resize: export_rows_size(sheet),
             })
             .collect(),
     })

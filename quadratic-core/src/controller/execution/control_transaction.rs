@@ -150,25 +150,19 @@ impl GridController {
         sheet_rect: &SheetRect,
         all_cells: bool,
     ) {
-        if !cfg!(target_family = "wasm") || cfg!(test) {
+        if !cfg!(target_family = "wasm") || cfg!(test) || !transaction.is_user() {
             return;
         }
 
-        if transaction.is_user() {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-                let cells = if all_cells {
-                    sheet_rect.to_cells()
-                } else {
-                    sheet.get_wrapped_cells(sheet_rect.to_rect())
-                };
-                if let Ok(cells) = serde_json::to_string(&cells) {
-                    crate::wasm_bindings::js::jsRequestRowHeights(
-                        sheet_rect.sheet_id.to_string(),
-                        cells,
-                        transaction.id.to_string(),
-                    );
-                    transaction.has_async = true;
-                }
+        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+            let auto_resize_cells = sheet.get_auto_resize_cells(sheet_rect, all_cells);
+            if let Ok(cells_string) = serde_json::to_string(&auto_resize_cells) {
+                crate::wasm_bindings::js::jsRequestRowHeights(
+                    sheet_rect.sheet_id.to_string(),
+                    cells_string,
+                    transaction.id.to_string(),
+                );
+                transaction.has_async = true;
             }
         }
     }

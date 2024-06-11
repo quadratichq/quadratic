@@ -196,6 +196,8 @@ class InlineEditorHandler {
         this.location.x,
         this.location.y
       );
+      this.temporaryBold = this.formatSummary?.bold || undefined;
+      this.temporaryItalic = this.formatSummary?.italic || undefined;
       this.renderCell = await quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y);
 
       inlineEditorMonaco.setBackgroundColor(

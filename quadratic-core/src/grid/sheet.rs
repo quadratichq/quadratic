@@ -11,10 +11,11 @@ use super::column::Column;
 use super::formatting::{BoolSummary, CellFmtAttr};
 use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, FormattingSummary};
+use super::resize::{Resize, ResizeMap};
 use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::sheet_offsets::SheetOffsets;
-use crate::{Array, CellValue, IsBlank, Pos, Rect};
+use crate::{Array, CellValue, IsBlank, Pos, Rect, SheetRect};
 
 pub mod bounds;
 pub mod cell_array;
@@ -45,6 +46,8 @@ pub struct Sheet {
 
     // bounds for the gird with only formatting
     pub(super) format_bounds: GridBounds,
+
+    pub(super) rows_resize: ResizeMap,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -55,14 +58,18 @@ impl Sheet {
             color: None,
             order,
 
+            offsets: SheetOffsets::default(),
+
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
+
             code_runs: IndexMap::new(),
 
             data_bounds: GridBounds::Empty,
+
             format_bounds: GridBounds::Empty,
 
-            offsets: SheetOffsets::default(),
+            rows_resize: ResizeMap::default(),
         }
     }
 
@@ -361,6 +368,39 @@ impl Sheet {
         } else {
             None
         }
+    }
+
+    pub fn get_row_resize(&self, row: i64) -> Resize {
+        self.rows_resize.get_resize(row)
+    }
+
+    pub fn set_row_resize(&mut self, row: i64, resize: Resize) -> Resize {
+        self.rows_resize.set_resize(row, resize)
+    }
+
+    pub fn update_row_resize(&mut self, row: i64, client_resized: bool) -> bool {
+        let resize = if client_resized {
+            Resize::Manual
+        } else {
+            Resize::Auto
+        };
+        let old_client_resized = self.rows_resize.set_resize(row, resize);
+        old_client_resized == Resize::Manual
+    }
+
+    pub fn get_auto_resize_cells(&self, sheet_rect: &SheetRect, all_cells: bool) -> Vec<Pos> {
+        let rect_cells = if all_cells {
+            sheet_rect.to_cells()
+        } else {
+            self.get_wrapped_cells(sheet_rect.to_rect())
+        };
+        let mut auto_resize_cells = Vec::<Pos>::new();
+        rect_cells.iter().for_each(|pos| {
+            if self.get_row_resize(pos.y) == Resize::Auto {
+                auto_resize_cells.push(*pos);
+            }
+        });
+        auto_resize_cells
     }
 }
 

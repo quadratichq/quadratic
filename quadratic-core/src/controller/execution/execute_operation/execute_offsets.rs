@@ -61,14 +61,18 @@ impl GridController {
                             sheet_id,
                         };
                         self.send_render_cells(&sheet_rect);
+
+                        // auto resize row heights when cell width changes
                         self.start_auto_resize_row_heights(transaction, &sheet_rect, false);
                     }
                 }
             }
 
             if cfg!(target_family = "wasm") || cfg!(test) {
-                // send resize operation to js if multiplayer or not client resized
-                if transaction.is_multiplayer() || (!client_resized && !transaction.is_server()) {
+                if transaction.is_undo_redo()
+                    || transaction.is_multiplayer()
+                    || (!client_resized && !transaction.is_server())
+                {
                     crate::wasm_bindings::js::jsOffsetsModified(
                         sheet_id.to_string(),
                         Some(column),
@@ -98,7 +102,9 @@ impl GridController {
                 new_size,
                 client_resized,
             });
+
             let old_size = sheet.offsets.set_row_height(row, new_size);
+            let old_client_resize = sheet.update_row_resize(row, client_resized);
 
             transaction.reverse_operations.insert(
                 0,
@@ -106,7 +112,7 @@ impl GridController {
                     sheet_id,
                     row,
                     new_size: old_size,
-                    client_resized: false,
+                    client_resized: old_client_resize,
                 },
             );
 
@@ -136,8 +142,10 @@ impl GridController {
             }
 
             if cfg!(target_family = "wasm") || cfg!(test) {
-                // send resize operation to js if multiplayer or not client resized
-                if transaction.is_multiplayer() || (!client_resized && !transaction.is_server()) {
+                if transaction.is_undo_redo()
+                    || transaction.is_multiplayer()
+                    || (!client_resized && !transaction.is_server())
+                {
                     crate::wasm_bindings::js::jsOffsetsModified(
                         sheet_id.to_string(),
                         None,

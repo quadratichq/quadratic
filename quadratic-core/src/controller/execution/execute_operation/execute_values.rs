@@ -62,6 +62,8 @@ impl GridController {
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
                         self.send_render_cells(&sheet_rect);
+
+                        // auto resize row heights when cell value changes
                         self.start_auto_resize_row_heights(transaction, &sheet_rect, false);
                     }
                 }

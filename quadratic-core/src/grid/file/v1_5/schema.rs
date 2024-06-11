@@ -104,6 +104,18 @@ pub struct Sheet {
     pub columns: Vec<(i64, Column)>,
     pub borders: Borders,
     pub code_runs: Vec<(Pos, CodeRun)>,
+
+    // The following skips are necessary since we're adding it mid-version. Next
+    // version we should remove them.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub rows_resize: Vec<(i64, Resize)>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Resize {
+    #[default]
+    Auto,
+    Manual,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

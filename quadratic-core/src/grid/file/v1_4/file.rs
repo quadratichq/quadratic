@@ -314,6 +314,7 @@ fn upgrade_sheet(sheet: &v1_4::Sheet) -> v1_5::Sheet {
         columns: upgrade_columns(sheet),
         borders: upgrade_borders(sheet),
         code_runs: upgrade_code_runs(sheet),
+        rows_resize: vec![],
     }
 }
 
