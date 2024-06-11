@@ -24,7 +24,7 @@ pub(crate) async fn axum_to_reqwest(
     let method = Method::from_bytes(method_bytes).map_err(proxy_error)?;
 
     let mut headers = reqwest::header::HeaderMap::with_capacity(req.headers().len());
-    let headers_to_ignore = vec!["host", PROXY_HEADER, "authorization"];
+    let headers_to_ignore = ["host", PROXY_HEADER, "authorization"];
 
     for (name, value) in req
         .headers()

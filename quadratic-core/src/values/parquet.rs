@@ -32,7 +32,7 @@ pub fn parquet_to_vec(file: Vec<u8>) -> Result<Vec<Vec<CellValue>>> {
 
         for col_index in 0..num_cols {
             let col = batch.column(col_index);
-            let values = arrow_col_to_cell_value_vec(col);
+            let values = arrow_col_to_cell_value_vec(col)?;
 
             for (index, value) in values.into_iter().enumerate() {
                 let new_row_index = (row_index * num_rows) + index + 1;

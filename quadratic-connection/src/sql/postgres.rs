@@ -83,7 +83,7 @@ mod tests {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
             query: "select * from \"FileCheckpoint\" limit 2".into(),
-            connection_id: connection_id.clone(),
+            connection_id,
         };
         let state = Extension(new_state().await);
         let data = query(state, get_claims(), Json(sql_query)).await.unwrap();

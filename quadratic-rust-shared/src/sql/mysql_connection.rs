@@ -204,11 +204,11 @@ mod tests {
             .unwrap();
 
         for row in &rows {
-            for (index, col) in row.columns().into_iter().enumerate() {
-                let value = MySqlConnection::to_arrow(&row, col, index);
+            for (index, col) in row.columns().iter().enumerate() {
+                let value = MySqlConnection::to_arrow(row, col, index);
                 println!(
                     "{} ({}) = {:?}",
-                    col.name().to_string(),
+                    col.name(),
                     col.type_info().name(),
                     value
                 );
