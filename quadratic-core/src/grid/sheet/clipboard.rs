@@ -222,32 +222,40 @@ impl Sheet {
 
         let formats = self.get_all_cell_formats(sheet_rect);
         let borders = get_cell_borders_in_rect(self, sheet_rect.into());
-        let origin = if selection.has_sheet_selection() {
-            if selection.all {
-                Some(ClipboardOrigin {
-                    all: Some((sheet_rect.min.x, sheet_rect.min.y)),
-                    column: None,
-                    row: None,
-                })
-            } else if selection.columns.is_some() {
-                // we need the row origin when columns are selected
-                Some(ClipboardOrigin {
-                    all: None,
-                    column: None,
-                    row: Some(sheet_rect.min.y),
-                })
-            } else
-            /* // if selection.rows.is_some() */
-            {
-                // we need the column origin when rows are selected
-                Some(ClipboardOrigin {
-                    all: None,
-                    column: Some(sheet_rect.min.x),
-                    row: None,
-                })
+        let origin = if selection.all {
+            ClipboardOrigin {
+                x: sheet_rect.min.x,
+                y: sheet_rect.min.y,
+                all: Some((sheet_rect.min.x, sheet_rect.min.y)),
+                column: None,
+                row: None,
+            }
+        } else if selection.columns.is_some() {
+            // we need the row origin when columns are selected
+            ClipboardOrigin {
+                x: sheet_rect.min.x,
+                y: sheet_rect.min.y,
+                all: None,
+                column: None,
+                row: Some(sheet_rect.min.y),
+            }
+        } else if selection.rows.is_some() {
+            // we need the column origin when rows are selected
+            ClipboardOrigin {
+                x: sheet_rect.min.x,
+                y: sheet_rect.min.y,
+                all: None,
+                column: Some(sheet_rect.min.x),
+                row: None,
             }
         } else {
-            None
+            ClipboardOrigin {
+                x: sheet_rect.min.x,
+                y: sheet_rect.min.y,
+                all: None,
+                column: None,
+                row: None,
+            }
         };
         let clipboard = Clipboard {
             cells,

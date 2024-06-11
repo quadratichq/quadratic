@@ -27,6 +27,8 @@ pub enum PasteSpecial {
 /// on top of another column, or a sheet on top of another sheet.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClipboardOrigin {
+    pub x: i64,
+    pub y: i64,
     pub column: Option<i64>,
     pub row: Option<i64>,
     pub all: Option<(i64, i64)>,
@@ -44,7 +46,7 @@ pub struct Clipboard {
     pub formats: Vec<CellFmtArray>,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
 
-    pub origin: Option<ClipboardOrigin>,
+    pub origin: ClipboardOrigin,
     pub selection: Option<Selection>,
 }
 
@@ -109,52 +111,52 @@ impl GridController {
             x: selection.x,
             y: selection.y,
         };
-
-        let cursor: Option<Operation> = if let Some(selection) = clipboard.selection.as_ref() {
-            Some(Operation::SetCursorSelection {
-                selection: selection.translate(start_pos),
-            })
-        } else {
-            None
-        };
+        let cursor: Option<Operation> =
+            if let Some(clipboard_selection) = clipboard.selection.as_ref() {
+                Some(Operation::SetCursorSelection {
+                    selection: clipboard_selection.translate(
+                        selection.x - clipboard.origin.x,
+                        selection.y - clipboard.origin.y,
+                    ),
+                })
+            } else {
+                None
+            };
 
         // clear the sheet first
         ops.extend(self.clear_format_selection_operations(selection));
 
-        // adjust start_pos based on ClipboardOrigin special cases
-        if let Some(clipboard_origin) = clipboard.origin.as_ref() {
-            // we paste the entire sheet over the existing sheet
-            if let Some((x, y)) = clipboard_origin.all {
-                // set the start_pos to the origin of the clipboard for the
-                // copied sheet
-                start_pos.x = x;
-                start_pos.y = y;
-            } else if let Some(column_origin) = clipboard_origin.column {
-                ops.extend(self.clear_format_selection_operations(selection));
-                start_pos.x = column_origin;
-                // cursor = Some(Operation::SetCursorSelection {
-                //     selection: Selection {
-                //         x: selection.x,
-                //         y: selection.y,
-                //         sheet_id: selection.sheet_id,
-                //         columns: None,
-                //         rows: Some(vec![selection.y]),
-                //         ..Default::default()
-                //     },
-                // });
-            } else if let Some(row_origin) = clipboard_origin.row {
-                start_pos.y = row_origin;
-                // cursor = Some(Operation::SetCursorSelection {
-                //     selection: Selection {
-                //         x: selection.x,
-                //         y: selection.y,
-                //         sheet_id: selection.sheet_id,
-                //         columns: Some(vec![selection.x]),
-                //         rows: None,
-                //         ..Default::default()
-                //     },
-                // });
-            }
+        // we paste the entire sheet over the existing sheet
+        if let Some((x, y)) = clipboard.origin.all {
+            // set the start_pos to the origin of the clipboard for the
+            // copied sheet
+            start_pos.x = x;
+            start_pos.y = y;
+        } else if let Some(column_origin) = clipboard.origin.column {
+            ops.extend(self.clear_format_selection_operations(selection));
+            start_pos.x = column_origin;
+            // cursor = Some(Operation::SetCursorSelection {
+            //     selection: Selection {
+            //         x: selection.x,
+            //         y: selection.y,
+            //         sheet_id: selection.sheet_id,
+            //         columns: None,
+            //         rows: Some(vec![selection.y]),
+            //         ..Default::default()
+            //     },
+            // });
+        } else if let Some(row_origin) = clipboard.origin.row {
+            start_pos.y = row_origin;
+            // cursor = Some(Operation::SetCursorSelection {
+            //     selection: Selection {
+            //         x: selection.x,
+            //         y: selection.y,
+            //         sheet_id: selection.sheet_id,
+            //         columns: Some(vec![selection.x]),
+            //         rows: None,
+            //         ..Default::default()
+            //     },
+            // });
         }
 
         match special {
@@ -252,30 +254,34 @@ impl GridController {
             }
         }
 
-        // set the cursor based on the type of paste
-        if clipboard.origin.as_ref().is_some_and(|o| o.all.is_some()) {
-            ops.push(Operation::SetCursorSelection {
-                selection: Selection {
-                    x: selection.x,
-                    y: selection.y,
-                    sheet_id: selection.sheet_id,
-                    all: true,
-                    ..Default::default()
-                },
-            });
-        } else if let Some(cursor) = cursor {
+        if let Some(cursor) = cursor {
             ops.push(cursor);
-        } else {
-            ops.push(Operation::SetCursorSelection {
-                selection: Selection {
-                    x: selection.x,
-                    y: selection.y,
-                    sheet_id: selection.sheet_id,
-                    rects: Some(vec![sheet_rect.into()]),
-                    ..Default::default()
-                },
-            });
         }
+
+        // // set the cursor based on the type of paste
+        // if clipboard.origin.as_ref().is_some_and(|o| o.all.is_some()) {
+        //     ops.push(Operation::SetCursorSelection {
+        //         selection: Selection {
+        //             x: selection.x,
+        //             y: selection.y,
+        //             sheet_id: selection.sheet_id,
+        //             all: true,
+        //             ..Default::default()
+        //         },
+        //     });
+        // } else if let Some(cursor) = cursor {
+        //     ops.push(cursor);
+        // } else {
+        //     ops.push(Operation::SetCursorSelection {
+        //         selection: Selection {
+        //             x: selection.x,
+        //             y: selection.y,
+        //             sheet_id: selection.sheet_id,
+        //             rects: Some(vec![sheet_rect.into()]),
+        //             ..Default::default()
+        //         },
+        //     });
+        // }
         ops
     }
 

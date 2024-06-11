@@ -136,28 +136,28 @@ impl Selection {
     }
 
     // Translates the selection by a clipboard origin.
-    pub fn translate(&self, pos: Pos) -> Selection {
+    pub fn translate(&self, delta_x: i64, delta_y: i64) -> Selection {
         Selection {
-            x: self.x + pos.x,
-            y: self.y + pos.y,
+            x: self.x + delta_x,
+            y: self.y + delta_y,
             columns: self
                 .columns
                 .as_ref()
-                .map(|c| c.iter().map(|x| x + pos.x).collect()),
+                .map(|c| c.iter().map(|x| x + delta_x).collect()),
             rows: self
                 .rows
                 .as_ref()
-                .map(|r| r.iter().map(|y| y + pos.y).collect()),
+                .map(|r| r.iter().map(|y| y + delta_y).collect()),
             rects: self.rects.as_ref().map(|r| {
                 r.iter()
                     .map(|rect| Rect {
                         min: Pos {
-                            x: rect.min.x + pos.x,
-                            y: rect.min.y + pos.y,
+                            x: rect.min.x + delta_x,
+                            y: rect.min.y + delta_y,
                         },
                         max: Pos {
-                            x: rect.max.x + pos.x,
-                            y: rect.max.y + pos.y,
+                            x: rect.max.x + delta_x,
+                            y: rect.max.y + delta_y,
                         },
                     })
                     .collect()
@@ -400,19 +400,23 @@ mod test {
             sheet_id,
             x: 1,
             y: 2,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
             columns: Some(vec![1, 2, 3]),
             rows: Some(vec![4, 5, 6]),
             ..Default::default()
         };
-        let translated = selection.translate(Pos { x: 2, y: 3 });
+        let delta_x = 1 - 2;
+        let delta_y = 2 - 3;
+        let translated = selection.translate(delta_x, delta_y);
         assert_eq!(
             translated,
             Selection {
                 sheet_id,
-                x: 1 + 2,
-                y: 2 + 3,
-                columns: Some(vec![1 + 2, 2 + 2, 3 + 2]),
-                rows: Some(vec![4 + 3, 5 + 3, 6 + 3]),
+                x: 0,
+                y: 1,
+                rects: Some(vec![Rect::from_numbers(1 + delta_x, 2 + delta_y, 3, 4)]),
+                columns: Some(vec![1 + delta_x, 2 + delta_x, 3 + delta_x]),
+                rows: Some(vec![4 + delta_y, 5 + delta_y, 6 + delta_y]),
                 ..Default::default()
             }
         );
