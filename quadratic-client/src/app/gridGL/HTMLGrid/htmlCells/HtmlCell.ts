@@ -204,7 +204,7 @@ export class HtmlCell {
     if (right && bottom) {
       return 'corner';
     }
-    if (right && e.data.global.y > rect.top && e.data.global.y < rect.bottom) {
+    if (right && e.data.global.y + top > rect.top && e.data.global.y + top < rect.bottom) {
       return 'right';
     }
     if (bottom && e.data.global.x > rect.left && e.data.global.x < rect.right) {

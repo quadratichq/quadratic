@@ -12,24 +12,15 @@ import pytz
 
 
 def attempt_fix_await(code: str) -> str:
-    # Insert a "await" keyword between known async functions to improve the UX
-    code = re.sub(r"([^a-zA-Z0-9]|^)cells\(", r"\1await cells(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)cell\(", r"\1await cell(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)c\(", r"\1await c(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)getCell\(", r"\1await getCell(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)getCells\(", r"\1await getCells(", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)cells\[", r"\1await cells[", code)
-    code = re.sub(r"([^a-zA-Z0-9]|^)rel_await cell\(", r"\1await rel_cell(", code) # intentional
-    code = re.sub(r"([^a-zA-Z0-9]|^)rc\(", r"\1await rc(", code)
-
-    code = code.replace("await await getCell", "await getCell")
-    code = code.replace("await await getCells", "await getCells")
-    code = code.replace("await await c(", "await c(")
-    code = code.replace("await await cell(", "await cell(")
-    code = code.replace("await await cells(", "await cells(")
-    code = code.replace("await await cells[", "await cells[")
-    code = code.replace("await await rel_cell[", "await rel_cell(")
-    code = code.replace("await await rc[", "await rc(")
+    # Convert c((x,y), ...) cell((x,y), ...) to cells((x,y), ...)
+    code = re.sub(r"(^|\W)c(?:ell)?(\([^\(\)]*\([^\)]*\)(?:[^\(\)]*|\([^\)]*\))*\))", r"\1cells\2", code) # captures c((x,y), ...) cell((x,y), ...)
+    
+    # Wrap known async functions with "(await <function-call>)" to improve the UX
+    code = re.sub(r"(^|\W)(?:await +)?(c(?:ells?)?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code) # captures c( cell( cells(
+    code = re.sub(r"(^|\W)(?:await +)?(cells\[[^\]]*\])", r"\1(await \2)", code)                         # captures cells[
+    code = re.sub(r"(^|\W)(?:await +)?(getCells?\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)   # captures get_cell( get_cells(
+    code = re.sub(r"(^|\W)(?:await +)?(rel_cell\([^\)]*\))", r"\1(await \2)", code)                      # captures rel_cell(
+    code = re.sub(r"(^|\W)(?:await +)?(rc\((?:[^\(\)]*|\([^\)]*\))*\))", r"\1(await \2)", code)          # captures rc(
 
     return code
 
