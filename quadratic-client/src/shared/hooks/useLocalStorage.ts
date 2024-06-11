@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useCallback, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 
 // See: https://usehooks-ts.com/react-hook/use-event-listener
 import useEventListener from './useEventListener';
@@ -36,31 +36,28 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
 
   // Return a wrapped version of useState's setter function that ...
   // ... persists the new value to localStorage.
-  const setValue = useCallback<SetValue<T>>(
-    (value) => {
-      // Prevent build error "window is undefined" but keeps working
-      if (typeof window == 'undefined') {
-        throw new Error(`Tried setting localStorage key “${key}” even though environment is not a client`);
-      }
+  const setValue: SetValue<T> = (value) => {
+    // Prevent build error "window is undefined" but keeps working
+    if (typeof window == 'undefined') {
+      throw new Error(`Tried setting localStorage key “${key}” even though environment is not a client`);
+    }
 
-      try {
-        // Allow value to be a function so we have the same API as useState
-        const newValue = value instanceof Function ? value(storedValue) : value;
+    try {
+      // Allow value to be a function so we have the same API as useState
+      const newValue = value instanceof Function ? value(storedValue) : value;
 
-        // Save to local storage
-        window.localStorage.setItem(key, JSON.stringify(newValue));
+      // Save to local storage
+      window.localStorage.setItem(key, JSON.stringify(newValue));
 
-        // Save state
-        setStoredValue(newValue);
+      // Save state
+      setStoredValue(newValue);
 
-        // We dispatch a custom event so every useLocalStorage hook are notified
-        window.dispatchEvent(new Event('local-storage'));
-      } catch (error) {
-        throw new Error(`Error setting localStorage key “${key}”`);
-      }
-    },
-    [key, storedValue]
-  );
+      // We dispatch a custom event so every useLocalStorage hook are notified
+      window.dispatchEvent(new Event('local-storage'));
+    } catch (error) {
+      throw new Error(`Error setting localStorage key “${key}”`);
+    }
+  };
 
   useEffect(() => {
     setStoredValue(readValue());

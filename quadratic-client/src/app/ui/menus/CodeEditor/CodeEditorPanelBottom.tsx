@@ -13,10 +13,8 @@ export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 export function CodeEditorPanelBottom() {
   const {
     consoleOutput: [consoleOutput],
-    spillError: [spillError],
-  } = useCodeEditor();
-  const {
     panelBottomActiveTab: [tab, setTab],
+    spillError: [spillError],
   } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
@@ -36,7 +34,7 @@ export function CodeEditorPanelBottom() {
             value="console"
             className={cn(
               `relative font-medium after:absolute after:right-1 after:top-1`,
-
+              // Special indicators when the console isn't active and there's output
               tab !== 'console' && hasOutput && `after:h-[5px] after:w-[5px] after:rounded-full after:content-['']`,
               tab !== 'console' && consoleOutput?.stdErr ? 'after:bg-destructive' : 'after:bg-muted-foreground'
             )}
