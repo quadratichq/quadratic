@@ -23,7 +23,7 @@ export function getVisibleLeftColumn(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
   const left = viewport.left + pixiApp.headings.headingSize.width / pixiApp.viewport.scale.x;
   const placement = sheets.sheet.offsets.getXPlacement(left);
-  console.log(placement.position, left);
+
   // if the left column is partially visible, then return the next column
   if (placement.position >= left) {
     return placement.index;
