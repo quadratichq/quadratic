@@ -1,4 +1,3 @@
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 
@@ -32,32 +31,13 @@ export async function selectColumns(columns: number[], column = columns[columns.
 
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
-  const columnRow = cursor.columnRow;
 
   if (columns.length === 0) {
     cursor.changePosition({ columnRow: undefined });
     return;
   }
 
-  // if second selection of same [column] then select content within column
-  if (columnRow?.columns && columnRow.columns.length === 1 && columnRow.columns[0] === columns[columns.length - 1]) {
-    const bounds = await quadraticCore.getColumnsBounds(sheet.id, columns[0], columns[0], true);
-    if (bounds) {
-      cursor.changePosition({
-        cursorPosition: { x: columns[0], y: bounds.min },
-        multiCursor:
-          bounds.min !== bounds.max
-            ? [new Rectangle(columns[0], bounds.min, 1, bounds.max - bounds.min + 1)]
-            : undefined,
-      });
-    } else {
-      cursor.changePosition({
-        cursorPosition: { x: column, y: 0 },
-      });
-    }
-  } else {
-    cursor.changePosition({ columnRow: { columns }, cursorPosition: { x: column, y: cursor.cursorPosition.y } });
-  }
+  cursor.changePosition({ columnRow: { columns }, cursorPosition: { x: column, y: cursor.cursorPosition.y } });
 }
 
 export async function selectRows(rows: number[], row = rows[rows.length - 1]) {
@@ -66,28 +46,11 @@ export async function selectRows(rows: number[], row = rows[rows.length - 1]) {
 
   const sheet = sheets.sheet;
   const cursor = sheet.cursor;
-  const columnRow = cursor.columnRow;
 
-  // if second selection of same [row] then select content within row
-  if (
-    columnRow?.rows &&
-    columnRow.rows.length === 1 &&
-    columnRow.rows[0] === rows[0] &&
-    columnRow.rows[0] === rows[rows.length - 1]
-  ) {
-    const bounds = await quadraticCore.getRowsBounds(sheet.id, rows[0], rows[0], true);
-    if (bounds) {
-      sheet.cursor.changePosition({
-        cursorPosition: { x: bounds.min, y: rows[0] },
-        multiCursor:
-          bounds.min !== bounds.max ? [new Rectangle(bounds.min, rows[0], bounds.max - bounds.min + 1, 1)] : undefined,
-      });
-    } else {
-      sheet.cursor.changePosition({
-        cursorPosition: { x: 0, y: row },
-      });
-    }
-  } else {
-    cursor.changePosition({ columnRow: { rows }, cursorPosition: { x: cursor.cursorPosition.x, y: row } });
+  if (rows.length === 0) {
+    cursor.changePosition({ columnRow: undefined });
+    return;
   }
+
+  cursor.changePosition({ columnRow: { rows }, cursorPosition: { x: cursor.cursorPosition.x, y: row } });
 }
