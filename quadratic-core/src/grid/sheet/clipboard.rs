@@ -38,6 +38,10 @@ impl Sheet {
 
                 let pos = Pos { x, y };
 
+                if !selection.pos_in_selection(pos) {
+                    continue;
+                }
+
                 // the CellValue at the cell that would be displayed in the cell (ie, including code_runs)
                 let simple_value = self.display_value(pos);
 
@@ -263,5 +267,42 @@ impl Sheet {
         final_html.push_str(&String::from("\">"));
         final_html.push_str(&html);
         Ok((plain_text, final_html))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::controller::{operations::clipboard::PasteSpecial, GridController};
+
+    use super::*;
+
+    #[test]
+    fn copy_to_clipboard_exclude() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_values(0, 0, 4, 1, vec!["1", "2", "3", "4"]);
+
+        let (_, html) = sheet
+            .copy_to_clipboard(&Selection {
+                rects: Some(vec![
+                    Rect::single_pos(Pos { x: 0, y: 0 }),
+                    Rect::from_numbers(2, 0, 2, 1),
+                ]),
+                ..Default::default()
+            })
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            Selection::pos(0, 5, sheet_id),
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.cell_value(Pos { x: 1, y: 5 }).is_none());
     }
 }
