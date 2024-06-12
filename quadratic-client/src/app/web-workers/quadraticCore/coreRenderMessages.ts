@@ -75,7 +75,7 @@ export interface CoreRenderSheetBoundsUpdate {
 export interface CoreRenderRequestRowHeights {
   type: 'coreRenderRequestRowHeights';
   sheetId: string;
-  cells: string;
+  rows: string;
   transactionId: string;
 }
 

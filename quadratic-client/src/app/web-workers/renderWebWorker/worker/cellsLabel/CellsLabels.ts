@@ -9,7 +9,7 @@
 import { debugShowLoadingHashes } from '@/app/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { JsRenderCell, JsRowHeight, Pos, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRenderCell, JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants.js';
 import { Rectangle } from 'pixi.js';
@@ -341,6 +341,18 @@ export class CellsLabels {
     return false;
   }
 
+  // updates hashes if hash.dirty has pending JsRenderCells update
+  // this is required to avoid sending stale data regarding rendered cells
+  async applyPendingJsRenderCells() {
+    const updatePromises: Promise<boolean>[] = [];
+    this.cellsTextHash.forEach((cellTextHash) => {
+      if (Array.isArray(cellTextHash.dirty)) {
+        updatePromises.push(cellTextHash.update());
+      }
+    });
+    await Promise.all(updatePromises);
+  }
+
   // adjust headings without recalculating the glyph geometries
   adjustHeadings(delta: number, column?: number, row?: number) {
     if (column !== undefined) {
@@ -427,40 +439,15 @@ export class CellsLabels {
     return max;
   }
 
-  async getRowHeights(cells: Pos[]): Promise<JsRowHeight[]> {
-    const seenHashes = new Set<string>();
-    const updatePromises: Promise<void>[] = cells.map(async (cell) => {
-      const { x, y } = cell;
-      const hash = this.getCellsHash(Number(x), Number(y), true);
-      if (!hash) return;
+  async getRowHeights(rows: number[]): Promise<JsRowHeight[]> {
+    await this.applyPendingJsRenderCells();
 
-      const hashKey = this.getHashKey(hash.hashX, hash.hashY);
-      if (seenHashes.has(hashKey)) return;
-      seenHashes.add(hashKey);
-
-      // update hash if hash.dirty has pending JsRenderCells update
-      if (hash.dirty instanceof Array) {
-        await hash.update();
-      }
-    });
-    await Promise.all(updatePromises);
-
-    const rowHeights: JsRowHeight[] = [];
-    const seenRows = new Set<number>();
-    cells.forEach((cell) => {
-      const row = Number(cell.y);
-
-      if (seenRows.has(row)) return;
-      seenRows.add(row);
-
-      const currentHeight = this.sheetOffsets.getRowHeight(row);
-      const maxContentHeight = this.rowMaxHeight(row);
-      const height = Math.max(maxContentHeight, CELL_HEIGHT);
-      if (height !== currentHeight) {
-        rowHeights.push({ row, height });
-      }
-    });
-
+    const rowHeights: JsRowHeight[] = rows
+      .map((row) => ({
+        row,
+        height: Math.max(this.rowMaxHeight(row), CELL_HEIGHT),
+      }))
+      .filter(({ row, height }) => height !== this.sheetOffsets.getRowHeight(row));
     return rowHeights;
   }
 }

@@ -24,7 +24,7 @@ declare var self: WorkerGlobalScope &
       size: number
     ) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
-    sendRequestRowHeights: (sheet_id: string, cells: string, transactionId: string) => void;
+    sendRequestRowHeights: (sheet_id: string, rows: string, transactionId: string) => void;
     handleResponseRowHeights: (rowHeights: JsRowHeight[], transactionId: string) => void;
   };
 
@@ -101,8 +101,8 @@ class CoreRender {
     this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds });
   };
 
-  sendRequestRowHeights = (sheetId: string, cells: string, transactionId: string) => {
-    this.send({ type: 'coreRenderRequestRowHeights', sheetId, cells, transactionId });
+  sendRequestRowHeights = (sheetId: string, rows: string, transactionId: string) => {
+    this.send({ type: 'coreRenderRequestRowHeights', sheetId, rows, transactionId });
   };
 
   handleResponseRowHeights = (rowHeights: JsRowHeight[], transactionId: string) => {

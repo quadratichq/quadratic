@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRenderCell, Pos } from '@/app/quadratic-core-types';
+import { JsRenderCell } from '@/app/quadratic-core-types';
 import {
   CoreRenderCells,
   CoreRenderMessage,
@@ -63,7 +63,7 @@ class RenderCore {
         break;
 
       case 'coreRenderRequestRowHeights':
-        this.getRowHeights(e.data.sheetId, e.data.cells, e.data.transactionId);
+        this.getRowHeights(e.data.sheetId, e.data.rows, e.data.transactionId);
         break;
 
       default:
@@ -77,8 +77,8 @@ class RenderCore {
       return;
     }
 
-    const cells: Pos[] = JSON.parse(cellsString);
-    const rowHeights = await renderText.getRowHeights(sheetId, cells);
+    const rows: number[] = JSON.parse(cellsString).map((row: BigInt) => Number(row));
+    const rowHeights = await renderText.getRowHeights(sheetId, rows);
     const message: RenderCoreResponseRowHeights = {
       type: 'renderCoreResponseRowHeights',
       rowHeights,

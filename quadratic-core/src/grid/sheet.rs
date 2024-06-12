@@ -388,13 +388,12 @@ impl Sheet {
         old_resize == Resize::Manual
     }
 
-    pub fn get_auto_resize_cells(&self, sheet_rect: &SheetRect) -> Vec<Pos> {
-        sheet_rect
-            .to_cells()
-            .iter()
-            .filter(|pos| self.get_row_resize(pos.y) == Resize::Auto)
-            .cloned()
-            .collect()
+    pub fn get_auto_resize_rows(&self, sheet_rect: &SheetRect) -> Option<Vec<i64>> {
+        let rows: Vec<i64> = sheet_rect
+            .y_range()
+            .filter(|y| self.get_row_resize(*y) == Resize::Auto)
+            .collect();
+        Some(rows).filter(|r| !r.is_empty())
     }
 }
 

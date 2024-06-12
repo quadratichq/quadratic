@@ -154,14 +154,15 @@ impl GridController {
         }
 
         if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-            let auto_resize_cells = sheet.get_auto_resize_cells(sheet_rect);
-            if let Ok(cells_string) = serde_json::to_string(&auto_resize_cells) {
-                crate::wasm_bindings::js::jsRequestRowHeights(
-                    sheet_rect.sheet_id.to_string(),
-                    cells_string,
-                    transaction.id.to_string(),
-                );
-                transaction.has_async = true;
+            if let Some(auto_resize_rows) = sheet.get_auto_resize_rows(sheet_rect) {
+                if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
+                    transaction.has_async = true;
+                    crate::wasm_bindings::js::jsRequestRowHeights(
+                        sheet_rect.sheet_id.to_string(),
+                        rows_string,
+                        transaction.id.to_string(),
+                    );
+                }
             }
         }
     }

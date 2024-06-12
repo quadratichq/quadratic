@@ -1,7 +1,4 @@
-use crate::{
-    grid::{CellFmtAttr, CellWrap},
-    Pos, Rect, RunLengthEncoding, SheetRect,
-};
+use crate::{grid::CellFmtAttr, Pos, RunLengthEncoding, SheetRect};
 
 use super::Sheet;
 
@@ -26,17 +23,5 @@ impl Sheet {
             }
         }
         old_values
-    }
-
-    // returns true if any cell in the rect has wrapped text
-    pub fn get_wrapped_cells(&self, rect: Rect) -> Vec<Pos> {
-        let mut wrapped_cells = Vec::<Pos>::new();
-        rect.to_cells().iter().for_each(|pos| {
-            let cell_wrap = self.get_formatting_value::<CellWrap>(*pos);
-            if cell_wrap == Some(CellWrap::Wrap) {
-                wrapped_cells.push(*pos);
-            }
-        });
-        wrapped_cells
     }
 }

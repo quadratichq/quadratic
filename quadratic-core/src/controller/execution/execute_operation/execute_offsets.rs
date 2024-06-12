@@ -40,18 +40,17 @@ impl GridController {
                 },
             );
 
-            if cfg!(target_family = "wasm") || cfg!(test) {
-                if transaction.is_undo_redo()
+            if (cfg!(target_family = "wasm") || cfg!(test))
+                && (transaction.is_undo_redo()
                     || transaction.is_multiplayer()
-                    || (!client_resized && transaction.is_user())
-                {
-                    crate::wasm_bindings::js::jsOffsetsModified(
-                        sheet_id.to_string(),
-                        Some(column),
-                        None,
-                        new_size,
-                    );
-                }
+                    || (!client_resized && transaction.is_user()))
+            {
+                crate::wasm_bindings::js::jsOffsetsModified(
+                    sheet_id.to_string(),
+                    Some(column),
+                    None,
+                    new_size,
+                );
             }
 
             if !transaction.is_server() {
@@ -114,18 +113,17 @@ impl GridController {
                 },
             );
 
-            if cfg!(target_family = "wasm") || cfg!(test) {
-                if transaction.is_undo_redo()
+            if (cfg!(target_family = "wasm") || cfg!(test))
+                && (transaction.is_undo_redo()
                     || transaction.is_multiplayer()
-                    || (!client_resized && transaction.is_user())
-                {
-                    crate::wasm_bindings::js::jsOffsetsModified(
-                        sheet_id.to_string(),
-                        None,
-                        Some(row),
-                        new_size,
-                    );
-                }
+                    || (!client_resized && transaction.is_user()))
+            {
+                crate::wasm_bindings::js::jsOffsetsModified(
+                    sheet_id.to_string(),
+                    None,
+                    Some(row),
+                    new_size,
+                );
             }
 
             if !transaction.is_server() {

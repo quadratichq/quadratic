@@ -74,7 +74,7 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
-    sendRequestRowHeights: (sheet_id: string, cells: string, transactionId: string) => void;
+    sendRequestRowHeights: (sheet_id: string, rows: string, transactionId: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -221,6 +221,6 @@ export const jsUndoRedo = (undo: string, redo: string) => {
   self.sendUndoRedo(undo, redo);
 };
 
-export const jsRequestRowHeights = (sheetId: string, cells: string, transactionId: string) => {
-  self.sendRequestRowHeights(sheetId, cells, transactionId);
+export const jsRequestRowHeights = (sheetId: string, rows: string, transactionId: string) => {
+  self.sendRequestRowHeights(sheetId, rows, transactionId);
 };

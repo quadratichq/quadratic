@@ -7,7 +7,7 @@
  */
 
 import { debugShowCellHashesInfo } from '@/app/debugFlags';
-import { Pos, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import init from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { Rectangle } from 'pixi.js';
 import { RenderBitmapFonts } from '../renderBitmapFonts';
@@ -165,10 +165,10 @@ class RenderText {
     return cellsLabels.rowMaxHeight(row);
   }
 
-  getRowHeights(sheetId: string, cells: Pos[]) {
+  getRowHeights(sheetId: string, rows: number[]) {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.getRowHeights');
-    return cellsLabels.getRowHeights(cells);
+    return cellsLabels.getRowHeights(rows);
   }
 }
 
