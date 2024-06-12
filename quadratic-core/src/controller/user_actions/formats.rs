@@ -639,4 +639,26 @@ mod test {
         assert_eq!(sheet.format_column(0).text_color, None);
         assert!(sheet.formats_columns.is_empty());
     }
+
+    #[test]
+    fn set_format_column_row() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_fill_color_selection(
+            Selection {
+                sheet_id,
+                rows: Some(vec![0, 2]),
+                columns: Some(vec![1]),
+                ..Default::default()
+            },
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.format_column(1).fill_color, Some("red".to_string()));
+        assert_eq!(sheet.format_row(0).fill_color, Some("red".to_string()));
+        assert_eq!(sheet.format_row(2).fill_color, Some("red".to_string()));
+    }
 }

@@ -484,5 +484,7 @@ mod tests {
         assert_eq!(serialized, r#"{"align":null}"#);
 
         let update_deserialized = serde_json::from_str::<FormatUpdate>(&serialized).unwrap();
+        assert_eq!(update_deserialized.align, Some(None));
+        assert_eq!(update_deserialized.wrap, None);
     }
 }

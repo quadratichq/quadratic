@@ -62,14 +62,18 @@ impl Sheet {
     ) -> Vec<Operation> {
         if selection.all {
             self.set_format_all(formats)
-        } else if let Some(columns) = selection.columns.as_ref() {
-            self.set_formats_columns(columns, formats)
-        } else if let Some(rows) = selection.rows.as_ref() {
-            self.set_formats_rows(rows, formats)
-        } else if let Some(rects) = selection.rects.as_ref() {
-            self.set_formats_rects(rects, formats)
         } else {
-            vec![]
+            let mut ops = vec![];
+            if let Some(columns) = selection.columns.as_ref() {
+                ops.extend(self.set_formats_columns(columns, formats));
+            }
+            if let Some(rows) = selection.rows.as_ref() {
+                ops.extend(self.set_formats_rows(rows, formats));
+            }
+            if let Some(rects) = selection.rects.as_ref() {
+                ops.extend(self.set_formats_rects(rects, formats));
+            }
+            ops
         }
     }
 }
