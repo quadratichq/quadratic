@@ -383,7 +383,7 @@ mod tests {
     use std::str::FromStr;
 
     /// Used to test whether the results of a selection has a position and value.
-    fn assert_results_has_value(results: &Vec<(Pos, &CellValue)>, pos: Pos, value: CellValue) {
+    fn assert_results_has_value(results: &[(Pos, &CellValue)], pos: Pos, value: CellValue) {
         assert!(results.iter().any(|(p, v)| *p == pos && **v == value));
     }
 
