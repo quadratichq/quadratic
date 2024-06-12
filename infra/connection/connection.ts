@@ -35,6 +35,12 @@ const web = alb.createListener("web", {
   sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
 });
 
+const internal = alb.createListener("internal", {
+  external: false,
+  port: 80,
+  protocol: "HTTP",
+});
+
 // Create a repository for container images.
 const repo = new awsx.ecr.Repository("connection-repo", {
   forceDelete: true,
@@ -55,7 +61,7 @@ const appService = new awsx.classic.ecs.FargateService("app-svc", {
       image: img.imageUri,
       cpu: 102 /*10% of 1024*/,
       memory: 50 /*MB*/,
-      portMappings: [web],
+      portMappings: [internal],
       environment: [
         // TODO: Pull these from Pulumi ESC
         { name: "QUADRATIC_API_URI", value: quadraticApiUri },
