@@ -750,14 +750,14 @@ mod test {
 
         // update row resize
         let old_client_resize = sheet.update_row_resize(row, true);
-        assert_eq!(old_client_resize, false);
+        assert!(!old_client_resize);
         // check if row is auto resized
         let auto_resized = sheet.rows_resize.get_resize(row);
         assert_eq!(auto_resized, Resize::Manual);
 
         // update row resize
         let old_client_resize = sheet.update_row_resize(row, false);
-        assert_eq!(old_client_resize, true);
+        assert!(old_client_resize);
         // check if row is auto resized
         let auto_resized = sheet.rows_resize.get_resize(row);
         assert_eq!(auto_resized, Resize::Auto);
@@ -794,6 +794,6 @@ mod test {
         sheet.update_row_resize(4, true);
         // check new auto resized rows should be None
         let rows = sheet.get_auto_resize_rows(&sheet_rect);
-        assert_eq!(rows, None)
+        assert_eq!(rows, None);
     }
 }
