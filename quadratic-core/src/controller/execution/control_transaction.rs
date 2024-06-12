@@ -149,14 +149,18 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
     ) {
-        if !cfg!(target_family = "wasm") || cfg!(test) || !transaction.is_user() {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || !transaction.is_user() {
             return;
         }
 
         if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
             if let Some(auto_resize_rows) = sheet.get_auto_resize_rows(sheet_rect) {
                 if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
-                    transaction.has_async = true;
+                    // has_async holds the transaction until the async call is complete
+                    // this is to avoid holding the transaction in tests
+                    if !cfg!(test) {
+                        transaction.has_async = true;
+                    }
                     crate::wasm_bindings::js::jsRequestRowHeights(
                         sheet_rect.sheet_id.to_string(),
                         rows_string,

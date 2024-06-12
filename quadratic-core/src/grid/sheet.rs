@@ -370,14 +370,6 @@ impl Sheet {
         }
     }
 
-    pub fn get_row_resize(&self, row: i64) -> Resize {
-        self.rows_resize.get_resize(row)
-    }
-
-    pub fn set_row_resize(&mut self, row: i64, resize: Resize) -> Resize {
-        self.rows_resize.set_resize(row, resize)
-    }
-
     pub fn update_row_resize(&mut self, row: i64, client_resized: bool) -> bool {
         let resize = if client_resized {
             Resize::Manual
@@ -391,7 +383,7 @@ impl Sheet {
     pub fn get_auto_resize_rows(&self, sheet_rect: &SheetRect) -> Option<Vec<i64>> {
         let rows: Vec<i64> = sheet_rect
             .y_range()
-            .filter(|y| self.get_row_resize(*y) == Resize::Auto)
+            .filter(|y| self.rows_resize.get_resize(*y) == Resize::Auto)
             .collect();
         Some(rows).filter(|r| !r.is_empty())
     }
@@ -748,5 +740,60 @@ mod test {
         let mut sheet = sheet.clone();
         let new_column = sheet.get_or_create_column(1);
         assert_eq!(new_column, &Column::new(new_column.x));
+    }
+
+    #[test]
+    fn test_update_row_resize() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.sheet(sheet_id).clone();
+        let row = 1;
+
+        // update row resize
+        let old_client_resize = sheet.update_row_resize(row, true);
+        assert_eq!(old_client_resize, false);
+        // check if row is auto resized
+        let auto_resized = sheet.rows_resize.get_resize(row);
+        assert_eq!(auto_resized, Resize::Manual);
+
+        // update row resize
+        let old_client_resize = sheet.update_row_resize(row, false);
+        assert_eq!(old_client_resize, true);
+        // check if row is auto resized
+        let auto_resized = sheet.rows_resize.get_resize(row);
+        assert_eq!(auto_resized, Resize::Auto);
+    }
+
+    #[test]
+    fn test_get_auto_resize_rows() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.sheet(sheet_id).clone();
+
+        let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
+        let sheet_rect = view_rect.to_sheet_rect(sheet_id);
+
+        // all rows should be auto resized by default
+        let rows = sheet.get_auto_resize_rows(&sheet_rect);
+        assert_eq!(rows, Some(vec![1, 2, 3, 4]));
+
+        // update row resize
+        sheet.update_row_resize(1, true);
+        sheet.update_row_resize(2, true);
+        // check new auto resized rows
+        let rows = sheet.get_auto_resize_rows(&sheet_rect);
+        assert_eq!(rows, Some(vec![3, 4]));
+
+        // update row resize
+        sheet.update_row_resize(1, false);
+        // check new auto resized rows
+        let rows = sheet.get_auto_resize_rows(&sheet_rect);
+        assert_eq!(rows, Some(vec![1, 3, 4]));
+
+        // update all rows to manual resize
+        sheet.update_row_resize(1, true);
+        sheet.update_row_resize(3, true);
+        sheet.update_row_resize(4, true);
+        // check new auto resized rows should be None
+        let rows = sheet.get_auto_resize_rows(&sheet_rect);
+        assert_eq!(rows, None)
     }
 }
