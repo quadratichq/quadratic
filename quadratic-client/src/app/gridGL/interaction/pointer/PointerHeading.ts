@@ -2,7 +2,7 @@ import { events } from '@/app/events/events';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -265,7 +265,8 @@ export class PointerHeading {
 
   async autoResizeRow(row: number) {
     const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
-    const size = Math.max(maxHeight, CELL_HEIGHT);
+    const contentSizePlusMargin = maxHeight + CELL_TEXT_MARGIN_TOP * 3;
+    const size = Math.max(contentSizePlusMargin, CELL_HEIGHT);
     const sheetId = sheets.sheet.id;
     const originalSize = sheets.sheet.getCellOffsets(0, row);
     if (originalSize.height !== size) {
