@@ -123,7 +123,7 @@ impl Sheet {
             Pos { x, y },
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
-                code: "".to_string(),
+                code: "code".to_string(),
             }),
         );
         self.set_code_run(

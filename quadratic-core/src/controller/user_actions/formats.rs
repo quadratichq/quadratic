@@ -555,4 +555,87 @@ mod test {
             Some(2)
         );
     }
+
+    #[test]
+    fn clear_format() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_text_color_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().text_color.get(0),
+            Some("red".to_string())
+        );
+
+        gc.clear_format(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.columns.get(&0).unwrap().text_color.get(0), None);
+    }
+
+    #[test]
+    fn clear_format_column() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_text_color_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: None,
+                rows: None,
+                columns: Some(vec![0]),
+                all: false,
+            },
+            Some("red".to_string()),
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.format_column(0).text_color, Some("red".to_string()));
+
+        gc.clear_format(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: None,
+                rows: None,
+                columns: Some(vec![0]),
+                all: false,
+            },
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.format_column(0).text_color, None);
+    }
 }

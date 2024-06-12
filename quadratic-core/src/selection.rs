@@ -71,17 +71,22 @@ impl Selection {
     }
 
     pub fn count(&self) -> usize {
-        if let Some(ref rects) = self.rects {
-            rects.iter().map(|r| r.count()).sum()
-        } else if let Some(ref rows) = self.rows {
-            rows.len()
-        } else if let Some(ref columns) = self.columns {
-            columns.len()
-        } else if self.all {
-            1
-        } else {
-            0
+        if self.all {
+            return 1;
         }
+
+        let mut count = 0;
+        if let Some(ref columns) = self.columns {
+            count += columns.len();
+        }
+        if let Some(ref rows) = self.rows {
+            count += rows.len();
+        }
+        if let Some(ref rects) = self.rects {
+            let sum = rects.iter().map(|rect| rect.count()).sum::<usize>();
+            count += sum;
+        }
+        count
     }
 
     /// Gets the encompassing rect for selection.rects. Returns None if there are no rects.
@@ -420,5 +425,33 @@ mod test {
                 ..Default::default()
             }
         );
+    }
+
+    #[test]
+    fn count() {
+        let sheet_id = SheetId::test();
+        let selection = Selection {
+            sheet_id,
+            x: 1,
+            y: 2,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            columns: Some(vec![1, 2, 3]),
+            rows: Some(vec![4, 5, 6]),
+            all: false,
+        };
+        assert_eq!(selection.count(), 18);
+
+        let selection = Selection {
+            sheet_id,
+            x: 1,
+            y: 2,
+            rects: Some(vec![Rect::from_numbers(1, 2, 3, 4)]),
+            columns: Some(vec![1, 2, 3]),
+            rows: Some(vec![4, 5, 6]),
+            all: true,
+        };
+
+        // all is always count = 1
+        assert_eq!(selection.count(), 1);
     }
 }

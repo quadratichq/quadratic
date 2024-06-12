@@ -412,4 +412,47 @@ mod tests {
         );
         assert_eq!(reverse.len(), 1);
     }
+
+    #[test]
+    fn cleared() {
+        let mut sheet = Sheet::test();
+        sheet.set_formats_columns(
+            &[0],
+            &Formats::repeat(
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        sheet.set_formats_columns(
+            &[1],
+            &Formats::repeat(
+                FormatUpdate {
+                    fill_color: Some(Some("red".to_string())),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        sheet.set_formats_columns(
+            &[2],
+            &Formats::repeat(
+                FormatUpdate {
+                    text_color: Some(Some("blue".to_string())),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        let formats = Formats::repeat(FormatUpdate::cleared(), 3);
+        let columns = vec![0, 1, 2];
+        let reverse = sheet.set_formats_columns(&columns, &formats);
+        assert_eq!(sheet.format_column(0), Format::default());
+        assert_eq!(sheet.format_column(1), Format::default());
+        assert_eq!(sheet.format_column(2), Format::default());
+        assert_eq!(sheet.formats_columns.len(), 0);
+        assert_eq!(reverse.len(), 1);
+    }
 }

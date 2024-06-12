@@ -202,9 +202,8 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::Pos;
-
     use super::*;
+    use crate::Pos;
 
     #[test]
     fn format_all() {

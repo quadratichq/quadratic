@@ -1,3 +1,9 @@
+//! These functions return Vec<(Pos, &CellValue)> for a Selection in the Sheet.
+//! 1. if selection includes all, then all cells are returned
+//! 2. otherwise, the selection iterates over columns, rows, and then rects
+
+use std::collections::HashMap;
+
 use crate::{
     grid::{formats::format::Format, CodeRunResult, GridBounds},
     selection::Selection,
@@ -24,7 +30,7 @@ impl Sheet {
         skip_code_runs: bool,
     ) -> Option<Vec<(Pos, &CellValue)>> {
         let mut count = 0;
-        let mut vec = Vec::new();
+        let mut cells = HashMap::new();
 
         // This checks whether we should skip a CellValue::Code. We skip the
         // code cell if `skip_code_runs`` is true. For example, when running
@@ -40,7 +46,7 @@ impl Sheet {
                 if count >= max_count.unwrap_or(i64::MAX) {
                     return None;
                 }
-                vec.extend(column.values.iter().filter_map(|(y, entry)| {
+                cells.extend(column.values.iter().filter_map(|(y, entry)| {
                     if !matches!(entry, &CellValue::Blank) && check_code(entry) {
                         Some((Pos { x: *x, y: *y }, entry))
                     } else {
@@ -57,7 +63,7 @@ impl Sheet {
                                 if count >= max_count.unwrap_or(i64::MAX) {
                                     return None;
                                 }
-                                vec.push((*pos, v));
+                                cells.insert(*pos, v);
                             }
                             Value::Array(a) => {
                                 for x in 0..a.width() {
@@ -68,13 +74,13 @@ impl Sheet {
                                                 if count >= max_count.unwrap_or(i64::MAX) {
                                                     return None;
                                                 }
-                                                vec.push((
+                                                cells.insert(
                                                     Pos {
                                                         x: x as i64 + pos.x,
                                                         y: y as i64 + pos.y,
                                                     },
                                                     entry,
-                                                ));
+                                                );
                                             }
                                         }
                                     }
@@ -85,14 +91,19 @@ impl Sheet {
                     }
                 }
             }
-        } else if let Some(columns) = selection.columns.as_ref() {
+
+            // if selection.all, then we don't need to check the other selections
+            return Some(cells.into_iter().collect());
+        }
+
+        if let Some(columns) = selection.columns.as_ref() {
             for x in columns.iter() {
                 if let Some(column) = self.columns.get(x) {
                     count += column.values.len() as i64;
                     if count >= max_count.unwrap_or(i64::MAX) {
                         return None;
                     }
-                    vec.extend(column.values.iter().filter_map(|(y, entry)| {
+                    cells.extend(column.values.iter().filter_map(|(y, entry)| {
                         if !matches!(entry, &CellValue::Blank) && check_code(entry) {
                             Some((Pos { x: *x, y: *y }, entry))
                         } else {
@@ -119,7 +130,7 @@ impl Sheet {
                                             if count >= max_count.unwrap_or(i64::MAX) {
                                                 return None;
                                             }
-                                            vec.push((Pos { x, y }, entry));
+                                            cells.insert(Pos { x, y }, entry);
                                         }
                                     }
                                 }
@@ -128,7 +139,9 @@ impl Sheet {
                     }
                 }
             }
-        } else if let Some(rows) = selection.rows.as_ref() {
+        }
+
+        if let Some(rows) = selection.rows.as_ref() {
             for (x, column) in self.columns.iter() {
                 for (y, entry) in column.values.iter() {
                     if rows.contains(y) && !matches!(entry, &CellValue::Blank) && check_code(entry)
@@ -137,7 +150,7 @@ impl Sheet {
                         if count >= max_count.unwrap_or(i64::MAX) {
                             return None;
                         }
-                        vec.push((Pos { x: *x, y: *y }, entry));
+                        cells.insert(Pos { x: *x, y: *y }, entry);
                     }
                 }
             }
@@ -155,7 +168,7 @@ impl Sheet {
                                         if count >= max_count.unwrap_or(i64::MAX) {
                                             return None;
                                         }
-                                        vec.push((Pos { x, y }, entry));
+                                        cells.insert(Pos { x, y }, entry);
                                     }
                                 }
                             }
@@ -163,7 +176,9 @@ impl Sheet {
                     }
                 }
             }
-        } else if let Some(rects) = selection.rects.as_ref() {
+        }
+
+        if let Some(rects) = selection.rects.as_ref() {
             for rect in rects.iter() {
                 for x in rect.min.x..=rect.max.x {
                     for y in rect.min.y..=rect.max.y {
@@ -173,7 +188,7 @@ impl Sheet {
                                 if count >= max_count.unwrap_or(i64::MAX) {
                                     return None;
                                 }
-                                vec.push((Pos { x, y }, entry));
+                                cells.insert(Pos { x, y }, entry);
                             }
                         }
                     }
@@ -193,7 +208,7 @@ impl Sheet {
                                         if count >= max_count.unwrap_or(i64::MAX) {
                                             return None;
                                         }
-                                        vec.push((Pos { x, y }, entry));
+                                        cells.insert(Pos { x, y }, entry);
                                     }
                                 }
                             }
@@ -202,7 +217,7 @@ impl Sheet {
                 }
             }
         }
-        Some(vec)
+        Some(cells.into_iter().collect())
     }
 
     /// Gets a selection with bounds. This is useful for dealing with a
@@ -297,73 +312,80 @@ impl Sheet {
     /// format are returned.
     /// TODO: return &Format when we change how formats are stored internally.
     pub fn format_selection(&self, selection: &Selection) -> Vec<(Pos, Format)> {
-        let mut vec = vec![];
+        let mut cells = HashMap::new();
         if selection.all {
             if let GridBounds::NonEmpty(bounds) = self.format_bounds {
                 for x in bounds.min.x..=bounds.max.x {
                     if let Some(column) = self.columns.get(&x) {
                         for y in bounds.min.y..=bounds.max.y {
                             if let Some(format) = column.format(y) {
-                                vec.push((Pos { x, y }, format));
-                            }
-                        }
-                    }
-                }
-            }
-        } else if let Some(columns) = selection.columns.as_ref() {
-            vec = vec![];
-            columns.iter().for_each(|x| {
-                if let Some(column) = self.get_column(*x) {
-                    if let Some(range) = column.format_range() {
-                        for y in range.start..=range.end {
-                            if let Some(format) = column.format(y) {
-                                vec.push((Pos { x: *x, y }, format));
-                            }
-                        }
-                    }
-                }
-            });
-        } else if let Some(rows) = selection.rows.as_ref() {
-            self.columns.iter().for_each(|(x, column)| {
-                if let Some(range) = column.format_range() {
-                    rows.iter().for_each(|y| {
-                        if range.contains(y) {
-                            if let Some(format) = column.format(*y) {
-                                vec.push((Pos { x: *x, y: *y }, format));
-                            }
-                        }
-                    });
-                }
-            });
-        } else if let Some(rects) = selection.rects.as_ref() {
-            for rect in rects {
-                for x in rect.min.x..=rect.max.x {
-                    if let Some(column) = self.columns.get(&x) {
-                        for y in rect.min.y..=rect.max.y {
-                            if let Some(format) = column.format(y) {
-                                vec.push((Pos { x, y }, format));
+                                cells.insert(Pos { x, y }, format);
                             }
                         }
                     }
                 }
             }
         }
-        vec
+
+        if let Some(columns) = selection.columns.as_ref() {
+            columns.iter().for_each(|x| {
+                if let Some(column) = self.get_column(*x) {
+                    if let Some(range) = column.format_range() {
+                        for y in range.start..=range.end {
+                            if let Some(format) = column.format(y) {
+                                cells.insert(Pos { x: *x, y }, format);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        if let Some(rows) = selection.rows.as_ref() {
+            self.columns.iter().for_each(|(x, column)| {
+                if let Some(range) = column.format_range() {
+                    rows.iter().for_each(|y| {
+                        if range.contains(y) {
+                            if let Some(format) = column.format(*y) {
+                                cells.insert(Pos { x: *x, y: *y }, format);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        if let Some(rects) = selection.rects.as_ref() {
+            for rect in rects {
+                for x in rect.min.x..=rect.max.x {
+                    if let Some(column) = self.columns.get(&x) {
+                        for y in rect.min.y..=rect.max.y {
+                            if let Some(format) = column.format(y) {
+                                cells.insert(Pos { x, y }, format);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        cells.into_iter().collect()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
+    use super::*;
     use crate::{
         grid::{formats::format_update::FormatUpdate, CodeCellLanguage},
         CodeCellValue, Rect,
     };
+    use bigdecimal::BigDecimal;
+    use std::str::FromStr;
 
-    use super::*;
+    /// Used to test whether the results of a selection has a position and value.
+    fn assert_results_has_value(results: &Vec<(Pos, &CellValue)>, pos: Pos, value: CellValue) {
+        assert!(results.iter().any(|(p, v)| *p == pos && **v == value));
+    }
 
     #[test]
     fn selection_all() {
@@ -431,20 +453,8 @@ mod tests {
 
         let results = sheet.selection(&selection, None, false).unwrap();
         assert_eq!(results.len(), 10);
-        assert_eq!(
-            results.first(),
-            Some(&(
-                Pos { x: 0, y: 0 },
-                &CellValue::Number(BigDecimal::from_str("1").unwrap())
-            ))
-        );
-        assert_eq!(
-            results.get(9),
-            Some(&(
-                Pos { x: -1, y: 2 },
-                &CellValue::Number(BigDecimal::from_str("12").unwrap())
-            ))
-        );
+        assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        assert_results_has_value(&results, Pos { x: -1, y: 2 }, CellValue::Number(12.into()));
 
         let results = sheet.selection(&selection, Some(5), false);
         assert!(results.is_none());
@@ -515,16 +525,13 @@ mod tests {
                 false,
             )
             .unwrap();
-        assert_eq!(
-            results,
-            vec![
-                (Pos { x: 0, y: 0 }, &CellValue::Number(1.into())),
-                (Pos { x: 1, y: 1 }, &CellValue::Number(5.into())),
-                (Pos { x: 1, y: 2 }, &CellValue::Number(8.into())),
-                (Pos { x: 2, y: 1 }, &CellValue::Number(6.into())),
-                (Pos { x: 2, y: 2 }, &CellValue::Number(9.into())),
-            ]
-        );
+        assert_eq!(results.len(), 5);
+        assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        assert_results_has_value(&results, Pos { x: 1, y: 1 }, CellValue::Number(5.into()));
+        assert_results_has_value(&results, Pos { x: 1, y: 2 }, CellValue::Number(8.into()));
+        assert_results_has_value(&results, Pos { x: 2, y: 1 }, CellValue::Number(6.into()));
+        assert_results_has_value(&results, Pos { x: 2, y: 2 }, CellValue::Number(9.into()));
+
         assert!(sheet
             .selection(
                 &Selection {
@@ -568,13 +575,8 @@ mod tests {
                 false,
             )
             .unwrap();
-        assert_eq!(
-            results,
-            vec![
-                (Pos { x: 4, y: 0 }, &CellValue::Number(1.into())),
-                (Pos { x: 4, y: 2 }, &CellValue::Number(3.into())),
-            ]
-        );
+        assert_results_has_value(&results, (4, 0).into(), CellValue::Number(1.into()));
+        assert_results_has_value(&results, (4, 2).into(), CellValue::Number(3.into()));
 
         assert!(sheet
             .selection(
@@ -614,10 +616,43 @@ mod tests {
                 Pos { x: 4, y: 0 },
                 &CellValue::Code(CodeCellValue {
                     language: CodeCellLanguage::Formula,
-                    code: "".to_string()
+                    code: "code".to_string()
                 })
             )
         );
+    }
+
+    #[test]
+    fn selection() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_values(
+            0,
+            0,
+            3,
+            3,
+            vec!["1", "2", "3", "4", "5", "6", "7", "8", "9"],
+        );
+        sheet.test_set_code_run_array(0, 4, vec!["1", "2", "3"], false);
+
+        let selection = Selection {
+            sheet_id: sheet.id,
+            x: 0,
+            y: 0,
+            rects: Some(vec![Rect::single_pos(Pos { x: 0, y: 0 })]),
+            rows: Some(vec![4]),
+            columns: Some(vec![2]),
+            all: false,
+        };
+
+        let results = sheet.selection(&selection, None, false).unwrap();
+        assert_eq!(results.len(), 7);
+        assert_results_has_value(&results, Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
+        assert_results_has_value(&results, Pos { x: 2, y: 0 }, CellValue::Number(3.into()));
+        assert_results_has_value(&results, Pos { x: 2, y: 1 }, CellValue::Number(6.into()));
+        assert_results_has_value(&results, Pos { x: 2, y: 2 }, CellValue::Number(9.into()));
+        assert_results_has_value(&results, Pos { x: 0, y: 4 }, CellValue::Number(1.into()));
+        assert_results_has_value(&results, Pos { x: 1, y: 4 }, CellValue::Number(2.into()));
+        assert_results_has_value(&results, Pos { x: 2, y: 4 }, CellValue::Number(3.into()));
     }
 
     #[test]
@@ -716,25 +751,15 @@ mod tests {
             rects: Some(vec![Rect::from_numbers(0, 0, 2, 2)]),
             ..Default::default()
         };
-        assert_eq!(
-            sheet.format_selection(&selection),
-            vec![
-                (
-                    Pos { x: 0, y: 0 },
-                    Format {
-                        bold: Some(true),
-                        ..Default::default()
-                    }
-                ),
-                (
-                    Pos { x: 1, y: 1 },
-                    Format {
-                        bold: Some(false),
-                        ..Default::default()
-                    }
-                )
-            ]
-        );
+
+        let result = sheet.format_selection(&selection);
+        assert_eq!(result.len(), 2);
+        assert!(result
+            .iter()
+            .any(|(pos, value)| { *pos == Pos { x: 0, y: 0 } && value.bold == Some(true) }));
+        assert!(result
+            .iter()
+            .any(|(pos, value)| { *pos == Pos { x: 1, y: 1 } && value.bold == Some(false) }));
 
         let selection = Selection {
             sheet_id,
