@@ -5,6 +5,7 @@ edition = "2021"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
 [dependencies]
+arrow-schema = "51.0.0"
 axum = { version = "0.7.1", features = ["tokio"]}
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
 axum-macros = "0.4.1"
@@ -22,6 +23,7 @@ hyper-util = { version  = "0.1.5", features = ["service"] }
 jsonwebtoken = "9.2.0"
 log = "0.4.21"
 openssl = { version = "0.10.62", features = ["vendored"] }
+parquet = { version = "51.0.0", default-features = false, features = ["arrow", "arrow-array"] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared" }
 reqwest = { version = "0.11.22", features = ["cookies", "json", "serde_json", "stream"] }
 serde = { version = "1.0.193", features = ["derive"] }
@@ -38,9 +40,11 @@ uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]
 fake = { version = "2.9.1", features = ["derive"] }
+quadratic-core = { path = "../quadratic-core" }
 tracing-test = "0.2.4"
 
 [features]
-default = ["files"]
+default = ["files", "rust_analyzer"]
+rust_analyzer = []
 multiplayer = []
 files = []

@@ -6,6 +6,13 @@
 // use quadratic_core::controller::GridController;
 // use quadratic_core::{Array, CellValue, SheetRect};
 
+use std::io::Read;
+
+use arrow_schema::DataType;
+use axum::response::Response;
+use futures::StreamExt;
+use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
+use parquet::data_type::AsBytes;
 use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
 
 use crate::auth::Claims;
@@ -37,5 +44,44 @@ pub(crate) fn get_claims() -> Claims {
     Claims {
         sub: "test".to_string(),
         exp: 0,
+    }
+}
+
+pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType, Vec<u8>)>) {
+    let bytes = response
+        .into_body()
+        .into_data_stream()
+        .into_future()
+        .await
+        .0
+        .unwrap()
+        .unwrap();
+    let builder = ParquetRecordBatchReaderBuilder::try_new(bytes).unwrap();
+    let reader = builder.build().unwrap();
+
+    let mut output = vec![];
+    for batch in reader {
+        let batch = batch.unwrap();
+        let num_cols = batch.num_columns();
+
+        for col_index in 0..num_cols {
+            let col = batch.column(col_index);
+            output.push(col.to_data());
+        }
+    }
+
+    for (count, expect) in expected.iter().enumerate() {
+        let data_type = output.get(count).unwrap().data_type();
+        let value = output
+            .get(count)
+            .unwrap()
+            .buffer(0)
+            .bytes()
+            .flatten()
+            .flat_map(|s| s.as_bytes().to_owned())
+            .collect::<Vec<_>>();
+
+        assert_eq!(data_type, &expect.0);
+        assert_eq!(value, expect.1);
     }
 }

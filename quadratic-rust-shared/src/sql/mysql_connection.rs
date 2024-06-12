@@ -185,7 +185,7 @@ mod tests {
             Some("password".into()),
             "0.0.0.0".into(),
             Some("3306".into()),
-            Some("connection".into()),
+            Some("mysql-connection".into()),
         )
     }
 
@@ -206,12 +206,7 @@ mod tests {
         for row in &rows {
             for (index, col) in row.columns().iter().enumerate() {
                 let value = MySqlConnection::to_arrow(row, col, index);
-                println!(
-                    "{} ({}) = {:?}",
-                    col.name(),
-                    col.type_info().name(),
-                    value
-                );
+                println!("{} ({}) = {:?}", col.name(), col.type_info().name(), value);
             }
         }
 

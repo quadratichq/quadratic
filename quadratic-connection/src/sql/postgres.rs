@@ -26,7 +26,25 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
 ) -> Result<(PostgresConnection, ApiConnection)> {
-    let connection = get_api_connection(state, "", &claims.sub, connection_id).await?;
+    let connection = if cfg!(not(test)) {
+        get_api_connection(state, "", &claims.sub, connection_id).await?
+    } else {
+        ApiConnection {
+            uuid: Uuid::new_v4(),
+            name: "".into(),
+            r#type: "".into(),
+            created_date: "".into(),
+            updated_date: "".into(),
+            type_details: quadratic_rust_shared::quadratic_api::TypeDetails {
+                host: "0.0.0.0".into(),
+                port: "5433".into(),
+                username: "user".into(),
+                password: "password".into(),
+                database: "postgres-connection".into(),
+            },
+        }
+    };
+
     let pg_connection = PostgresConnection::new(
         Some(connection.type_details.username.to_owned()),
         Some(connection.type_details.password.to_owned()),
@@ -77,17 +95,20 @@ mod tests {
     use tracing_test::traced_test;
     use uuid::Uuid;
 
-    // #[tokio::test]
-    // #[traced_test]
-    // async fn test_postgres_connection() {
-    //     let connection_id = Uuid::new_v4();
-    //     let sql_query = SqlQuery {
-    //         query: "select * from \"FileCheckpoint\" limit 2".into(),
-    //         connection_id,
-    //     };
-    //     let state = Extension(new_state().await);
-    //     let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+    #[tokio::test]
+    #[traced_test]
+    async fn test_postgres_connection() {
+        let connection_id = Uuid::new_v4();
+        let sql_query = SqlQuery {
+            query: "select * from all_native_data_types order by id limit 1".into(),
+            connection_id,
+        };
+        let state = Extension(new_state().await);
+        let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
+        let response = data.into_response();
 
-    //     assert_eq!(data.into_response().status(), 200);
-    // }
+        println!("{:?}", response.body());
+
+        assert_eq!(response.status(), 200);
+    }
 }
