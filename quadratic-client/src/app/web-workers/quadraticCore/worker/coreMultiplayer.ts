@@ -45,7 +45,6 @@ class CoreMultiplayer {
   };
 
   sendTransaction = (transactionId: string, operations: string) => {
-    console.log(operations);
     this.send({
       type: 'coreMultiplayerTransaction',
       operations,
