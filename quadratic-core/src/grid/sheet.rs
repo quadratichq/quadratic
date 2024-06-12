@@ -384,23 +384,17 @@ impl Sheet {
         } else {
             Resize::Auto
         };
-        let old_client_resized = self.rows_resize.set_resize(row, resize);
-        old_client_resized == Resize::Manual
+        let old_resize = self.rows_resize.set_resize(row, resize);
+        old_resize == Resize::Manual
     }
 
-    pub fn get_auto_resize_cells(&self, sheet_rect: &SheetRect, all_cells: bool) -> Vec<Pos> {
-        let rect_cells = if all_cells {
-            sheet_rect.to_cells()
-        } else {
-            self.get_wrapped_cells(sheet_rect.to_rect())
-        };
-        let mut auto_resize_cells = Vec::<Pos>::new();
-        rect_cells.iter().for_each(|pos| {
-            if self.get_row_resize(pos.y) == Resize::Auto {
-                auto_resize_cells.push(*pos);
-            }
-        });
-        auto_resize_cells
+    pub fn get_auto_resize_cells(&self, sheet_rect: &SheetRect) -> Vec<Pos> {
+        sheet_rect
+            .to_cells()
+            .iter()
+            .filter(|pos| self.get_row_resize(pos.y) == Resize::Auto)
+            .cloned()
+            .collect()
     }
 }
 

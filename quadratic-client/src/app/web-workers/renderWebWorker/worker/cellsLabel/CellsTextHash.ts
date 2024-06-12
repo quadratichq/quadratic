@@ -350,7 +350,7 @@ export class CellsTextHash {
     let max = 0;
     this.labels.forEach((label) => {
       if (label.location.x === column) {
-        max = Math.max(max, label.textWidth);
+        max = Math.max(max, label.unwrappedTextWidth);
       }
     });
     return max;

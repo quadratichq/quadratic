@@ -57,26 +57,10 @@ impl GridController {
                 match &attr {
                     CellFmtArray::RenderSize(_) => self.send_html_output_rect(&sheet_rect),
                     CellFmtArray::FillColor(_) => self.send_fill_cells(&sheet_rect),
-                    CellFmtArray::Wrap(wrap) => {
-                        self.send_updated_bounds_rect(&sheet_rect, true);
-                        self.send_render_cells(&sheet_rect);
-
-                        let old_has_wrap = if let CellFmtArray::Wrap(wrap) = &old_attr {
-                            wrap.iter_values().any(|val| val == &Some(CellWrap::Wrap))
-                        } else {
-                            false
-                        };
-                        let new_has_wrap =
-                            wrap.iter_values().any(|val| val == &Some(CellWrap::Wrap));
-
-                        // auto resize row heights when text wrapping changes
-                        if old_has_wrap || new_has_wrap {
-                            self.start_auto_resize_row_heights(transaction, &sheet_rect, true);
-                        }
-                    }
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
                         self.send_render_cells(&sheet_rect);
+                        self.start_auto_resize_row_heights(transaction, &sheet_rect);
                     }
                 };
             }

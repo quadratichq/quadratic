@@ -148,14 +148,13 @@ impl GridController {
         &self,
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
-        all_cells: bool,
     ) {
         if !cfg!(target_family = "wasm") || cfg!(test) || !transaction.is_user() {
             return;
         }
 
         if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-            let auto_resize_cells = sheet.get_auto_resize_cells(sheet_rect, all_cells);
+            let auto_resize_cells = sheet.get_auto_resize_cells(sheet_rect);
             if let Ok(cells_string) = serde_json::to_string(&auto_resize_cells) {
                 crate::wasm_bindings::js::jsRequestRowHeights(
                     sheet_rect.sheet_id.to_string(),

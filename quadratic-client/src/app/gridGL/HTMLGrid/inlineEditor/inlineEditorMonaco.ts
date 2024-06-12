@@ -130,7 +130,7 @@ class InlineEditorMonaco {
 
     // set final width and height
     width = textWrap === 'wrap' ? width : Math.max(scrollWidth + PADDING_FOR_GROWING_HORIZONTALLY, width);
-    height = textWrap === 'wrap' ? Math.max(contentHeight, height) : height;
+    height = Math.max(contentHeight, height);
     this.editor.layout({ width, height });
 
     return { width, height };

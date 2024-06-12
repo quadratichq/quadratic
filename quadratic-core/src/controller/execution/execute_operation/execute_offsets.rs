@@ -40,6 +40,20 @@ impl GridController {
                 },
             );
 
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                if transaction.is_undo_redo()
+                    || transaction.is_multiplayer()
+                    || (!client_resized && transaction.is_user())
+                {
+                    crate::wasm_bindings::js::jsOffsetsModified(
+                        sheet_id.to_string(),
+                        Some(column),
+                        None,
+                        new_size,
+                    );
+                }
+            }
+
             if !transaction.is_server() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: column,
@@ -61,24 +75,8 @@ impl GridController {
                             sheet_id,
                         };
                         self.send_render_cells(&sheet_rect);
-
-                        // auto resize row heights when cell width changes
-                        self.start_auto_resize_row_heights(transaction, &sheet_rect, false);
+                        self.start_auto_resize_row_heights(transaction, &sheet_rect);
                     }
-                }
-            }
-
-            if cfg!(target_family = "wasm") || cfg!(test) {
-                if transaction.is_undo_redo()
-                    || transaction.is_multiplayer()
-                    || (!client_resized && !transaction.is_server())
-                {
-                    crate::wasm_bindings::js::jsOffsetsModified(
-                        sheet_id.to_string(),
-                        Some(column),
-                        None,
-                        new_size,
-                    );
                 }
             }
         }
@@ -116,6 +114,20 @@ impl GridController {
                 },
             );
 
+            if cfg!(target_family = "wasm") || cfg!(test) {
+                if transaction.is_undo_redo()
+                    || transaction.is_multiplayer()
+                    || (!client_resized && transaction.is_user())
+                {
+                    crate::wasm_bindings::js::jsOffsetsModified(
+                        sheet_id.to_string(),
+                        None,
+                        Some(row),
+                        new_size,
+                    );
+                }
+            }
+
             if !transaction.is_server() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: 0,
@@ -138,20 +150,6 @@ impl GridController {
                         };
                         self.send_render_cells(&sheet_rect);
                     }
-                }
-            }
-
-            if cfg!(target_family = "wasm") || cfg!(test) {
-                if transaction.is_undo_redo()
-                    || transaction.is_multiplayer()
-                    || (!client_resized && !transaction.is_server())
-                {
-                    crate::wasm_bindings::js::jsOffsetsModified(
-                        sheet_id.to_string(),
-                        None,
-                        Some(row),
-                        new_size,
-                    );
                 }
             }
         }

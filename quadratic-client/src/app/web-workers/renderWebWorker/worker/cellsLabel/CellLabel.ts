@@ -82,6 +82,7 @@ export class CellLabel {
 
   textWidth = 0;
   textHeight = 0;
+  unwrappedTextWidth = 0;
 
   overflowRight?: number;
   overflowLeft?: number;
@@ -236,8 +237,8 @@ export class CellLabel {
     if (!data) throw new Error(`Expected BitmapFont ${this.fontName} to be defined in CellLabel.updateText`);
     const pos = new Point();
     this.chars = [];
-    const lineWidths = [];
-    const lineSpaces = [];
+    const lineWidths: number[] = [];
+    const lineSpaces: number[] = [];
     const text = this.text.replace(/(?:\r\n|\r)/g, '\n') || ' ';
     const charsInput = splitTextToCharacters(text);
     const scale = this.fontSize / data.size;
@@ -250,7 +251,6 @@ export class CellLabel {
     let lastBreakPos = -1;
     let lastBreakWidth = 0;
     let spacesRemoved = 0;
-    let maxLineHeight = 0;
     let spaceCount = 0;
     let i: number;
     for (i = 0; i < charsInput.length; i++) {
@@ -292,7 +292,6 @@ export class CellLabel {
       };
       this.chars.push(charRenderData);
       pos.x += charData.xAdvance + this.letterSpacing;
-      maxLineHeight = Math.max(maxLineHeight, charData.yOffset + charData.textureHeight);
       prevCharCode = charCode;
       if (maxWidth !== undefined && pos.x > maxWidth / scale) {
         const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
@@ -330,6 +329,19 @@ export class CellLabel {
 
     this.textWidth = maxLineWidth * scale;
     this.textHeight = textHeight * scale;
+
+    // calculate the unwrapped text width
+    // content can be multi-line due to \n or \r, this corresponds to lineSpaces[i] === -1
+    let curUnwrappedTextWidth = 0;
+    let maxUnwrappedTextWidth = 0;
+    for (let i = 0; i < lineWidths.length; i++) {
+      curUnwrappedTextWidth += lineWidths[i];
+      if (lineSpaces[i] === -1) {
+        maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
+        curUnwrappedTextWidth = 0;
+      }
+    }
+    this.unwrappedTextWidth = (maxUnwrappedTextWidth + 3 * CELL_TEXT_MARGIN_LEFT) * scale;
 
     this.horizontalAlignOffsets = [];
     for (let i = 0; i <= line; i++) {
