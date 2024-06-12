@@ -637,5 +637,6 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.format_column(0).text_color, None);
+        assert!(sheet.formats_columns.is_empty());
     }
 }

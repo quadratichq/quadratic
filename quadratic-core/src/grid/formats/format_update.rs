@@ -5,17 +5,67 @@ use crate::grid::{CellAlign, CellWrap, NumericFormat, RenderSize};
 use serde::{Deserialize, Serialize};
 
 /// Used to store changes from a Format to another Format.
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
 pub struct FormatUpdate {
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub align: Option<Option<CellAlign>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub wrap: Option<Option<CellWrap>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub numeric_format: Option<Option<NumericFormat>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub numeric_decimals: Option<Option<i16>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub numeric_commas: Option<Option<bool>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub bold: Option<Option<bool>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub italic: Option<Option<bool>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub text_color: Option<Option<String>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub fill_color: Option<Option<String>>,
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "::serde_with::rust::double_option"
+    )]
     pub render_size: Option<Option<RenderSize>>,
 }
 
@@ -422,5 +472,17 @@ mod tests {
                 h: "2".to_string()
             })
         );
+    }
+
+    #[test]
+    fn serialize_format_update() {
+        let update = FormatUpdate {
+            align: Some(None),
+            ..Default::default()
+        };
+        let serialized = serde_json::to_string(&update).unwrap();
+        assert_eq!(serialized, r#"{"align":null}"#);
+
+        let update_deserialized = serde_json::from_str::<FormatUpdate>(&serialized).unwrap();
     }
 }
