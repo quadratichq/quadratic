@@ -29,7 +29,7 @@ const nlb = new awsx.classic.lb.NetworkLoadBalancer("connection-nlb", {
 
 const targetGroup = nlb.createTargetGroup("connection-target-group", {
   port: 80,
-  protocol: "HTTP",
+  protocol: "TCP",
   targetType: "ip",
   healthCheck: {
     path: "/health",
