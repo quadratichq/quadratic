@@ -14,7 +14,7 @@ use crate::{
 pub(crate) mod mysql;
 pub(crate) mod postgres;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct Schema {
     id: Uuid,
     name: String,

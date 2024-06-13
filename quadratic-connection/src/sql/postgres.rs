@@ -91,13 +91,19 @@ pub(crate) async fn schema(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_util::{get_claims, new_state};
+    use crate::{
+        num_vec,
+        test_util::{get_claims, new_state, str_vec, validate_parquet},
+    };
+    use arrow::datatypes::Date32Type;
+    use arrow_schema::{DataType, TimeUnit};
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use tracing_test::traced_test;
     use uuid::Uuid;
 
     #[tokio::test]
     #[traced_test]
-    async fn test_postgres_connection() {
+    async fn postgres_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
             query: "select * from all_native_data_types order by id limit 1".into(),
@@ -107,8 +113,83 @@ mod tests {
         let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
         let response = data.into_response();
 
-        println!("{:?}", response.body());
+        let expected = vec![
+            (DataType::Int32, num_vec!(1_i32)),
+            (DataType::Int16, num_vec!(32767_i16)),
+            (DataType::Int32, num_vec!(2147483647_i32)),
+            (DataType::Int64, num_vec!(9223372036854775807_i64)),
+            (DataType::Float64, num_vec!(12345.67_f64)),
+            (DataType::Float64, num_vec!(12345.67_f64)),
+            (DataType::Float32, num_vec!(123.45_f32)),
+            (DataType::Float64, num_vec!(123456789.123456_f64)),
+            (DataType::Int32, num_vec!(1_i32)),
+            (DataType::Int64, num_vec!(1_i64)),
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, str_vec("char_data ")),
+            (DataType::Utf8, str_vec("varchar_data")),
+            (DataType::Utf8, str_vec("text_data")),
+            (DataType::Utf8, vec![]), // unsupported
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                num_vec!(
+                    NaiveDateTime::parse_from_str("2024-05-20 12:34:56", "%Y-%m-%d %H:%M:%S")
+                        .unwrap()
+                        .and_utc()
+                        .timestamp_millis()
+                ),
+            ), // unsupported
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                num_vec!(NaiveDateTime::parse_from_str(
+                    "2024-05-20 06:34:56+00",
+                    "%Y-%m-%d %H:%M:%S%#z"
+                )
+                .unwrap()
+                .and_utc()
+                .timestamp_millis()),
+            ),
+            (
+                DataType::Date32,
+                num_vec!(Date32Type::from_naive_date(
+                    NaiveDate::parse_from_str("2024-05-20", "%Y-%m-%d").unwrap(),
+                )),
+            ),
+            (
+                DataType::Time32(TimeUnit::Second),
+                num_vec!(NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
+                    .unwrap()
+                    .num_seconds_from_midnight()),
+            ),
+            (
+                DataType::Time32(TimeUnit::Second),
+                num_vec!(NaiveTime::parse_from_str("12:34:56+09:30", "%H:%M:%S%z")
+                    .unwrap()
+                    .num_seconds_from_midnight()),
+            ),
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Boolean, vec![1]),
+            (DataType::Utf8, str_vec("value1")),
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, str_vec(r#"{"key":"value"}"#)),
+            (DataType::Utf8, str_vec(r#"{"key":"value"}"#)),
+            (
+                DataType::Utf8,
+                str_vec("123e4567-e89b-12d3-a456-426614174000"),
+            ),
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+        ];
 
-        assert_eq!(response.status(), 200);
+        validate_parquet(response, expected).await;
+        // assert_eq!(response.status(), 200);
     }
 }

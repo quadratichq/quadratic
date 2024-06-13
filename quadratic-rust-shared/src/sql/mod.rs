@@ -187,23 +187,23 @@ macro_rules! vec_time_arrow_type_to_array_ref {
     }};
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct SchemaColumn {
-    name: String,
-    r#type: String,
-    is_nullable: bool,
+    pub name: String,
+    pub r#type: String,
+    pub is_nullable: bool,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct SchemaTable {
-    name: String,
-    schema: String,
-    columns: Vec<SchemaColumn>,
+    pub name: String,
+    pub schema: String,
+    pub columns: Vec<SchemaColumn>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct DatabaseSchema {
-    database: String,
+    pub database: String,
     pub tables: BTreeMap<String, SchemaTable>,
 }
 

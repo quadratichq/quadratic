@@ -104,7 +104,7 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn test_mysql_connection() {
+    async fn mysql_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
             query: "select * from all_native_data_types order by id limit 1".into(),

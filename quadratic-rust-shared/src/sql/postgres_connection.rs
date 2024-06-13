@@ -52,6 +52,7 @@ impl Connection for PostgresConnection {
 
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = PgConnectOptions::new();
+        options = options.host(&self.host);
 
         if let Some(ref username) = self.username {
             options = options.username(username);
@@ -137,6 +138,7 @@ impl Connection for PostgresConnection {
     }
 
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
+        println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
                 ArrowType::Utf8(convert_pg_type!(String, row, index))
@@ -247,12 +249,7 @@ mod tests {
         for row in &rows {
             for (index, col) in row.columns().iter().enumerate() {
                 let value = PostgresConnection::to_arrow(row, col, index);
-                println!(
-                    "{} ({}) = {:?}",
-                    col.name(),
-                    col.type_info().name(),
-                    value
-                );
+                println!("{} ({}) = {:?}", col.name(), col.type_info().name(), value);
             }
         }
 

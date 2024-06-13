@@ -52,6 +52,7 @@ impl Connection for MySqlConnection {
 
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = MySqlConnectOptions::new();
+        options = options.host(&self.host);
 
         if let Some(ref username) = self.username {
             options = options.username(username);
