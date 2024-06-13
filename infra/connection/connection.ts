@@ -23,22 +23,32 @@ const vpcId = config.require("vpc-id");
 const cluster = new awsx.classic.ecs.Cluster("cluster");
 
 // Define the Networking for our service.
-const alb = new awsx.classic.lb.ApplicationLoadBalancer("connection-lb", {
-  external: true,
-  securityGroups: cluster.securityGroups,
-});
-const web = alb.createListener("web", {
-  external: true,
-  port: 443,
-  protocol: "HTTPS",
-  certificateArn: certificateArn, // Attach the SSL certificate
-  sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
+const nlb = new awsx.classic.lb.NetworkLoadBalancer("connection-nlb", {
+  subnets: [subNet1, subNet2],
 });
 
-const internal = alb.createListener("internal", {
-  external: false,
+const targetGroup = nlb.createTargetGroup("connection-target-group", {
   port: 80,
   protocol: "HTTP",
+  targetType: "ip",
+  healthCheck: {
+    path: "/health",
+    interval: 30,
+    healthyThreshold: 2,
+    unhealthyThreshold: 2,
+  },
+});
+
+const listener = nlb.createListener("connection-listener", {
+  port: 443,
+  protocol: "TLS",
+  certificateArn: certificateArn,
+  defaultActions: [
+    {
+      type: "forward",
+      targetGroupArn: targetGroup.targetGroup.arn,
+    },
+  ],
 });
 
 // Create a repository for container images.
@@ -61,7 +71,7 @@ const appService = new awsx.classic.ecs.FargateService("app-svc", {
       image: img.imageUri,
       cpu: 102 /*10% of 1024*/,
       memory: 50 /*MB*/,
-      portMappings: [internal],
+      portMappings: [targetGroup],
       environment: [
         // TODO: Pull these from Pulumi ESC
         { name: "QUADRATIC_API_URI", value: quadraticApiUri },
@@ -96,8 +106,8 @@ const dnsRecord = new aws.route53.Record("connection-r53-record", {
   type: "A",
   aliases: [
     {
-      name: alb.loadBalancer.dnsName,
-      zoneId: alb.loadBalancer.zoneId,
+      name: nlb.loadBalancer.dnsName,
+      zoneId: nlb.loadBalancer.zoneId,
       evaluateTargetHealth: true,
     },
   ],
