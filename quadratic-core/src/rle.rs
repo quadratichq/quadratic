@@ -10,6 +10,9 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
     pub fn repeat(value: T, len: usize) -> Self {
         RunLengthEncoding(vec![(value, len)])
     }
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
     pub fn push(&mut self, value: T) {
         match self.0.last_mut() {
             Some((old_value, len)) if *old_value == value => *len += 1,
@@ -40,6 +43,7 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
         self.0.iter().map(|(_, len)| len).sum()
     }
 }
+
 impl<T: Eq + Clone> FromIterator<T> for RunLengthEncoding<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut ret = RunLengthEncoding::new();
@@ -83,5 +87,20 @@ mod tests {
         assert_eq!(rle.size(), 4);
         rle.push_n(2, 2);
         assert_eq!(rle.size(), 6);
+    }
+
+    #[test]
+    fn is_empty() {
+        let mut rle = RunLengthEncoding::new();
+        assert!(rle.is_empty());
+
+        rle.push_n(1, 0);
+        assert!(!rle.is_empty());
+
+        let rel = RunLengthEncoding::repeat(0, 1);
+        assert!(rel.is_empty());
+
+        let rel = RunLengthEncoding::repeat(0, 0);
+        assert!(rel.is_empty());
     }
 }

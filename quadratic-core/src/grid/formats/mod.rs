@@ -19,6 +19,12 @@ pub struct Formats {
 }
 
 impl Formats {
+    pub fn new() -> Self {
+        Self {
+            formats: RunLengthEncoding::new(),
+        }
+    }
+
     pub fn repeat(update: FormatUpdate, count: usize) -> Self {
         let mut formats = Formats::default();
         formats.push_n(update, count);

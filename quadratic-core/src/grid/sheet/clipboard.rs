@@ -5,7 +5,7 @@ use crate::{
     formulas::replace_a1_notation,
     grid::{get_cell_borders_in_rect, CellAlign, CellWrap, CodeCellLanguage, Sheet},
     selection::Selection,
-    CellValue, Pos, Rect,
+    CellValue, Pos,
 };
 
 impl Sheet {
@@ -13,25 +13,25 @@ impl Sheet {
     ///
     /// Returns the copied SheetRect, plain text, and html.
     pub fn copy_to_clipboard(&self, selection: &Selection) -> Result<(String, String), String> {
-        let sheet_rect = self
-            .clipboard_selection(selection)
-            .ok_or("Unable to find SheetRect in selection")?;
+        let Some(bounds) = self.clipboard_selection(selection) else {
+            return Err("Unable to find selection".to_string());
+        };
 
-        let mut cells = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
+        let mut cells = CellValues::new(bounds.width() as u32, bounds.height() as u32);
         let mut plain_text = String::new();
         let mut html = String::from("<tbody>");
-        let mut values = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
+        let mut values = CellValues::new(bounds.width() as u32, bounds.height() as u32);
 
-        for y in sheet_rect.y_range() {
-            if y != sheet_rect.min.y {
+        for y in bounds.y_range() {
+            if y != bounds.min.y {
                 plain_text.push('\n');
                 html.push_str("</tr>");
             }
 
             html.push_str("<tr>");
 
-            for x in sheet_rect.x_range() {
-                if x != sheet_rect.min.x {
+            for x in bounds.x_range() {
+                if x != bounds.min.x {
                     plain_text.push('\t');
                     html.push_str("</td>");
                 }
@@ -61,8 +61,8 @@ impl Sheet {
                     };
 
                     cells.set(
-                        (x - sheet_rect.min.x) as u32,
-                        (y - sheet_rect.min.y) as u32,
+                        (x - bounds.min.x) as u32,
+                        (y - bounds.min.y) as u32,
                         real_value,
                     );
                 }
@@ -70,8 +70,8 @@ impl Sheet {
                 // create quadratic clipboard value-only
                 if let Some(simple_value) = &simple_value {
                     values.set(
-                        (x - sheet_rect.min.x) as u32,
-                        (y - sheet_rect.min.y) as u32,
+                        (x - bounds.min.x) as u32,
+                        (y - bounds.min.y) as u32,
                         simple_value.clone(),
                     );
                 }
@@ -162,10 +162,10 @@ impl Sheet {
             }
         }
 
-        let clipboard_rect: Rect = sheet_rect.into();
+        let bounds_rect = bounds.into();
 
         // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
-        self.iter_code_output_in_rect(clipboard_rect)
+        self.iter_code_output_in_rect(bounds_rect)
             .filter(|(_, code_cell)| !code_cell.spill_error)
             .for_each(|(output_rect, code_cell)| {
                 // only change the cells if the CellValue::Code is not in the selection box
@@ -173,29 +173,29 @@ impl Sheet {
                     x: output_rect.min.x,
                     y: output_rect.min.y,
                 };
-                let x_start = if output_rect.min.x > clipboard_rect.min.x {
+                let x_start = if output_rect.min.x > bounds.min.x {
                     output_rect.min.x
                 } else {
-                    clipboard_rect.min.x
+                    bounds.min.x
                 };
-                let y_start = if output_rect.min.y > clipboard_rect.min.y {
+                let y_start = if output_rect.min.y > bounds.min.y {
                     output_rect.min.y
                 } else {
-                    clipboard_rect.min.y
+                    bounds.min.y
                 };
-                let x_end = if output_rect.max.x < clipboard_rect.max.x {
+                let x_end = if output_rect.max.x < bounds.max.x {
                     output_rect.max.x
                 } else {
-                    clipboard_rect.max.x
+                    bounds.max.x
                 };
-                let y_end = if output_rect.max.y < clipboard_rect.max.y {
+                let y_end = if output_rect.max.y < bounds.max.y {
                     output_rect.max.y
                 } else {
-                    clipboard_rect.max.y
+                    bounds.max.y
                 };
 
                 // add the CellValue to cells if the code is not included in the clipboard
-                let include_in_cells = !clipboard_rect.contains(code_pos);
+                let include_in_cells = !bounds_rect.contains(code_pos);
 
                 // add the code_run output to clipboard.values
                 for y in y_start..=y_end {
@@ -203,55 +203,54 @@ impl Sheet {
                         if let Some(value) = code_cell
                             .cell_value_at((x - code_pos.x) as u32, (y - code_pos.y) as u32)
                         {
-                            if include_in_cells {
-                                cells.set(
-                                    (x - sheet_rect.min.x) as u32,
-                                    (y - sheet_rect.min.y) as u32,
-                                    value.clone(),
-                                );
+                            let pos = Pos {
+                                x: x - bounds.min.x,
+                                y: y - bounds.min.y,
+                            };
+                            if selection.pos_in_selection(Pos { x, y }) {
+                                if include_in_cells {
+                                    cells.set(pos.x as u32, pos.y as u32, value.clone());
+                                }
+                                values.set(pos.x as u32, pos.y as u32, value);
                             }
-                            values.set(
-                                (x - sheet_rect.min.x) as u32,
-                                (y - sheet_rect.min.y) as u32,
-                                value,
-                            );
                         }
                     }
                 }
             });
 
-        let formats = self.get_all_cell_formats(sheet_rect);
-        let borders = get_cell_borders_in_rect(self, sheet_rect.into());
+        let formats = self.get_all_cell_formats(bounds, Some(selection));
+        let sheet_formats = self.sheet_formats(selection);
+        let borders = get_cell_borders_in_rect(self, bounds_rect, Some(selection));
         let origin = if selection.all {
             ClipboardOrigin {
-                x: sheet_rect.min.x,
-                y: sheet_rect.min.y,
-                all: Some((sheet_rect.min.x, sheet_rect.min.y)),
+                x: bounds.min.x,
+                y: bounds.min.y,
+                all: Some((bounds.min.x, bounds.min.y)),
                 column: None,
                 row: None,
             }
         } else if selection.columns.is_some() {
             // we need the row origin when columns are selected
             ClipboardOrigin {
-                x: sheet_rect.min.x,
-                y: sheet_rect.min.y,
+                x: bounds.min.x,
+                y: bounds.min.y,
                 all: None,
                 column: None,
-                row: Some(sheet_rect.min.y),
+                row: Some(bounds.min.y),
             }
         } else if selection.rows.is_some() {
             // we need the column origin when rows are selected
             ClipboardOrigin {
-                x: sheet_rect.min.x,
-                y: sheet_rect.min.y,
+                x: bounds.min.x,
+                y: bounds.min.y,
                 all: None,
-                column: Some(sheet_rect.min.x),
+                column: Some(bounds.min.x),
                 row: None,
             }
         } else {
             ClipboardOrigin {
-                x: sheet_rect.min.x,
-                y: sheet_rect.min.y,
+                x: bounds.min.x,
+                y: bounds.min.y,
                 all: None,
                 column: None,
                 row: None,
@@ -260,10 +259,11 @@ impl Sheet {
         let clipboard = Clipboard {
             cells,
             formats,
+            sheet_formats,
             borders,
             values,
-            w: sheet_rect.width() as u32,
-            h: sheet_rect.height() as u32,
+            w: bounds.width() as u32,
+            h: bounds.height() as u32,
             origin,
             selection: Some(selection.clone()),
         };
@@ -281,9 +281,11 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::controller::{operations::clipboard::PasteSpecial, GridController};
-
     use super::*;
+    use crate::{
+        controller::{operations::clipboard::PasteSpecial, GridController},
+        Rect,
+    };
 
     #[test]
     fn copy_to_clipboard_exclude() {

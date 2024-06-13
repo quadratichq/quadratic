@@ -67,7 +67,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) else {
             return vec![];
         };
-        sheet.get_all_cell_formats(sheet_rect)
+        sheet.get_all_cell_formats(sheet_rect, None)
     }
 
     pub fn set_cell_render_size(

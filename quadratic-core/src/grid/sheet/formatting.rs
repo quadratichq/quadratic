@@ -3,6 +3,7 @@ use crate::{
         formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
         NumericCommas, NumericDecimals, NumericFormat, RenderSize, TextColor,
     },
+    selection::Selection,
     Pos, RunLengthEncoding, SheetRect,
 };
 
@@ -33,7 +34,11 @@ impl Sheet {
 
     /// Gets all cell formats for a sheet using the all old CellFmtArray. This
     /// will eventually be deprecated.
-    pub fn get_all_cell_formats(&self, sheet_rect: SheetRect) -> Vec<CellFmtArray> {
+    pub fn get_all_cell_formats(
+        &self,
+        sheet_rect: SheetRect,
+        selection: Option<&Selection>,
+    ) -> Vec<CellFmtArray> {
         let mut cell_formats = vec![
             CellFmtArray::Align(RunLengthEncoding::new()),
             CellFmtArray::Wrap(RunLengthEncoding::new()),
@@ -48,38 +53,73 @@ impl Sheet {
         for y in sheet_rect.y_range() {
             for x in sheet_rect.x_range() {
                 let pos = Pos { x, y };
-                cell_formats.iter_mut().for_each(|array| match array {
-                    CellFmtArray::Align(array) => {
-                        array.push(self.get_formatting_value::<CellAlign>(pos));
-                    }
-                    CellFmtArray::Wrap(array) => {
-                        array.push(self.get_formatting_value::<CellWrap>(pos));
-                    }
-                    CellFmtArray::NumericFormat(array) => {
-                        array.push(self.get_formatting_value::<NumericFormat>(pos));
-                    }
-                    CellFmtArray::NumericDecimals(array) => {
-                        array.push(self.get_formatting_value::<NumericDecimals>(pos));
-                    }
-                    CellFmtArray::NumericCommas(array) => {
-                        array.push(self.get_formatting_value::<NumericCommas>(pos));
-                    }
-                    CellFmtArray::Bold(array) => {
-                        array.push(self.get_formatting_value::<Bold>(pos));
-                    }
-                    CellFmtArray::Italic(array) => {
-                        array.push(self.get_formatting_value::<Italic>(pos));
-                    }
-                    CellFmtArray::TextColor(array) => {
-                        array.push(self.get_formatting_value::<TextColor>(pos));
-                    }
-                    CellFmtArray::FillColor(array) => {
-                        array.push(self.get_formatting_value::<FillColor>(pos));
-                    }
-                    CellFmtArray::RenderSize(array) => {
-                        array.push(self.get_formatting_value::<RenderSize>(pos));
-                    }
-                });
+                if selection.is_none() || selection.is_some_and(|s| s.pos_in_selection(pos)) {
+                    cell_formats.iter_mut().for_each(|array| match array {
+                        CellFmtArray::Align(array) => {
+                            array.push(self.get_formatting_value::<CellAlign>(pos));
+                        }
+                        CellFmtArray::Wrap(array) => {
+                            array.push(self.get_formatting_value::<CellWrap>(pos));
+                        }
+                        CellFmtArray::NumericFormat(array) => {
+                            array.push(self.get_formatting_value::<NumericFormat>(pos));
+                        }
+                        CellFmtArray::NumericDecimals(array) => {
+                            array.push(self.get_formatting_value::<NumericDecimals>(pos));
+                        }
+                        CellFmtArray::NumericCommas(array) => {
+                            array.push(self.get_formatting_value::<NumericCommas>(pos));
+                        }
+                        CellFmtArray::Bold(array) => {
+                            array.push(self.get_formatting_value::<Bold>(pos));
+                        }
+                        CellFmtArray::Italic(array) => {
+                            array.push(self.get_formatting_value::<Italic>(pos));
+                        }
+                        CellFmtArray::TextColor(array) => {
+                            array.push(self.get_formatting_value::<TextColor>(pos));
+                        }
+                        CellFmtArray::FillColor(array) => {
+                            array.push(self.get_formatting_value::<FillColor>(pos));
+                        }
+                        CellFmtArray::RenderSize(array) => {
+                            array.push(self.get_formatting_value::<RenderSize>(pos));
+                        }
+                    });
+                } else {
+                    cell_formats.iter_mut().for_each(|array| match array {
+                        CellFmtArray::Align(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::Wrap(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::NumericFormat(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::NumericDecimals(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::NumericCommas(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::Bold(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::Italic(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::TextColor(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::FillColor(array) => {
+                            array.push(None);
+                        }
+                        CellFmtArray::RenderSize(array) => {
+                            array.push(None);
+                        }
+                    });
+                }
             }
         }
         cell_formats

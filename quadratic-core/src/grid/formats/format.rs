@@ -183,6 +183,24 @@ impl From<&Format> for FormatUpdate {
     }
 }
 
+/// Converts a Format to a FormatUpdate.
+impl From<Format> for FormatUpdate {
+    fn from(format: Format) -> Self {
+        Self {
+            align: format.align.map(Some),
+            wrap: format.wrap.map(Some),
+            numeric_format: format.numeric_format.clone().map(Some),
+            numeric_decimals: format.numeric_decimals.map(Some),
+            numeric_commas: format.numeric_commas.map(Some),
+            bold: format.bold.map(Some),
+            italic: format.italic.map(Some),
+            text_color: format.text_color.clone().map(Some),
+            fill_color: format.fill_color.clone().map(Some),
+            render_size: format.render_size.clone().map(Some),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -394,7 +412,7 @@ mod test {
     }
 
     #[test]
-    fn format_to_format_update() {
+    fn format_to_format_update_ref() {
         let format = Format {
             align: Some(CellAlign::Center),
             wrap: Some(CellWrap::Wrap),
@@ -415,6 +433,53 @@ mod test {
         };
 
         let update: FormatUpdate = (&format).into();
+
+        assert_eq!(update.align, Some(Some(CellAlign::Center)));
+        assert_eq!(update.wrap, Some(Some(CellWrap::Wrap)));
+        assert_eq!(
+            update.numeric_format,
+            Some(Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string())
+            }))
+        );
+        assert_eq!(update.numeric_decimals, Some(Some(2)));
+        assert_eq!(update.numeric_commas, Some(Some(true)));
+        assert_eq!(update.bold, Some(Some(true)));
+        assert_eq!(update.italic, Some(Some(true)));
+        assert_eq!(update.text_color, Some(Some("red".to_string())));
+        assert_eq!(update.fill_color, Some(Some("blue".to_string())));
+        assert_eq!(
+            update.render_size,
+            Some(Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string()
+            }))
+        );
+    }
+
+    #[test]
+    fn format_to_format_update() {
+        let format = Format {
+            align: Some(CellAlign::Center),
+            wrap: Some(CellWrap::Wrap),
+            numeric_format: Some(NumericFormat {
+                kind: NumericFormatKind::Currency,
+                symbol: Some("$".to_string()),
+            }),
+            numeric_decimals: Some(2),
+            numeric_commas: Some(true),
+            bold: Some(true),
+            italic: Some(true),
+            text_color: Some("red".to_string()),
+            fill_color: Some("blue".to_string()),
+            render_size: Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+        };
+
+        let update: FormatUpdate = format.into();
 
         assert_eq!(update.align, Some(Some(CellAlign::Center)));
         assert_eq!(update.wrap, Some(Some(CellWrap::Wrap)));

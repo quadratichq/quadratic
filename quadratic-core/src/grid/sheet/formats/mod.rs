@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use super::Sheet;
 use crate::{
-    controller::operations::operation::Operation,
+    controller::operations::{clipboard::ClipboardSheetFormats, operation::Operation},
     grid::formats::{format::Format, format_update::FormatUpdate, Formats},
     selection::Selection,
 };
@@ -75,5 +77,117 @@ impl Sheet {
             }
             ops
         }
+    }
+
+    /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
+    pub fn sheet_formats(&self, selection: &Selection) -> ClipboardSheetFormats {
+        if selection.all {
+            ClipboardSheetFormats {
+                all: self.format_all.clone(),
+                ..Default::default()
+            }
+        } else {
+            let columns: HashMap<i64, Format> = match selection.columns.as_ref() {
+                None => HashMap::new(),
+                Some(columns) => columns
+                    .iter()
+                    .filter_map(|column| {
+                        if let Some(format) = self.try_format_column(*column) {
+                            Some((column.clone(), format.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+            };
+            let rows = match selection.rows.as_ref() {
+                None => HashMap::new(),
+                Some(rows) => rows
+                    .iter()
+                    .filter_map(|row| {
+                        if let Some(format) = self.try_format_row(*row) {
+                            Some((row.clone(), format.clone()))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+            };
+            ClipboardSheetFormats {
+                columns,
+                rows,
+                ..Default::default()
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        grid::{
+            formats::{format::Format, format_update::FormatUpdate, Formats},
+            sheet,
+        },
+        selection::Selection,
+    };
+
+    #[test]
+    fn sheet_formats() {
+        let mut sheet = sheet::Sheet::test();
+        sheet.set_formats_columns(
+            &[2, 3],
+            &Formats::repeat(
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    ..Default::default()
+                },
+                2,
+            ),
+        );
+        sheet.set_formats_rows(
+            &[1, 2],
+            &Formats::repeat(
+                FormatUpdate {
+                    italic: Some(Some(true)),
+                    ..Default::default()
+                },
+                2,
+            ),
+        );
+        let selection = Selection {
+            columns: Some(vec![2]),
+            rows: Some(vec![2]),
+            ..Default::default()
+        };
+        let formats = sheet.sheet_formats(&selection);
+        assert_eq!(formats.columns.len(), 1);
+        assert_eq!(formats.rows.len(), 1);
+        assert_eq!(formats.columns[&2].bold, Some(true));
+        assert_eq!(formats.rows[&2].italic, Some(true));
+
+        sheet.set_format_all(&Formats::repeat(
+            FormatUpdate {
+                wrap: Some(Some(crate::grid::CellWrap::Overflow)),
+                ..Default::default()
+            },
+            1,
+        ));
+        // note that columns and rows are ignored when all is true
+        let formats = sheet.sheet_formats(&Selection {
+            all: true,
+            rows: Some(vec![2]),
+            columns: Some(vec![2]),
+            ..Default::default()
+        });
+        assert_eq!(
+            formats.all,
+            Some(Format {
+                wrap: Some(crate::grid::CellWrap::Overflow),
+                ..Default::default()
+            })
+        );
+        assert_eq!(formats.columns.len(), 0);
+        assert_eq!(formats.rows.len(), 0);
     }
 }

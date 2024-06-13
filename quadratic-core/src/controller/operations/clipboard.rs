@@ -1,11 +1,14 @@
+use std::collections::HashMap;
+
 use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
     formulas::replace_internal_cell_references,
     grid::{
-        formatting::CellFmtArray, generate_borders_full, BorderSelection, CellBorders,
-        CodeCellLanguage,
+        formats::{format::Format, Formats},
+        formatting::CellFmtArray,
+        generate_borders_full, BorderSelection, CellBorders, CodeCellLanguage,
     },
     selection::Selection,
     CellValue, Pos, SheetPos, SheetRect,
@@ -34,6 +37,13 @@ pub struct ClipboardOrigin {
     pub all: Option<(i64, i64)>,
 }
 
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub struct ClipboardSheetFormats {
+    pub columns: HashMap<i64, Format>,
+    pub rows: HashMap<i64, Format>,
+    pub all: Option<Format>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Clipboard {
     pub w: u32,
@@ -44,6 +54,7 @@ pub struct Clipboard {
     pub values: CellValues,
 
     pub formats: Vec<CellFmtArray>,
+    pub sheet_formats: ClipboardSheetFormats,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
 
     pub origin: ClipboardOrigin,
@@ -96,6 +107,64 @@ impl GridController {
         }
     }
 
+    /// Sets sheet formats from ClipboardSheetFormats.
+    ///
+    /// Returns a list of operations to undo the change.
+    fn set_sheet_formats(
+        &mut self,
+        selection: &Selection,
+        clipboard: &Clipboard,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+        if let Some(all) = clipboard.sheet_formats.all.as_ref() {
+            let formats = Formats::repeat(all.into(), 1);
+            ops.push(Operation::SetCellFormatsSelection {
+                selection: Selection {
+                    sheet_id: selection.sheet_id,
+                    all: true,
+                    ..Default::default()
+                },
+                formats: formats.clone(),
+            });
+        } else {
+            let mut formats = Formats::new();
+            let mut selection = Selection {
+                sheet_id: selection.sheet_id,
+                ..Default::default()
+            };
+            let columns = clipboard
+                .sheet_formats
+                .columns
+                .iter()
+                .map(|(column, format)| {
+                    let adjusted_column = column + clipboard.origin.x;
+                    formats.push(format.into());
+                    adjusted_column
+                })
+                .collect::<Vec<_>>();
+            if !columns.is_empty() {
+                selection.columns = Some(columns);
+            }
+            let rows = clipboard
+                .sheet_formats
+                .rows
+                .iter()
+                .map(|(row, format)| {
+                    let adjusted_row = row + clipboard.origin.y;
+                    formats.push(format.into());
+                    adjusted_row
+                })
+                .collect::<Vec<_>>();
+            if !rows.is_empty() {
+                selection.rows = Some(rows);
+            }
+            if !formats.is_empty() {
+                ops.push(Operation::SetCellFormatsSelection { selection, formats });
+            }
+        }
+        ops
+    }
+
     fn set_clipboard_cells(
         &mut self,
         selection: &Selection,
@@ -135,28 +204,8 @@ impl GridController {
         } else if let Some(column_origin) = clipboard.origin.column {
             ops.extend(self.clear_format_selection_operations(selection));
             start_pos.x = column_origin;
-            // cursor = Some(Operation::SetCursorSelection {
-            //     selection: Selection {
-            //         x: selection.x,
-            //         y: selection.y,
-            //         sheet_id: selection.sheet_id,
-            //         columns: None,
-            //         rows: Some(vec![selection.y]),
-            //         ..Default::default()
-            //     },
-            // });
         } else if let Some(row_origin) = clipboard.origin.row {
             start_pos.y = row_origin;
-            // cursor = Some(Operation::SetCursorSelection {
-            //     selection: Selection {
-            //         x: selection.x,
-            //         y: selection.y,
-            //         sheet_id: selection.sheet_id,
-            //         columns: Some(vec![selection.x]),
-            //         rows: None,
-            //         ..Default::default()
-            //     },
-            // });
         }
 
         match special {
@@ -210,6 +259,8 @@ impl GridController {
                 });
             });
 
+            ops.extend(self.set_sheet_formats(selection, &clipboard));
+
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 // add borders to the sheet
                 borders.iter().for_each(|(x, y, cell_borders)| {
@@ -258,30 +309,6 @@ impl GridController {
             ops.push(cursor);
         }
 
-        // // set the cursor based on the type of paste
-        // if clipboard.origin.as_ref().is_some_and(|o| o.all.is_some()) {
-        //     ops.push(Operation::SetCursorSelection {
-        //         selection: Selection {
-        //             x: selection.x,
-        //             y: selection.y,
-        //             sheet_id: selection.sheet_id,
-        //             all: true,
-        //             ..Default::default()
-        //         },
-        //     });
-        // } else if let Some(cursor) = cursor {
-        //     ops.push(cursor);
-        // } else {
-        //     ops.push(Operation::SetCursorSelection {
-        //         selection: Selection {
-        //             x: selection.x,
-        //             y: selection.y,
-        //             sheet_id: selection.sheet_id,
-        //             rects: Some(vec![sheet_rect.into()]),
-        //             ..Default::default()
-        //         },
-        //     });
-        // }
         ops
     }
 
@@ -523,5 +550,10 @@ mod test {
             sheet.cell_value_ref((3, 3).into()),
             Some(&CellValue::Number(1.into()))
         );
+    }
+
+    #[test]
+    fn set_sheet_formats() {
+        todo!();
     }
 }
