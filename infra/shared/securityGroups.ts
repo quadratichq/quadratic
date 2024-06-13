@@ -121,4 +121,12 @@ if (isPreviewEnvironment) {
     cidrBlocks: ["0.0.0.0/0"],
     securityGroupId: multiplayerEc2SecurityGroup.id,
   });
+  new aws.ec2.SecurityGroupRule(`multiplayer-ssh-ingress-rule`, {
+    type: "ingress",
+    fromPort: 22,
+    toPort: 22,
+    protocol: "tcp",
+    cidrBlocks: ["0.0.0.0/0"],
+    securityGroupId: connectionEc2SecurityGroup.id,
+  });
 }
