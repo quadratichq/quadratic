@@ -28,7 +28,7 @@ pub enum PasteSpecial {
 /// selection. In order to paste a column, row, or all, we need to know the
 /// origin of the copy. For example, this is used to copy and paste a column
 /// on top of another column, or a sheet on top of another sheet.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct ClipboardOrigin {
     pub x: i64,
     pub y: i64,
@@ -110,11 +110,13 @@ impl GridController {
     /// Sets sheet formats from ClipboardSheetFormats.
     ///
     /// Returns a list of operations to undo the change.
-    fn set_sheet_formats(
+    fn sheet_formats_operations(
         &mut self,
         selection: &Selection,
         clipboard: &Clipboard,
     ) -> Vec<Operation> {
+        dbgjs!(selection);
+
         let mut ops = vec![];
         if let Some(all) = clipboard.sheet_formats.all.as_ref() {
             let formats = Formats::repeat(all.into(), 1);
@@ -128,7 +130,7 @@ impl GridController {
             });
         } else {
             let mut formats = Formats::new();
-            let mut selection = Selection {
+            let mut new_selection = Selection {
                 sheet_id: selection.sheet_id,
                 ..Default::default()
             };
@@ -137,29 +139,30 @@ impl GridController {
                 .columns
                 .iter()
                 .map(|(column, format)| {
-                    let adjusted_column = column + clipboard.origin.x;
                     formats.push(format.into());
-                    adjusted_column
+                    column - clipboard.origin.x + selection.x
                 })
                 .collect::<Vec<_>>();
             if !columns.is_empty() {
-                selection.columns = Some(columns);
+                new_selection.columns = Some(columns);
             }
             let rows = clipboard
                 .sheet_formats
                 .rows
                 .iter()
                 .map(|(row, format)| {
-                    let adjusted_row = row + clipboard.origin.y;
                     formats.push(format.into());
-                    adjusted_row
+                    row - clipboard.origin.y + selection.y
                 })
                 .collect::<Vec<_>>();
             if !rows.is_empty() {
-                selection.rows = Some(rows);
+                new_selection.rows = Some(rows);
             }
             if !formats.is_empty() {
-                ops.push(Operation::SetCellFormatsSelection { selection, formats });
+                ops.push(Operation::SetCellFormatsSelection {
+                    selection: new_selection,
+                    formats,
+                });
             }
         }
         ops
@@ -259,7 +262,7 @@ impl GridController {
                 });
             });
 
-            ops.extend(self.set_sheet_formats(selection, &clipboard));
+            ops.extend(self.sheet_formats_operations(selection, &clipboard));
 
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 // add borders to the sheet
@@ -414,16 +417,10 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        controller::{
-            active_transactions::transaction_name::TransactionName,
-            operations::operation::Operation, GridController,
-        },
-        selection::Selection,
-        CellValue,
-    };
-
     use super::PasteSpecial;
+    use super::*;
+    use crate::controller::active_transactions::transaction_name::TransactionName;
+    use crate::grid::formats::format_update::FormatUpdate;
 
     #[test]
     fn move_cell_operations() {
@@ -553,7 +550,54 @@ mod test {
     }
 
     #[test]
-    fn set_sheet_formats() {
-        todo!();
+    fn sheet_formats_operations_column_rows() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_formats_columns(
+            &[1, 2],
+            &Formats::repeat(
+                FormatUpdate {
+                    bold: Some(Some(true)),
+                    ..Default::default()
+                },
+                2,
+            ),
+        );
+        sheet.set_formats_rows(
+            &[3, 4],
+            &Formats::repeat(
+                FormatUpdate {
+                    italic: Some(Some(true)),
+                    ..Default::default()
+                },
+                2,
+            ),
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let (_, html) = sheet
+            .copy_to_clipboard(&Selection {
+                sheet_id,
+                x: 1,
+                y: 3,
+                columns: Some(vec![1, 2]),
+                rows: Some(vec![3, 4]),
+                ..Default::default()
+            })
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            Selection {
+                sheet_id,
+                x: 3,
+                y: 3,
+                ..Default::default()
+            },
+            None,
+            Some(html),
+            PasteSpecial::None,
+            None,
+        )
     }
 }
