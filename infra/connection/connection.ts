@@ -1,6 +1,14 @@
 import * as aws from "@pulumi/aws";
-import * as awsx from "@pulumi/awsx";
 import * as pulumi from "@pulumi/pulumi";
+
+import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
+import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
+import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
+import { redisHost, redisPort } from "../shared/redis";
+import {
+  connectionEc2SecurityGroup,
+  connectionNlbSecurityGroup,
+} from "../shared/securityGroups";
 const config = new pulumi.Config();
 
 // Configuration from command line
@@ -17,90 +25,72 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 
-////////////////////////////////////////////////////////
-
-// Create a security group to allow outbound traffic
-const securityGroup = new aws.ec2.SecurityGroup("service-sg", {
-  vpcId: vpcId,
-  egress: [
-    {
-      protocol: "-1", // All protocols
-      fromPort: 0,
-      toPort: 0,
-      cidrBlocks: ["0.0.0.0/0"], // Allow all outbound traffic
-    },
-  ],
+const instance = new aws.ec2.Instance("connection-instance", {
+  tags: {
+    Name: `connection-instance-${connectionSubdomain}`,
+  },
+  instanceType: "t2.micro",
+  iamInstanceProfile: instanceProfileIAMContainerRegistry,
+  vpcSecurityGroupIds: [connectionEc2SecurityGroup.id],
+  subnetId: subNet1, // Assign a subnet, otherwise a random one will be chosen which could be disconnected from the NLB
+  ami: latestAmazonLinuxAmi.id,
+  // Run Setup script on instance boot to create connection systemd service
+  userDataReplaceOnChange: true,
+  userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
+    runDockerImageBashScript(
+      connectionECRName,
+      dockerImageTag,
+      "quadratic-connection-development",
+      {
+        QUADRATIC_API_URI: quadraticApiUri,
+      },
+      true
+    )
+  ),
 });
 
-// Create an ECS Fargate cluster.
-const cluster = new awsx.classic.ecs.Cluster("cluster");
-
-// Define the Networking for our service.
-const nlb = new awsx.classic.lb.NetworkLoadBalancer("connection-nlb", {
+// Create a new Network Load Balancer
+const nlb = new aws.lb.LoadBalancer("connection-nlb", {
+  internal: false,
+  loadBalancerType: "network",
   subnets: [subNet1, subNet2],
+  enableCrossZoneLoadBalancing: true,
+  securityGroups: [connectionNlbSecurityGroup.id],
 });
 
-const targetGroup = nlb.createTargetGroup("connection-target-group", {
+// Create a new Target Group
+const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
   port: 80,
   protocol: "TCP",
-  targetType: "ip",
-  healthCheck: {
-    path: "/health",
-    interval: 30,
-    healthyThreshold: 2,
-    unhealthyThreshold: 2,
-  },
+  targetType: "instance",
+  vpcId: vpcId,
 });
 
-const listener = nlb.createListener("connection-listener", {
+// Attach the instance to the new Target Group
+const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
+  "connection-attach-instance-tg",
+  {
+    targetId: instance.id,
+    targetGroupArn: targetGroup.arn,
+  }
+);
+
+// Create NLB Listener for TLS on port 443
+const nlbListener = new aws.lb.Listener("connection-nlb-listener", {
+  tags: {
+    Name: `connection-nlb-${connectionSubdomain}`,
+  },
+  loadBalancerArn: nlb.arn,
   port: 443,
   protocol: "TLS",
-  certificateArn: certificateArn,
+  certificateArn: certificateArn, // Attach the SSL certificate
+  sslPolicy: "ELBSecurityPolicy-2016-08", // Choose an appropriate SSL policy
   defaultActions: [
     {
       type: "forward",
-      targetGroupArn: targetGroup.targetGroup.arn,
+      targetGroupArn: targetGroup.arn,
     },
   ],
-});
-
-// Create a repository for container images.
-const repo = new awsx.ecr.Repository("connection-repo", {
-  forceDelete: true,
-});
-
-// Build and publish a Docker image to a private ECR registry.
-const img = new awsx.ecr.Image("connection-image", {
-  repositoryUrl: repo.url,
-  context: "../",
-  dockerfile: "../quadratic-connection/Dockerfile",
-});
-
-// Create a Fargate service task that can scale out.
-const appService = new awsx.classic.ecs.FargateService("app-svc", {
-  cluster,
-  taskDefinitionArgs: {
-    container: {
-      image: img.imageUri,
-      cpu: 102 /*10% of 1024*/,
-      memory: 50 /*MB*/,
-      portMappings: [targetGroup],
-      environment: [
-        // TODO: Pull these from Pulumi ESC
-        { name: "QUADRATIC_API_URI", value: quadraticApiUri },
-        { name: "HOST", value: "0.0.0.0" },
-        { name: "PORT", value: "80" },
-        { name: "ENVIRONMENT", value: "docker" },
-        {
-          name: "AUTH0_JWKS_URI",
-          value: "https://dev-nje7dw8s.us.auth0.com/.well-known/jwks.json",
-        },
-        { name: "M2M_AUTH_TOKEN", value: "M2M_AUTH_TOKEN" },
-      ],
-    },
-  },
-  desiredCount: 1,
-  securityGroups: [securityGroup.id],
 });
 
 // Get the hosted zone ID for domain
@@ -120,8 +110,8 @@ const dnsRecord = new aws.route53.Record("connection-r53-record", {
   type: "A",
   aliases: [
     {
-      name: nlb.loadBalancer.dnsName,
-      zoneId: nlb.loadBalancer.zoneId,
+      name: nlb.dnsName,
+      zoneId: nlb.zoneId,
       evaluateTargetHealth: true,
     },
   ],
