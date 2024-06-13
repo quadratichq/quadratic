@@ -94,7 +94,7 @@ export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
         protocol: "tcp",
         fromPort: 80,
         toPort: 80,
-        securityGroups: [multiplayerNlbSecurityGroup.id],
+        securityGroups: [connectionNlbSecurityGroup.id],
       },
     ],
     egress: [
