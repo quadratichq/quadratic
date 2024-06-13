@@ -52,6 +52,7 @@ impl Connection for MySqlConnection {
 
     async fn connect(&self) -> Result<Self::Conn> {
         let mut options = MySqlConnectOptions::new();
+        options = options.host(&self.host);
 
         if let Some(ref username) = self.username {
             options = options.username(username);
@@ -206,12 +207,7 @@ mod tests {
         for row in &rows {
             for (index, col) in row.columns().iter().enumerate() {
                 let value = MySqlConnection::to_arrow(row, col, index);
-                println!(
-                    "{} ({}) = {:?}",
-                    col.name(),
-                    col.type_info().name(),
-                    value
-                );
+                println!("{} ({}) = {:?}", col.name(), col.type_info().name(), value);
             }
         }
 
