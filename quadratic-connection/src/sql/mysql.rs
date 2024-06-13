@@ -92,8 +92,13 @@ pub(crate) async fn schema(
 mod tests {
 
     use super::*;
-    use crate::test_util::{get_claims, new_state, validate_parquet};
+    use crate::{
+        num_vec,
+        test_util::{get_claims, new_state, str_vec, validate_parquet},
+    };
+    use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use tracing_test::traced_test;
     use uuid::Uuid;
 
@@ -108,45 +113,64 @@ mod tests {
         let state = Extension(new_state().await);
         let data = query(state, get_claims(), Json(sql_query)).await.unwrap();
         let response = data.into_response();
-        /*
-        ArrayData { data_type: UInt64, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000020681c0, len: 8, data: [1, 0, 0, 0, 0, 0, 0, 0] }, ptr: 0x6000020681c0, length: 8 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006328170, len: 8, data: [0, 0, 0, 0, 9, 0, 0, 0] }, ptr: 0x600006328170, length: 8 }, Buffer { data: Bytes { ptr: 0x6000063289f0, len: 9, data: [99, 104, 97, 114, 95, 100, 97, 116, 97] }, ptr: 0x6000063289f0, length: 9 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000063281a0, len: 8, data: [0, 0, 0, 0, 12, 0, 0, 0] }, ptr: 0x6000063281a0, length: 8 }, Buffer { data: Bytes { ptr: 0x600006328000, len: 12, data: [118, 97, 114, 99, 104, 97, 114, 95, 100, 97, 116, 97] }, ptr: 0x600006328000, length: 12 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000063281d0, len: 8, data: [0, 0, 0, 0, 0, 0, 0, 0] }, ptr: 0x6000063281d0, length: 8 }, Buffer { data: Bytes { ptr: 0x1, len: 0, data: [] }, ptr: 0x1, length: 0 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000063286d0, len: 8, data: [0, 0, 0, 0, 0, 0, 0, 0] }, ptr: 0x6000063286d0, length: 8 }, Buffer { data: Bytes { ptr: 0x1, len: 0, data: [] }, ptr: 0x1, length: 0 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006328670, len: 8, data: [0, 0, 0, 0, 0, 0, 0, 0] }, ptr: 0x600006328670, length: 8 }, Buffer { data: Bytes { ptr: 0x1, len: 0, data: [] }, ptr: 0x1, length: 0 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006328610, len: 8, data: [0, 0, 0, 0, 0, 0, 0, 0] }, ptr: 0x600006328610, length: 8 }, Buffer { data: Bytes { ptr: 0x1, len: 0, data: [] }, ptr: 0x1, length: 0 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006328550, len: 8, data: [0, 0, 0, 0, 0, 0, 0, 0] }, ptr: 0x600006328550, length: 8 }, Buffer { data: Bytes { ptr: 0x1, len: 0, data: [] }, ptr: 0x1, length: 0 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000063284f0, len: 8, data: [0, 0, 0, 0, 0, 0, 0, 0] }, ptr: 0x6000063284f0, length: 8 }, Buffer { data: Bytes { ptr: 0x1, len: 0, data: [] }, ptr: 0x1, length: 0 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006328530, len: 8, data: [0, 0, 0, 0, 13, 0, 0, 0] }, ptr: 0x600006328530, length: 8 }, Buffer { data: Bytes { ptr: 0x600006328eb0, len: 13, data: [116, 105, 110, 121, 116, 101, 120, 116, 95, 100, 97, 116, 97] }, ptr: 0x600006328eb0, length: 13 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000063284c0, len: 8, data: [0, 0, 0, 0, 9, 0, 0, 0] }, ptr: 0x6000063284c0, length: 8 }, Buffer { data: Bytes { ptr: 0x600006328ef0, len: 9, data: [116, 101, 120, 116, 95, 100, 97, 116, 97] }, ptr: 0x600006328ef0, length: 9 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000063284e0, len: 8, data: [0, 0, 0, 0, 15, 0, 0, 0] }, ptr: 0x6000063284e0, length: 8 }, Buffer { data: Bytes { ptr: 0x600006328f20, len: 15, data: [109, 101, 100, 105, 117, 109, 116, 101, 120, 116, 95, 100, 97, 116, 97] }, ptr: 0x600006328f20, length: 15 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006328450, len: 8, data: [0, 0, 0, 0, 13, 0, 0, 0] }, ptr: 0x600006328450, length: 8 }, Buffer { data: Bytes { ptr: 0x600006328f50, len: 13, data: [108, 111, 110, 103, 116, 101, 120, 116, 95, 100, 97, 116, 97] }, ptr: 0x600006328f50, length: 13 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000063283d0, len: 8, data: [0, 0, 0, 0, 6, 0, 0, 0] }, ptr: 0x6000063283d0, length: 8 }, Buffer { data: Bytes { ptr: 0x600006328f90, len: 6, data: [118, 97, 108, 117, 101, 49] }, ptr: 0x600006328f90, length: 6 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006328410, len: 8, data: [0, 0, 0, 0, 13, 0, 0, 0] }, ptr: 0x600006328410, length: 8 }, Buffer { data: Bytes { ptr: 0x600006328fc0, len: 13, data: [118, 97, 108, 117, 101, 49, 44, 118, 97, 108, 117, 101, 50] }, ptr: 0x600006328fc0, length: 13 }], child_data: [], nulls: None }
-        ArrayData { data_type: Date32, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006328ff0, len: 4, data: [159, 77, 0, 0] }, ptr: 0x600006328ff0, length: 4 }], child_data: [], nulls: None }
-        ArrayData { data_type: Timestamp(Millisecond, None), len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600002068540, len: 8, data: [128, 77, 50, 191, 143, 1, 0, 0] }, ptr: 0x600002068540, length: 8 }], child_data: [], nulls: None }
-        ArrayData { data_type: Timestamp(Millisecond, None), len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000020685a0, len: 8, data: [128, 77, 50, 191, 143, 1, 0, 0] }, ptr: 0x6000020685a0, length: 8 }], child_data: [], nulls: None }
-        ArrayData { data_type: Time32(Second), len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x600006329040, len: 4, data: [240, 176, 0, 0] }, ptr: 0x600006329040, length: 4 }], child_data: [], nulls: None }
-        ArrayData { data_type: UInt16, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x12e107800, len: 2, data: [232, 7] }, ptr: 0x12e107800, length: 2 }], child_data: [], nulls: None }
-        ArrayData { data_type: Utf8, len: 1, offset: 0, buffers: [Buffer { data: Bytes { ptr: 0x6000063282e0, len: 8, data: [0, 0, 0, 0, 15, 0, 0, 0] }, ptr: 0x6000063282e0, length: 8 }, Buffer { data: Bytes { ptr: 0x6000063290a0, len: 15, data: [123, 34, 107, 101, 121, 34, 58, 34, 118, 97, 108, 117, 101, 34, 125] }, ptr: 0x6000063290a0, length: 15 }], child_data: [], nulls: None }
-        */
+
         let expected = vec![
-            (DataType::Int32, 1_i32.to_ne_bytes().to_vec()),
-            (DataType::Int8, 127_i8.to_ne_bytes().to_vec()),
-            (DataType::Int16, 32767_i16.to_ne_bytes().to_vec()),
-            (DataType::Int32, 8388607_i32.to_ne_bytes().to_vec()),
-            (DataType::Int32, 2147483647_i32.to_ne_bytes().to_vec()),
+            (DataType::Int32, num_vec!(1_i32)),
+            (DataType::Int8, num_vec!(127_i8)),
+            (DataType::Int16, num_vec!(32767_i16)),
+            (DataType::Int32, num_vec!(8388607_i32)),
+            (DataType::Int32, num_vec!(2147483647_i32)),
+            (DataType::Int64, num_vec!(9223372036854775807_i64)),
+            (DataType::Float64, num_vec!(12345.67_f64)),
+            (DataType::Float32, num_vec!(123.45_f32)),
+            (DataType::Float64, num_vec!(123456789.123456_f64)),
+            (DataType::UInt64, num_vec!(1_u64)),
+            (DataType::Utf8, str_vec("char_data")),
+            (DataType::Utf8, str_vec("varchar_data")),
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, vec![]), // unsupported
+            (DataType::Utf8, str_vec("tinytext_data")),
+            (DataType::Utf8, str_vec("text_data")),
+            (DataType::Utf8, str_vec("mediumtext_data")),
+            (DataType::Utf8, str_vec("longtext_data")),
+            (DataType::Utf8, str_vec("value1")),
+            (DataType::Utf8, str_vec("value1,value2")),
             (
-                DataType::Int64,
-                9223372036854775807_i64.to_ne_bytes().to_vec(),
+                DataType::Date32,
+                num_vec!(Date32Type::from_naive_date(
+                    NaiveDate::parse_from_str("2024-05-28", "%Y-%m-%d").unwrap(),
+                )),
             ),
-            (DataType::Float64, 12345.67_f64.to_ne_bytes().to_vec()),
-            (DataType::Float32, 123.45_f32.to_ne_bytes().to_vec()),
             (
-                DataType::Float64,
-                123456789.123456_f64.to_ne_bytes().to_vec(),
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                num_vec!(
+                    NaiveDateTime::parse_from_str("2024-05-28 12:34:56", "%Y-%m-%d %H:%M:%S")
+                        .unwrap()
+                        .and_utc()
+                        .timestamp_millis()
+                ),
             ),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                num_vec!(
+                    NaiveDateTime::parse_from_str("2024-05-28 12:34:56", "%Y-%m-%d %H:%M:%S")
+                        .unwrap()
+                        .and_utc()
+                        .timestamp_millis()
+                ),
+            ),
+            (
+                DataType::Time32(TimeUnit::Second),
+                num_vec!(NaiveTime::parse_from_str("12:34:56", "%H:%M:%S")
+                    .unwrap()
+                    .num_seconds_from_midnight()),
+            ),
+            (DataType::UInt16, num_vec!(2024_u16)),
+            (DataType::Utf8, str_vec(r#"{"key":"value"}"#)),
         ];
 
         validate_parquet(response, expected).await;

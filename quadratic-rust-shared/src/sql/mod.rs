@@ -64,6 +64,7 @@ pub enum ArrowType {
 
 impl ArrowType {
     pub fn to_array_ref(values: Vec<ArrowType>) -> ArrayRef {
+        // println!("to_array_ref: {:?}", values[0]);
         match values[0] {
             ArrowType::Int8(_) => {
                 vec_arrow_type_to_array_ref!(ArrowType::Int8, Int8Array, values)
@@ -138,10 +139,12 @@ impl ArrowType {
             ArrowType::Jsonb(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Jsonb, values),
             ArrowType::Uuid(_) => vec_string_arrow_type_to_array_ref!(ArrowType::Uuid, values),
             // ArrowType::Void => Arc::new(NullArray::new(1)),
-            // ArrowType::Unsupported => Arc::new(NullArray::new(1)),
+            ArrowType::Unsupported => Arc::new(StringArray::new_null(1)),
             _ => {
-                println!("Unsupported ArrowType: {:?}", values[0]);
-                Arc::new(StringArray::from_iter_values(["".to_string()])) as ArrayRef
+                tracing::trace!("Unsupported ArrowType: {:?}", values[0]);
+                // Arc::new(NullArray::new(0))
+                // Arc::new(StringArray::from_iter_values(["".to_string()])) as ArrayRef
+                Arc::new(StringArray::new_null(1))
             }
         }
     }

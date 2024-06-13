@@ -5,6 +5,7 @@ edition = "2021"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
 [dependencies]
+arrow = "51.0.0"
 arrow-schema = "51.0.0"
 axum = { version = "0.7.1", features = ["tokio"]}
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
