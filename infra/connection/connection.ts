@@ -19,6 +19,19 @@ const vpcId = config.require("vpc-id");
 
 ////////////////////////////////////////////////////////
 
+// Create a security group to allow outbound traffic
+const securityGroup = new aws.ec2.SecurityGroup("service-sg", {
+  vpcId: vpcId,
+  egress: [
+    {
+      protocol: "-1", // All protocols
+      fromPort: 0,
+      toPort: 0,
+      cidrBlocks: ["0.0.0.0/0"], // Allow all outbound traffic
+    },
+  ],
+});
+
 // Create an ECS Fargate cluster.
 const cluster = new awsx.classic.ecs.Cluster("cluster");
 
@@ -87,6 +100,7 @@ const appService = new awsx.classic.ecs.FargateService("app-svc", {
     },
   },
   desiredCount: 1,
+  securityGroups: [securityGroup.id],
 });
 
 // Get the hosted zone ID for domain
