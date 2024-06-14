@@ -5,7 +5,7 @@ import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
 import { authClient } from '@/auth';
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { Send, Stop } from '@mui/icons-material';

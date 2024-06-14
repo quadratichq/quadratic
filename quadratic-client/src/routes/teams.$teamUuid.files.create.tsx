@@ -14,7 +14,7 @@ const getFailUrl = (path: string = ROUTES.FILES) => {
   return path + '?' + params.toString();
 };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   // We initialize mixpanel here (again, as we do it in the root loader) because
   // it helps us prevent the app from failing because all the loaders run in parallel
   // and we can't guarantee this loader finishes before the root one
@@ -22,16 +22,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   let user = await authClient.user();
   initMixpanelAnalytics(user);
 
+  // Get the team we're creating the file in
+  const teamUuid = params.teamUuid;
+  if (!teamUuid) {
+    return redirect(getFailUrl());
+  }
+
   // Determine what kind of file creation we're doing:
-  const url = new URL(request.url);
+  const { searchParams } = new URL(request.url);
 
   // 1.
   // Clone an example file by passing the file id, e.g.
-  // /files/create?example=:publicFileUrlInProduction
-  const exampleUrl = url.searchParams.get('example');
+  // /teams/:teamUuid/files/create?example=:publicFileUrlInProduction
+  const exampleUrl = searchParams.get('example');
   if (exampleUrl) {
     try {
-      const { uuid, name } = await apiClient.examples.duplicate(exampleUrl);
+      const { uuid, name } = await apiClient.examples.duplicate({ publicFileUrlInProduction: exampleUrl, teamUuid });
       mixpanel.track('[Files].newExampleFile', { fileName: name });
       return redirectDocument(ROUTES.FILE(uuid));
     } catch (error) {
@@ -47,29 +53,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   // 2.
-  // The file is being created as part of a team
-  // /files/create?team=:uuid
-  const teamUuid = url.searchParams.get('team-uuid');
-  if (teamUuid) {
-    mixpanel.track('[Files].newFileInTeam');
-    try {
-      const {
-        file: { uuid },
-      } = await apiClient.files.create(undefined, teamUuid);
-      return redirectDocument(ROUTES.FILE(uuid));
-    } catch (error) {
-      return redirect(getFailUrl());
-    }
-  }
-
-  // 3.
   // If there's no query params for the kind of file to create, just create a
-  // new, blank file in the user’s personal files
-  mixpanel.track('[Files].newFile');
+  // new, blank file. If it's personal, that's passed as a query param
+  // /teams/:teamUuid/files/create?personal
+  const isPersonal = searchParams.get('personal') !== null;
+  mixpanel.track('[Files].newFile', { isPersonal });
   try {
     const {
       file: { uuid },
-    } = await apiClient.files.create();
+    } = await apiClient.files.create({ teamUuid, isPersonal });
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());
@@ -83,16 +75,21 @@ export type CreateActionRequest = {
 };
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
-  const url = new URL(request.url);
-  const searchParams = new URLSearchParams(url.search);
-  const teamUuid = searchParams.get('team-uuid');
+  const { searchParams } = new URL(request.url);
+  const isPersonal = searchParams.get('personal') !== null;
+
+  const { teamUuid } = params;
+  if (!teamUuid) {
+    return redirect(getFailUrl());
+  }
+
   const { name, contents, version }: CreateActionRequest = await request.json();
 
   mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
   try {
     const {
       file: { uuid },
-    } = await apiClient.files.create({ name, contents, version }, teamUuid ? teamUuid : undefined);
+    } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPersonal });
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());

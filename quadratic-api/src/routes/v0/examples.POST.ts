@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { ApiSchemas, ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
+import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
@@ -19,8 +20,10 @@ const schema = z.object({
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/examples.POST.response']>) {
   const { id: userId } = req.user;
   const {
-    body: { publicFileUrlInProduction },
+    body: { publicFileUrlInProduction, teamUuid },
   } = parseRequest(req, schema);
+  const { team } = await getTeam({ uuid: teamUuid, userId });
+
   // We validate that we get a UUID in the zod schema, so if we reach here
   // we know we can do this simple operation.
   const fileUuid = publicFileUrlInProduction.split('/').pop() as string;
@@ -36,8 +39,15 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     // Fetch the contents of the file
     const fileContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
 
-    // Create the file in the user's account
-    const dbFile = await createFile({ name, userId, contents: fileContents, version: lastCheckpointVersion });
+    // Create a personal file for the user in the requested team
+    const dbFile = await createFile({
+      name,
+      userId,
+      contents: fileContents,
+      version: lastCheckpointVersion,
+      teamId: team.id,
+      isPersonal: true,
+    });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
   } catch (e) {
     console.error(e);

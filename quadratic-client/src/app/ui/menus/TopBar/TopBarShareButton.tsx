@@ -1,4 +1,4 @@
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import mixpanel from 'mixpanel-browser';

@@ -56,8 +56,8 @@ const isLoggedIn = (permissions: FilePermission[], isAuthenticated: boolean) => 
 export const createNewFileAction = {
   label: 'Create',
   isAvailable: isLoggedIn,
-  run({ navigate }: { navigate: NavigateFunction }) {
-    navigate(ROUTES.CREATE_FILE);
+  run({ navigate, teamUuid }: { navigate: NavigateFunction; teamUuid: string }) {
+    navigate(ROUTES.CREATE_FILE(teamUuid));
   },
 };
 

@@ -1,22 +1,24 @@
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { AvatarTeam } from '@/dashboard/components/AvatarTeam';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
+import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
-import { QuadraticLogoType } from '@/dashboard/components/QuadraticLogoType';
+import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { Action as FileAction } from '@/routes/files.$uuid';
-import { useRootRouteLoaderData } from '@/routes/index';
-import { TeamAction } from '@/routes/teams.$uuid';
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
-import { DOCUMENTATION_URL } from '@/shared/constants/urls';
+import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { useTheme } from '@/shared/hooks/useTheme';
 import { Avatar, AvatarFallback } from '@/shared/shadcn/ui/avatar';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { LiveChatWidget } from '@livechat/widget-react';
 import { SchoolOutlined } from '@mui/icons-material';
@@ -25,16 +27,18 @@ import {
   Cross2Icon,
   ExternalLinkIcon,
   FileIcon,
+  GearIcon,
   HamburgerMenuIcon,
   MagicWandIcon,
   MixIcon,
+  PersonIcon,
   PlusIcon,
-  ReaderIcon,
-  ReloadIcon,
   Share2Icon,
 } from '@radix-ui/react-icons';
 import { Dispatch, ReactNode, SetStateAction, createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
+  Link,
+  LoaderFunctionArgs,
   NavLink,
   Outlet,
   useFetchers,
@@ -47,26 +51,27 @@ import {
   useSearchParams,
   useSubmit,
 } from 'react-router-dom';
-import QuadraticLogo from '../dashboard/components/quadratic-logo.svg';
 
 const DRAWER_WIDTH = 264;
+export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 
 /**
  * Dashboard state & context
  */
-type DashboardState = {};
-const initialDashboardState: DashboardState = {};
-const DashboardContext = createContext([initialDashboardState, () => {}] as [
-  DashboardState,
-  Dispatch<SetStateAction<DashboardState>>
-]);
+type DashboardState = {
+  activeTeamUuid: [string, Dispatch<SetStateAction<string>>];
+};
+const initialDashboardState: DashboardState = {
+  activeTeamUuid: ['', () => {}],
+};
+const DashboardContext = createContext(initialDashboardState);
 export const useDashboardContext = () => useContext(DashboardContext);
 
 /**
  * Loader
  */
 type LoaderData = Awaited<ReturnType<typeof loader>>;
-export const loader = async () => {
+export const loader = async ({ params }: LoaderFunctionArgs) => {
   const [teamsData, { eduStatus }] = await Promise.all([apiClient.teams.list(), apiClient.education.get()]);
   return { ...teamsData, eduStatus };
 };
@@ -76,18 +81,37 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  * Component
  */
 export const Component = () => {
+  const params = useParams();
+  const { teams } = useLoaderData() as LoaderData;
   const [searchParams] = useSearchParams();
-  const [dashboardState, setDashboardState] = useState<DashboardState>(initialDashboardState);
   const navigation = useNavigation();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
   const { loggedInUser: user } = useRootRouteLoaderData();
-  useTheme(); // Trigger the theme in the root of the app
+
+  // Get the initial value for the active team. These are in a specific order of priority
+  const activeTeamUuidFromLocalStorage = localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
+  let initialActiveTeamUuid = '';
+  if (params.teamUuid) {
+    initialActiveTeamUuid = params.teamUuid;
+  } else if (activeTeamUuidFromLocalStorage) {
+    initialActiveTeamUuid = activeTeamUuidFromLocalStorage;
+  } else if (teams.length > 0) {
+    initialActiveTeamUuid = teams[0].team.uuid;
+  }
+  const [activeTeamUuid, setActiveTeamUuid] = useState<string>(initialActiveTeamUuid);
+  useEffect(() => {
+    console.log('sync active team to localstorage', activeTeamUuid);
+    localStorage.setItem(ACTIVE_TEAM_UUID_KEY, activeTeamUuid);
+  }, [activeTeamUuid]);
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
   const navbar = <Navbar isLoading={isLoading} />;
+
+  // Trigger the theme in the root of the app
+  useTheme();
 
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
@@ -95,11 +119,21 @@ export const Component = () => {
     if (contentPaneRef.current) contentPaneRef.current.scrollTop = 0;
   }, [location.pathname]);
 
+  // Update the active team in localstorage when it changes, so if the page refreshes
+  // we know what team the user was looking at (even if it's not in the URL)
+  useEffect(() => {
+    localStorage.setItem(ACTIVE_TEAM_UUID_KEY, activeTeamUuid);
+  }, [activeTeamUuid]);
+
   // Ensure long-running browser sessions still have a token
   useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
-    <DashboardContext.Provider value={[dashboardState, setDashboardState]}>
+    <DashboardContext.Provider
+      value={{
+        activeTeamUuid: [activeTeamUuid, setActiveTeamUuid],
+      }}
+    >
       <LiveChatWidget license="14763831" customerEmail={user?.email} customerName={user?.name} />
       <div className={`h-full lg:flex lg:flex-row`}>
         <div
@@ -148,8 +182,10 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
     eduStatus,
   } = useLoaderData() as LoaderData;
   const { loggedInUser: user } = useRootRouteLoaderData();
+  const {
+    activeTeamUuid: [activeTeamUuid],
+  } = useDashboardContext();
   const fetchers = useFetchers();
-  const revalidator = useRevalidator();
   const params = useParams();
   const [hideFancyCreateTeamMsgUserPref, setHideFancyCreateTeamMsgUserPref] = useLocalStorage(
     'hideFancyCreateTeamMsg',
@@ -161,27 +197,39 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
   let showTeamsUpgradeMsg = teamsFiltered.length === 0;
   if (hideFancyCreateTeamMsgUserPref) showTeamsUpgradeMsg = false;
 
+  // TODO: (connections) handle case where there is no active team
+  // For example: you were part of a team, then you login when day and you've
+  // been removed and are no longer part of a team
+
   return (
     <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
       <div className={`flex flex-col`}>
-        <div className={`flex items-center lg:justify-between`}>
-          <SidebarNavLink
-            to="."
-            onClick={(e) => {
-              e.preventDefault();
-              revalidator.revalidate();
-            }}
-            className={`w-full`}
-            isLogo={true}
-          >
-            <div className={`flex w-5 items-center justify-center`}>
-              <img src={QuadraticLogo} alt="Quadratic logo glyph" />
-            </div>
-            <QuadraticLogoType />
+        <TeamSwitcher appIsLoading={isLoading} />
 
-            <ReloadIcon
-              className={`ml-auto mr-1 animate-spin text-primary transition-opacity ${isLoading ? '' : ' opacity-0'}`}
-            />
+        <Type
+          as="h3"
+          variant="overline"
+          className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
+        >
+          Team
+        </Type>
+        <div className="grid gap-0.5">
+          <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={{ type: 'user', id: ownerUserId }}>
+            <FileIcon className={classNameIcons} />
+            Files
+            <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE(activeTeamUuid)} />
+          </SidebarNavLink>
+          <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
+            <ConnectionsIcon className={classNameIcons} />
+            Connections
+          </SidebarNavLink>
+          <SidebarNavLink to={ROUTES.TEAM_MEMBERS(activeTeamUuid)}>
+            <PersonIcon className={classNameIcons} />
+            Members
+          </SidebarNavLink>
+          <SidebarNavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
+            <GearIcon className={classNameIcons} />
+            Settings
           </SidebarNavLink>
         </div>
 
@@ -190,19 +238,17 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
           variant="overline"
           className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
         >
-          Files
+          Personal
         </Type>
-
-        <div className="grid gap-0.5">
-          <SidebarNavLink to={ROUTES.FILES} dropTarget={{ type: 'user', id: ownerUserId }}>
-            <FileIcon className={classNameIcons} />
-            My files
-          </SidebarNavLink>
-          <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
-            <Share2Icon className={classNameIcons} />
-            Shared with me
-          </SidebarNavLink>
-        </div>
+        <SidebarNavLink to={ROUTES.TEAM_FILES_PERSONAL(activeTeamUuid)} dropTarget={{ type: 'user', id: ownerUserId }}>
+          <FileIcon className={classNameIcons} />
+          Files
+          <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PERSONAL(activeTeamUuid)} />
+        </SidebarNavLink>
+        <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
+          <Share2Icon className={classNameIcons} />
+          Shared with me
+        </SidebarNavLink>
 
         <Type
           as="h3"
@@ -304,12 +350,21 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             <MixIcon className={classNameIcons} />
             Examples
           </SidebarNavLink>
-          <SidebarNavLink to={DOCUMENTATION_URL} target="_blank" className="group">
-            <ReaderIcon className={classNameIcons} />
+          <SidebarNavLink
+            to={DOCUMENTATION_URL}
+            target="_blank"
+            className="group text-muted-foreground hover:text-foreground"
+          >
+            <ExternalLinkIcon className={cn(classNameIcons, 'opacity-70 group-hover:text-foreground')} />
             Docs
-            <ExternalLinkIcon
-              className={cn(classNameIcons, `ml-auto text-muted-foreground opacity-50 group-hover:opacity-100`)}
-            />
+          </SidebarNavLink>
+          <SidebarNavLink
+            to={CONTACT_URL}
+            target="_blank"
+            className="group text-muted-foreground hover:text-foreground"
+          >
+            <ExternalLinkIcon className={cn(classNameIcons, 'opacity-70 group-hover:text-foreground')} />
+            Contact us
           </SidebarNavLink>
         </div>
       </div>
@@ -348,6 +403,23 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
         </SidebarNavLink>
       </div>
     </nav>
+  );
+}
+
+function SidebarNavLinkCreateButton({ to }: { to: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon-sm" asChild>
+            <Link to={to} className="absolute right-2 top-1 ml-auto hover:bg-background">
+              <PlusIcon />
+            </Link>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Create new</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

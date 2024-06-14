@@ -17,32 +17,31 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.POST.response']>) {
   const {
-    body: { name, contents, version, teamUuid },
+    body: { name, contents, version, teamUuid, isPersonal },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
   } = req;
 
-  // Trying to create a file in a team?
-  let teamId = undefined;
-  if (teamUuid) {
-    // Check that the team exists and the user can create in it
-    const {
-      team: { id },
-      userMakingRequest,
-    } = await getTeam({ uuid: teamUuid, userId });
-    teamId = id;
+  // Check that the team exists and the user can create in it
+  const {
+    team: { id: teamId },
+    userMakingRequest,
+  } = await getTeam({ uuid: teamUuid, userId });
 
-    // Can you even create a file in this team?
-    if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
-      throw new ApiError(403, 'User does not have permission to create a file in this team.');
-    }
+  // Can you even create a file in this team?
+  if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'User does not have permission to create a file in this team.');
   }
 
-  const dbFile = await createFile({ name, userId, teamId, contents, version });
+  const dbFile = await createFile({ name, userId, teamId, contents, version, isPersonal });
 
   return res.status(201).json({
     file: { uuid: dbFile.uuid, name: dbFile.name },
-    team: dbFile.ownerTeam ? { uuid: dbFile.ownerTeam.uuid } : undefined,
+    team: {
+      // TODO: (team-schema) we can change this to dbFile.ownerTeam.uuid once we
+      // update the team schema so ownerTeam is required
+      uuid: teamUuid, // dbFile.ownerTeam.uuid
+    },
   });
 }

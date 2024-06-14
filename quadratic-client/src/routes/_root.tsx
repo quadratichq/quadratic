@@ -1,5 +1,4 @@
 import { authClient } from '@/auth';
-import * as CloudFilesMigration from '@/dashboard/CloudFilesMigrationRoute';
 import { Empty } from '@/dashboard/components/Empty';
 import { GlobalSnackbarProvider } from '@/shared/components/GlobalSnackbarProvider';
 import { Theme } from '@/shared/components/Theme';
@@ -8,7 +7,7 @@ import { initializeAnalytics } from '@/shared/utils/analytics';
 import { User } from '@auth0/auth0-spa-js';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import { LoaderFunctionArgs, Outlet, redirect, useRouteError, useRouteLoaderData } from 'react-router-dom';
+import { LoaderFunctionArgs, Outlet, useRouteError, useRouteLoaderData } from 'react-router-dom';
 
 export type RootLoaderData = {
   isAuthenticated: boolean;
@@ -21,16 +20,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<R
   // All other routes get the same data
   const isAuthenticated = await authClient.isAuthenticated();
   const user = await authClient.user();
-
-  // This is where we determine whether we need to run a migration
-  // This redirect should trigger for every route _except_ the migration
-  // route (this prevents an infinite loop of redirects).
-  const url = new URL(request.url);
-  if (isAuthenticated && !url.pathname.startsWith('/cloud-migration')) {
-    if (await CloudFilesMigration.needsMigration()) {
-      return redirect('/cloud-migration');
-    }
-  }
 
   initializeAnalytics(user);
 

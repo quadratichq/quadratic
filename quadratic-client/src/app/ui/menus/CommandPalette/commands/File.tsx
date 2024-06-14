@@ -20,7 +20,8 @@ const commands: CommandGroup = {
       isAvailable: createNewFileAction.isAvailable,
       Component: (props) => {
         const navigate = useNavigate();
-        const action = () => createNewFileAction.run({ navigate });
+        // TODO: (connections) add teamUuid
+        const action = () => createNewFileAction.run({ navigate, teamUuid: '' });
         return <CommandPaletteListItem {...props} icon={<FileIcon />} action={action} />;
       },
     },

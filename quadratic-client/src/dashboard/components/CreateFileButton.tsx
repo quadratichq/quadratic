@@ -32,8 +32,8 @@ export default function CreateFileButton() {
   const [open, onOpenChange] = useState<boolean>(false);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const submit = useSubmit();
-  const { uuid } = useParams();
-  const actionUrl = uuid ? ROUTES.CREATE_FILE_IN_TEAM(uuid) : ROUTES.CREATE_FILE;
+  const { teamUuid } = useParams();
+  const actionUrl = ROUTES.CREATE_FILE(teamUuid || '');
 
   const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
     // If nothing was selected, just exit

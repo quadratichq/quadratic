@@ -1,11 +1,10 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getCodeCell, getConnectionUuid } from '@/app/helpers/codeCellLanguage';
+import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
-import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
@@ -32,11 +31,12 @@ export const CodeEditorHeader = (props: Props) => {
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
   const codeCell = getCodeCell(editorInteractionState.mode);
-  const { connections } = useFileMetaRouteLoaderData();
+  // const { connections } = useFileMetaRouteLoaderData();
 
-  const connectionUuid = getConnectionUuid(editorInteractionState.mode);
-  const foundConnection = connections.find((connection) => connection.uuid === connectionUuid);
-  const currentConnectionName = foundConnection ? foundConnection.name : '';
+  // const connectionUuid = getConnectionUuid(editorInteractionState.mode);
+  // const foundConnection = connections.find((connection) => connection.uuid === connectionUuid);
+  // TODO: (connections) fix
+  const currentConnectionName = ''; // foundConnection ? foundConnection.name : '';
 
   // Keep track of the current sheet ID so we know whether to show the sheet name or not
   const currentCodeEditorCellIsNotInActiveSheet = currentSheetId !== editorInteractionState.selectedCellSheet;

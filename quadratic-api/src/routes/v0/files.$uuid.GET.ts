@@ -23,6 +23,7 @@ export default [
 ];
 
 async function handler(req: RequestWithOptionalUser, res: Response) {
+  console.log('fired');
   const {
     file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerTeam },
     userMakingRequest: { filePermissions, isFileOwner, fileRole },
@@ -56,7 +57,9 @@ async function handler(req: RequestWithOptionalUser, res: Response) {
       lastCheckpointDataUrl,
       thumbnail: thumbnailSignedUrl,
     },
-    team: ownerTeam ? { uuid: ownerTeam.uuid, name: ownerTeam.name } : undefined,
+    // These should be guaranteed after shipping the new schema
+    // @ts-expect-error
+    team: { uuid: ownerTeam.uuid, name: ownerTeam.name },
     userMakingRequest: {
       filePermissions,
       isFileOwner,

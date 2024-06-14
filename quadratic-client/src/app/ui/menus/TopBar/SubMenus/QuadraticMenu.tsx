@@ -1,5 +1,5 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { isMac } from '@/shared/utils/isMac';
@@ -47,6 +47,9 @@ export const QuadraticMenu = () => {
   const { isAuthenticated } = useRootRouteLoaderData();
   const { permissions } = editorInteractionState;
 
+  // TODO: (connections) add teamUuid
+  const teamUuid = '';
+
   // For mobile, set Headers to not visible by default
   useEffect(() => {
     if (isMobile) {
@@ -76,7 +79,7 @@ export const QuadraticMenu = () => {
         {isAuthenticated && (
           <SubMenu label={<MenuLineItem primary="File" />}>
             {createNewFileAction.isAvailable(permissions, isAuthenticated) && (
-              <MenuItem onClick={() => createNewFileAction.run({ navigate })}>
+              <MenuItem onClick={() => createNewFileAction.run({ navigate, teamUuid })}>
                 <MenuLineItem primary={createNewFileAction.label} />
               </MenuItem>
             )}

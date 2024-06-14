@@ -1,4 +1,4 @@
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
 import fuzzysort from 'fuzzysort';
 import mixpanel from 'mixpanel-browser';

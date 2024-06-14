@@ -1,4 +1,5 @@
 import { ExampleFilesList, FilesListExampleFile } from '@/dashboard/components/FilesList';
+import { useDashboardContext } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import { useLoaderData } from 'react-router-dom';
@@ -6,17 +7,22 @@ import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/D
 
 export const loader = async () => {
   const examples = await sanityClient.examples.list();
-  const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
-    description,
-    href: ROUTES.CREATE_FILE_EXAMPLE(url),
-    name,
-    thumbnail: thumbnail + '?w=800&h=450&fit=crop&auto=format', // 16/9 aspect ratio
-  }));
-  return { files };
+  return { examples };
 };
 
 export const Component = () => {
-  const { files } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
+  const { examples } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
+  const {
+    activeTeamUuid: [activeTeamUuid],
+  } = useDashboardContext();
+
+  const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
+    description,
+    href: ROUTES.CREATE_FILE_EXAMPLE(activeTeamUuid, url),
+    name,
+    thumbnail: thumbnail + '?w=800&h=450&fit=crop&auto=format', // 16/9 aspect ratio
+  }));
+
   return (
     <>
       <DashboardHeader

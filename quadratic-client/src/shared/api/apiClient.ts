@@ -111,17 +111,25 @@ export const apiClient = {
     async get(uuid: string) {
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'GET' }, ApiSchemas['/v0/files/:uuid.GET.response']);
     },
-    async create(
-      file: Omit<ApiTypes['/v0/files.POST.request'], 'teamUuid'> = {
-        name: 'Untitled',
-        contents: JSON.stringify(DEFAULT_FILE),
-        version: DEFAULT_FILE.version,
-      },
-      teamUuid?: ApiTypes['/v0/files.POST.request']['teamUuid']
-    ) {
+    async create({
+      file,
+      teamUuid,
+      isPersonal,
+    }: {
+      file?: Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>;
+      teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
+      isPersonal: ApiTypes['/v0/files.POST.request']['isPersonal'];
+    }) {
+      if (file === undefined) {
+        file = {
+          name: 'Untitled',
+          contents: JSON.stringify(DEFAULT_FILE),
+          version: DEFAULT_FILE.version,
+        };
+      }
       return fetchFromApi(
         `/v0/files`,
-        { method: 'POST', body: JSON.stringify({ ...file, teamUuid }) },
+        { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPersonal }) },
         ApiSchemas['/v0/files.POST.response']
       );
     },
@@ -158,6 +166,8 @@ export const apiClient = {
         },
         // If we're duplicating with the current owner, denote the team (if present,
         // otherwise it duplicates to the user's personal files)
+        // TODO: (connections) fix this
+        // @ts-expect-error
         withCurrentOwner ? team?.uuid : undefined
       );
 
@@ -270,8 +280,7 @@ export const apiClient = {
   },
 
   examples: {
-    async duplicate(publicFileUrlInProduction: string) {
-      const body: ApiTypes['/v0/examples.POST.request'] = { publicFileUrlInProduction };
+    async duplicate(body: ApiTypes['/v0/examples.POST.request']) {
       return fetchFromApi(
         `/v0/examples`,
         { method: 'POST', body: JSON.stringify(body) },

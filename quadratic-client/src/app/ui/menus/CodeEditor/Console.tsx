@@ -4,7 +4,7 @@ import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { useRootRouteLoaderData } from '@/routes/index';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';

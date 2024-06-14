@@ -1,5 +1,5 @@
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
-import { TeamAction } from '@/routes/teams.$uuid';
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';

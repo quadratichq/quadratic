@@ -1,7 +1,7 @@
 import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '@/app/actions';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Action as FileAction } from '@/routes/files.$uuid';
-import { useTeamRouteLoaderData } from '@/routes/teams.$uuid';
+import { useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';

@@ -1,49 +1,37 @@
-import { focusGrid } from '@/app/helpers/focusGrid';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { ConnectionsBreadcrumb } from '@/app/ui/connections/ConnectionsBreadcrumb';
 import { connectionsByType } from '@/app/ui/connections/data';
-import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { CircularProgress } from '@mui/material';
 import { Cross2Icon, MagnifyingGlassIcon, PlusIcon } from '@radix-ui/react-icons';
 import { useState } from 'react';
-import { Link, Outlet, useNavigate, useNavigation, useParams } from 'react-router-dom';
+import { Link, useNavigate, useNavigation } from 'react-router-dom';
 
-export const Component = () => {
-  const { uuid } = useParams() as { uuid: string };
-  const navigate = useNavigate();
-
-  const onClose = () => {
-    navigate(ROUTES.FILE(uuid), { replace: true });
-  };
-
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent onCloseAutoFocus={focusGrid}>
-        <Outlet />
-      </DialogContent>
-    </Dialog>
-  );
+type Props = {
+  teamUuid: string;
+  connections: {
+    // id: number;
+    path: string;
+    name: string;
+    updatedDate: string;
+    type: 'POSTGRES' | 'MYSQL'; // TODO: get these from the API endpoint
+  }[];
 };
 
-export const Index = () => {
-  const { uuid } = useParams() as { uuid: string };
+export const ConnectionsList = ({ connections, teamUuid }: Props) => {
   const navigate = useNavigate();
   const navigation = useNavigation();
   const [filterQuery, setFilterQuery] = useState<string>('');
-  const { connections } = useFileMetaRouteLoaderData();
 
   const filteredConnections =
     filterQuery.length > 0
-      ? // TODO: (connections) fix
-        // @ts-expect-error
-        connections.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
+      ? connections.filter(({ name, type }) => name.toLowerCase().includes(filterQuery.toLowerCase()))
       : connections;
 
   return (
@@ -61,7 +49,8 @@ export const Index = () => {
               variant="outline"
               className="group relative h-auto w-full"
               onClick={() => {
-                navigate(ROUTES.FILE_CONNECTIONS_CREATE(uuid, type.toLowerCase()));
+                // navigate to create URL
+                navigate(ROUTES.TEAM_CONNECTION_CREATE(teamUuid, type));
               }}
             >
               <PlusIcon className="absolute bottom-2 right-2 opacity-30 group-hover:opacity-100" />
@@ -102,17 +91,18 @@ export const Index = () => {
             </form>
             {filteredConnections.length > 0 ? (
               <div className="-mt-4">
-                {filteredConnections.map(({ uuid: connectionUuid, name, type, updatedDate }, i) => (
+                {filteredConnections.map(({ path, name, type, updatedDate }, i) => (
                   <Link
-                    to={ROUTES.FILE_CONNECTION(uuid, connectionUuid)}
-                    key={connectionUuid}
+                    to={path}
+                    key={path}
                     className={cn(
                       `flex items-center gap-2 px-1 py-2 hover:bg-accent`,
                       i < filteredConnections.length - 1 && 'border-b border-border'
                     )}
                   >
                     <div className="flex h-6 w-6 items-center justify-center">
-                      {navigation.state === 'loading' && navigation.location.pathname.includes(connectionUuid) ? (
+                      {navigation.state === 'loading' &&
+                      navigation.location.pathname.includes('TODO: (connections)') ? (
                         <CircularProgress style={{ width: '15px', height: '15px' }} />
                       ) : (
                         <LanguageIcon language={type} fontSize="small" />
@@ -136,6 +126,3 @@ export const Index = () => {
     </>
   );
 };
-
-// TODO: (connections) make some nice error boundary routes for the dialog.
-// If the data failed to load, show something useful.

@@ -8,7 +8,6 @@ import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
-import { updateBillingIfNecessary } from '../../stripe/stripe';
 import { RequestWithUser } from '../../types/Request';
 import { getFilePermissions } from '../../utils/permissions';
 
@@ -29,14 +28,17 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   } = req as RequestWithUser;
   const { team, userMakingRequest } = await getTeam({ uuid, userId: userMakingRequestId });
 
-  await updateBillingIfNecessary(team);
-
   // Get data associated with the file
   const dbTeam = await dbClient.team.findUnique({
     where: {
       id: team.id,
     },
     include: {
+      Connection: {
+        orderBy: {
+          createdDate: 'desc',
+        },
+      },
       UserTeamRole: {
         include: {
           user: true,
@@ -76,6 +78,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
   const dbFiles = dbTeam.File ? dbTeam.File : [];
   const dbUsers = dbTeam.UserTeamRole ? dbTeam.UserTeamRole : [];
   const dbInvites = dbTeam.TeamInvite ? dbTeam.TeamInvite : [];
+  const dbConnections = dbTeam.Connection ? dbTeam.Connection : [];
 
   // Get user info from auth0
   const auth0UsersById = await getUsersFromAuth0(dbUsers.map(({ user }) => user));
@@ -89,7 +92,7 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
     })
   );
 
-  const response: ApiTypes['/v0/teams/:uuid.GET.response'] = {
+  const response = {
     team: {
       id: team.id,
       uuid,
@@ -117,8 +120,9 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
       };
     }),
     invites: dbInvites.map(({ email, role, id }) => ({ email, role, id })),
-    files: dbFiles.map((file) => {
-      return {
+    files: dbFiles
+      .filter((file) => !file.ownerUserId)
+      .map((file) => ({
         file: {
           uuid: file.uuid,
           name: file.name,
@@ -131,14 +135,41 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           filePermissions: getFilePermissions({
             publicLinkAccess: file.publicLinkAccess,
             userFileRelationship: {
-              owner: 'team',
+              context: 'public-to-team',
               teamRole: userMakingRequest.role,
               fileRole: file.UserFileRole.find(({ userId }) => userId === userMakingRequestId)?.role,
             },
           }),
         },
-      };
-    }),
+      })),
+    filesPersonal: dbFiles
+      .filter((file) => file.ownerUserId)
+      .map((file) => ({
+        file: {
+          uuid: file.uuid,
+          name: file.name,
+          createdDate: file.createdDate.toISOString(),
+          updatedDate: file.updatedDate.toISOString(),
+          publicLinkAccess: file.publicLinkAccess,
+          thumbnail: file.thumbnail,
+        },
+        userMakingRequest: {
+          filePermissions: getFilePermissions({
+            publicLinkAccess: file.publicLinkAccess,
+            userFileRelationship: {
+              context: 'private-to-me',
+            },
+          }),
+        },
+      })),
+    // TODO: (connections) setup types for this
+    connections: dbConnections.map(({ uuid, createdDate, updatedDate, name, type }) => ({
+      uuid,
+      createdDate,
+      updatedDate,
+      name,
+      type,
+    })),
   };
 
   return res.status(200).json(response);

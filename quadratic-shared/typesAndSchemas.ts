@@ -88,6 +88,22 @@ const FileSchema = z.object({
   thumbnail: z.string().url().nullable(),
 });
 
+const TeamFilesSchema = z.array(
+  z.object({
+    file: FileSchema.pick({
+      uuid: true,
+      name: true,
+      createdDate: true,
+      updatedDate: true,
+      publicLinkAccess: true,
+      thumbnail: true,
+    }),
+    userMakingRequest: z.object({
+      filePermissions: z.array(FilePermissionSchema),
+    }),
+  })
+);
+
 const ConnectionSchemaBase = z.object({
   uuid: z.string().uuid(),
   name: z.string(),
@@ -152,11 +168,12 @@ export const ApiSchemas = {
     name: FileSchema.shape.name,
     contents: z.string(),
     version: z.string(),
-    teamUuid: TeamSchema.shape.uuid.optional(),
+    teamUuid: TeamSchema.shape.uuid,
+    isPersonal: z.boolean().optional(),
   }),
   '/v0/files.POST.response': z.object({
     file: FileSchema.pick({ uuid: true, name: true }),
-    team: TeamSchema.pick({ uuid: true }).optional(),
+    team: TeamSchema.pick({ uuid: true }),
   }),
 
   /**
@@ -168,11 +185,12 @@ export const ApiSchemas = {
    */
   '/v0/files/:uuid.GET.response': z.object({
     file: FileSchema,
-    team: TeamSchema.pick({ uuid: true, name: true }).optional(),
+    team: TeamSchema.pick({ uuid: true, name: true }),
     userMakingRequest: z.object({
       filePermissions: z.array(FilePermissionSchema),
       isFileOwner: z.boolean(),
       fileRole: UserFileRoleSchema.optional(),
+      teamRole: UserTeamRoleSchema.optional(),
     }),
   }),
   '/v0/files/:uuid.DELETE.response': z.object({
@@ -280,6 +298,7 @@ export const ApiSchemas = {
    * ===========================================================================
    */
   '/v0/examples.POST.request': z.object({
+    teamUuid: TeamSchema.shape.uuid,
     publicFileUrlInProduction: z
       .string()
       .url()
@@ -330,23 +349,11 @@ export const ApiSchemas = {
       status: TeamSubscriptionStatusSchema.optional(),
       currentPeriodEnd: z.string().optional(),
     }),
-    files: z.array(
-      z.object({
-        file: FileSchema.pick({
-          uuid: true,
-          name: true,
-          createdDate: true,
-          updatedDate: true,
-          publicLinkAccess: true,
-          thumbnail: true,
-        }),
-        userMakingRequest: z.object({
-          filePermissions: z.array(FilePermissionSchema),
-        }),
-      })
-    ),
+    files: TeamFilesSchema,
+    filesPersonal: TeamFilesSchema,
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
+    connections: z.array(z.any()),
   }),
   '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true }),
   '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true }),
