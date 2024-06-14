@@ -13,7 +13,9 @@ impl GridController {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Ok("".to_string());
         };
-        let Some((bounds, values)) = sheet.selection_with_bounds(&selection, false, true) else {
+        let Some((bounds, values)) =
+            sheet.selection_sorted_vec_with_bounds(&selection, false, true)
+        else {
             return Ok("".to_string());
         };
         let mut writer = Writer::from_writer(vec![]);

@@ -13,7 +13,7 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
-    /// Returns a Vec of (Pos, &CellValue) for a Selection in the Sheet.
+    /// Returns a HashMap<Pos, &CellValue> for a Selection in the Sheet.
     /// Note: there's an order of precedence in enumerating the selection:
     /// 1. All
     /// 2. Columns
@@ -28,7 +28,7 @@ impl Sheet {
         selection: &Selection,
         max_count: Option<i64>,
         skip_code_runs: bool,
-    ) -> Option<Vec<(Pos, &CellValue)>> {
+    ) -> Option<HashMap<Pos, &CellValue>> {
         let mut count = 0;
         let mut cells = HashMap::new();
 
@@ -217,22 +217,30 @@ impl Sheet {
                 }
             }
         }
-        Some(cells.into_iter().collect())
+        Some(cells)
+    }
+
+    /// returns the content and formatting bounds for a Selection.
+    pub(crate) fn selection_bounds(&self, selection: &Selection) -> Option<Rect> {
+        let map = self.selection(selection, None, true)?;
+        let bounds: Vec<Pos> = map.iter().map(|(pos, _)| *pos).collect();
+        Some(bounds.into())
     }
 
     /// Gets a selection with bounds. This is useful for dealing with a
     /// rectangular selection. If sort is true, then values are sorted
     /// ascending, by y and then x.
-    pub(crate) fn selection_with_bounds(
+    pub(crate) fn selection_sorted_vec_with_bounds(
         &self,
         selection: &Selection,
         skip_code_runs: bool,
         sort: bool,
     ) -> Option<(Rect, Vec<(Pos, &CellValue)>)> {
-        let mut values = self.selection(selection, None, skip_code_runs)?;
-        let bounds: Vec<Pos> = values.iter().map(|(pos, _)| *pos).collect();
+        let map = self.selection(selection, None, skip_code_runs)?;
+        let mut vec: Vec<_> = map.iter().map(|(pos, value)| (*pos, *value)).collect();
+        let bounds: Vec<Pos> = vec.iter().map(|(pos, _)| *pos).collect();
         if sort {
-            values.sort_by(|(a, _), (b, _)| {
+            vec.sort_by(|(a, _), (b, _)| {
                 if a.y < b.y {
                     return std::cmp::Ordering::Less;
                 }
@@ -242,7 +250,7 @@ impl Sheet {
                 a.x.cmp(&b.x)
             });
         }
-        Some((bounds.into(), values))
+        Some((bounds.into(), vec))
     }
 
     /// Gets a sheet_rect of the selection area. We combine columns, rows, and

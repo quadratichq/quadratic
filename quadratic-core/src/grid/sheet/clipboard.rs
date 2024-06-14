@@ -20,10 +20,10 @@ impl Sheet {
         let mut values = CellValues::default();
         let mut sheet_bounds: Option<Rect> = None;
 
-        if let Some(bounds) = self.clipboard_selection(selection) {
+        if let Some(bounds) = self.selection_bounds(&selection) {
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
-            sheet_bounds = Some(bounds.into());
+            sheet_bounds = Some(bounds);
 
             for y in bounds.y_range() {
                 if y != bounds.min.y {
