@@ -138,7 +138,7 @@ impl GridController {
                 .iter()
                 .map(|(column, format)| {
                     formats.push(format.into());
-                    column - clipboard.origin.x + selection.x
+                    column + selection.x
                 })
                 .collect::<Vec<_>>();
             if !columns.is_empty() {
@@ -150,7 +150,7 @@ impl GridController {
                 .iter()
                 .map(|(row, format)| {
                     formats.push(format.into());
-                    row - clipboard.origin.y + selection.y
+                    row + selection.y
                 })
                 .collect::<Vec<_>>();
             if !rows.is_empty() {

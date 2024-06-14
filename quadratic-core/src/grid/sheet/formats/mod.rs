@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use super::Sheet;
 use crate::{
-    controller::operations::{clipboard::ClipboardSheetFormats, operation::Operation},
+    controller::operations::{
+        clipboard::{ClipboardOrigin, ClipboardSheetFormats},
+        operation::Operation,
+    },
     grid::formats::{format::Format, format_update::FormatUpdate, Formats},
     selection::Selection,
 };
@@ -80,7 +83,11 @@ impl Sheet {
     }
 
     /// Gets sheet formats (ie, all, columns, and row formats) for a selection.
-    pub fn sheet_formats(&self, selection: &Selection) -> ClipboardSheetFormats {
+    pub fn sheet_formats(
+        &self,
+        selection: &Selection,
+        clipboard_origin: &ClipboardOrigin,
+    ) -> ClipboardSheetFormats {
         if selection.all {
             ClipboardSheetFormats {
                 all: self.format_all.clone(),
@@ -93,7 +100,7 @@ impl Sheet {
                     .iter()
                     .filter_map(|column| {
                         if let Some(format) = self.try_format_column(*column) {
-                            Some((column.clone(), format.clone()))
+                            Some((column.clone() - clipboard_origin.x, format.clone()))
                         } else {
                             None
                         }
@@ -106,7 +113,7 @@ impl Sheet {
                     .iter()
                     .filter_map(|row| {
                         if let Some(format) = self.try_format_row(*row) {
-                            Some((row.clone(), format.clone()))
+                            Some((row.clone() - clipboard_origin.y, format.clone()))
                         } else {
                             None
                         }
@@ -125,6 +132,7 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
+        controller::operations::clipboard::ClipboardOrigin,
         grid::{
             formats::{format::Format, format_update::FormatUpdate, Formats},
             sheet,
@@ -160,7 +168,7 @@ mod tests {
             rows: Some(vec![2]),
             ..Default::default()
         };
-        let formats = sheet.sheet_formats(&selection);
+        let formats = sheet.sheet_formats(&selection, &ClipboardOrigin::default());
         assert_eq!(formats.columns.len(), 1);
         assert_eq!(formats.rows.len(), 1);
         assert_eq!(formats.columns[&2].bold, Some(true));
@@ -174,12 +182,15 @@ mod tests {
             1,
         ));
         // note that columns and rows are ignored when all is true
-        let formats = sheet.sheet_formats(&Selection {
-            all: true,
-            rows: Some(vec![2]),
-            columns: Some(vec![2]),
-            ..Default::default()
-        });
+        let formats = sheet.sheet_formats(
+            &Selection {
+                all: true,
+                rows: Some(vec![2]),
+                columns: Some(vec![2]),
+                ..Default::default()
+            },
+            &ClipboardOrigin::default(),
+        );
         assert_eq!(
             formats.all,
             Some(Format {

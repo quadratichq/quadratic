@@ -1,6 +1,5 @@
-use serde::{Deserialize, Serialize};
-
 use crate::{Pos, Rect};
+use serde::{Deserialize, Serialize};
 
 #[derive(PartialEq)]
 pub struct BoundsRect {
@@ -48,6 +47,12 @@ impl GridBounds {
         match self {
             GridBounds::Empty => *self = Rect::single_pos(pos).into(),
             GridBounds::NonEmpty(rect) => rect.extend_to(pos),
+        }
+    }
+    pub fn add_rect(&mut self, rect: Rect) {
+        match self {
+            GridBounds::Empty => *self = rect.into(),
+            GridBounds::NonEmpty(r) => *r = r.union(&rect),
         }
     }
     pub fn merge(a: Self, b: Self) -> Self {

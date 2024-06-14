@@ -245,66 +245,44 @@ impl Sheet {
         Some((bounds.into(), values))
     }
 
-    /// Gets a sheet_rect of the selection area. For selection.columns and
-    /// selection.rows, we find the minimum index, and return either that, or 0
-    /// if that index > 0. This ensures we're always at least copying from the
-    /// top or left of the sheet.
+    /// Gets a sheet_rect of the selection area. We combine columns, rows, and
+    /// rects.
     pub(crate) fn clipboard_selection(&self, selection: &Selection) -> Option<SheetRect> {
-        let ignore_formatting = true;
+        let ignore_formatting = false;
 
+        // if all is selected, then return the bounds for the sheet
         if selection.all {
-            match self.bounds(false) {
+            return match self.bounds(false) {
                 GridBounds::Empty => None,
                 GridBounds::NonEmpty(rect) => Some(rect.to_sheet_rect(selection.sheet_id)),
-            }
-        } else if let Some(columns) = selection.columns.as_ref() {
-            if columns.is_empty() {
-                return None;
-            }
-            let min_x = columns.iter().min().unwrap_or(&0).to_owned();
-            let max_x = columns.iter().max().unwrap_or(&0).to_owned();
-            let mut min_y = i64::MAX;
-            let mut max_y = i64::MIN;
-            for i in min_x..=max_x {
-                if let Some((min, max)) = self.column_bounds(i, ignore_formatting) {
-                    min_y = min_y.min(min);
-                    max_y = max_y.max(max);
+            };
+        }
+
+        let mut bounds = GridBounds::default();
+        if let Some(columns) = selection.columns.as_ref() {
+            columns.iter().for_each(|x| {
+                if let Some((min, max)) = self.column_bounds(*x, ignore_formatting) {
+                    bounds.add(Pos { x: *x, y: min });
+                    bounds.add(Pos { x: *x, y: max });
                 }
-            }
-            if min_x == i64::MAX || min_y == i64::MAX {
-                None
-            } else {
-                Some(SheetRect {
-                    min: Pos { x: min_x, y: min_y },
-                    max: Pos { x: max_x, y: max_y },
-                    sheet_id: selection.sheet_id,
-                })
-            }
-        } else if let Some(rows) = selection.rows.as_ref() {
-            if rows.is_empty() {
-                return None;
-            }
-            let min_y = rows.iter().min().unwrap_or(&0).to_owned();
-            let max_y = rows.iter().max().unwrap_or(&0).to_owned();
-            let mut min_x = i64::MAX;
-            let mut max_x = i64::MIN;
-            for i in min_y..=max_y {
-                if let Some((min, max)) = self.row_bounds(i, ignore_formatting) {
-                    min_x = min_x.min(min);
-                    max_x = max_x.max(max);
+            });
+        }
+        if let Some(rows) = selection.rows.as_ref() {
+            rows.iter().for_each(|y| {
+                if let Some((min, max)) = self.row_bounds(*y, ignore_formatting) {
+                    bounds.add(Pos { x: min, y: *y });
+                    bounds.add(Pos { x: max, y: *y });
                 }
+            });
+        }
+        if let Some(rects) = selection.rects.as_ref() {
+            for rect in rects {
+                bounds.add_rect(*rect);
             }
-            if min_y == i64::MAX || min_x == i64::MAX {
-                None
-            } else {
-                Some(SheetRect {
-                    min: Pos { x: min_x, y: min_y },
-                    max: Pos { x: max_x, y: max_y },
-                    sheet_id: self.id,
-                })
-            }
-        } else {
-            selection.largest_rect()
+        }
+        match bounds {
+            GridBounds::Empty => None,
+            GridBounds::NonEmpty(rect) => Some(rect.to_sheet_rect(selection.sheet_id)),
         }
     }
 

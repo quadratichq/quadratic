@@ -236,18 +236,20 @@ impl Sheet {
         } else {
             (vec![], vec![])
         };
-        let sheet_formats = self.sheet_formats(selection);
         if selection.all {
             clipboard_origin.all = Some((clipboard_origin.x, clipboard_origin.y));
         } else {
             if selection.columns.is_some() {
                 // we need the row origin when columns are selected
                 clipboard_origin.row = sheet_bounds.map(|b| b.min.y);
-            } else if selection.rows.is_some() {
+            }
+
+            if selection.rows.is_some() {
                 // we need the column origin when rows are selected
                 clipboard_origin.column = sheet_bounds.map(|b| b.min.x);
             }
         }
+        let sheet_formats = self.sheet_formats(selection, &clipboard_origin);
         let clipboard = Clipboard {
             cells,
             formats,
