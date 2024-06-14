@@ -10,6 +10,7 @@ use std::io::Read;
 
 use arrow_schema::DataType;
 use axum::response::Response;
+use bytes::Bytes;
 use futures::StreamExt;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::data_type::AsBytes;
@@ -71,16 +72,20 @@ pub(crate) fn get_claims() -> Claims {
     }
 }
 
-/// Validate a parquet response against an expected array of (DataType, Value Byte Array)
-pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType, Vec<u8>)>) {
-    let bytes = response
+pub(crate) async fn response_bytes(response: Response) -> Bytes {
+    response
         .into_body()
         .into_data_stream()
         .into_future()
         .await
         .0
         .unwrap()
-        .unwrap();
+        .unwrap()
+}
+
+/// Validate a parquet response against an expected array of (DataType, Value Byte Array)
+pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType, Vec<u8>)>) {
+    let bytes = response_bytes(response).await;
     let builder = ParquetRecordBatchReaderBuilder::try_new(bytes).unwrap();
     let reader = builder.build().unwrap();
 
