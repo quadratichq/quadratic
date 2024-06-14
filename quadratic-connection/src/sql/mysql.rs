@@ -93,14 +93,196 @@ mod tests {
 
     use super::*;
     use crate::{
-        num_vec,
+        num_vec, test_connection,
         test_util::{get_claims, new_state, str_vec, validate_parquet},
     };
     use arrow::datatypes::Date32Type;
     use arrow_schema::{DataType, TimeUnit};
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+    use quadratic_rust_shared::sql::{SchemaColumn, SchemaTable};
     use tracing_test::traced_test;
     use uuid::Uuid;
+
+    #[tokio::test]
+    #[traced_test]
+    async fn mysql_test_connection() {
+        test_connection!(get_connection);
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn mysql_schema() {
+        let connection_id = Uuid::new_v4();
+        let state = Extension(new_state().await);
+        let response = schema(Path(connection_id), state, get_claims())
+            .await
+            .unwrap();
+
+        let expected = Schema {
+            id: response.0.id,
+            name: "".into(),
+            r#type: "".into(),
+            database: "mysql-connection".into(),
+            tables: vec![SchemaTable {
+                name: "all_native_data_types".into(),
+                schema: "mysql-connection".into(),
+                columns: vec![
+                    SchemaColumn {
+                        name: "id".into(),
+                        r#type: "int".into(),
+                        is_nullable: false,
+                    },
+                    SchemaColumn {
+                        name: "tinyint_col".into(),
+                        r#type: "tinyint".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "smallint_col".into(),
+                        r#type: "smallint".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "mediumint_col".into(),
+                        r#type: "mediumint".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "int_col".into(),
+                        r#type: "int".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "bigint_col".into(),
+                        r#type: "bigint".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "decimal_col".into(),
+                        r#type: "decimal".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "float_col".into(),
+                        r#type: "float".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "double_col".into(),
+                        r#type: "double".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "bit_col".into(),
+                        r#type: "bit".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "char_col".into(),
+                        r#type: "char".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "varchar_col".into(),
+                        r#type: "varchar".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "binary_col".into(),
+                        r#type: "binary".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "varbinary_col".into(),
+                        r#type: "varbinary".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "tinyblob_col".into(),
+                        r#type: "tinyblob".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "blob_col".into(),
+                        r#type: "blob".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "mediumblob_col".into(),
+                        r#type: "mediumblob".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "longblob_col".into(),
+                        r#type: "longblob".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "tinytext_col".into(),
+                        r#type: "tinytext".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "text_col".into(),
+                        r#type: "text".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "mediumtext_col".into(),
+                        r#type: "mediumtext".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "longtext_col".into(),
+                        r#type: "longtext".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "enum_col".into(),
+                        r#type: "enum".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "set_col".into(),
+                        r#type: "set".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "date_col".into(),
+                        r#type: "date".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "datetime_col".into(),
+                        r#type: "datetime".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "timestamp_col".into(),
+                        r#type: "timestamp".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "time_col".into(),
+                        r#type: "time".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "year_col".into(),
+                        r#type: "year".into(),
+                        is_nullable: true,
+                    },
+                    SchemaColumn {
+                        name: "json_col".into(),
+                        r#type: "json".into(),
+                        is_nullable: true,
+                    },
+                ],
+            }],
+        };
+
+        assert_eq!(response.0, expected);
+    }
 
     #[tokio::test]
     #[traced_test]
