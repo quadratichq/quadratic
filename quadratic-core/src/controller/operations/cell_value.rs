@@ -283,7 +283,7 @@ mod test {
             },
             value,
         );
-        dbg!(cell_value.to_string());
+        assert_eq!(cell_value.to_string(), value.to_string());
     }
 
     #[test]

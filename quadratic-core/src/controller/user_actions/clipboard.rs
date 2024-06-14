@@ -199,9 +199,6 @@ mod test {
                 commas: None,
             }
         );
-
-        // use to create output for test_paste_from_quadratic_clipboard()
-        print!("{}", clipboard.1);
     }
 
     #[test]
@@ -489,13 +486,46 @@ mod test {
 
     #[test]
     fn test_paste_from_quadratic_clipboard() {
-        let mut gc = GridController::default();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        // see line ~357 for the output (`print!("{}", clipboard.1);`)
-        let pasted_output = String::from(
-            r#"<table data-quadratic="&#x7B;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x2C;&quot;cells&quot;&#x3A;&#x7B;&quot;columns&quot;&#x3A;&#x5B;&#x7B;&#x7D;&#x2C;&#x7B;&quot;1&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x7D;&#x2C;&#x7B;&#x7D;&#x2C;&#x7B;&quot;2&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x7D;&#x5D;&#x2C;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x7D;&#x2C;&quot;values&quot;&#x3A;&#x7B;&quot;columns&quot;&#x3A;&#x5B;&#x7B;&#x7D;&#x2C;&#x7B;&quot;1&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;text&quot;&#x2C;&quot;value&quot;&#x3A;&quot;1&#x2C;&#x20;1&quot;&#x7D;&#x7D;&#x2C;&#x7B;&#x7D;&#x2C;&#x7B;&quot;2&quot;&#x3A;&#x7B;&quot;type&quot;&#x3A;&quot;number&quot;&#x2C;&quot;value&quot;&#x3A;&quot;12&quot;&#x7D;&#x7D;&#x5D;&#x2C;&quot;w&quot;&#x3A;4&#x2C;&quot;h&quot;&#x3A;4&#x7D;&#x2C;&quot;formats&quot;&#x3A;&#x5B;&#x7B;&quot;Align&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Wrap&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericFormat&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericDecimals&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;NumericCommas&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Bold&quot;&#x3A;&#x5B;&#x5B;null&#x2C;5&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;10&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;Italic&quot;&#x3A;&#x5B;&#x5B;null&#x2C;11&#x5D;&#x2C;&#x5B;true&#x2C;1&#x5D;&#x2C;&#x5B;null&#x2C;4&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;TextColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x2C;&#x7B;&quot;FillColor&quot;&#x3A;&#x5B;&#x5B;null&#x2C;16&#x5D;&#x5D;&#x7D;&#x5D;&#x2C;&quot;borders&quot;&#x3A;&#x5B;&#x5B;0&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;0&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;1&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;2&#x2C;3&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;0&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;1&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;2&#x2C;null&#x5D;&#x2C;&#x5B;3&#x2C;3&#x2C;null&#x5D;&#x5D;&#x2C;&quot;origin&quot;&#x3A;&#x7B;&quot;x&quot;&#x3A;0&#x2C;&quot;y&quot;&#x3A;0&#x2C;&quot;column&quot;&#x3A;null&#x2C;&quot;row&quot;&#x3A;null&#x2C;&quot;all&quot;&#x3A;null&#x7D;&#x2C;&quot;selection&quot;&#x3A;&#x7B;&quot;sheet&#x5F;id&quot;&#x3A;&#x7B;&quot;id&quot;&#x3A;&quot;05d744eb&#x2D;18a6&#x2D;4f98&#x2D;95c8&#x2D;85b5c6e41930&quot;&#x7D;&#x2C;&quot;x&quot;&#x3A;0&#x2C;&quot;y&quot;&#x3A;0&#x2C;&quot;rects&quot;&#x3A;&#x5B;&#x7B;&quot;min&quot;&#x3A;&#x7B;&quot;x&quot;&#x3A;0&#x2C;&quot;y&quot;&#x3A;0&#x7D;&#x2C;&quot;max&quot;&#x3A;&#x7B;&quot;x&quot;&#x3A;3&#x2C;&quot;y&quot;&#x3A;3&#x7D;&#x7D;&#x5D;&#x2C;&quot;rows&quot;&#x3A;null&#x2C;&quot;columns&quot;&#x3A;null&#x2C;&quot;all&quot;&#x3A;false&#x7D;&#x7D;"><tbody><tr><td ></td><td ></td><td ></td><td ></tr><tr><td ></td><td style="font-weight:bold;">1, 1</td><td ></td><td ></tr><tr><td ></td><td ></td><td ></td><td style="font-style:italic;">12</tr><tr><td ></td><td ></td><td ></td><td ></td></tr></tbody></table>"#,
+        set_cell_value(&mut gc, sheet_id, "1, 1", 1, 1);
+        gc.set_cell_bold(
+            SheetRect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 },
+                sheet_id,
+            },
+            Some(true),
+            None,
         );
+        set_cell_value(&mut gc, sheet_id, "12", 3, 2);
+        gc.set_cell_italic(
+            SheetRect {
+                min: Pos { x: 3, y: 2 },
+                max: Pos { x: 3, y: 2 },
+                sheet_id,
+            },
+            Some(true),
+            None,
+        );
+
+        let rect = Rect {
+            min: Pos { x: 1, y: 1 },
+            max: Pos { x: 3, y: 2 },
+        };
+
+        let selection = Selection::rect(rect, sheet_id);
+        let sheet = gc.sheet(sheet_id);
+        let (plain_text, _) = sheet.copy_to_clipboard(&selection).unwrap();
+        assert_eq!(plain_text, String::from("1, 1\t\t\n\t\t12"));
+
+        let selection = Selection::rect(
+            Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 3 }),
+            sheet_id,
+        );
+        let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
+        let pasted_output = String::from(clipboard.1);
 
         gc.paste_from_clipboard(
             Selection::pos(1, 2, sheet_id),

@@ -115,8 +115,6 @@ impl GridController {
         selection: &Selection,
         clipboard: &Clipboard,
     ) -> Vec<Operation> {
-        dbgjs!(selection);
-
         let mut ops = vec![];
         if let Some(all) = clipboard.sheet_formats.all.as_ref() {
             let formats = Formats::repeat(all.into(), 1);

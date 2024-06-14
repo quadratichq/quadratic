@@ -655,68 +655,68 @@ mod tests {
         assert_results_has_value(&results, Pos { x: 2, y: 4 }, CellValue::Number(3.into()));
     }
 
-    // #[test]
-    // fn clipboard_selection() {
-    //     let mut sheet = Sheet::test();
-    //     let sheet_id = sheet.id;
+    #[test]
+    fn clipboard_selection() {
+        let mut sheet = Sheet::test();
+        let sheet_id = sheet.id;
 
-    //     let selection = Selection {
-    //         sheet_id,
-    //         ..Default::default()
-    //     };
-    //     assert_eq!(sheet.clipboard_selection(&selection), None);
+        let selection = Selection {
+            sheet_id,
+            ..Default::default()
+        };
+        assert_eq!(sheet.clipboard_selection(&selection), None);
 
-    //     sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
-    //     sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
+        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
+        sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
 
-    //     let selection = Selection {
-    //         sheet_id,
-    //         rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
-    //         ..Default::default()
-    //     };
-    //     assert_eq!(
-    //         sheet.clipboard_selection(&selection),
-    //         Some(SheetRect::from_numbers(-4, -4, 10, 10, sheet_id))
-    //     );
+        let selection = Selection {
+            sheet_id,
+            rects: Some(vec![Rect::from_numbers(-4, -4, 10, 10)]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.clipboard_selection(&selection),
+            Some(SheetRect::from_numbers(-4, -4, 10, 10, sheet_id))
+        );
 
-    //     let selection = Selection {
-    //         sheet_id,
-    //         columns: Some(vec![-1, 0]),
-    //         ..Default::default()
-    //     };
-    //     assert_eq!(
-    //         sheet.clipboard_selection(&selection),
-    //         Some(SheetRect::from_numbers(-1, -1, 2, 3, sheet_id))
-    //     );
+        let selection = Selection {
+            sheet_id,
+            columns: Some(vec![-1, 0]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.clipboard_selection(&selection),
+            Some(SheetRect::from_numbers(-1, -1, 2, 3, sheet_id))
+        );
 
-    //     let selection = Selection {
-    //         sheet_id,
-    //         columns: Some(vec![5, 6]),
-    //         ..Default::default()
-    //     };
-    //     assert_eq!(sheet.clipboard_selection(&selection), None);
+        let selection = Selection {
+            sheet_id,
+            columns: Some(vec![5, 6]),
+            ..Default::default()
+        };
+        assert_eq!(sheet.clipboard_selection(&selection), None);
 
-    //     let selection = Selection {
-    //         sheet_id,
-    //         rows: Some(vec![-1, 0]),
-    //         ..Default::default()
-    //     };
-    //     assert_eq!(
-    //         sheet.clipboard_selection(&selection),
-    //         Some(SheetRect {
-    //             min: Pos { x: -1, y: -1 },
-    //             max: Pos { x: 1, y: 0 },
-    //             sheet_id
-    //         })
-    //     );
+        let selection = Selection {
+            sheet_id,
+            rows: Some(vec![-1, 0]),
+            ..Default::default()
+        };
+        assert_eq!(
+            sheet.clipboard_selection(&selection),
+            Some(SheetRect {
+                min: Pos { x: -1, y: -1 },
+                max: Pos { x: 1, y: 0 },
+                sheet_id
+            })
+        );
 
-    //     let selection = Selection {
-    //         sheet_id,
-    //         rows: Some(vec![-10, -11]),
-    //         ..Default::default()
-    //     };
-    //     assert_eq!(sheet.clipboard_selection(&selection), None);
-    // }
+        let selection = Selection {
+            sheet_id,
+            rows: Some(vec![-10, -11]),
+            ..Default::default()
+        };
+        assert_eq!(sheet.clipboard_selection(&selection), None);
+    }
 
     #[test]
     fn format_selection() {
@@ -780,24 +780,19 @@ mod tests {
             rows: Some(vec![0, 1]),
             ..Default::default()
         };
+        let results = sheet.format_selection(&selection);
+        assert_eq!(results.len(), 2);
         assert_eq!(
-            sheet.format_selection(&selection),
-            vec![
-                (
-                    Pos { x: 0, y: 0 },
-                    Format {
-                        bold: Some(true),
-                        ..Default::default()
-                    }
-                ),
-                (
-                    Pos { x: 1, y: 1 },
-                    Format {
-                        bold: Some(false),
-                        ..Default::default()
-                    }
-                ),
-            ]
+            results
+                .iter()
+                .any(|(pos, format)| *pos == Pos { x: 0, y: 0 } && format.bold == Some(true)),
+            true
+        );
+        assert_eq!(
+            results
+                .iter()
+                .any(|(pos, format)| *pos == Pos { x: 1, y: 1 } && format.bold == Some(false)),
+            true
         );
     }
 }

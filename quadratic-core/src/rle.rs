@@ -8,6 +8,9 @@ impl<T: Eq + Clone> RunLengthEncoding<T> {
         RunLengthEncoding(vec![])
     }
     pub fn repeat(value: T, len: usize) -> Self {
+        if len == 0 {
+            return RunLengthEncoding::new();
+        }
         RunLengthEncoding(vec![(value, len)])
     }
     pub fn is_empty(&self) -> bool {
@@ -95,10 +98,10 @@ mod tests {
         assert!(rle.is_empty());
 
         rle.push_n(1, 0);
-        assert!(!rle.is_empty());
+        assert!(rle.is_empty());
 
         let rel = RunLengthEncoding::repeat(0, 1);
-        assert!(rel.is_empty());
+        assert!(!rel.is_empty());
 
         let rel = RunLengthEncoding::repeat(0, 0);
         assert!(rel.is_empty());

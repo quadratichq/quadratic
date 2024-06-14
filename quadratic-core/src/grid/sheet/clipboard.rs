@@ -5,7 +5,7 @@ use crate::{
     formulas::replace_a1_notation,
     grid::{get_cell_borders_in_rect, CellAlign, CellWrap, CodeCellLanguage, Sheet},
     selection::Selection,
-    CellValue, Pos,
+    CellValue, Pos, Rect,
 };
 
 impl Sheet {
@@ -18,7 +18,7 @@ impl Sheet {
         let mut plain_text = String::new();
         let mut cells = CellValues::default();
         let mut values = CellValues::default();
-        let mut sheet_bounds: Option<Rect>;
+        let mut sheet_bounds: Option<Rect> = None;
 
         if let Some(bounds) = self.clipboard_selection(selection) {
             clipboard_origin.x = bounds.min.x;
@@ -225,9 +225,18 @@ impl Sheet {
                 });
         }
 
-        let formats = self.get_all_cell_formats(bounds, Some(selection));
+        let (formats, borders) = if let Some(bounds) = sheet_bounds {
+            (
+                self.get_all_cell_formats(
+                    bounds.to_sheet_rect(selection.sheet_id),
+                    Some(selection),
+                ),
+                get_cell_borders_in_rect(self, bounds, Some(selection)),
+            )
+        } else {
+            (vec![], vec![])
+        };
         let sheet_formats = self.sheet_formats(selection);
-        let borders = get_cell_borders_in_rect(self, bounds_rect, Some(selection));
         if selection.all {
             clipboard_origin.all = Some((clipboard_origin.x, clipboard_origin.y));
         } else {
