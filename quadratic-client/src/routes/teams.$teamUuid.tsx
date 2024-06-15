@@ -25,7 +25,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<L
     if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
     throw error;
   });
-  console.log('data', data);
 
   // Sort the users so the logged-in user is first in the list
   data.users.sort((a, b) => {
@@ -41,9 +40,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<L
 };
 
 export type TeamAction = {
-  'request.update-team': ApiTypes['/v0/teams/:uuid.PATCH.request'] & {
-    intent: 'update-team';
-  };
+  'request.update-team': ReturnType<typeof getActionUpdateTeam>;
   'request.create-team-invite': ApiTypes['/v0/teams/:uuid/invites.POST.request'] & {
     intent: 'create-team-invite';
   };
@@ -69,6 +66,13 @@ export type TeamAction = {
     ok: boolean;
   };
 };
+
+export function getActionUpdateTeam(body: ApiTypes['/v0/teams/:uuid.PATCH.request']) {
+  return {
+    ...body,
+    intent: 'update-team' as const,
+  };
+}
 
 export const action = async ({ request, params }: ActionFunctionArgs): Promise<TeamAction['response']> => {
   const data = (await request.json()) as TeamAction['request'];

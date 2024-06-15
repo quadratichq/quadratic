@@ -1,18 +1,15 @@
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { AvatarTeam } from '@/dashboard/components/AvatarTeam';
 import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { Action as FileAction } from '@/routes/files.$uuid';
-import { TeamAction } from '@/routes/teams.$teamUuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, DOCUMENTATION_URL } from '@/shared/constants/urls';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { useTheme } from '@/shared/hooks/useTheme';
 import { Avatar, AvatarFallback } from '@/shared/shadcn/ui/avatar';
 import { Badge } from '@/shared/shadcn/ui/badge';
@@ -24,12 +21,10 @@ import { LiveChatWidget } from '@livechat/widget-react';
 import { SchoolOutlined } from '@mui/icons-material';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import {
-  Cross2Icon,
   ExternalLinkIcon,
   FileIcon,
   GearIcon,
   HamburgerMenuIcon,
-  MagicWandIcon,
   MixIcon,
   PersonIcon,
   PlusIcon,
@@ -41,7 +36,6 @@ import {
   LoaderFunctionArgs,
   NavLink,
   Outlet,
-  useFetchers,
   useLoaderData,
   useLocation,
   useNavigation,
@@ -103,7 +97,6 @@ export const Component = () => {
   }
   const [activeTeamUuid, setActiveTeamUuid] = useState<string>(initialActiveTeamUuid);
   useEffect(() => {
-    console.log('sync active team to localstorage', activeTeamUuid);
     localStorage.setItem(ACTIVE_TEAM_UUID_KEY, activeTeamUuid);
   }, [activeTeamUuid]);
 
@@ -177,7 +170,6 @@ export const Component = () => {
 function Navbar({ isLoading }: { isLoading: boolean }) {
   const [, setSearchParams] = useSearchParams();
   const {
-    teams,
     userMakingRequest: { id: ownerUserId },
     eduStatus,
   } = useLoaderData() as LoaderData;
@@ -185,40 +177,34 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
   const {
     activeTeamUuid: [activeTeamUuid],
   } = useDashboardContext();
-  const fetchers = useFetchers();
-  const params = useParams();
-  const [hideFancyCreateTeamMsgUserPref, setHideFancyCreateTeamMsgUserPref] = useLocalStorage(
-    'hideFancyCreateTeamMsg',
-    false
-  );
 
-  const teamsFiltered = teams.filter((team) => team.team.activated || team.team.uuid === params.uuid);
   const classNameIcons = `mx-1 text-muted-foreground`;
-  let showTeamsUpgradeMsg = teamsFiltered.length === 0;
-  if (hideFancyCreateTeamMsgUserPref) showTeamsUpgradeMsg = false;
 
   // TODO: (connections) handle case where there is no active team
   // For example: you were part of a team, then you login when day and you've
   // been removed and are no longer part of a team
 
   return (
-    <nav className={`flex h-full flex-col justify-between gap-4 overflow-auto px-4 pb-2 pt-4`}>
-      <div className={`flex flex-col`}>
+    <nav className={`flex h-full flex-col gap-4 overflow-auto`}>
+      <div className="sticky top-0 z-10 flex flex-col bg-background px-4 pt-4">
         <TeamSwitcher appIsLoading={isLoading} />
-
+      </div>
+      <div className={`flex flex-col px-4`}>
         <Type
           as="h3"
           variant="overline"
-          className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
+          className={`mb-2 mt-1 flex items-baseline justify-between indent-2 text-muted-foreground`}
         >
           Team
         </Type>
         <div className="grid gap-0.5">
-          <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={{ type: 'user', id: ownerUserId }}>
-            <FileIcon className={classNameIcons} />
-            Files
+          <div className="relative">
+            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={{ type: 'user', id: ownerUserId }}>
+              <FileIcon className={classNameIcons} />
+              Files
+            </SidebarNavLink>
             <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE(activeTeamUuid)} />
-          </SidebarNavLink>
+          </div>
           <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
             <ConnectionsIcon className={classNameIcons} />
             Connections
@@ -240,105 +226,21 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
         >
           Personal
         </Type>
-        <SidebarNavLink to={ROUTES.TEAM_FILES_PERSONAL(activeTeamUuid)} dropTarget={{ type: 'user', id: ownerUserId }}>
-          <FileIcon className={classNameIcons} />
-          Files
+        <div className="relative">
+          <SidebarNavLink
+            to={ROUTES.TEAM_FILES_PERSONAL(activeTeamUuid)}
+            dropTarget={{ type: 'user', id: ownerUserId }}
+          >
+            <FileIcon className={classNameIcons} />
+            Files
+          </SidebarNavLink>
           <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PERSONAL(activeTeamUuid)} />
-        </SidebarNavLink>
+        </div>
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
           <Share2Icon className={classNameIcons} />
           Shared with me
         </SidebarNavLink>
 
-        <Type
-          as="h3"
-          className={`${TYPE.overline} mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
-        >
-          Teams
-        </Type>
-        <div className="grid gap-0.5">
-          {teamsFiltered.map(({ team: { id: ownerTeamId, uuid, name }, userMakingRequest: { teamPermissions } }) => {
-            // See if this team has an inflight fetcher that's updating team info
-            const inFlightFetcher = fetchers.find(
-              (fetcher) =>
-                fetcher.state !== 'idle' &&
-                fetcher.formAction?.includes(uuid) &&
-                fetcher.json &&
-                typeof fetcher.json === 'object' &&
-                (fetcher.json as TeamAction['request.update-team']).intent === 'update-team'
-            );
-            // If it does, use its data
-            if (inFlightFetcher) {
-              const data = inFlightFetcher.json as TeamAction['request.update-team'];
-              if (data.name) name = data.name;
-            }
-
-            return (
-              <SidebarNavLink
-                key={uuid}
-                to={ROUTES.TEAM(uuid)}
-                dropTarget={teamPermissions.includes('TEAM_EDIT') ? { type: 'team', id: ownerTeamId } : undefined}
-                className="truncate"
-              >
-                <AvatarTeam className={`-my-0.5 h-6 w-6`} />
-                <span className="block truncate">{name}</span>
-              </SidebarNavLink>
-            );
-          })}
-          {showTeamsUpgradeMsg ? (
-            <div className="relative mb-2 flex flex-col gap-2 rounded bg-accent p-3 text-xs">
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                className="absolute right-1 top-1 text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  setHideFancyCreateTeamMsgUserPref(true);
-                }}
-              >
-                <Cross2Icon />
-              </Button>
-              <div className="flex gap-3">
-                <MagicWandIcon className="mt-1 text-primary" />
-                <div className="">
-                  <h3 className="font-semibold">Create a team</h3>
-                  <p className="text-muted-foreground">Unlock collaboration in Quadratic.</p>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={() => {
-                  setSearchParams(
-                    (prev) => {
-                      prev.set(SEARCH_PARAMS.DIALOG.KEY, SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM);
-                      return prev;
-                    },
-                    { replace: true }
-                  );
-                }}
-              >
-                Create team
-              </Button>
-            </div>
-          ) : (
-            <SidebarNavLink
-              to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM}`}
-              onClick={(e) => {
-                e.preventDefault();
-                setSearchParams(
-                  (prev) => {
-                    prev.set(SEARCH_PARAMS.DIALOG.KEY, SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM);
-                    return prev;
-                  },
-                  { replace: true }
-                );
-              }}
-            >
-              <PlusIcon className={classNameIcons} />
-              Create
-            </SidebarNavLink>
-          )}
-        </div>
         <Type
           as="h3"
           className={`${TYPE.overline} mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
@@ -368,7 +270,7 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
         </div>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="mt-auto flex flex-col gap-1 bg-background px-4 pb-2">
         {eduStatus === 'ENROLLED' && (
           <SidebarNavLink
             to={`./?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`}
@@ -412,7 +314,7 @@ function SidebarNavLinkCreateButton({ to }: { to: string }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon-sm" asChild>
-            <Link to={to} className="absolute right-2 top-1 ml-auto hover:bg-background">
+            <Link to={to} className="absolute right-2 top-1 ml-auto opacity-30 hover:opacity-100">
               <PlusIcon />
             </Link>
           </Button>

@@ -105,20 +105,20 @@ export const router = createBrowserRouter(
             <Route path={ROUTES.TEAMS}>
               {/* TODO: (connections) Figure out where to route /teams (probably same logic as root) */}
               <Route index loader={() => redirect('/')} />
-              <Route path=":teamUuid">
-                {/* Putting these outside the team loader lets you hit this route and directly create a file without having to load other data */}
-                <Route path="files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
 
-                <Route id={ROUTE_LOADER_IDS.TEAM} lazy={() => import('./routes/teams.$teamUuid')}>
-                  <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
-                  <Route path="files/personal" lazy={() => import('./routes/teams.$teamUuid.files.personal')} />
-                  <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
-                  <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
-                  <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')}>
-                    <Route index lazy={() => import('./routes/teams.$teamUuid.connections.index')} />
-                  </Route>
+              {/* Putting this outside the team loader lets you hit this route and directly create a file without having to load other data */}
+              <Route path=":teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
+
+              <Route path=":teamUuid" id={ROUTE_LOADER_IDS.TEAM} lazy={() => import('./routes/teams.$teamUuid')}>
+                <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
+                <Route path="files/personal" lazy={() => import('./routes/teams.$teamUuid.files.personal')} />
+                <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
+                <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
+                <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')}>
+                  <Route index lazy={() => import('./routes/teams.$teamUuid.connections.index')} />
                 </Route>
               </Route>
+
               {/* TEAM 404 page probably necessary here...meaning no activeTeamUuid */}
             </Route>
           </Route>

@@ -56,6 +56,12 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
         where: {
           ownerTeamId: team.id,
           deleted: false,
+          // Don't return files that are private to other users
+          // (one of these must return true)
+          OR: [
+            { ownerUserId: null }, // Public files to the team
+            { ownerUserId: userMakingRequestId }, // Private files to the user
+          ],
         },
         include: {
           UserFileRole: {

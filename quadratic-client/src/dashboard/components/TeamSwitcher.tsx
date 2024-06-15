@@ -1,4 +1,5 @@
 import { useDashboardContext, useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Type } from '@/shared/components/Type';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -10,9 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { CaretSortIcon, CheckCircledIcon, ExitIcon, PlusIcon, ReloadIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
-import { Link, useSearchParams, useSubmit } from 'react-router-dom';
+import { Link, useFetcher, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
 
 type Props = {
   appIsLoading: boolean;
@@ -21,19 +23,57 @@ type Props = {
 export function TeamSwitcher({ appIsLoading }: Props) {
   const [, setSearchParams] = useSearchParams();
   const submit = useSubmit();
-
   const { teams } = useDashboardRouteLoaderData();
   const {
     activeTeamUuid: [activeTeamUuid, setActiveTeamUuid],
   } = useDashboardContext();
+  const navigation = useNavigation();
+
   const activeTeam = teams.find(({ team }) => team.uuid === activeTeamUuid);
-  const activeTeamName = activeTeam?.team.name ?? 'Select a team';
+  const fetcher = useFetcher({ key: 'update-team' });
+
+  const optimisticActiveTeamName =
+    fetcher.state !== 'idle' && isJsonObject(fetcher.json)
+      ? (fetcher.json as TeamAction['request.update-team']).name
+      : activeTeam
+      ? activeTeam.team.name
+      : 'Select a team';
+
+  // TODO: (connections) move this to the settings page
+  //
+  // {teamPermissions.includes('TEAM_BILLING_EDIT') && (
+  //   <DropdownMenuItem
+  //     onClick={() => {
+  //       // Get the billing session URL
+  //       apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+  //         window.location.href = data.url;
+  //       });
+  //     }}
+  //   >
+  //     Update billing
+  //   </DropdownMenuItem>
+  // )}
+  //
+  // {isRenaming && (
+  //   <DialogRenameItem
+  //     itemLabel="Team"
+  //     onClose={() => {
+  //       setIsRenaming(false);
+  //     }}
+  //     value={name}
+  //     onSave={(name: string) => {
+  //       setIsRenaming(false);
+  //       const data: TeamAction['request.update-team'] = { intent: 'update-team', name };
+  //       fetcher.submit(data, { method: 'POST', encType: 'application/json' });
+  //     }}
+  //   />
+  // )}
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="flex justify-between px-3 font-semibold">
-          {activeTeamName}{' '}
+          {optimisticActiveTeamName}
           <div className="relative">
             <CaretSortIcon />
             <ReloadIcon

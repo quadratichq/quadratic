@@ -1,6 +1,5 @@
 import { Action as FileShareAction } from '@/routes/files.$uuid.sharing';
 import { TeamAction } from '@/routes/teams.$teamUuid';
-import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -103,8 +102,8 @@ export function ShareTeamDialog({
         <DialogHeader>
           <DialogTitle>Team members</DialogTitle>
           <DialogDescription>
-            {noOfUsers} paid ·{' '}
-            <Button
+            {noOfUsers} member{noOfUsers === 1 ? '' : 's'}
+            {/* <Button
               variant="link"
               onClick={() => {
                 apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
@@ -114,7 +113,7 @@ export function ShareTeamDialog({
               className="h-auto p-0 font-normal leading-4"
             >
               Edit billing
-            </Button>
+            </Button> */}
           </DialogDescription>
         </DialogHeader>
         <DialogBody>
@@ -238,6 +237,7 @@ function ShareFileDialogBody({ uuid, data }: { uuid: string; data: ApiTypes['/v0
       };
     });
 
+  // TODO: (connections) shouldn't say everyone on team has access if it's a personal file
   const disallowedEmails: string[] = [
     ...(owner.type === 'user' ? [owner.email] : []),
     ...users.map((user) => user.email),
