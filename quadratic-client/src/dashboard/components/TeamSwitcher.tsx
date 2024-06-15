@@ -14,7 +14,7 @@ import {
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { CaretSortIcon, CheckCircledIcon, ExitIcon, PlusIcon, ReloadIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
-import { Link, useFetcher, useNavigation, useSearchParams, useSubmit } from 'react-router-dom';
+import { Link, useFetcher, useSearchParams, useSubmit } from 'react-router-dom';
 
 type Props = {
   appIsLoading: boolean;
@@ -27,10 +27,9 @@ export function TeamSwitcher({ appIsLoading }: Props) {
   const {
     activeTeamUuid: [activeTeamUuid, setActiveTeamUuid],
   } = useDashboardContext();
-  const navigation = useNavigation();
+  const fetcher = useFetcher({ key: 'update-team' });
 
   const activeTeam = teams.find(({ team }) => team.uuid === activeTeamUuid);
-  const fetcher = useFetcher({ key: 'update-team' });
 
   const optimisticActiveTeamName =
     fetcher.state !== 'idle' && isJsonObject(fetcher.json)
@@ -52,21 +51,6 @@ export function TeamSwitcher({ appIsLoading }: Props) {
   //   >
   //     Update billing
   //   </DropdownMenuItem>
-  // )}
-  //
-  // {isRenaming && (
-  //   <DialogRenameItem
-  //     itemLabel="Team"
-  //     onClose={() => {
-  //       setIsRenaming(false);
-  //     }}
-  //     value={name}
-  //     onSave={(name: string) => {
-  //       setIsRenaming(false);
-  //       const data: TeamAction['request.update-team'] = { intent: 'update-team', name };
-  //       fetcher.submit(data, { method: 'POST', encType: 'application/json' });
-  //     }}
-  //   />
   // )}
 
   return (
