@@ -163,6 +163,35 @@ impl Format {
         }
         format
     }
+
+    /// Turns a Format into a FormatUpdate, with None set to Some(None) to
+    /// replace the entire value.
+    pub fn to_replace(&self) -> FormatUpdate {
+        FormatUpdate {
+            align: self.align.map_or(Some(None), |a| Some(Some(a))),
+            wrap: self.wrap.map_or(Some(None), |w| Some(Some(w))),
+            numeric_format: self
+                .numeric_format
+                .clone()
+                .map_or(Some(None), |n| Some(Some(n))),
+            numeric_decimals: self.numeric_decimals.map_or(Some(None), |d| Some(Some(d))),
+            numeric_commas: self.numeric_commas.map_or(Some(None), |c| Some(Some(c))),
+            bold: self.bold.map_or(Some(None), |b| Some(Some(b))),
+            italic: self.italic.map_or(Some(None), |i| Some(Some(i))),
+            text_color: self
+                .text_color
+                .clone()
+                .map_or(Some(None), |t| Some(Some(t))),
+            fill_color: self
+                .fill_color
+                .clone()
+                .map_or(Some(None), |f| Some(Some(f))),
+            render_size: self
+                .render_size
+                .clone()
+                .map_or(Some(None), |r| Some(Some(r))),
+        }
+    }
 }
 
 /// Converts a &Format to a FormatUpdate.
@@ -502,6 +531,26 @@ mod test {
                 w: "1".to_string(),
                 h: "2".to_string()
             }))
+        );
+    }
+
+    #[test]
+    fn to_replace() {
+        let format_update: FormatUpdate = Format::default().to_replace();
+        assert_eq!(
+            format_update,
+            FormatUpdate {
+                align: Some(None),
+                wrap: Some(None),
+                numeric_format: Some(None),
+                numeric_decimals: Some(None),
+                numeric_commas: Some(None),
+                bold: Some(None),
+                italic: Some(None),
+                text_color: Some(None),
+                fill_color: Some(None),
+                render_size: Some(None),
+            }
         );
     }
 }

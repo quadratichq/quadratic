@@ -10,9 +10,9 @@ use crate::{
 
 impl Sheet {
     /// Gets a format for a cell, returning Format::default if not set.
-    pub fn format_cell(&self, x: i64, y: i64) -> Format {
-        if let Some(column) = self.get_column(x) {
-            Format {
+    pub fn format_cell(&self, x: i64, y: i64, include_sheet: bool) -> Format {
+        let format = if let Some(column) = self.get_column(x) {
+            Some(Format {
                 align: column.align.get(y),
                 wrap: column.wrap.get(y),
                 numeric_format: column.numeric_format.get(y),
@@ -23,9 +23,17 @@ impl Sheet {
                 text_color: column.text_color.get(y),
                 fill_color: column.fill_color.get(y),
                 render_size: column.render_size.get(y),
-            }
+            })
         } else {
-            Format::default()
+            None
+        };
+        if include_sheet {
+            let column = self.try_format_row(y);
+            let row = self.try_format_column(x);
+            let sheet = self.format_all.as_ref();
+            Format::combine(format.as_ref(), column.as_ref(), row.as_ref(), sheet)
+        } else {
+            format.unwrap_or(Format::default())
         }
     }
 
@@ -106,7 +114,7 @@ mod tests {
     use serial_test::serial;
 
     use crate::{
-        grid::{js_types::JsRenderCell, CellAlign},
+        grid::{formats::Formats, js_types::JsRenderCell, CellAlign},
         wasm_bindings::js::{expect_js_call, hash_test},
     };
 
@@ -115,7 +123,7 @@ mod tests {
     #[test]
     fn format_cell() {
         let mut sheet = Sheet::test();
-        assert_eq!(sheet.format_cell(0, 0), Format::default());
+        assert_eq!(sheet.format_cell(0, 0, false), Format::default());
         sheet.set_format_cell(
             Pos { x: 0, y: 0 },
             &FormatUpdate {
@@ -125,11 +133,41 @@ mod tests {
             false,
         );
         assert_eq!(
-            sheet.format_cell(0, 0),
+            sheet.format_cell(0, 0, false),
             Format {
                 bold: Some(true),
                 ..Default::default()
             }
+        );
+
+        sheet.set_formats_columns(
+            &[0],
+            &Formats::repeat(
+                FormatUpdate {
+                    text_color: Some(Some("red".to_string())),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        sheet.set_formats_rows(
+            &[0],
+            &Formats::repeat(
+                FormatUpdate {
+                    italic: Some(Some(false)),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        assert_eq!(
+            sheet.format_cell(0, 0, true),
+            Format {
+                bold: Some(true),
+                italic: Some(false),
+                text_color: Some("red".to_string()),
+                ..Default::default()
+            },
         );
     }
 
@@ -145,7 +183,7 @@ mod tests {
         let pos = Pos { x: 0, y: 0 };
         let old_format = sheet.set_format_cell(pos, &update, true);
         assert_eq!(
-            sheet.format_cell(0, 0),
+            sheet.format_cell(0, 0, false),
             Format {
                 bold: Some(true),
                 ..Default::default()
@@ -172,7 +210,7 @@ mod tests {
         expect_js_call("jsRenderCellSheets", args, true);
 
         sheet.set_format_cell(pos, &old_format, true);
-        assert_eq!(sheet.format_cell(0, 0), Format::default());
+        assert_eq!(sheet.format_cell(0, 0, false), Format::default());
         let cells = serde_json::to_string(&vec![JsRenderCell {
             x: pos.x,
             y: pos.y,

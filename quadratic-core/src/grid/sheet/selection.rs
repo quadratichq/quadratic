@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use crate::{
     grid::{formats::format::Format, CodeRunResult, GridBounds},
     selection::Selection,
-    CellValue, Pos, Rect, SheetRect, Value,
+    CellValue, Pos, Rect, Value,
 };
 
 use super::Sheet;
@@ -222,9 +222,39 @@ impl Sheet {
 
     /// returns the content and formatting bounds for a Selection.
     pub(crate) fn selection_bounds(&self, selection: &Selection) -> Option<Rect> {
-        let map = self.selection(selection, None, true)?;
-        let bounds: Vec<Pos> = map.iter().map(|(pos, _)| *pos).collect();
-        Some(bounds.into())
+        if selection.all {
+            return match self.bounds(false) {
+                GridBounds::Empty => None,
+                GridBounds::NonEmpty(rect) => Some(rect),
+            };
+        }
+
+        let mut bounds = GridBounds::default();
+        if let Some(columns) = selection.columns.as_ref() {
+            columns.iter().for_each(|x| {
+                if let Some((min, max)) = self.column_bounds(*x, false) {
+                    bounds.add(Pos { x: *x, y: min });
+                    bounds.add(Pos { x: *x, y: max });
+                }
+            });
+        }
+        if let Some(rows) = selection.rows.as_ref() {
+            rows.iter().for_each(|y| {
+                if let Some((min, max)) = self.row_bounds(*y, false) {
+                    bounds.add(Pos { x: min, y: *y });
+                    bounds.add(Pos { x: max, y: *y });
+                }
+            });
+        }
+        if let Some(rects) = selection.rects.as_ref() {
+            for rect in rects {
+                bounds.add_rect(*rect);
+            }
+        }
+        match bounds {
+            GridBounds::Empty => None,
+            GridBounds::NonEmpty(rect) => Some(rect),
+        }
     }
 
     /// Gets a selection with bounds. This is useful for dealing with a
@@ -251,47 +281,6 @@ impl Sheet {
             });
         }
         Some((bounds.into(), vec))
-    }
-
-    /// Gets a sheet_rect of the selection area. We combine columns, rows, and
-    /// rects.
-    pub(crate) fn clipboard_selection(&self, selection: &Selection) -> Option<SheetRect> {
-        let ignore_formatting = false;
-
-        // if all is selected, then return the bounds for the sheet
-        if selection.all {
-            return match self.bounds(false) {
-                GridBounds::Empty => None,
-                GridBounds::NonEmpty(rect) => Some(rect.to_sheet_rect(selection.sheet_id)),
-            };
-        }
-
-        let mut bounds = GridBounds::default();
-        if let Some(columns) = selection.columns.as_ref() {
-            columns.iter().for_each(|x| {
-                if let Some((min, max)) = self.column_bounds(*x, ignore_formatting) {
-                    bounds.add(Pos { x: *x, y: min });
-                    bounds.add(Pos { x: *x, y: max });
-                }
-            });
-        }
-        if let Some(rows) = selection.rows.as_ref() {
-            rows.iter().for_each(|y| {
-                if let Some((min, max)) = self.row_bounds(*y, ignore_formatting) {
-                    bounds.add(Pos { x: min, y: *y });
-                    bounds.add(Pos { x: max, y: *y });
-                }
-            });
-        }
-        if let Some(rects) = selection.rects.as_ref() {
-            for rect in rects {
-                bounds.add_rect(*rect);
-            }
-        }
-        match bounds {
-            GridBounds::Empty => None,
-            GridBounds::NonEmpty(rect) => Some(rect.to_sheet_rect(selection.sheet_id)),
-        }
     }
 
     /// Gets a list of cells with formatting for a selection. Only cells with a
@@ -369,7 +358,7 @@ mod tests {
     use std::str::FromStr;
 
     /// Used to test whether the results of a selection has a position and value.
-    fn assert_results_has_value(results: &[(Pos, &CellValue)], pos: Pos, value: CellValue) {
+    fn assert_results_has_value(results: &HashMap<Pos, &CellValue>, pos: Pos, value: CellValue) {
         assert!(results.iter().any(|(p, v)| *p == pos && **v == value));
     }
 
@@ -597,14 +586,11 @@ mod tests {
             .unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(
-            results[0],
-            (
-                Pos { x: 4, y: 0 },
-                &CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Formula,
-                    code: "code".to_string()
-                })
-            )
+            results.get(&Pos { x: 4, y: 0 }).unwrap(),
+            &&CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "code".to_string()
+            })
         );
     }
 
@@ -642,7 +628,7 @@ mod tests {
     }
 
     #[test]
-    fn clipboard_selection() {
+    fn selection_bounds() {
         let mut sheet = Sheet::test();
         let sheet_id = sheet.id;
 
@@ -650,7 +636,7 @@ mod tests {
             sheet_id,
             ..Default::default()
         };
-        assert_eq!(sheet.clipboard_selection(&selection), None);
+        assert_eq!(sheet.selection_bounds(&selection), None);
 
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
         sheet.test_set_code_run_array(-1, -1, vec!["c", "d", "e"], true);
@@ -661,8 +647,8 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            sheet.clipboard_selection(&selection),
-            Some(SheetRect::from_numbers(-4, -4, 10, 10, sheet_id))
+            sheet.selection_bounds(&selection),
+            Some(Rect::from_numbers(-4, -4, 10, 10))
         );
 
         let selection = Selection {
@@ -671,8 +657,8 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            sheet.clipboard_selection(&selection),
-            Some(SheetRect::from_numbers(-1, -1, 2, 3, sheet_id))
+            sheet.selection_bounds(&selection),
+            Some(Rect::from_numbers(-1, -1, 2, 3))
         );
 
         let selection = Selection {
@@ -680,7 +666,7 @@ mod tests {
             columns: Some(vec![5, 6]),
             ..Default::default()
         };
-        assert_eq!(sheet.clipboard_selection(&selection), None);
+        assert_eq!(sheet.selection_bounds(&selection), None);
 
         let selection = Selection {
             sheet_id,
@@ -688,11 +674,10 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            sheet.clipboard_selection(&selection),
-            Some(SheetRect {
+            sheet.selection_bounds(&selection),
+            Some(Rect {
                 min: Pos { x: -1, y: -1 },
                 max: Pos { x: 1, y: 0 },
-                sheet_id
             })
         );
 
@@ -701,7 +686,7 @@ mod tests {
             rows: Some(vec![-10, -11]),
             ..Default::default()
         };
-        assert_eq!(sheet.clipboard_selection(&selection), None);
+        assert_eq!(sheet.selection_bounds(&selection), None);
     }
 
     #[test]

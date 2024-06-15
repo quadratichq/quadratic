@@ -1,10 +1,12 @@
 use crate::{
     grid::{
-        formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
-        NumericCommas, NumericDecimals, NumericFormat, RenderSize, TextColor,
+        formats::{format_update::FormatUpdate, Formats},
+        formatting::CellFmtArray,
+        Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
+        NumericFormat, RenderSize, TextColor,
     },
     selection::Selection,
-    Pos, RunLengthEncoding, SheetRect,
+    Pos, Rect, RunLengthEncoding, SheetRect,
 };
 
 use super::Sheet;
@@ -123,5 +125,50 @@ impl Sheet {
             }
         }
         cell_formats
+    }
+
+    /// Returns Formats within a rect for a sheet that will rewrite destination
+    /// formatting. This is used in the paste and (soon) auto-fill operations.
+    /// If Selection is provided, it ignores values that do not fall within the
+    /// Selection.
+    pub fn override_cell_formats(&self, rect: Rect, selection: Option<&Selection>) -> Formats {
+        let mut formats = Formats::default();
+        for y in rect.y_range() {
+            for x in rect.x_range() {
+                let pos = Pos { x, y };
+                if selection.is_none() || selection.is_some_and(|s| s.pos_in_selection(pos)) {
+                    let format = self.format_cell(x, y, true);
+                    formats.push(format.to_replace());
+                } else {
+                    formats.push(FormatUpdate::cleared());
+                }
+            }
+        }
+        formats
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn override_cell_formats() {
+        let sheet = Sheet::test();
+        let rect = Rect::from_numbers(0, 0, 2, 2);
+        let selection = Selection::rect(rect.clone(), sheet.id);
+        let formats = sheet.override_cell_formats(rect, Some(&selection));
+        assert_eq!(formats.size(), 4);
+        let format = formats.get_at(0).unwrap();
+        assert_eq!(format.align, Some(None));
+        assert_eq!(format.wrap, Some(None));
+        assert_eq!(format.numeric_format, Some(None));
+        assert_eq!(format.numeric_decimals, Some(None));
+        assert_eq!(format.numeric_commas, Some(None));
+        assert_eq!(format.bold, Some(None));
+        assert_eq!(format.italic, Some(None));
+        assert_eq!(format.text_color, Some(None));
+        assert_eq!(format.fill_color, Some(None));
+        assert_eq!(format.render_size, Some(None));
     }
 }

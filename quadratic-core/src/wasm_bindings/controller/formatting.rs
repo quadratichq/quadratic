@@ -234,7 +234,7 @@ impl GridController {
     pub fn js_get_format_cell(&self, sheet_id: String, x: i32, y: i32) -> Result<String, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_json::to_string(&sheet.format_cell(x as i64, y as i64))
+        serde_json::to_string(&sheet.format_cell(x as i64, y as i64, false))
             .map_err(|_| JsValue::UNDEFINED)
     }
 }

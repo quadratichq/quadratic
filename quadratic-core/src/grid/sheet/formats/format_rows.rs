@@ -272,7 +272,7 @@ mod tests {
         );
         let rows = vec![0, 1, 2];
         let reverse = sheet.set_formats_rows(&rows, &formats);
-        assert_eq!(sheet.format_cell(0, 0), Format::default());
+        assert_eq!(sheet.format_cell(0, 0, false), Format::default());
         assert_eq!(sheet.format_row(0).bold, Some(true));
         assert_eq!(reverse.len(), 2);
 
@@ -305,7 +305,7 @@ mod tests {
         };
         sheet.set_formats_selection(&reverse_selection, &reverse_formats);
         assert_eq!(
-            sheet.format_cell(0, 0),
+            sheet.format_cell(0, 0, false),
             Format {
                 bold: Some(false),
                 ..Default::default()
@@ -326,7 +326,10 @@ mod tests {
             },
         );
         sheet.calculate_bounds();
-        assert_eq!(sheet.format_cell(0, 0).fill_color, Some("red".to_string()));
+        assert_eq!(
+            sheet.format_cell(0, 0, false).fill_color,
+            Some("red".to_string())
+        );
 
         let reverse = sheet.set_formats_rows(
             &[0],
@@ -340,7 +343,7 @@ mod tests {
         );
 
         // cell format is cleared because of the row format change
-        assert_eq!(sheet.format_cell(0, 0).fill_color, None);
+        assert_eq!(sheet.format_cell(0, 0, false).fill_color, None);
 
         // ensure fills are sent to the client
         let meta_fills = sheet.get_sheet_fills();

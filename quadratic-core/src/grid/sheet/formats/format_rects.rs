@@ -85,9 +85,9 @@ mod test {
         );
         let rect = Rect::from_numbers(0, 0, 2, 2);
         let reverse = sheet.set_formats_rects(&[rect], &formats);
-        assert_eq!(sheet.format_cell(0, 0).bold, Some(true));
-        assert_eq!(sheet.format_cell(1, 1).bold, Some(true));
-        assert_eq!(sheet.format_cell(2, 2).bold, None);
+        assert_eq!(sheet.format_cell(0, 0, false).bold, Some(true));
+        assert_eq!(sheet.format_cell(1, 1, false).bold, Some(true));
+        assert_eq!(sheet.format_cell(2, 2, false).bold, None);
 
         assert_eq!(reverse.len(), 1);
         assert_eq!(
@@ -152,21 +152,21 @@ mod test {
         let rect = Rect::from_numbers(0, 0, 2, 2);
         let reverse = sheet.set_formats_rects(&[rect], &formats);
         assert_eq!(
-            sheet.format_cell(0, 0),
+            sheet.format_cell(0, 0, false),
             Format {
                 fill_color: Some("red".to_string()),
                 ..Default::default()
             }
         );
         assert_eq!(
-            sheet.format_cell(1, 1),
+            sheet.format_cell(1, 1, false),
             Format {
                 fill_color: Some("red".to_string()),
                 ..Default::default()
             }
         );
         assert_eq!(
-            sheet.format_cell(2, 2),
+            sheet.format_cell(2, 2, false),
             Format {
                 fill_color: None,
                 ..Default::default()
@@ -200,7 +200,7 @@ mod test {
             4,
         );
         sheet.set_formats_rects(&[rect], &formats);
-        assert_eq!(sheet.format_cell(0, 0), Format::default());
-        assert_eq!(sheet.format_cell(1, 1), Format::default());
+        assert_eq!(sheet.format_cell(0, 0, false), Format::default());
+        assert_eq!(sheet.format_cell(1, 1, false), Format::default());
     }
 }

@@ -476,7 +476,7 @@ mod tests {
         );
         sheet.calculate_bounds();
         assert_eq!(
-            sheet.format_cell(0, 0),
+            sheet.format_cell(0, 0, false),
             Format {
                 fill_color: Some("red".to_string()),
                 ..Default::default()
@@ -490,6 +490,6 @@ mod tests {
             },
             1,
         ));
-        assert_eq!(sheet.format_cell(0, 0), Format::default());
+        assert_eq!(sheet.format_cell(0, 0, false), Format::default());
     }
 }
