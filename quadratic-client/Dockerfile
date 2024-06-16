@@ -2,6 +2,7 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package.json .
 COPY package-lock.json .
+COPY updateAlertVersion.json .
 COPY quadratic-client ./quadratic-client
 COPY quadratic-shared ./quadratic-shared
 RUN npm install

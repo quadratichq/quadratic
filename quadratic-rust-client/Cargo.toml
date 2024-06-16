@@ -1,10 +1,8 @@
 [package]
 name = "quadratic-rust-client"
 version = "0.1.0"
-authors.workspace = true
-edition.workspace = true
-description.workspace = true
-repository.workspace = true
+edition = "2021"
+authors = ["David Figatner <david.figatner@quadratichq.com>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

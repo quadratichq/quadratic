@@ -37,6 +37,7 @@ export default defineConfig(() => {
       port: 3000,
     },
     resolve: {
+      preserveSymlinks: process.env.VITEST !== 'true',
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
