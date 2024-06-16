@@ -36,7 +36,7 @@ export const Component = () => {
 
   // If for some reason it failed, display an error
   useEffect(() => {
-    if (fetcher.data?.ok === false) {
+    if (fetcher.data && fetcher.data.ok === false) {
       addGlobalSnackbar('Failed to update team name. Try again later.', { severity: 'error' });
     }
   }, [fetcher.data, addGlobalSnackbar]);

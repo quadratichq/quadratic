@@ -109,7 +109,15 @@ export const router = createBrowserRouter(
               {/* Putting this outside the team loader lets you hit this route and directly create a file without having to load other data */}
               <Route path=":teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
 
-              <Route path=":teamUuid" id={ROUTE_LOADER_IDS.TEAM} lazy={() => import('./routes/teams.$teamUuid')}>
+              <Route
+                path=":teamUuid"
+                id={ROUTE_LOADER_IDS.TEAM}
+                lazy={() => import('./routes/teams.$teamUuid')}
+                shouldRevalidate={({ currentUrl }: ShouldRevalidateFunctionArgs) => {
+                  const shouldRevalidate = !currentUrl.pathname.includes('/members');
+                  return shouldRevalidate;
+                }}
+              >
                 <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
                 <Route path="files/personal" lazy={() => import('./routes/teams.$teamUuid.files.personal')} />
                 <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
@@ -130,7 +138,12 @@ export const router = createBrowserRouter(
       <Route path={ROUTES.LOGIN_RESULT} loader={LoginResult.loader} />
       <Route path={ROUTES.LOGOUT} loader={Logout.loader} action={Logout.action} />
     </>
-  )
+  ),
+  {
+    future: {
+      v7_fetcherPersist: true,
+    },
+  }
 );
 
 function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
