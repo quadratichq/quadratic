@@ -143,11 +143,11 @@ services:
     restart: "always"
     ports:
       - "3003:3003"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      quadratic-api:
-        condition: service_started
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+    #   quadratic-api:
+    #     condition: service_started
     profiles:
       - backend
       - quadratic-connection
