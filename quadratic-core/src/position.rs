@@ -234,6 +234,11 @@ impl Rect {
 /// Creates a bounding rect from a list of positions
 impl From<Vec<Pos>> for Rect {
     fn from(positions: Vec<Pos>) -> Self {
+        assert!(
+            positions.len() == 0,
+            "Cannot create a bounding rect from an empty list"
+        );
+
         let mut min_x = i64::MAX;
         let mut min_y = i64::MAX;
         let mut max_x = i64::MIN;

@@ -127,7 +127,7 @@ impl GridController {
                     min_x = min_x.min(pos.x);
                     min_y = min_y.min(pos.y);
                 });
-                if min_x != i64::MAX && min_y != i64::MAX {
+                if min_x != i64::MAX && min_y != i64::MAX && !values.is_empty() {
                     values.iter().for_each(|(pos, _value)| {
                         cell_values.set(
                             (pos.x - min_x) as u32,

@@ -115,7 +115,7 @@ impl Selection {
                 min_y = min_y.min(rect.min.y);
                 max_y = max_y.max(rect.max.y);
             });
-            if min_x != i64::MAX && min_y != i64::MAX {
+            if min_x != i64::MAX && min_y != i64::MAX && max_x != i64::MIN && max_y != i64::MIN {
                 Some(SheetRect {
                     sheet_id: self.sheet_id,
                     min: Pos { x: min_x, y: min_y },

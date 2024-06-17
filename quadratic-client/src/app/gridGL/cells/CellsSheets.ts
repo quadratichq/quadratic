@@ -100,7 +100,7 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find cellsSheet in labelMeshEntry');
     }
     cellsSheet.cellsLabels.addLabelMeshEntry(message);
-    if (sheets.sheet.id === message.sheetId) {
+    if (sheets.sheet?.id === message.sheetId) {
       pixiApp.setViewportDirty();
     }
   }
