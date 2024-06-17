@@ -188,30 +188,30 @@ services:
       - quadratic-connection-test
       - all
 
-  # mysql-connection:
-  #   image: mysql:8
-  #   restart: always
-  #   container_name: mysql-connection
-  #   ports:
-  #     - 3306:3306
-  #   environment:
-  #     MYSQL_DATABASE: mysql-connection
-  #     MYSQL_USER: user
-  #     MYSQL_PASSWORD: password
-  #     MYSQL_ROOT_PASSWORD: password
-  #   healthcheck:
-  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   volumes:
-  #     - ./docker/mysql-connection/data:/var/lib/mysql
-  #     - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
-  #   profiles:
-  #     - additional-databases
-  #     - quadratic-connection
-  #     - quadratic-connection-test
-  #     - all
+  mysql-connection:
+    image: mysql:8
+    restart: always
+    container_name: mysql-connection
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: mysql-connection
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/mysql-connection/data:/var/lib/mysql
+      - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
+    profiles:
+      - additional-databases
+      - quadratic-connection
+      - quadratic-connection-test
+      - all
 
 volumes:
   docker:
