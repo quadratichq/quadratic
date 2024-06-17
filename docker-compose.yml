@@ -7,6 +7,8 @@ services:
       service: redis
     volumes:
       - ./docker/redis/data:/data
+    profiles:
+      - all
 
   postgres:
     extends:
@@ -14,6 +16,8 @@ services:
       service: postgres
     volumes:
       - ./docker/postgres/data:/var/lib/postgresql/data
+    profiles:
+      - all
 
   localstack:
     extends:
@@ -22,6 +26,8 @@ services:
     volumes:
       - "./docker/localstack/data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+    profiles:
+      - all
 
   aws-cli:
     extends:
@@ -31,6 +37,8 @@ services:
       - localstack
     volumes:
       - ./docker/localstack/cli:/aws
+    profiles:
+      - all
 
   quadratic-client:
     build:
@@ -177,6 +185,7 @@ services:
     profiles:
       - additional-databases
       - quadratic-connection
+      - quadratic-connection-test
       - all
 
   mysql-connection:
@@ -201,6 +210,7 @@ services:
     profiles:
       - additional-databases
       - quadratic-connection
+      - quadratic-connection-test
       - all
 
 volumes:
