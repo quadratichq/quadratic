@@ -1,4 +1,4 @@
-import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileWithUserAsOwnerAction } from '@/app/actions';
+import { createNewFileAction, deleteFile, downloadFileAction, duplicateToPrivateFiles } from '@/app/actions';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import {
   FileDeleteIcon,
@@ -27,13 +27,13 @@ const commands: CommandGroup = {
     },
 
     {
-      label: duplicateFileWithUserAsOwnerAction.label,
-      isAvailable: duplicateFileWithUserAsOwnerAction.isAvailable,
+      label: duplicateToPrivateFiles.label,
+      isAvailable: duplicateToPrivateFiles.isAvailable,
       Component: (props) => {
         const submit = useSubmit();
         const { uuid } = useParams() as { uuid: string };
         const action = () => {
-          duplicateFileWithUserAsOwnerAction.run({ uuid, submit });
+          duplicateToPrivateFiles.run({ uuid, submit });
         };
         return <CommandPaletteListItem {...props} action={action} icon={<FileDuplicateIcon />} />;
       },

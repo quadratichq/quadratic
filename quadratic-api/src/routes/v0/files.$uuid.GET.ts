@@ -23,7 +23,6 @@ export default [
 ];
 
 async function handler(req: RequestWithOptionalUser, res: Response) {
-  console.log('fired');
   const {
     file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerTeam },
     userMakingRequest: { filePermissions, isFileOwner, fileRole },

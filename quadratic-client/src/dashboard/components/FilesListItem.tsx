@@ -1,6 +1,11 @@
-import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '@/app/actions';
+import { deleteFile, downloadFileAction, duplicateToTeamFiles, renameFileAction } from '@/app/actions';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { Action as FileAction, getActionMoveFile } from '@/routes/files.$uuid';
+import {
+  Action as FileAction,
+  getActionFileDelete,
+  getActionFileDuplicate,
+  getActionFileMove,
+} from '@/routes/files.$uuid';
 import { useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -119,9 +124,7 @@ export function FilesListItemUserFile({
 
   const handleDelete = () => {
     if (window.confirm(`Confirm you want to delete the file: “${name}”`)) {
-      const data: FileAction['request.delete'] = {
-        action: 'delete',
-      };
+      const data = getActionFileDelete();
       fetcherDelete.submit(data, fetcherSubmitOpts);
     }
   };
@@ -134,10 +137,7 @@ export function FilesListItemUserFile({
   };
 
   const handleDuplicate = () => {
-    const data: FileAction['request.duplicate'] = {
-      action: 'duplicate',
-      withCurrentOwner: true,
-    };
+    const data = getActionFileDuplicate({ redirect: false, isPrivate: isTeamPrivateFilesRoute ? true : false });
     fetcherDuplicate.submit(data, fetcherSubmitOpts);
   };
 
@@ -208,9 +208,7 @@ export function FilesListItemUserFile({
                     <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={handleDuplicate}>
-                      {duplicateFileWithCurrentOwnerAction.label}
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDuplicate}>{duplicateToTeamFiles.label}</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>
@@ -222,7 +220,7 @@ export function FilesListItemUserFile({
                       {isTeamPublicFilesRoute && (
                         <DropdownMenuItem
                           onClick={() => {
-                            const data = getActionMoveFile(userId);
+                            const data = getActionFileMove(userId);
                             submit(data, {
                               method: 'POST',
                               action: `/files/${uuid}`,
@@ -238,7 +236,7 @@ export function FilesListItemUserFile({
                       {isTeamPrivateFilesRoute && (
                         <DropdownMenuItem
                           onClick={() => {
-                            const data = getActionMoveFile(null);
+                            const data = getActionFileMove(null);
                             submit(data, {
                               method: 'POST',
                               action: `/files/${uuid}`,

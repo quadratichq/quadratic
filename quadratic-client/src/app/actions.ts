@@ -2,7 +2,7 @@ import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { downloadFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { FileContextType } from '@/app/ui/components/FileProvider';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { Action } from '@/routes/files.$uuid';
+import { getActionFileDuplicate } from '@/routes/files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -66,26 +66,27 @@ export const renameFileAction = {
   isAvailable: hasPermissionToEditFile,
 };
 
-export const duplicateFileWithUserAsOwnerAction = {
-  label: 'Duplicate in my files',
-  isAvailable: isLoggedIn,
+export const duplicateToPrivateFiles = {
+  label: 'Duplicate to private files',
+  isAvailable: hasPermissionToEditFile,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
-    const data = { action: 'duplicate', redirect: true, withCurrentOwner: false } as Action['request.duplicate'];
+    const data = getActionFileDuplicate({ redirect: true, isPrivate: true });
     submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
   },
 };
 
-export const duplicateFileWithCurrentOwnerAction = {
+export const duplicateToTeamFiles = {
   label: 'Duplicate',
-  isAvailable: isLoggedIn,
+  isAvailable: hasPermissionToEditFile,
   async run({ uuid, submit }: { uuid: string; submit: SubmitFunction }) {
-    const data = { action: 'duplicate', redirect: true, withCurrentOwner: true } as Action['request.duplicate'];
+    const data = getActionFileDuplicate({ redirect: true, isPrivate: false });
     submit(data, { method: 'POST', action: `/files/${uuid}`, encType: 'application/json' });
   },
 };
 
 export const downloadFileAction = {
   label: 'Download',
+  // TODO: (connections) this should probably read from team connections to duplicate
   isAvailable: isLoggedIn,
   async run({ name }: { name: FileContextType['name'] }) {
     downloadQuadraticFile(name, await quadraticCore.export());

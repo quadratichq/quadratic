@@ -3,7 +3,7 @@ import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { getActionMoveFile } from '@/routes/files.$uuid';
+import { getActionFileMove } from '@/routes/files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
@@ -390,7 +390,7 @@ function SidebarNavLink({
           event.preventDefault();
           const uuid = event.dataTransfer.getData('application/quadratic-file-uuid');
           setIsDraggingOver(false);
-          const data = getActionMoveFile(dropTarget);
+          const data = getActionFileMove(dropTarget);
           submit(data, {
             method: 'POST',
             action: `/files/${uuid}`,

@@ -6,7 +6,7 @@ import { Menu, MenuDivider, MenuItem } from '@szhsin/react-menu';
 import { Dispatch, SetStateAction } from 'react';
 import { useParams, useSubmit } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
-import { deleteFile, downloadFileAction, duplicateFileWithUserAsOwnerAction, renameFileAction } from '../../../actions';
+import { deleteFile, downloadFileAction, duplicateToPrivateFiles, renameFileAction } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { useFileContext } from '../../components/FileProvider';
 import { MenuLineItem } from './MenuLineItem';
@@ -65,9 +65,9 @@ export function TopBarFileMenuDropdown({ setIsRenaming }: { setIsRenaming: Dispa
           <MenuLineItem primary={renameFileAction.label} />
         </MenuItem>
       )}
-      {duplicateFileWithUserAsOwnerAction.isAvailable(permissions, isAuthenticated) && (
-        <MenuItem onClick={() => duplicateFileWithUserAsOwnerAction.run({ uuid, submit })}>
-          <MenuLineItem primary={duplicateFileWithUserAsOwnerAction.label} />
+      {duplicateToPrivateFiles.isAvailable(permissions, isAuthenticated) && (
+        <MenuItem onClick={() => duplicateToPrivateFiles.run({ uuid, submit })}>
+          <MenuLineItem primary={duplicateToPrivateFiles.label} />
         </MenuItem>
       )}
       {downloadFileAction.isAvailable(permissions, isAuthenticated) && (

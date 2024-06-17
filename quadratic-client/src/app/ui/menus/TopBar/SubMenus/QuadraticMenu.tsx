@@ -18,7 +18,7 @@ import {
   cutAction,
   deleteFile,
   downloadFileAction,
-  duplicateFileWithUserAsOwnerAction,
+  duplicateToPrivateFiles,
   findInSheet,
   findInSheets,
   pasteAction,
@@ -83,9 +83,9 @@ export const QuadraticMenu = () => {
                 <MenuLineItem primary={createNewFileAction.label} />
               </MenuItem>
             )}
-            {duplicateFileWithUserAsOwnerAction.isAvailable(permissions, isAuthenticated) && (
-              <MenuItem onClick={() => duplicateFileWithUserAsOwnerAction.run({ uuid, submit })}>
-                <MenuLineItem primary={duplicateFileWithUserAsOwnerAction.label} />
+            {duplicateToPrivateFiles.isAvailable(permissions, isAuthenticated) && (
+              <MenuItem onClick={() => duplicateToPrivateFiles.run({ uuid, submit })}>
+                <MenuLineItem primary={duplicateToPrivateFiles.label} />
               </MenuItem>
             )}
             {downloadFileAction.isAvailable(permissions, isAuthenticated) && (
