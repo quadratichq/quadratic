@@ -39,14 +39,14 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     // Fetch the contents of the file
     const fileContents = await fetch(lastCheckpointDataUrl).then((res) => res.text());
 
-    // Create a personal file for the user in the requested team
+    // Create a private file for the user in the requested team
     const dbFile = await createFile({
       name,
       userId,
       contents: fileContents,
       version: lastCheckpointVersion,
       teamId: team.id,
-      isPersonal: true,
+      isPrivate: true,
     });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
   } catch (e) {

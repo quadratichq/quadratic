@@ -26,14 +26,15 @@ export const ROUTES = {
   CREATE_FILE: (teamUuid: string) => `/teams/${teamUuid}/files/create`,
   CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string) =>
     `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}`,
-  CREATE_FILE_PERSONAL: (teamUuid: string) => `/teams/${teamUuid}/files/create?personal`,
+  CREATE_FILE_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/create?private`,
   TEAMS: `/teams`,
+  TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
   TEAM_CONNECTIONS: (teamUuid: string) => `/teams/${teamUuid}/connections`,
   TEAM_CONNECTION_CREATE: (teamUuid: string, connectionType: string) =>
     `/teams/${teamUuid}/connections/create/${connectionType}`,
   TEAM_FILES: (teamUuid: string) => `/teams/${teamUuid}/files`,
-  TEAM_FILES_PERSONAL: (teamUuid: string) => `/teams/${teamUuid}/files/personal`,
+  TEAM_FILES_PRIVATE: (teamUuid: string) => `/teams/${teamUuid}/files/private`,
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
@@ -51,7 +52,7 @@ export const ROUTE_LOADER_IDS = {
 };
 
 export const SEARCH_PARAMS = {
-  DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education', CREATE_TEAM: 'create-team' } },
+  DIALOG: { KEY: 'dialog', VALUES: { EDUCATION: 'education' } },
   SNACKBAR_MSG: { KEY: 'snackbar-msg' }, // VALUE can be any message you want to display
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
 };

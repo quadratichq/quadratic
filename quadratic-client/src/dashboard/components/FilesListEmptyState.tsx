@@ -9,7 +9,7 @@ import { ExternalLinkIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { Link } from 'react-router-dom';
 
-export const FilesListEmptyState = ({ isPersonal }: { isPersonal?: boolean }) => {
+export const FilesListEmptyState = ({ isPrivate }: { isPrivate?: boolean }) => {
   const {
     activeTeamUuid: [activeTeamUuid],
   } = useDashboardContext();
@@ -47,7 +47,7 @@ export const FilesListEmptyState = ({ isPersonal }: { isPersonal?: boolean }) =>
               description: 'With a fresh new file',
               link: (
                 <Link
-                  to={isPersonal ? ROUTES.CREATE_FILE_PERSONAL(activeTeamUuid) : ROUTES.CREATE_FILE(activeTeamUuid)}
+                  to={isPrivate ? ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid) : ROUTES.CREATE_FILE(activeTeamUuid)}
                   reloadDocument
                   onClick={() => {
                     mixpanel.track('[FilesEmptyState].clickCreateBlankFile');

@@ -84,7 +84,7 @@ export const router = createBrowserRouter(
           <Route
             id={ROUTE_LOADER_IDS.DASHBOARD}
             lazy={() => import('./routes/_dashboard')}
-            shouldRevalidate={dontRevalidateDialogs}
+            shouldRevalidate={revalidateDashboard}
           >
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
@@ -106,20 +106,22 @@ export const router = createBrowserRouter(
               {/* TODO: (connections) Figure out where to route /teams (probably same logic as root) */}
               <Route index loader={() => redirect('/')} />
 
-              {/* Putting this outside the team loader lets you hit this route and directly create a file without having to load other data */}
-              <Route path=":teamUuid/files/create" lazy={() => import('./routes/teams.$teamUuid.files.create')} />
+              <Route path="create" lazy={() => import('./routes/teams.create')} />
 
+              {/* Putting this outside the team loader lets you hit this route and directly create a file without having to load other data */}
+              <Route
+                path=":teamUuid/files/create"
+                lazy={() => import('./routes/teams.$teamUuid.files.create')}
+                shouldRevalidate={() => false}
+              />
               <Route
                 path=":teamUuid"
                 id={ROUTE_LOADER_IDS.TEAM}
                 lazy={() => import('./routes/teams.$teamUuid')}
-                shouldRevalidate={({ currentUrl }: ShouldRevalidateFunctionArgs) => {
-                  const shouldRevalidate = !currentUrl.pathname.includes('/members');
-                  return shouldRevalidate;
-                }}
+                shouldRevalidate={revalidateDashboard}
               >
                 <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
-                <Route path="files/personal" lazy={() => import('./routes/teams.$teamUuid.files.personal')} />
+                <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
                 <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
                 <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
                 <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')}>
@@ -153,5 +155,30 @@ function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunction
   if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
     return false;
   }
+  return true;
+}
+
+function revalidateDashboard({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
+  // const { pathname } = currentUrl;
+
+  // if (currentUrl.pathname === ROUTES.TEAMS_CREATE || nextUrl.pathname === ROUTES.TEAMS_CREATE) {
+  //   console.log('do not revlidate');
+  //   return false;
+  // }
+
+  // // If you're coming from team members or connections, which are dialogs, don't revalidate.
+  // // Just close immediately.
+  // if (
+  //   pathname.includes('teams/') &&
+  //   (pathname.includes('members') || pathname.includes('connections') || pathname.includes('create'))
+  // ) {
+  //   return false;
+  // }
+
+  // // If you're not coming from a teams page, don't revalidate
+  // if (!pathname.includes('teams/')) {
+  //   return false;
+  // }
+
   return true;
 }

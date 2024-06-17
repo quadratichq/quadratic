@@ -1,7 +1,7 @@
 import { useDashboardContext, useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Type } from '@/shared/components/Type';
-import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -14,20 +14,20 @@ import {
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { CaretSortIcon, CheckCircledIcon, ExitIcon, PlusIcon, ReloadIcon } from '@radix-ui/react-icons';
 import { ReactNode } from 'react';
-import { Link, useFetcher, useSearchParams, useSubmit } from 'react-router-dom';
+import { Link, useFetcher, useNavigate, useSubmit } from 'react-router-dom';
 
 type Props = {
   appIsLoading: boolean;
 };
 
 export function TeamSwitcher({ appIsLoading }: Props) {
-  const [, setSearchParams] = useSearchParams();
   const submit = useSubmit();
   const { teams } = useDashboardRouteLoaderData();
   const {
-    activeTeamUuid: [activeTeamUuid, setActiveTeamUuid],
+    activeTeamUuid: [activeTeamUuid],
   } = useDashboardContext();
   const fetcher = useFetcher({ key: 'update-team' });
+  const navigate = useNavigate();
 
   const activeTeam = teams.find(({ team }) => team.uuid === activeTeamUuid);
 
@@ -38,26 +38,11 @@ export function TeamSwitcher({ appIsLoading }: Props) {
       ? activeTeam.team.name
       : 'Select a team';
 
-  // TODO: (connections) move this to the settings page
-  //
-  // {teamPermissions.includes('TEAM_BILLING_EDIT') && (
-  //   <DropdownMenuItem
-  //     onClick={() => {
-  //       // Get the billing session URL
-  //       apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-  //         window.location.href = data.url;
-  //       });
-  //     }}
-  //   >
-  //     Update billing
-  //   </DropdownMenuItem>
-  // )}
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="flex justify-between px-3 font-semibold">
-          {optimisticActiveTeamName}
+          <div className="truncate">{optimisticActiveTeamName}</div>
           <div className="relative">
             <CaretSortIcon />
             <ReloadIcon
@@ -91,7 +76,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
                     return;
                   }
 
-                  setActiveTeamUuid(uuid);
+                  // setActiveTeamUuid(uuid);
                 }}
               >
                 {/* <IconWrapper>
@@ -118,13 +103,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
         <DropdownMenuItem
           className="flex gap-3 text-muted-foreground"
           onClick={() => {
-            setSearchParams(
-              (prev) => {
-                prev.set(SEARCH_PARAMS.DIALOG.KEY, SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM);
-                return prev;
-              },
-              { replace: true }
-            );
+            navigate(ROUTES.TEAMS_CREATE);
           }}
         >
           <IconWrapper>

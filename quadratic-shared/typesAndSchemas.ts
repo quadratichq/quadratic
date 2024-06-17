@@ -169,7 +169,7 @@ export const ApiSchemas = {
     contents: z.string(),
     version: z.string(),
     teamUuid: TeamSchema.shape.uuid,
-    isPersonal: z.boolean().optional(),
+    isPrivate: z.boolean().optional(),
   }),
   '/v0/files.POST.response': z.object({
     file: FileSchema.pick({ uuid: true, name: true }),
@@ -198,13 +198,11 @@ export const ApiSchemas = {
   }),
   '/v0/files/:uuid.PATCH.request': z.object({
     name: FileSchema.shape.name.optional(),
-    ownerUserId: BaseUserSchema.shape.id.optional(),
-    ownerTeamId: TeamSchema.shape.id.optional(),
+    ownerUserId: BaseUserSchema.shape.id.or(z.null()).optional(),
   }),
   '/v0/files/:uuid.PATCH.response': z.object({
     name: FileSchema.shape.name.optional(),
     ownerUserId: BaseUserSchema.shape.id.optional(),
-    ownerTeamId: TeamSchema.shape.id.optional(),
   }),
   '/v0/files/:uuid/thumbnail.POST.response': z.object({
     message: z.string(),
@@ -350,7 +348,7 @@ export const ApiSchemas = {
       currentPeriodEnd: z.string().optional(),
     }),
     files: TeamFilesSchema,
-    filesPersonal: TeamFilesSchema,
+    filesPrivate: TeamFilesSchema,
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
     connections: z.array(z.any()),

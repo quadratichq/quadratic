@@ -1,18 +1,15 @@
+import { useTeamRouteDialog } from '@/dashboard/hooks/useTeamRouteDialog';
 import { Dialog, DialogContent } from '@/shared/shadcn/ui/dialog';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 
 export const Component = () => {
-  const navigate = useNavigate();
+  const { open, onClose } = useTeamRouteDialog();
 
-  const onClose = () => {
-    navigate(-1);
-  };
-
-  return (
+  return open ? (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent>
         <Outlet />
       </DialogContent>
     </Dialog>
-  );
+  ) : null;
 };

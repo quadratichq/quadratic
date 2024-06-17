@@ -1,10 +1,9 @@
 import { useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
-import { CreateTeamDialog } from '@/dashboard/components/CreateTeamDialog';
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { EducationDialog } from '@/dashboard/components/EducationDialog';
 import { TeamSwitcher } from '@/dashboard/components/TeamSwitcher';
 import { useRootRouteLoaderData } from '@/routes/_root';
-import { Action as FileAction } from '@/routes/files.$uuid';
+import { getActionMoveFile } from '@/routes/files.$uuid';
 import { apiClient } from '@/shared/api/apiClient';
 import { Type } from '@/shared/components/Type';
 import { TYPE } from '@/shared/constants/appConstants';
@@ -89,6 +88,8 @@ export const Component = () => {
   const activeTeamUuidFromLocalStorage = localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
   let initialActiveTeamUuid = '';
   if (params.teamUuid) {
+    // TODO: (connections) this is problematic because you might be accessing a team
+    // you do not have access to and we don't want to save that as the active team
     initialActiveTeamUuid = params.teamUuid;
   } else if (activeTeamUuidFromLocalStorage) {
     initialActiveTeamUuid = activeTeamUuidFromLocalStorage;
@@ -97,8 +98,13 @@ export const Component = () => {
   }
   const [activeTeamUuid, setActiveTeamUuid] = useState<string>(initialActiveTeamUuid);
   useEffect(() => {
-    localStorage.setItem(ACTIVE_TEAM_UUID_KEY, activeTeamUuid);
-  }, [activeTeamUuid]);
+    // If the teamUuid changed (due to a navigation, create a new team, etc.)
+    // Then update the app's current team
+    if (params.teamUuid && params.teamUuid !== activeTeamUuid) {
+      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, activeTeamUuid);
+      setActiveTeamUuid(params.teamUuid);
+    }
+  }, [params.teamUuid, activeTeamUuid]);
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
   const navbar = <Navbar isLoading={isLoading} />;
@@ -157,7 +163,6 @@ export const Component = () => {
         >
           {navbar}
         </div>
-        {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.CREATE_TEAM && <CreateTeamDialog />}
         {searchParams.get(SEARCH_PARAMS.DIALOG.KEY) === SEARCH_PARAMS.DIALOG.VALUES.EDUCATION && <EducationDialog />}
       </div>
     </DashboardContext.Provider>
@@ -170,6 +175,7 @@ export const Component = () => {
 function Navbar({ isLoading }: { isLoading: boolean }) {
   const [, setSearchParams] = useSearchParams();
   const {
+    teams,
     userMakingRequest: { id: ownerUserId },
     eduStatus,
   } = useLoaderData() as LoaderData;
@@ -177,6 +183,16 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
   const {
     activeTeamUuid: [activeTeamUuid],
   } = useDashboardContext();
+
+  const activeTeam = teams.find(({ team }) => team.uuid === activeTeamUuid);
+
+  // This is an error, there should always be team data
+  if (!activeTeam) {
+    // TODO: (connections) log to sentry
+    return null;
+  }
+
+  const canEditTeam = activeTeam.userMakingRequest.teamPermissions.includes('TEAM_EDIT');
 
   const classNameIcons = `mx-1 text-muted-foreground`;
 
@@ -199,11 +215,11 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
         </Type>
         <div className="grid gap-0.5">
           <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={{ type: 'user', id: ownerUserId }}>
+            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
               <FileIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
-            <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE(activeTeamUuid)} />
+            {canEditTeam && <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE(activeTeamUuid)} />}
           </div>
           <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
             <ConnectionsIcon className={classNameIcons} />
@@ -213,10 +229,12 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
             <PersonIcon className={classNameIcons} />
             Members
           </SidebarNavLink>
-          <SidebarNavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
-            <GearIcon className={classNameIcons} />
-            Settings
-          </SidebarNavLink>
+          {canEditTeam && (
+            <SidebarNavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
+              <GearIcon className={classNameIcons} />
+              Settings
+            </SidebarNavLink>
+          )}
         </div>
 
         <Type
@@ -224,18 +242,17 @@ function Navbar({ isLoading }: { isLoading: boolean }) {
           variant="overline"
           className={`mb-2 mt-6 flex items-baseline justify-between indent-2 text-muted-foreground`}
         >
-          Personal
+          Private
         </Type>
-        <div className="relative">
-          <SidebarNavLink
-            to={ROUTES.TEAM_FILES_PERSONAL(activeTeamUuid)}
-            dropTarget={{ type: 'user', id: ownerUserId }}
-          >
-            <FileIcon className={classNameIcons} />
-            Files
-          </SidebarNavLink>
-          <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PERSONAL(activeTeamUuid)} />
-        </div>
+        {canEditTeam && (
+          <div className="relative">
+            <SidebarNavLink to={ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)} dropTarget={ownerUserId}>
+              <FileIcon className={classNameIcons} />
+              Files
+            </SidebarNavLink>
+            <SidebarNavLinkCreateButton to={ROUTES.CREATE_FILE_PRIVATE(activeTeamUuid)} />
+          </div>
+        )}
         <SidebarNavLink to={ROUTES.FILES_SHARED_WITH_ME}>
           <Share2Icon className={classNameIcons} />
           Shared with me
@@ -337,10 +354,8 @@ function SidebarNavLink({
   to: string;
   children: ReactNode;
   className?: string;
-  dropTarget?: {
-    type: 'user' | 'team';
-    id: number;
-  };
+  // number = assigning to a user, null = assigning to a team
+  dropTarget?: number | null;
   isLogo?: boolean;
   onClick?: (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void;
   target?: string;
@@ -356,7 +371,7 @@ function SidebarNavLink({
     // We're navigating to this page
     to === navigation.location?.pathname;
 
-  const isDroppable = dropTarget && to !== location.pathname;
+  const isDroppable = dropTarget !== undefined && to !== location.pathname;
   const dropProps = isDroppable
     ? {
         onDragLeave: (event: React.DragEvent<HTMLAnchorElement>) => {
@@ -375,10 +390,7 @@ function SidebarNavLink({
           event.preventDefault();
           const uuid = event.dataTransfer.getData('application/quadratic-file-uuid');
           setIsDraggingOver(false);
-          const data: FileAction['request.move'] = {
-            action: 'move',
-            ...(dropTarget.type === 'user' ? { ownerUserId: dropTarget.id } : { ownerTeamId: dropTarget.id }),
-          };
+          const data = getActionMoveFile(dropTarget);
           submit(data, {
             method: 'POST',
             action: `/files/${uuid}`,

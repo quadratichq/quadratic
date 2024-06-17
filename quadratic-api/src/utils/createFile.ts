@@ -7,14 +7,14 @@ export async function createFile({
   userId,
   version,
   teamId,
-  isPersonal,
+  isPrivate,
 }: {
   contents: string;
   name: string;
   userId: number;
   version: string;
   teamId: number;
-  isPersonal?: boolean;
+  isPrivate?: boolean;
 }) {
   // Create file in db
   const dbFile = await dbClient.file.create({
@@ -22,8 +22,8 @@ export async function createFile({
       creatorUserId: userId,
       name,
       ownerTeamId: teamId,
-      // Public team file or personal file?
-      ...(isPersonal ? { ownerUserId: userId } : {}),
+      // Is the file public to the entire team or private to the user creating it?
+      ...(isPrivate ? { ownerUserId: userId } : {}),
     },
     select: {
       id: true,

@@ -114,11 +114,11 @@ export const apiClient = {
     async create({
       file,
       teamUuid,
-      isPersonal,
+      isPrivate,
     }: {
       file?: Pick<ApiTypes['/v0/files.POST.request'], 'name' | 'contents' | 'version'>;
       teamUuid: ApiTypes['/v0/files.POST.request']['teamUuid'];
-      isPersonal: ApiTypes['/v0/files.POST.request']['isPersonal'];
+      isPrivate: ApiTypes['/v0/files.POST.request']['isPrivate'];
     }) {
       if (file === undefined) {
         file = {
@@ -129,7 +129,7 @@ export const apiClient = {
       }
       return fetchFromApi(
         `/v0/files`,
-        { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPersonal }) },
+        { method: 'POST', body: JSON.stringify({ ...file, teamUuid, isPrivate }) },
         ApiSchemas['/v0/files.POST.response']
       );
     },
@@ -165,7 +165,7 @@ export const apiClient = {
           contents: lastCheckpointContents,
         },
         // If we're duplicating with the current owner, denote the team (if present,
-        // otherwise it duplicates to the user's personal files)
+        // otherwise it duplicates to the user's private files)
         // TODO: (connections) fix this
         // @ts-expect-error
         withCurrentOwner ? team?.uuid : undefined

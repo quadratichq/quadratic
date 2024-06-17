@@ -148,26 +148,30 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
           }),
         },
       })),
-    filesPersonal: dbFiles
-      .filter((file) => file.ownerUserId)
-      .map((file) => ({
-        file: {
-          uuid: file.uuid,
-          name: file.name,
-          createdDate: file.createdDate.toISOString(),
-          updatedDate: file.updatedDate.toISOString(),
-          publicLinkAccess: file.publicLinkAccess,
-          thumbnail: file.thumbnail,
-        },
-        userMakingRequest: {
-          filePermissions: getFilePermissions({
-            publicLinkAccess: file.publicLinkAccess,
-            userFileRelationship: {
-              context: 'private-to-me',
+    // Don't return the user's private files if they don't have edit access to the team
+    // TODO: (connections) check the permissions for this and make sure it's right
+    filesPrivate: userMakingRequest.permissions.includes('TEAM_EDIT')
+      ? dbFiles
+          .filter((file) => file.ownerUserId)
+          .map((file) => ({
+            file: {
+              uuid: file.uuid,
+              name: file.name,
+              createdDate: file.createdDate.toISOString(),
+              updatedDate: file.updatedDate.toISOString(),
+              publicLinkAccess: file.publicLinkAccess,
+              thumbnail: file.thumbnail,
             },
-          }),
-        },
-      })),
+            userMakingRequest: {
+              filePermissions: getFilePermissions({
+                publicLinkAccess: file.publicLinkAccess,
+                userFileRelationship: {
+                  context: 'private-to-me',
+                },
+              }),
+            },
+          }))
+      : [],
     // TODO: (connections) setup types for this
     connections: dbConnections.map(({ uuid, createdDate, updatedDate, name, type }) => ({
       uuid,

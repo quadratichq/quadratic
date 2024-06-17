@@ -54,14 +54,14 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   // 2.
   // If there's no query params for the kind of file to create, just create a
-  // new, blank file. If it's personal, that's passed as a query param
-  // /teams/:teamUuid/files/create?personal
-  const isPersonal = searchParams.get('personal') !== null;
-  mixpanel.track('[Files].newFile', { isPersonal });
+  // new, blank file. If it's private, that's passed as a query param
+  // /teams/:teamUuid/files/create?private
+  const isPrivate = searchParams.get('private') !== null;
+  mixpanel.track('[Files].newFile', { isPrivate });
   try {
     const {
       file: { uuid },
-    } = await apiClient.files.create({ teamUuid, isPersonal });
+    } = await apiClient.files.create({ teamUuid, isPrivate });
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());
@@ -76,7 +76,7 @@ export type CreateActionRequest = {
 
 export const action = async ({ params, request }: ActionFunctionArgs) => {
   const { searchParams } = new URL(request.url);
-  const isPersonal = searchParams.get('personal') !== null;
+  const isPrivate = searchParams.get('private') !== null;
 
   const { teamUuid } = params;
   if (!teamUuid) {
@@ -89,7 +89,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
   try {
     const {
       file: { uuid },
-    } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPersonal });
+    } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPrivate });
     return redirectDocument(ROUTES.FILE(uuid));
   } catch (error) {
     return redirect(getFailUrl());

@@ -1,6 +1,6 @@
 import { deleteFile, downloadFileAction, duplicateFileWithCurrentOwnerAction, renameFileAction } from '@/app/actions';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import { Action as FileAction } from '@/routes/files.$uuid';
+import { Action as FileAction, getActionMoveFile } from '@/routes/files.$uuid';
 import { useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -17,7 +17,7 @@ import { cn } from '@/shared/shadcn/utils';
 import { DotsVerticalIcon, FileIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
-import { Link, SubmitOptions, useFetcher, useLocation, useSubmit } from 'react-router-dom';
+import { Link, SubmitOptions, useFetcher, useMatch, useSubmit } from 'react-router-dom';
 import { DialogRenameItem } from './DialogRenameItem';
 import { FilesListExampleFile, FilesListUserFile } from './FilesList';
 import { FilesListItemCore } from './FilesListItemCore';
@@ -65,24 +65,19 @@ export function FilesListItemUserFile({
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
   const teamRouteLoaderData = useTeamRouteLoaderData();
-  const location = useLocation();
   const fileDragRef = useRef<HTMLDivElement>(null);
   const {
-    teams,
     userMakingRequest: { id: userId },
   } = useDashboardRouteLoaderData();
 
-  // Determine if the user can move files
-  // If we're looking at the user's personal files, make sure they have edit access to another team
-  // If we're looking at a team, make sure they have edit access to the curent team
-  const isPersonalFilesRoute = location.pathname === ROUTES.FILES;
-  const isTeamRoute = teamRouteLoaderData !== undefined;
-  const canMoveFiles =
-    (isPersonalFilesRoute &&
-      teams.filter(({ userMakingRequest: { teamPermissions } }) => teamPermissions.includes('TEAM_EDIT')).length > 0) ||
-    (isTeamRoute && teamRouteLoaderData.userMakingRequest.teamPermissions.includes('TEAM_EDIT'));
-
   const { name, thumbnail, uuid, publicLinkAccess, permissions } = file;
+
+  // Determine if the user can move files
+  // If we're looking at the user's private files, make sure they have edit access to another team
+  // If we're looking at a team, make sure they have edit access to the curent team
+  const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(teamRouteLoaderData?.team?.uuid)));
+  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM(teamRouteLoaderData?.team?.uuid)));
+  const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
 
   const description =
     viewPreferences.sort === Sort.Created
@@ -224,13 +219,10 @@ export function FilesListItemUserFile({
                   {canMoveFiles && (
                     <>
                       <DropdownMenuSeparator />
-                      {!isPersonalFilesRoute && (
+                      {isTeamPublicFilesRoute && (
                         <DropdownMenuItem
                           onClick={() => {
-                            const data: FileAction['request.move'] = {
-                              action: 'move',
-                              ownerUserId: userId,
-                            };
+                            const data = getActionMoveFile(userId);
                             submit(data, {
                               method: 'POST',
                               action: `/files/${uuid}`,
@@ -240,38 +232,25 @@ export function FilesListItemUserFile({
                             });
                           }}
                         >
-                          Move to my files
+                          Move to private files
                         </DropdownMenuItem>
                       )}
-                      {teams
-                        .filter(
-                          ({ team, userMakingRequest: { teamPermissions } }) =>
-                            team.activated &&
-                            teamPermissions.includes('TEAM_EDIT') &&
-                            (isTeamRoute ? teamRouteLoaderData.team.uuid !== team.uuid : true)
-                        )
-                        .map(({ team }) => (
-                          <DropdownMenuItem
-                            className="block truncate"
-                            key={team.uuid}
-                            onClick={() => {
-                              const data: FileAction['request.move'] = {
-                                action: 'move',
-                                ownerTeamId: team.id,
-                              };
-                              submit(data, {
-                                method: 'POST',
-                                action: `/files/${uuid}`,
-                                encType: 'application/json',
-                                navigate: false,
-                                fetcherKey: `move-file:${uuid}`,
-                              });
-                            }}
-                          >
-                            Move to {team.name}
-                          </DropdownMenuItem>
-                        ))
-                        .slice(0, 2)}
+                      {isTeamPrivateFilesRoute && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const data = getActionMoveFile(null);
+                            submit(data, {
+                              method: 'POST',
+                              action: `/files/${uuid}`,
+                              encType: 'application/json',
+                              navigate: false,
+                              fetcherKey: `move-file:${uuid}`,
+                            });
+                          }}
+                        >
+                          Move to team files
+                        </DropdownMenuItem>
+                      )}
                     </>
                   )}
 

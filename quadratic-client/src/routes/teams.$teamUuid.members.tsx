@@ -1,17 +1,10 @@
+import { useTeamRouteDialog } from '@/dashboard/hooks/useTeamRouteDialog';
 import { useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
 import { ShareTeamDialog } from '@/shared/components/ShareDialog';
-import { useNavigate } from 'react-router-dom';
 
 export const Component = () => {
-  const navigate = useNavigate();
   const loaderData = useTeamRouteLoaderData();
+  const { open, onClose } = useTeamRouteDialog();
 
-  return (
-    <ShareTeamDialog
-      data={loaderData}
-      onClose={() => {
-        navigate(-1);
-      }}
-    />
-  );
+  return open ? <ShareTeamDialog data={loaderData} onClose={onClose} /> : null;
 };

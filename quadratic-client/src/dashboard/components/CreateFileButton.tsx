@@ -26,12 +26,12 @@ const getFileType = (file: File): UploadFileType => {
   throw new Error(`Unsupported file type: ${file}`);
 };
 
-export default function CreateFileButton({ isPersonal }: { isPersonal?: boolean }) {
+export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean }) {
   const [open, onOpenChange] = useState<boolean>(false);
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const submit = useSubmit();
   const { teamUuid } = useParams() as { teamUuid: string };
-  const actionUrl = isPersonal ? ROUTES.CREATE_FILE_PERSONAL(teamUuid) : ROUTES.CREATE_FILE(teamUuid);
+  const actionUrl = isPrivate ? ROUTES.CREATE_FILE_PRIVATE(teamUuid) : ROUTES.CREATE_FILE(teamUuid);
 
   const handleImport = async (e: ChangeEvent<HTMLInputElement>) => {
     // If nothing was selected, just exit

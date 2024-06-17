@@ -17,7 +17,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.POST.response']>) {
   const {
-    body: { name, contents, version, teamUuid, isPersonal },
+    body: { name, contents, version, teamUuid, isPrivate },
   } = parseRequest(req, schema);
   const {
     user: { id: userId },
@@ -34,7 +34,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
     throw new ApiError(403, 'User does not have permission to create a file in this team.');
   }
 
-  const dbFile = await createFile({ name, userId, teamId, contents, version, isPersonal });
+  const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate });
 
   return res.status(201).json({
     file: { uuid: dbFile.uuid, name: dbFile.name },

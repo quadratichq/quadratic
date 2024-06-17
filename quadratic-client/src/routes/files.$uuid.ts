@@ -17,11 +17,7 @@ export type Action = {
     withCurrentOwner: boolean;
     redirect?: boolean;
   };
-  'request.move': {
-    action: 'move';
-    ownerUserId?: number;
-    ownerTeamId?: number;
-  };
+  'request.move': ReturnType<typeof getActionMoveFile>;
   'request.rename': {
     action: 'rename';
     name: string;
@@ -79,8 +75,8 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
 
   if (action === 'move') {
     try {
-      const { ownerUserId, ownerTeamId } = json as Action['request.move'];
-      await apiClient.files.update(uuid, { ownerUserId, ownerTeamId });
+      const { ownerUserId } = json as Action['request.move'];
+      await apiClient.files.update(uuid, { ownerUserId });
       return { ok: true };
     } catch (error) {
       return { ok: false };
@@ -88,4 +84,16 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
   }
 
   return null;
+};
+
+/**
+ * @param ownerUserId - The ID of the user where you want to move the file
+ * (as a private file on the team). `null` moves it to the team's public files.
+ * @returns
+ */
+export const getActionMoveFile = (ownerUserId: number | null) => {
+  return {
+    action: 'move' as const,
+    ownerUserId,
+  };
 };

@@ -6,11 +6,14 @@ import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { ReactNode, useEffect } from 'react';
-import { useFetcher, useSubmit } from 'react-router-dom';
+import { Navigate, useFetcher, useSubmit } from 'react-router-dom';
 
 // TODO: (connections) do this view
 export const Component = () => {
-  const { team } = useTeamRouteLoaderData();
+  const {
+    team,
+    userMakingRequest: { teamPermissions },
+  } = useTeamRouteLoaderData();
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
@@ -34,6 +37,21 @@ export const Component = () => {
     });
   };
 
+  // TODO: (connections) move this to the settings page
+  //
+  // {teamPermissions.includes('TEAM_BILLING_EDIT') && (
+  //   <DropdownMenuItem
+  //     onClick={() => {
+  //       // Get the billing session URL
+  //       apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+  //         window.location.href = data.url;
+  //       });
+  //     }}
+  //   >
+  //     Update billing
+  //   </DropdownMenuItem>
+  // )}
+
   // If for some reason it failed, display an error
   useEffect(() => {
     if (fetcher.data && fetcher.data.ok === false) {
@@ -41,13 +59,17 @@ export const Component = () => {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
+  if (!teamPermissions.includes('TEAM_EDIT')) {
+    return <Navigate to={ROUTES.TEAM(team.uuid)} />;
+  }
+
   return (
     <>
       <DashboardHeader title="Team settings" />
       <div className={`mt-6 flex flex-col gap-6`}>
         <Row>
           <Type variant="body2" className="font-bold">
-            Team name
+            Name
           </Type>
           <div className="flex items-center gap-2">
             <Input defaultValue={team.name} onBlur={onBlur} />

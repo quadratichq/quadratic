@@ -49,9 +49,9 @@ export const getFilePermissions = ({
   userFileRelationship:
     // Not logged in
     | undefined
-    // Logged in + file is on a team + it's personal to me
+    // Logged in + file is on a team + it's private to me
     | { context: 'private-to-me' }
-    // Logged in + file is on a team + it's personal to another user + it was shared with me
+    // Logged in + file is on a team + it's private to another user + it was shared with me
     | { context: 'private-to-someone-else'; fileRole?: UserFileRole }
     // Logged in + file is public to team
     | { context: 'public-to-team'; teamRole?: UserTeamRole; fileRole?: UserFileRole };
