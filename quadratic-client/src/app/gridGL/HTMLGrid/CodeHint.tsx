@@ -33,7 +33,9 @@ export const CodeHint = () => {
         setHide(true);
       }
       setOffsets(sheets.sheet.getCellOffsets(x, y));
-      setMultipleSelection(sheets.sheet.cursor.multiCursor !== undefined || sheets.sheet.cursor.columnRow !== undefined);
+      setMultipleSelection(
+        sheets.sheet.cursor.multiCursor !== undefined || sheets.sheet.cursor.columnRow !== undefined
+      );
     };
     updateCursor();
     events.on('setCursor', updateCursor);

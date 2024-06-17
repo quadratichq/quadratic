@@ -278,60 +278,60 @@ function handleShiftKey(deltaX: number, deltaY: number) {
 
 const handleHomeKey = async (event: KeyboardEvent) => {
   const sheet = sheets.sheet;
-    if (event.metaKey || event.ctrlKey) {
-      setCursorPosition(0, 0);
-      moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
-    } else {
-      const bounds = sheet.getBounds(true);
-      if (!bounds) return;
-
-      const y = sheet.cursor.cursorPosition.y;
-      const x = await quadraticCore.findNextColumn({
-        sheetId: sheet.id,
-        columnStart: bounds.left,
-        row: y,
-        reverse: false,
-        withContent: true,
-      });
-
-      const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
-      if (hasContent) {
-        setCursorPosition(x, y);
-      }
-    }
-  };
-
-const handleEndKey = async (event: KeyboardEvent) => {
-  const sheet = sheets.sheet;
+  if (event.metaKey || event.ctrlKey) {
+    setCursorPosition(0, 0);
+    moveViewport({ topLeft: { x: 0, y: 0 }, force: true });
+  } else {
     const bounds = sheet.getBounds(true);
     if (!bounds) return;
 
-    if (event.metaKey || event.ctrlKey) {
-      const y = bounds.bottom;
-      const x = await quadraticCore.findNextColumn({
-        sheetId: sheet.id,
-        columnStart: bounds.right,
-        row: y,
-        reverse: true,
-        withContent: true,
-      });
-      setCursorPosition(x, y);
-    } else {
-      const y = sheet.cursor.cursorPosition.y;
-      const x = await quadraticCore.findNextColumn({
-        sheetId: sheet.id,
-        columnStart: bounds.right,
-        row: y,
-        reverse: true,
-        withContent: true,
-      });
+    const y = sheet.cursor.cursorPosition.y;
+    const x = await quadraticCore.findNextColumn({
+      sheetId: sheet.id,
+      columnStart: bounds.left,
+      row: y,
+      reverse: false,
+      withContent: true,
+    });
 
-      const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
-      if (hasContent) {
-        setCursorPosition(x, y);
-      }
+    const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
+    if (hasContent) {
+      setCursorPosition(x, y);
     }
-  };
+  }
+};
+
+const handleEndKey = async (event: KeyboardEvent) => {
+  const sheet = sheets.sheet;
+  const bounds = sheet.getBounds(true);
+  if (!bounds) return;
+
+  if (event.metaKey || event.ctrlKey) {
+    const y = bounds.bottom;
+    const x = await quadraticCore.findNextColumn({
+      sheetId: sheet.id,
+      columnStart: bounds.right,
+      row: y,
+      reverse: true,
+      withContent: true,
+    });
+    setCursorPosition(x, y);
+  } else {
+    const y = sheet.cursor.cursorPosition.y;
+    const x = await quadraticCore.findNextColumn({
+      sheetId: sheet.id,
+      columnStart: bounds.right,
+      row: y,
+      reverse: true,
+      withContent: true,
+    });
+
+    const hasContent = await quadraticCore.cellHasContent(sheet.id, x, y);
+    if (hasContent) {
+      setCursorPosition(x, y);
+    }
+  }
+};
 
 function handleNormal(deltaX: number, deltaY: number) {
   const cursor = sheets.sheet.cursor;
