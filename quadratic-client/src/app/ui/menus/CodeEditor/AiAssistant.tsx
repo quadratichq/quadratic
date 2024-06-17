@@ -87,7 +87,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
     const token = await authClient.getTokenOrRedirect();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
     const request_body = {
-      model: 'gpt-4-32k',
+      model: 'gpt-4o',
       messages: [...systemMessages, ...updatedMessages],
     };
     setMessages(updatedMessages);
@@ -240,7 +240,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
         </div>
       </div>
       <form
-        className="z-10 flex gap-2 px-3 pb-2"
+        className="z-10 flex gap-2 px-3 pb-2 pt-2"
         onSubmit={(e) => {
           e.preventDefault();
         }}
@@ -253,8 +253,19 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
             setPrompt(event.target.value);
           }}
           onKeyDown={(event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && prompt.trim().length > 0) {
+            if (event.key === 'Enter') {
+              if (event.ctrlKey || event.shiftKey) {
+                return;
+              }
+
+              if (prompt.trim().length === 0) {
+                event.preventDefault();
+                return;
+              }
+
               submitPrompt();
+              event.preventDefault();
+              event.currentTarget.focus();
             }
           }}
           autoComplete="off"
