@@ -25,11 +25,10 @@ export class PointerDown {
   async pointerDown(world: Point, event: PointerEvent) {
     if (isMobile || pixiAppSettings.panMode !== PanMode.Disabled || event.button === 1) return;
     const sheet = sheets.sheet;
-    const offsets = sheet.offsets;
     const cursor = sheet.cursor;
 
     this.positionRaw = world;
-    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     const rightClick = event.button === 2 || (event.button === 0 && event.ctrlKey);
 
@@ -71,7 +70,7 @@ export class PointerDown {
     // Select cells between pressed and cursor position. Uses last multiCursor
     // or creates a multiCursor.
     if (event.shiftKey) {
-      const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
+      const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
       const cursorPosition = cursor.cursorPosition;
       if (column !== cursorPosition.x || row !== cursorPosition.y) {
         // make origin top left, and terminal bottom right
@@ -149,7 +148,6 @@ export class PointerDown {
 
     const { viewport } = pixiApp;
     const sheet = sheets.sheet;
-    const offsets = sheet.offsets;
     const cursor = sheet.cursor;
 
     // for determining if double click
@@ -169,7 +167,7 @@ export class PointerDown {
     }
 
     // calculate mouse move position
-    const { column, row } = offsets.getColumnRowFromScreen(world.x, world.y);
+    const { column, row } = sheet.getColumnRowFromScreen(world.x, world.y);
 
     const columnRow = event.metaKey || event.ctrlKey ? undefined : null;
 

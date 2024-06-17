@@ -217,10 +217,19 @@ impl Sheet {
                 }
             }
         }
-        Some(cells)
+        if cells.is_empty() {
+            None
+        } else {
+            Some(cells)
+        }
     }
 
-    /// returns the content and formatting bounds for a Selection.
+    /// Returns the content and formatting bounds for a Selection.
+    ///
+    /// * For all, it returns the data+formatting bounds for the sheet.
+    /// * For rects, it returns the largest bounds around the rects.
+    /// * For columns or rows, it returns the data+formatting bounds around the
+    ///   columns and/or rows.
     pub(crate) fn selection_bounds(&self, selection: &Selection) -> Option<Rect> {
         if selection.all {
             return match self.bounds(false) {
@@ -257,19 +266,15 @@ impl Sheet {
         }
     }
 
-    /// Gets a selection with bounds. This is useful for dealing with a
-    /// rectangular selection. If sort is true, then values are sorted
-    /// ascending, by y and then x.
-    pub(crate) fn selection_sorted_vec_with_bounds(
+    /// Gets a selection of CellValues. This is useful for dealing with a
+    /// rectangular selection. It sorts the results by y and then x.
+    pub(crate) fn selection_sorted_vec(
         &self,
         selection: &Selection,
         skip_code_runs: bool,
-        sort: bool,
-    ) -> Option<(Rect, Vec<(Pos, &CellValue)>)> {
-        let map = self.selection(selection, None, skip_code_runs)?;
-        let mut vec: Vec<_> = map.iter().map(|(pos, value)| (*pos, *value)).collect();
-        let bounds: Vec<Pos> = vec.iter().map(|(pos, _)| *pos).collect();
-        if sort {
+    ) -> Vec<(Pos, &CellValue)> {
+        if let Some(map) = self.selection(selection, None, skip_code_runs) {
+            let mut vec: Vec<_> = map.iter().map(|(pos, value)| (*pos, *value)).collect();
             vec.sort_by(|(a, _), (b, _)| {
                 if a.y < b.y {
                     return std::cmp::Ordering::Less;
@@ -279,8 +284,10 @@ impl Sheet {
                 }
                 a.x.cmp(&b.x)
             });
+            vec
+        } else {
+            vec![]
         }
-        Some((bounds.into(), vec))
     }
 
     /// Gets a list of cells with formatting for a selection. Only cells with a

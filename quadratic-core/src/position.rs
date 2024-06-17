@@ -1,23 +1,28 @@
-use std::ops::Range;
-use std::{fmt, str::FromStr};
-
-use serde::{Deserialize, Serialize};
-#[cfg(feature = "js")]
-use wasm_bindgen::prelude::*;
-
 use crate::{
     controller::transaction_summary::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
     grid::SheetId,
     ArraySize,
 };
+use serde::{Deserialize, Serialize};
+use std::ops::Range;
+use std::{fmt, str::FromStr};
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+    Serialize,
+    Deserialize,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ts_rs::TS,
 )]
-#[cfg_attr(feature = "js", wasm_bindgen)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "-4..=4_i64"))]
@@ -80,9 +85,19 @@ impl fmt::Display for Pos {
 
 /// Rectangular region of cells.
 #[derive(
-    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
+    Serialize,
+    Deserialize,
+    Debug,
+    Default,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ts_rs::TS,
 )]
-#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct Rect {
     /// Upper-left corner.
     pub min: Pos,
@@ -90,6 +105,13 @@ pub struct Rect {
     pub max: Pos,
 }
 impl Rect {
+    pub fn new(x0: i64, y0: i64, x1: i64, y1: i64) -> Rect {
+        Rect {
+            min: Pos { x: x0, y: y0 },
+            max: Pos { x: x1, y: y1 },
+        }
+    }
+
     /// Constructs a rectangle spanning two positions
     pub fn new_span(pos1: Pos, pos2: Pos) -> Rect {
         use std::cmp::{max, min};
@@ -229,15 +251,12 @@ impl Rect {
     pub fn count(&self) -> usize {
         self.width() as usize * self.height() as usize
     }
-}
 
-/// Creates a bounding rect from a list of positions
-impl From<Vec<Pos>> for Rect {
-    fn from(positions: Vec<Pos>) -> Self {
-        assert!(
-            positions.len() == 0,
-            "Cannot create a bounding rect from an empty list"
-        );
+    /// Creates a bounding rect from a list of positions
+    pub fn from_positions(positions: Vec<Pos>) -> Option<Rect> {
+        if positions.is_empty() {
+            return None;
+        }
 
         let mut min_x = i64::MAX;
         let mut min_y = i64::MAX;
@@ -251,10 +270,10 @@ impl From<Vec<Pos>> for Rect {
             max_y = max_y.max(pos.y);
         }
 
-        Rect {
+        Some(Rect {
             min: Pos { x: min_x, y: min_y },
             max: Pos { x: max_x, y: max_y },
-        }
+        })
     }
 }
 
@@ -273,9 +292,7 @@ impl From<SheetRect> for Rect {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, ts_rs::TS)]
 pub struct ScreenRect {
     pub x: f64,
     pub y: f64,
@@ -850,9 +867,8 @@ mod test {
 
     #[test]
     fn rect_from_positions() {
-        use super::*;
         let positions = vec![Pos { x: 1, y: 1 }, Pos { x: 2, y: 2 }];
-        let bounds = Rect::from(positions);
+        let bounds = Rect::from_positions(positions).unwrap();
         assert_eq!(bounds.min.x, 1);
         assert_eq!(bounds.min.y, 1);
         assert_eq!(bounds.max.x, 2);
@@ -878,5 +894,12 @@ mod test {
         let rect: Rect = pos.into();
         assert_eq!(rect.min, pos);
         assert_eq!(rect.max, pos);
+    }
+
+    #[test]
+    fn rect_new() {
+        let rect = Rect::new(0, 1, 2, 3);
+        assert_eq!(rect.min, Pos { x: 0, y: 1 });
+        assert_eq!(rect.max, Pos { x: 2, y: 3 });
     }
 }

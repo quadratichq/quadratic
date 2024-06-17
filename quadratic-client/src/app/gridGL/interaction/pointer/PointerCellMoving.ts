@@ -74,8 +74,8 @@ export class PointerCellMoving {
     if (this.state !== 'move' || !this.moving) {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
-    const offsets = sheets.sheet.offsets;
-    const position = offsets.getColumnRowFromScreen(world.x + this.moving.offset.x, world.y + this.moving.offset.y);
+    const sheet = sheets.sheet;
+    const position = sheet.getColumnRowFromScreen(world.x + this.moving.offset.x, world.y + this.moving.offset.y);
     if (this.moving.toColumn !== position.column || this.moving.toRow !== position.row) {
       this.moving.toColumn = position.column;
       this.moving.toRow = position.row;

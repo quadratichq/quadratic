@@ -83,7 +83,7 @@ export class PointerAutoComplete {
       this.cursor = 'crosshair';
 
       if (this.active) {
-        const { column, row } = sheets.sheet.offsets.getColumnRowFromScreen(world.x, world.y);
+        const { column, row } = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
         let { selection, screenSelection } = this;
         if (!selection || !screenSelection) {
           throw new Error('Expected selection and screenSelection to be defined');

@@ -1,13 +1,13 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { JsRenderFill, JsSheetFill } from '@/app/quadratic-core-types';
+import { colors } from '@/app/theme/colors';
 import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
 import { Sheet } from '../../grid/sheet/Sheet';
 import { convertColorStringToTint } from '../../helpers/convertColor';
 import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
-import { colors } from '@/app/theme/colors';
 
 // todo: might want to add this to the update loop instead of listening for
 // viewport changes to avoid multiple calls to drawMeta

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use csv::Writer;
 use itertools::PeekingNext;
 
@@ -10,14 +10,11 @@ impl GridController {
     ///
     /// Returns a [`String`].
     pub fn export_csv_selection(&self, selection: Selection) -> Result<String> {
-        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
-            return Ok("".to_string());
-        };
-        let Some((bounds, values)) =
-            sheet.selection_sorted_vec_with_bounds(&selection, false, true)
-        else {
-            return Ok("".to_string());
-        };
+        let sheet = self
+            .try_sheet(selection.sheet_id)
+            .context("Sheet not found")?;
+        let bounds = sheet.selection_bounds(&selection).context("No values")?;
+        let values = sheet.selection_sorted_vec(&selection, false);
         let mut writer = Writer::from_writer(vec![]);
         let mut iter = values.iter();
         for y in bounds.min.y..=bounds.max.y {

@@ -1,5 +1,5 @@
 import { events } from '@/app/events/events';
-import { GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { ColumnRow, GridBounds, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
@@ -97,16 +97,16 @@ export class Sheet {
 
   // @returns screen position of a cell
   getCellOffsets(column: number, row: number): Rectangle {
-    const screenRect = this.offsets.getCellOffsets(column, row);
+    const screenRectStringified = this.offsets.getCellOffsets(column, row);
+    const screenRect = JSON.parse(screenRectStringified);
     return new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
   }
 
   // todo: change this to a JsValue instead of a Rust struct
   getColumnRow(x: number, y: number): Coordinate {
-    const columnRow = this.offsets.getColumnRowFromScreen(x, y);
-    const result = { x: columnRow.column, y: columnRow.row };
-    columnRow.free();
-    return result;
+    const columnRowStringified = this.offsets.getColumnRowFromScreen(x, y);
+    const columnRow: ColumnRow = JSON.parse(columnRowStringified);
+    return { x: columnRow.column, y: columnRow.row };
   }
 
   // @returns screen rectangle for a column/row rectangle
@@ -128,6 +128,11 @@ export class Sheet {
     } else if (row !== undefined) {
       this.offsets.setRowHeight(row, size);
     }
+  }
+
+  getColumnRowFromScreen(x: number, y: number): ColumnRow {
+    const columnRowStringified = this.offsets.getColumnRowFromScreen(x, y);
+    return JSON.parse(columnRowStringified);
   }
 
   //#endregion

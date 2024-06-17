@@ -22,7 +22,7 @@ import {
   SheetPos,
   SummarizeSelectionResult,
 } from '@/app/quadratic-core-types';
-import initCore, { GridController, Pos, Rect } from '@/app/quadratic-core/quadratic_core';
+import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import * as Sentry from '@sentry/react';
@@ -38,7 +38,7 @@ import { coreClient } from './coreClient';
 import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
-import { numbersToRect, pointsToRect } from './rustConversions';
+import { numbersToRect, pointsToRect, posToPos, posToRect } from './rustConversions';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -170,7 +170,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getCodeCell');
-        resolve(this.gridController.getCodeCell(sheetId, new Pos(x, y)));
+        resolve(this.gridController.getCodeCell(sheetId, posToPos(x, y)));
       });
     });
   }
@@ -179,7 +179,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined in Core.cellHasContent');
-        resolve(this.gridController.hasRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(x, y))));
+        resolve(this.gridController.hasRenderCells(sheetId, posToRect(x, y)));
       });
     });
   }
@@ -188,7 +188,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getEditCell');
-        resolve(this.gridController.getEditCell(sheetId, new Pos(x, y)));
+        resolve(this.gridController.getEditCell(sheetId, posToPos(x, y)));
       });
     });
   }
@@ -197,7 +197,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellValue(sheetId, new Pos(x, y), value, cursor);
+        this.gridController.setCellValue(sheetId, x, y, value, cursor);
         resolve(undefined);
       });
     });
@@ -207,7 +207,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        resolve(this.gridController.getCellFormatSummary(sheetId, new Pos(x, y), withSheetInfo));
+        resolve(this.gridController.getCellFormatSummary(sheetId, posToPos(x, y), withSheetInfo));
       });
     });
   }
@@ -381,7 +381,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        const results = JSON.parse(this.gridController.getRenderCells(sheetId, new Rect(new Pos(x, y), new Pos(x, y))));
+        const results = JSON.parse(this.gridController.getRenderCells(sheetId, posToRect(x, y)));
         resolve(results[0]);
       });
     });
@@ -409,7 +409,7 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         try {
-          this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, new Pos(x, y), cursor);
+          this.gridController.importCsv(sheetId, new Uint8Array(file), fileName, posToPos(x, y), cursor);
           resolve(undefined);
         } catch (error) {
           // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
@@ -435,7 +435,7 @@ class Core {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
         try {
-          this.gridController.importParquet(sheetId, new Uint8Array(file), fileName, new Pos(x, y), cursor);
+          this.gridController.importParquet(sheetId, new Uint8Array(file), fileName, posToPos(x, y), cursor);
           resolve(undefined);
         } catch (error) {
           // TODO(ddimaria): standardize on how WASM formats errors for a consistent error
@@ -469,7 +469,7 @@ class Core {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellCode(sheetId, new Pos(x, y), language, codeString, cursor);
+        this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, cursor);
         resolve(undefined);
       });
     });
@@ -874,7 +874,7 @@ class Core {
   rerunCodeCells(sheetId?: string, x?: number, y?: number, cursor?: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     if (sheetId !== undefined && x !== undefined && y !== undefined) {
-      this.gridController.rerunCodeCell(sheetId, new Pos(x, y), cursor);
+      this.gridController.rerunCodeCell(sheetId, posToPos(x, y), cursor);
     } else if (sheetId !== undefined) {
       this.gridController.rerunSheetCodeCells(sheetId, cursor);
     } else {

@@ -53,3 +53,4 @@ export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_n
 export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
 export interface Format { align: CellAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, }
 export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
+export interface ColumnRow { column: number, row: number, }

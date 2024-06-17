@@ -97,6 +97,7 @@ fn main() {
         SummarizeSelectionResult,
         Format,
         JsSheetFill,
+        ColumnRow,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {
