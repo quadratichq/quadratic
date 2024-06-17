@@ -133,8 +133,8 @@ impl Sheet {
     /// Selection.
     pub fn override_cell_formats(&self, rect: Rect, selection: Option<&Selection>) -> Formats {
         let mut formats = Formats::default();
-        for y in rect.y_range() {
-            for x in rect.x_range() {
+        for x in rect.x_range() {
+            for y in rect.y_range() {
                 let pos = Pos { x, y };
                 if selection.is_none() || selection.is_some_and(|s| s.pos_in_selection(pos)) {
                     let format = self.format_cell(x, y, true);

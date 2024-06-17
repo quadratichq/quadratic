@@ -245,6 +245,11 @@ impl Sheet {
                     bounds.add(Pos { x: *x, y: min });
                     bounds.add(Pos { x: *x, y: max });
                 }
+
+                // we extend the bounds by any formatting within the sheet.formats_columns
+                if self.try_format_column(*x).is_some() {
+                    bounds.extend_x(*x);
+                }
             });
         }
         if let Some(rows) = selection.rows.as_ref() {
@@ -252,6 +257,11 @@ impl Sheet {
                 if let Some((min, max)) = self.row_bounds(*y, false) {
                     bounds.add(Pos { x: min, y: *y });
                     bounds.add(Pos { x: max, y: *y });
+                }
+
+                // we extend the bounds by any formatting within the sheet.formats_rows
+                if self.try_format_row(*y).is_some() {
+                    bounds.extend_y(*y);
                 }
             });
         }

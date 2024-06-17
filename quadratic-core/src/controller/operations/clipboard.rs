@@ -7,7 +7,6 @@ use crate::{
     formulas::replace_internal_cell_references,
     grid::{
         formats::{format::Format, Formats},
-        formatting::CellFmtArray,
         generate_borders_full, BorderSelection, CellBorders, CodeCellLanguage,
     },
     selection::Selection,
@@ -53,7 +52,7 @@ pub struct Clipboard {
     // plain values for use with PasteSpecial::Values
     pub values: CellValues,
 
-    pub formats: Vec<CellFmtArray>,
+    pub formats: Formats,
     pub sheet_formats: ClipboardSheetFormats,
     pub borders: Vec<(i64, i64, Option<CellBorders>)>,
 
@@ -242,22 +241,19 @@ impl GridController {
             _ => (),
         }
 
-        let sheet_rect = SheetRect {
-            min: start_pos,
-            max: Pos {
-                x: start_pos.x + (clipboard.w as i64) - 1,
-                y: start_pos.y + (clipboard.h as i64) - 1,
-            },
-            sheet_id: selection.sheet_id,
-        };
-
-        // paste formats and borders unless pasting only values
+        // paste formats and borders if not PasteSpecial::Values
         if !matches!(special, PasteSpecial::Values) {
-            formats.iter().for_each(|format| {
-                ops.push(Operation::SetCellFormats {
-                    sheet_rect,
-                    attr: format.clone(),
-                });
+            let sheet_rect = SheetRect {
+                min: start_pos,
+                max: Pos {
+                    x: start_pos.x + (clipboard.w as i64) - 1,
+                    y: start_pos.y + (clipboard.h as i64) - 1,
+                },
+                sheet_id: selection.sheet_id,
+            };
+            ops.push(Operation::SetCellFormatsSelection {
+                selection: Selection::sheet_rect(sheet_rect),
+                formats,
             });
 
             ops.extend(self.sheet_formats_operations(selection, &clipboard));

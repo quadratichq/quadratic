@@ -275,6 +275,16 @@ impl Rect {
             max: Pos { x: max_x, y: max_y },
         })
     }
+
+    pub fn extend_x(&mut self, x: i64) {
+        self.min.x = self.min.x.min(x);
+        self.max.x = self.max.x.max(x);
+    }
+
+    pub fn extend_y(&mut self, y: i64) {
+        self.min.y = self.min.y.min(y);
+        self.max.y = self.max.y.max(y);
+    }
 }
 
 impl From<Pos> for Rect {
@@ -901,5 +911,21 @@ mod test {
         let rect = Rect::new(0, 1, 2, 3);
         assert_eq!(rect.min, Pos { x: 0, y: 1 });
         assert_eq!(rect.max, Pos { x: 2, y: 3 });
+    }
+
+    #[test]
+    fn extend_x() {
+        let mut rect = Rect::from_numbers(1, 2, 3, 4);
+        rect.extend_x(5);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 5, y: 5 });
+    }
+
+    #[test]
+    fn extend_y() {
+        let mut rect = Rect::from_numbers(1, 2, 3, 4);
+        rect.extend_y(5);
+        assert_eq!(rect.min, Pos { x: 1, y: 2 });
+        assert_eq!(rect.max, Pos { x: 3, y: 5 });
     }
 }

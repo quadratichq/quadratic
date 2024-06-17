@@ -54,9 +54,11 @@ mod test {
         color::Rgba,
         controller::GridController,
         grid::{
-            generate_borders, js_types::CellFormatSummary, set_rect_borders, BorderSelection,
-            BorderStyle, CellBorderLine, CodeCellLanguage, Sheet, SheetId,
+            formats::format_update::FormatUpdate, generate_borders, js_types::CellFormatSummary,
+            set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
+            Sheet, SheetId,
         },
+        test_util::print_table_sheet,
         CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use bigdecimal::BigDecimal;
@@ -808,6 +810,71 @@ mod test {
         assert_eq!(
             sheet.display_value((0, 2).into()),
             Some(CellValue::Number(BigDecimal::from(100)))
+        );
+    }
+
+    #[test]
+    fn copy_cell_formats() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_format_cell(
+            Pos { x: 1, y: 2 },
+            &FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+            false,
+        );
+        sheet.set_format_cell(
+            Pos { x: 3, y: 4 },
+            &FormatUpdate {
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+            false,
+        );
+
+        let clipboard = sheet
+            .copy_to_clipboard(&Selection::rect(
+                Rect::new_span(Pos { x: 0, y: 0 }, Pos { x: 4, y: 4 }),
+                sheet_id,
+            ))
+            .unwrap();
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.paste_from_clipboard(
+            Selection::pos(0, 0, sheet_id),
+            Some(clipboard.0),
+            Some(clipboard.1),
+            PasteSpecial::None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+
+        print_table_sheet(&sheet, Rect::new(0, 0, 4, 4));
+
+        assert_eq!(
+            sheet.cell_format_summary(Pos { x: 1, y: 2 }, false),
+            CellFormatSummary {
+                bold: Some(true),
+                italic: None,
+                text_color: None,
+                fill_color: None,
+                commas: None,
+            }
+        );
+        assert_eq!(
+            sheet.cell_format_summary(Pos { x: 3, y: 4 }, false),
+            CellFormatSummary {
+                bold: None,
+                italic: None,
+                text_color: None,
+                fill_color: Some("red".to_string()),
+                commas: None,
+            }
         );
     }
 }

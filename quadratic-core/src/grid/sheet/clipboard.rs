@@ -3,7 +3,9 @@ use crate::{
     color::Rgba,
     controller::operations::clipboard::{Clipboard, ClipboardOrigin},
     formulas::replace_a1_notation,
-    grid::{get_cell_borders_in_rect, CellAlign, CellWrap, CodeCellLanguage, Sheet},
+    grid::{
+        formats::Formats, get_cell_borders_in_rect, CellAlign, CellWrap, CodeCellLanguage, Sheet,
+    },
     selection::Selection,
     CellValue, Pos, Rect,
 };
@@ -227,15 +229,13 @@ impl Sheet {
 
         let (formats, borders) = if let Some(bounds) = sheet_bounds {
             (
-                self.get_all_cell_formats(
-                    bounds.to_sheet_rect(selection.sheet_id),
-                    Some(selection),
-                ),
+                self.override_cell_formats(bounds, Some(selection)),
                 get_cell_borders_in_rect(self, bounds, Some(selection)),
             )
         } else {
-            (vec![], vec![])
+            (Formats::default(), vec![])
         };
+
         if selection.all {
             clipboard_origin.all = Some((clipboard_origin.x, clipboard_origin.y));
         } else {
