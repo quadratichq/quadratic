@@ -55,15 +55,16 @@ quadratic-core/coverage
 quadratic-files/coverage
 quadratic-multiplayer/coverage
 
-# Python deployment files
+# Python Deployment files
 quadratic-kernels/python-wasm/dist/
 quadratic-client/public/*.whl
 
-# Docker Data
+# Docker Data Volumes
 docker/localstack/data
 docker/redis/data
 docker/postgres/data
-docker/mysql/data
+docker/postgres-connection/data
+docker/mysql-connection/data
 
 # JMeter
 jmeter.log

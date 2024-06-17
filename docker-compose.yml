@@ -7,6 +7,8 @@ services:
       service: redis
     volumes:
       - ./docker/redis/data:/data
+    profiles:
+      - all
 
   postgres:
     extends:
@@ -14,6 +16,8 @@ services:
       service: postgres
     volumes:
       - ./docker/postgres/data:/var/lib/postgresql/data
+    profiles:
+      - all
 
   localstack:
     extends:
@@ -22,6 +26,8 @@ services:
     volumes:
       - "./docker/localstack/data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+    profiles:
+      - all
 
   aws-cli:
     extends:
@@ -31,6 +37,8 @@ services:
       - localstack
     volumes:
       - ./docker/localstack/cli:/aws
+    profiles:
+      - all
 
   quadratic-client:
     build:
@@ -143,32 +151,66 @@ services:
     restart: "always"
     ports:
       - "3003:3003"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      quadratic-api:
-        condition: service_started
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+    #   quadratic-api:
+    #     condition: service_started
     profiles:
       - backend
       - quadratic-connection
       - all
 
-  mysql:
-    image: mysql:8
+  # Databases to be used for testing by the connection service
+
+  postgres-connection:
+    image: postgres:15
     restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: connection
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+    container_name: postgres-connection
     ports:
-      - 3306:3306
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: postgres-connection
+      POSTGRES_USER: user
+      PGUSER: user
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d postgres-connection"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
-      - ./docker/mysql/data:/var/lib/mysql
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      - ./docker/postgres-connection/data:/var/lib/postgresql/data
+      - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
     profiles:
       - additional-databases
       - quadratic-connection
+      - quadratic-connection-test
+      - all
+
+  mysql-connection:
+    image: mysql:8
+    restart: always
+    container_name: mysql-connection
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: mysql-connection
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/mysql-connection/data:/var/lib/mysql
+      - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
+    profiles:
+      - additional-databases
+      - quadratic-connection
+      - quadratic-connection-test
       - all
 
 volumes:

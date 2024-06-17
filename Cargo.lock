@@ -2997,6 +2997,8 @@ dependencies = [
 name = "quadratic-connection"
 version = "0.1.0"
 dependencies = [
+ "arrow",
+ "arrow-schema",
  "axum",
  "axum-extra",
  "axum-macros",
@@ -3015,6 +3017,8 @@ dependencies = [
  "jsonwebtoken",
  "log",
  "openssl",
+ "parquet",
+ "quadratic-core",
  "quadratic-rust-shared",
  "reqwest",
  "serde",

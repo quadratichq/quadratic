@@ -134,8 +134,11 @@ impl Connection for MySqlConnection {
     }
 
     fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
+        // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "CHAR" => ArrowType::Utf8(convert_mysql_type!(String, row, index)),
+            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
+                ArrowType::Utf8(convert_mysql_type!(String, row, index))
+            }
             "TINYINT" => ArrowType::Int8(convert_mysql_type!(i8, row, index)),
             "SMALLINT" => ArrowType::Int16(convert_mysql_type!(i16, row, index)),
             "MEDIUMINT" | "INT" => ArrowType::Int32(convert_mysql_type!(i32, row, index)),
@@ -159,7 +162,7 @@ impl Connection for MySqlConnection {
             "JSON" => ArrowType::Json(convert_mysql_type!(Value, row, index)),
             "UUID" => ArrowType::Uuid(convert_mysql_type!(Uuid, row, index)),
             // try to convert others to a string
-            _ => ArrowType::Utf8(convert_mysql_type!(String, row, index)),
+            _ => ArrowType::Unsupported,
         }
     }
 }
@@ -186,7 +189,7 @@ mod tests {
             Some("password".into()),
             "0.0.0.0".into(),
             Some("3306".into()),
-            Some("connection".into()),
+            Some("mysql-connection".into()),
         )
     }
 

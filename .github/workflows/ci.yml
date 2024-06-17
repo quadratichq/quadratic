@@ -98,6 +98,15 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Test quadratic-connection
+        env:
+          LLVM_PROFILE_FILE: grcov-%p-%m.profraw
+          RUSTFLAGS: -Cinstrument-coverage
+          RUSTC_BOOTSTRAP: 1
+        run: |
+          cd quadratic-connection
+          npm run test:docker:ci
+
   test_unit:
     runs-on: ubuntu-latest-8-cores
     steps:
@@ -107,7 +116,7 @@ jobs:
           node-version: 18
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11.3'
+          python-version: "3.11.3"
 
       - name: Set up Rust
         uses: moonrepo/setup-rust@v1

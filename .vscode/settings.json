@@ -62,6 +62,7 @@
     "./quadratic-rust-client/Cargo.toml"
   ],
   "rust-analyzer.checkOnSave": true,
+  "rust-analyzer.cargo.unsetTest": true,
   // "rust-analyzer.checkOnSave.command": "clippy",
   "files.associations": {
     "*.grid": "json"

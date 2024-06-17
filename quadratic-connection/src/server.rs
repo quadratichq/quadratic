@@ -62,7 +62,7 @@ pub(crate) struct SqlQuery {
     pub(crate) connection_id: Uuid,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, PartialEq, Debug)]
 pub(crate) struct TestResponse {
     connected: bool,
     message: Option<String>,
