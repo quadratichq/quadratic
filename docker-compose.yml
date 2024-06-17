@@ -174,11 +174,11 @@ services:
       POSTGRES_USER: user
       PGUSER: user
       POSTGRES_PASSWORD: password
-    # healthcheck:
-    #   test: ["CMD-SHELL", "pg_isready -U user -d postgres-connection"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d postgres-connection"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - ./docker/postgres-connection/data:/var/lib/postgresql/data
       - ./docker/postgres-connection/scripts:/docker-entrypoint-initdb.d
@@ -188,30 +188,30 @@ services:
       - quadratic-connection-test
       - all
 
-  mysql-connection:
-    image: mysql:8
-    restart: always
-    container_name: mysql-connection
-    ports:
-      - 3306:3306
-    environment:
-      MYSQL_DATABASE: mysql-connection
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
-      MYSQL_ROOT_PASSWORD: password
-    # healthcheck:
-    #   test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-    #   interval: 10s
-    #   timeout: 5s
-    #   retries: 5
-    volumes:
-      - ./docker/mysql-connection/data:/var/lib/mysql
-      - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
-    profiles:
-      - additional-databases
-      - quadratic-connection
-      - quadratic-connection-test
-      - all
+  # mysql-connection:
+  #   image: mysql:8
+  #   restart: always
+  #   container_name: mysql-connection
+  #   ports:
+  #     - 3306:3306
+  #   environment:
+  #     MYSQL_DATABASE: mysql-connection
+  #     MYSQL_USER: user
+  #     MYSQL_PASSWORD: password
+  #     MYSQL_ROOT_PASSWORD: password
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   volumes:
+  #     - ./docker/mysql-connection/data:/var/lib/mysql
+  #     - ./docker/mysql-connection/scripts:/docker-entrypoint-initdb.d/
+  #   profiles:
+  #     - additional-databases
+  #     - quadratic-connection
+  #     - quadratic-connection-test
+  #     - all
 
 volumes:
   docker:
