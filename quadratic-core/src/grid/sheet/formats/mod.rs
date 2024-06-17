@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use super::Sheet;
 use crate::{
     controller::operations::{
@@ -9,6 +7,7 @@ use crate::{
     grid::formats::{format::Format, format_update::FormatUpdate, Formats},
     selection::Selection,
 };
+use std::collections::HashMap;
 
 pub mod format_all;
 pub mod format_cell;
@@ -99,11 +98,8 @@ impl Sheet {
                 Some(columns) => columns
                     .iter()
                     .filter_map(|column| {
-                        if let Some(format) = self.try_format_column(*column) {
-                            Some((column.clone() - clipboard_origin.x, format.clone()))
-                        } else {
-                            None
-                        }
+                        self.try_format_column(*column)
+                            .map(|format| (*column - clipboard_origin.x, format.clone()))
                     })
                     .collect(),
             };
@@ -112,11 +108,8 @@ impl Sheet {
                 Some(rows) => rows
                     .iter()
                     .filter_map(|row| {
-                        if let Some(format) = self.try_format_row(*row) {
-                            Some((row.clone() - clipboard_origin.y, format.clone()))
-                        } else {
-                            None
-                        }
+                        self.try_format_row(*row)
+                            .map(|format| (*row - clipboard_origin.y, format.clone()))
                     })
                     .collect(),
             };

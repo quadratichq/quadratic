@@ -592,6 +592,38 @@ mod test {
             Some(html),
             PasteSpecial::None,
             None,
-        )
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.format_cell(3, 3, true),
+            Format {
+                italic: Some(true),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            sheet.format_cell(3, 4, true),
+            Format {
+                italic: Some(true),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            sheet.format_cell(1, 3, true),
+            Format {
+                bold: Some(true),
+                italic: Some(true),
+                ..Default::default()
+            }
+        );
+        assert_eq!(
+            sheet.format_cell(2, 3, true),
+            Format {
+                bold: Some(true),
+                italic: Some(true),
+                ..Default::default()
+            }
+        );
     }
 }

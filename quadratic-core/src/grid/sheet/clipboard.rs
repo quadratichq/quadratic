@@ -22,7 +22,7 @@ impl Sheet {
         let mut values = CellValues::default();
         let mut sheet_bounds: Option<Rect> = None;
 
-        if let Some(bounds) = self.selection_bounds(&selection) {
+        if let Some(bounds) = self.selection_bounds(selection) {
             clipboard_origin.x = bounds.min.x;
             clipboard_origin.y = bounds.min.y;
             sheet_bounds = Some(bounds);
@@ -170,10 +170,8 @@ impl Sheet {
                 }
             }
 
-            let bounds_rect = bounds.into();
-
             // allow copying of code_run values (unless CellValue::Code is also in the clipboard)
-            self.iter_code_output_in_rect(bounds_rect)
+            self.iter_code_output_in_rect(bounds)
                 .filter(|(_, code_cell)| !code_cell.spill_error)
                 .for_each(|(output_rect, code_cell)| {
                     // only change the cells if the CellValue::Code is not in the selection box
@@ -203,7 +201,7 @@ impl Sheet {
                     };
 
                     // add the CellValue to cells if the code is not included in the clipboard
-                    let include_in_cells = !bounds_rect.contains(code_pos);
+                    let include_in_cells = !bounds.contains(code_pos);
 
                     // add the code_run output to clipboard.values
                     for y in y_start..=y_end {
@@ -256,8 +254,8 @@ impl Sheet {
             sheet_formats,
             borders,
             values,
-            w: sheet_bounds.map_or(0, |b| b.width() as u32),
-            h: sheet_bounds.map_or(0, |b| b.height() as u32),
+            w: sheet_bounds.map_or(0, |b| b.width()),
+            h: sheet_bounds.map_or(0, |b| b.height()),
             origin: clipboard_origin,
             selection: Some(selection.clone()),
         };

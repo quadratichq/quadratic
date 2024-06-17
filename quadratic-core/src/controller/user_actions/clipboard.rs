@@ -58,7 +58,6 @@ mod test {
             set_rect_borders, BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
             Sheet, SheetId,
         },
-        test_util::print_table_sheet,
         CellValue, CodeCellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use bigdecimal::BigDecimal;
@@ -527,7 +526,7 @@ mod test {
             sheet_id,
         );
         let clipboard = sheet.copy_to_clipboard(&selection).unwrap();
-        let pasted_output = String::from(clipboard.1);
+        let pasted_output = clipboard.1;
 
         gc.paste_from_clipboard(
             Selection::pos(1, 2, sheet_id),
@@ -853,9 +852,6 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id);
-
-        print_table_sheet(&sheet, Rect::new(0, 0, 4, 4));
-
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 1, y: 2 }, false),
             CellFormatSummary {

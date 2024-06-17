@@ -257,3 +257,91 @@ pub fn print_code_run_order(sheet: &Sheet) {
         .map(|(pos, _)| pos)
         .collect::<Vec<_>>());
 }
+
+// prints formatting for table
+pub fn print_table_sheet_formats(sheet: &Sheet, rect: Rect) {
+    let mut builder = Builder::default();
+    let columns = (rect.x_range())
+        .map(|i| i.to_string())
+        .collect::<Vec<String>>();
+    let mut blank = vec!["".to_string()];
+    blank.extend(columns.clone());
+    builder.set_header(blank);
+
+    for y in rect.y_range() {
+        let mut vals = vec![y.to_string()];
+        for x in rect.x_range() {
+            let format = sheet.format_cell(x, y, false);
+            vals.push(format.to_string());
+        }
+        builder.push_record(vals);
+    }
+    let mut table = builder.build();
+    table.with(Style::modern());
+
+    println!("\nsheet: {}\n{}", sheet.id, table);
+}
+
+#[cfg(test)]
+mod test {
+    use crate::grid::formats::format_update::FormatUpdate;
+
+    use super::*;
+
+    #[test]
+    fn print_table_sheet_format() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_format_cell(
+            Pos { x: 0, y: 0 },
+            &FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+            false,
+        );
+        sheet.set_format_cell(
+            Pos { x: 1, y: 1 },
+            &FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+            false,
+        );
+        sheet.set_format_cell(
+            Pos { x: 2, y: 2 },
+            &FormatUpdate {
+                bold: Some(Some(true)),
+                ..Default::default()
+            },
+            false,
+        );
+        sheet.set_format_cell(
+            Pos { x: 0, y: 1 },
+            &FormatUpdate {
+                fill_color: Some(Some("red".to_string())),
+                ..Default::default()
+            },
+            false,
+        );
+        sheet.set_format_cell(
+            Pos { x: 1, y: 2 },
+            &FormatUpdate {
+                fill_color: Some(Some("blue".to_string())),
+                ..Default::default()
+            },
+            false,
+        );
+        sheet.set_format_cell(
+            Pos { x: 2, y: 0 },
+            &FormatUpdate {
+                fill_color: Some(Some("green".to_string())),
+                ..Default::default()
+            },
+            false,
+        );
+        let rect = Rect::new(0, 0, 3, 3);
+        print_table_sheet_formats(sheet, rect);
+    }
+}

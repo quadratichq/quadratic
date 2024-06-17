@@ -156,7 +156,7 @@ mod tests {
     fn override_cell_formats() {
         let sheet = Sheet::test();
         let rect = Rect::from_numbers(0, 0, 2, 2);
-        let selection = Selection::rect(rect.clone(), sheet.id);
+        let selection = Selection::rect(rect, sheet.id);
         let formats = sheet.override_cell_formats(rect, Some(&selection));
         assert_eq!(formats.size(), 4);
         let format = formats.get_at(0).unwrap();

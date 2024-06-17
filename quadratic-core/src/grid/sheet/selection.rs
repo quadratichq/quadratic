@@ -770,17 +770,11 @@ mod tests {
         };
         let results = sheet.format_selection(&selection);
         assert_eq!(results.len(), 2);
-        assert_eq!(
-            results
-                .iter()
-                .any(|(pos, format)| *pos == Pos { x: 0, y: 0 } && format.bold == Some(true)),
-            true
-        );
-        assert_eq!(
-            results
-                .iter()
-                .any(|(pos, format)| *pos == Pos { x: 1, y: 1 } && format.bold == Some(false)),
-            true
-        );
+        assert!(results
+            .iter()
+            .any(|(pos, format)| *pos == Pos { x: 0, y: 0 } && format.bold == Some(true)),);
+        assert!(results
+            .iter()
+            .any(|(pos, format)| *pos == Pos { x: 1, y: 1 } && format.bold == Some(false)));
     }
 }

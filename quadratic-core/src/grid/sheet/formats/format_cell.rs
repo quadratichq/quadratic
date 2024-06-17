@@ -11,29 +11,25 @@ use crate::{
 impl Sheet {
     /// Gets a format for a cell, returning Format::default if not set.
     pub fn format_cell(&self, x: i64, y: i64, include_sheet: bool) -> Format {
-        let format = if let Some(column) = self.get_column(x) {
-            Some(Format {
-                align: column.align.get(y),
-                wrap: column.wrap.get(y),
-                numeric_format: column.numeric_format.get(y),
-                numeric_decimals: column.numeric_decimals.get(y),
-                numeric_commas: column.numeric_commas.get(y),
-                bold: column.bold.get(y),
-                italic: column.italic.get(y),
-                text_color: column.text_color.get(y),
-                fill_color: column.fill_color.get(y),
-                render_size: column.render_size.get(y),
-            })
-        } else {
-            None
-        };
+        let format = self.get_column(x).map(|column| Format {
+            align: column.align.get(y),
+            wrap: column.wrap.get(y),
+            numeric_format: column.numeric_format.get(y),
+            numeric_decimals: column.numeric_decimals.get(y),
+            numeric_commas: column.numeric_commas.get(y),
+            bold: column.bold.get(y),
+            italic: column.italic.get(y),
+            text_color: column.text_color.get(y),
+            fill_color: column.fill_color.get(y),
+            render_size: column.render_size.get(y),
+        });
         if include_sheet {
             let column = self.try_format_row(y);
             let row = self.try_format_column(x);
             let sheet = self.format_all.as_ref();
             Format::combine(format.as_ref(), column.as_ref(), row.as_ref(), sheet)
         } else {
-            format.unwrap_or(Format::default())
+            format.unwrap_or_default()
         }
     }
 
