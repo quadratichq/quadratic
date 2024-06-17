@@ -24,7 +24,7 @@ pub(crate) async fn axum_to_reqwest(
     let method = Method::from_bytes(method_bytes).map_err(proxy_error)?;
 
     let mut headers = reqwest::header::HeaderMap::with_capacity(req.headers().len());
-    let headers_to_ignore = vec!["host", PROXY_HEADER, "authorization"];
+    let headers_to_ignore = ["host", PROXY_HEADER, "authorization"];
 
     for (name, value) in req
         .headers()
@@ -85,4 +85,59 @@ pub(crate) async fn proxy(
     let response = reqwest_to_axum(reqwest_response)?;
 
     Ok(response)
+}
+
+#[cfg(test)]
+mod tests {
+
+    use http::header::ACCEPT;
+
+    use super::*;
+    use crate::test_util::{new_state, response_bytes};
+
+    const URL: &str = "https://www.google.com/";
+
+    #[tokio::test]
+    async fn proxy_request() {
+        let state = Extension(new_state().await);
+        let mut request = Request::new(Body::empty());
+        request
+            .headers_mut()
+            .insert(PROXY_HEADER, HeaderValue::from_static(URL));
+        let data = proxy(state, request).await.unwrap();
+        let response = data.into_response();
+
+        assert_eq!(response.status(), 200);
+        assert_ne!(response_bytes(response).await.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn proxy_axum_to_reqwest() {
+        let state = Extension(new_state().await);
+        let accept = "application/json";
+        let mut request = Request::new(Body::empty());
+        *request.method_mut() = http::Method::POST;
+        request
+            .headers_mut()
+            .insert(ACCEPT, HeaderValue::from_static(accept));
+        request
+            .headers_mut()
+            .insert(PROXY_HEADER, HeaderValue::from_static(URL));
+
+        let result = axum_to_reqwest(URL, request, state.client.clone())
+            .await
+            .unwrap()
+            .build()
+            .unwrap();
+
+        assert_eq!(result.method(), Method::POST);
+        assert_eq!(result.url().to_string(), URL);
+
+        // PROXY_HEADER doesn't get copied over
+        assert_eq!(result.headers().len(), 1);
+        assert_eq!(
+            result.headers().get(reqwest::header::ACCEPT).unwrap(),
+            accept
+        );
+    }
 }

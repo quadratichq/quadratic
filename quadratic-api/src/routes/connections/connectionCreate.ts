@@ -1,3 +1,5 @@
+// TODO: (connections) delete these files
+
 // import express from 'express';
 // import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 // import { z } from 'zod';

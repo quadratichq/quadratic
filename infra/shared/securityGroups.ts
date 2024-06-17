@@ -85,6 +85,24 @@ export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
   }
 );
 
+// Create a Security Group for the Multiplayer EC2 instance
+export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
+  "connection-sg",
+  {
+    ingress: [
+      {
+        protocol: "tcp",
+        fromPort: 80,
+        toPort: 80,
+        securityGroups: [connectionNlbSecurityGroup.id],
+      },
+    ],
+    egress: [
+      { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+    ],
+  }
+);
+
 // Allow SSH traffic to the Preview Instances
 if (isPreviewEnvironment) {
   new aws.ec2.SecurityGroupRule(`files-ssh-ingress-rule`, {
@@ -102,5 +120,13 @@ if (isPreviewEnvironment) {
     protocol: "tcp",
     cidrBlocks: ["0.0.0.0/0"],
     securityGroupId: multiplayerEc2SecurityGroup.id,
+  });
+  new aws.ec2.SecurityGroupRule(`connection-ssh-ingress-rule`, {
+    type: "ingress",
+    fromPort: 22,
+    toPort: 22,
+    protocol: "tcp",
+    cidrBlocks: ["0.0.0.0/0"],
+    securityGroupId: connectionEc2SecurityGroup.id,
   });
 }

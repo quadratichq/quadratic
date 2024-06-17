@@ -1,4 +1,4 @@
-import z from 'zod';
+import * as z from 'zod';
 
 // Helper to turn empty string into undefined, so JSON.stringify() will remove empty values
 const transformEmptyStringToUndefined = (val: any) => (val === '' ? undefined : val);

@@ -9,6 +9,8 @@
   width: 1px;
   height: 100%;
   position: absolute;
+}
+.resize-control--position-VERTICAL:hover:not(.resize-control--disabled) {
   cursor: col-resize;
 }
 
@@ -17,6 +19,8 @@
   position: absolute;
   width: 100%;
   height: 1px;
+}
+.resize-control--position-HORIZONTAL:not(.resize-control--disabled) {
   cursor: row-resize;
 }
 
@@ -40,7 +44,7 @@
   left: 0;
 }
 .resize-control--is-dragging:before,
-.resize-control:hover:before {
+.resize-control:hover:not(.resize-control--disabled):before {
   background-color: var(--resize-control-highlight);
   z-index: 100;
   /* Delay the transition effect so it only appears when the user shows intent */
