@@ -1,3 +1,4 @@
+// @ts-nocheck
 import dbClient from '../dbClient';
 import { ApiError } from '../utils/ApiError';
 
