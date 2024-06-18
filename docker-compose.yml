@@ -9,6 +9,7 @@ services:
       - ./docker/redis/data:/data
     profiles:
       - base
+      - all
 
   postgres:
     extends:
@@ -18,6 +19,7 @@ services:
       - ./docker/postgres/data:/var/lib/postgresql/data
     profiles:
       - base
+      - all
 
   localstack:
     extends:
@@ -28,6 +30,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     profiles:
       - base
+      - all
 
   aws-cli:
     extends:
@@ -39,6 +42,7 @@ services:
       - ./docker/localstack/cli:/aws
     profiles:
       - base
+      - all
 
   quadratic-client:
     build:

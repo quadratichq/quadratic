@@ -48,8 +48,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     createdDate: updatedConnection.createdDate.toISOString(),
     updatedDate: updatedConnection.updatedDate.toISOString(),
     type: updatedConnection.type,
-    // // @ts-expect-error TODO: (connections) fix types
-    // typeDetails: JSON.parse(updatedConnection.typeDetails),
     typeDetails,
   });
 }
