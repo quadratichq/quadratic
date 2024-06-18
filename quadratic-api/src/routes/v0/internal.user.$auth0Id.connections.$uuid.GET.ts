@@ -5,6 +5,7 @@ import { validateM2MAuth } from '../../internal/validateM2MAuth';
 import { getConnection } from '../../middleware/getConnection';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { ApiError } from '../../utils/ApiError';
+import { decryptFromEnv } from '../../utils/crypto';
 
 export default [validateM2MAuth(), handler];
 
@@ -29,6 +30,7 @@ async function handler(req: Request, res: Response) {
 
   // Get the connection
   const connection = await getConnection({ uuid, userId: user.id });
+  const typeDetails = decryptFromEnv(connection.typeDetails?.toString('utf-8') || '');
 
   // Return the data
   const data = {
@@ -37,9 +39,7 @@ async function handler(req: Request, res: Response) {
     type: connection.type,
     createdDate: connection.createdDate.toISOString(),
     updatedDate: connection.updatedDate.toISOString(),
-    // TODO: (connections) fix types, don't send sensitive info
-    // @ts-expect-error
-    typeDetails: JSON.parse(connection.typeDetails),
+    typeDetails: JSON.parse(typeDetails),
   };
   return res.status(200).json(data);
 }

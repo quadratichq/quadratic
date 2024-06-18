@@ -20,6 +20,7 @@ export const AWS_S3_ACCESS_KEY_ID = process.env.AWS_S3_ACCESS_KEY_ID as string;
 export const AWS_S3_SECRET_ACCESS_KEY = process.env.AWS_S3_SECRET_ACCESS_KEY as string;
 export const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME as string;
 export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
+export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY as string;
 [
   'AUTH0_DOMAIN',
   'AUTH0_CLIENT_ID',
@@ -32,6 +33,7 @@ export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY as string;
   'AWS_S3_SECRET_ACCESS_KEY',
   'AWS_S3_BUCKET_NAME',
   'STRIPE_SECRET_KEY',
+  'ENCRYPTION_KEY',
 ].forEach(ensureEnvVarExists);
 
 // Required in prod, optional locally

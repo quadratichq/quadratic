@@ -7,6 +7,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
 import { ResponseError } from '../../types/Response';
+import { encryptFromEnv } from '../../utils/crypto';
 // import { CreateSecret } from '../connections/awsSecret';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -30,7 +31,7 @@ async function handler(req: RequestWithUser, res: Response<ResponseError | ApiTy
     data: {
       name,
       type,
-      typeDetails: JSON.stringify(typeDetails),
+      typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
       UserConnectionRole: {
         create: {
           userId,

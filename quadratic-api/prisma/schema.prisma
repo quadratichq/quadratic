@@ -152,7 +152,7 @@ model Connection {
 
     // Type-specific details
     type        ConnectionType
-    typeDetails Json
+    typeDetails Bytes // JSON
 }
 
 model UserConnectionRole {

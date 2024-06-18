@@ -7,6 +7,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { encryptFromEnv } from '../../utils/crypto';
 // import { CreateSecret } from '../connections/awsSecret';
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -37,7 +38,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     data: {
       name,
       updatedDate: new Date(),
-      typeDetails: JSON.stringify(typeDetails),
+      typeDetails: Buffer.from(encryptFromEnv(typeDetails)),
     },
   });
 
@@ -47,7 +48,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     createdDate: updatedConnection.createdDate.toISOString(),
     updatedDate: updatedConnection.updatedDate.toISOString(),
     type: updatedConnection.type,
-    // @ts-expect-error TODO: (connections) fix types
-    typeDetails: JSON.parse(updatedConnection.typeDetails),
+    // // @ts-expect-error TODO: (connections) fix types
+    // typeDetails: JSON.parse(updatedConnection.typeDetails),
+    typeDetails,
   });
 }
