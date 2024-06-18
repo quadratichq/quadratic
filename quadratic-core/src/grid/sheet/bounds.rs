@@ -113,10 +113,12 @@ impl Sheet {
     /// If `ignore_formatting` is `true`, only data is considered; if it is
     /// `false`, then data and formatting are both considered.
     pub fn column_bounds(&self, column: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column_data = self.columns.get(&column)?;
-        let range = column_data.range(ignore_formatting);
+        let range = if let Some(column_data) = self.columns.get(&column) {
+            column_data.range(ignore_formatting)
+        } else {
+            None
+        };
         let code_range = self.code_columns_bounds(column, column);
-
         if range.is_none() && code_range.is_none() {
             return None;
         }
@@ -237,7 +239,7 @@ impl Sheet {
     /// if reverse is true it searches to the left of the start
     /// if with_content is true it searches for a column with content; otherwise it searches for a column without content
     ///
-    /// Returns the found column or column_start or bounds_rect_min/bounds_rect_max  
+    /// Returns the found column or column_start or bounds_rect_min/bounds_rect_max
     pub fn find_next_column(
         &self,
         column_start: i64,
@@ -245,39 +247,22 @@ impl Sheet {
         reverse: bool,
         with_content: bool,
     ) -> i64 {
-        let bounds = self.bounds(true);
-        if bounds.is_empty() {
-            return column_start;
-        }
-        match bounds {
-            GridBounds::Empty => column_start,
-            GridBounds::NonEmpty(rect) => {
-                let mut x = if reverse {
-                    column_start.min(rect.max.x)
-                } else {
-                    column_start.max(rect.min.x)
-                };
-                if x < rect.min.x || x > rect.max.x {
-                    return column_start;
+        let Some(bounds) = self.row_bounds(row, true) else {
+            return column_start + if reverse { -1 } else { 1 };
+        };
+        let mut x = column_start;
+        while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
+            let has_content = self.display_value(Pos { x, y: row });
+            if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
+                if with_content {
+                    return x;
                 }
-                while x >= rect.min.x && x <= rect.max.x {
-                    let has_content = self.display_value(Pos { x, y: row });
-                    if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
-                        if with_content {
-                            return x;
-                        }
-                    } else if !with_content {
-                        return x;
-                    }
-                    x += if reverse { -1 } else { 1 };
-                }
-                if x < rect.min.x {
-                    rect.min.x
-                } else {
-                    rect.max.x
-                }
+            } else if !with_content {
+                return x;
             }
+            x += if reverse { -1 } else { 1 };
         }
+        x
     }
 
     /// finds the next column with or without content
@@ -292,39 +277,22 @@ impl Sheet {
         reverse: bool,
         with_content: bool,
     ) -> i64 {
-        let bounds = self.bounds(true);
-        if bounds.is_empty() {
-            return row_start;
-        }
-        match bounds {
-            GridBounds::Empty => row_start,
-            GridBounds::NonEmpty(rect) => {
-                let mut y = if reverse {
-                    row_start.min(rect.max.y)
-                } else {
-                    row_start.max(rect.min.y)
-                };
-                if y < rect.min.y || y > rect.max.y {
-                    return row_start;
+        let Some(bounds) = self.column_bounds(column, true) else {
+            return row_start + if reverse { -1 } else { 1 };
+        };
+        let mut y = row_start;
+        while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
+            let has_content = self.display_value(Pos { x: column, y });
+            if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
+                if with_content {
+                    return y;
                 }
-                while y >= rect.min.y && y <= rect.max.y {
-                    let has_content = self.display_value(Pos { x: column, y });
-                    if has_content.is_some_and(|cell_value| cell_value != CellValue::Blank) {
-                        if with_content {
-                            return y;
-                        }
-                    } else if !with_content {
-                        return y;
-                    }
-                    y += if reverse { -1 } else { 1 };
-                }
-                if y < rect.min.y {
-                    rect.min.y
-                } else {
-                    rect.max.y
-                }
+            } else if !with_content {
+                return y;
             }
+            y += if reverse { -1 } else { 1 };
         }
+        y
     }
 
     /// Returns the bounds of the sheet.
@@ -392,7 +360,7 @@ mod test {
     }
 
     #[test]
-    fn test_column_bounds() {
+    fn column_bounds() {
         let mut sheet = Sheet::test();
         let _ = sheet.set_cell_value(
             Pos { x: 100, y: -50 },
@@ -408,6 +376,14 @@ mod test {
     }
 
     #[test]
+    fn column_bounds_code() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array_2d(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
+        assert_eq!(sheet.column_bounds(0, true), Some((0, 1)));
+        assert_eq!(sheet.column_bounds(1, true), Some((0, 1)));
+    }
+
+    #[test]
     fn test_row_bounds() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(
@@ -420,6 +396,14 @@ mod test {
 
         assert_eq!(sheet.row_bounds(100, true), Some((-50, 80)));
         assert_eq!(sheet.row_bounds(100, false), Some((-50, 200)));
+    }
+
+    #[test]
+    fn row_bounds_code() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array_2d(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
+        assert_eq!(sheet.row_bounds(0, true), Some((0, 1)));
+        assert_eq!(sheet.row_bounds(1, true), Some((0, 1)));
     }
 
     #[test]
@@ -502,8 +486,8 @@ mod test {
     fn test_find_next_column() {
         let mut sheet = Sheet::test();
 
-        let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
-        sheet.recalculate_bounds();
+        sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_column(-1, 2, false, true), 1);
         assert_eq!(sheet.find_next_column(-1, 2, true, true), -1);
@@ -513,8 +497,28 @@ mod test {
         assert_eq!(sheet.find_next_column(2, 2, true, true), 1);
         assert_eq!(sheet.find_next_column(0, 2, false, true), 1);
         assert_eq!(sheet.find_next_column(0, 2, true, true), 0);
-        assert_eq!(sheet.find_next_column(1, 2, false, false), 1);
-        assert_eq!(sheet.find_next_column(1, 2, true, false), 1);
+        assert_eq!(sheet.find_next_column(1, 2, false, false), 2);
+        assert_eq!(sheet.find_next_column(1, 2, true, false), 0);
+
+        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 3, y: 2 }, CellValue::Text(String::from("test")));
+
+        assert_eq!(sheet.find_next_column(1, 2, false, false), 4);
+        assert_eq!(sheet.find_next_column(2, 2, false, false), 4);
+        assert_eq!(sheet.find_next_column(2, 2, true, false), 0);
+        assert_eq!(sheet.find_next_column(3, 2, true, false), 0);
+    }
+
+    #[test]
+    fn test_find_next_column_code() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(0, 0, vec!["1", "2", "3"], false);
+
+        assert_eq!(sheet.find_next_column(-1, 0, false, true), 0);
+        assert_eq!(sheet.find_next_column(0, 0, false, false), 3);
+        assert_eq!(sheet.find_next_column(2, 0, false, false), 3);
+        assert_eq!(sheet.find_next_column(4, 0, true, true), 2);
+        assert_eq!(sheet.find_next_column(2, 0, true, false), -1);
     }
 
     #[test]
@@ -522,7 +526,7 @@ mod test {
         let mut sheet = Sheet::test();
 
         let _ = sheet.set_cell_value(Pos { x: 2, y: 1 }, CellValue::Text(String::from("test")));
-        sheet.recalculate_bounds();
+        sheet.set_cell_value(Pos { x: 10, y: 10 }, CellValue::Text(String::from("test")));
 
         assert_eq!(sheet.find_next_row(-1, 2, false, true), 1);
         assert_eq!(sheet.find_next_row(-1, 2, true, true), -1);
@@ -532,8 +536,27 @@ mod test {
         assert_eq!(sheet.find_next_row(2, 2, true, true), 1);
         assert_eq!(sheet.find_next_row(0, 2, false, true), 1);
         assert_eq!(sheet.find_next_row(0, 2, true, true), 0);
-        assert_eq!(sheet.find_next_row(1, 2, false, false), 1);
-        assert_eq!(sheet.find_next_row(1, 2, true, false), 1);
+        assert_eq!(sheet.find_next_row(1, 2, false, false), 2);
+        assert_eq!(sheet.find_next_row(1, 2, true, false), 0);
+
+        sheet.set_cell_value(Pos { x: 2, y: 2 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 2, y: 3 }, CellValue::Text(String::from("test")));
+
+        assert_eq!(sheet.find_next_row(1, 2, false, false), 4);
+        assert_eq!(sheet.find_next_row(2, 2, false, false), 4);
+        assert_eq!(sheet.find_next_row(3, 2, true, false), 0);
+    }
+
+    #[test]
+    fn test_find_next_row_code() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array(0, 0, vec!["1", "2", "3"], true);
+
+        assert_eq!(sheet.find_next_row(-1, 0, false, true), 0);
+        assert_eq!(sheet.find_next_row(0, 0, false, false), 3);
+        assert_eq!(sheet.find_next_row(2, 0, false, false), 3);
+        assert_eq!(sheet.find_next_row(4, 0, true, true), 2);
+        assert_eq!(sheet.find_next_row(2, 0, true, false), -1);
     }
 
     #[test]

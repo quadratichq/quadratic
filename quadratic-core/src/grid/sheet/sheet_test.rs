@@ -142,6 +142,54 @@ impl Sheet {
             }),
         );
     }
+
+    #[cfg(test)]
+    pub fn test_set_code_run_array_2d(&mut self, x: i64, y: i64, w: u32, h: u32, n: Vec<&str>) {
+        use crate::{
+            grid::{CodeCellLanguage, CodeRun, CodeRunResult},
+            Array, ArraySize, CellValue, CodeCellValue, Pos, Value,
+        };
+        use bigdecimal::BigDecimal;
+        use chrono::Utc;
+        use std::{collections::HashSet, str::FromStr};
+
+        self.set_cell_value(
+            Pos { x, y },
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "code".to_string(),
+            }),
+        );
+
+        let array_size = ArraySize::new(w, h).unwrap();
+        let mut array = Array::new_empty(array_size);
+        for (i, s) in n.iter().enumerate() {
+            if !s.is_empty() {
+                let value = if let Ok(bd) = BigDecimal::from_str(s) {
+                    CellValue::Number(bd)
+                } else {
+                    CellValue::Text(s.to_string())
+                };
+                array.set(i as u32 % w, i as u32 / w, value).unwrap();
+            }
+        }
+
+        self.set_code_run(
+            Pos { x, y },
+            Some(CodeRun {
+                std_out: None,
+                std_err: None,
+                formatted_code_string: None,
+                cells_accessed: HashSet::new(),
+                result: CodeRunResult::Ok(Value::Array(array)),
+                return_type: Some("number".into()),
+                line_number: None,
+                output_type: None,
+                spill_error: false,
+                last_modified: Utc::now(),
+            }),
+        );
+    }
 }
 
 #[cfg(test)]
@@ -272,5 +320,27 @@ mod tests {
         let mut sheet = Sheet::test();
         sheet.test_set_value_number(0, 0, "");
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
+    }
+
+    #[test]
+    fn test_set_code_run_array_2d() {
+        let mut sheet = Sheet::test();
+        sheet.test_set_code_run_array_2d(-1, -1, 2, 2, vec!["1", "2", "3", "4"]);
+        assert_eq!(
+            sheet.display_value(Pos { x: -1, y: -1 }),
+            Some(CellValue::Number(BigDecimal::from(1)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: -1 }),
+            Some(CellValue::Number(BigDecimal::from(2)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: -1, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(3)))
+        );
+        assert_eq!(
+            sheet.display_value(Pos { x: 0, y: 0 }),
+            Some(CellValue::Number(BigDecimal::from(4)))
+        );
     }
 }
