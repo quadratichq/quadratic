@@ -180,20 +180,12 @@ impl GridController {
             x: selection.x,
             y: selection.y,
         };
-        let cursor: Option<Operation> =
-            if let Some(clipboard_selection) = clipboard.selection.as_ref() {
-                Some(Operation::SetCursorSelection {
-                    selection: clipboard_selection.translate(
-                        selection.x - clipboard.origin.x,
-                        selection.y - clipboard.origin.y,
-                    ),
-                })
-            } else {
-                None
-            };
 
         // clear the sheet first
         ops.extend(self.clear_format_selection_operations(selection));
+
+        let mut cursor_translate_x = selection.x - clipboard.origin.x;
+        let mut cursor_translate_y = selection.y - clipboard.origin.y;
 
         // we paste the entire sheet over the existing sheet
         if let Some((x, y)) = clipboard.origin.all {
@@ -201,12 +193,26 @@ impl GridController {
             // copied sheet
             start_pos.x = x;
             start_pos.y = y;
-        } else if let Some(column_origin) = clipboard.origin.column {
-            ops.extend(self.clear_format_selection_operations(selection));
-            start_pos.x = column_origin;
-        } else if let Some(row_origin) = clipboard.origin.row {
-            start_pos.y = row_origin;
+        } else {
+            if let Some(column_origin) = clipboard.origin.column {
+                start_pos.x = column_origin + selection.x;
+                cursor_translate_x += clipboard.origin.x;
+            }
+            if let Some(row_origin) = clipboard.origin.row {
+                start_pos.y = row_origin + selection.y;
+                cursor_translate_y += clipboard.origin.y;
+            }
         }
+
+        let cursor: Option<Operation> = if let Some(clipboard_selection) =
+            clipboard.selection.as_ref()
+        {
+            Some(Operation::SetCursorSelection {
+                selection: clipboard_selection.translate(cursor_translate_x, cursor_translate_y),
+            })
+        } else {
+            None
+        };
 
         match special {
             PasteSpecial::None => {
@@ -497,7 +503,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value_ref((5, 5).into()),
-            Some(&CellValue::Number(1.into()))
+            Some(&CellValue::Number(5.into()))
         );
     }
 
