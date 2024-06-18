@@ -14,10 +14,11 @@ export function selectAllCells() {
   // if we've already selected all, then select the content within the sheet
   if (cursor.columnRow?.all) {
     const bounds = sheet.getBounds(true);
+    console.log(bounds);
     if (bounds) {
       cursor.changePosition({
         columnRow: null,
-        multiCursor: [new Rectangle(bounds.left, bounds.top, bounds.right, bounds.bottom)],
+        multiCursor: [new Rectangle(bounds.left, bounds.top, bounds.width + 1, bounds.height + 1)],
         cursorPosition: { x: bounds.left, y: bounds.top },
       });
     } else {
