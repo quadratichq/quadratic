@@ -95,6 +95,10 @@ export class PointerDown {
           });
         }
       }
+      this.active = true;
+      this.position = new Point(cursorPosition.x, cursorPosition.y);
+      this.previousPosition = new Point(column, row);
+      this.pointerMoved = false;
       return;
     }
 
