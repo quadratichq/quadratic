@@ -51,7 +51,7 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
             end.y - selectedCell.y
           }))`;
         } else {
-          ref = `cells((${start.x}, ${start.y}), (${end.x}, ${end.y}))`;
+          ref = `cells((${start.x}, ${start.y}), (${end.x}, ${end.y}), first_row_header = False)`;
         }
       }
     } else {
