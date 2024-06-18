@@ -33,36 +33,6 @@ export class Control {
     };
     constructor(cli) {
         this.cli = cli;
-        this.isRedisRunning().then((running) => {
-            this.ui.print("redis", "checking whether redis is running...");
-            if (running === "not found") {
-                this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
-                this.ui.print("redis", "redis-cli not found", "red");
-            }
-            else if (running === true) {
-                this.status.redis = true;
-                this.ui.print("redis", "is running", "green");
-            }
-            else {
-                this.status.redis = "error";
-                this.ui.print("redis", "is NOT running!", "red");
-            }
-        });
-        this.isPostgresRunning().then((running) => {
-            this.ui.print("postgres", "checking whether postgres is running...");
-            if (running === "not found") {
-                this.status.postgres = "killed"; // use killed to indicate that redis-cli was not found
-                this.ui.print("postgres", "pg_isready not found", "red");
-            }
-            else if (running === true) {
-                this.status.postgres = true;
-                this.ui.print("postgres", "is running", "green");
-            }
-            else {
-                this.status.postgres = "error";
-                this.ui.print("postgres", "is NOT running!", "red");
-            }
-        });
     }
     async quit() {
         if (this.quitting)
@@ -101,6 +71,38 @@ export class Control {
             : response.includes(options.start)) {
             this.status[name] = false;
         }
+    }
+    checkServices() {
+        this.isRedisRunning().then((running) => {
+            this.ui.print("redis", "checking whether redis is running...");
+            if (running === "not found") {
+                this.status.redis = "killed"; // use killed to indicate that redis-cli was not found
+                this.ui.print("redis", "redis-cli not found", "red");
+            }
+            else if (running === true) {
+                this.status.redis = true;
+                this.ui.print("redis", "is running", "green");
+            }
+            else {
+                this.status.redis = "error";
+                this.ui.print("redis", "is NOT running!", "red");
+            }
+        });
+        this.isPostgresRunning().then((running) => {
+            this.ui.print("postgres", "checking whether postgres is running...");
+            if (running === "not found") {
+                this.status.postgres = "killed"; // use killed to indicate that redis-cli was not found
+                this.ui.print("postgres", "pg_isready not found", "red");
+            }
+            else if (running === true) {
+                this.status.postgres = true;
+                this.ui.print("postgres", "is running", "green");
+            }
+            else {
+                this.status.postgres = "error";
+                this.ui.print("postgres", "is NOT running!", "red");
+            }
+        });
     }
     async runApi() {
         if (this.quitting)
@@ -470,12 +472,10 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const redis = spawn("docker", [
-                "exec",
-                "quadratic-redis-1",
-                "redis-cli",
-                "ping",
-            ]);
+            const servicesLocal = this.cli.options.servicesLocal;
+            const redis = servicesLocal
+                ? spawn("redis-cli", ["ping"])
+                : spawn("docker", ["exec", "quadratic-redis-1", "redis-cli", "ping"]);
             redis.on("error", (e) => {
                 if (e.code === "ENOENT") {
                     resolve("not found");
@@ -490,7 +490,10 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const postgres = spawn("docker", ["exec", "postgres", "pg_isready"]);
+            const servicesLocal = this.cli.options.servicesLocal;
+            const postgres = servicesLocal
+                ? spawn("pg_isready")
+                : spawn("docker", ["exec", "postgres", "pg_isready"]);
             postgres.on("error", (e) => {
                 if (e.code === "ENOENT") {
                     resolve("not found");
@@ -504,6 +507,7 @@ export class Control {
     async start(ui) {
         exec("rm -rf quadratic-client/src/app/quadratic-core");
         this.ui = ui;
+        this.checkServices();
         this.runRust();
         this.runDb();
         this.runPython();
