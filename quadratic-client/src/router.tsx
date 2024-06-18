@@ -66,6 +66,7 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
+          {/* Resource routes - putting these outside the nested tree lets you hit them directly without having to load other data */}
           <Route
             path={ROUTES.EDUCATION_ENROLL}
             loader={async () => {
@@ -74,11 +75,15 @@ export const router = createBrowserRouter(
               return redirect(`${ROUTES.FILES}?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
             }}
           />
-
-          {/* Resource routes */}
           <Route path="files/:uuid" lazy={() => import('./routes/files.$uuid')} />
           <Route path="files/:uuid/sharing" lazy={() => import('./routes/files.$uuid.sharing')} />
+          <Route
+            path="teams/:teamUuid/files/create"
+            lazy={() => import('./routes/teams.$teamUuid.files.create')}
+            shouldRevalidate={() => false}
+          />
 
+          {/* Dashboard UI routes */}
           <Route
             id={ROUTE_LOADER_IDS.DASHBOARD}
             lazy={() => import('./routes/_dashboard')}
@@ -101,24 +106,10 @@ export const router = createBrowserRouter(
               shouldRevalidate={dontRevalidateDialogs}
             />
 
-            <Route path={ROUTES.TEAMS}>
-              {/* TODO: (connections) Figure out where to route /teams (probably same logic as root) */}
+            <Route path="teams">
               <Route index loader={() => redirect('/')} />
-
               <Route path="create" lazy={() => import('./routes/teams.create')} />
-
-              {/* Putting this outside the team loader lets you hit this route and directly create a file without having to load other data */}
-              <Route
-                path=":teamUuid/files/create"
-                lazy={() => import('./routes/teams.$teamUuid.files.create')}
-                shouldRevalidate={() => false}
-              />
-              <Route
-                path=":teamUuid"
-                id={ROUTE_LOADER_IDS.TEAM}
-                lazy={() => import('./routes/teams.$teamUuid')}
-                shouldRevalidate={revalidateDashboard}
-              >
+              <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
                 <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
                 <Route path="files/private" lazy={() => import('./routes/teams.$teamUuid.files.private')} />
                 <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
@@ -127,8 +118,6 @@ export const router = createBrowserRouter(
                   <Route index lazy={() => import('./routes/teams.$teamUuid.connections.index')} />
                 </Route>
               </Route>
-
-              {/* TEAM 404 page probably necessary here...meaning no activeTeamUuid */}
             </Route>
           </Route>
         </Route>

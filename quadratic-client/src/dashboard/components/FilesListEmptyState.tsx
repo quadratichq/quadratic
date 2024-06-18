@@ -1,5 +1,5 @@
 import { Empty } from '@/dashboard/components/Empty';
-import { useDashboardContext } from '@/routes/_dashboard';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_URL } from '@/shared/constants/urls';
@@ -14,7 +14,7 @@ export const FilesListEmptyState = ({ isPrivate }: { isPrivate?: boolean }) => {
     activeTeam: {
       team: { uuid: activeTeamUuid },
     },
-  } = useDashboardContext();
+  } = useDashboardRouteLoaderData();
 
   return (
     <Empty

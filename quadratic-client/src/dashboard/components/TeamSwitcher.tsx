@@ -1,4 +1,4 @@
-import { useDashboardContext, useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -27,7 +27,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
     activeTeam: {
       team: { name: activeTeamName, uuid: activeTeamUuid },
     },
-  } = useDashboardContext();
+  } = useDashboardRouteLoaderData();
   const fetcher = useFetcher({ key: 'update-team' });
   const navigate = useNavigate();
 

@@ -1,5 +1,5 @@
 import { ExampleFilesList, FilesListExampleFile } from '@/dashboard/components/FilesList';
-import { useDashboardContext } from '@/routes/_dashboard';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import { useLoaderData } from 'react-router-dom';
@@ -16,7 +16,7 @@ export const Component = () => {
     activeTeam: {
       team: { uuid: activeTeamUuid },
     },
-  } = useDashboardContext();
+  } = useDashboardRouteLoaderData();
 
   const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({
     description,

@@ -1,10 +1,10 @@
 import { useTeamRouteDialog } from '@/dashboard/hooks/useTeamRouteDialog';
-import { useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ShareTeamDialog } from '@/shared/components/ShareDialog';
 
 export const Component = () => {
-  const loaderData = useTeamRouteLoaderData();
+  const { activeTeam } = useDashboardRouteLoaderData();
   const { open, onClose } = useTeamRouteDialog();
 
-  return open ? <ShareTeamDialog data={loaderData} onClose={onClose} /> : null;
+  return open ? <ShareTeamDialog data={activeTeam} onClose={onClose} /> : null;
 };

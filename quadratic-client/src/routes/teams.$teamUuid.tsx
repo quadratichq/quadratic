@@ -1,43 +1,9 @@
 import { Empty } from '@/dashboard/components/Empty';
 import { apiClient } from '@/shared/api/apiClient';
-import { ROUTE_LOADER_IDS } from '@/shared/constants/routes';
-import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
-import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import {
-  ActionFunctionArgs,
-  Link,
-  LoaderFunctionArgs,
-  Outlet,
-  isRouteErrorResponse,
-  useRouteError,
-  useRouteLoaderData,
-} from 'react-router-dom';
-
-export const useTeamRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.TEAM) as LoaderData;
-
-type LoaderData = ApiTypes['/v0/teams/:uuid.GET.response'];
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<LoaderData> => {
-  const { teamUuid } = params as { teamUuid: string };
-  const data = await apiClient.teams.get(teamUuid).catch((error) => {
-    const { status } = error;
-    if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
-    throw error;
-  });
-
-  // Sort the users so the logged-in user is first in the list
-  data.users.sort((a, b) => {
-    const loggedInUser = data.userMakingRequest.id;
-    // Move the logged in user to the front
-    if (a.id === loggedInUser && b.id !== loggedInUser) return -1;
-    // Keep the logged in user at the front
-    if (a.id !== loggedInUser && b.id === loggedInUser) return 1;
-    // Leave the order as is for others
-    return 0;
-  });
-  return data;
-};
+import { ActionFunctionArgs, Link, Outlet } from 'react-router-dom';
 
 export type TeamAction = {
   'request.update-team': ReturnType<typeof getActionUpdateTeam>;
@@ -164,38 +130,7 @@ export const Component = () => {
 };
 
 export const ErrorBoundary = () => {
-  const error = useRouteError();
-
-  const actions = (
-    <Button asChild variant="outline">
-      <a href={CONTACT_URL} target="_blank" rel="noreferrer">
-        Get help
-      </a>
-    </Button>
-  );
-
-  if (isRouteErrorResponse(error)) {
-    if (error.status === 403)
-      return (
-        <Empty
-          title="You don’t have access to this team"
-          description="Reach out to the team owner for permission to access this team."
-          Icon={InfoCircledIcon}
-        />
-      );
-    if (error.status === 404 || error.status === 400)
-      return (
-        <Empty
-          title="Team not found"
-          description="This team may have been deleted, moved, or made unavailable. Try reaching out to the team owner."
-          Icon={ExclamationTriangleIcon}
-          actions={actions}
-        />
-      );
-  }
-
-  // Maybe we log this to Sentry someday...
-  console.error(error);
+  // Maybe we log this to Sentry?
   return (
     <Empty
       title="Unexpected error"

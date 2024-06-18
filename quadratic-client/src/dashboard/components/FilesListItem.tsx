@@ -6,7 +6,6 @@ import {
   getActionFileDuplicate,
   getActionFileMove,
 } from '@/routes/files.$uuid';
-import { useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button as Btn } from '@/shared/shadcn/ui/button';
@@ -69,7 +68,11 @@ export function FilesListItemUserFile({
   const fetcherMove = useFetcher({ key: 'move-file:' + file.uuid });
   const { addGlobalSnackbar } = useGlobalSnackbar();
   const [open, setOpen] = useState<boolean>(false);
-  const teamRouteLoaderData = useTeamRouteLoaderData();
+  const {
+    activeTeam: {
+      team: { uuid: activeTeamUuid },
+    },
+  } = useDashboardRouteLoaderData();
   const fileDragRef = useRef<HTMLDivElement>(null);
   const {
     userMakingRequest: { id: userId },
@@ -80,8 +83,8 @@ export function FilesListItemUserFile({
   // Determine if the user can move files
   // If we're looking at the user's private files, make sure they have edit access to another team
   // If we're looking at a team, make sure they have edit access to the curent team
-  const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(teamRouteLoaderData?.team?.uuid)));
-  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM(teamRouteLoaderData?.team?.uuid)));
+  const isTeamPrivateFilesRoute = Boolean(useMatch(ROUTES.TEAM_FILES_PRIVATE(activeTeamUuid)));
+  const isTeamPublicFilesRoute = Boolean(useMatch(ROUTES.TEAM(activeTeamUuid)));
   const canMoveFiles = (isTeamPrivateFilesRoute || isTeamPublicFilesRoute) && permissions.includes('FILE_MOVE');
 
   const description =

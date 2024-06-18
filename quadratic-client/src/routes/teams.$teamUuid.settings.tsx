@@ -1,22 +1,25 @@
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
-import { getActionUpdateTeam, useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { getActionUpdateTeam } from '@/routes/teams.$teamUuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useFetcher, useSubmit } from 'react-router-dom';
 
-// TODO: (connections) do this view
 export const Component = () => {
   const {
-    team,
-    userMakingRequest: { teamPermissions },
-  } = useTeamRouteLoaderData();
+    activeTeam: {
+      team,
+      userMakingRequest: { teamPermissions },
+    },
+  } = useDashboardRouteLoaderData();
   const submit = useSubmit();
   const fetcher = useFetcher({ key: 'update-team' });
   const { addGlobalSnackbar } = useGlobalSnackbar();
+  const [value, setValue] = useState<string>(team.name);
 
   const onBlur = (e: any) => {
     const value = e.target.value;
@@ -59,6 +62,7 @@ export const Component = () => {
     }
   }, [fetcher.data, addGlobalSnackbar]);
 
+  // If you don’t have permission, you can't see this view
   if (!teamPermissions.includes('TEAM_EDIT')) {
     return <Navigate to={ROUTES.TEAM(team.uuid)} />;
   }
@@ -72,7 +76,7 @@ export const Component = () => {
             Name
           </Type>
           <div className="flex items-center gap-2">
-            <Input defaultValue={team.name} onBlur={onBlur} />
+            <Input value={value} onChange={(e) => setValue(e.target.value)} onBlur={onBlur} />
           </div>
         </Row>
         <Row>

@@ -1,4 +1,4 @@
-import { useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { Box, useTheme } from '@mui/material';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
@@ -12,10 +12,12 @@ import { FilesListEmptyState } from '../dashboard/components/FilesListEmptyState
 
 export const Component = () => {
   const {
-    team: { uuid },
-    filesPrivate,
-    userMakingRequest: { teamPermissions },
-  } = useTeamRouteLoaderData();
+    activeTeam: {
+      team: { uuid },
+      filesPrivate,
+      userMakingRequest: { teamPermissions },
+    },
+  } = useDashboardRouteLoaderData();
 
   const files = filesPrivate.map(
     ({

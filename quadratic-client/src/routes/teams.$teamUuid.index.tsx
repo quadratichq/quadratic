@@ -3,14 +3,16 @@ import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { Empty } from '@/dashboard/components/Empty';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
-import { useTeamRouteLoaderData } from '@/routes/teams.$teamUuid';
+import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { FileIcon } from '@radix-ui/react-icons';
 
 export const Component = () => {
   const {
-    files,
-    userMakingRequest: { teamPermissions },
-  } = useTeamRouteLoaderData();
+    activeTeam: {
+      files,
+      userMakingRequest: { teamPermissions },
+    },
+  } = useDashboardRouteLoaderData();
 
   const canEdit = teamPermissions.includes('TEAM_EDIT');
 
