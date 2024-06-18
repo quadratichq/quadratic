@@ -31,7 +31,7 @@ import {
 } from 'react-router-dom';
 
 const DRAWER_WIDTH = 264;
-const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
+export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 
 /**
  * Dashboard state & context
@@ -115,25 +115,34 @@ export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<L
   /**
    * Get data for the active team
    */
-  const activeTeam = await apiClient.teams.get(initialActiveTeamUuid).catch((error) => {
-    const { status } = error;
-    if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
-    throw error;
-  });
-  // Sort the users so the logged-in user is first in the list
-  activeTeam.users.sort((a, b) => {
-    const loggedInUser = activeTeam.userMakingRequest.id;
-    // Move the logged in user to the front
-    if (a.id === loggedInUser && b.id !== loggedInUser) return -1;
-    // Keep the logged in user at the front
-    if (a.id !== loggedInUser && b.id === loggedInUser) return 1;
-    // Leave the order as is for others
-    return 0;
-  });
+  const activeTeam = await apiClient.teams
+    .get(initialActiveTeamUuid)
+    .then((data) => {
+      // If we got to here, we successfully loaded the active team so now this is
+      // the one we keep in localstorage for when the page loads anew
+      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, initialActiveTeamUuid);
 
-  // If we got to here, we successfully loaded the active team so now this is
-  // the one we keep in localstorage for when the page loads anew
-  localStorage.setItem(ACTIVE_TEAM_UUID_KEY, activeTeam.team.uuid);
+      // Sort the users so the logged-in user is first in the list
+      data.users.sort((a, b) => {
+        const loggedInUser = data.userMakingRequest.id;
+        // Move the logged in user to the front
+        if (a.id === loggedInUser && b.id !== loggedInUser) return -1;
+        // Keep the logged in user at the front
+        if (a.id !== loggedInUser && b.id === loggedInUser) return 1;
+        // Leave the order as is for others
+        return 0;
+      });
+
+      return data;
+    })
+    .catch((error) => {
+      // If we errored out, remove this one from localstorage because we can't access it
+      // so we don't want to keep trying to load it on the home route `/`
+      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, '');
+      const { status } = error;
+      if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
+      throw error;
+    });
 
   return { teams, userMakingRequest, eduStatus, initialActiveTeamUuid, activeTeam };
 };

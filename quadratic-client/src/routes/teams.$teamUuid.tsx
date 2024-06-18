@@ -1,9 +1,10 @@
 import { Empty } from '@/dashboard/components/Empty';
+import { ACTIVE_TEAM_UUID_KEY } from '@/routes/_dashboard';
 import { apiClient } from '@/shared/api/apiClient';
 import { Button } from '@/shared/shadcn/ui/button';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ActionFunctionArgs, Link, Outlet } from 'react-router-dom';
+import { ActionFunctionArgs, Link, Outlet, redirectDocument } from 'react-router-dom';
 
 export type TeamAction = {
   'request.update-team': ReturnType<typeof getActionUpdateTeam>;
@@ -88,7 +89,13 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   if (intent === 'delete-team-user') {
     try {
       const { userId } = data;
-      await apiClient.teams.users.delete(teamUuid, userId);
+      const res = await apiClient.teams.users.delete(teamUuid, userId);
+      // If the user is deleting themselves, we need to clear the active team
+      // and redirect to home
+      if (res.redirect) {
+        localStorage.setItem(ACTIVE_TEAM_UUID_KEY, '');
+        return redirectDocument('/');
+      }
       return { ok: true };
     } catch (e) {
       return { ok: false };
@@ -100,9 +107,6 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
 };
 
 export const Component = () => {
-  // TODO: (connections) handle case where you might have Team1 active, but open
-  // team2 in a new browser and now that needs to be set
-
   // const [searchParams, setSearchParams] = useSearchParams();
   // When the user comes back successfully from stripe, fire off an event to Google
   // useEffect(() => {
