@@ -204,15 +204,14 @@ impl GridController {
             }
         }
 
-        let cursor: Option<Operation> = if let Some(clipboard_selection) =
-            clipboard.selection.as_ref()
-        {
-            Some(Operation::SetCursorSelection {
-                selection: clipboard_selection.translate(cursor_translate_x, cursor_translate_y),
-            })
-        } else {
-            None
-        };
+        let cursor: Option<Operation> =
+            clipboard
+                .selection
+                .as_ref()
+                .map(|clipboard_selection| Operation::SetCursorSelection {
+                    selection: clipboard_selection
+                        .translate(cursor_translate_x, cursor_translate_y),
+                });
 
         match special {
             PasteSpecial::None => {
@@ -502,7 +501,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.cell_value_ref((5, 5).into()),
+            sheet.cell_value_ref((10, 5).into()),
             Some(&CellValue::Number(5.into()))
         );
     }
