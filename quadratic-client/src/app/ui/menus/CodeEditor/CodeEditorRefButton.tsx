@@ -32,8 +32,10 @@ export const CodeEditorRefButton = () => {
       }
     };
     events.on('cursorPosition', checkDisabled);
+    events.on('changeSheet', checkDisabled);
     return () => {
       events.off('cursorPosition', checkDisabled);
+      events.off('changeSheet', checkDisabled);
     };
   });
 
