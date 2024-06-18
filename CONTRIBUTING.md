@@ -46,7 +46,9 @@ Check out our open roles ⟶ [careers.quadratichq.com](https://careers.quadratic
 
 8. Install [Docker Desktop](https://docs.docker.com/desktop/)
 
-### Configure Auth0 account
+### Configure Auth0 account (Optional)
+
+This is only required if the `quadratic-community` Auth0 account does not work.
 
 1. Create an account on [Auth0](https://auth0.com/)
 
@@ -70,16 +72,14 @@ Check out our open roles ⟶ [careers.quadratichq.com](https://careers.quadratic
     cp quadratic-multiplayer/.env.example quadratic-multiplayer/.env
    ```
 
-   These are prefilled with values required to access services in docker.
+   These are prefilled with `quadratic-community` Auth0 account credentials and values required to access services in docker.
 
-2. Replace the Auth0 values in
+2. If the `quadratic-community` Auth0 account does not work, update the Auth0 values in the following files with your Auth0 account values:
 
    - `.env`
    - `quadratic-api/.env`
    - `quadratic-client/.env`
    - `quadratic-multiplayer/.env`
-
-   These are prefilled with representative values and only the `xxxxxxxxxxxxxxxx` parts should change.
 
 ## Run Quadratic
 
@@ -89,7 +89,7 @@ Check out our open roles ⟶ [careers.quadratichq.com](https://careers.quadratic
     npm install
    ```
 
-2. Start Redis, Postgres and AWS in docker
+2. Start Redis, Postgres and Localstack in docker
 
    ```sh
     npm run docker:up
