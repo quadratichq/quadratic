@@ -100,6 +100,8 @@ export async function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
+    event.preventDefault();
+    event.stopPropagation();
     setBold();
     return true;
   }
