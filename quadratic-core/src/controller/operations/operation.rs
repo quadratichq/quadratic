@@ -64,7 +64,7 @@ pub enum Operation {
         column: i64,
         new_size: f64,
 
-        // `client_resized`` is used to indicate whether the client needs to be
+        // `client_resized` is used to indicate whether the client needs to be
         // notified of the resize. For manual resizing, the original client is
         // updated as the user drags the column/row so they don't need to be
         // notified again.

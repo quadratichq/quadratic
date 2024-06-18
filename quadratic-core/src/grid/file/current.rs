@@ -629,10 +629,10 @@ pub fn export_rows_size(sheet: &Sheet) -> Vec<(i64, current::Resize)> {
     sheet
         .rows_resize
         .iter_resize()
-        .map(|(y, size)| {
+        .map(|(y, resize)| {
             (
                 y,
-                match size {
+                match resize {
                     Resize::Auto => current::Resize::Auto,
                     Resize::Manual => current::Resize::Manual,
                 },

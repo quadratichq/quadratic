@@ -75,10 +75,10 @@ export const FormatMenu = () => {
         <MenuLineItem primary="Left" Icon={TextAlignLeftIcon} secondary="" />
       </MenuItem>
       <MenuItem onClick={() => setHorizontalAlign('center')}>
-        <MenuLineItem primary="Center" Icon={TextAlignRightIcon} />
+        <MenuLineItem primary="Center" Icon={TextAlignCenterIcon} />
       </MenuItem>
       <MenuItem onClick={() => setHorizontalAlign('right')}>
-        <MenuLineItem primary="Right" Icon={TextAlignCenterIcon} />
+        <MenuLineItem primary="Right" Icon={TextAlignRightIcon} />
       </MenuItem>
 
       <MenuDivider />

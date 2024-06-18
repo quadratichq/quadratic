@@ -357,7 +357,7 @@ impl SheetRect {
         self.width() * self.height()
     }
     pub fn is_empty(&self) -> bool {
-        self.width() == 0 && self.height() == 0
+        self.width() == 0 || self.height() == 0
     }
     pub fn size(&self) -> ArraySize {
         ArraySize::new(self.width() as u32, self.height() as u32)

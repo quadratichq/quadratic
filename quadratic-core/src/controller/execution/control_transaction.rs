@@ -181,17 +181,18 @@ impl GridController {
             .remove_awaiting_async(transaction_id)
             .unwrap();
 
-        row_heights.iter().for_each(|row_height| {
-            let sheet_id = transaction.sheet_id.unwrap();
-            let row = row_height.row as i64;
-            let new_size = row_height.height;
-            transaction.operations.push_back(Operation::ResizeRow {
-                sheet_id,
-                row,
-                new_size,
-                client_resized: false,
+        if let Some(sheet_id) = transaction.sheet_id {
+            row_heights.iter().for_each(|row_height| {
+                let row = row_height.row as i64;
+                let new_size = row_height.height;
+                transaction.operations.push_back(Operation::ResizeRow {
+                    sheet_id,
+                    row,
+                    new_size,
+                    client_resized: false,
+                });
             });
-        });
+        }
 
         transaction.has_async = false;
         self.start_transaction(&mut transaction);

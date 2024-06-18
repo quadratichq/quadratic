@@ -53,6 +53,7 @@ impl Column {
             crate::util::union_ranges([
                 self.values_range(),
                 self.align.range(),
+                self.vertical_align.range(),
                 self.wrap.range(),
                 self.numeric_format.range(),
                 self.numeric_decimals.range(),
@@ -70,6 +71,7 @@ impl Column {
     pub fn has_anything_in_row(&self, y: i64) -> bool {
         self.has_data_in_row(y)
             || self.align.get(y).is_some()
+            || self.vertical_align.get(y).is_some()
             || self.wrap.get(y).is_some()
             || self.numeric_format.get(y).is_some()
             || self.numeric_decimals.get(y).is_some()

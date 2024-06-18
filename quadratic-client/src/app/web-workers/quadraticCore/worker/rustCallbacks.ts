@@ -64,7 +64,7 @@ declare var self: WorkerGlobalScope &
       w?: number,
       h?: number
     ) => void;
-    sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
+    sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCell: (
       sheetId: string,
@@ -193,7 +193,7 @@ export const jsTransactionStart = (
   self.sendTransactionStart(transaction_id, transactionType, sheet_id, Number(x), Number(y), w, h);
 };
 
-export const jsTransactionProgress = (transactionId: String, remainingOperations: number) => {
+export const jsTransactionProgress = (transactionId: string, remainingOperations: number) => {
   self.sendTransactionProgress(transactionId, remainingOperations);
 };
 

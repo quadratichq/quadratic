@@ -102,6 +102,7 @@ impl GridController {
             CellFmtArray::Italic(RunLengthEncoding::new()),
             CellFmtArray::TextColor(RunLengthEncoding::new()),
             CellFmtArray::FillColor(RunLengthEncoding::new()),
+            CellFmtArray::RenderSize(RunLengthEncoding::new()),
         ];
         for y in sheet_rect.y_range() {
             for x in sheet_rect.x_range() {

@@ -42,7 +42,7 @@ impl ResizeMap {
         self.resize_map.remove(&index).unwrap_or(self.default)
     }
 
-    pub fn iter_resize(&self) -> impl '_ + Iterator<Item = (i64, Resize)> {
-        self.resize_map.iter().map(|(&k, &v)| (k, v))
+    pub fn iter_resize(&self) -> impl '_ + Iterator<Item = (i64, &Resize)> {
+        self.resize_map.iter().map(|(&k, v)| (k, v))
     }
 }

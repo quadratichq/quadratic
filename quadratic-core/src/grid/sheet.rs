@@ -212,7 +212,7 @@ impl Sheet {
 
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
         let column = self.get_column(pos.x)?;
-        if let Some(format) = column.numeric_format.get(pos.x) {
+        if let Some(format) = column.numeric_format.get(pos.y) {
             Some(format.kind)
         } else {
             None
