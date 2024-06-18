@@ -6,6 +6,8 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
+  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -30,12 +32,14 @@ declare var self: WorkerGlobalScope &
     sendSheetInfoClient: (sheets: SheetInfo[]) => void;
     sendSheetInfoRender: (sheets: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fill: JsRenderFill[]) => void;
+    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoUpdateRender: (sheetInfo: SheetInfo) => void;
     sendAddSheetRender: (sheetInfo: SheetInfo) => void;
     sendDeleteSheetRender: (sheetId: string) => void;
     sendSetCursor: (cursor: string) => void;
+    sendSetCursorSelection: (selection: Selection) => void;
     requestTransactions: (sequenceNum: number) => void;
     sendSheetOffsetsClient: (
       sheetId: string,
@@ -55,15 +59,7 @@ declare var self: WorkerGlobalScope &
     sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
-    sendTransactionStart: (
-      transactionId: string,
-      transactionType: TransactionName,
-      sheetId?: string,
-      x?: number,
-      y?: number,
-      w?: number,
-      h?: number
-    ) => void;
+    sendTransactionStart: (transactionId: string, transactionType: TransactionName) => void;
     sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCell: (
@@ -154,6 +150,11 @@ export const jsSetCursor = (cursor: string) => {
   self.sendSetCursor(cursor);
 };
 
+export const jsSetCursorSelection = (selectionStringified: string) => {
+  const selection = JSON.parse(selectionStringified) as Selection;
+  self.sendSetCursorSelection(selection);
+};
+
 export const jsHtmlOutput = (htmlStringified: string) => {
   const html: JsHtmlOutput[] = JSON.parse(htmlStringified);
   self.sendSheetHtml(html);
@@ -179,17 +180,9 @@ export const jsSheetBoundsUpdate = (bounds: string) => {
   self.sendSheetBoundsUpdateRender(sheetBounds);
 };
 
-export const jsTransactionStart = (
-  transaction_id: string,
-  transaction_name: string,
-  sheet_id: string | undefined,
-  x?: bigint,
-  y?: bigint,
-  w?: number,
-  h?: number
-) => {
+export const jsTransactionStart = (transaction_id: string, transaction_name: string) => {
   const transactionType = JSON.parse(transaction_name);
-  self.sendTransactionStart(transaction_id, transactionType, sheet_id, Number(x), Number(y), w, h);
+  self.sendTransactionStart(transaction_id, transactionType);
 };
 
 export const jsTransactionProgress = (transactionId: String, remainingOperations: number) => {
@@ -218,4 +211,9 @@ export const jsUpdateCodeCell = (
 
 export const jsUndoRedo = (undo: string, redo: string) => {
   self.sendUndoRedo(undo, redo);
+};
+
+export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
+  const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
+  self.sendSheetMetaFills(sheetId, sheetMetaFills);
 };

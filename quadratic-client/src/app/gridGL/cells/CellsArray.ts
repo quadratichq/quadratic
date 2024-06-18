@@ -2,8 +2,9 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { Coordinate } from '@/app/gridGL/types/size';
 import { JsRenderCodeCell } from '@/app/quadratic-core-types';
-import { Container, Graphics, ParticleContainer, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, ParticleContainer, Point, Rectangle, Sprite, Texture } from 'pixi.js';
 import { colors } from '../../theme/colors';
 import { dashedTextures } from '../dashedTextures';
 import { intersects } from '../helpers/intersects';
@@ -89,16 +90,11 @@ export class CellsArray extends Container {
       return;
     }
 
-    const cursor = sheets.sheet.cursor;
-    const cursorRectangle = cursor.getRectangle();
-
-    // need to adjust the cursor rectangle for intersection testing
-    cursorRectangle.width++;
-    cursorRectangle.height++;
+    const cursor = sheets.sheet.cursor.getCursor();
     codeCells?.forEach((codeCell) => {
       const cell = inlineEditorHandler.getShowing();
       const editingCell = cell && codeCell.x === cell.x && codeCell.y === cell.y && cell.sheetId === this.sheetId;
-      this.draw(codeCell, cursorRectangle, editingCell);
+      this.draw(codeCell, cursor, editingCell);
     });
     pixiApp.setViewportDirty();
   }
@@ -117,7 +113,7 @@ export class CellsArray extends Container {
     return sheet;
   }
 
-  private draw(codeCell: JsRenderCodeCell, cursorRectangle: Rectangle, editingCell?: boolean): void {
+  private draw(codeCell: JsRenderCodeCell, cursor: Coordinate, editingCell?: boolean): void {
     const start = this.sheet.getCellOffsets(Number(codeCell.x), Number(codeCell.y));
 
     const overlapTest = new Rectangle(Number(codeCell.x), Number(codeCell.y), codeCell.w, codeCell.h);
@@ -135,7 +131,7 @@ export class CellsArray extends Container {
 
     if (!pixiAppSettings.showCellTypeOutlines) {
       // only show the entire array if the cursor overlaps any part of the output
-      if (!intersects.rectangleRectangle(cursorRectangle, overlapTest)) {
+      if (!intersects.rectanglePoint(overlapTest, new Point(cursor.x, cursor.y))) {
         this.cellsSheet.cellsMarkers.add(start, codeCell, false);
         return;
       }

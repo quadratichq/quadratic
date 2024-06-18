@@ -35,7 +35,7 @@ export async function zoomToFit() {
 }
 
 export function zoomInOut(scale: number): void {
-  const cursorPosition = sheets.sheet.cursor.getRectangle();
+  const cursorPosition = sheets.sheet.cursor.getCursor();
   const visibleBounds = pixiApp.viewport.getVisibleBounds();
 
   // If the center of the cell cursor's position is visible, then zoom to that point
@@ -64,13 +64,18 @@ export function zoomToSelection(): void {
   let screenRectangle: Rectangle;
   const sheet = sheets.sheet;
   if (sheet.cursor.multiCursor) {
-    const cursor = sheet.cursor.multiCursor;
-    screenRectangle = sheet.getScreenRectangle(
-      cursor.originPosition.x,
-      cursor.originPosition.y,
-      cursor.terminalPosition.x - cursor.originPosition.x,
-      cursor.terminalPosition.y - cursor.originPosition.y
-    );
+    const rectangles = sheet.cursor.multiCursor;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    for (const rectangle of rectangles) {
+      minX = Math.min(minX, rectangle.left);
+      minY = Math.min(minY, rectangle.top);
+      maxX = Math.max(maxX, rectangle.right);
+      maxY = Math.max(maxY, rectangle.bottom);
+    }
+    screenRectangle = sheet.getScreenRectangle(minX, minY, maxX - minX, maxY - minY);
   } else {
     const cursor = sheet.cursor.cursorPosition;
     screenRectangle = sheet.getScreenRectangle(cursor.x, cursor.y, 1, 1);

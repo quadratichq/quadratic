@@ -1,5 +1,6 @@
 use super::SheetOffsets;
-use crate::{Rect, ScreenRect};
+use crate::Rect;
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 
 #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
@@ -9,7 +10,7 @@ pub struct Placement {
     pub size: i32,
 }
 
-#[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, ts_rs::TS)]
 pub struct ColumnRow {
     pub column: i32,
     pub row: i32,
@@ -19,8 +20,9 @@ pub struct ColumnRow {
 impl SheetOffsets {
     /// Returns a rectangle with the screen coordinates for a cell
     #[wasm_bindgen(js_name = "getCellOffsets")]
-    pub fn js_get_cell_offsets(&self, column: i32, row: i32) -> ScreenRect {
-        self.cell_offsets(column as i64, row as i64)
+    pub fn js_get_cell_offsets(&self, column: i32, row: i32) -> String {
+        let screen_rect = self.cell_offsets(column as i64, row as i64);
+        serde_json::to_string(&screen_rect).unwrap_or("".to_string())
     }
 
     // Returns a rectangle with the screen coordinates for a rectangle of cells
@@ -31,9 +33,10 @@ impl SheetOffsets {
         row: i32,
         width: i32,
         height: i32,
-    ) -> ScreenRect {
+    ) -> String {
         let rect = Rect::from_numbers(column as i64, row as i64, width as i64, height as i64);
-        self.rect_cell_offsets(rect)
+        let screen_rect = self.screen_rect_cell_offsets(rect);
+        serde_json::to_string(&screen_rect).unwrap_or("".to_string())
     }
 
     /// gets the column width. Returns a f32
@@ -104,11 +107,12 @@ impl SheetOffsets {
 
     /// gets the column and row based on the pixels' coordinates. Returns a (column, row) index
     #[wasm_bindgen(js_name = "getColumnRowFromScreen")]
-    pub fn js_get_column_row_from_screen(&self, x: f64, y: f64) -> ColumnRow {
-        ColumnRow {
+    pub fn js_get_column_row_from_screen(&self, x: f64, y: f64) -> String {
+        let column_row = ColumnRow {
             column: self.js_x_placement(x).index,
             row: self.js_y_placement(y).index,
-        }
+        };
+        serde_json::to_string(&column_row).unwrap_or("".to_string())
     }
 
     /// Resizes a column transiently; the operation must be committed using

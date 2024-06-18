@@ -6,6 +6,7 @@ use crate::{
         series::{find_auto_complete, SeriesOptions},
         SheetId,
     },
+    selection::Selection,
     util::maybe_reverse_range,
     CellValue, Pos, Rect, SheetPos, SheetRect,
 };
@@ -152,8 +153,9 @@ impl GridController {
     fn shrink(&mut self, delete_range: SheetRect) -> Vec<Operation> {
         let mut ops = vec![];
 
-        ops.extend(self.delete_cells_rect_operations(delete_range));
-        ops.extend(self.clear_formatting_operations(delete_range));
+        let selection = Selection::sheet_rect(delete_range);
+        ops.extend(self.delete_cells_operations(&selection));
+        ops.extend(self.clear_format_selection_operations(&selection));
         ops
     }
 

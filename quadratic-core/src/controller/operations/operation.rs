@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cell_values::CellValues,
-    grid::{formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
+    grid::{formats::Formats, formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
+    selection::Selection,
     SheetPos, SheetRect,
 };
 
@@ -21,10 +22,18 @@ pub enum Operation {
     ComputeCode {
         sheet_pos: SheetPos,
     },
+
+    // Deprecated. Use SetCellFormatsSelection instead.
     SetCellFormats {
         sheet_rect: SheetRect,
         attr: CellFmtArray,
     },
+
+    SetCellFormatsSelection {
+        selection: Selection,
+        formats: Formats,
+    },
+
     SetBorders {
         sheet_rect: SheetRect,
         borders: SheetBorders,
@@ -32,12 +41,20 @@ pub enum Operation {
 
     // Sheet metadata operations
 
-    // TODO: we should use the SheetSchema format + version in grid/file/current.rs
-    // instead of the actual Sheet. That way we can change the Sheet struct
-    // without breaking offline.
+    // This operation is deprecated in favor of AddSheetSchema. It is kept here
+    // to ensure Offline operations continue to work. It should be removed in
+    // the future.
     AddSheet {
         sheet: Sheet,
     },
+
+    // This replaces the deprecated AddSheet operation. It uses the schema
+    // instead of the actual Sheet to ensure compatibility with future Sheet
+    // changes. We will continue to add new schema versions as needed.
+    AddSheetSchema {
+        v1_5: Option<crate::grid::file::v1_5::schema::Sheet>,
+    },
+
     DuplicateSheet {
         sheet_id: SheetId,
         new_sheet_id: SheetId,
@@ -81,9 +98,15 @@ pub enum Operation {
         client_resized: bool,
     },
 
-    // used for User transactions to set cursor (eg, Paste)
+    // Deprecated in favor of SetCursorSelection. This operation remains to
+    // support offline operations for now.
     SetCursor {
         sheet_rect: SheetRect,
+    },
+
+    // used for User transactions to set cursor (eg, Paste)
+    SetCursorSelection {
+        selection: Selection,
     },
 
     MoveCells {
@@ -111,6 +134,13 @@ impl fmt::Display for Operation {
                 sheet_pos, run, index
             ),
             Operation::SetCellFormats { .. } => write!(fmt, "SetCellFormats {{ todo }}",),
+            Operation::SetCellFormatsSelection { selection, formats } => {
+                write!(
+                    fmt,
+                    "SetCellFormatsSelection {{ selection: {:?} formats: {:?} }}",
+                    selection, formats
+                )
+            }
             Operation::AddSheet { sheet } => write!(fmt, "AddSheet {{ sheet: {} }}", sheet.name),
             Operation::DeleteSheet { sheet_id } => {
                 write!(fmt, "DeleteSheet {{ sheet_id: {} }}", sheet_id)
@@ -156,6 +186,9 @@ impl fmt::Display for Operation {
             Operation::SetCursor { sheet_rect } => {
                 write!(fmt, "SetCursor {{ sheet_rect: {} }}", sheet_rect)
             }
+            Operation::SetCursorSelection { selection } => {
+                write!(fmt, "SetCursorSelection {{ selection: {:?} }}", selection)
+            }
             Operation::DuplicateSheet {
                 sheet_id,
                 new_sheet_id,
@@ -168,6 +201,9 @@ impl fmt::Display for Operation {
             }
             Operation::MoveCells { source, dest } => {
                 write!(fmt, "MoveCells {{ source: {} dest: {} }}", source, dest)
+            }
+            Operation::AddSheetSchema { v1_5 } => {
+                write!(fmt, "AddSheetSchema {{ v1_5: {:?} }}", v1_5)
             }
         }
     }
