@@ -49,7 +49,7 @@ export class Control {
             }
         });
         this.isPostgresRunning().then((running) => {
-            this.ui.print("redis", "checking whether postgres is running...");
+            this.ui.print("postgres", "checking whether postgres is running...");
             if (running === "not found") {
                 this.status.postgres = "killed"; // use killed to indicate that redis-cli was not found
                 this.ui.print("postgres", "pg_isready not found", "red");
@@ -470,7 +470,12 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const redis = spawn("redis-cli", ["ping"]);
+            const redis = spawn("docker", [
+                "exec",
+                "quadratic-redis-1",
+                "redis-cli",
+                "ping",
+            ]);
             redis.on("error", (e) => {
                 if (e.code === "ENOENT") {
                     resolve("not found");
@@ -485,7 +490,7 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const postgres = spawn("pg_isready");
+            const postgres = spawn("docker", ["exec", "postgres", "pg_isready"]);
             postgres.on("error", (e) => {
                 if (e.code === "ENOENT") {
                     resolve("not found");
@@ -497,7 +502,7 @@ export class Control {
         });
     }
     async start(ui) {
-        exec("rm -rf quadratic-client/src/quadratic-core");
+        exec("rm -rf quadratic-client/src/app/quadratic-core");
         this.ui = ui;
         this.runRust();
         this.runDb();
