@@ -86,20 +86,36 @@ export class SheetCursor {
 
   loadFromSelection(selection: Selection) {
     this.cursorPosition = { x: Number(selection.x), y: Number(selection.y) };
-    this.multiCursor = selection.rects?.map(
-      (rect) =>
-        new Rectangle(
-          Number(rect.min.x),
-          Number(rect.min.y),
-          Number(rect.max.x) - Number(rect.min.x) + 1,
-          Number(rect.max.y) - Number(rect.min.y) + 1
-        )
-    );
-    this.columnRow = {
-      columns: selection.columns?.map((x) => Number(x)),
-      rows: selection.rows?.map((y) => Number(y)),
-      all: selection.all === true ? true : undefined,
-    };
+
+    if (
+      selection.rects?.length === 1 &&
+      selection.rects[0].min.x === selection.rects[0].max.x &&
+      selection.rects[0].min.y === selection.rects[0].max.y
+    ) {
+      // This is a single cell selection
+      this.multiCursor = undefined;
+    } else {
+      this.multiCursor = selection.rects?.map(
+        (rect) =>
+          new Rectangle(
+            Number(rect.min.x),
+            Number(rect.min.y),
+            Number(rect.max.x) - Number(rect.min.x) + 1,
+            Number(rect.max.y) - Number(rect.min.y) + 1
+          )
+      );
+    }
+
+    if (selection.columns === null && selection.rows === null && selection.all === false) {
+      this.columnRow = undefined;
+    } else {
+      this.columnRow = {
+        columns: selection.columns?.map((x) => Number(x)),
+        rows: selection.rows?.map((y) => Number(y)),
+        all: selection.all === true ? true : undefined,
+      };
+    }
+
     multiplayer.sendSelection(this.getMultiplayerSelection());
     pixiApp.cursor.dirty = true;
   }
