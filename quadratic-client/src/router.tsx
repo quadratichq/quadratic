@@ -16,7 +16,6 @@ import {
 } from 'react-router-dom';
 import { protectedRouteLoaderWrapper } from './auth';
 import * as RootRoute from './routes/_root';
-import { loader as RootIndexLoader } from './routes/index';
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -67,7 +66,6 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
-          <Route index loader={RootIndexLoader} />
           <Route
             path={ROUTES.EDUCATION_ENROLL}
             loader={async () => {
@@ -86,6 +84,7 @@ export const router = createBrowserRouter(
             lazy={() => import('./routes/_dashboard')}
             shouldRevalidate={revalidateDashboard}
           >
+            <Route index lazy={() => import('./routes/_dashboard.index')} />
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
               lazy={() => import('./routes/files.shared-with-me')}

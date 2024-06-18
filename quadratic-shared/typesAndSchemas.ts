@@ -323,6 +323,7 @@ export const ApiSchemas = {
     teams: z.array(
       z.object({
         team: TeamSchema.pick({ id: true, uuid: true, name: true, activated: true }),
+        users: z.number(),
         userMakingRequest: z.object({
           teamPermissions: z.array(TeamPermissionSchema),
         }),

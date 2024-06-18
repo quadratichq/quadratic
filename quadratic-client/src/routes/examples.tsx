@@ -13,7 +13,9 @@ export const loader = async () => {
 export const Component = () => {
   const { examples } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const {
-    activeTeamUuid: [activeTeamUuid],
+    activeTeam: {
+      team: { uuid: activeTeamUuid },
+    },
   } = useDashboardContext();
 
   const files: FilesListExampleFile[] = examples.map(({ name, description, thumbnail, url }, i) => ({

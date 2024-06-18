@@ -24,19 +24,17 @@ export function TeamSwitcher({ appIsLoading }: Props) {
   const submit = useSubmit();
   const { teams } = useDashboardRouteLoaderData();
   const {
-    activeTeamUuid: [activeTeamUuid],
+    activeTeam: {
+      team: { name: activeTeamName, uuid: activeTeamUuid },
+    },
   } = useDashboardContext();
   const fetcher = useFetcher({ key: 'update-team' });
   const navigate = useNavigate();
 
-  const activeTeam = teams.find(({ team }) => team.uuid === activeTeamUuid);
-
   const optimisticActiveTeamName =
     fetcher.state !== 'idle' && isJsonObject(fetcher.json)
       ? (fetcher.json as TeamAction['request.update-team']).name
-      : activeTeam
-      ? activeTeam.team.name
-      : 'Select a team';
+      : activeTeamName;
 
   return (
     <DropdownMenu>
@@ -56,11 +54,10 @@ export function TeamSwitcher({ appIsLoading }: Props) {
       <DropdownMenuContent align="start" className="min-w-72">
         <DropdownMenuLabel className="text-xs text-muted-foreground">jim.nielsen@quadratichq.com</DropdownMenuLabel>
 
-        {teams.map(({ team: { uuid, name } }: any) => {
+        {teams.map(({ team: { uuid, name }, users }) => {
           const isActive = activeTeamUuid === uuid;
 
           // TODO: (connections) get these from the API
-          const memberCount = 1;
           const isPaid = false;
 
           return (
@@ -87,7 +84,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
                 <div className="flex flex-col">
                   <div>{name}</div>
                   <Type variant="caption">
-                    {isPaid ? 'Paid' : 'Free'} · {memberCount} member{memberCount === 1 ? '' : 's'}
+                    {isPaid ? 'Paid' : 'Free'} · {users} member{users === 1 ? '' : 's'}
                   </Type>
                 </div>
                 {/* <div className="ml-auto flex h-6 w-6 items-center justify-center">

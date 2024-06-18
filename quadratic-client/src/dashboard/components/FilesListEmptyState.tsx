@@ -11,7 +11,9 @@ import { Link } from 'react-router-dom';
 
 export const FilesListEmptyState = ({ isPrivate }: { isPrivate?: boolean }) => {
   const {
-    activeTeamUuid: [activeTeamUuid],
+    activeTeam: {
+      team: { uuid: activeTeamUuid },
+    },
   } = useDashboardContext();
 
   return (

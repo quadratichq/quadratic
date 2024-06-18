@@ -29,7 +29,8 @@ import {
   PlusIcon,
   Share2Icon,
 } from '@radix-ui/react-icons';
-import { Dispatch, ReactNode, SetStateAction, createContext, useContext, useEffect, useRef, useState } from 'react';
+import * as Sentry from '@sentry/react';
+import { ReactNode, createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   Link,
   LoaderFunctionArgs,
@@ -46,16 +47,17 @@ import {
 } from 'react-router-dom';
 
 const DRAWER_WIDTH = 264;
-export const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
+const ACTIVE_TEAM_UUID_KEY = 'activeTeamUuid';
 
 /**
  * Dashboard state & context
  */
 type DashboardState = {
-  activeTeamUuid: [string, Dispatch<SetStateAction<string>>];
+  activeTeam: Awaited<ReturnType<typeof apiClient.teams.list>>['teams'][0];
 };
 const initialDashboardState: DashboardState = {
-  activeTeamUuid: ['', () => {}],
+  // @ts-expect-error
+  activeTeam: {},
 };
 const DashboardContext = createContext(initialDashboardState);
 export const useDashboardContext = () => useContext(DashboardContext);
@@ -65,8 +67,51 @@ export const useDashboardContext = () => useContext(DashboardContext);
  */
 type LoaderData = Awaited<ReturnType<typeof loader>>;
 export const loader = async ({ params }: LoaderFunctionArgs) => {
-  const [teamsData, { eduStatus }] = await Promise.all([apiClient.teams.list(), apiClient.education.get()]);
-  return { ...teamsData, eduStatus };
+  let [{ teams, userMakingRequest }, { eduStatus }] = await Promise.all([
+    apiClient.teams.list(),
+    apiClient.education.get(),
+  ]);
+
+  let initialActiveTeam: ReturnType<typeof getTeam> = undefined;
+  const uuidFromUrl = params.teamUuid;
+  const uuidFromLocalStorage = localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
+  const getTeam = (teamUuid: string) => teams.find(({ team }) => team.uuid === teamUuid);
+
+  // 1) Check the URL for a team UUID
+  // FYI: if you have a UUID in the URL or localstorage, it doesn’t mean you
+  // have acces to it (maybe you were removed from a team, so it’s a 404)
+  // So we have to ensure we A) have a UUID, and B) it's in the list of teams
+  // we have access to from the server.
+  if (uuidFromUrl && getTeam(uuidFromUrl)) {
+    initialActiveTeam = getTeam(uuidFromUrl);
+
+    // 2) Check localstorage for a team UUID
+  } else if (uuidFromLocalStorage && getTeam(uuidFromLocalStorage)) {
+    initialActiveTeam = getTeam(uuidFromLocalStorage);
+
+    // 3) there's no default preference (yet), so pick the 1st one in the API
+  } else if (teams.length > 0) {
+    initialActiveTeam = teams[0];
+
+    // 4) there's no teams in the API, so create one
+  } else if (teams.length === 0) {
+    await apiClient.teams.create({ name: 'My team' });
+    // refetch teams data after creating a new team
+    const refreshedTeamsData = await apiClient.teams.list();
+    teams = refreshedTeamsData.teams;
+    userMakingRequest = refreshedTeamsData.userMakingRequest;
+  }
+
+  // This should never happen, but if it does, we'll log it to sentry
+  if (initialActiveTeam === undefined) {
+    Sentry.captureEvent({
+      message: 'No active team was found or could be created.',
+      level: 'fatal',
+    });
+    throw new Error('No active team could be found or created. Try reloading?');
+  }
+
+  return { teams, userMakingRequest, eduStatus, initialActiveTeam };
 };
 export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
 
@@ -75,7 +120,7 @@ export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER
  */
 export const Component = () => {
   const params = useParams();
-  const { teams } = useLoaderData() as LoaderData;
+  const { teams, initialActiveTeam } = useLoaderData() as LoaderData;
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const location = useLocation();
@@ -83,28 +128,19 @@ export const Component = () => {
   const contentPaneRef = useRef<HTMLDivElement>(null);
   const revalidator = useRevalidator();
   const { loggedInUser: user } = useRootRouteLoaderData();
+  const [activeTeam, setActiveTeam] = useState<LoaderData['initialActiveTeam']>(initialActiveTeam);
+  const activeTeamUuid = activeTeam.team.uuid;
 
-  // Get the initial value for the active team. These are in a specific order of priority
-  const activeTeamUuidFromLocalStorage = localStorage.getItem(ACTIVE_TEAM_UUID_KEY);
-  let initialActiveTeamUuid = '';
-  if (params.teamUuid) {
-    // TODO: (connections) this is problematic because you might be accessing a team
-    // you do not have access to and we don't want to save that as the active team
-    initialActiveTeamUuid = params.teamUuid;
-  } else if (activeTeamUuidFromLocalStorage) {
-    initialActiveTeamUuid = activeTeamUuidFromLocalStorage;
-  } else if (teams.length > 0) {
-    initialActiveTeamUuid = teams[0].team.uuid;
-  }
-  const [activeTeamUuid, setActiveTeamUuid] = useState<string>(initialActiveTeamUuid);
+  // If the teamUuid changed in the URL (due to a navigation, created a new team, etc.)
+  // Then update the app's currently active team
   useEffect(() => {
-    // If the teamUuid changed (due to a navigation, create a new team, etc.)
-    // Then update the app's current team
-    if (params.teamUuid && params.teamUuid !== activeTeamUuid) {
-      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, activeTeamUuid);
-      setActiveTeamUuid(params.teamUuid);
+    const team = teams.find((data) => data.team.uuid === params.teamUuid);
+    if (params.teamUuid && params.teamUuid !== activeTeamUuid && team) {
+      console.warn('SWITCHED TEAM IN LOCAL STORAGE', params.teamUuid);
+      localStorage.setItem(ACTIVE_TEAM_UUID_KEY, params.teamUuid);
+      setActiveTeam(team);
     }
-  }, [params.teamUuid, activeTeamUuid]);
+  }, [params.teamUuid, activeTeamUuid, teams]);
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
   const navbar = <Navbar isLoading={isLoading} />;
@@ -118,19 +154,13 @@ export const Component = () => {
     if (contentPaneRef.current) contentPaneRef.current.scrollTop = 0;
   }, [location.pathname]);
 
-  // Update the active team in localstorage when it changes, so if the page refreshes
-  // we know what team the user was looking at (even if it's not in the URL)
-  useEffect(() => {
-    localStorage.setItem(ACTIVE_TEAM_UUID_KEY, activeTeamUuid);
-  }, [activeTeamUuid]);
-
   // Ensure long-running browser sessions still have a token
   useCheckForAuthorizationTokenOnWindowFocus();
 
   return (
     <DashboardContext.Provider
       value={{
-        activeTeamUuid: [activeTeamUuid, setActiveTeamUuid],
+        activeTeam,
       }}
     >
       <LiveChatWidget license="14763831" customerEmail={user?.email} customerName={user?.name} />
@@ -175,30 +205,19 @@ export const Component = () => {
 function Navbar({ isLoading }: { isLoading: boolean }) {
   const [, setSearchParams] = useSearchParams();
   const {
-    teams,
     userMakingRequest: { id: ownerUserId },
     eduStatus,
   } = useLoaderData() as LoaderData;
   const { loggedInUser: user } = useRootRouteLoaderData();
   const {
-    activeTeamUuid: [activeTeamUuid],
+    activeTeam: {
+      userMakingRequest: { teamPermissions },
+      team: { uuid: activeTeamUuid },
+    },
   } = useDashboardContext();
 
-  const activeTeam = teams.find(({ team }) => team.uuid === activeTeamUuid);
-
-  // This is an error, there should always be team data
-  if (!activeTeam) {
-    // TODO: (connections) log to sentry
-    return null;
-  }
-
-  const canEditTeam = activeTeam.userMakingRequest.teamPermissions.includes('TEAM_EDIT');
-
+  const canEditTeam = teamPermissions.includes('TEAM_EDIT');
   const classNameIcons = `mx-1 text-muted-foreground`;
-
-  // TODO: (connections) handle case where there is no active team
-  // For example: you were part of a team, then you login when day and you've
-  // been removed and are no longer part of a team
 
   return (
     <nav className={`flex h-full flex-col gap-4 overflow-auto`}>
