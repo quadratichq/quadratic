@@ -161,4 +161,8 @@ export class CellsSheets extends Container<CellsSheet> {
       cellsSheet.cellsLabels.finalizeCellsTextHash(message.hashX, message.hashY);
     }
   }
+
+  update() {
+    this.current?.update();
+  }
 }

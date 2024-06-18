@@ -121,6 +121,8 @@ export class Update {
     debugTimeCheck('[Update] multiplayerCursor');
     pixiApp.cellMoving.update();
     debugTimeCheck('[Update] cellMoving');
+    pixiApp.cellsSheets.update();
+    debugTimeCheck('[Update] cellsSheets');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

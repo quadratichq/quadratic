@@ -70,4 +70,8 @@ export class CellsSheet extends Container {
   updateCellsArray() {
     this.cellsArray.updateCellsArray();
   }
+
+  update() {
+    this.cellsFills.update();
+  }
 }

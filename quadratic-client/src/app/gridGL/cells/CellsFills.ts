@@ -31,6 +31,8 @@ export class CellsFills extends Container {
   private cellsContainer: ParticleContainer;
   private meta: Graphics;
 
+  private dirty = false;
+
   constructor(cellsSheet: CellsSheet) {
     super();
     this.cellsSheet = cellsSheet;
@@ -53,7 +55,7 @@ export class CellsFills extends Container {
           pixiApp.setViewportDirty();
         } else {
           this.metaFill = fills;
-          this.drawMeta();
+          this.setDirty();
         }
       }
     });
@@ -62,10 +64,14 @@ export class CellsFills extends Container {
         this.drawCells();
       }
     });
-
-    pixiApp.viewport.on('zoomed', this.drawMeta);
-    pixiApp.viewport.on('moved', this.drawMeta);
+    events.on('cursorPosition', this.setDirty);
+    pixiApp.viewport.on('zoomed', this.setDirty);
+    pixiApp.viewport.on('moved', this.setDirty);
   }
+
+  setDirty = () => {
+    this.dirty = true;
+  };
 
   cheapCull(viewBounds: Rectangle) {
     this.cellsContainer.children.forEach(
@@ -103,6 +109,13 @@ export class CellsFills extends Container {
       sprite.viewBounds = new Rectangle(screen.x, screen.y, screen.width + 1, screen.height + 1);
     });
     pixiApp.setViewportDirty();
+  }
+
+  update() {
+    if (this.dirty) {
+      this.dirty = false;
+      this.drawMeta();
+    }
   }
 
   private drawMeta = () => {
