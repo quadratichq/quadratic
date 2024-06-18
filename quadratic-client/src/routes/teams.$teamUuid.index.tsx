@@ -13,7 +13,6 @@ export const Component = () => {
       userMakingRequest: { teamPermissions },
     },
   } = useDashboardRouteLoaderData();
-
   const canEdit = teamPermissions.includes('TEAM_EDIT');
 
   return (

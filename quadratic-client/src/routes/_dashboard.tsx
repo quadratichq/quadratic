@@ -51,11 +51,10 @@ type LoaderData = {
   activeTeam: ApiTypes['/v0/teams/:uuid.GET.response'];
 };
 
-export const loader = async ({ params }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
+export const loader = async ({ params, request }: LoaderFunctionArgs): Promise<LoaderData | Response> => {
   /**
    * Get the initial data
    */
-  console.log('fired loader');
   const [{ teams, userMakingRequest }, { eduStatus }] = await Promise.all([
     apiClient.teams.list(),
     apiClient.education.get(),
@@ -96,7 +95,12 @@ export const loader = async ({ params }: LoaderFunctionArgs): Promise<LoaderData
       message: 'No active team was found or could be created.',
       level: 'fatal',
     });
-    throw new Error('No active team could be found or created. Try reloading?');
+    throw new Error('No active team could be found or created.');
+  }
+
+  // If this was a request to the root of the app, re-route to the active team
+  if (new URL(request.url).pathname === '/') {
+    return redirect(ROUTES.TEAM(initialActiveTeamUuid));
   }
 
   /**

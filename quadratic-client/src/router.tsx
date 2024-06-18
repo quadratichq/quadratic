@@ -82,14 +82,15 @@ export const router = createBrowserRouter(
             lazy={() => import('./routes/teams.$teamUuid.files.create')}
             shouldRevalidate={() => false}
           />
+          <Route path="teams" index loader={() => redirect('/')} />
 
           {/* Dashboard UI routes */}
           <Route
+            path="/"
             id={ROUTE_LOADER_IDS.DASHBOARD}
             lazy={() => import('./routes/_dashboard')}
             shouldRevalidate={revalidateDashboard}
           >
-            <Route index lazy={() => import('./routes/_dashboard.index')} />
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
               lazy={() => import('./routes/files.shared-with-me')}
@@ -107,7 +108,6 @@ export const router = createBrowserRouter(
             />
 
             <Route path="teams">
-              <Route index loader={() => redirect('/')} />
               <Route path="create" lazy={() => import('./routes/teams.create')} />
               <Route path=":teamUuid" lazy={() => import('./routes/teams.$teamUuid')}>
                 <Route index lazy={() => import('./routes/teams.$teamUuid.index')} />
