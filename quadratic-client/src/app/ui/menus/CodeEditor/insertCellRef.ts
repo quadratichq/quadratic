@@ -13,17 +13,19 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
   }
   if (language === 'Formula') {
     if (cursor.multiCursor) {
-      const startLocation = cursor.multiCursor.originPosition;
-      const start = getA1Notation(startLocation.x, startLocation.y);
-      const endLocation = cursor.multiCursor.terminalPosition;
-      const end = getA1Notation(endLocation.x, endLocation.y);
-      if (sheet) {
-        ref = `'${sheet}'!${start}:${end}`;
-      } else {
-        ref = `${start}:${end}`;
+      let sheet = '';
+      if (selectedCellSheet !== sheets.sheet.id) {
+        sheet = `'${sheets.sheet.name}'!`;
       }
+      let coords = '';
+      cursor.multiCursor.forEach((c, i) => {
+        const start = getA1Notation(c.left, c.top);
+        const end = getA1Notation(c.right - 1, c.bottom - 1);
+        coords += `${start}:${end}${i !== cursor.multiCursor!.length - 1 ? ',' : ''}`;
+      });
+      ref = `${sheet}${coords}`;
     } else {
-      const location = cursor.originPosition;
+      const location = cursor.cursorPosition;
       const a1Notation = getA1Notation(location.x, location.y);
       if (sheet) {
         ref = `'${sheet}'!${a1Notation}`;
@@ -33,8 +35,14 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
     }
   } else if (language === 'Python') {
     if (cursor.multiCursor) {
-      const start = cursor.multiCursor.originPosition;
-      const end = cursor.multiCursor.terminalPosition;
+      if (cursor.multiCursor.length > 1) {
+        console.warn(
+          'We do not yet support multiple multiCursors for inserting cell references. The button should be disabled'
+        );
+      }
+      const multiCursor = cursor.multiCursor[0];
+      const start = { x: multiCursor.left, y: multiCursor.top };
+      const end = { x: multiCursor.right - 1, y: multiCursor.bottom - 1 };
       if (sheet) {
         ref = `cells((${start.x}, ${start.y}), (${end.x}, ${end.y}), '${sheet}')`;
       } else {
@@ -47,7 +55,7 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
         }
       }
     } else {
-      const location = cursor.originPosition;
+      const location = cursor.cursorPosition;
       if (sheet) {
         ref = `cell(${location.x}, ${location.y}, '${sheet}')`;
       } else {
@@ -60,8 +68,14 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
     }
   } else if (language === 'Javascript') {
     if (cursor.multiCursor) {
-      const start = cursor.multiCursor.originPosition;
-      const end = cursor.multiCursor.terminalPosition;
+      if (cursor.multiCursor.length > 1) {
+        console.warn(
+          'We do not yet support multiple multiCursors for inserting cell references. The button should be disabled'
+        );
+      }
+      const multiCursor = cursor.multiCursor[0];
+      const start = { x: multiCursor.left, y: multiCursor.top };
+      const end = { x: multiCursor.right - 1, y: multiCursor.bottom - 1 };
       if (sheet) {
         ref = `cells((${start.x}, ${start.y}), (${end.x}, ${end.y}), '${sheet}')`;
       } else {
@@ -74,7 +88,7 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
         }
       }
     } else {
-      const location = cursor.originPosition;
+      const location = cursor.cursorPosition;
       if (sheet) {
         ref = `cell(${location.x}, ${location.y}, '${sheet}')`;
       } else {
