@@ -66,7 +66,8 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route loader={protectedRouteLoaderWrapper(async () => null)}>
-          {/* Resource routes - putting these outside the nested tree lets you hit them directly without having to load other data */}
+          {/* Resource routes (these have no UI)
+              Putting them outside the nested tree lets you hit them directly without having to load other data */}
           <Route
             path={ROUTES.EDUCATION_ENROLL}
             loader={async () => {
@@ -85,12 +86,7 @@ export const router = createBrowserRouter(
           <Route path="teams" index loader={() => redirect('/')} />
 
           {/* Dashboard UI routes */}
-          <Route
-            path="/"
-            id={ROUTE_LOADER_IDS.DASHBOARD}
-            lazy={() => import('./routes/_dashboard')}
-            shouldRevalidate={revalidateDashboard}
-          >
+          <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>
             <Route
               path={ROUTES.FILES_SHARED_WITH_ME}
               lazy={() => import('./routes/files.shared-with-me')}
@@ -143,30 +139,5 @@ function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunction
   if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
     return false;
   }
-  return true;
-}
-
-function revalidateDashboard({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
-  // const { pathname } = currentUrl;
-
-  // if (currentUrl.pathname === ROUTES.TEAMS_CREATE || nextUrl.pathname === ROUTES.TEAMS_CREATE) {
-  //   console.log('do not revlidate');
-  //   return false;
-  // }
-
-  // // If you're coming from team members or connections, which are dialogs, don't revalidate.
-  // // Just close immediately.
-  // if (
-  //   pathname.includes('teams/') &&
-  //   (pathname.includes('members') || pathname.includes('connections') || pathname.includes('create'))
-  // ) {
-  //   return false;
-  // }
-
-  // // If you're not coming from a teams page, don't revalidate
-  // if (!pathname.includes('teams/')) {
-  //   return false;
-  // }
-
   return true;
 }

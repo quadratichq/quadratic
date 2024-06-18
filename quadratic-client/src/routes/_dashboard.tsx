@@ -19,6 +19,7 @@ import {
   Link,
   LoaderFunctionArgs,
   Outlet,
+  ShouldRevalidateFunctionArgs,
   isRouteErrorResponse,
   redirect,
   useLocation,
@@ -39,6 +40,14 @@ type DashboardState = {};
 const initialDashboardState: DashboardState = {};
 const DashboardContext = createContext(initialDashboardState);
 export const useDashboardContext = () => useContext(DashboardContext);
+
+/**
+ * Revalidation
+ */
+export const shouldRevalidate = ({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) => {
+  // Re-validate if we're going to a teams route, otherwise skip
+  return nextUrl.pathname.startsWith('/teams/');
+};
 
 /**
  * Loader
