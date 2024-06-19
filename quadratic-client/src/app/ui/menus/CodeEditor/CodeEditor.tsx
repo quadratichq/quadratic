@@ -77,7 +77,12 @@ export const CodeEditor = () => {
   }, [editorInteractionState]);
 
   const unsaved = useMemo(() => {
-    return editorContent !== codeString;
+    const unsaved = editorContent !== codeString;
+
+    // we use the for keyboardCell so we know whether we can delete a cell with
+    // the code editor open
+    pixiAppSettings.unsavedEditorChanges = unsaved;
+    return unsaved;
   }, [codeString, editorContent]);
 
   // handle someone trying to open a different code editor
