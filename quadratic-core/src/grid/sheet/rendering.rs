@@ -84,7 +84,7 @@ impl Sheet {
                     JsRenderCellSpecial::False
                 }),
             };
-        } else if CellValue::Image(_) = value {
+        } else if let CellValue::Image(_) = value {
             return JsRenderCell {
                 x,
                 y,
@@ -95,7 +95,7 @@ impl Sheet {
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: Some(JsRenderCellSpecial::Image),
+                special: Some(JsRenderCellSpecial::Chart),
             };
         }
 
@@ -514,7 +514,7 @@ mod tests {
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
         selection::Selection,
-        wasm_bindings::js::{expect_js_call, hash_test},
+        wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 

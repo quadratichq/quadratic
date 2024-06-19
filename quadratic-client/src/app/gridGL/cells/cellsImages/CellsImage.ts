@@ -116,7 +116,7 @@ export class CellsImage extends Container {
   };
 
   reposition() {
-    const screen = this.sheet.offsets.getCellOffsets(this.column, this.row + 1);
+    const screen = this.sheet.getCellOffsets(this.column, this.row + 1);
     this.position.set(screen.x, screen.y);
     this.resizeImage();
   }
