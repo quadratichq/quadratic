@@ -1,7 +1,10 @@
 import { downloadSelectionAsCsvAction, hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { events } from '@/app/events/events';
 import { copySelectionToPNG, fullClipboardSupport, pasteFromClipboard } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
@@ -31,6 +34,7 @@ import {
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
+  clearFillColor,
   clearFormattingAndBorders,
   removeCellNumericFormat,
   setAlignment,
@@ -48,13 +52,16 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
 import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState } from '@szhsin/react-menu';
 import mixpanel from 'mixpanel-browser';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 interface Props {
   container?: HTMLDivElement;
   showContextMenu: boolean;
 }
+
+const HORIZONTAL_PADDING = 15;
+const VERTICAL_PADDING = 20;
 
 export const FloatingContextMenu = (props: Props) => {
   const { container, showContextMenu } = props;
@@ -94,75 +101,119 @@ export const FloatingContextMenu = (props: Props) => {
     const cursor = sheet.cursor;
 
     // Calculate position of input based on cell
-    const cell_offsets = sheet.getCellOffsets(
-      cursor.multiCursor
-        ? Math.min(cursor.cursorPosition.x, cursor.multiCursor.originPosition.x, cursor.multiCursor.terminalPosition.x)
-        : cursor.cursorPosition.x,
-      cursor.multiCursor
-        ? Math.min(cursor.cursorPosition.y, cursor.multiCursor.originPosition.y, cursor.multiCursor.terminalPosition.y)
-        : cursor.cursorPosition.y
+    const cursorRectangle = pixiApp.cursor.cursorRectangle;
+    if (!cursorRectangle) return;
+    const cursorTopLeft = viewport.toScreen(cursorRectangle.x, cursorRectangle.y);
+    const cursorBottomRight = viewport.toScreen(
+      cursorRectangle.x + cursorRectangle.width,
+      cursorRectangle.y + cursorRectangle.height
     );
-    let cell_offset_scaled = viewport.toScreen(cell_offsets.x, cell_offsets.y);
 
     const menuHeight = menuDiv.current?.clientHeight || 0;
 
-    let x = cell_offset_scaled.x + container.offsetLeft - 20;
-    let y = cell_offset_scaled.y + container.offsetTop - menuHeight - 20;
+    let x = cursorTopLeft.x + container.offsetLeft - HORIZONTAL_PADDING;
+    let y = cursorTopLeft.y + container.offsetTop - menuHeight - VERTICAL_PADDING;
 
     /**
      * Control menu visibility
      */
-    let visibility = 'visible';
+    let visibility: boolean | 'vanish' = true;
 
     // Hide if zoomed out too much
     if (viewport.scale.x < 0.1) {
-      visibility = 'hidden';
+      visibility = false;
     }
     // hide if boxCells is active
     if (cursor.boxCells) {
-      visibility = 'hidden';
+      visibility = false;
     }
 
+    // hide if inline Formula editor is keyboard selecting cells
+    if (inlineEditorHandler.cursorIsMoving) visibility = 'vanish';
+
     // Hide if it's not 1) a multicursor or, 2) an active right click
-    if (!(cursor.multiCursor || showContextMenu)) visibility = 'hidden';
+    if (!(cursor.multiCursor || cursor.columnRow || showContextMenu)) visibility = 'vanish';
 
     // Hide if currently selecting
-    if (pixiApp.pointer?.pointerDown?.active) visibility = 'hidden';
+    if (pixiApp.pointer?.pointerDown?.active) visibility = 'vanish';
+
+    if (pixiApp.pointer.pointerCellMoving.state === 'move') visibility = 'vanish';
 
     // Hide if in presentation mode
-    if (pixiAppSettings.presentationMode) visibility = 'hidden';
+    if (pixiAppSettings.presentationMode) visibility = 'vanish';
 
     // Hide if you don't have edit access
-    if (!hasPermissionToEditFile(editorInteractionState.permissions)) visibility = 'hidden';
+    if (!hasPermissionToEditFile(editorInteractionState.permissions)) visibility = 'vanish';
 
     // Hide FloatingFormatMenu if multi cursor is off screen
-    const terminal_pos = sheet.getCellOffsets(
-      cursor.multiCursor ? cursor.multiCursor.terminalPosition.x : cursor.cursorPosition.x,
-      cursor.multiCursor ? cursor.multiCursor.terminalPosition.y : cursor.cursorPosition.y
-    );
-    let multiselect_offset = viewport.toScreen(
-      terminal_pos.x + terminal_pos.width,
-      terminal_pos.y + terminal_pos.height
-    );
-    if (multiselect_offset.x < 0 || multiselect_offset.y < 0) visibility = 'hidden';
+
+    const selection = pixiApp.cursor.cursorRectangle;
+    if (!selection) return;
+    const viewportBounds = pixiApp.viewport.getVisibleBounds();
+    if (!intersects.rectangleRectangle(selection, viewportBounds)) {
+      visibility = false;
+    }
 
     // Hide More menu if changing from visible to hidden
-    if (menuDiv.current.style.visibility === 'visible' && visibility === 'hidden') moreMenuToggle(false);
+    if (
+      (moreMenuProps.state === 'open' || moreMenuProps.state === 'opening') &&
+      (visibility === false || visibility === 'vanish')
+    ) {
+      moreMenuToggle(false);
+    }
 
     // Apply visibility
-    menuDiv.current.style.visibility = visibility;
+    // menuDiv.current.style.visibility = visibility;
+    if (visibility === true) {
+      menuDiv.current.style.opacity = '1';
+      menuDiv.current.style.pointerEvents = 'auto';
+      menuDiv.current.style.visibility = 'visible';
+    } else if (visibility === false) {
+      menuDiv.current.style.opacity = '0';
+      menuDiv.current.style.pointerEvents = 'none';
+      menuDiv.current.style.visibility = 'visible';
+    } else if (visibility === 'vanish') {
+      menuDiv.current.style.opacity = '0';
+      menuDiv.current.style.pointerEvents = 'none';
+      menuDiv.current.style.visibility = 'hidden';
+    }
 
     /**
      * Menu positioning
      */
 
+    const columnHeader = pixiApp.headings.headingSize.width;
+    const rowHeader = pixiApp.headings.headingSize.height;
+
     // if outside of viewport keep it inside
-    if (x < container.offsetLeft + 35) {
-      x = container.offsetLeft + 35;
-    } // left
-    if (y < container.offsetTop + 35) {
-      y = container.offsetTop + 35;
-    } // top
+
+    // left
+    if (x < container.offsetLeft + HORIZONTAL_PADDING + columnHeader) {
+      x = container.offsetLeft + HORIZONTAL_PADDING + columnHeader;
+    }
+
+    // right
+    else if (x + menuDiv.current.offsetWidth + HORIZONTAL_PADDING > container.offsetLeft + container.offsetWidth) {
+      x = Math.max(
+        container.offsetLeft + container.offsetWidth - menuDiv.current.offsetWidth - HORIZONTAL_PADDING,
+        container.offsetLeft + HORIZONTAL_PADDING
+      );
+    }
+
+    // top
+    if (y < container.offsetTop + HORIZONTAL_PADDING + rowHeader) {
+      y = container.offsetTop + HORIZONTAL_PADDING + rowHeader;
+    }
+
+    // move cursor to bottom of selection if necessary
+    if (y + menuDiv.current.offsetHeight >= cursorTopLeft.y && y <= cursorBottomRight.y) {
+      y = cursorBottomRight.y + VERTICAL_PADDING;
+
+      // if selection is too big, then default to the top calculation for y
+      if (y + menuDiv.current.offsetHeight >= container.offsetTop + container.offsetHeight) {
+        y = container.offsetTop + HORIZONTAL_PADDING + rowHeader;
+      }
+    }
 
     // Generate transform CSS
     const transform = 'translate(' + [x, y].join('px,') + 'px) ';
@@ -177,10 +228,14 @@ export const FloatingContextMenu = (props: Props) => {
       setTimeout(updateContextMenuCSSTransform, 100);
     } else menuDiv.current.style.pointerEvents = 'auto';
     return transform;
-  }, [container, showContextMenu, editorInteractionState.permissions, moreMenuToggle]);
+  }, [container, showContextMenu, editorInteractionState.permissions, moreMenuProps.state, moreMenuToggle]);
 
+  // trigger is used to hide the menu when cellMoving
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setTrigger] = useState(0);
   useEffect(() => {
     const { viewport } = pixiApp;
+    const trigger = () => setTrigger((prev) => prev + 1);
 
     if (!viewport) return;
     viewport.on('moved', updateContextMenuCSSTransform);
@@ -188,6 +243,7 @@ export const FloatingContextMenu = (props: Props) => {
     document.addEventListener('pointerup', updateContextMenuCSSTransform);
     window.addEventListener('resize', updateContextMenuCSSTransform);
     window.addEventListener('keyup', updateContextMenuCSSTransform);
+    events.on('cellMoving', trigger);
 
     return () => {
       viewport.removeListener('moved', updateContextMenuCSSTransform);
@@ -195,6 +251,7 @@ export const FloatingContextMenu = (props: Props) => {
       document.removeEventListener('pointerup', updateContextMenuCSSTransform);
       window.removeEventListener('resize', updateContextMenuCSSTransform);
       window.addEventListener('keyup', updateContextMenuCSSTransform);
+      events.off('cellMoving', trigger);
     };
   }, [updateContextMenuCSSTransform]);
 
@@ -215,7 +272,8 @@ export const FloatingContextMenu = (props: Props) => {
         transformOrigin: '0 0',
         transform,
         pointerEvents: 'auto',
-        visibility: 'hidden',
+        opacity: 0,
+        transition: 'opacity 0.2s ease-in-out',
         borderRadius: '2px',
         boxShadow:
           'rgba(0, 0, 0, 0.2) 0px 3px 3px -2px, rgba(0, 0, 0, 0.14) 0px 3px 4px 0px, rgba(0, 0, 0, 0.12) 0px 1px 8px 0px',
@@ -233,25 +291,13 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton
-            size="small"
-            onClick={async () => {
-              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
-              setBold(!formatPrimaryCell?.bold);
-            }}
-          >
+          <IconButton size="small" onClick={async () => setBold()}>
             <FontBoldIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton
-            size="small"
-            onClick={async () => {
-              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
-              setItalic(!formatPrimaryCell?.italic);
-            }}
-          >
+          <IconButton size="small" onClick={() => setItalic()}>
             <FontItalicIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -323,25 +369,36 @@ export const FloatingContextMenu = (props: Props) => {
             }}
             onClear={() => {
               fillColorRef.current?.closeMenu();
-              setFillColor(undefined);
+              clearFillColor();
               focusGrid();
             }}
           />
         </Menu>
-        <Menu
-          menuButton={
-            <div>
-              <TooltipHint title="Borders">
-                <IconButton size="small">
-                  <BorderAllIcon fontSize={iconSize} />
-                </IconButton>
-              </TooltipHint>
-            </div>
-          }
-        >
-          {borders}
-        </Menu>
-
+        {!borders ? (
+          <TooltipHint title="Borders">
+            <span>
+              <IconButton size="small" disabled={true}>
+                <BorderAllIcon fontSize={iconSize} />
+              </IconButton>
+            </span>
+          </TooltipHint>
+        ) : (
+          <Menu
+            menuButton={
+              <div>
+                <TooltipHint title="Borders">
+                  <span>
+                    <IconButton size="small">
+                      <BorderAllIcon fontSize={iconSize} />
+                    </IconButton>
+                  </span>
+                </TooltipHint>
+              </div>
+            }
+          >
+            {borders}
+          </Menu>
+        )}
         <MenuDividerVertical />
 
         <TooltipHint title="Format automatically">

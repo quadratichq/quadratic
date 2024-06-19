@@ -44,6 +44,19 @@ pub enum CellBorderLine {
     Dashed,
     Double,
 }
+
+impl CellBorderLine {
+    pub fn as_css_string(&self) -> &'static str {
+        match self {
+            CellBorderLine::Line1 => "1px solid",
+            CellBorderLine::Line2 => "2px solid",
+            CellBorderLine::Line3 => "3px solid",
+            CellBorderLine::Dotted => "1px dashed",
+            CellBorderLine::Dashed => "1px dotted",
+            CellBorderLine::Double => "3px double",
+        }
+    }
+}
 // TODO: Causes weird shadowing problem in wasm-bindgen
 // #[cfg_attr(feature = "js", wasm_bindgen)]
 // impl CellBorderLine {

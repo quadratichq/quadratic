@@ -1,6 +1,8 @@
 import { events } from '@/app/events/events';
-import { SheetInfo } from '@/app/quadratic-core-types';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '../../gridGL/pixiApp/PixiAppSettings';
 import { Sheet } from '../sheet/Sheet';
@@ -59,13 +61,17 @@ class Sheets {
 
     // todo: this code should be in quadratic-core, not here
     if (user) {
-      // the timeout is needed because cellsSheets receives the deleteSheet message after sheets receives the message
       if (index - 1 >= 0 && index - 1 < this.sheets.length) {
         this.current = this.sheets[index - 1].id;
       } else {
         this.current = this.sheets[0].id;
       }
     } else {
+      // protection against deleting the current sheet and leaving the app in an uncertain state
+      if (!this.sheets.find((sheet) => sheet.id === this.current)) {
+        this.current = this.sheets[0].id;
+      }
+
       // otherwise we update the sheet bar since another player deleted the sheet
       this.updateSheetBar();
     }
@@ -92,12 +98,35 @@ class Sheets {
     pixiApp.multiplayerCursor.dirty = true;
   };
 
-  private setCursor = (cursorStringified: string) => {
-    const cursor: SheetCursorSave = JSON.parse(cursorStringified);
-    if (cursor.sheetId !== this.current) {
-      this.current = cursor.sheetId;
+  private setCursor = (cursorStringified?: string, selection?: Selection) => {
+    if (selection !== undefined) {
+      this.sheet.cursor.loadFromSelection(selection);
+    } else if (cursorStringified !== undefined) {
+      const cursor: SheetCursorSave = JSON.parse(cursorStringified);
+      if (cursor.sheetId !== this.current) {
+        this.current = cursor.sheetId;
+      }
+      // need to convert from old style multiCursor from Rust to new style
+      if ((cursor.multiCursor as any)?.originPosition) {
+        const multiCursor = cursor.multiCursor as any;
+        const convertedCursor = {
+          ...cursor,
+          multiCursor: [
+            new Rectangle(
+              multiCursor.originPosition.x,
+              multiCursor.originPosition.y,
+              multiCursor.terminalPosition.x - multiCursor.originPosition.x + 1,
+              multiCursor.terminalPosition.y - multiCursor.originPosition.y + 1
+            ),
+          ],
+        };
+        this.sheet.cursor.load(convertedCursor);
+      } else {
+        this.sheet.cursor.load(cursor);
+      }
+    } else {
+      throw new Error('Expected setCursor in Sheets.ts to have cursorStringified or selection defined');
     }
-    this.sheet.cursor.load(cursor);
   };
 
   // updates the SheetBar UI
@@ -135,16 +164,18 @@ class Sheets {
       pixiApp.cursor.dirty = true;
       pixiApp.multiplayerCursor.dirty = true;
       pixiApp.boxCells.reset();
-      pixiAppSettings.changeInput(false);
+      if (!inlineEditorHandler.isEditingFormula()) {
+        pixiAppSettings.changeInput(false);
+      }
       pixiApp.cellsSheets.show(value);
       this.updateSheetBar();
-      pixiApp.loadViewport();
+      pixiApp.viewport.loadViewport();
     }
   }
 
-  getSheetByName(name: string): Sheet | undefined {
+  getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {
     for (const sheet of this.sheets) {
-      if (sheet.name === name) {
+      if (sheet.name === name || (urlCompare && decodeURI(name).toLowerCase() === sheet.name.toLowerCase())) {
         return sheet;
       }
     }
@@ -273,6 +304,10 @@ class Sheets {
 
   getMultiplayerSelection(): string {
     return this.sheet.cursor.getMultiplayerSelection();
+  }
+
+  getRustSelection(): Selection {
+    return this.sheet.cursor.getRustSelection();
   }
 }
 

@@ -18,4 +18,5 @@ pub enum TransactionName {
     SheetAdd,
     SheetDelete,
     DuplicateSheet,
+    MoveCells,
 }

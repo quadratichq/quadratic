@@ -64,14 +64,14 @@ export class CellsTextHash {
     this.labels = new Map();
     this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    const screenRect = this.cellsLabels.sheetOffsets.getRectCellOffsets(
+    const screenRectStringified = this.cellsLabels.sheetOffsets.getRectCellOffsets(
       this.AABB.left,
       this.AABB.top,
       sheetHashWidth,
       sheetHashHeight
     );
+    const screenRect = JSON.parse(screenRectStringified);
     this.viewRectangle = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
-    screenRect.free();
     this.hashX = hashX;
     this.hashY = hashY;
   }
@@ -253,7 +253,25 @@ export class CellsTextHash {
     this.labelMeshes.prepare();
 
     // populate labelMeshes webGL buffers
-    this.labels.forEach((cellLabel) => cellLabel.updateLabelMesh(this.labelMeshes));
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
+    this.labels.forEach((cellLabel) => {
+      const bounds = cellLabel.updateLabelMesh(this.labelMeshes);
+      if (bounds) {
+        minX = Math.min(minX, bounds.minX);
+        minY = Math.min(minY, bounds.minY);
+        maxX = Math.max(maxX, bounds.maxX);
+        maxY = Math.max(maxY, bounds.maxY);
+      }
+    });
+    if (minX !== Infinity && minY !== Infinity) {
+      this.viewRectangle.x = minX;
+      this.viewRectangle.y = minY;
+      this.viewRectangle.width = maxX - minX;
+      this.viewRectangle.height = maxY - minY;
+    }
 
     // prepares the client's CellsTextHash for new content
     renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);

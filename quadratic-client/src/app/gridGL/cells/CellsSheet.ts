@@ -72,7 +72,6 @@ export class CellsSheet extends Container {
 
   adjustOffsets() {
     this.cellsBorders.draw();
-    this.cellsFills.draw();
   }
 
   updateCellsArray() {
@@ -81,5 +80,9 @@ export class CellsSheet extends Container {
 
   getCellsImages(): CellsImage[] {
     return this.cellsImages.children;
+  }
+
+  update() {
+    this.cellsFills.update();
   }
 }

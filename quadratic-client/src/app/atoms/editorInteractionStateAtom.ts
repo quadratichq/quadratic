@@ -16,6 +16,7 @@ export interface EditorInteractionState {
   selectedCell: Coordinate;
   selectedCellSheet: string;
   mode?: CodeCellLanguage;
+  initialCode?: string;
   follow?: string;
   editorEscapePressed?: boolean;
   waitingForEditorClose?: {
@@ -23,6 +24,8 @@ export interface EditorInteractionState {
     selectedCellSheet: string;
     mode?: CodeCellLanguage;
     showCellTypeMenu: boolean;
+    inlineEditor?: boolean;
+    initialCode?: string;
   };
   undo: boolean;
   redo: boolean;
@@ -40,6 +43,7 @@ export const editorInteractionStateDefault: EditorInteractionState = {
   uuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   selectedCell: { x: 0, y: 0 },
   selectedCellSheet: '',
+  initialCode: undefined,
   mode: undefined,
   undo: false,
   redo: false,

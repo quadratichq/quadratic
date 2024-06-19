@@ -14,9 +14,16 @@ export const colors = {
   cellColorError: 0xf25f5c,
   cursorCell: 0x6cd4ff,
   searchCell: 0x50c878,
+
+  // todo: this should be changed
+  movingCells: 0x6cd4ff,
+
+  gridBackground: 0xffffff,
+
   independence: 0x5d576b,
   headerBackgroundColor: 0xffffff,
   headerSelectedBackgroundColor: 0xe7f7ff,
+  headerSelectedRowColumnBackgroundColor: 0xb6e7ff,
   headerCornerBackgroundColor: 0xffffff,
   boxCellsDeleteColor: Number(`0x${muiColors.red['400'].replace('#', '')}`),
   htmlPlaceholderThumbnailColor: 0xeeeeee,

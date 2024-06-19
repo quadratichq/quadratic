@@ -8,9 +8,10 @@ use serde::{Deserialize, Serialize};
 
 use super::bounds::GridBounds;
 use super::column::Column;
-use super::formatting::{BoolSummary, CellFmtAttr};
+use super::formats::format::Format;
+use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
-use super::js_types::{CellFormatSummary, FormattingSummary};
+use super::js_types::CellFormatSummary;
 use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::sheet_offsets::SheetOffsets;
@@ -19,10 +20,17 @@ use crate::{Array, CellValue, IsBlank, Pos, Rect};
 pub mod bounds;
 pub mod cell_array;
 pub mod cell_values;
+pub mod clipboard;
 pub mod code;
+pub mod formats;
 pub mod formatting;
 pub mod rendering;
 pub mod search;
+pub mod selection;
+pub mod send_render;
+pub mod sheet_test;
+
+pub mod summarize;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Sheet {
@@ -34,11 +42,28 @@ pub struct Sheet {
     pub offsets: SheetOffsets,
 
     #[serde(with = "crate::util::btreemap_serde")]
-    pub(super) columns: BTreeMap<i64, Column>,
+    pub columns: BTreeMap<i64, Column>,
     pub(super) borders: SheetBorders,
 
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
+
+    // Column/Row, and All formatting. The second tuple stores the timestamp for
+    // the fill_color, which is used to determine the z-order for overlapping
+    // column and row fills.
+    #[serde(
+        skip_serializing_if = "BTreeMap::is_empty",
+        with = "crate::util::btreemap_serde"
+    )]
+    pub formats_columns: BTreeMap<i64, (Format, i64)>,
+    #[serde(
+        skip_serializing_if = "BTreeMap::is_empty",
+        with = "crate::util::btreemap_serde"
+    )]
+    pub formats_rows: BTreeMap<i64, (Format, i64)>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format_all: Option<Format>,
 
     // bounds for the grid with only data
     pub(super) data_bounds: GridBounds,
@@ -59,6 +84,10 @@ impl Sheet {
             borders: SheetBorders::new(),
             code_runs: IndexMap::new(),
 
+            formats_columns: BTreeMap::new(),
+            formats_rows: BTreeMap::new(),
+            format_all: None,
+
             data_bounds: GridBounds::Empty,
             format_bounds: GridBounds::Empty,
 
@@ -69,7 +98,7 @@ impl Sheet {
     // creates a Sheet for testing
     #[cfg(test)]
     pub fn test() -> Self {
-        Sheet::new(SheetId::new(), String::from("name"), String::from("A0"))
+        Sheet::new(SheetId::test(), String::from("name"), String::from("A0"))
     }
 
     /// Populates the current sheet with random values
@@ -187,6 +216,11 @@ impl Sheet {
         column.values.get(&pos.y).cloned()
     }
 
+    pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
+        let column = self.get_column(pos.x)?;
+        column.values.get(&pos.y)
+    }
+
     /// Returns a formatting property of a cell.
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
         let column = self.get_column(pos.x)?;
@@ -213,71 +247,31 @@ impl Sheet {
     }
 
     /// Returns a summary of formatting in a region.
-    pub fn get_formatting_summary(&self, region: Rect) -> FormattingSummary {
-        let mut bold = BoolSummary::default();
-        let mut italic = BoolSummary::default();
-
-        for x in region.x_range() {
-            match self.columns.get(&x) {
-                None => {
-                    bold.is_any_false = true;
-                    italic.is_any_false = true;
-                }
-                Some(column) => {
-                    bold |= column.bold.bool_summary(region.y_range());
-                    italic |= column.italic.bool_summary(region.y_range());
-                }
-            };
-        }
-
-        FormattingSummary { bold, italic }
-    }
-
-    /// Returns a summary of formatting in a region.
-    pub fn get_cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        match self.columns.get(&pos.x) {
-            None => CellFormatSummary {
-                bold: None,
-                italic: None,
-                text_color: None,
-                fill_color: None,
-            },
-            Some(column) => CellFormatSummary {
-                bold: column.bold.get(pos.y),
-                italic: column.italic.get(pos.y),
-                text_color: column.text_color.get(pos.y),
-                fill_color: column.fill_color.get(pos.y),
-            },
-        }
-    }
-
-    // returns CellFormatSummary only if a formatting exists
-    // TODL(ddimaria): this function is nearly a duplicate of get_cell_format_summary, talk
-    // with the team to see if we can consolidate
-    pub fn get_existing_cell_format_summary(&self, pos: Pos) -> Option<CellFormatSummary> {
-        match self.columns.get(&pos.x) {
-            Some(column) => {
-                let bold = column.bold.get(pos.y);
-                let italic = column.italic.get(pos.y);
-                let fill_color = column.fill_color.get(pos.y);
-                let text_color = column.text_color.get(pos.y);
-
-                if bold.is_some()
-                    || italic.is_some()
-                    || fill_color.is_some()
-                    || text_color.is_some()
-                {
-                    Some(CellFormatSummary {
-                        bold,
-                        italic,
-                        fill_color,
-                        text_color,
-                    })
-                } else {
-                    None
-                }
-            }
-            None => None,
+    pub fn cell_format_summary(&self, pos: Pos, include_sheet_info: bool) -> CellFormatSummary {
+        let cell = self.columns.get(&pos.x).map(|column| Format {
+            bold: column.bold.get(pos.y),
+            italic: column.italic.get(pos.y),
+            text_color: column.text_color.get(pos.y),
+            fill_color: column.fill_color.get(pos.y),
+            numeric_commas: column.numeric_commas.get(pos.y),
+            ..Default::default()
+        });
+        let format = if include_sheet_info {
+            Format::combine(
+                cell.as_ref(),
+                self.try_format_column(pos.x).as_ref(),
+                self.try_format_row(pos.y).as_ref(),
+                self.format_all.as_ref(),
+            )
+        } else {
+            cell.unwrap_or_default()
+        };
+        CellFormatSummary {
+            bold: format.bold,
+            italic: format.italic,
+            text_color: format.text_color,
+            fill_color: format.fill_color,
+            commas: format.numeric_commas,
         }
     }
 
@@ -366,17 +360,16 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use bigdecimal::BigDecimal;
-    use chrono::Utc;
-    use std::{collections::HashSet, str::FromStr};
-
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{Bold, CodeRunResult, Italic, NumericFormat},
+        grid::{Bold, CodeCellLanguage, Italic, NumericFormat},
+        selection::Selection,
         test_util::print_table,
-        SheetPos, Value,
+        CodeCellValue, SheetPos,
     };
+    use bigdecimal::BigDecimal;
+    use std::str::FromStr;
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
         let mut grid_controller = GridController::test();
@@ -398,8 +391,6 @@ mod test {
         let vals = vec!["1", "2", "3", "4", "5", "6", "7", "8"];
         let selected = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let (grid_controller, sheet_id) = test_setup(&selected, &vals);
-
-        print_table(&grid_controller, sheet_id, selected);
 
         (grid_controller, sheet_id, selected)
     }
@@ -511,54 +502,39 @@ mod test {
     }
 
     #[test]
-    fn test_delete_cell_values() {
-        let (mut grid, sheet_id, selected) = test_setup_basic();
+    fn delete_cell_values() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "a", "b"]);
 
-        grid.delete_cells_rect(selected.to_sheet_rect(sheet_id), None);
-        let sheet = grid.sheet(sheet_id);
+        let rect = Rect::from_numbers(0, 0, 2, 2);
+        let selection = &Selection::rect(rect, sheet_id);
+        gc.delete_cells(selection, None);
 
-        print_table(&grid, sheet_id, selected);
-
-        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
-        values
-            .into_cell_values_vec()
-            .into_iter()
-            .for_each(|v| assert_eq!(v, CellValue::Blank));
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
+        assert!(sheet.cell_value(Pos { x: 0, y: 1 }).is_none());
+        assert!(sheet.cell_value(Pos { x: 1, y: 0 }).is_none());
+        assert!(sheet.cell_value(Pos { x: 1, y: 1 }).is_none());
     }
 
-    // TODO(ddimaria): use the code below as a template once formula cells are in place
-    #[ignore]
     #[test]
-    fn test_delete_cell_values_affects_dependent_cells() {
-        let (mut grid, sheet_id, selected) = test_setup_basic();
+    fn delete_cell_values_code() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_cell_value(
+            Pos { x: 0, y: 0 },
+            CellValue::Code(CodeCellValue {
+                code: "test".to_string(),
+                language: CodeCellLanguage::Formula,
+            }),
+        );
+        gc.delete_cells(&Selection::pos(0, 0, sheet_id), None);
 
-        let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
-        let _ = CodeRun {
-            std_err: None,
-            std_out: None,
-            spill_error: false,
-            formatted_code_string: None,
-            cells_accessed: HashSet::new(),
-            last_modified: Utc::now(),
-            result: CodeRunResult::Ok(Value::Single(CellValue::Number(BigDecimal::from(1)))),
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-        };
-
-        // grid.set_code_cell_value((5, 2).into(), Some(code_cell));
-        print_table(&grid, sheet_id, view_rect);
-
-        grid.delete_cells_rect(selected.to_sheet_rect(sheet_id), None);
-        let sheet = grid.sheet(sheet_id);
-
-        print_table(&grid, sheet_id, view_rect);
-
-        let values = sheet.cell_values_in_rect(&selected, false).unwrap();
-        values
-            .into_cell_values_vec()
-            .into_iter()
-            .for_each(|v| assert_eq!(v, CellValue::Blank));
+        let sheet = gc.sheet(sheet_id);
+        assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
     }
 
     // TODO(ddimaria): use the code below as a template once cell borders are in place
@@ -624,68 +600,36 @@ mod test {
     }
 
     #[test]
-    fn test_formatting_summary() {
-        let (grid, sheet_id, selected) = test_setup_basic();
-        let mut sheet = grid.sheet(sheet_id).clone();
-        let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-
-        // just set a single bold value
-        let value = sheet.get_formatting_summary(selected);
-        let mut format_summary = FormattingSummary {
-            bold: BoolSummary {
-                is_any_true: true,
-                is_any_false: false,
-            },
-            italic: BoolSummary {
-                is_any_true: false,
-                is_any_false: false,
-            },
-        };
-        assert_eq!(value, format_summary);
-
-        // now add in a single italic value
-        let _ = sheet.set_formatting_value::<Italic>((3, 1).into(), Some(true));
-        let value = sheet.get_formatting_summary(selected);
-        format_summary.italic.is_any_true = true;
-        assert_eq!(value, format_summary);
-    }
-
-    #[test]
     fn test_cell_format_summary() {
         let (grid, sheet_id, _) = test_setup_basic();
         let mut sheet = grid.sheet(sheet_id).clone();
 
-        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
-        assert_eq!(None, existing_cell_format_summary);
+        let format_summary = sheet.cell_format_summary((2, 1).into(), false);
+        assert_eq!(format_summary, CellFormatSummary::default());
 
         // just set a bold value
         let _ = sheet.set_formatting_value::<Bold>((2, 1).into(), Some(true));
-        let value = sheet.get_cell_format_summary((2, 1).into());
+        let value = sheet.cell_format_summary((2, 1).into(), false);
         let mut cell_format_summary = CellFormatSummary {
             bold: Some(true),
             italic: None,
             text_color: None,
             fill_color: None,
+            commas: None,
         };
         assert_eq!(value, cell_format_summary);
 
-        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
-        assert_eq!(
-            Some(cell_format_summary.clone()),
-            existing_cell_format_summary
-        );
+        let format_summary = sheet.cell_format_summary((2, 1).into(), false);
+        assert_eq!(cell_format_summary.clone(), format_summary);
 
         // now set a italic value
         let _ = sheet.set_formatting_value::<Italic>((2, 1).into(), Some(true));
-        let value = sheet.get_cell_format_summary((2, 1).into());
+        let value = sheet.cell_format_summary((2, 1).into(), false);
         cell_format_summary.italic = Some(true);
         assert_eq!(value, cell_format_summary);
 
-        let existing_cell_format_summary = sheet.get_existing_cell_format_summary((2, 1).into());
-        assert_eq!(
-            Some(cell_format_summary.clone()),
-            existing_cell_format_summary
-        );
+        let existing_cell_format_summary = sheet.cell_format_summary((2, 1).into(), false);
+        assert_eq!(cell_format_summary.clone(), existing_cell_format_summary);
     }
 
     #[test]

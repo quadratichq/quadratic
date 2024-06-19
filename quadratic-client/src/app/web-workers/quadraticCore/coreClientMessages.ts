@@ -1,19 +1,23 @@
-import { Rectangle } from '@/app/gridGL/types/size';
 import {
   CellAlign,
   CellFormatSummary,
   CodeCellLanguage,
+  Format,
   JsCodeCell,
   JsHtmlOutput,
   JsRenderBorders,
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
   MinMax,
   SearchOptions,
+  Selection,
   SheetBounds,
   SheetInfo,
   SheetPos,
+  SheetRect,
+  SummarizeSelectionResult,
   TransactionName,
 } from '@/app/quadratic-core-types';
 import { MultiplayerState } from '../multiplayerWebWorker/multiplayerClientMessages';
@@ -80,12 +84,8 @@ export interface CoreClientExport {
 
 export interface ClientCoreExportCsvSelection {
   type: 'clientCoreExportCsvSelection';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
   id: number;
+  selection: Selection;
 }
 
 export interface CoreClientExportCsvSelection {
@@ -142,10 +142,11 @@ export interface CoreClientGetEditCell {
 
 export interface ClientCoreGetCellFormatSummary {
   type: 'clientCoreGetCellFormatSummary';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
-  id: number;
+  withSheetInfo: boolean;
 }
 
 export interface CoreClientGetCellFormatSummary {
@@ -154,27 +155,69 @@ export interface CoreClientGetCellFormatSummary {
   id: number;
 }
 
-export interface ClientCoreSummarizeSelection {
-  type: 'clientCoreSummarizeSelection';
-  sheetId: string;
-  decimalPlaces: number;
+export interface ClientCoreGetFormatAll {
+  type: 'clientCoreGetFormatAll';
   id: number;
+  sheetId: string;
+}
+
+export interface CoreClientGetFormatAll {
+  type: 'coreClientGetFormatAll';
+  id: number;
+  format?: Format;
+}
+
+export interface ClientCoreGetFormatColumn {
+  type: 'clientCoreGetFormatColumn';
+  id: number;
+  sheetId: string;
+  column: number;
+}
+
+export interface CoreClientGetFormatColumn {
+  type: 'coreClientGetFormatColumn';
+  id: number;
+  format?: Format;
+}
+
+export interface ClientCoreGetFormatRow {
+  type: 'clientCoreGetFormatRow';
+  id: number;
+  sheetId: string;
+  row: number;
+}
+
+export interface CoreClientGetFormatRow {
+  type: 'coreClientGetFormatRow';
+  id: number;
+  format?: Format;
+}
+
+export interface ClientCoreGetFormatCell {
+  type: 'clientCoreGetFormatCell';
+  id: number;
+  sheetId: string;
   x: number;
   y: number;
-  width: number;
-  height: number;
+}
+
+export interface CoreClientGetFormatCell {
+  type: 'coreClientGetFormatCell';
+  id: number;
+  format?: Format;
+}
+
+export interface ClientCoreSummarizeSelection {
+  type: 'clientCoreSummarizeSelection';
+  decimalPlaces: number;
+  id: number;
+  selection: Selection;
 }
 
 export interface CoreClientSummarizeSelection {
   type: 'coreClientSummarizeSelection';
   id: number;
-  summary:
-    | {
-        count: number;
-        sum: number | undefined;
-        average: number | undefined;
-      }
-    | undefined;
+  summary: SummarizeSelectionResult | undefined;
 }
 
 export interface ClientCoreSearch {
@@ -255,129 +298,81 @@ export interface ClientCoreSetCellValue {
 
 export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   bold: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellItalic {
   type: 'clientCoreSetCellItalic';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   italic: boolean;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellFillColor {
   type: 'clientCoreSetCellFillColor';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   fillColor?: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   color?: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellAlign {
   type: 'clientCoreSetCellAlign';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  align?: CellAlign;
+  selection: Selection;
+  align: CellAlign;
   cursor?: string;
 }
 
 export interface ClientCoreSetCurrency {
   type: 'clientCoreSetCurrency';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   symbol: string;
   cursor?: string;
 }
 
 export interface ClientCoreSetPercentage {
   type: 'clientCoreSetPercentage';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
 export interface ClientCoreSetExponential {
   type: 'clientCoreSetExponential';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
 export interface ClientCoreRemoveCellNumericFormat {
   type: 'clientCoreRemoveCellNumericFormat';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
 export interface ClientCoreChangeDecimals {
   type: 'clientCoreChangeDecimals';
-  sheetId: string;
-  sourceX: number;
-  sourceY: number;
-  rectangle: Rectangle;
+  selection: Selection;
   delta: number;
   cursor?: string;
 }
 
 export interface ClientCoreClearFormatting {
   type: 'clientCoreClearFormatting';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
-export interface ClientCoreToggleCommas {
-  type: 'clientCoreToggleCommas';
-  sheetId: string;
-  sourceX: number;
-  sourceY: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+export interface ClientCoreSetCommas {
+  type: 'clientCoreSetCommas';
+  selection: Selection;
+  commas: boolean;
   cursor?: string;
 }
 
@@ -417,11 +412,7 @@ export interface CoreClientImportParquet {
 
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor?: string;
 }
 
@@ -439,6 +430,12 @@ export interface CoreClientSheetFills {
   type: 'coreClientSheetFills';
   sheetId: string;
   fills: JsRenderFill[];
+}
+
+export interface CoreClientSheetMetaFills {
+  type: 'coreClientSheetMetaFills';
+  sheetId: string;
+  fills: JsSheetFill;
 }
 
 export interface ClientCoreRerunCodeCells {
@@ -474,14 +471,14 @@ export interface ClientCoreSetCellRenderResize {
 export interface ClientCoreAutocomplete {
   type: 'clientCoreAutocomplete';
   sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fullX: number;
-  fullY: number;
-  fullWidth: number;
-  fullHeight: number;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  fullX1: number;
+  fullY1: number;
+  fullX2: number;
+  fullY2: number;
   cursor: string;
 }
 
@@ -605,11 +602,7 @@ export interface ClientCoreRedo {
 export interface ClientCoreCopyToClipboard {
   type: 'clientCoreCopyToClipboard';
   id: number;
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
 }
 
 export interface CoreClientCopyToClipboard {
@@ -622,11 +615,7 @@ export interface CoreClientCopyToClipboard {
 export interface ClientCoreCutToClipboard {
   type: 'clientCoreCutToClipboard';
   id: number;
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  selection: Selection;
   cursor: string;
 }
 
@@ -639,9 +628,7 @@ export interface CoreClientCutToClipboard {
 
 export interface ClientCorePasteFromClipboard {
   type: 'clientCorePasteFromClipboard';
-  sheetId: string;
-  x: number;
-  y: number;
+  selection: Selection;
   plainText?: string;
   html?: string;
   special: string;
@@ -749,11 +736,6 @@ export interface CoreClientTransactionStart {
   type: 'coreClientTransactionStart';
   transactionId: string;
   transactionType: TransactionName;
-  sheetId?: string;
-  x?: number;
-  y?: number;
-  w?: number;
-  h?: number;
 }
 
 export interface CoreClientTransactionProgress {
@@ -802,6 +784,20 @@ export interface CoreClientUndoRedo {
   redo: boolean;
 }
 
+export interface ClientCoreMoveCells {
+  type: 'clientCoreMoveCells';
+  source: SheetRect;
+  targetSheetId: string;
+  targetX: number;
+  targetY: number;
+  cursor: string;
+}
+
+export interface CoreClientSetCursorSelection {
+  type: 'coreClientSetCursorSelection';
+  selection: Selection;
+}
+
 //#endregion
 
 export interface CoreClientImage {
@@ -835,7 +831,7 @@ export type ClientCoreMessage =
   | ClientCoreChangeDecimals
   | ClientCoreClearFormatting
   | ClientCoreGetRenderCell
-  | ClientCoreToggleCommas
+  | ClientCoreSetCommas
   | ClientCoreImportCsv
   | ClientCoreImportParquet
   | ClientCoreDeleteCellValues
@@ -869,7 +865,12 @@ export type ClientCoreMessage =
   | ClientCoreInitPython
   | ClientCoreInitJavascript
   | ClientCoreImportExcel
-  | ClientCoreCancelExecution;
+  | ClientCoreCancelExecution
+  | ClientCoreMoveCells
+  | ClientCoreGetFormatAll
+  | ClientCoreGetFormatColumn
+  | ClientCoreGetFormatRow
+  | ClientCoreGetFormatCell;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -914,4 +915,10 @@ export type CoreClientMessage =
   | CoreClientMultiplayerState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
-  | CoreClientImage;
+  | CoreClientImage
+  | CoreClientGetFormatAll
+  | CoreClientGetFormatColumn
+  | CoreClientGetFormatRow
+  | CoreClientGetFormatCell
+  | CoreClientSheetMetaFills
+  | CoreClientSetCursorSelection;

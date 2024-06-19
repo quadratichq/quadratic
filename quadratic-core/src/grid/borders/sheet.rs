@@ -8,6 +8,7 @@ use crate::grid::borders::cell::{CellBorders, CellSide};
 use crate::grid::borders::compute_indices;
 use crate::grid::borders::style::{BorderSelection, BorderStyle};
 use crate::grid::{ColumnData, Sheet};
+use crate::selection::Selection;
 use crate::{Pos, Rect};
 
 pub fn generate_borders(
@@ -83,14 +84,21 @@ pub fn get_rect_borders(sheet: &Sheet, rect: &Rect) -> SheetBorders {
     sheet.borders.get_rect(rect)
 }
 
-pub fn get_cell_borders_in_rect(sheet: &Sheet, rect: Rect) -> Vec<(i64, i64, Option<CellBorders>)> {
+pub fn get_cell_borders_in_rect(
+    sheet: &Sheet,
+    rect: Rect,
+    selection: Option<&Selection>,
+) -> Vec<(i64, i64, Option<CellBorders>)> {
     let mut borders = vec![];
     let mut id_space_borders = sheet.borders().per_cell.to_owned();
 
     for (i, x) in rect.x_range().enumerate() {
         for (j, y) in rect.y_range().enumerate() {
-            let border = id_space_borders.get_cell_border(Pos { x, y });
-            borders.push((i as i64, j as i64, border));
+            let pos = Pos { x, y };
+            if selection.is_none() || selection.is_some_and(|s| s.pos_in_selection(pos)) {
+                let border = id_space_borders.get_cell_border(pos);
+                borders.push((i as i64, j as i64, border));
+            }
         }
     }
 
@@ -100,7 +108,7 @@ pub fn get_cell_borders_in_rect(sheet: &Sheet, rect: Rect) -> Vec<(i64, i64, Opt
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct SheetBorders {
     pub per_cell: IdSpaceBorders,
-    pub(super) render_lookup: GridSpaceBorders,
+    pub render_lookup: GridSpaceBorders,
 }
 
 impl SheetBorders {
@@ -130,6 +138,10 @@ impl SheetBorders {
         let mut sheet_borders = SheetBorders::default();
         let cloned_id_space = self.per_cell.clone_rect(rect);
         sheet_borders.per_cell.replace_rect(&cloned_id_space, rect);
+        let cloned_render_lookup = self.render_lookup.clone_rect(rect);
+        sheet_borders
+            .render_lookup
+            .replace_rect(&cloned_render_lookup, rect);
         sheet_borders
     }
 }

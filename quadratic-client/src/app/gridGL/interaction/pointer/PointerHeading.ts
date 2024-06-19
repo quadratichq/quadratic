@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -13,6 +14,21 @@ import { PanMode, pixiAppSettings } from '../../pixiApp/PixiAppSettings';
 import { DOUBLE_CLICK_TIME } from './pointerUtils';
 
 const MINIMUM_COLUMN_SIZE = 20;
+
+// minimum cell when resizing in 1 character
+const MIN_CELL_WIDTH = 10;
+
+// Returns an array with all numbers inclusive of start to end
+function fillArray(start: number, end: number): number[] {
+  const result = [];
+  if (start > end) {
+    [start, end] = [end, start];
+  }
+  for (let i = start; i <= end; i++) {
+    result.push(i);
+  }
+  return result;
+}
 
 export interface ResizeHeadingColumnEvent extends CustomEvent {
   detail: number;
@@ -53,24 +69,21 @@ export class PointerHeading {
     return false;
   }
 
-  selectAll() {
-    const { cursor } = pixiApp;
-    selectAllCells();
-    cursor.dirty = true;
-  }
-
   pointerDown(world: Point, event: InteractivePointerEvent): boolean {
     clearTimeout(this.fitToColumnTimeout);
     const { headings, viewport } = pixiApp;
     const intersects = headings.intersectsHeadings(world);
     if (!intersects) return false;
 
+    // exit out of inline editor
+    inlineEditorHandler.closeIfOpen();
+
     const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
     const headingResize = !hasPermission ? undefined : headings.intersectsHeadingGridLine(world);
     if (headingResize) {
       pixiApp.setViewportDirty();
       if (this.clicked && headingResize.column !== undefined) {
-        this.onDoubleClickColumn(headingResize.column);
+        this.autoResizeColumn(headingResize.column);
         event.preventDefault();
         return true;
       } else if (this.clicked && headingResize.row !== undefined) {
@@ -104,7 +117,7 @@ export class PointerHeading {
           this.downTimeout = undefined;
           zoomToFit();
         } else {
-          this.selectAll();
+          selectAllCells();
           this.downTimeout = window.setTimeout(() => {
             if (this.downTimeout) {
               this.downTimeout = undefined;
@@ -115,23 +128,85 @@ export class PointerHeading {
 
       const cursor = sheets.sheet.cursor;
 
-      if (event.shiftKey) {
+      // Selects multiple columns or rows. If ctrl/meta is pressed w/o shift,
+      // then it add or removes the clicked column or row. If shift is pressed,
+      // then it selects all columns or rows between the last clicked column or
+      // row and the current one.
+      if (event.ctrlKey || event.metaKey) {
+        if (intersects.column !== undefined) {
+          let column = intersects.column;
+          const columns = cursor.columnRow?.columns || [];
+          if (event.shiftKey) {
+            if (columns.length === 0) {
+              selectColumns([column], undefined, true);
+            } else {
+              const lastColumn = columns[columns.length - 1];
+              if (lastColumn < column) {
+                selectColumns([...columns, ...fillArray(lastColumn + 1, column)], undefined, true);
+              } else {
+                selectColumns([...columns, ...fillArray(column, lastColumn - 1)], undefined, true);
+              }
+            }
+          } else {
+            if (columns.includes(column)) {
+              selectColumns(
+                columns.filter((c) => c !== column),
+                undefined,
+                true
+              );
+            } else {
+              selectColumns([...columns, column], undefined, true);
+            }
+          }
+        } else if (intersects.row !== undefined) {
+          let row = intersects.row;
+          const rows = cursor.columnRow?.rows || [];
+          if (event.shiftKey) {
+            if (rows.length === 0) {
+              selectRows([row], undefined, true);
+            } else {
+              const lastRow = rows[rows.length - 1];
+              if (lastRow < row) {
+                selectRows([...rows, ...fillArray(lastRow + 1, row)], undefined, true);
+              } else {
+                selectRows([...rows, ...fillArray(row, lastRow - 1)], undefined, true);
+              }
+            }
+          } else {
+            if (rows.includes(row)) {
+              selectRows(
+                rows.filter((c) => c !== row),
+                undefined,
+                true
+              );
+            } else {
+              selectRows([...rows, row], undefined, true);
+            }
+          }
+        }
+      }
+
+      // If a column/row is not selected, then it selects that column/row.
+      // Otherwise it selects between the last selected column/row and the
+      // current one.
+      else if (event.shiftKey) {
         if (intersects.column !== undefined) {
           let x1 = cursor.cursorPosition.x;
           let x2 = intersects.column;
-          selectColumns(Math.min(x1, x2), Math.max(x1, x2));
-          pixiApp.cursor.dirty = true;
+          selectColumns(fillArray(x1, x2), x1);
         } else if (intersects.row !== undefined) {
           let y1 = cursor.cursorPosition.y;
           let y2 = intersects.row;
-          selectRows(Math.min(y1, y2), Math.max(y1, y2));
-          pixiApp.cursor.dirty = true;
+          selectRows(fillArray(y1, y2), y1);
         }
-      } else {
+      }
+
+      // Otherwise, it selects the column/row.
+      else {
         if (intersects.column !== undefined) {
-          selectColumns(intersects.column, intersects.column);
+          selectColumns([intersects.column]);
         } else if (intersects.row !== undefined) {
-          selectRows(intersects.row, intersects.row);
+          selectRows([intersects.row]);
         }
       }
     }
@@ -193,7 +268,7 @@ export class PointerHeading {
           }
           this.resizing.lastSize = size;
 
-          window.dispatchEvent(new CustomEvent<number>('resize-heading-column', { detail: this.resizing.column }));
+          events.emit('resizeHeadingColumn', sheets.sheet.id, this.resizing.column);
         }
       } else if (this.resizing.row !== undefined) {
         let size: number;
@@ -255,15 +330,19 @@ export class PointerHeading {
     return false;
   }
 
-  private async onDoubleClickColumn(column: number) {
+  async autoResizeColumn(column: number) {
     const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
-    const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-    const size = Math.max(contentSizePlusMargin, CELL_WIDTH);
+    let size: number;
+    if (maxWidth === 0) {
+      size = CELL_WIDTH;
+    } else {
+      const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+      size = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+    }
     const sheetId = sheets.sheet.id;
     const originalSize = sheets.sheet.getCellOffsets(column, 0);
     if (originalSize.width !== size) {
       quadraticCore.commitSingleResize(sheetId, column, undefined, size);
-      events.emit('resizeHeadingColumn', column);
     }
   }
 

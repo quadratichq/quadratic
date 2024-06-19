@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     grid::{js_types::JsRenderFill, RenderSize, SheetId},
+    selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
     CellValue, Pos, Rect, SheetPos, SheetRect,
 };
@@ -84,6 +85,22 @@ impl GridController {
 
         if cfg!(target_family = "wasm") && recalculated {
             if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+                if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
+                    crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
+                }
+            }
+        };
+    }
+
+    pub fn send_updated_bounds_selection(&mut self, selection: &Selection, format: bool) {
+        let recalculated = if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
+            sheet.recalculate_add_bounds_selection(selection, format)
+        } else {
+            false
+        };
+
+        if cfg!(target_family = "wasm") && recalculated {
+            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 if let Ok(sheet_info) = serde_json::to_string(&SheetBounds::from(sheet)) {
                     crate::wasm_bindings::js::jsSheetBoundsUpdate(sheet_info);
                 }
@@ -380,6 +397,55 @@ mod test {
                 h: Some("2".to_string()),
             })
             .unwrap(),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn send_render_cells_from_rects() {
+        let mut gc = GridController::test();
+        let sheet_id = SheetId::new();
+        gc.sheet_mut(gc.sheet_ids()[0]).id = sheet_id;
+
+        gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
+        gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
+
+        let result = vec![JsRenderCell {
+            x: 0,
+            y: 0,
+            language: None,
+            value: "test 1".to_string(),
+            special: None,
+            align: None,
+            wrap: None,
+            bold: None,
+            italic: None,
+            text_color: None,
+        }];
+        let result = serde_json::to_string(&result).unwrap();
+        expect_js_call(
+            "jsRenderCellSheets",
+            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&result)),
+            false,
+        );
+
+        let result = vec![JsRenderCell {
+            x: 100,
+            y: 100,
+            language: None,
+            value: "test 2".to_string(),
+            special: None,
+            align: None,
+            wrap: None,
+            bold: None,
+            italic: None,
+            text_color: None,
+        }];
+        let result = serde_json::to_string(&result).unwrap();
+        expect_js_call(
+            "jsRenderCellSheets",
+            format!("{},{},{},{}", sheet_id, 6, 3, hash_test(&result)),
             true,
         );
     }

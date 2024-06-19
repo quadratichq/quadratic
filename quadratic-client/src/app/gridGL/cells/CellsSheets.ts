@@ -100,7 +100,7 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find cellsSheet in labelMeshEntry');
     }
     cellsSheet.cellsLabels.addLabelMeshEntry(message);
-    if (sheets.sheet.id === message.sheetId) {
+    if (sheets.sheet?.id === message.sheetId) {
       pixiApp.setViewportDirty();
     }
   }
@@ -165,7 +165,11 @@ export class CellsSheets extends Container<CellsSheet> {
   isCursorOnCodeCell(): boolean {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
-    const cursor = sheets.sheet.cursor.originPosition;
+    const cursor = sheets.sheet.cursor.cursorPosition;
     return cellsSheet.cellsArray.isCodeCell(cursor.x, cursor.y);
+  }
+
+  update() {
+    this.current?.update();
   }
 }

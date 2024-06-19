@@ -18,7 +18,7 @@ impl GridController {
         transaction.current_sheet_pos = Some(sheet_pos);
         match parse_formula(&code, sheet_pos.into()) {
             Ok(parsed) => {
-                match parsed.eval(&mut ctx) {
+                match parsed.eval(&mut ctx, false) {
                     Ok(value) => {
                         transaction.cells_accessed = ctx.cells_accessed;
                         let new_code_run = CodeRun {
@@ -106,8 +106,6 @@ mod test {
             ],
             None,
             TransactionName::Unknown,
-            None,
-            None,
         );
 
         let sheet = gc.sheet_mut(sheet_id);

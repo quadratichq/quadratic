@@ -12,13 +12,7 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.set_borders_operations(sheet_rect, selections, style);
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::SetBorders,
-            Some(sheet_rect.sheet_id),
-            Some(sheet_rect.into()),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::SetBorders);
     }
 }
 
@@ -37,7 +31,13 @@ mod tests {
         let mut grid_controller = GridController::test();
         let sheet_id = grid_controller.grid.sheets()[0].id;
         let sheet_rect = SheetRect::single_pos(Pos { x: 0, y: 0 }, sheet_id);
-        let selections = vec![BorderSelection::Top, BorderSelection::Left];
+
+        // apply top, left & right border
+        let selections = vec![
+            BorderSelection::Left,
+            BorderSelection::Top,
+            BorderSelection::Right,
+        ];
         let style = Some(BorderStyle {
             color: Rgba::default(),
             line: CellBorderLine::Line1,
@@ -63,8 +63,86 @@ mod tests {
         assert_eq!(borders.len(), 4);
         assert_eq!(borders[0], style);
         assert_eq!(borders[1], style);
-        assert_eq!(borders[2], None);
+        assert_eq!(borders[2], style);
         assert_eq!(borders[3], None);
+
+        // toggle left border
+        let selections = vec![BorderSelection::Left];
+
+        grid_controller.set_borders(sheet_rect, selections, style, None);
+
+        let borders = grid_controller.grid.sheets()[0]
+            .borders()
+            .per_cell
+            .borders
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .blocks()
+            .next()
+            .unwrap()
+            .content
+            .value
+            .borders;
+
+        assert_eq!(borders.len(), 4);
+        assert_eq!(borders[0], None);
+        assert_eq!(borders[1], style);
+        assert_eq!(borders[2], style);
+        assert_eq!(borders[3], None);
+
+        // apply top & bottom border
+        let selections = vec![BorderSelection::Bottom, BorderSelection::Top];
+
+        grid_controller.set_borders(sheet_rect, selections, style, None);
+
+        let borders = grid_controller.grid.sheets()[0]
+            .borders()
+            .per_cell
+            .borders
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .blocks()
+            .next()
+            .unwrap()
+            .content
+            .value
+            .borders;
+
+        assert_eq!(borders.len(), 4);
+        assert_eq!(borders[0], None);
+        assert_eq!(borders[1], style);
+        assert_eq!(borders[2], style);
+        assert_eq!(borders[3], style);
+
+        // toggle top & right border
+        let selections = vec![BorderSelection::Top, BorderSelection::Right];
+
+        grid_controller.set_borders(sheet_rect, selections, style, None);
+
+        let borders = grid_controller.grid.sheets()[0]
+            .borders()
+            .per_cell
+            .borders
+            .iter()
+            .next()
+            .unwrap()
+            .1
+            .blocks()
+            .next()
+            .unwrap()
+            .content
+            .value
+            .borders;
+
+        assert_eq!(borders.len(), 4);
+        assert_eq!(borders[0], None);
+        assert_eq!(borders[1], None);
+        assert_eq!(borders[2], None);
+        assert_eq!(borders[3], style);
     }
 
     #[test]

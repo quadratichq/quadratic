@@ -64,8 +64,8 @@ class Offline {
 
   // Loads the unsent transactions for this file from indexedDb
   async load(): Promise<{ transactionId: string; transactions: string }[] | undefined> {
+    if (!this.fileId) return undefined;
     return new Promise((resolve) => {
-      if (!this.fileId) throw new Error("Expected fileId to be set in 'load' method.");
       const store = this.getFileIndex(true, 'fileId');
       const keyRange = IDBKeyRange.only(this.fileId);
       const getAll = store.getAll(keyRange);
@@ -151,7 +151,11 @@ class Offline {
     }
 
     unsentTransactions?.forEach((tx) => {
-      core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions);
+      // we remove the transaction is there was a problem applying it (eg, if
+      // the schema has changed since it was saved offline)
+      if (!core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions)) {
+        this.markTransactionSent(tx.transactionId);
+      }
     });
   }
 

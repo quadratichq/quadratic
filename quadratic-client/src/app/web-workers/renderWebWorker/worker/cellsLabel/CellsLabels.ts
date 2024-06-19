@@ -79,9 +79,9 @@ export class CellsLabels {
   }
 
   getCellOffsets(x: number, y: number) {
-    const screenRect = this.sheetOffsets.getCellOffsets(x, y);
+    const screenRectStringified = this.sheetOffsets.getCellOffsets(x, y);
+    const screenRect = JSON.parse(screenRectStringified);
     const rect = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
-    screenRect.free();
     return rect;
   }
 
@@ -381,7 +381,7 @@ export class CellsLabels {
     cellsHash.dirty = renderCells;
   }
 
-  setOffsets(column: number | undefined, row: number | undefined, delta: number) {
+  setOffsetsDelta(column: number | undefined, row: number | undefined, delta: number) {
     if (column !== undefined) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
       this.sheetOffsets.setColumnWidth(column, size);
@@ -389,6 +389,21 @@ export class CellsLabels {
       const size = this.sheetOffsets.getRowHeight(row) - delta;
       this.sheetOffsets.setRowHeight(row, size);
     }
+    if (delta) {
+      this.adjustHeadings(delta, column, row);
+    }
+  }
+
+  setOffsetsSize(column: number | undefined, row: number | undefined, size: number) {
+    let delta = 0;
+    if (column !== undefined) {
+      delta = this.sheetOffsets.getColumnWidth(column) - size;
+      this.sheetOffsets.setColumnWidth(column, size);
+    } else if (row !== undefined) {
+      delta = this.sheetOffsets.getRowHeight(row) - size;
+      this.sheetOffsets.setRowHeight(row, size);
+    }
+
     if (delta) {
       this.adjustHeadings(delta, column, row);
     }

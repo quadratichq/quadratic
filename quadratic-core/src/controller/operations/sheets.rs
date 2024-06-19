@@ -42,7 +42,9 @@ impl GridController {
         let name = name.unwrap_or_else(|| self.get_next_sheet_name());
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
-        vec![Operation::AddSheet { sheet }]
+
+        let v1_5 = crate::grid::file::current::export_sheet(&sheet);
+        vec![Operation::AddSheetSchema { v1_5: Some(v1_5) }]
     }
 
     pub fn delete_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {

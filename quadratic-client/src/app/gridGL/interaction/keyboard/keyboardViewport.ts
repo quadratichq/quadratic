@@ -1,6 +1,5 @@
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
 import { clearFormattingAndBorders, setBold, setItalic } from '../../../ui/menus/TopBar/SubMenus/formatCells';
 import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebWorker';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
@@ -101,14 +100,14 @@ export async function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
-    setBold(!(formatPrimaryCell ? formatPrimaryCell.bold === true : true));
+    event.preventDefault();
+    event.stopPropagation();
+    setBold();
     return true;
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
-    const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
-    setItalic(!(formatPrimaryCell ? formatPrimaryCell.italic === true : true));
+    setItalic();
     return true;
   }
 

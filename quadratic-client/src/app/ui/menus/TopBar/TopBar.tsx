@@ -1,5 +1,4 @@
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
-import { Search } from '@/app/ui/components/Search';
 import { CommandPaletteIcon } from '@/app/ui/icons';
 import { SwitchApp } from '@/shared/shadcn/ui/switch';
 import { isElectron } from '@/shared/utils/isElectron';
@@ -112,7 +111,6 @@ export const TopBar = () => {
           <TopBarZoomMenu />
         </div>
       </div>
-      <Search />
     </Box>
   );
 };
