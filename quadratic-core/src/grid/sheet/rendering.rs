@@ -969,6 +969,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn render_bool_on_code_run() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

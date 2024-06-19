@@ -126,9 +126,11 @@ mod test {
         wasm_bindings::js::expect_js_call, CellValue, CodeCellValue, Pos, SheetRect, Value,
     };
     use chrono::Utc;
+    use serial_test::serial;
     use std::collections::HashSet;
 
     #[test]
+    #[serial]
     fn execute_set_formats_render_size() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
