@@ -1,7 +1,6 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import { ROUTES } from '@/shared/constants/routes';
 import { isMac } from '@/shared/utils/isMac';
 import { Check } from '@mui/icons-material';
 import { Menu, MenuDivider, MenuItem, SubMenu } from '@szhsin/react-menu';
@@ -70,8 +69,8 @@ export const QuadraticMenu = () => {
       >
         {isAuthenticated && (
           <>
-            <MenuItem href={ROUTES.FILES} style={{ textDecoration: 'none' }}>
-              <MenuLineItem primary="Back to files" />
+            <MenuItem href="/" style={{ textDecoration: 'none' }}>
+              <MenuLineItem primary="Back to dashboard" />
             </MenuItem>
             <MenuDivider />
           </>
