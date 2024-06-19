@@ -1,4 +1,5 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { TeamAction } from '@/routes/teams.$teamUuid';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -22,6 +23,7 @@ type Props = {
 
 export function TeamSwitcher({ appIsLoading }: Props) {
   const submit = useSubmit();
+  const { loggedInUser } = useRootRouteLoaderData();
   const { teams } = useDashboardRouteLoaderData();
   const {
     activeTeam: {
@@ -52,7 +54,7 @@ export function TeamSwitcher({ appIsLoading }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-72">
-        <DropdownMenuLabel className="text-xs text-muted-foreground">jim.nielsen@quadratichq.com</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-xs text-muted-foreground">{loggedInUser?.email}</DropdownMenuLabel>
 
         {teams.map(({ team: { uuid, name }, users }) => {
           const isActive = activeTeamUuid === uuid;
