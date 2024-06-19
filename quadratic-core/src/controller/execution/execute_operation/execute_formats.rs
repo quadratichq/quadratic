@@ -118,3 +118,63 @@ impl GridController {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::{
+        wasm_bindings::js::expect_js_call, CellValue, CodeCellValue, Pos, SheetRect, Value,
+    };
+    use chrono::Utc;
+    use std::collections::HashSet;
+
+    #[test]
+    fn execute_set_formats_render_size() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        sheet.test_set_code_run_single(
+            0,
+            0,
+            crate::CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: "code".to_string(),
+            }),
+        );
+        sheet.set_code_run(
+            Pos { x: 0, y: 0 },
+            Some(CodeRun {
+                formatted_code_string: None,
+                spill_error: false,
+                output_type: None,
+                std_err: None,
+                std_out: None,
+                result: CodeRunResult::Ok(Value::Single(CellValue::Image("image".to_string()))),
+                cells_accessed: HashSet::new(),
+                return_type: None,
+                line_number: None,
+                last_modified: Utc::now(),
+            }),
+        );
+
+        gc.set_cell_render_size(
+            SheetRect::from_numbers(0, 0, 1, 1, sheet_id),
+            Some(RenderSize {
+                w: "1".to_string(),
+                h: "2".to_string(),
+            }),
+            None,
+        );
+        let args = format!(
+            "{},{},{},{:?},{:?},{:?}",
+            sheet_id,
+            0,
+            0,
+            true,
+            Some("1".to_string()),
+            Some("2".to_string())
+        );
+        expect_js_call("jsSendImage", args, true);
+    }
+}
