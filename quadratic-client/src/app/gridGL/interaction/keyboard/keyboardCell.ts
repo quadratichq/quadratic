@@ -76,10 +76,16 @@ export async function keyboardCell(options: {
   }
 
   if (event.key === 'Backspace' || event.key === 'Delete') {
-    if (!inCodeEditor(editorInteractionState, cursor)) {
-      // delete a range or a single cell, depending on if MultiCursor is active
-      quadraticCore.deleteCellValues(sheets.getRustSelection(), sheets.getCursorPosition());
+    if (inCodeEditor(editorInteractionState, cursor)) {
+      setEditorInteractionState((state) => ({
+        ...state,
+        waitingForEditorClose: undefined,
+        showCodeEditor: false,
+        mode: undefined,
+      }));
     }
+    // delete a range or a single cell, depending on if MultiCursor is active
+    quadraticCore.deleteCellValues(sheets.getRustSelection(), sheets.getCursorPosition());
     event.preventDefault();
   }
 
