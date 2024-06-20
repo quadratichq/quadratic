@@ -1,6 +1,7 @@
 import focusInput from '@/shared/utils/focusInput';
 import { East } from '@mui/icons-material';
 import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
+import { Rectangle } from 'pixi.js';
 import React, { SyntheticEvent } from 'react';
 import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
@@ -32,7 +33,7 @@ export const GoTo = () => {
     // GoTo Cell
     let cursorPosition = coor1;
     let keyboardMovePosition = coor1;
-    let multiCursor: undefined | { originPosition: Coordinate; terminalPosition: Coordinate };
+    let multiCursor: undefined | Rectangle[];
 
     // GoTo range
     if (coor2) {
@@ -43,10 +44,14 @@ export const GoTo = () => {
 
       keyboardMovePosition = originPosition;
       cursorPosition = originPosition;
-      multiCursor = {
-        originPosition,
-        terminalPosition,
-      };
+      multiCursor = [
+        new Rectangle(
+          originPosition.x,
+          originPosition.y,
+          terminalPosition.x - originPosition.x + 1,
+          terminalPosition.y - originPosition.y + 1
+        ),
+      ];
     }
     sheets.sheet.cursor.changePosition({
       keyboardMovePosition,

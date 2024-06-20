@@ -34,6 +34,7 @@ import {
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
 import {
+  clearFillColor,
   clearFormattingAndBorders,
   removeCellNumericFormat,
   setAlignment,
@@ -131,7 +132,7 @@ export const FloatingContextMenu = (props: Props) => {
     if (inlineEditorHandler.cursorIsMoving) visibility = 'vanish';
 
     // Hide if it's not 1) a multicursor or, 2) an active right click
-    if (!(cursor.multiCursor || showContextMenu)) visibility = 'vanish';
+    if (!(cursor.multiCursor || cursor.columnRow || showContextMenu)) visibility = 'vanish';
 
     // Hide if currently selecting
     if (pixiApp.pointer?.pointerDown?.active) visibility = 'vanish';
@@ -290,25 +291,13 @@ export const FloatingContextMenu = (props: Props) => {
         }}
       >
         <TooltipHint title="Bold" shortcut={KeyboardSymbols.Command + 'B'}>
-          <IconButton
-            size="small"
-            onClick={async () => {
-              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
-              setBold(!formatPrimaryCell?.bold);
-            }}
-          >
+          <IconButton size="small" onClick={async () => setBold()}>
             <FontBoldIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
 
         <TooltipHint title="Italic" shortcut={KeyboardSymbols.Command + 'I'}>
-          <IconButton
-            size="small"
-            onClick={async () => {
-              const formatPrimaryCell = await sheets.sheet.getFormatPrimaryCell();
-              setItalic(!formatPrimaryCell?.italic);
-            }}
-          >
+          <IconButton size="small" onClick={() => setItalic()}>
             <FontItalicIcon fontSize={iconSize} />
           </IconButton>
         </TooltipHint>
@@ -380,25 +369,36 @@ export const FloatingContextMenu = (props: Props) => {
             }}
             onClear={() => {
               fillColorRef.current?.closeMenu();
-              setFillColor(undefined);
+              clearFillColor();
               focusGrid();
             }}
           />
         </Menu>
-        <Menu
-          menuButton={
-            <div>
-              <TooltipHint title="Borders">
-                <IconButton size="small">
-                  <BorderAllIcon fontSize={iconSize} />
-                </IconButton>
-              </TooltipHint>
-            </div>
-          }
-        >
-          {borders}
-        </Menu>
-
+        {!borders ? (
+          <TooltipHint title="Borders">
+            <span>
+              <IconButton size="small" disabled={true}>
+                <BorderAllIcon fontSize={iconSize} />
+              </IconButton>
+            </span>
+          </TooltipHint>
+        ) : (
+          <Menu
+            menuButton={
+              <div>
+                <TooltipHint title="Borders">
+                  <span>
+                    <IconButton size="small">
+                      <BorderAllIcon fontSize={iconSize} />
+                    </IconButton>
+                  </span>
+                </TooltipHint>
+              </div>
+            }
+          >
+            {borders}
+          </Menu>
+        )}
         <MenuDividerVertical />
 
         <TooltipHint title="Format automatically">

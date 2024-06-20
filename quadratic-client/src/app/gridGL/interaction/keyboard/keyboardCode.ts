@@ -1,4 +1,5 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { hasPermissionToEditFile } from '../../../actions';
 import { EditorInteractionState } from '../../../atoms/editorInteractionStateAtom';
@@ -27,6 +28,13 @@ export function keyboardCode(
     }
     event.preventDefault();
     return true;
+  }
+
+  if (editorInteractionState.showCodeEditor) {
+    if (event.code === 'KeyL' && (event.ctrlKey || event.metaKey)) {
+      insertCellRef(editorInteractionState);
+      event.preventDefault();
+    }
   }
   return false;
 }

@@ -17,8 +17,8 @@ const commands: CommandGroup = {
             action={() =>
               quadraticCore.rerunCodeCells(
                 sheets.sheet.id,
-                sheets.sheet.cursor.originPosition.x,
-                sheets.sheet.cursor.originPosition.y,
+                sheets.sheet.cursor.cursorPosition.x,
+                sheets.sheet.cursor.cursorPosition.y,
                 sheets.getCursorPosition()
               )
             }

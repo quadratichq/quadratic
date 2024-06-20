@@ -1,13 +1,13 @@
+use super::Grid;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-use super::Grid;
-
 pub mod current;
+pub mod sheet_schema;
 mod v1_3;
 mod v1_4;
-mod v1_5;
+pub mod v1_5;
 
 pub static CURRENT_VERSION: &str = "1.5";
 
