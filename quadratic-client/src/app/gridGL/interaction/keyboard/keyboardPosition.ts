@@ -192,7 +192,6 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
   } else if (deltaY === -1) {
     let y = keyboardY;
-    // const bottomOfCursor = keyboardY > cursor.cursorPosition.y;
     const x = cursor.keyboardMovePosition.x;
 
     // always use the original cursor position to search
