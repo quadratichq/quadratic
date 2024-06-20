@@ -159,16 +159,6 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       }
       // if next cell is not empty, find the next empty cell
       else {
-        console.log(
-          y + 1,
-          await quadraticCore.findNextRow({
-            sheetId,
-            column: xCheck,
-            rowStart: y + 1,
-            reverse: false,
-            withContent: false,
-          })
-        );
         y =
           (await quadraticCore.findNextRow({
             sheetId,
