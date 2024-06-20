@@ -29,11 +29,11 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files.P
     userMakingRequest,
   } = await getTeam({ uuid: teamUuid, userId });
 
-  // Can you even create a file in this team?
   if (!userMakingRequest.permissions.includes('TEAM_EDIT')) {
     throw new ApiError(403, 'User does not have permission to create a file in this team.');
   }
 
+  // If so, create it!
   const dbFile = await createFile({ name, userId, teamId, contents, version, isPrivate });
 
   return res.status(201).json({
