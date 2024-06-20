@@ -101,10 +101,12 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           Resources
         </Type>
         <div className="grid gap-0.5">
-          <SidebarNavLink to={ROUTES.EXAMPLES}>
-            <MixIcon className={classNameIcons} />
-            Examples
-          </SidebarNavLink>
+          {canEditTeam && (
+            <SidebarNavLink to={ROUTES.EXAMPLES}>
+              <MixIcon className={classNameIcons} />
+              Examples
+            </SidebarNavLink>
+          )}
           <SidebarNavLink
             to={DOCUMENTATION_URL}
             target="_blank"
