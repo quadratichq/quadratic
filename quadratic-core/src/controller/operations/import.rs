@@ -3,7 +3,10 @@ use std::io::Cursor;
 use anyhow::{anyhow, bail, Result};
 
 use crate::{
-    cell_values::CellValues, controller::GridController, grid::SheetId, CellValue, Pos, SheetPos,
+    cell_values::CellValues,
+    controller::GridController,
+    grid::{CodeCellLanguage, SheetId},
+    CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -126,15 +129,22 @@ impl GridController {
         file_name: &str,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
-        let insert_at = Pos::default();
-        let mut cell_values = vec![];
+        let mut formula_ops = vec![] as Vec<Operation>;
         let error =
             |message: String| anyhow!("Error parsing Excel file {}: {}", file_name, message);
 
         let cursor = Cursor::new(file);
         let mut workbook: Xlsx<_> =
-            ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
+            ExcelReader::new(cursor.clone()).map_err(|e: XlsxError| error(e.to_string()))?;
         let sheets = workbook.sheet_names().to_owned();
+        let xlsx_range_to_pos = |(row, col)| Pos {
+            // col is 0-based in quadratic i.e. A1 is col 0, B1 is col 1, same as excel
+            x: col as i64,
+            // row is 1-based in quadratic i.e. A1 is row 1, A2 is row 2
+            // it is 0-based in excel i.e. A1 is row 0, A2 is row 1
+            // so we add 1 to it, to make cell references work in formulas
+            y: row as i64 + 1,
+        };
 
         for sheet_name in sheets {
             // add the sheet
@@ -144,14 +154,17 @@ impl GridController {
                 let sheet_id = sheet.id;
                 ops.extend(add_sheet_operations);
 
+                // values
+                let mut cell_values = vec![];
                 let range = workbook
                     .worksheet_range(&sheet_name)
                     .map_err(|e: XlsxError| error(e.to_string()))?;
                 let size = range.get_size();
 
+                let start = range.start().map_or_else(Pos::default, xlsx_range_to_pos);
                 for row in range.rows() {
-                    for col in row.iter() {
-                        let cell_value = match col {
+                    for cell in row.iter() {
+                        let cell_value = match cell {
                             ExcelData::Empty => CellValue::Blank,
                             ExcelData::String(value) => CellValue::Text(value.to_string()),
                             ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
@@ -181,23 +194,44 @@ impl GridController {
                             ExcelData::Error(_) => CellValue::Blank,
                             ExcelData::Bool(value) => CellValue::Logical(*value),
                         };
-
                         cell_values.push(cell_value);
                     }
                 }
-
                 let values = CellValues::from_flat_array(size.1 as u32, size.0 as u32, cell_values);
-                let operations = Operation::SetCellValues {
-                    sheet_pos: (insert_at.x, insert_at.y, sheet_id).into(),
+                let value_op = Operation::SetCellValues {
+                    sheet_pos: (start.x, start.y, sheet_id).into(),
                     values,
                 };
-                ops.push(operations);
+                ops.push(value_op);
 
-                // empty cell values for each sheet
-                cell_values = vec![];
+                // formulas
+                let formula = workbook
+                    .worksheet_formula(&sheet_name)
+                    .map_err(|e: XlsxError| error(e.to_string()))?;
+                let start = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
+                for (row_idx, row) in formula.rows().enumerate() {
+                    for (col_idx, cell) in row.iter().enumerate() {
+                        if !cell.is_empty() {
+                            let sheet_pos = SheetPos {
+                                x: start.x + col_idx as i64,
+                                y: start.y + row_idx as i64,
+                                sheet_id,
+                            };
+                            let code_cell_ops = self.set_code_cell_operations(
+                                sheet_pos,
+                                CodeCellLanguage::Formula,
+                                cell.to_string(),
+                            );
+                            formula_ops.extend(code_cell_ops);
+                        }
+                    }
+                }
             }
         }
 
+        // formula ops are added after all set value ops
+        // so that all cell values are populated in all sheets before formulas are evaluated
+        ops.extend(formula_ops);
         Ok(ops)
     }
 
@@ -295,15 +329,15 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 
     // strip invalid characters
     let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
-    
+
     Some(result)
 }
 
 #[cfg(test)]
 mod test {
     use super::read_utf16;
-    use crate::CellValue;
     use super::*;
+    use crate::CellValue;
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");

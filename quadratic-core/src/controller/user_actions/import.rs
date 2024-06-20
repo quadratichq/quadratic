@@ -187,7 +187,7 @@ mod tests {
             sheet_id,
             0,
             10,
-            0,
+            1,
             vec![
                 "Empty",
                 "String",
@@ -208,7 +208,7 @@ mod tests {
             sheet_id,
             0,
             10,
-            1,
+            2,
             vec![
                 "",
                 "Hello",

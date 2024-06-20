@@ -97,9 +97,6 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            if !transaction.is_user() {
-                unreachable!("Only a user transaction should have a ComputeCode");
-            }
             let sheet_id = sheet_pos.sheet_id;
             let Some(sheet) = self.try_sheet(sheet_id) else {
                 // sheet may have been deleted in a multiplayer operation
