@@ -150,27 +150,24 @@ export const CodeEditorHeader = (props: Props) => {
         )}
         {hasPermission && <CodeEditorRefButton />}
         {hasPermission && language === 'Python' && <SnippetsPopover />}
-        {hasPermission && (!isRunningComputation ?
-          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-            <span>
-              <IconButton
-                id="QuadraticCodeEditorRunButtonID"
-                size="small"
-                color="primary"
-                onClick={saveAndRunCell}
-              >
-                <PlayArrow />
-              </IconButton>
-            </span>
-          </TooltipHint> :
-          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-            <span>
-              <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
-                <Stop />
-              </IconButton>
-            </span>
-          </TooltipHint>
-        )}
+        {hasPermission &&
+          (!isRunningComputation ? (
+            <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
+              <span>
+                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
+                  <PlayArrow />
+                </IconButton>
+              </span>
+            </TooltipHint>
+          ) : (
+            <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
+              <span>
+                <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
+                  <Stop />
+                </IconButton>
+              </span>
+            </TooltipHint>
+          ))}
         <TooltipHint title="Close" shortcut="ESC" placement="bottom">
           <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
             <Close />

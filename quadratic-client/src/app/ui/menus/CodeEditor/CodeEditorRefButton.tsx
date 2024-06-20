@@ -3,7 +3,12 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/shared/shadcn/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/shared/shadcn/ui/dropdown-menu';
 import HighlightAltIcon from '@mui/icons-material/HighlightAlt';
 import { IconButton } from '@mui/material';
 import { CaretDownIcon } from '@radix-ui/react-icons';
@@ -19,14 +24,17 @@ export const CodeEditorRefButton = () => {
   useEffect(() => {
     const checkDisabled = () => {
       // we do not yet support multiple multiCursors for inserting cell references
-      if ((sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) || sheets.sheet.cursor.columnRow !== undefined) {
+      if (
+        (sheets.sheet.cursor.multiCursor && sheets.sheet.cursor.multiCursor.length > 1) ||
+        sheets.sheet.cursor.columnRow !== undefined
+      ) {
         setDisabled(true);
       } else {
         setDisabled(
           !sheets.sheet.cursor.multiCursor &&
-          editorInteractionState.selectedCell.x === sheets.sheet.cursor.cursorPosition.x &&
-          editorInteractionState.selectedCell.y === sheets.sheet.cursor.cursorPosition.y &&
-          editorInteractionState.selectedCellSheet === sheets.sheet.id
+            editorInteractionState.selectedCell.x === sheets.sheet.cursor.cursorPosition.x &&
+            editorInteractionState.selectedCell.y === sheets.sheet.cursor.cursorPosition.y &&
+            editorInteractionState.selectedCellSheet === sheets.sheet.id
         );
       }
     };
@@ -38,35 +46,39 @@ export const CodeEditorRefButton = () => {
     };
   });
 
-  const tooltip = !disabled ? <>Insert {relative ? 'relative ' : ''}cell reference</> : <>Select cells on the grid to insert cell reference.</>;
+  const tooltip = !disabled ? (
+    <>Insert {relative ? 'relative ' : ''}cell reference</>
+  ) : (
+    <>Select cells on the grid to insert cell reference.</>
+  );
 
   return (
-    <div className="flex items-center code-editor-ref-button">
+    <div className="code-editor-ref-button flex items-center">
       <TooltipHint title={tooltip} placement="bottom">
-         <span>
-           <IconButton
+        <span>
+          <IconButton
             disabled={disabled}
             size="small"
             color="primary"
-             onClick={() => insertCellRef(editorInteractionState, relative)}
-           >
-             <HighlightAltIcon fontSize="small" />
-           </IconButton>
-         </span>
+            onClick={() => insertCellRef(editorInteractionState, relative)}
+          >
+            <HighlightAltIcon fontSize="small" />
+          </IconButton>
+        </span>
       </TooltipHint>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <IconButton
-            style={{ padding: 0, marginLeft: "-0.3rem"}}
-            size="small"
-            disabled={disabled}
-          >
+          <IconButton style={{ padding: 0, marginLeft: '-0.3rem' }} size="small" disabled={disabled}>
             <CaretDownIcon />
           </IconButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuCheckboxItem checked={!relative} onClick={() => setRelative(false) }>Absolute cell reference</DropdownMenuCheckboxItem>
-          <DropdownMenuCheckboxItem checked={relative} onClick={() => setRelative(true) }>Relative cell reference</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={!relative} onClick={() => setRelative(false)}>
+            Absolute cell reference
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={relative} onClick={() => setRelative(true)}>
+            Relative cell reference
+          </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
