@@ -83,6 +83,8 @@ interface EventTypes {
 
   codeEditor: () => void;
   cellMoving: (move: boolean) => void;
+
+  insertCodeEditorText: (text: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

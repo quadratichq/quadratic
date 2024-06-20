@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { cn } from '@/shared/shadcn/utils';
@@ -147,17 +148,9 @@ export const CodeEditorHeader = (props: Props) => {
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
+        {hasPermission && <CodeEditorRefButton />}
         {hasPermission && language === 'Python' && <SnippetsPopover />}
-        {hasPermission && (
-          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-            <span>
-              <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
-                <Stop />
-              </IconButton>
-            </span>
-          </TooltipHint>
-        )}
-        {hasPermission && (
+        {hasPermission && (!isRunningComputation ?
           <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
             <span>
               <IconButton
@@ -165,9 +158,15 @@ export const CodeEditorHeader = (props: Props) => {
                 size="small"
                 color="primary"
                 onClick={saveAndRunCell}
-                disabled={!!isRunningComputation}
               >
                 <PlayArrow />
+              </IconButton>
+            </span>
+          </TooltipHint> :
+          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
+            <span>
+              <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
+                <Stop />
               </IconButton>
             </span>
           </TooltipHint>

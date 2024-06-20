@@ -14,7 +14,9 @@
     "quadratic-client",
     "quadratic-files",
     "quadratic-multiplayer",
-    "quadratic-rust-client"
+    "quadratic-rust-client",
+    "quadratic-client",
+    "quadratic-kernels/python-wasm"
   ],
   "type": "module",
   "scripts": {
@@ -50,7 +52,9 @@
     "prisma:migrate": "cd quadratic-api && npm run prisma:migrate",
     "docker:up": "docker compose up -d --wait && npm run prisma:migrate --workspace=quadratic-api",
     "docker:down": "docker compose down",
-    "docker:down:kill-volumes": "docker compose down -v"
+    "docker:down:kill-volumes": "docker compose down -v",
+    "gen:pyright:initialization": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
+    "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm"
   },
   "dependencies": {
     "vitest": "^1.5.0",
