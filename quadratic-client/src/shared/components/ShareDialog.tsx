@@ -3,7 +3,7 @@ import { TeamAction } from '@/routes/teams.$teamUuid';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import {
   Select,
@@ -57,13 +57,7 @@ export function DialogBody({ children }: { children: ReactNode }) {
   return <div className={`flex flex-col gap-3`}>{children}</div>;
 }
 
-export function ShareTeamDialog({
-  data,
-  onClose,
-}: {
-  data: ApiTypes['/v0/teams/:uuid.GET.response'];
-  onClose: () => void;
-}) {
+export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.response'] }) {
   const {
     userMakingRequest,
     users,
@@ -94,118 +88,105 @@ export function ShareTeamDialog({
     ...pendingInvites.map((invite) => invite.email),
   ];
 
-  const noOfUsers = users.length;
+  // <Button
+  //   variant="link"
+  //   onClick={() => {
+  //     apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
+  //       window.location.href = data.url;
+  //     });
+  //   }}
+  //   className="h-auto p-0 font-normal leading-4"
+  // >
+  //   Edit billing
+  // </Button>
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Team members</DialogTitle>
-          <DialogDescription>
-            {noOfUsers} member{noOfUsers === 1 ? '' : 's'}
-            {/* <Button
-              variant="link"
-              onClick={() => {
-                apiClient.teams.billing.getPortalSessionUrl(uuid).then((data) => {
-                  window.location.href = data.url;
-                });
-              }}
-              className="h-auto p-0 font-normal leading-4"
-            >
-              Edit billing
-            </Button> */}
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody>
-          {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
-            <InviteForm
-              action={action}
-              intent="create-team-invite"
-              disallowedEmails={exisitingTeamEmails}
-              roles={[
-                ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER
-                  ? [UserTeamRoleSchema.enum.OWNER]
-                  : []),
-                UserTeamRoleSchema.enum.EDITOR,
-                UserTeamRoleSchema.enum.VIEWER,
-              ]}
-              roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
-            />
-          )}
+    <DialogBody>
+      {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
+        <InviteForm
+          action={action}
+          intent="create-team-invite"
+          disallowedEmails={exisitingTeamEmails}
+          roles={[
+            ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER ? [UserTeamRoleSchema.enum.OWNER] : []),
+            UserTeamRoleSchema.enum.EDITOR,
+            UserTeamRoleSchema.enum.VIEWER,
+          ]}
+          roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
+        />
+      )}
 
-          {users.map((user) => {
-            const isLoggedInUser = userMakingRequest.id === user.id;
-            const canDelete = isLoggedInUser
-              ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
-              : canDeleteUserInTeam({
-                  permissions: userMakingRequest.teamPermissions,
-                  loggedInUserRole: userMakingRequest.teamRole,
-                  userRole: user.role,
-                });
-            const roles = isLoggedInUser
-              ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
-              : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
-            return (
-              <ManageUser
-                key={user.id}
-                isLoggedInUser={isLoggedInUser}
-                user={user}
-                onUpdate={(submit, userId, role) => {
-                  const data: TeamAction['request.update-team-user'] = {
-                    intent: 'update-team-user',
-                    userId,
-                    role,
-                  };
+      {users.map((user) => {
+        const isLoggedInUser = userMakingRequest.id === user.id;
+        const canDelete = isLoggedInUser
+          ? canDeleteLoggedInUserInTeam({ role: user.role, numberOfOwners })
+          : canDeleteUserInTeam({
+              permissions: userMakingRequest.teamPermissions,
+              loggedInUserRole: userMakingRequest.teamRole,
+              userRole: user.role,
+            });
+        const roles = isLoggedInUser
+          ? getAvailableRolesForLoggedInUserInTeam({ role: user.role, numberOfOwners })
+          : getAvailableRolesForUserInTeam({ loggedInUserRole: userMakingRequest.teamRole, userRole: user.role });
+        return (
+          <ManageUser
+            key={user.id}
+            isLoggedInUser={isLoggedInUser}
+            user={user}
+            onUpdate={(submit, userId, role) => {
+              const data: TeamAction['request.update-team-user'] = {
+                intent: 'update-team-user',
+                userId,
+                role,
+              };
+              submit(data, {
+                method: 'POST',
+                action,
+                encType: 'application/json',
+              });
+            }}
+            onDelete={
+              canDelete
+                ? (submit, userId) => {
+                    const data: TeamAction['request.delete-team-user'] = {
+                      intent: 'delete-team-user',
+                      userId,
+                    };
+
+                    submit(data, {
+                      method: 'POST',
+                      action,
+                      encType: 'application/json',
+                    });
+                  }
+                : undefined
+            }
+            roles={roles}
+          />
+        );
+      })}
+      {invites.map((invite) => (
+        <ManageInvite
+          key={invite.id}
+          invite={invite}
+          onDelete={
+            userMakingRequest.teamPermissions.includes('TEAM_EDIT')
+              ? (submit, inviteId) => {
+                  const data: TeamAction['request.delete-team-invite'] = { intent: 'delete-team-invite', inviteId };
                   submit(data, {
                     method: 'POST',
                     action,
                     encType: 'application/json',
                   });
-                }}
-                onDelete={
-                  canDelete
-                    ? (submit, userId) => {
-                        const data: TeamAction['request.delete-team-user'] = {
-                          intent: 'delete-team-user',
-                          userId,
-                        };
-
-                        submit(data, {
-                          method: 'POST',
-                          action,
-                          encType: 'application/json',
-                        });
-                      }
-                    : undefined
                 }
-                roles={roles}
-              />
-            );
-          })}
-          {invites.map((invite) => (
-            <ManageInvite
-              key={invite.id}
-              invite={invite}
-              onDelete={
-                userMakingRequest.teamPermissions.includes('TEAM_EDIT')
-                  ? (submit, inviteId) => {
-                      const data: TeamAction['request.delete-team-invite'] = { intent: 'delete-team-invite', inviteId };
-                      submit(data, {
-                        method: 'POST',
-                        action,
-                        encType: 'application/json',
-                      });
-                    }
-                  : undefined
-              }
-            />
-          ))}
-          {pendingInvites.map((invite, i) => (
-            <ManageInvite key={i} invite={invite} />
-          ))}
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
+              : undefined
+          }
+        />
+      ))}
+      {pendingInvites.map((invite, i) => (
+        <ManageInvite key={i} invite={invite} />
+      ))}
+    </DialogBody>
   );
 }
 
