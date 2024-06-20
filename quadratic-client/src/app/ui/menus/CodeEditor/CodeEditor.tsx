@@ -13,8 +13,8 @@ import { useRecoilState } from 'recoil';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/CodeEditorPanels';
-import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
+import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanels';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -25,7 +25,7 @@ import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebW
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
-import { CodeEditorPanel } from './CodeEditorPanel';
+import { CodeEditorPanel } from './panels/CodeEditorPanel';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
 

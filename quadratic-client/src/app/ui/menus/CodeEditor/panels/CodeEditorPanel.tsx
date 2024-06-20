@@ -1,10 +1,10 @@
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
-import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/CodeEditorPanelBottom';
-import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/CodeEditorPanelSide';
-import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
+import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
+import { CodeEditorPanelBottom } from './CodeEditorPanelBottom';
+import { CodeEditorPanelSide } from './CodeEditorPanelSide';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
@@ -23,8 +23,6 @@ export function CodeEditorPanel(props: Props) {
           <IconButton
             onClick={(e) => {
               setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
-
-              // TODO: figure out why keeping focus is kinda ugly
               e.currentTarget.blur();
             }}
           >
@@ -33,7 +31,7 @@ export function CodeEditorPanel(props: Props) {
         </TooltipHint>
       </div>
 
-      {panelPosition === 'left' && <CodeEditorPanelSide />}
+      {panelPosition === 'left' && <CodeEditorPanelSide codeEditorPanelData={props.codeEditorPanelData} />}
 
       {panelPosition === 'bottom' && <CodeEditorPanelBottom />}
     </>

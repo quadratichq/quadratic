@@ -1,11 +1,11 @@
 import { Coordinate } from '@/app/gridGL/types/size';
 import { AiMessage } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { CodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditor';
-import { PanelTab } from '@/app/ui/menus/CodeEditor/CodeEditorPanelBottom';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { Monaco } from '@monaco-editor/react';
 import monaco from 'monaco-editor';
 import React, { createContext, useContext, useRef, useState } from 'react';
+import { PanelTab } from './panels//CodeEditorPanelBottom';
 
 type Context = {
   aiAssistant: {

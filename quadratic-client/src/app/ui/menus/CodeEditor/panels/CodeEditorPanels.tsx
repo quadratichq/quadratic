@@ -1,10 +1,10 @@
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { ResizeControl } from '@/app/ui/menus/CodeEditor/ResizeControl';
+import { useCodeEditor } from '../CodeEditorContext';
+import { ResizeControl } from './ResizeControl';
 import {
   CodeEditorPanelData,
   MIN_WIDTH_PANEL,
   MIN_WIDTH_VISIBLE_GRID,
-} from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
+} from './useCodeEditorPanelData';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;

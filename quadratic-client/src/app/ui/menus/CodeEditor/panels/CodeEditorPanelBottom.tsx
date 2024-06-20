@@ -1,3 +1,4 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
@@ -6,7 +7,6 @@ import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { useRecoilValue } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 
