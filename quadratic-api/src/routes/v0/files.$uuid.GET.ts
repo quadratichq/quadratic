@@ -8,6 +8,7 @@ import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { RequestWithOptionalUser } from '../../types/Request';
+import { ResponseError } from '../../types/Response';
 
 export default [
   validateRequestSchema(
@@ -22,11 +23,15 @@ export default [
   handler,
 ];
 
-async function handler(req: RequestWithOptionalUser, res: Response) {
+async function handler(
+  req: RequestWithOptionalUser,
+  res: Response<ApiTypes['/v0/files/:uuid.GET.response'] | ResponseError>
+) {
+  const userId = req.user?.id;
   const {
-    file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerTeam },
-    userMakingRequest: { filePermissions, isFileOwner, fileRole },
-  } = await getFile({ uuid: req.params.uuid, userId: req.user?.id });
+    file: { id, thumbnail, uuid, name, createdDate, updatedDate, publicLinkAccess, ownerUserId, ownerTeam },
+    userMakingRequest: { filePermissions, fileRole, teamRole, teamPermissions },
+  } = await getFile({ uuid: req.params.uuid, userId });
 
   const thumbnailSignedUrl = thumbnail ? await generatePresignedUrl(thumbnail) : null;
 
@@ -44,7 +49,18 @@ async function handler(req: RequestWithOptionalUser, res: Response) {
   }
   const lastCheckpointDataUrl = await generatePresignedUrl(checkpoint.s3Key);
 
-  const data: ApiTypes['/v0/files/:uuid.GET.response'] = {
+  // Location of the file relative to the user making the request
+  // If it was shared _somehow_, e.g. direct invite or public link,
+  // we just leave it undefined
+  let fileRelativeLocation: ApiTypes['/v0/files/:uuid.GET.response']['userMakingRequest']['fileRelativeLocation'] =
+    undefined;
+  if (ownerUserId === userId) {
+    fileRelativeLocation = 'TEAM_PRIVATE';
+  } else if (ownerUserId === null && teamRole) {
+    fileRelativeLocation = 'TEAM_PUBLIC';
+  }
+
+  const data = {
     file: {
       uuid,
       name,
@@ -56,13 +72,15 @@ async function handler(req: RequestWithOptionalUser, res: Response) {
       lastCheckpointDataUrl,
       thumbnail: thumbnailSignedUrl,
     },
-    // These should be guaranteed after shipping the new schema
+    // TODO: (team-schema) these should be guaranteed after shipping the new schema
     // @ts-expect-error
     team: { uuid: ownerTeam.uuid, name: ownerTeam.name },
     userMakingRequest: {
       filePermissions,
-      isFileOwner,
+      fileRelativeLocation,
       fileRole,
+      teamRole,
+      teamPermissions,
     },
   };
   return res.status(200).json(data);

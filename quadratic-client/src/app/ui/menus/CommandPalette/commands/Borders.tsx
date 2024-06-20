@@ -10,7 +10,7 @@ import {
   BorderTopIcon,
   BorderVerticalIcon,
 } from '@/app/ui/icons';
-import { hasPermissionToEditFile } from '../../../../actions';
+import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { ChangeBorder, useBorders } from '../../TopBar/SubMenus/useBorders';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
@@ -29,7 +29,7 @@ const commands: CommandGroup = {
     {
       label: 'Border none',
       keywords: ['Remove borders', 'Clear borders'],
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         const { clearBorders } = useBorders();
         return (
@@ -58,7 +58,7 @@ const commands: CommandGroup = {
 function generateListItem(label: string, changeBordersArgs: ChangeBorder, icon: JSX.Element | undefined) {
   const item: CommandGroup['commands'][0] = {
     label,
-    isAvailable: hasPermissionToEditFile,
+    isAvailable: isAvailableBecauseCanEditFile,
     Component: (props) => {
       const { changeBorders } = useBorders();
       return (

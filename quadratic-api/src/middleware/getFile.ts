@@ -1,6 +1,6 @@
 import dbClient from '../dbClient';
 import { ApiError } from '../utils/ApiError';
-import { getFilePermissions } from '../utils/permissions';
+import { getFilePermissions, getTeamPermissions } from '../utils/permissions';
 
 /**
  * Most of the time, `userId` will be defined because the user will be logged in.
@@ -40,7 +40,6 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
 
   // FYI: the included relational data is not always filtered on the `where`
   // clause because `userId` is possibly `undefined`
-  const isFileOwner = file.ownerUserId === userId;
   const teamRole =
     file.ownerTeam && file.ownerTeam.UserTeamRole[0] && file.ownerTeam.UserTeamRole[0].userId === userId
       ? file.ownerTeam.UserTeamRole[0].role
@@ -52,7 +51,7 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
   let userFileRelationship: Parameters<typeof getFilePermissions>[0]['userFileRelationship'] = undefined;
   // Only define the relationship if they're logged in
   if (userId !== undefined) {
-    if (isFileOwner) {
+    if (file.ownerUserId === userId) {
       userFileRelationship = { context: 'private-to-me' };
     } else if (file.ownerUserId) {
       userFileRelationship = { context: 'private-to-someone-else', fileRole };
@@ -70,14 +69,16 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     throw new ApiError(403, 'Permission denied');
   }
 
+  const teamPermissions = teamRole ? getTeamPermissions(teamRole) : undefined;
+
   return {
     file,
     userMakingRequest: {
       filePermissions,
       fileRole,
+      teamPermissions,
       teamRole,
       id: userId,
-      isFileOwner,
     },
   };
 }

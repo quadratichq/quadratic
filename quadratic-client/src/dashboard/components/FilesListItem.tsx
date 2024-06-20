@@ -1,4 +1,4 @@
-import { deleteFile, downloadFileAction, duplicateToTeamFiles, renameFileAction } from '@/app/actions';
+import { deleteFile, downloadFileAction, duplicateFileAction, renameFileAction } from '@/app/actions';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import {
   Action as FileAction,
@@ -211,7 +211,7 @@ export function FilesListItemUserFile({
                     <DropdownMenuItem onClick={handleShare}>Share</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
-                    <DropdownMenuItem onClick={handleDuplicate}>{duplicateToTeamFiles.label}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleDuplicate}>{duplicateFileAction.label}</DropdownMenuItem>
                   )}
                   {permissions.includes('FILE_EDIT') && (
                     <DropdownMenuItem onClick={() => setOpen(true)}>{renameFileAction.label}</DropdownMenuItem>

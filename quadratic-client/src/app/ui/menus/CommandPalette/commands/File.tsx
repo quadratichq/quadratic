@@ -1,4 +1,4 @@
-import { createNewFileAction, deleteFile, downloadFileAction, duplicateToPrivateFiles } from '@/app/actions';
+import { createNewFileAction, deleteFile, downloadFileAction, duplicateFileAction } from '@/app/actions';
 import { useFileContext } from '@/app/ui/components/FileProvider';
 import {
   FileDeleteIcon,
@@ -7,6 +7,7 @@ import {
   // FileDeleteIcon, FileDownloadIcon, FileDuplicateIcon,
   FileIcon,
 } from '@/app/ui/icons';
+import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { useNavigate, useParams, useSubmit } from 'react-router-dom';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
@@ -19,21 +20,23 @@ const commands: CommandGroup = {
       keywords: ['New file', 'Create file'],
       isAvailable: createNewFileAction.isAvailable,
       Component: (props) => {
+        const {
+          team: { uuid: teamUuid },
+        } = useFileRouteLoaderData();
         const navigate = useNavigate();
-        // TODO: (connections) add teamUuid
-        const action = () => createNewFileAction.run({ navigate, teamUuid: '' });
+        const action = () => createNewFileAction.run({ navigate, teamUuid });
         return <CommandPaletteListItem {...props} icon={<FileIcon />} action={action} />;
       },
     },
 
     {
-      label: duplicateToPrivateFiles.label,
-      isAvailable: duplicateToPrivateFiles.isAvailable,
+      label: duplicateFileAction.label,
+      isAvailable: duplicateFileAction.isAvailable,
       Component: (props) => {
         const submit = useSubmit();
         const { uuid } = useParams() as { uuid: string };
         const action = () => {
-          duplicateToPrivateFiles.run({ uuid, submit });
+          duplicateFileAction.run({ uuid, submit });
         };
         return <CommandPaletteListItem {...props} action={action} icon={<FileDuplicateIcon />} />;
       },

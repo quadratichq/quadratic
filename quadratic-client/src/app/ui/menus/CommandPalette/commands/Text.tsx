@@ -6,7 +6,7 @@ import {
   TextAlignRightIcon,
 } from '@/app/ui/icons';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { hasPermissionToEditFile } from '../../../../actions';
+import { isAvailableBecauseCanEditFile } from '../../../../actions';
 import { sheets } from '../../../../grid/controller/Sheets';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import { setAlignment, setBold, setItalic } from '../../TopBar/SubMenus/formatCells';
@@ -17,7 +17,7 @@ const commands: CommandGroup = {
   commands: [
     {
       label: 'Bold',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem
@@ -39,7 +39,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Italic',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem
@@ -61,14 +61,14 @@ const commands: CommandGroup = {
     },
     {
       label: 'Left align',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setAlignment('left')} />;
       },
     },
     {
       label: 'Center align',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return (
           <CommandPaletteListItem {...props} icon={<TextAlignCenterIcon />} action={() => setAlignment('center')} />
@@ -77,7 +77,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Right align',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
         return <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setAlignment('right')} />;
       },

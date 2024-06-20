@@ -1,4 +1,4 @@
-import { hasPermissionToEditFile } from '@/app/actions';
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CSV_IMPORT_MESSAGE, PARQUET_IMPORT_MESSAGE } from '@/shared/constants/appConstants';
 import { ROUTES } from '@/shared/constants/routes';
@@ -10,7 +10,7 @@ const commands: CommandGroup = {
   commands: [
     {
       label: 'CSV',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const { addGlobalSnackbar } = useGlobalSnackbar();
         return (
@@ -25,7 +25,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Parquet',
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const { addGlobalSnackbar } = useGlobalSnackbar();
         return (
@@ -41,7 +41,7 @@ const commands: CommandGroup = {
     {
       label: 'Connections',
       // TODO: (connections) is this the right permission?
-      isAvailable: hasPermissionToEditFile,
+      isAvailable: isAvailableBecauseCanEditFile,
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const navigate = useNavigate();
         const { uuid } = useParams();
