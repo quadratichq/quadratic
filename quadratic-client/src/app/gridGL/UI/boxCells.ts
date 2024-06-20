@@ -1,3 +1,5 @@
+//! Used to draw autocomplete box.
+
 import { Graphics, Rectangle } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { colors } from '../../theme/colors';

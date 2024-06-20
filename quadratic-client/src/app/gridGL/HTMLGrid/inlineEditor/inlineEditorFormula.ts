@@ -124,13 +124,15 @@ class InlineEditorFormula {
         sheet = `'${sheets.sheet.name}'!`;
       }
       if (cursor.multiCursor) {
-        const startLocation = cursor.multiCursor.originPosition;
-        const start = getA1Notation(startLocation.x, startLocation.y);
-        const endLocation = cursor.multiCursor.terminalPosition;
-        const end = getA1Notation(endLocation.x, endLocation.y);
-        this.insertInsertingCells(`${sheet}${start}:${end}`);
+        let coords = '';
+        cursor.multiCursor.forEach((c, i) => {
+          const start = getA1Notation(c.left, c.top);
+          const end = getA1Notation(c.right - 1, c.bottom - 1);
+          coords += `${start}:${end}${i !== cursor.multiCursor!.length - 1 ? ',' : ''}`;
+        });
+        this.insertInsertingCells(`${sheet}${coords}`);
       } else {
-        const location = cursor.originPosition;
+        const location = cursor.getCursor();
         const a1Notation = getA1Notation(location.x, location.y);
         this.insertInsertingCells(`${sheet}${a1Notation}`);
       }
