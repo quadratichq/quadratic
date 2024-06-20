@@ -14,7 +14,7 @@ impl SheetSchema {
     /// Imports a Sheet from the schema.
     pub fn into_latest(&self) -> Result<Sheet> {
         match self {
-            SheetSchema::V1_5(sheet) => current::import_sheet(&sheet),
+            SheetSchema::V1_5(sheet) => current::import_sheet(sheet),
         }
     }
 }
