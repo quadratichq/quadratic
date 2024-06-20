@@ -6,7 +6,7 @@ use lexicon_fractional_index::key_between;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    grid::{Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
     CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
@@ -192,7 +192,7 @@ impl GridController {
                 }
             }
             ops.push(Operation::AddSheetSchema {
-                v1_5: Some(crate::grid::file::current::export_sheet(&sheet)),
+                schema: export_sheet(&sheet),
             });
         }
 
