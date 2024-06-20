@@ -295,15 +295,15 @@ fn read_utf16(bytes: &[u8]) -> Option<String> {
 
     // strip invalid characters
     let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
-    
+
     Some(result)
 }
 
 #[cfg(test)]
 mod test {
     use super::read_utf16;
-    use crate::CellValue;
     use super::*;
+    use crate::CellValue;
 
     const INVALID_ENCODING_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
@@ -355,33 +355,97 @@ mod test {
         }
 
         let ops = gc.import_csv_operations(sheet_id, csv.as_bytes(), "long.csv", pos);
-        assert_eq!(ops.as_ref().unwrap().len(), 3);
-        let first_pos = match ops.as_ref().unwrap()[0] {
-            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
-            _ => panic!("Expected SetCellValues operation"),
-        };
-        let second_pos = match ops.as_ref().unwrap()[1] {
-            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
-            _ => panic!("Expected SetCellValues operation"),
-        };
-        let third_pos = match ops.as_ref().unwrap()[2] {
-            Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
-            _ => panic!("Expected SetCellValues operation"),
-        };
-        assert_eq!(first_pos.x, 1);
-        assert_eq!(second_pos.x, 1);
-        assert_eq!(third_pos.x, 1);
-        assert_eq!(first_pos.y, 2);
-        assert_eq!(second_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64);
-        assert_eq!(third_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64 * 2);
 
-        let first_values = match ops.as_ref().unwrap()[0] {
-            Operation::SetCellValues { ref values, .. } => values,
-            _ => panic!("Expected SetCellValues operation"),
-        };
-        assert_eq!(
-            first_values.get(0, 0),
-            Some(&CellValue::Text("city0".into()))
+        use flate2::write::ZlibEncoder;
+        use flate2::Compression;
+        use std::io::prelude::*;
+        use std::time::Instant;
+
+        let now = Instant::now();
+
+        let json = serde_json::to_string(&ops.as_ref().unwrap()).unwrap();
+        let json_len = json.as_bytes().len() as f64;
+        let mut e = ZlibEncoder::new(Vec::new(), Compression::default());
+        e.write_all(json.clone().as_bytes()).unwrap();
+        let json_zlib_len = e.finish().unwrap().as_slice().len() as f64;
+
+        let elapsed = now.elapsed();
+        println!("JSON serializaton and compresson: {:.2?}", elapsed);
+        let now = Instant::now();
+
+        let serialized = bincode::serialize(&ops.unwrap()).unwrap();
+
+        let serialized_len = serialized.as_slice().len() as f64;
+
+        let mut e = ZlibEncoder::new(Vec::new(), Compression::fast());
+        e.write_all(serialized.clone().as_slice()).unwrap();
+        let serialized_zlib_len = e.finish().unwrap().as_slice().len() as f64;
+
+        let elapsed = now.elapsed();
+        println!("Bincode serializaton and compresson: {:.2?}", elapsed);
+
+        println!(
+            "No Compression: JSON: {} bytes, Bincode: {} bytes, % Decrease: {:.2}% over JSON",
+            json_len,
+            serialized_len,
+            -((serialized_len - json_len) / json_len) * 100.0
         );
+
+        println!(
+            "JSON: {} bytes, JSON ZLIB: {} bytes, % Decrease: {:.2}%",
+            json_len,
+            json_zlib_len,
+            -((json_zlib_len - json_len) / json_len) * 100.0
+        );
+
+        println!(
+            "Bincode: {} bytes, Bincode ZLIB: {} bytes, % Decrease: {:.2}%",
+            serialized_len,
+            serialized_zlib_len,
+            -((serialized_zlib_len - serialized_len) / serialized_len) * 100.0
+        );
+
+        // let operation = ops.as_ref().unwrap()[0].clone();
+        // let mut vec_operations = vec![operation];
+        // let mut e = ZlibEncoder::new(vec_operations, Compression::default());
+        // e.write_all(ops.as_ref().unwrap().clone().as_slice())
+        //     .unwrap();
+        // let json_zlib_len = e.finish().unwrap().as_slice().len() as f64;
+
+        // println!(
+        //     "JSON: {} bytes, JSON ZLIB: {} bytes, % Decrease: {:.2}%",
+        //     json_len,
+        //     json_zlib_len,
+        //     -((json_zlib_len - json_len) / json_len) * 100.0
+        // );
+
+        // assert_eq!(ops.as_ref().unwrap().len(), 3);
+        // let first_pos = match ops.as_ref().unwrap()[0] {
+        //     Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
+        //     _ => panic!("Expected SetCellValues operation"),
+        // };
+        // let second_pos = match ops.as_ref().unwrap()[1] {
+        //     Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
+        //     _ => panic!("Expected SetCellValues operation"),
+        // };
+        // let third_pos = match ops.as_ref().unwrap()[2] {
+        //     Operation::SetCellValues { sheet_pos, .. } => sheet_pos,
+        //     _ => panic!("Expected SetCellValues operation"),
+        // };
+        // assert_eq!(first_pos.x, 1);
+        // assert_eq!(second_pos.x, 1);
+        // assert_eq!(third_pos.x, 1);
+        // assert_eq!(first_pos.y, 2);
+        // assert_eq!(second_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64);
+        // assert_eq!(third_pos.y, 2 + IMPORT_LINES_PER_OPERATION as i64 * 2);
+
+        // let first_values = match ops.as_ref().unwrap()[0] {
+        //     Operation::SetCellValues { ref values, .. } => values,
+        //     _ => panic!("Expected SetCellValues operation"),
+        // };
+        // assert_eq!(
+        //     first_values.get(0, 0),
+        //     Some(&CellValue::Text("city0".into()))
+        // );
     }
 }

@@ -99,7 +99,7 @@ export const Component = () => {
           // Create a new file in the DB
           await apiClient.files.create({
             name: localFile.filename,
-            contents: newFile.contents,
+            contents: new TextDecoder().decode(newFile.contents),
             version: newFile.version,
           });
 

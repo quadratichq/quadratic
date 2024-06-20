@@ -3,6 +3,7 @@
   "cSpell.words": [
     "actix",
     "bigdecimal",
+    "bincode",
     "bindgen",
     "dashmap",
     "dbgjs",

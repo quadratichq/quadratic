@@ -133,8 +133,8 @@ export const apiClient = {
       mixpanel.track('[Files].downloadFile', { id: uuid });
       const { file } = await this.get(uuid);
       const checkpointUrl = file.lastCheckpointDataUrl;
-      const checkpointData = await fetch(checkpointUrl).then((res) => res.text());
-      downloadQuadraticFile(file.name, checkpointData);
+      const checkpointData = await fetch(checkpointUrl).then((res) => res.arrayBuffer());
+      downloadQuadraticFile(file.name, new Uint8Array(checkpointData));
     },
     async duplicate(uuid: string, withCurrentOwner: boolean) {
       mixpanel.track('[Files].duplicateFile', { id: uuid });
