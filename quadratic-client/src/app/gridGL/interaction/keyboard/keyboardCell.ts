@@ -76,11 +76,24 @@ export async function keyboardCell(options: {
   }
 
   if (event.key === 'Backspace' || event.key === 'Delete') {
-    if (!inCodeEditor(editorInteractionState, cursor)) {
-      // delete a range or a single cell, depending on if MultiCursor is active
-      quadraticCore.deleteCellValues(sheets.getRustSelection(), sheets.getCursorPosition());
-    }
     event.preventDefault();
+    if (inCodeEditor(editorInteractionState, cursor)) {
+      if (!pixiAppSettings.unsavedEditorChanges) {
+        setEditorInteractionState((state) => ({
+          ...state,
+          waitingForEditorClose: undefined,
+          showCodeEditor: false,
+          mode: undefined,
+        }));
+      } else {
+        pixiAppSettings.addGlobalSnackbar?.('You can not delete a code cell with unsaved changes', {
+          severity: 'warning',
+        });
+        return true;
+      }
+    }
+    // delete a range or a single cell, depending on if MultiCursor is active
+    quadraticCore.deleteCellValues(sheets.getRustSelection(), sheets.getCursorPosition());
   }
 
   if (event.key === '/') {

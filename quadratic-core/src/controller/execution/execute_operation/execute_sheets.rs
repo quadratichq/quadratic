@@ -1,13 +1,11 @@
-use lexicon_fractional_index::key_between;
-use std::str::FromStr;
-
 use crate::{
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    grid::{Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
 };
+use lexicon_fractional_index::key_between;
 
 impl GridController {
     pub(crate) fn execute_add_sheet(
@@ -28,7 +26,7 @@ impl GridController {
             transaction
                 .forward_operations
                 .push(Operation::AddSheetSchema {
-                    v1_5: Some(crate::grid::file::current::export_sheet(&sheet)),
+                    schema: export_sheet(&sheet),
                 });
             transaction
                 .reverse_operations
@@ -41,27 +39,23 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::AddSheetSchema { v1_5 } = op {
-            if let Some(v1_5) = v1_5.as_ref() {
-                let sheet_id = SheetId::from_str(&v1_5.id.to_string()).unwrap_or_default();
-                if self.grid.try_sheet(sheet_id).is_some() {
+        if let Operation::AddSheetSchema { schema } = op {
+            if let Ok(sheet) = schema.into_latest() {
+                if self.grid.try_sheet(sheet.id).is_some() {
                     // sheet already exists (unlikely but possible if this operation is run twice)
                     return;
                 }
-                if let Ok(sheet) = crate::grid::file::current::import_sheet(v1_5) {
-                    let sheet_id = self.grid.add_sheet(Some(sheet.clone()));
+                let sheet_id = sheet.id;
+                self.grid.add_sheet(Some(sheet));
 
-                    self.send_add_sheet(sheet_id, transaction);
+                self.send_add_sheet(sheet_id, transaction);
 
-                    transaction
-                        .forward_operations
-                        .push(Operation::AddSheetSchema {
-                            v1_5: Some(v1_5.clone()),
-                        });
-                    transaction
-                        .reverse_operations
-                        .insert(0, Operation::DeleteSheet { sheet_id });
-                }
+                transaction
+                    .forward_operations
+                    .push(Operation::AddSheetSchema { schema });
+                transaction
+                    .reverse_operations
+                    .insert(0, Operation::DeleteSheet { sheet_id });
             }
         }
     }
@@ -93,7 +87,7 @@ impl GridController {
                 transaction.reverse_operations.insert(
                     0,
                     Operation::AddSheetSchema {
-                        v1_5: Some(crate::grid::file::current::export_sheet(&deleted_sheet)),
+                        schema: export_sheet(&deleted_sheet),
                     },
                 );
                 transaction.reverse_operations.insert(
@@ -112,7 +106,7 @@ impl GridController {
                 transaction.reverse_operations.insert(
                     0,
                     Operation::AddSheetSchema {
-                        v1_5: Some(crate::grid::file::current::export_sheet(&deleted_sheet)),
+                        schema: export_sheet(&deleted_sheet),
                     },
                 );
 

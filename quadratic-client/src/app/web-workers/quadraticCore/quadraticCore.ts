@@ -60,9 +60,11 @@ class QuadraticCore {
   private waitingForResponse: Record<number, Function> = {};
 
   initWorker() {
-    this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
-    this.worker.onmessage = this.handleMessage;
-    this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
+    if (!this.worker) {
+      this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
+      this.worker.onmessage = this.handleMessage;
+      this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
+    }
   }
 
   private handleMessage = (e: MessageEvent<CoreClientMessage>) => {
