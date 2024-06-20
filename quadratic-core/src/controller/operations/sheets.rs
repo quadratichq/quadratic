@@ -3,7 +3,7 @@ use lexicon_fractional_index::key_between;
 
 use crate::{
     controller::GridController,
-    grid::{Sheet, SheetId},
+    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
     util,
 };
 
@@ -43,8 +43,9 @@ impl GridController {
         let order = self.grid.end_order();
         let sheet = Sheet::new(id, name, order);
 
-        let v1_5 = crate::grid::file::current::export_sheet(&sheet);
-        vec![Operation::AddSheetSchema { v1_5: Some(v1_5) }]
+        vec![Operation::AddSheetSchema {
+            schema: export_sheet(&sheet),
+        }]
     }
 
     pub fn delete_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {

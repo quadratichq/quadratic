@@ -39,7 +39,6 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
 
   if (deltaX === 1) {
     let x = keyboardX;
-    const leftOfCursor = keyboardX < cursor.cursorPosition.x;
     const y = cursor.keyboardMovePosition.y;
     // always use the original cursor position to search
     const yCheck = cursor.cursorPosition.y;
@@ -79,8 +78,8 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       if (x === keyboardX) x++;
     }
     if (event.shiftKey) {
-      lastMultiCursor.x = leftOfCursor ? Math.min(x, lastMultiCursor.right) : lastMultiCursor.left;
-      lastMultiCursor.width = leftOfCursor ? Math.max(x, lastMultiCursor.right) : x - lastMultiCursor.left;
+      lastMultiCursor.x = cursor.cursorPosition.x;
+      lastMultiCursor.width = x - cursor.cursorPosition.x + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -90,7 +89,6 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
   } else if (deltaX === -1) {
     let x = keyboardX;
-    const rightOfCursor = keyboardX > cursor.cursorPosition.x;
     const y = cursor.keyboardMovePosition.y;
 
     // always use the original cursor position to search
@@ -133,8 +131,8 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       });
     }
     if (event.shiftKey) {
-      lastMultiCursor.x = rightOfCursor ? Math.min(x, lastMultiCursor.left) : x;
-      lastMultiCursor.width = rightOfCursor ? Math.max(x, lastMultiCursor.left) : lastMultiCursor.right - x;
+      lastMultiCursor.x = x;
+      lastMultiCursor.width = cursor.cursorPosition.x - x + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -144,7 +142,6 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
   } else if (deltaY === 1) {
     let y = keyboardY;
-    const topOfCursor = keyboardY < cursor.cursorPosition.y;
     const x = cursor.keyboardMovePosition.x;
     // always use the original cursor position to search
     const xCheck = cursor.cursorPosition.x;
@@ -162,16 +159,6 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       }
       // if next cell is not empty, find the next empty cell
       else {
-        console.log(
-          y + 1,
-          await quadraticCore.findNextRow({
-            sheetId,
-            column: xCheck,
-            rowStart: y + 1,
-            reverse: false,
-            withContent: false,
-          })
-        );
         y =
           (await quadraticCore.findNextRow({
             sheetId,
@@ -194,8 +181,8 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       if (y === keyboardY) y++;
     }
     if (event.shiftKey) {
-      lastMultiCursor.y = topOfCursor ? Math.min(y, lastMultiCursor.bottom) : lastMultiCursor.top;
-      lastMultiCursor.height = topOfCursor ? Math.max(y, lastMultiCursor.bottom) : y - lastMultiCursor.top;
+      lastMultiCursor.y = cursor.cursorPosition.y;
+      lastMultiCursor.height = y - cursor.cursorPosition.y + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },
@@ -205,7 +192,6 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
     }
   } else if (deltaY === -1) {
     let y = keyboardY;
-    const bottomOfCursor = keyboardY > cursor.cursorPosition.y;
     const x = cursor.keyboardMovePosition.x;
 
     // always use the original cursor position to search
@@ -246,8 +232,8 @@ async function handleMetaCtrl(event: KeyboardEvent, deltaX: number, deltaY: numb
       });
     }
     if (event.shiftKey) {
-      lastMultiCursor.y = bottomOfCursor ? Math.min(y, lastMultiCursor.top) : lastMultiCursor.bottom;
-      lastMultiCursor.height = bottomOfCursor ? Math.max(y, lastMultiCursor.top) : lastMultiCursor.bottom - y;
+      lastMultiCursor.y = y;
+      lastMultiCursor.height = cursor.cursorPosition.y - y + 1;
       cursor.changePosition({
         multiCursor,
         keyboardMovePosition: { x, y },

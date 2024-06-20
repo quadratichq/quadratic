@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     cell_values::CellValues,
-    grid::{formats::Formats, formatting::CellFmtArray, CodeRun, Sheet, SheetBorders, SheetId},
+    grid::{
+        file::sheet_schema::SheetSchema, formats::Formats, formatting::CellFmtArray, CodeRun,
+        Sheet, SheetBorders, SheetId,
+    },
     selection::Selection,
     SheetPos, SheetRect,
 };
@@ -52,7 +55,7 @@ pub enum Operation {
     // instead of the actual Sheet to ensure compatibility with future Sheet
     // changes. We will continue to add new schema versions as needed.
     AddSheetSchema {
-        v1_5: Option<crate::grid::file::v1_5::schema::Sheet>,
+        schema: SheetSchema,
     },
 
     DuplicateSheet {
@@ -202,8 +205,8 @@ impl fmt::Display for Operation {
             Operation::MoveCells { source, dest } => {
                 write!(fmt, "MoveCells {{ source: {} dest: {} }}", source, dest)
             }
-            Operation::AddSheetSchema { v1_5 } => {
-                write!(fmt, "AddSheetSchema {{ v1_5: {:?} }}", v1_5)
+            Operation::AddSheetSchema { schema } => {
+                write!(fmt, "AddSheetSchema {{ schema: {:?} }}", schema)
             }
         }
     }
