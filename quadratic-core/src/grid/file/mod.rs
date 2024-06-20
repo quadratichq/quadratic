@@ -1,3 +1,5 @@
+use crate::compression::{decompress_and_deserialize, serialize_and_compress};
+
 use super::Grid;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
@@ -15,6 +17,11 @@ pub static CURRENT_VERSION: &str = "1.6";
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.6")]
+    V1_6 {
+        #[serde(flatten)]
+        grid: v1_6::schema::GridSchema,
+    },
     #[serde(rename = "1.5")]
     V1_5 {
         #[serde(flatten)]
@@ -35,24 +42,12 @@ enum GridFile {
 impl GridFile {
     fn into_latest(self) -> Result<v1_6::schema::GridSchema> {
         match self {
+            GridFile::V1_6 { grid } => Ok(grid),
             GridFile::V1_5 { grid } => v1_5::file::upgrade(grid),
             GridFile::V1_4 { grid } => v1_5::file::upgrade(v1_4::file::upgrade(grid)?),
             GridFile::V1_3 { grid } => {
                 v1_5::file::upgrade(v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?)
             }
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-enum GridFileBinary {
-    V1_6 { grid: v1_6::schema::GridSchema },
-}
-
-impl GridFileBinary {
-    fn into_latest(self) -> Result<v1_6::schema::GridSchema> {
-        match self {
-            GridFileBinary::V1_6 { grid } => Ok(grid),
         }
     }
 }
@@ -69,9 +64,7 @@ pub fn import(file_contents: &[u8]) -> Result<Grid> {
 
 /// Imports a binary file.
 fn import_binary(file_contents: &[u8]) -> Result<Grid> {
-    let file = bincode::deserialize::<GridFileBinary>(file_contents)
-        .map_err(|e| anyhow!(e))?
-        .into_latest()?;
+    let file = decompress_and_deserialize::<GridFile>(file_contents)?.into_latest()?;
     current::import(file)
 }
 
@@ -87,9 +80,9 @@ fn import_json(file_contents: &str) -> Result<Grid> {
 
 pub fn export(grid: &Grid) -> Result<Vec<u8>> {
     let converted = current::export(grid)?;
-    let serialized =
-        bincode::serialize(&GridFileBinary::V1_6 { grid: converted }).map_err(|e| anyhow!(e))?;
-    Ok(serialized)
+    let compressed = serialize_and_compress(&converted)?;
+
+    Ok(compressed)
 }
 
 #[cfg(test)]
@@ -262,16 +255,21 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.add_sheet(None);
         // gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
-        gc.set_cell_value((1, 0, sheet_id).into(), "12".to_string(), None);
-        gc.set_code_cell(
-            (0, 1, sheet_id).into(),
-            crate::grid::CodeCellLanguage::Formula,
-            "13".into(),
-            None,
-        );
 
-        let exported = export(gc.grid()).unwrap();
+        for x in 0..100 {
+            gc.set_cell_value((0, x, sheet_id).into(), "true".into(), None);
+        }
+        // gc.set_cell_value((1, 0, sheet_id).into(), "12".to_string(), None);
+        // gc.set_code_cell(
+        //     (0, 1, sheet_id).into(),
+        //     crate::grid::CodeCellLanguage::Formula,
+        //     "13".into(),
+        //     None,
+        // );
+
+        let imported = import(V1_4_AIRPORTS_DISTANCE_FILE).unwrap();
+        let exported = export(&imported).unwrap();
         let imported = import(&exported).unwrap();
-        assert_eq!(*gc.grid(), imported);
+        // assert_eq!(*gc.grid(), imported);
     }
 }

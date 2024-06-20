@@ -7,7 +7,6 @@ pub(crate) use crate::{array, CodeResult, RunError, RunErrorMsg, Spanned};
 use crate::{Pos, SheetPos};
 
 pub(crate) fn try_eval_at(grid: &Grid, pos: SheetPos, s: &str) -> CodeResult<Value> {
-    println!("Evaluating formula {s:?} at {pos:?}");
     let mut ctx = Ctx::new(grid, pos);
     parse_formula(s, Pos::ORIGIN)?.eval(&mut ctx)
 }
