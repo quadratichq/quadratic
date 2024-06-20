@@ -26,8 +26,7 @@ export const CodeEditorRefButton = () => {
           !sheets.sheet.cursor.multiCursor &&
           editorInteractionState.selectedCell.x === sheets.sheet.cursor.cursorPosition.x &&
           editorInteractionState.selectedCell.y === sheets.sheet.cursor.cursorPosition.y &&
-          editorInteractionState.selectedCellSheet === sheets.sheet.id &&
-          !sheets.sheet.cursor.multiCursor
+          editorInteractionState.selectedCellSheet === sheets.sheet.id
         );
       }
     };
