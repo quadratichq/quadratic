@@ -681,7 +681,7 @@ fn export_formats(formats: &BTreeMap<i64, (Format, i64)>) -> Vec<(i64, (current:
         .collect()
 }
 
-pub fn export_sheet(sheet: &Sheet) -> current::Sheet {
+pub(crate) fn export_sheet(sheet: &Sheet) -> current::Sheet {
     current::Sheet {
         id: current::Id {
             id: sheet.id.to_string(),

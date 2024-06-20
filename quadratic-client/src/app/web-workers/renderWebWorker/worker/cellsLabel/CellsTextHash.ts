@@ -85,11 +85,10 @@ export class CellsTextHash {
     return this.labels.get(`${column},${row}`);
   }
 
-  private createLabel(cell: JsRenderCell): CellLabel {
+  private createLabel(cell: JsRenderCell) {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
     const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
     this.labels.set(this.getKey(cell), cellLabel);
-    return cellLabel;
   }
 
   async createLabels(cells: JsRenderCell[]) {

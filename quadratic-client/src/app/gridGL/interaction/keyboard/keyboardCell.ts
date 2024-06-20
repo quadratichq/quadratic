@@ -86,12 +86,9 @@ export async function keyboardCell(options: {
           mode: undefined,
         }));
       } else {
-        pixiAppSettings.addGlobalSnackbar?.(
-          'You may lose your code changes if you delete this cell. Please save your changes before closing the editor.',
-          {
-            severity: 'warning',
-          }
-        );
+        pixiAppSettings.addGlobalSnackbar?.('You can not delete a code cell with unsaved changes', {
+          severity: 'warning',
+        });
         return true;
       }
     }
