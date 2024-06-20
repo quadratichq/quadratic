@@ -54,6 +54,9 @@
   "[rust]": {
     "editor.defaultFormatter": "rust-lang.rust-analyzer"
   },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "rust-analyzer.linkedProjects": [
     "./Cargo.toml",
     "./quadratic-files/Cargo.toml",
