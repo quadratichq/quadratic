@@ -23,6 +23,10 @@ export function stripExtension(name: string): string {
   return name.replace(/\.[^/.]+$/, '');
 }
 
+export function getExtension(name: string): string {
+  return name.split('.').pop() || '';
+}
+
 export function has_extension(name: string, extension: string): boolean {
   return new RegExp(`\\.${extension}$`, 'i').test(name);
 }
