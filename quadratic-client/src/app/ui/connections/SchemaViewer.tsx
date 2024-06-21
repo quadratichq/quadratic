@@ -34,7 +34,7 @@ export const SchemaViewer = () => {
   }
 
   const [expandAll, setExpandAll] = useState(false);
-  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [loadState, setLoadState] = useState<LoadState>('error');
   const [data, setData] = useState<SchemaData | null>(null);
 
   // TODO: (connections) fetch this data when the document loads
@@ -72,7 +72,7 @@ export const SchemaViewer = () => {
         </div>
       </div>
       {loadState === 'error' && (
-        <Type className="text-destructive">
+        <Type className="text-destructive m-3 mt-0">
           Error loading data schema.{' '}
           <button className="underline" onClick={fetchData}>
             Try again
