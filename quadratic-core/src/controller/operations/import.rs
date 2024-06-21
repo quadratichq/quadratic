@@ -136,10 +136,11 @@ impl GridController {
 
         let cursor = Cursor::new(file);
         let mut workbook: Xlsx<_> =
-            ExcelReader::new(cursor.clone()).map_err(|e: XlsxError| error(e.to_string()))?;
+            ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
         let sheets = workbook.sheet_names().to_owned();
+
         // first cell in excel is A1, but first cell in quadratic is A0
-        // so we need to offset rows by 1, so that values are inserted in the correct position
+        // so we need to offset rows by 1, so that values are inserted in the original A1 notations cell
         // this is required so that cell references (A1 notations) in formulas are correct
         let xlsx_range_to_pos = |(row, col)| Pos {
             x: col as i64,
