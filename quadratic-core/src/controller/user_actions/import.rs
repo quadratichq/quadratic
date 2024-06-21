@@ -22,8 +22,13 @@ impl GridController {
     ///
     /// Returns a [`TransactionSummary`].
     pub fn import_excel(&mut self, file: Vec<u8>, file_name: &str) -> Result<()> {
-        let ops = self.import_excel_operations(file, file_name)?;
-        self.server_apply_transaction(ops);
+        let import_ops = self.import_excel_operations(file, file_name)?;
+        self.server_apply_transaction(import_ops);
+
+        // Rerun all code cells after importing Excel file
+        // This is required to run compute cells in order
+        let code_rerun_ops = self.rerun_all_code_cells_operations();
+        self.server_apply_transaction(code_rerun_ops);
         Ok(())
     }
 

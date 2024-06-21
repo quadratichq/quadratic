@@ -130,7 +130,6 @@ impl GridController {
         file_name: &str,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
-        let mut formula_compute_ops = vec![] as Vec<Operation>;
         let error =
             |message: String| anyhow!("Error parsing Excel file {}: {}", file_name, message);
 
@@ -206,6 +205,7 @@ impl GridController {
                 .worksheet_formula(&sheet_name)
                 .map_err(|e: XlsxError| error(e.to_string()))?;
             let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
+            let mut formula_compute_ops = vec![] as Vec<Operation>;
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {
@@ -218,7 +218,7 @@ impl GridController {
                             code: cell.to_string(),
                         });
                         sheet.set_cell_value(pos, cell_value);
-                        // add the compute operation, to generate code runs
+                        // add code compute operation, to generate code runs
                         formula_compute_ops.push(Operation::ComputeCode {
                             sheet_pos: pos.to_sheet_pos(sheet.id),
                         });
@@ -228,9 +228,8 @@ impl GridController {
             ops.push(Operation::AddSheetSchema {
                 schema: export_sheet(&sheet),
             });
+            ops.extend(formula_compute_ops);
         }
-        // add formula ops at the end, to ensure all cells values in all sheets are populated
-        ops.extend(formula_compute_ops);
         Ok(ops)
     }
 
