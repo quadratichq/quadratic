@@ -21,6 +21,10 @@ export class GridHeadingsLabels extends Container {
     this.labelData.push(label);
   }
 
+  removeLast() {
+    this.labelData.pop();
+  }
+
   private addLabelText(): BitmapText {
     const label = this.addChild(
       new BitmapText('', {

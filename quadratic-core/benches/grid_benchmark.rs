@@ -1,7 +1,9 @@
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
+use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::GridController;
 use quadratic_core::grid::Grid;
-use quadratic_core::{Pos, Rect, SheetPos, SheetRect};
+use quadratic_core::selection::Selection;
+use quadratic_core::{Pos, Rect, SheetRect};
 use std::time::Duration;
 
 criterion_group!(benches, criterion_benchmark);
@@ -52,17 +54,16 @@ fn criterion_benchmark(c: &mut Criterion) {
                 max: Pos { x: 10, y: 10 },
                 sheet_id,
             };
-            let sheet_pos = SheetPos {
-                x: 10000,
-                y: 10000,
-                sheet_id,
-            };
-            let contents = gc.copy_to_clipboard(sheet_rect);
+            let pos = Pos { x: 10000, y: 10000 };
+            let sheet = gc.try_sheet(sheet_id).unwrap();
+            let contents = sheet
+                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect))
+                .unwrap();
             gc.paste_from_clipboard(
-                sheet_pos,
+                Selection::rect(pos.into(), sheet_id),
                 Some(contents.0),
                 Some(contents.1),
-                quadratic_core::controller::user_actions::clipboard::PasteSpecial::None,
+                PasteSpecial::None,
                 None,
             );
         });
@@ -77,17 +78,16 @@ fn criterion_benchmark(c: &mut Criterion) {
                 max: Pos { x: 100, y: 100 },
                 sheet_id,
             };
-            let sheet_pos = SheetPos {
-                x: 10000,
-                y: 10000,
-                sheet_id,
-            };
-            let contents = gc.copy_to_clipboard(sheet_rect);
+            let pos = Pos { x: 10000, y: 10000 };
+            let sheet = gc.try_sheet(sheet_id).unwrap();
+            let contents = sheet
+                .copy_to_clipboard(&Selection::sheet_rect(sheet_rect))
+                .unwrap();
             gc.paste_from_clipboard(
-                sheet_pos,
+                Selection::rect(pos.into(), sheet_id),
                 Some(contents.0),
                 Some(contents.1),
-                quadratic_core::controller::user_actions::clipboard::PasteSpecial::None,
+                PasteSpecial::None,
                 None,
             );
         });
@@ -126,7 +126,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.delete_cells_rect(sheet_rect, None);
+                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -146,7 +146,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells_rect(sheet_rect, None);
+                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
                 gc
             },
             |mut gc| {
@@ -171,7 +171,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells_rect(sheet_rect, None);
+                gc.delete_cells(&Selection::sheet_rect(sheet_rect), None);
                 gc.undo(None);
                 gc
             },
@@ -247,7 +247,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.clear_formatting(sheet_rect, None);
+                gc.clear_formatting(&Selection::sheet_rect(sheet_rect), None);
             },
             criterion::BatchSize::SmallInput,
         )

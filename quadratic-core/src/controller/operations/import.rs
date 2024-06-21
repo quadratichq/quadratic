@@ -1,11 +1,12 @@
 use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
+use lexicon_fractional_index::key_between;
 
 use crate::{
     cell_values::CellValues,
     controller::GridController,
-    grid::{CodeCellLanguage, SheetId},
+    grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
     CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
@@ -129,7 +130,7 @@ impl GridController {
         file_name: &str,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
-        let mut formula_ops = vec![] as Vec<Operation>;
+        let mut formula_compute_ops = vec![] as Vec<Operation>;
         let error =
             |message: String| anyhow!("Error parsing Excel file {}: {}", file_name, message);
 
@@ -137,101 +138,98 @@ impl GridController {
         let mut workbook: Xlsx<_> =
             ExcelReader::new(cursor.clone()).map_err(|e: XlsxError| error(e.to_string()))?;
         let sheets = workbook.sheet_names().to_owned();
+        // first cell in excel is A1, but first cell in quadratic is A0
+        // so we need to offset rows by 1, so that values are inserted in the correct position
+        // this is required so that cell references (A1 notations) in formulas are correct
         let xlsx_range_to_pos = |(row, col)| Pos {
-            // col is 0-based in quadratic i.e. A1 is col 0, B1 is col 1, same as excel
             x: col as i64,
-            // row is 1-based in quadratic i.e. A1 is row 1, A2 is row 2
-            // it is 0-based in excel i.e. A1 is row 0, A2 is row 1
-            // so we add 1 to it, to make cell references work in formulas
             y: row as i64 + 1,
         };
 
+        let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
             // add the sheet
-            let add_sheet_operations = self.add_sheet_operations(Some(sheet_name.to_owned()));
+            let mut sheet = Sheet::new(SheetId::new(), sheet_name.to_owned(), order.clone());
+            order = key_between(&Some(order), &None).unwrap_or("A0".to_string());
 
-            if let Operation::AddSheet { sheet } = &add_sheet_operations[0] {
-                let sheet_id = sheet.id;
-                ops.extend(add_sheet_operations);
-
-                // values
-                let mut cell_values = vec![];
-                let range = workbook
-                    .worksheet_range(&sheet_name)
-                    .map_err(|e: XlsxError| error(e.to_string()))?;
-                let size = range.get_size();
-
-                let start = range.start().map_or_else(Pos::default, xlsx_range_to_pos);
-                for row in range.rows() {
-                    for cell in row.iter() {
-                        let cell_value = match cell {
-                            ExcelData::Empty => CellValue::Blank,
-                            ExcelData::String(value) => CellValue::Text(value.to_string()),
-                            ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
-                            ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
-                            ExcelData::Float(ref value) => {
-                                CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
-                            }
-                            // TODO(ddimaria): implement when implementing Instant
-                            // ExcelData::DateTime(ref value) => match value.is_datetime() {
-                            //     true => value.as_datetime().map_or_else(
-                            //         || CellValue::Blank,
-                            //         |v| CellValue::Instant(v.into()),
-                            //     ),
-                            //     false => CellValue::Text(value.to_string()),
-                            // },
-                            // TODO(ddimaria): remove when implementing Instant
-                            ExcelData::DateTime(ref value) => match value.is_datetime() {
-                                true => value.as_datetime().map_or_else(
-                                    || CellValue::Blank,
-                                    |v| CellValue::Text(v.to_string()),
-                                ),
-                                false => CellValue::Text(value.to_string()),
-                            },
-                            ExcelData::Int(ref value) => {
-                                CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
-                            }
-                            ExcelData::Error(_) => CellValue::Blank,
-                            ExcelData::Bool(value) => CellValue::Logical(*value),
-                        };
-                        cell_values.push(cell_value);
-                    }
-                }
-                let values = CellValues::from_flat_array(size.1 as u32, size.0 as u32, cell_values);
-                let value_op = Operation::SetCellValues {
-                    sheet_pos: (start.x, start.y, sheet_id).into(),
-                    values,
-                };
-                ops.push(value_op);
-
-                // formulas
-                let formula = workbook
-                    .worksheet_formula(&sheet_name)
-                    .map_err(|e: XlsxError| error(e.to_string()))?;
-                let start = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
-                for (row_idx, row) in formula.rows().enumerate() {
-                    for (col_idx, cell) in row.iter().enumerate() {
-                        if !cell.is_empty() {
-                            let sheet_pos = SheetPos {
-                                x: start.x + col_idx as i64,
-                                y: start.y + row_idx as i64,
-                                sheet_id,
-                            };
-                            let code_cell_ops = self.set_code_cell_operations(
-                                sheet_pos,
-                                CodeCellLanguage::Formula,
-                                cell.to_string(),
-                            );
-                            formula_ops.extend(code_cell_ops);
+            // values
+            let range = workbook
+                .worksheet_range(&sheet_name)
+                .map_err(|e: XlsxError| error(e.to_string()))?;
+            let insert_at = range.start().map_or_else(Pos::default, xlsx_range_to_pos);
+            for (y, row) in range.rows().enumerate() {
+                for (x, cell) in row.iter().enumerate() {
+                    let cell_value = match cell {
+                        ExcelData::Empty => CellValue::Blank,
+                        ExcelData::String(value) => CellValue::Text(value.to_string()),
+                        ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
+                        ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
+                        ExcelData::Float(ref value) => {
+                            CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
                         }
+                        // TODO(ddimaria): implement when implementing Instant
+                        // ExcelData::DateTime(ref value) => match value.is_datetime() {
+                        //     true => value.as_datetime().map_or_else(
+                        //         || CellValue::Blank,
+                        //         |v| CellValue::Instant(v.into()),
+                        //     ),
+                        //     false => CellValue::Text(value.to_string()),
+                        // },
+                        // TODO(ddimaria): remove when implementing Instant
+                        ExcelData::DateTime(ref value) => match value.is_datetime() {
+                            true => value.as_datetime().map_or_else(
+                                || CellValue::Blank,
+                                |v| CellValue::Text(v.to_string()),
+                            ),
+                            false => CellValue::Text(value.to_string()),
+                        },
+                        ExcelData::Int(ref value) => {
+                            CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
+                        }
+                        ExcelData::Error(_) => CellValue::Blank,
+                        ExcelData::Bool(value) => CellValue::Logical(*value),
+                    };
+
+                    sheet.set_cell_value(
+                        Pos {
+                            x: insert_at.x + x as i64,
+                            y: insert_at.y + y as i64,
+                        },
+                        cell_value,
+                    );
+                }
+            }
+
+            // formulas
+            let formula = workbook
+                .worksheet_formula(&sheet_name)
+                .map_err(|e: XlsxError| error(e.to_string()))?;
+            let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
+            for (y, row) in formula.rows().enumerate() {
+                for (x, cell) in row.iter().enumerate() {
+                    if !cell.is_empty() {
+                        let pos = Pos {
+                            x: insert_at.x + x as i64,
+                            y: insert_at.y + y as i64,
+                        };
+                        let cell_value = CellValue::Code(crate::CodeCellValue {
+                            language: CodeCellLanguage::Formula,
+                            code: cell.to_string(),
+                        });
+                        sheet.set_cell_value(pos, cell_value);
+                        // add the compute operation, to generate code runs
+                        formula_compute_ops.push(Operation::ComputeCode {
+                            sheet_pos: pos.to_sheet_pos(sheet.id),
+                        });
                     }
                 }
             }
+            ops.push(Operation::AddSheetSchema {
+                schema: export_sheet(&sheet),
+            });
         }
-
-        // formula ops are added after all set value ops
-        // so that all cell values are populated in all sheets before formulas are evaluated
-        ops.extend(formula_ops);
+        // add formula ops at the end, to ensure all cells values in all sheets are populated
+        ops.extend(formula_compute_ops);
         Ok(ops)
     }
 

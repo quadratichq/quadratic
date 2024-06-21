@@ -1,8 +1,6 @@
-use std::ops::{BitOr, BitOrAssign};
-
 use serde::{Deserialize, Serialize};
 
-use super::formatting::{BoolSummary, CellAlign, CellWrap};
+use super::formatting::{CellAlign, CellWrap};
 use super::CodeCellLanguage;
 use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
@@ -17,7 +15,7 @@ pub enum JsRenderCellSpecial {
     False,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
@@ -79,8 +77,7 @@ impl From<Pos> for JsRenderCell {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[derive(Serialize, Deserialize, Debug, Clone, ts_rs::TS)]
 pub struct JsRenderFill {
     pub x: i64,
     pub y: i64,
@@ -88,6 +85,13 @@ pub struct JsRenderFill {
     pub h: u32,
 
     pub color: String,
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, ts_rs::TS, PartialEq)]
+pub struct JsSheetFill {
+    pub columns: Vec<(i64, (String, i64))>,
+    pub rows: Vec<(i64, (String, i64))>,
+    pub all: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -130,30 +134,10 @@ impl JsRenderBorder {
 pub struct CellFormatSummary {
     pub bold: Option<bool>,
     pub italic: Option<bool>,
+    pub commas: Option<bool>,
 
     pub text_color: Option<String>,
     pub fill_color: Option<String>,
-}
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct FormattingSummary {
-    pub bold: BoolSummary,
-    pub italic: BoolSummary,
-}
-impl BitOr for FormattingSummary {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        FormattingSummary {
-            bold: self.bold | rhs.bold,
-            italic: self.italic | rhs.italic,
-        }
-    }
-}
-impl BitOrAssign for FormattingSummary {
-    fn bitor_assign(&mut self, rhs: Self) {
-        *self = self.clone() | rhs;
-    }
 }
 
 #[derive(Serialize, PartialEq, Debug)]

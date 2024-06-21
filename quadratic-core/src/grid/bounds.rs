@@ -1,8 +1,7 @@
+use crate::{Pos, Rect};
 use serde::{Deserialize, Serialize};
 
-use crate::{Pos, Rect};
-
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct BoundsRect {
     pub x: i64,
     pub y: i64,
@@ -50,6 +49,12 @@ impl GridBounds {
             GridBounds::NonEmpty(rect) => rect.extend_to(pos),
         }
     }
+    pub fn add_rect(&mut self, rect: Rect) {
+        match self {
+            GridBounds::Empty => *self = rect.into(),
+            GridBounds::NonEmpty(r) => *r = r.union(&rect),
+        }
+    }
     pub fn merge(a: Self, b: Self) -> Self {
         match (a, b) {
             (GridBounds::Empty, r) | (r, GridBounds::Empty) => r,
@@ -70,5 +75,58 @@ impl GridBounds {
                 height: rect.height(),
             }),
         }
+    }
+
+    pub fn extend_x(&mut self, x: i64) {
+        match self {
+            // we cannot extend x to an empty bounds
+            GridBounds::Empty => (),
+            GridBounds::NonEmpty(rect) => rect.extend_x(x),
+        }
+    }
+
+    pub fn extend_y(&mut self, y: i64) {
+        match self {
+            // we cannot extend y to an empty bounds
+            GridBounds::Empty => (),
+            GridBounds::NonEmpty(rect) => rect.extend_y(y),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_bounds_rect() {
+        let bounds = BoundsRect {
+            x: 1,
+            y: 2,
+            width: 3,
+            height: 4,
+        };
+        let grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 5));
+        assert_eq!(grid_bounds.to_bounds_rect(), Some(bounds));
+    }
+
+    #[test]
+    fn test_bounds_rect_empty() {
+        let grid_bounds = GridBounds::Empty;
+        assert_eq!(grid_bounds.to_bounds_rect(), None);
+    }
+
+    #[test]
+    fn test_bounds_rect_extend_x() {
+        let mut grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
+        grid_bounds.extend_x(5);
+        assert_eq!(grid_bounds, GridBounds::NonEmpty(Rect::new(1, 2, 5, 4)));
+    }
+
+    #[test]
+    fn test_bounds_rect_extend_y() {
+        let mut grid_bounds = GridBounds::NonEmpty(Rect::new(1, 2, 3, 4));
+        grid_bounds.extend_y(5);
+        assert_eq!(grid_bounds, GridBounds::NonEmpty(Rect::new(1, 2, 3, 5)));
     }
 }

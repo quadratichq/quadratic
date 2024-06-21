@@ -2,19 +2,21 @@
 //! handles when the cursorIsMoving outside of the inline formula edit box.
 
 import { sheets } from '@/app/grid/controller/Sheets';
+import { getSingleSelection } from '@/app/grid/sheet/selection';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { keyboardPosition } from '@/app/gridGL/interaction/keyboard/keyboardPosition';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 class InlineEditorKeyboard {
   escapeBackspacePressed = false;
 
   // Keyboard event for inline editor (via either Monaco's keyDown event or,
   // when on a different sheet, via window's keyDown listener).
-  keyDown = (e: KeyboardEvent) => {
+  keyDown = async (e: KeyboardEvent) => {
     if (inlineEditorHandler.cursorIsMoving) {
       this.escapeBackspacePressed = ['Escape', 'Backspace'].includes(e.code);
     } else {
@@ -52,7 +54,7 @@ class InlineEditorKeyboard {
       const target = isRight ? inlineEditorMonaco.getLastColumn() : 1;
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
-          keyboardPosition(e);
+          await keyboardPosition(e);
           e.stopPropagation();
         } else {
           const column = inlineEditorMonaco.getCursorColumn();
@@ -65,7 +67,7 @@ class InlineEditorKeyboard {
               if (isRight) {
                 inlineEditorHandler.cursorIsMoving = true;
                 inlineEditorFormula.addInsertingCells(column);
-                keyboardPosition(e);
+                await keyboardPosition(e);
               }
               e.stopPropagation();
             }
@@ -102,7 +104,7 @@ class InlineEditorKeyboard {
     else if (e.code === 'ArrowDown' || e.code === 'ArrowUp') {
       if (inlineEditorHandler.isEditingFormula()) {
         if (inlineEditorHandler.cursorIsMoving) {
-          keyboardPosition(e);
+          await keyboardPosition(e);
           e.stopPropagation();
         } else {
           // if we're not moving and the formula is valid, close the editor
@@ -118,7 +120,7 @@ class InlineEditorKeyboard {
           const column = inlineEditorMonaco.getCursorColumn();
           inlineEditorFormula.addInsertingCells(column);
           inlineEditorHandler.cursorIsMoving = true;
-          keyboardPosition(e);
+          await keyboardPosition(e);
           e.stopPropagation();
         }
       } else {
@@ -132,22 +134,39 @@ class InlineEditorKeyboard {
       e.preventDefault();
       e.stopPropagation();
       inlineEditorHandler.toggleItalics();
+      if (inlineEditorHandler.location) {
+        const selection = getSingleSelection(
+          inlineEditorHandler.location.sheetId,
+          inlineEditorHandler.location.x,
+          inlineEditorHandler.location.y
+        );
+        quadraticCore.setCellItalic(selection, !!inlineEditorHandler.temporaryItalic);
+      }
     }
 
     // toggle bold
     else if (e.code === 'KeyB' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       e.stopPropagation();
-      inlineEditorHandler.toggleBold();
+      if (inlineEditorHandler.location) {
+        inlineEditorHandler.toggleBold();
+        const selection = getSingleSelection(
+          inlineEditorHandler.location.sheetId,
+          inlineEditorHandler.location.x,
+          inlineEditorHandler.location.y
+        );
+        quadraticCore.setCellBold(selection, !!inlineEditorHandler.temporaryBold);
+      }
     }
 
     // trigger cell type menu
     else if (e.code === 'Slash' && inlineEditorMonaco.get().length === 0) {
       pixiAppSettings.changeInput(false);
+      const cursor = sheets.sheet.cursor.getCursor();
       pixiAppSettings.setEditorInteractionState?.({
         ...pixiAppSettings.editorInteractionState,
         showCellTypeMenu: true,
-        selectedCell: { x: sheets.sheet.cursor.originPosition.x, y: sheets.sheet.cursor.originPosition.y },
+        selectedCell: { x: cursor.x, y: cursor.y },
         selectedCellSheet: sheets.sheet.id,
       });
       e.preventDefault();
@@ -156,7 +175,8 @@ class InlineEditorKeyboard {
     // Fallback for all other keys (used to end cursorIsMoving and return
     // control to the formula box)
     else {
-      if (inlineEditorHandler.cursorIsMoving) {
+      // need to ignore meta and control to allow for multi-selection
+      if (!['Meta', 'Control'].includes(e.key) && inlineEditorHandler.cursorIsMoving) {
         inlineEditorFormula.endInsertingCells();
         this.resetKeyboardPosition();
         if (sheets.sheet.id !== inlineEditorHandler.location?.sheetId) {
@@ -181,7 +201,8 @@ class InlineEditorKeyboard {
     const position = { x: location.x, y: location.y };
     editingSheet.cursor.changePosition({
       cursorPosition: position,
-      multiCursor: undefined,
+      multiCursor: null,
+      columnRow: null,
       keyboardMovePosition: position,
     });
     if (sheets.sheet.id !== location.sheetId) {
