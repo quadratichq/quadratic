@@ -62,13 +62,18 @@ class Core {
     this.next();
   }
 
-  private next = () => {
+  private allowEventLoop() {
+    return new Promise((ok) => setTimeout(ok, 0));
+  }
+
+  private next = async () => {
     if (this.clientQueue.length) {
       this.clientQueue.shift()?.();
     } else if (this.renderQueue.length) {
       this.renderQueue.shift()?.();
     }
-    setTimeout(this.next, 0);
+    await this.allowEventLoop();
+    this.next();
   };
 
   // Creates a Grid form a file. Initializes bother coreClient and coreRender w/metadata.

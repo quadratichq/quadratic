@@ -66,6 +66,8 @@ class QuadraticCore {
       this.worker = new Worker(new URL('./worker/core.worker.ts', import.meta.url), { type: 'module' });
       this.worker.onmessage = this.handleMessage;
       this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
+
+      this.sendInit();
     }
   }
 
@@ -161,7 +163,6 @@ class QuadraticCore {
         this.waitingForResponse[e.data.id](e.data);
         delete this.waitingForResponse[e.data.id];
       } else {
-        debugger;
         console.warn('No resolve for message in quadraticCore', e.data.id);
       }
     }
