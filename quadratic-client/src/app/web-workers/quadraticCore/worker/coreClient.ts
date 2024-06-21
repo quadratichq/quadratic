@@ -219,88 +219,26 @@ class CoreClient {
 
       case 'clientCoreSetCellBold':
         await core.setCellBold(e.data.selection, e.data.bold, e.data.cursor);
-        break;
-        await core.setCellBold(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.bold,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreSetCellItalic':
         await core.setCellItalic(e.data.selection, e.data.italic, e.data.cursor);
-        break;
-        await core.setCellItalic(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.italic,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreSetCellTextColor':
         await core.setCellTextColor(e.data.selection, e.data.color, e.data.cursor);
-        break;
-        await core.setCellTextColor(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.color ?? '',
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreSetCellFillColor':
         await core.setCellFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
-        break;
-        await core.setCellFillColor(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.fillColor,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreSetCommas':
         await core.setCommas(e.data.selection, e.data.commas, e.data.cursor);
-        break;
-      case 'clientCoreToggleCommas':
-        await core.toggleCommas(
-          e.data.sheetId,
-          e.data.sourceX,
-          e.data.sourceY,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreSetCurrency':
         await core.setCurrency(e.data.selection, e.data.symbol, e.data.cursor);
-        break;
-        await core.setCurrency(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.symbol,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreImportCsv':
@@ -337,8 +275,6 @@ class CoreClient {
 
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.selection, e.data.cursor);
-        break;
-        await core.deleteCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreSetCodeCellValue':
@@ -411,16 +347,6 @@ class CoreClient {
 
       case 'clientCoreSetCellAlign':
         await core.setCellAlign(e.data.selection, e.data.align, e.data.cursor);
-        break;
-        await core.setCellAlign(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.align,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreCopyToClipboard':
@@ -435,16 +361,6 @@ class CoreClient {
 
       case 'clientCorePasteFromClipboard':
         await core.pasteFromClipboard(e.data.selection, e.data.plainText, e.data.html, e.data.special, e.data.cursor);
-        break;
-        await core.pasteFromClipboard(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.plainText,
-          e.data.html,
-          e.data.special,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreSetRegionBorders':
@@ -538,8 +454,6 @@ class CoreClient {
 
       case 'clientCoreClearFormatting':
         core.clearFormatting(e.data.selection, e.data.cursor);
-        break;
-        core.clearFormatting(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreRerunCodeCells':
@@ -556,33 +470,18 @@ class CoreClient {
 
       case 'clientCoreChangeDecimals':
         core.changeDecimals(e.data.selection, e.data.delta, e.data.cursor);
-        break;
-        core.changeDecimals(
-          e.data.sheetId,
-          e.data.sourceX,
-          e.data.sourceY,
-          e.data.rectangle,
-          e.data.delta,
-          e.data.cursor
-        );
         return;
 
       case 'clientCoreSetPercentage':
         core.setPercentage(e.data.selection, e.data.cursor);
-        break;
-        core.setPercentage(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreSetExponential':
         core.setExponential(e.data.selection, e.data.cursor);
-        break;
-        core.setExponential(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreRemoveCellNumericFormat':
         core.removeCellNumericFormat(e.data.selection, e.data.cursor);
-        break;
-        core.removeCellNumericFormat(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
         return;
 
       case 'clientCoreMoveCells':
