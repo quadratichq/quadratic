@@ -1,6 +1,6 @@
 import { Tooltip, TooltipProps } from '@mui/material';
 
-interface TooltipHintProps extends TooltipProps {
+interface TooltipHintProps extends TooltipProps{
   title: string | JSX.Element;
   shortcut?: string;
   children: React.ReactElement<any, any>;
