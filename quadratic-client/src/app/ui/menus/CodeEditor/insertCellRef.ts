@@ -68,7 +68,8 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
         }
       }
     }
-  } else if (language as any  === 'Javascript') { // any needed until Javascript is properly defined in Javascript branch
+  } else if ((language as any) === 'Javascript') {
+    // any needed until Javascript is properly defined in Javascript branch
     if (cursor.multiCursor) {
       if (cursor.multiCursor.length > 1) {
         console.warn(

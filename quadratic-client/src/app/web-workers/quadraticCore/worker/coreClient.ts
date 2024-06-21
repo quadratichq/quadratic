@@ -167,7 +167,7 @@ class CoreClient {
           id: e.data.id,
           formatSummary: await core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y, e.data.withSheetInfo),
         });
-        break;
+        return;
 
       case 'clientCoreGetFormatAll':
         this.send({
@@ -175,7 +175,7 @@ class CoreClient {
           id: e.data.id,
           format: await core.getFormatAll(e.data.sheetId),
         });
-        break;
+        return;
 
       case 'clientCoreGetFormatColumn':
         this.send({
@@ -183,7 +183,7 @@ class CoreClient {
           id: e.data.id,
           format: await core.getFormatColumn(e.data.sheetId, e.data.column),
         });
-        break;
+        return;
 
       case 'clientCoreGetFormatRow':
         this.send({
@@ -191,7 +191,7 @@ class CoreClient {
           id: e.data.id,
           format: await core.getFormatRow(e.data.sheetId, e.data.row),
         });
-        break;
+        return;
 
       case 'clientCoreGetFormatCell':
         this.send({
