@@ -63,5 +63,6 @@ async function handler(req: RequestWithOptionalUser, res: Response) {
       fileRole,
     },
   };
+
   return res.status(200).json(data);
 }

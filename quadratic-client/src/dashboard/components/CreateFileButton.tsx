@@ -1,5 +1,4 @@
 import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
-import { validateAndUpgradeGridFile } from '@/app/schemas/validateAndUpgradeGridFile';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
@@ -11,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { CaretDownIcon } from '@radix-ui/react-icons';
+import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { ChangeEvent, useState } from 'react';
 import { Link, useParams, useSubmit } from 'react-router-dom';
@@ -47,22 +47,26 @@ export default function CreateFileButton() {
       switch (getFileType(file)) {
         case 'grid':
           mixpanel.track('[Files].importGrid', { fileName: file.name });
-          const contents = await file.text().catch((e) => null);
 
-          // Ensure it's a valid Quadratic grid file
-          const validFile = await validateAndUpgradeGridFile(contents);
-          if (!validFile) {
+          const contents = await file.arrayBuffer().catch((e) => null);
+
+          if (!contents) return null;
+
+          const buffer = new Uint8Array(contents);
+
+          try {
+            const { grid, version } = await quadraticCore.upgradeGridFile(buffer, 0);
+
+            data = {
+              name: file.name ? stripExtension(file.name) : 'Untitled',
+              version: version,
+              contents: Buffer.from(new Uint8Array(grid)).toString('base64'),
+            };
+          } catch (e) {
             addGlobalSnackbar('Import failed: invalid `.grid` file.', { severity: 'error' });
             return;
           }
 
-          data = {
-            name: file.name ? stripExtension(file.name) : 'Untitled',
-            version: validFile.version,
-            contents: /*validFile.version === '1.3' ? JSON.stringify(validFile) : */ new TextDecoder().decode(
-              validFile.contents
-            ),
-          };
           break;
 
         case 'excel':

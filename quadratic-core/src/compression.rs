@@ -10,7 +10,7 @@ pub fn serialize_and_compress<T>(data: &T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
 {
-    let serialized = serialize(data)?;
+    let serialized = serialize::<T>(data)?;
     compress(serialized)
 }
 
@@ -18,7 +18,7 @@ pub fn serialize<T>(data: &T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
 {
-    Ok(bincode::serialize(data)?)
+    Ok(bincode::serialize::<T>(data)?)
 }
 
 pub fn compress(data: Vec<u8>) -> Result<Vec<u8>> {
@@ -32,7 +32,7 @@ where
     T: DeserializeOwned,
 {
     let decompressed = decompress(data)?;
-    deserialize(decompressed)
+    deserialize::<T>(decompressed)
 }
 
 pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
@@ -47,7 +47,7 @@ pub fn deserialize<T>(data: Vec<u8>) -> Result<T>
 where
     T: DeserializeOwned,
 {
-    Ok(bincode::deserialize(&data)?)
+    Ok(bincode::deserialize::<T>(&data)?)
 }
 
 #[cfg(test)]

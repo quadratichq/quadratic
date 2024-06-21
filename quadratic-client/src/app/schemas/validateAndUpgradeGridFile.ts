@@ -1,5 +1,4 @@
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { validateAndUpgradeLegacyGridFile } from './validateAndUpgradeLegacyGridFile';
 
 /**
  * Given arbitrary JSON, validate whether it's a valid file format and return
@@ -12,13 +11,8 @@ export async function validateAndUpgradeGridFile(
   contents: Uint8Array;
   version: string;
 } | null> {
-  let file = validateAndUpgradeLegacyGridFile(input, logOutput);
-  if (file === null) return null;
-
-  const stringified = JSON.stringify(file);
-  const buffer = Buffer.from(stringified, 'utf8');
-
-  // There cannot be a sequence_num before v1.5
+  let buffer = new Uint8Array(input);
   const results = await quadraticCore.upgradeGridFile(buffer, 0);
+
   return { contents: results.grid, version: results.version };
 }

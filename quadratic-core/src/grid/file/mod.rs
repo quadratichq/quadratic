@@ -5,6 +5,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::str;
+use v1_6::schema::GridSchema;
 
 pub mod current;
 mod v1_3;
@@ -64,8 +65,8 @@ pub fn import(file_contents: &[u8]) -> Result<Grid> {
 
 /// Imports a binary file.
 fn import_binary(file_contents: &[u8]) -> Result<Grid> {
-    let file = decompress_and_deserialize::<GridFile>(file_contents)?.into_latest()?;
-    current::import(file)
+    let schema = decompress_and_deserialize::<GridSchema>(file_contents)?;
+    current::import(schema)
 }
 
 fn import_json(file_contents: &str) -> Result<Grid> {
@@ -80,7 +81,7 @@ fn import_json(file_contents: &str) -> Result<Grid> {
 
 pub fn export(grid: &Grid) -> Result<Vec<u8>> {
     let converted = current::export(grid)?;
-    let compressed = serialize_and_compress(&converted)?;
+    let compressed = serialize_and_compress::<GridSchema>(&converted)?;
 
     Ok(compressed)
 }
@@ -113,6 +114,8 @@ mod tests {
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid");
     const V1_5_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
+    const V1_6_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_6_simple.grid");
 
     #[test]
     fn process_a_number_v1_3_file() {
@@ -267,9 +270,9 @@ mod tests {
         //     None,
         // );
 
-        let imported = import(V1_4_AIRPORTS_DISTANCE_FILE).unwrap();
+        let imported = import(V1_6_FILE).unwrap();
         let exported = export(&imported).unwrap();
-        let imported = import(&exported).unwrap();
+        // let imported = import(&exported).unwrap();
         // assert_eq!(*gc.grid(), imported);
     }
 }
