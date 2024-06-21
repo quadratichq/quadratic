@@ -96,7 +96,7 @@ export class Pointer {
       this.pointerHtmlCells.pointerMove(e) ||
       this.pointerHeading.pointerMove(world) ||
       this.pointerAutoComplete.pointerMove(world) ||
-      this.pointerDown.pointerMove(world) ||
+      this.pointerDown.pointerMove(world, event) ||
       this.pointerCursor.pointerMove(world);
 
     this.updateCursor();

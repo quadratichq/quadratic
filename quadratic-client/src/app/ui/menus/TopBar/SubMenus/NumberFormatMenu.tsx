@@ -4,12 +4,12 @@ import '@szhsin/react-menu/dist/index.css';
 import { MenuLineItem } from '../MenuLineItem';
 import {
   removeCellNumericFormat,
+  setCellCommas,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
   textFormatSetExponential,
   textFormatSetPercentage,
-  toggleCommas,
 } from './formatCells';
 
 import {
@@ -46,7 +46,7 @@ export const NumberFormatMenu = () => {
       <MenuItem onClick={() => textFormatSetExponential()}>
         <MenuLineItem primary="Scientific" secondary={<code className="text-xs">6.02E+23</code>} Icon={FunctionIcon} />
       </MenuItem>
-      <MenuItem onClick={() => toggleCommas()}>
+      <MenuItem onClick={() => setCellCommas()}>
         <MenuLineItem primary="Toggle commas" secondary={<code className="text-xs">9,999.99</code>} Icon={QuoteIcon} />
       </MenuItem>
 

@@ -64,14 +64,14 @@ export class CellsTextHash {
     this.labels = new Map();
     this.labelMeshes = new LabelMeshes(this.cellsLabels.sheetId, hashX, hashY);
     this.AABB = new Rectangle(hashX * sheetHashWidth, hashY * sheetHashHeight, sheetHashWidth - 1, sheetHashHeight - 1);
-    const screenRect = this.cellsLabels.sheetOffsets.getRectCellOffsets(
+    const screenRectStringified = this.cellsLabels.sheetOffsets.getRectCellOffsets(
       this.AABB.left,
       this.AABB.top,
       sheetHashWidth,
       sheetHashHeight
     );
+    const screenRect = JSON.parse(screenRectStringified);
     this.viewRectangle = new Rectangle(screenRect.x, screenRect.y, screenRect.w, screenRect.h);
-    screenRect.free();
     this.hashX = hashX;
     this.hashY = hashY;
   }
