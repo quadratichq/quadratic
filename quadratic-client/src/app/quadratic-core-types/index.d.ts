@@ -17,12 +17,10 @@ export type CellVerticalAlign = "top" | "middle" | "bottom";
 export type CellWrap = "overflow" | "wrap" | "clip";
 export interface NumericFormat { type: NumericFormatKind, symbol: string | null, }
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";
-export interface BoolSummary { isAnyTrue: boolean, isAnyFalse: boolean, }
 export interface SheetId { id: string, }
 export interface JsRenderCell { x: bigint, y: bigint, value: string, language?: CodeCellLanguage, align?: CellAlign, verticalAlign?: CellVerticalAlign, wrap?: CellWrap, bold?: boolean, italic?: boolean, textColor?: string, special: JsRenderCellSpecial | null, }
 export interface JsRenderFill { x: bigint, y: bigint, w: number, h: number, color: string, }
-export interface FormattingSummary { bold: BoolSummary, italic: BoolSummary, }
-export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, textColor: string | null, fillColor: string | null, }
+export interface CellFormatSummary { bold: boolean | null, italic: boolean | null, commas: boolean | null, textColor: string | null, fillColor: string | null, }
 export interface JsClipboard { plainText: string, html: string, }
 export interface JsRowHeight { row: number, height: number, }
 export interface ArraySize { w: number, h: number, }
@@ -37,6 +35,7 @@ export interface Span { start: number, end: number, }
 export interface SearchOptions { case_sensitive?: boolean, whole_cell?: boolean, search_code?: boolean, sheet_id?: string, }
 export interface SheetPos { x: bigint, y: bigint, sheet_id: SheetId, }
 export interface SheetRect { min: Pos, max: Pos, sheet_id: SheetId, }
+export interface Selection { sheet_id: SheetId, x: bigint, y: bigint, rects: Array<Rect> | null, rows: Array<bigint> | null, columns: Array<bigint> | null, all: boolean, }
 export interface Placement { index: number, position: number, size: number, }
 export interface ColumnRow { column: number, row: number, }
 export interface SheetInfo { sheet_id: string, name: string, order: string, color: string | null, offsets: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
@@ -53,3 +52,7 @@ export interface TransientResize { row: bigint | null, column: bigint | null, ol
 export interface SheetBounds { sheet_id: string, bounds: GridBounds, bounds_without_formatting: GridBounds, }
 export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells";
 export interface JsGetCellResponse { x: bigint, y: bigint, value: string, type_name: string, }
+export interface SummarizeSelectionResult { count: bigint, sum: number | null, average: number | null, }
+export interface Format { align: CellAlign | null, wrap: CellWrap | null, numeric_format: NumericFormat | null, numeric_decimals: number | null, numeric_commas: boolean | null, bold: boolean | null, italic: boolean | null, text_color: string | null, fill_color: string | null, render_size: RenderSize | null, }
+export interface JsSheetFill { columns: Array<[bigint, [string, bigint]]>, rows: Array<[bigint, [string, bigint]]>, all: string | null, }
+export interface ColumnRow { column: number, row: number, }

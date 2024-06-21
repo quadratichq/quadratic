@@ -1,11 +1,12 @@
 use std::fs::create_dir_all;
 
+use controller::operations::clipboard::PasteSpecial;
+use grid::{formats::format::Format, js_types::JsSheetFill};
 use quadratic_core::{
     color::Rgba,
     controller::{
         active_transactions::transaction_name::TransactionName,
         execution::run_code::get_cells::JsGetCellResponse, transaction_types::JsCodeResult,
-        user_actions::clipboard::PasteSpecial,
     },
     grid::{
         js_types::{
@@ -15,6 +16,7 @@ use quadratic_core::{
         sheet::search::SearchOptions,
         BorderSelection, BorderStyle, CellBorderLine, CodeCellLanguage,
     },
+    selection::Selection,
     sheet_offsets::{
         resize_transient::TransientResize,
         sheet_offsets_wasm::{ColumnRow, Placement},
@@ -22,6 +24,7 @@ use quadratic_core::{
     wasm_bindings::controller::{
         bounds::MinMax,
         sheet_info::{SheetBounds, SheetInfo},
+        summarize::SummarizeSelectionResult,
     },
     Rect, *,
 };
@@ -58,11 +61,9 @@ fn main() {
         grid::CellWrap,
         grid::NumericFormat,
         grid::NumericFormatKind,
-        grid::BoolSummary,
         grid::SheetId,
         grid::js_types::JsRenderCell,
         grid::js_types::JsRenderFill,
-        grid::js_types::FormattingSummary,
         grid::js_types::CellFormatSummary,
         grid::js_types::JsClipboard,
         grid::js_types::JsRowHeight,
@@ -78,6 +79,7 @@ fn main() {
         SearchOptions,
         SheetPos,
         SheetRect,
+        Selection,
         Placement,
         ColumnRow,
         SheetInfo,
@@ -94,6 +96,10 @@ fn main() {
         SheetBounds,
         TransactionName,
         JsGetCellResponse,
+        SummarizeSelectionResult,
+        Format,
+        JsSheetFill,
+        ColumnRow,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

@@ -7,7 +7,7 @@ import { useRecoilState } from 'recoil';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { Command } from './CommandPaletteListItem';
-import borderCommandGroup from './commands/Borders';
+import { BordersHook } from './commands/Borders';
 import codeCommandGroup from './commands/Code';
 import { columnRowCommandGroup } from './commands/ColumnRow';
 import editCommandGroup from './commands/Edit';
@@ -41,6 +41,8 @@ export const CommandPalette = () => {
   useEffect(() => {
     mixpanel.track('[CommandPalette].open');
   }, []);
+
+  const borderCommandGroup = BordersHook();
 
   const commandGroups = [
     editCommandGroup,

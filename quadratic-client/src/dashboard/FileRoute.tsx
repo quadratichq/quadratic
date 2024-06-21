@@ -7,6 +7,7 @@ import initRustClient from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
 import QuadraticApp from '@/app/ui/QuadraticApp';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, ROUTE_LOADER_IDS } from '@/shared/constants/routes';
@@ -47,6 +48,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     console.log(
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
+
+  // initialize all workers
+  initWorkers();
 
   // initialize: Rust metadata and PIXI assets
   await Promise.all([initRustClient(), loadAssets()]);

@@ -24,6 +24,7 @@ import { QColorPicker } from '../../../../components/qColorPicker';
 import { MenuLineItem } from '../../MenuLineItem';
 import { TopBarMenuItem } from '../../TopBarMenuItem';
 import {
+  clearFillColor,
   clearFormattingAndBorders,
   setBold,
   setFillColor,
@@ -37,9 +38,6 @@ import './formatMenuStyles.scss';
 import { useGetBorderMenu } from './useGetBorderMenu';
 
 export const FormatMenu = () => {
-  // todo!!!
-  const formatPrimaryCell = { bold: false, italic: false };
-
   // focus canvas after the format menu closes
   const onMenuChange = useCallback((event: MenuChangeEvent) => {
     if (!event.open) focusGrid();
@@ -56,10 +54,10 @@ export const FormatMenu = () => {
         </TopBarMenuItem>
       )}
     >
-      <MenuItem onClick={() => setBold(!(formatPrimaryCell?.bold === true))}>
+      <MenuItem onClick={() => setBold()}>
         <MenuLineItem primary="Bold" secondary={KeyboardSymbols.Command + 'B'} Icon={FontBoldIcon} />
       </MenuItem>
-      <MenuItem onClick={() => setItalic(!(formatPrimaryCell?.italic === true))}>
+      <MenuItem onClick={() => setItalic()}>
         <MenuLineItem primary="Italic" secondary={KeyboardSymbols.Command + 'I'} Icon={FontItalicIcon} />
       </MenuItem>
       <SubMenu
@@ -109,7 +107,7 @@ export const FormatMenu = () => {
         id="FillColorMenuID"
         label={<MenuLineItem primary="Fill color" Icon={PaintBucketIcon} />}
       >
-        <QColorPicker onChangeComplete={setFillColor} onClear={() => setFillColor()} />
+        <QColorPicker onChangeComplete={setFillColor} onClear={clearFillColor} />
       </SubMenu>
 
       <SubMenu label={<MenuLineItem primary="Border" Icon={BorderNoneIcon} />}>{borders}</SubMenu>

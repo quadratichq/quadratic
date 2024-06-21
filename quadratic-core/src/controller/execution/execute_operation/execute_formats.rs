@@ -8,6 +8,7 @@ use crate::{
 };
 
 impl GridController {
+    // Supports deprecated SetCellFormats operation.
     pub(crate) fn execute_set_cell_formats(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -78,6 +79,33 @@ impl GridController {
                     attr: old_attr,
                 },
             );
+        }
+    }
+
+    /// Executes SetCellFormatsSelection operation.
+    pub fn execute_set_cell_formats_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetCellFormatsSelection { selection, formats } = op {
+            if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
+                let reverse_operations = sheet.set_formats_selection(&selection, &formats);
+
+                if !transaction.is_server() {
+                    self.send_updated_bounds_selection(&selection, true);
+                }
+
+                transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetCellFormatsSelection { selection, formats });
+
+                transaction
+                    .reverse_operations
+                    .splice(0..0, reverse_operations.iter().cloned());
+            }
         }
     }
 }

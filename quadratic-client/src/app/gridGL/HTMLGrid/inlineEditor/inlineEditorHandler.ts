@@ -41,8 +41,9 @@ class InlineEditorHandler {
 
   private formatSummary?: CellFormatSummary;
   private renderCell?: JsRenderCell;
-  private temporaryBold: boolean | undefined;
-  private temporaryItalic: boolean | undefined;
+
+  temporaryBold: boolean | undefined;
+  temporaryItalic: boolean | undefined;
 
   // this is used to display the formula expand button
   private formulaExpandButton?: HTMLDivElement;
@@ -70,8 +71,8 @@ class InlineEditorHandler {
   // Resets state after editing is complete.
   private reset() {
     this.location = undefined;
-    this.temporaryBold = false;
-    this.temporaryItalic = false;
+    this.temporaryBold = undefined;
+    this.temporaryItalic = undefined;
     this.changeToFormula(false);
     this.height = 0;
     this.open = false;
@@ -170,10 +171,11 @@ class InlineEditorHandler {
       }
       this.open = true;
       const sheet = sheets.sheet;
+      const cursor = sheet.cursor.getCursor();
       this.location = {
         sheetId: sheet.id,
-        x: sheet.cursor.originPosition.x,
-        y: sheet.cursor.originPosition.y,
+        x: cursor.x,
+        y: cursor.y,
       };
       let value: string;
       let changeToFormula = false;
@@ -194,7 +196,8 @@ class InlineEditorHandler {
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
-        this.location.y
+        this.location.y,
+        true
       );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
@@ -340,6 +343,12 @@ class InlineEditorHandler {
     this.updateFont();
   };
 
+  closeIfOpen() {
+    if (this.open) {
+      this.close(0, 0, false);
+    }
+  }
+
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   close = (deltaX = 0, deltaY = 0, cancel: boolean) => {
@@ -396,6 +405,8 @@ class InlineEditorHandler {
     if (deltaX || deltaY) {
       const position = sheets.sheet.cursor.cursorPosition;
       sheets.sheet.cursor.changePosition({
+        multiCursor: null,
+        columnRow: null,
         cursorPosition: {
           x: position.x + deltaX,
           y: position.y + deltaY,

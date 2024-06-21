@@ -12,34 +12,19 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    grid::{js_types::JsRowHeight, SheetId},
-    Pos, Rect, SheetRect,
+    grid::js_types::JsRowHeight,
+    Pos, SheetRect,
 };
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
     pub(super) fn start_transaction(&mut self, transaction: &mut PendingTransaction) {
         if cfg!(target_family = "wasm") && !transaction.is_server() {
-            let (x, y, w, h) = if let Some(rect) = transaction.rect {
-                (
-                    Some(rect.min.x),
-                    Some(rect.min.y),
-                    Some(rect.width()),
-                    Some(rect.height()),
-                )
-            } else {
-                (None, None, None, None)
-            };
             let transaction_name = serde_json::to_string(&transaction.transaction_name)
                 .unwrap_or("Unknown".to_string());
             crate::wasm_bindings::js::jsTransactionStart(
                 transaction.id.to_string(),
                 transaction_name,
-                transaction.sheet_id.map(|s| s.to_string()),
-                x,
-                y,
-                w,
-                h,
             );
         }
         loop {
@@ -102,16 +87,12 @@ impl GridController {
         operations: Vec<Operation>,
         cursor: Option<String>,
         transaction_name: TransactionName,
-        sheet_id: Option<SheetId>,
-        rect: Option<Rect>,
     ) {
         let mut transaction = PendingTransaction {
             transaction_type: TransactionType::User,
             operations: operations.into(),
             cursor,
             transaction_name,
-            sheet_id,
-            rect,
             ..Default::default()
         };
         self.start_transaction(&mut transaction);
@@ -298,13 +279,7 @@ mod tests {
         assert!(!gc.has_undo());
         assert!(!gc.has_redo());
 
-        gc.start_user_transaction(
-            vec![operation.clone()],
-            None,
-            TransactionName::Unknown,
-            Some(gc.sheet_ids()[0]),
-            None,
-        );
+        gc.start_user_transaction(vec![operation.clone()], None, TransactionName::Unknown);
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);

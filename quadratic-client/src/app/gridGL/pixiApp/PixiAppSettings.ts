@@ -28,10 +28,12 @@ class PixiAppSettings {
   private lastSettings: GridSettings;
   private _panMode: PanMode;
   private _input: Input;
+  unsavedEditorChanges = false;
 
   temporarilyHideCellTypeOutlines = false;
   editorInteractionState = editorInteractionStateDefault;
   setEditorInteractionState?: (value: EditorInteractionState) => void;
+  addGlobalSnackbar?: (message: string, options?: { severity?: 'error' | 'warning' }) => void;
 
   constructor() {
     const settings = localStorage.getItem('viewSettings');

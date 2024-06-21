@@ -87,7 +87,7 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
     const token = await authClient.getTokenOrRedirect();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as Message[];
     const request_body = {
-      model: 'gpt-4-32k',
+      model: 'gpt-4o',
       messages: [...systemMessages, ...updatedMessages],
     };
     setMessages(updatedMessages);
