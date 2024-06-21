@@ -1,9 +1,13 @@
 use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
+use lexicon_fractional_index::key_between;
 
 use crate::{
-    cell_values::CellValues, controller::GridController, grid::SheetId, CellValue, Pos, SheetPos,
+    cell_values::CellValues,
+    controller::GridController,
+    grid::{file::sheet_schema::export_sheet, Sheet, SheetId},
+    CellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -127,7 +131,6 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![] as Vec<Operation>;
         let insert_at = Pos::default();
-        let mut cell_values = vec![];
         let error =
             |message: String| anyhow!("Error parsing Excel file {}: {}", file_name, message);
 
@@ -136,66 +139,61 @@ impl GridController {
             ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
         let sheets = workbook.sheet_names().to_owned();
 
+        let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
             // add the sheet
-            let add_sheet_operations = self.add_sheet_operations(Some(sheet_name.to_owned()));
+            let mut sheet = Sheet::new(SheetId::new(), sheet_name.to_owned(), order.clone());
+            order = key_between(&Some(order), &None).unwrap_or("A0".to_string());
 
-            if let Operation::AddSheet { sheet } = &add_sheet_operations[0] {
-                let sheet_id = sheet.id;
-                ops.extend(add_sheet_operations);
+            let range = workbook
+                .worksheet_range(&sheet_name)
+                .map_err(|e: XlsxError| error(e.to_string()))?;
 
-                let range = workbook
-                    .worksheet_range(&sheet_name)
-                    .map_err(|e: XlsxError| error(e.to_string()))?;
-                let size = range.get_size();
+            for (y, row) in range.rows().enumerate() {
+                for (x, col) in row.iter().enumerate() {
+                    let cell_value = match col {
+                        ExcelData::Empty => CellValue::Blank,
+                        ExcelData::String(value) => CellValue::Text(value.to_string()),
+                        ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
+                        ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
+                        ExcelData::Float(ref value) => {
+                            CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
+                        }
+                        // TODO(ddimaria): implement when implementing Instant
+                        // ExcelData::DateTime(ref value) => match value.is_datetime() {
+                        //     true => value.as_datetime().map_or_else(
+                        //         || CellValue::Blank,
+                        //         |v| CellValue::Instant(v.into()),
+                        //     ),
+                        //     false => CellValue::Text(value.to_string()),
+                        // },
+                        // TODO(ddimaria): remove when implementing Instant
+                        ExcelData::DateTime(ref value) => match value.is_datetime() {
+                            true => value.as_datetime().map_or_else(
+                                || CellValue::Blank,
+                                |v| CellValue::Text(v.to_string()),
+                            ),
+                            false => CellValue::Text(value.to_string()),
+                        },
+                        ExcelData::Int(ref value) => {
+                            CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
+                        }
+                        ExcelData::Error(_) => CellValue::Blank,
+                        ExcelData::Bool(value) => CellValue::Logical(*value),
+                    };
 
-                for row in range.rows() {
-                    for col in row.iter() {
-                        let cell_value = match col {
-                            ExcelData::Empty => CellValue::Blank,
-                            ExcelData::String(value) => CellValue::Text(value.to_string()),
-                            ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
-                            ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
-                            ExcelData::Float(ref value) => {
-                                CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
-                            }
-                            // TODO(ddimaria): implement when implementing Instant
-                            // ExcelData::DateTime(ref value) => match value.is_datetime() {
-                            //     true => value.as_datetime().map_or_else(
-                            //         || CellValue::Blank,
-                            //         |v| CellValue::Instant(v.into()),
-                            //     ),
-                            //     false => CellValue::Text(value.to_string()),
-                            // },
-                            // TODO(ddimaria): remove when implementing Instant
-                            ExcelData::DateTime(ref value) => match value.is_datetime() {
-                                true => value.as_datetime().map_or_else(
-                                    || CellValue::Blank,
-                                    |v| CellValue::Text(v.to_string()),
-                                ),
-                                false => CellValue::Text(value.to_string()),
-                            },
-                            ExcelData::Int(ref value) => {
-                                CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
-                            }
-                            ExcelData::Error(_) => CellValue::Blank,
-                            ExcelData::Bool(value) => CellValue::Logical(*value),
-                        };
-
-                        cell_values.push(cell_value);
-                    }
+                    sheet.set_cell_value(
+                        Pos {
+                            x: insert_at.x + x as i64,
+                            y: insert_at.y + y as i64,
+                        },
+                        cell_value,
+                    );
                 }
-
-                let values = CellValues::from_flat_array(size.1 as u32, size.0 as u32, cell_values);
-                let operations = Operation::SetCellValues {
-                    sheet_pos: (insert_at.x, insert_at.y, sheet_id).into(),
-                    values,
-                };
-                ops.push(operations);
-
-                // empty cell values for each sheet
-                cell_values = vec![];
             }
+            ops.push(Operation::AddSheetSchema {
+                schema: export_sheet(&sheet),
+            });
         }
 
         Ok(ops)

@@ -1,15 +1,13 @@
-use std::str::FromStr;
-
-use bigdecimal::BigDecimal;
-
+use super::operation::Operation;
 use crate::{
     cell_values::CellValues,
     controller::GridController,
     grid::{formatting::CellFmtArray, NumericDecimals, NumericFormat, NumericFormatKind},
+    selection::Selection,
     CellValue, RunLengthEncoding, SheetPos, SheetRect,
 };
-
-use super::operation::Operation;
+use bigdecimal::BigDecimal;
+use std::str::FromStr;
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
 // there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
@@ -113,23 +111,51 @@ impl GridController {
         ops
     }
 
-    /// Generates and returns the set of operations to delete the values and code in a sheet_rect
+    /// Generates and returns the set of operations to delete the values and code in a Selection
     /// Does not commit the operations or create a transaction.
-    pub fn delete_cells_rect_operations(&mut self, sheet_rect: SheetRect) -> Vec<Operation> {
-        let values = CellValues::new(sheet_rect.width() as u32, sheet_rect.height() as u32);
-        vec![Operation::SetCellValues {
-            sheet_pos: sheet_rect.into(),
-            values,
-        }]
+    pub fn delete_cells_operations(&self, selection: &Selection) -> Vec<Operation> {
+        let mut ops = vec![];
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            // Find all cells with values.
+            if let Some(values) = sheet.selection(selection, None, true) {
+                // Find the minimum x and y values of the selection, which will
+                // populate CellValues.
+                let mut min_x = i64::MAX;
+                let mut min_y = i64::MAX;
+                let mut cell_values = CellValues::new(0, 0);
+                values.iter().for_each(|(pos, _value)| {
+                    min_x = min_x.min(pos.x);
+                    min_y = min_y.min(pos.y);
+                });
+                if min_x != i64::MAX && min_y != i64::MAX && !values.is_empty() {
+                    values.iter().for_each(|(pos, _value)| {
+                        cell_values.set(
+                            (pos.x - min_x) as u32,
+                            (pos.y - min_y) as u32,
+                            CellValue::Blank,
+                        );
+                    });
+                    ops.push(Operation::SetCellValues {
+                        sheet_pos: SheetPos {
+                            x: min_x,
+                            y: min_y,
+                            sheet_id: selection.sheet_id,
+                        },
+                        values: cell_values,
+                    });
+                }
+            }
+        };
+        ops
     }
 
     /// Generates and returns the set of operations to clear the formatting in a sheet_rect
     pub fn delete_values_and_formatting_operations(
         &mut self,
-        sheet_rect: SheetRect,
+        selection: &Selection,
     ) -> Vec<Operation> {
-        let mut ops = self.delete_cells_rect_operations(sheet_rect);
-        ops.extend(self.clear_formatting_operations(sheet_rect));
+        let mut ops = self.delete_cells_operations(selection);
+        ops.extend(self.clear_format_selection_operations(selection));
         ops
     }
 }
@@ -143,8 +169,9 @@ mod test {
     use crate::{
         cell_values::CellValues,
         controller::{operations::operation::Operation, GridController},
-        grid::SheetId,
-        CellValue, SheetPos,
+        grid::{CodeCellLanguage, SheetId},
+        selection::Selection,
+        CellValue, Rect, SheetPos,
     };
 
     #[test]
@@ -256,6 +283,47 @@ mod test {
             },
             value,
         );
-        dbg!(cell_value.to_string());
+        assert_eq!(cell_value.to_string(), value.to_string());
+    }
+
+    #[test]
+    fn delete_cells_operations() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 1,
+            y: 2,
+            sheet_id,
+        };
+        gc.set_cell_value(sheet_pos, "hello".to_string(), None);
+
+        let sheet_pos_2 = SheetPos {
+            x: 2,
+            y: 2,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos_2,
+            CodeCellLanguage::Formula,
+            "5 + 5".to_string(),
+            None,
+        );
+        let selection = Selection::rect(Rect::from_numbers(1, 2, 2, 1), sheet_id);
+        let operations = gc.delete_cells_operations(&selection);
+        assert_eq!(operations.len(), 1);
+        assert_eq!(
+            operations,
+            vec![Operation::SetCellValues {
+                sheet_pos: SheetPos {
+                    x: 1,
+                    y: 2,
+                    sheet_id
+                },
+                values: CellValues::from_cell_value_vec(vec![vec![
+                    CellValue::Blank,
+                    CellValue::Blank
+                ]])
+            }]
+        );
     }
 }

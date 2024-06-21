@@ -144,6 +144,10 @@ export class Input {
       case "\r": // ctrl + m
         this.control.killMultiplayer();
         break;
+      case "L":
+        this.cli.options.servicesLocal = !this.cli.options.servicesLocal;
+        this.control.checkServices();
+        break;
     }
   };
 }

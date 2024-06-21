@@ -13,8 +13,8 @@ pub use bounds::GridBounds;
 pub use code_run::*;
 pub use column::{Column, ColumnData};
 pub use formatting::{
-    Bold, BoolSummary, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas,
-    NumericDecimals, NumericFormat, NumericFormatKind, RenderSize, TextColor,
+    Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic, NumericCommas, NumericDecimals,
+    NumericFormat, NumericFormatKind, RenderSize, TextColor,
 };
 pub use ids::*;
 use serde::{Deserialize, Serialize};
@@ -28,6 +28,7 @@ mod bounds;
 mod code_run;
 mod column;
 pub mod file;
+pub mod formats;
 pub mod formatting;
 mod ids;
 pub mod js_types;
