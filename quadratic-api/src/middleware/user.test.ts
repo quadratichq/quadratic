@@ -11,26 +11,8 @@ beforeEach(async () => {
     },
   });
 
-  // Create a file with an invite
-  await createFile({
-    data: {
-      name: 'Test File 1',
-      uuid: '00000000-0000-4000-8000-000000000001',
-      creatorUserId: user1.id,
-      ownerUserId: user1.id,
-      FileInvite: {
-        create: [
-          {
-            email: 'johndoe@example.com',
-            role: 'EDITOR',
-          },
-        ],
-      },
-    },
-  });
-
   // Create a team with an invite
-  await dbClient.team.create({
+  const team = await dbClient.team.create({
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000002',
@@ -44,6 +26,25 @@ beforeEach(async () => {
         ],
       },
       TeamInvite: {
+        create: [
+          {
+            email: 'johndoe@example.com',
+            role: 'EDITOR',
+          },
+        ],
+      },
+    },
+  });
+
+  // Create a file with an invite
+  await createFile({
+    data: {
+      name: 'Test File 1',
+      uuid: '00000000-0000-4000-8000-000000000001',
+      creatorUserId: user1.id,
+      ownerUserId: user1.id,
+      ownerTeamId: team.id,
+      FileInvite: {
         create: [
           {
             email: 'johndoe@example.com',
