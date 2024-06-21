@@ -1,8 +1,9 @@
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { Graphics, Rectangle } from 'pixi.js';
+import { Graphics } from 'pixi.js';
 import { sheets } from '../../grid/controller/Sheets';
 import { Coordinate } from '../types/size';
 import { CELL_INPUT_PADDING } from './Cursor';
+import { drawColumnRowCursor, drawMultiCursor } from './drawCursor';
 
 export const CURSOR_THICKNESS = 1;
 const ALPHA = 0.5;
@@ -32,7 +33,7 @@ export class UIMultiPlayerCursor extends Graphics {
     editing: boolean;
     sessionId: string;
     code: boolean;
-  }): void {
+  }) {
     const sheet = sheets.sheet;
     let { x, y, width, height } = sheet.getCellOffsets(cursor.x, cursor.y);
 
@@ -64,22 +65,14 @@ export class UIMultiPlayerCursor extends Graphics {
     }
   }
 
-  private drawMultiCursor(color: number, rectangle: Rectangle): void {
-    const sheet = sheets.sheet;
-    this.lineStyle(1, color, 1, 0, true);
-    this.beginFill(color, FILL_ALPHA);
-    const startCell = sheet.getCellOffsets(rectangle.x, rectangle.y);
-    const endCell = sheet.getCellOffsets(rectangle.x + rectangle.width, rectangle.y + rectangle.height);
-    this.drawRect(
-      startCell.x,
-      startCell.y,
-      endCell.x + endCell.width - startCell.x,
-      endCell.y + endCell.height - startCell.y
-    );
-  }
+  update(viewportDirty: boolean) {
+    // we need to update the multiplayer cursor if a player has selected a row,
+    // column, or the sheet, and the viewport has changed
+    const dirtySheet = viewportDirty
+      ? [...multiplayer.users].some(([_, player]) => player.parsedSelection?.columnRow)
+      : false;
 
-  update() {
-    if (this.dirty) {
+    if (dirtySheet || this.dirty) {
       this.dirty = false;
       this.clear();
       const sheetId = sheets.sheet.id;
@@ -88,15 +81,23 @@ export class UIMultiPlayerCursor extends Graphics {
         if (player.parsedSelection && player.sheet_id === sheetId) {
           this.drawCursor({
             color,
-            cursor: player.parsedSelection.cursor,
+            cursor: player.parsedSelection.cursorPosition,
             editing: player.cell_edit.active,
             sessionId: player.session_id,
             code: player.cell_edit.code_editor,
           });
 
-          // note: the rectangle is not really a PIXI.Rectangle, but a (x, y, width, height) type (b/c we JSON stringified)
-          if (player.parsedSelection.rectangle) {
-            this.drawMultiCursor(color, player.parsedSelection.rectangle);
+          const columnRow = player.parsedSelection.columnRow;
+          if (columnRow) {
+            drawColumnRowCursor({
+              g: this,
+              color,
+              alpha: FILL_ALPHA,
+              cursorPosition: player.parsedSelection.cursorPosition,
+              columnRow,
+            });
+          } else if (player.parsedSelection.multiCursor) {
+            drawMultiCursor(this, color, FILL_ALPHA, player.parsedSelection.multiCursor);
           }
         }
       });

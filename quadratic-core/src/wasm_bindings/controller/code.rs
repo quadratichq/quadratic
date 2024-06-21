@@ -43,11 +43,12 @@ impl GridController {
     ///
     /// * CodeCell.evaluation_result is a stringified version of the output (used for AI models)
     #[wasm_bindgen(js_name = "getCodeCell")]
-    pub fn js_get_code_string(&self, sheet_id: String, pos: &Pos) -> Result<JsValue, JsValue> {
+    pub fn js_get_code_string(&self, sheet_id: String, pos: String) -> Result<JsValue, JsValue> {
+        let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
         let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
             return Ok(JsValue::null());
         };
-        if let Some(edit_code) = sheet.edit_code_value(*pos) {
+        if let Some(edit_code) = sheet.edit_code_value(pos) {
             Ok(serde_wasm_bindgen::to_value(&edit_code)?)
         } else {
             Ok(JsValue::null())
@@ -59,14 +60,16 @@ impl GridController {
     pub fn js_set_cell_code(
         &mut self,
         sheet_id: String,
-        pos: Pos,
+        pos: String,
         language: JsValue,
         code_string: String,
         cursor: Option<String>,
     ) {
-        let sheet_id = SheetId::from_str(&sheet_id).unwrap();
-        if let Ok(language) = serde_wasm_bindgen::from_value(language) {
-            self.set_code_cell(pos.to_sheet_pos(sheet_id), language, code_string, cursor);
+        if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
+            let sheet_id = SheetId::from_str(&sheet_id).unwrap();
+            if let Ok(language) = serde_wasm_bindgen::from_value(language) {
+                self.set_code_cell(pos.to_sheet_pos(sheet_id), language, code_string, cursor);
+            }
         }
     }
 
@@ -86,9 +89,11 @@ impl GridController {
 
     /// Reruns one code cell
     #[wasm_bindgen(js_name = "rerunCodeCell")]
-    pub fn js_rerun_code_cell(&mut self, sheet_id: String, pos: Pos, cursor: Option<String>) {
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            self.rerun_code_cell(pos.to_sheet_pos(sheet_id), cursor);
+    pub fn js_rerun_code_cell(&mut self, sheet_id: String, pos: String, cursor: Option<String>) {
+        if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
+            if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+                self.rerun_code_cell(pos.to_sheet_pos(sheet_id), cursor);
+            }
         }
     }
 

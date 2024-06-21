@@ -109,18 +109,20 @@ export class Update {
     debugTimeCheck('[Update] gridLines');
     pixiApp.axesLines.update();
     debugTimeCheck('[Update] axesLines');
-    pixiApp.headings.update();
+    pixiApp.headings.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] headings');
     pixiApp.boxCells.update();
     debugTimeCheck('[Update] boxCells');
-    pixiApp.cursor.update();
+    pixiApp.cursor.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] cursor');
     pixiApp.cellHighlights.update();
     debugTimeCheck('[Update] cellHighlights');
-    pixiApp.multiplayerCursor.update();
+    pixiApp.multiplayerCursor.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] multiplayerCursor');
     pixiApp.cellMoving.update();
     debugTimeCheck('[Update] cellMoving');
+    pixiApp.cellsSheets.update();
+    debugTimeCheck('[Update] cellsSheets');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

@@ -7,6 +7,8 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
+  Selection,
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
@@ -38,7 +40,7 @@ interface EventTypes {
   changeSheet: () => void;
   sheetBounds: (sheetBounds: SheetBounds) => void;
 
-  setCursor: (cursor: string) => void;
+  setCursor: (cursor?: string, selection?: Selection) => void;
   cursorPosition: () => void;
   generateThumbnail: () => void;
   changeInput: (input: boolean, initialValue?: string) => void;
@@ -47,6 +49,7 @@ interface EventTypes {
 
   sheetOffsets: (sheetId: string, column: number | undefined, row: number | undefined, size: number) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
+  sheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
   htmlUpdate: (html: JsHtmlOutput) => void;
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
@@ -83,6 +86,8 @@ interface EventTypes {
 
   codeEditor: () => void;
   cellMoving: (move: boolean) => void;
+
+  insertCodeEditorText: (text: string) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

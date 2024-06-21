@@ -106,8 +106,6 @@ mod test {
             ],
             None,
             TransactionName::Unknown,
-            None,
-            None,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
