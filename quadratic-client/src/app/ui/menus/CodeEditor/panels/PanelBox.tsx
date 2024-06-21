@@ -3,10 +3,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/sh
 import { ChevronRightIcon } from '@radix-ui/react-icons';
 
 interface Props {
-    title: string;
-    component: any;
-    index: number;
-    codeEditorPanelData: CodeEditorPanelData;
+  title: string;
+  component: any;
+  index: number;
+  codeEditorPanelData: CodeEditorPanelData;
 }
 
 export function PanelBox(props: Props) {
@@ -19,7 +19,7 @@ export function PanelBox(props: Props) {
 
   return (
     <Collapsible
-      className="h-full"
+      className={open ? 'h-full' : ''}
       // className="data-[state=open]:flex-growz flex flex-col relative"
       open={open}
       onOpenChange={setOpen}
@@ -28,7 +28,7 @@ export function PanelBox(props: Props) {
         <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
         {title}
       </CollapsibleTrigger>
-      <CollapsibleContent className="overflow-scroll h-full">{component}</CollapsibleContent>
+      <CollapsibleContent className="h-full overflow-scroll">{component}</CollapsibleContent>
     </Collapsible>
   );
 }

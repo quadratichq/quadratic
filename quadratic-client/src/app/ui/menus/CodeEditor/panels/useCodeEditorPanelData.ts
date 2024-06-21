@@ -56,6 +56,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     `codeEditorPanelHidden-${type}`,
     type === 'Connection' ? [false, false, false] : [false, false]
   );
+
   const [panelHeightPercentages, setPanelHeightPercentages] = useLocalStorage<number[]>(
     `codeEditorPanelHeightPercentages-${type}`,
     type === 'Connection' ? [34, 33, 33] : [50, 50]

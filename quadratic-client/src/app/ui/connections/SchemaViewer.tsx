@@ -70,7 +70,7 @@ export const SchemaViewer = () => {
         </div>
       </div>
       {loadState === 'error' && (
-        <Type className="text-destructive m-3 mt-0">
+        <Type className="m-3 mt-0 text-destructive">
           Error loading data schema.{' '}
           <button className="underline" onClick={fetchData}>
             Try again
@@ -85,7 +85,8 @@ export const SchemaViewer = () => {
               <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
             ))}
           </ul>
-        </div>)}
+        </div>
+      )}
     </>
   );
 };
