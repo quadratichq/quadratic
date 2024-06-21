@@ -35,10 +35,10 @@ impl GridController {
 
         if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
             // send the modified cells to the render web worker
-            modified.iter().for_each(|hash| {
+            modified.iter().for_each(|modified| {
                 let rect = Rect::from_numbers(
-                    hash.x * CELL_SHEET_WIDTH as i64,
-                    hash.y * CELL_SHEET_HEIGHT as i64,
+                    modified.x * CELL_SHEET_WIDTH as i64,
+                    modified.y * CELL_SHEET_HEIGHT as i64,
                     CELL_SHEET_WIDTH as i64,
                     CELL_SHEET_HEIGHT as i64,
                 );
@@ -46,8 +46,8 @@ impl GridController {
                 if let Ok(cells) = serde_json::to_string(&render_cells) {
                     crate::wasm_bindings::js::jsRenderCellSheets(
                         sheet_rect.sheet_id.to_string(),
-                        hash.x,
-                        hash.y,
+                        modified.x,
+                        modified.y,
                         cells,
                     );
                 }
