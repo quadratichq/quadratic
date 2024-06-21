@@ -2,9 +2,11 @@ import { EditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
 
 export const insertCellRef = (editorInteractionState: EditorInteractionState, relative?: boolean) => {
-  const { selectedCell, selectedCellSheet, mode: language } = editorInteractionState;
+  const { selectedCell, selectedCellSheet, mode } = editorInteractionState;
+  const language = getLanguage(mode);
   let ref = '';
   let sheet = '';
   const cursor = sheets.sheet.cursor;
@@ -66,7 +68,7 @@ export const insertCellRef = (editorInteractionState: EditorInteractionState, re
         }
       }
     }
-  } else if (language === 'Javascript') {
+  } else if (language as any  === 'Javascript') { // any needed until Javascript is properly defined in Javascript branch
     if (cursor.multiCursor) {
       if (cursor.multiCursor.length > 1) {
         console.warn(
