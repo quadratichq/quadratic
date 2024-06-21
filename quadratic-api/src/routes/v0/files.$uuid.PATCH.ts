@@ -35,6 +35,11 @@ async function handler(
     userMakingRequest: { filePermissions, id: userMakingRequestId },
   } = await getFile({ uuid, userId });
 
+  // Can't change both at once
+  if (ownerUserId && name) {
+    return res.status(400).json({ error: { message: 'You can only change one thing at a time' } });
+  }
+
   // Can they edit this file?
   if (!filePermissions.includes(FILE_EDIT)) {
     return res.status(403).json({ error: { message: 'Permission denied' } });
@@ -64,11 +69,11 @@ async function handler(
     throw new ApiError(403, 'Permission denied');
   }
 
-  // Moving to a user's private files?
+  // Moving to a user's private (team) files?
   if (ownerUserId) {
     // The specified user must be the same person making the request
     if (ownerUserId !== userMakingRequestId) {
-      throw new ApiError(400, 'You can only request to move your own files');
+      throw new ApiError(400, 'You can only move your own files');
     }
 
     const modifiedFile = await dbClient.file.update({
