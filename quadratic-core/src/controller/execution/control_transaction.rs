@@ -13,9 +13,9 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    grid::{CodeRun, CodeRunResult, SheetId},
+    grid::{CodeRun, CodeRunResult},
     parquet::parquet_to_vec,
-    Pos, Rect, Value,
+    Pos, Value,
 };
 
 impl GridController {
