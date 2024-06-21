@@ -326,6 +326,14 @@ fn import_format(format: &current::Format) -> Format {
             current::CellAlign::Center => CellAlign::Center,
             current::CellAlign::Right => CellAlign::Right,
         }),
+        vertical_align: format
+            .vertical_align
+            .as_ref()
+            .map(|vertical_align| match vertical_align {
+                current::CellVerticalAlign::Top => CellVerticalAlign::Top,
+                current::CellVerticalAlign::Middle => CellVerticalAlign::Middle,
+                current::CellVerticalAlign::Bottom => CellVerticalAlign::Bottom,
+            }),
         wrap: format.wrap.as_ref().map(|wrap| match wrap {
             current::CellWrap::Wrap => CellWrap::Wrap,
             current::CellWrap::Overflow => CellWrap::Overflow,
@@ -690,6 +698,13 @@ fn export_format(format: &Format) -> Option<current::Format> {
                 CellAlign::Center => current::CellAlign::Center,
                 CellAlign::Right => current::CellAlign::Right,
             }),
+            vertical_align: format
+                .vertical_align
+                .map(|vertical_align| match vertical_align {
+                    CellVerticalAlign::Top => current::CellVerticalAlign::Top,
+                    CellVerticalAlign::Middle => current::CellVerticalAlign::Middle,
+                    CellVerticalAlign::Bottom => current::CellVerticalAlign::Bottom,
+                }),
             wrap: format.wrap.map(|wrap| match wrap {
                 CellWrap::Wrap => current::CellWrap::Wrap,
                 CellWrap::Overflow => current::CellWrap::Overflow,

@@ -345,27 +345,11 @@ class CoreClient {
         break;
 
       case 'clientCoreSetCellVerticalAlign':
-        await core.setCellVerticalAlign(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.verticalAlign,
-          e.data.cursor
-        );
+        await core.setCellVerticalAlign(e.data.selection, e.data.verticalAlign, e.data.cursor);
         break;
 
       case 'clientCoreSetCellWrap':
-        await core.setCellWrap(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.wrap,
-          e.data.cursor
-        );
+        await core.setCellWrap(e.data.selection, e.data.wrap, e.data.cursor);
         break;
 
       case 'clientCoreCopyToClipboard':

@@ -62,7 +62,11 @@ impl GridController {
                     if !transaction.is_server() {
                         self.send_updated_bounds(sheet_rect.sheet_id);
                         self.send_render_cells(&sheet_rect);
-                        self.start_auto_resize_row_heights(transaction, &sheet_rect);
+                        self.start_auto_resize_row_heights(
+                            transaction,
+                            sheet_pos.sheet_id,
+                            sheet_rect.y_range().collect(),
+                        );
                     }
                 }
             }

@@ -61,7 +61,11 @@ impl GridController {
                     _ => {
                         self.send_updated_bounds_rect(&sheet_rect, true);
                         self.send_render_cells(&sheet_rect);
-                        self.start_auto_resize_row_heights(transaction, &sheet_rect);
+                        self.start_auto_resize_row_heights(
+                            transaction,
+                            sheet_rect.sheet_id,
+                            sheet_rect.y_range().collect(),
+                        );
                     }
                 };
             }
@@ -91,9 +95,11 @@ impl GridController {
         if let Operation::SetCellFormatsSelection { selection, formats } = op {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
                 let reverse_operations = sheet.set_formats_selection(&selection, &formats);
+                let rows = sheet.get_rows_in_selection(&selection);
 
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
+                    self.start_auto_resize_row_heights(transaction, selection.sheet_id, rows);
                 }
 
                 transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);

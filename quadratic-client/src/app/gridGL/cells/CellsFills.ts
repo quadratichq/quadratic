@@ -65,8 +65,22 @@ export class CellsFills extends Container {
       }
     });
     events.on('cursorPosition', this.setDirty);
+    events.on('resizeHeadingColumn', () => this.drawCells());
+    events.on('resizeHeadingRow', () => this.drawCells());
     pixiApp.viewport.on('zoomed', this.setDirty);
     pixiApp.viewport.on('moved', this.setDirty);
+  }
+
+  destroy() {
+    events.off('sheetFills', this.drawCells);
+    events.off('sheetMetaFills', this.drawMeta);
+    events.off('sheetOffsets', this.drawCells);
+    events.off('cursorPosition', this.setDirty);
+    events.off('resizeHeadingColumn', this.drawCells);
+    events.off('resizeHeadingRow', this.drawCells);
+    pixiApp.viewport.off('zoomed', this.setDirty);
+    pixiApp.viewport.off('moved', this.setDirty);
+    super.destroy();
   }
 
   setDirty = () => {

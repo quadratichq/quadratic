@@ -97,6 +97,7 @@ pub type Borders = HashMap<String, Vec<(i64, Vec<Option<CellBorder>>)>>;
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Format {
     pub align: Option<CellAlign>,
+    pub vertical_align: Option<CellVerticalAlign>,
     pub wrap: Option<CellWrap>,
     pub numeric_format: Option<NumericFormat>,
     pub numeric_decimals: Option<i16>,
@@ -177,8 +178,8 @@ pub struct Column {
     pub values: HashMap<String, CellValue>,
     pub align: HashMap<String, ColumnRepeat<CellAlign>>,
 
-    // The following skips are necessary since we're adding it mid-version. Next
-    // version we should remove them.
+    // This skip is necessary since we're adding it mid-version.
+    // Next version we should remove them.
     #[serde(skip_serializing_if = "HashMap::is_empty", default)]
     pub vertical_align: HashMap<String, ColumnRepeat<CellVerticalAlign>>,
 

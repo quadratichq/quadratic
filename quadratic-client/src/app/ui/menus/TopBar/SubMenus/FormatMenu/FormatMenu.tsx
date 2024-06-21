@@ -26,13 +26,13 @@ import { TopBarMenuItem } from '../../TopBarMenuItem';
 import {
   clearFillColor,
   clearFormattingAndBorders,
+  setAlign,
   setBold,
   setFillColor,
-  setHorizontalAlign,
   setItalic,
   setTextColor,
   setVerticalAlign,
-  setWrap,
+  setWrap
 } from '../formatCells';
 import './formatMenuStyles.scss';
 import { useGetBorderMenu } from './useGetBorderMenu';
@@ -69,13 +69,13 @@ export const FormatMenu = () => {
       </SubMenu>
 
       <MenuDivider />
-      <MenuItem onClick={() => setHorizontalAlign('left')}>
+      <MenuItem onClick={() => setAlign('left')}>
         <MenuLineItem primary="Left" Icon={TextAlignLeftIcon} secondary="" />
       </MenuItem>
-      <MenuItem onClick={() => setHorizontalAlign('center')}>
+      <MenuItem onClick={() => setAlign('center')}>
         <MenuLineItem primary="Center" Icon={TextAlignCenterIcon} />
       </MenuItem>
-      <MenuItem onClick={() => setHorizontalAlign('right')}>
+      <MenuItem onClick={() => setAlign('right')}>
         <MenuLineItem primary="Right" Icon={TextAlignRightIcon} />
       </MenuItem>
 
@@ -91,7 +91,7 @@ export const FormatMenu = () => {
       </MenuItem>
 
       <MenuDivider />
-      <MenuItem onClick={() => setWrap(undefined)}>
+      <MenuItem onClick={() => setWrap('overflow')}>
         <MenuLineItem primary="Overflow" Icon={TextOverflowIcon} secondary="" />
       </MenuItem>
       <MenuItem onClick={() => setWrap('wrap')}>

@@ -350,7 +350,7 @@ export class GridHeadings extends Container {
     const x = bounds.left + this.rowWidth / 2;
     let row = start.index;
     let currentHeight = 0;
-    this.gridLinesColumns = [];
+    this.gridLinesRows = [];
 
     // keep track of last label to ensure we don't overlap
     let lastLabel: { top: number; bottom: number; selected: boolean } | undefined = undefined;

@@ -480,28 +480,6 @@ impl SheetRect {
             sheet_id: self.sheet_id,
         }
     }
-
-    pub fn to_rect(&self) -> Rect {
-        Rect {
-            min: self.min,
-            max: self.max,
-        }
-    }
-
-    pub fn to_hashes(&self) -> Vec<Pos> {
-        let mut hashes = HashSet::new();
-        for y in self.y_range() {
-            let y_hash = (y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i64;
-            for x in self.x_range() {
-                let x_hash = (x as f64 / CELL_SHEET_WIDTH as f64).floor() as i64;
-                hashes.insert(Pos {
-                    x: x_hash,
-                    y: y_hash,
-                });
-            }
-        }
-        hashes.into_iter().collect()
-    }
 }
 impl fmt::Display for SheetRect {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -888,35 +866,6 @@ mod test {
                 y: 2,
                 sheet_id
             }
-        );
-    }
-
-    #[test]
-    fn test_sheet_rect_to_rect() {
-        let sheet_id = SheetId::new();
-        let sheet_rect = SheetRect::from_numbers(1, 2, 3, 4, sheet_id);
-        assert_eq!(sheet_rect.to_rect(), Rect::from_numbers(1, 2, 3, 4));
-    }
-
-    #[test]
-    fn test_sheet_rect_to_hashes() {
-        let sheet_id = SheetId::new();
-        let sheet_rect = SheetRect::from_numbers(1, 2, 30, 60, sheet_id);
-        let mut hashes = sheet_rect.to_hashes();
-        hashes.sort();
-        assert_eq!(
-            hashes,
-            [
-                Pos { x: 0, y: 0 },
-                Pos { x: 0, y: 1 },
-                Pos { x: 0, y: 2 },
-                Pos { x: 1, y: 0 },
-                Pos { x: 1, y: 1 },
-                Pos { x: 1, y: 2 },
-                Pos { x: 2, y: 0 },
-                Pos { x: 2, y: 1 },
-                Pos { x: 2, y: 2 }
-            ]
         );
     }
 

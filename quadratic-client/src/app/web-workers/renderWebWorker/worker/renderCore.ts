@@ -63,7 +63,7 @@ class RenderCore {
         break;
 
       case 'coreRenderRequestRowHeights':
-        this.getRowHeights(e.data.sheetId, e.data.rows, e.data.transactionId);
+        this.getRowHeights(e.data.transactionId, e.data.sheetId, e.data.rows);
         break;
 
       default:
@@ -71,7 +71,7 @@ class RenderCore {
     }
   };
 
-  async getRowHeights(sheetId: string, cellsString: string, transactionId: string) {
+  async getRowHeights(transactionId: string, sheetId: string, cellsString: string) {
     if (!this.renderCorePort) {
       console.warn('Expected renderCorePort to be defined in RenderCore.responseRowHeights');
       return;
@@ -81,8 +81,9 @@ class RenderCore {
     const rowHeights = await renderText.getRowHeights(sheetId, rows);
     const message: RenderCoreResponseRowHeights = {
       type: 'renderCoreResponseRowHeights',
-      rowHeights,
       transactionId,
+      sheetId,
+      rowHeights,
     };
     this.renderCorePort.postMessage(message);
   }

@@ -70,7 +70,7 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
-    sendRequestRowHeights: (sheet_id: string, rows: string, transactionId: string) => void;
+    sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -117,9 +117,9 @@ export const jsSheetInfo = (sheetInfoStringified: string) => {
   self.sendSheetInfoRender(sheetInfo);
 };
 
-export const jsSheetFills = (sheet_id: string, fills: string) => {
-  const sheet_fills = JSON.parse(fills);
-  self.sendSheetFills(sheet_id, sheet_fills);
+export const jsSheetFills = (sheetId: string, fills: string) => {
+  const sheetFills = JSON.parse(fills);
+  self.sendSheetFills(sheetId, sheetFills);
 };
 
 export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
@@ -214,11 +214,11 @@ export const jsUndoRedo = (undo: string, redo: string) => {
   self.sendUndoRedo(undo, redo);
 };
 
-export const jsRequestRowHeights = (sheetId: string, rows: string, transactionId: string) => {
-  self.sendRequestRowHeights(sheetId, rows, transactionId);
-};
-
 export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
   const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
   self.sendSheetMetaFills(sheetId, sheetMetaFills);
+};
+
+export const jsRequestRowHeights = (transactionId: string, sheetId: string, rows: string) => {
+  self.sendRequestRowHeights(transactionId, sheetId, rows);
 };

@@ -11,7 +11,7 @@ use crate::{
     },
     grid::{
         formats::{format_update::FormatUpdate, Formats},
-        CellAlign, CellWrap, NumericFormat, NumericFormatKind,
+        CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind,
     },
     selection::Selection,
 };
@@ -36,6 +36,24 @@ impl GridController {
         let formats = Formats::repeat(
             FormatUpdate {
                 align: Some(Some(align)),
+                ..Default::default()
+            },
+            selection.count(),
+        );
+        let ops = vec![Operation::SetCellFormatsSelection { selection, formats }];
+        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        Ok(())
+    }
+
+    pub(crate) fn set_vertical_align_selection(
+        &mut self,
+        selection: Selection,
+        vertical_align: CellVerticalAlign,
+        cursor: Option<String>,
+    ) -> Result<(), JsValue> {
+        let formats = Formats::repeat(
+            FormatUpdate {
+                vertical_align: Some(Some(vertical_align)),
                 ..Default::default()
             },
             selection.count(),
@@ -267,6 +285,32 @@ mod test {
         assert_eq!(
             sheet.columns.get(&0).unwrap().align.get(0),
             Some(crate::grid::CellAlign::Center)
+        );
+    }
+
+    #[test]
+    fn set_vertical_align_selection() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_vertical_align_selection(
+            Selection {
+                sheet_id,
+                x: 0,
+                y: 0,
+                rects: Some(vec![Rect::from_numbers(0, 0, 1, 1)]),
+                rows: None,
+                columns: None,
+                all: false,
+            },
+            crate::grid::CellVerticalAlign::Middle,
+            None,
+        )
+        .unwrap();
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.columns.get(&0).unwrap().vertical_align.get(0),
+            Some(crate::grid::CellVerticalAlign::Middle)
         );
     }
 

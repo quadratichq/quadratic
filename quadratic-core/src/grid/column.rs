@@ -70,6 +70,7 @@ impl Column {
     pub fn format_range(&self) -> Option<Range<i64>> {
         crate::util::union_ranges([
             self.align.range(),
+            self.vertical_align.range(),
             self.wrap.range(),
             self.numeric_format.range(),
             self.numeric_decimals.range(),
@@ -100,6 +101,7 @@ impl Column {
     pub fn format(&self, y: i64) -> Option<Format> {
         let format = Format {
             align: self.align.get(y),
+            vertical_align: self.vertical_align.get(y),
             wrap: self.wrap.get(y),
             numeric_format: self.numeric_format.get(y),
             numeric_decimals: self.numeric_decimals.get(y),
@@ -419,6 +421,8 @@ mod test {
 
         cd.align
             .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
+        cd.vertical_align
+            .set_range(Range { start: 0, end: 10 }, CellVerticalAlign::Middle);
         cd.wrap
             .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
         cd.numeric_format.set_range(
@@ -448,6 +452,7 @@ mod test {
 
         let format = cd.format(0).unwrap();
         assert_eq!(format.align, Some(CellAlign::Center));
+        assert_eq!(format.vertical_align, Some(CellVerticalAlign::Middle));
         assert_eq!(format.wrap, Some(CellWrap::Wrap));
         assert_eq!(
             format.numeric_format,
@@ -477,6 +482,8 @@ mod test {
 
         cd.align
             .set_range(Range { start: 0, end: 10 }, CellAlign::Center);
+        cd.vertical_align
+            .set_range(Range { start: 0, end: 10 }, CellVerticalAlign::Middle);
         cd.wrap
             .set_range(Range { start: 0, end: 10 }, CellWrap::Wrap);
         cd.numeric_format.set_range(

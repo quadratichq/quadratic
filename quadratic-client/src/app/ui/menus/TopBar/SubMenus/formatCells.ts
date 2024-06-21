@@ -59,7 +59,7 @@ export const setVerticalAlign = (verticalAlign: CellVerticalAlign) => {
   quadraticCore.setCellVerticalAlign(sheets.getRustSelection(), verticalAlign, sheets.getCursorPosition());
 };
 
-export const setWrap = (wrap?: CellWrap) => {
+export const setWrap = (wrap: CellWrap) => {
   quadraticCore.setCellWrap(sheets.getRustSelection(), wrap, sheets.getCursorPosition());
 };
 

@@ -12,8 +12,8 @@ use crate::{
         transaction_types::JsCodeResult,
     },
     error_core::Result,
-    grid::js_types::JsRowHeight,
-    Pos, SheetRect,
+    grid::{js_types::JsRowHeight, SheetId},
+    Pos,
 };
 
 impl GridController {
@@ -128,25 +128,23 @@ impl GridController {
     pub fn start_auto_resize_row_heights(
         &self,
         transaction: &mut PendingTransaction,
-        sheet_rect: &SheetRect,
+        sheet_id: SheetId,
+        rows: Vec<i64>,
     ) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || !transaction.is_user() {
+        if !cfg!(target_family = "wasm") || cfg!(test) || !transaction.is_user() {
             return;
         }
 
-        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
-            if let Some(auto_resize_rows) = sheet.get_auto_resize_rows(sheet_rect) {
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            if let Some(auto_resize_rows) = sheet.get_auto_resize_rows(rows) {
                 if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
-                    // has_async holds the transaction until the async call is complete
-                    // this is to avoid holding the transaction in tests
-                    if !cfg!(test) {
-                        transaction.has_async = true;
-                    }
                     crate::wasm_bindings::js::jsRequestRowHeights(
-                        sheet_rect.sheet_id.to_string(),
-                        rows_string,
                         transaction.id.to_string(),
+                        sheet_id.to_string(),
+                        rows_string,
                     );
+
+                    transaction.has_async = true;
                 }
             }
         }
@@ -154,26 +152,22 @@ impl GridController {
 
     pub fn complete_auto_resize_row_heights(
         &mut self,
-        row_heights: Vec<JsRowHeight>,
         transaction_id: Uuid,
+        sheet_id: SheetId,
+        row_heights: Vec<JsRowHeight>,
     ) -> Result<()> {
-        let mut transaction = self
-            .transactions
-            .remove_awaiting_async(transaction_id)
-            .unwrap();
+        let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
-        if let Some(sheet_id) = transaction.sheet_id {
-            row_heights.iter().for_each(|row_height| {
-                let row = row_height.row as i64;
-                let new_size = row_height.height;
-                transaction.operations.push_back(Operation::ResizeRow {
-                    sheet_id,
-                    row,
-                    new_size,
-                    client_resized: false,
-                });
+        row_heights.iter().for_each(|row_height| {
+            let row = row_height.row as i64;
+            let new_size = row_height.height;
+            transaction.operations.push_back(Operation::ResizeRow {
+                sheet_id,
+                row,
+                new_size,
+                client_resized: false,
             });
-        }
+        });
 
         transaction.has_async = false;
         self.start_transaction(&mut transaction);

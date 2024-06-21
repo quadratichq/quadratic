@@ -85,7 +85,7 @@ extern "C" {
     pub fn jsUndoRedo(undo: bool, redo: bool);
 
     // cells: Vec<Pos>
-    pub fn jsRequestRowHeights(sheet_id: String, cells: String, transaction_id: String);
+    pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, cells: String);
 }
 
 #[cfg(test)]
@@ -464,12 +464,12 @@ pub fn jsUndoRedo(undo: bool, redo: bool) {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsRequestRowHeights(
+    transaction_id: String,
     sheet_id: String,
     cells: String, /*Vec<Pos>*/
-    transaction_id: String,
 ) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRequestRowHeights",
-        format!("{},{},{}", sheet_id, cells, transaction_id),
+        format!("{},{},{}", transaction_id, sheet_id, cells),
     ));
 }

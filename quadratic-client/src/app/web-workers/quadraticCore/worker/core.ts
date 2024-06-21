@@ -603,29 +603,21 @@ class Core {
     });
   }
 
-  setCellVerticalAlign(
-    sheetId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    verticalAlign?: CellVerticalAlign,
-    cursor?: string
-  ) {
+  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellVerticalAlign(sheetId, pointsToRect(x, y, width, height), verticalAlign, cursor);
+        this.gridController.setCellVerticalAlign(JSON.stringify(selection, bigIntReplacer), verticalAlign, cursor);
         resolve(undefined);
       });
     });
   }
 
-  setCellWrap(sheetId: string, x: number, y: number, width: number, height: number, wrap?: CellWrap, cursor?: string) {
+  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
     return new Promise((resolve) => {
       this.clientQueue.push(() => {
         if (!this.gridController) throw new Error('Expected gridController to be defined');
-        this.gridController.setCellWrap(sheetId, pointsToRect(x, y, width, height), wrap, cursor);
+        this.gridController.setCellWrap(JSON.stringify(selection, bigIntReplacer), wrap, cursor);
         resolve(undefined);
       });
     });
@@ -963,9 +955,9 @@ class Core {
     );
   }
 
-  receiveRowHeights(rowHeights: JsRowHeight[], transactionId: string) {
+  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: JsRowHeight[]) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.receiveRowHeights(JSON.stringify(rowHeights), transactionId);
+    this.gridController.receiveRowHeights(transactionId, sheetId, JSON.stringify(rowHeights));
   }
 }
 

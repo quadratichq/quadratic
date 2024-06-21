@@ -24,8 +24,8 @@ declare var self: WorkerGlobalScope &
       size: number
     ) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
-    sendRequestRowHeights: (sheet_id: string, rows: string, transactionId: string) => void;
-    handleResponseRowHeights: (rowHeights: JsRowHeight[], transactionId: string) => void;
+    sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
+    handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: JsRowHeight[]) => void;
   };
 
 class CoreRender {
@@ -46,7 +46,7 @@ class CoreRender {
         break;
 
       case 'renderCoreResponseRowHeights':
-        this.handleResponseRowHeights(e.data.rowHeights, e.data.transactionId);
+        this.handleResponseRowHeights(e.data.transactionId, e.data.sheetId, e.data.rowHeights);
         break;
 
       default:
@@ -101,12 +101,12 @@ class CoreRender {
     this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds });
   };
 
-  sendRequestRowHeights = (sheetId: string, rows: string, transactionId: string) => {
-    this.send({ type: 'coreRenderRequestRowHeights', sheetId, rows, transactionId });
+  sendRequestRowHeights = (transactionId: string, sheetId: string, rows: string) => {
+    this.send({ type: 'coreRenderRequestRowHeights', transactionId, sheetId, rows });
   };
 
-  handleResponseRowHeights = (rowHeights: JsRowHeight[], transactionId: string) => {
-    core.receiveRowHeights(rowHeights, transactionId);
+  handleResponseRowHeights = (transactionId: string, sheetId: string, rowHeights: JsRowHeight[]) => {
+    core.receiveRowHeights(transactionId, sheetId, rowHeights);
   };
 }
 

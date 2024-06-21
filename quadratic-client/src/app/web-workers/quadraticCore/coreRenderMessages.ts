@@ -16,8 +16,9 @@ export interface RenderCoreRequestRenderCells {
 
 export interface RenderCoreResponseRowHeights {
   type: 'renderCoreResponseRowHeights';
-  rowHeights: JsRowHeight[];
   transactionId: string;
+  sheetId: string;
+  rowHeights: JsRowHeight[];
 }
 
 export interface CoreRenderCells {
@@ -74,9 +75,9 @@ export interface CoreRenderSheetBoundsUpdate {
 
 export interface CoreRenderRequestRowHeights {
   type: 'coreRenderRequestRowHeights';
+  transactionId: string;
   sheetId: string;
   rows: string;
-  transactionId: string;
 }
 
 export type CoreRenderMessage =

@@ -331,23 +331,15 @@ export interface ClientCoreSetCellAlign {
 
 export interface ClientCoreSetCellVerticalAlign {
   type: 'clientCoreSetCellVerticalAlign';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  verticalAlign?: CellVerticalAlign;
+  selection: Selection;
+  verticalAlign: CellVerticalAlign;
   cursor?: string;
 }
 
 export interface ClientCoreSetCellWrap {
   type: 'clientCoreSetCellWrap';
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  wrap?: CellWrap;
+  selection: Selection;
+  wrap: CellWrap;
   cursor?: string;
 }
 

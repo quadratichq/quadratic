@@ -44,9 +44,9 @@ import {
   clearFillColor,
   clearFormattingAndBorders,
   removeCellNumericFormat,
+  setAlign,
   setBold,
   setFillColor,
-  setHorizontalAlign,
   setItalic,
   setTextColor,
   setVerticalAlign,
@@ -55,7 +55,7 @@ import {
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
   textFormatSetExponential,
-  textFormatSetPercentage,
+  textFormatSetPercentage
 } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
@@ -355,17 +355,17 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Align left">
-              <IconButton size="small" onClick={() => setHorizontalAlign('left')}>
+              <IconButton size="small" onClick={() => setAlign('left')}>
                 <TextAlignLeftIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Align center">
-              <IconButton size="small" onClick={() => setHorizontalAlign('center')}>
+              <IconButton size="small" onClick={() => setAlign('center')}>
                 <TextAlignCenterIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
             <TooltipHint title="Align right">
-              <IconButton size="small" onClick={() => setHorizontalAlign('right')}>
+              <IconButton size="small" onClick={() => setAlign('right')}>
                 <TextAlignRightIcon fontSize={iconSize} />
               </IconButton>
             </TooltipHint>
@@ -410,7 +410,7 @@ export const FloatingContextMenu = (props: Props) => {
             <div>
               <TooltipHint title="Text wrap">
                 <IconButton size="small">
-                  <WrapTextIcon fontSize={iconSize} />
+                <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
                   <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
                 </IconButton>
               </TooltipHint>
@@ -419,7 +419,7 @@ export const FloatingContextMenu = (props: Props) => {
         >
           <div style={{ padding: '0px 4px' }}>
             <TooltipHint title="Overflow">
-              <IconButton size="small" onClick={() => setWrap(undefined)}>
+              <IconButton size="small" onClick={() => setWrap('overflow')}>
                 <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
               </IconButton>
             </TooltipHint>

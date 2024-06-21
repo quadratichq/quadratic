@@ -37,18 +37,14 @@ impl GridController {
     #[wasm_bindgen(js_name = "setCellVerticalAlign")]
     pub fn js_set_cell_vertical_align(
         &mut self,
-        sheet_id: String,
-        rect: &Rect,
+        selection: String,
         vertical_align: JsValue,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return Result::Err("Invalid sheet id".into());
-        };
-        if let Ok(value) = serde_wasm_bindgen::from_value(vertical_align) {
-            self.set_cell_vertical_align(rect.to_sheet_rect(sheet_id), value, cursor);
-        }
-        Ok(())
+        let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
+        let vertical_align =
+            serde_wasm_bindgen::from_value(vertical_align).map_err(|_| "Invalid vertical align")?;
+        self.set_vertical_align_selection(selection, vertical_align, cursor)
     }
 
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
@@ -60,10 +56,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let selection = Selection::from_str(&selection).map_err(|_| "Invalid selection")?;
-        if let Ok(wrap) = serde_wasm_bindgen::from_value(wrap) {
-            self.set_cell_wrap_selection(selection, wrap, cursor)?;
-        }
-        Ok(())
+        let wrap = serde_wasm_bindgen::from_value(wrap).map_err(|_| "Invalid wrap")?;
+        self.set_cell_wrap_selection(selection, wrap, cursor)
     }
 
     /// Sets cells numeric_format to normal

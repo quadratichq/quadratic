@@ -13,6 +13,7 @@ impl Sheet {
     pub fn format_cell(&self, x: i64, y: i64, include_sheet: bool) -> Format {
         let format = self.get_column(x).map(|column| Format {
             align: column.align.get(y),
+            vertical_align: column.vertical_align.get(y),
             wrap: column.wrap.get(y),
             numeric_format: column.numeric_format.get(y),
             numeric_decimals: column.numeric_decimals.get(y),
@@ -49,6 +50,10 @@ impl Sheet {
         if let Some(align) = update.align {
             old_format.align = Some(column.align.get(y));
             column.align.set(y, align);
+        }
+        if let Some(vertical_align) = update.vertical_align {
+            old_format.vertical_align = Some(column.vertical_align.get(y));
+            column.vertical_align.set(y, vertical_align);
         }
         if let Some(wrap) = update.wrap {
             old_format.wrap = Some(column.wrap.get(y));

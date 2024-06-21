@@ -74,7 +74,7 @@ export class CellLabel {
 
   align: CellAlign | 'justify';
   verticalAlign: CellVerticalAlign;
-  wrapping: CellWrap;
+  wrap: CellWrap;
 
   letterSpacing: number;
   bold: boolean;
@@ -133,7 +133,7 @@ export class CellLabel {
     this.updateFontName();
     this.align = cell.align ?? 'left';
     this.verticalAlign = cell.verticalAlign ?? 'top';
-    this.wrapping = cell.wrap ?? 'overflow';
+    this.wrap = cell.wrap ?? 'overflow';
     this.updateCellLimits();
   }
 
@@ -144,11 +144,12 @@ export class CellLabel {
   }
 
   updateCellLimits() {
-    this.cellClipLeft = this.wrapping === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
-    this.cellClipRight = this.wrapping === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
+    this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipRight =
+      this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
-    this.maxWidth = this.wrapping === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
+    this.maxWidth = this.wrap === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
   }
 
   changeBold(bold?: boolean) {

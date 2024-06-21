@@ -1,8 +1,10 @@
+use std::collections::HashSet;
+
 use crate::{
     grid::{js_types::JsRenderFill, SheetId},
     selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    Rect, SheetPos, SheetRect,
+    Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{
@@ -19,11 +21,21 @@ impl GridController {
         }
 
         // calculate the hashes that were updated
-        let hashes = sheet_rect.to_hashes();
+        let mut modified = HashSet::new();
+        for y in sheet_rect.y_range() {
+            let y_hash = (y as f64 / CELL_SHEET_HEIGHT as f64).floor() as i64;
+            for x in sheet_rect.x_range() {
+                let x_hash = (x as f64 / CELL_SHEET_WIDTH as f64).floor() as i64;
+                modified.insert(Pos {
+                    x: x_hash,
+                    y: y_hash,
+                });
+            }
+        }
 
         if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
             // send the modified cells to the render web worker
-            hashes.iter().for_each(|hash| {
+            modified.iter().for_each(|hash| {
                 let rect = Rect::from_numbers(
                     hash.x * CELL_SHEET_WIDTH as i64,
                     hash.y * CELL_SHEET_HEIGHT as i64,
@@ -378,6 +390,7 @@ mod test {
             value: "test 1".to_string(),
             special: None,
             align: None,
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,
@@ -397,6 +410,7 @@ mod test {
             value: "test 2".to_string(),
             special: None,
             align: None,
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,

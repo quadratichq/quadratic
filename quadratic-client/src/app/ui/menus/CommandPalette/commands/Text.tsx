@@ -13,7 +13,7 @@ import {
 } from '@/app/ui/icons';
 import { hasPermissionToEditFile } from '../../../../actions';
 import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
-import { setBold, setHorizontalAlign, setItalic, setVerticalAlign, setWrap } from '../../TopBar/SubMenus/formatCells';
+import { setAlign, setBold, setItalic, setVerticalAlign, setWrap } from '../../TopBar/SubMenus/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
 const commands: CommandGroup = {
@@ -56,7 +56,7 @@ const commands: CommandGroup = {
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
         return (
-          <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setHorizontalAlign('left')} />
+          <CommandPaletteListItem {...props} icon={<TextAlignLeftIcon />} action={() => setAlign('left')} />
         );
       },
     },
@@ -68,7 +68,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             icon={<TextAlignCenterIcon />}
-            action={() => setHorizontalAlign('center')}
+            action={() => setAlign('center')}
           />
         );
       },
@@ -78,7 +78,7 @@ const commands: CommandGroup = {
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
         return (
-          <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setHorizontalAlign('right')} />
+          <CommandPaletteListItem {...props} icon={<TextAlignRightIcon />} action={() => setAlign('right')} />
         );
       },
     },
@@ -125,7 +125,7 @@ const commands: CommandGroup = {
       label: 'Text overflow',
       isAvailable: hasPermissionToEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} icon={<TextOverflowIcon />} action={() => setWrap(undefined)} />;
+        return <CommandPaletteListItem {...props} icon={<TextOverflowIcon />} action={() => setWrap('overflow')} />;
       },
     },
     {

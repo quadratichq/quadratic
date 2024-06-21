@@ -1,4 +1,4 @@
-use std::collections::{btree_map, BTreeMap};
+use std::collections::{btree_map, BTreeMap, HashSet};
 use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, RoundingMode};
@@ -15,8 +15,9 @@ use super::js_types::CellFormatSummary;
 use super::resize::{Resize, ResizeMap};
 use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
+use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
-use crate::{Array, CellValue, IsBlank, Pos, Rect, SheetRect};
+use crate::{Array, CellValue, IsBlank, Pos, Rect};
 
 pub mod bounds;
 pub mod cell_array;
@@ -374,12 +375,42 @@ impl Sheet {
         old_resize == Resize::Manual
     }
 
-    pub fn get_auto_resize_rows(&self, sheet_rect: &SheetRect) -> Option<Vec<i64>> {
-        let rows: Vec<i64> = sheet_rect
-            .y_range()
-            .filter(|y| self.rows_resize.get_resize(*y) == Resize::Auto)
+    pub fn get_rows_in_selection(&self, selection: &Selection) -> Vec<i64> {
+        let mut rows = HashSet::<i64>::new();
+        if (selection.all) || selection.columns.is_some() {
+            if let GridBounds::NonEmpty(rect) = self.data_bounds {
+                for y in rect.y_range() {
+                    rows.insert(y);
+                }
+            }
+            if let GridBounds::NonEmpty(rect) = self.format_bounds {
+                for y in rect.y_range() {
+                    rows.insert(y);
+                }
+            }
+        } else {
+            if let Some(selection_rows) = &selection.rows {
+                for &row in selection_rows {
+                    rows.insert(row);
+                }
+            }
+            if let Some(selection_rects) = &selection.rects {
+                for rect in selection_rects {
+                    for y in rect.y_range() {
+                        rows.insert(y);
+                    }
+                }
+            }
+        }
+        rows.into_iter().collect()
+    }
+
+    pub fn get_auto_resize_rows(&self, rows: Vec<i64>) -> Option<Vec<i64>> {
+        let auto_resize_rows: Vec<i64> = rows
+            .into_iter()
+            .filter(|&row| self.rows_resize.get_resize(row) == Resize::Auto)
             .collect();
-        Some(rows).filter(|r| !r.is_empty())
+        Some(auto_resize_rows).filter(|r| !r.is_empty())
     }
 }
 
@@ -716,20 +747,20 @@ mod test {
         let sheet_rect = view_rect.to_sheet_rect(sheet_id);
 
         // all rows should be auto resized by default
-        let rows = sheet.get_auto_resize_rows(&sheet_rect);
+        let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
         assert_eq!(rows, Some(vec![1, 2, 3, 4]));
 
         // update row resize
         sheet.update_row_resize(1, true);
         sheet.update_row_resize(2, true);
         // check new auto resized rows
-        let rows = sheet.get_auto_resize_rows(&sheet_rect);
+        let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
         assert_eq!(rows, Some(vec![3, 4]));
 
         // update row resize
         sheet.update_row_resize(1, false);
         // check new auto resized rows
-        let rows = sheet.get_auto_resize_rows(&sheet_rect);
+        let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
         assert_eq!(rows, Some(vec![1, 3, 4]));
 
         // update all rows to manual resize
@@ -737,7 +768,7 @@ mod test {
         sheet.update_row_resize(3, true);
         sheet.update_row_resize(4, true);
         // check new auto resized rows should be None
-        let rows = sheet.get_auto_resize_rows(&sheet_rect);
+        let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
         assert_eq!(rows, None);
     }
 }

@@ -218,7 +218,7 @@ export class PointerHeading {
       window.clearTimeout(this.downTimeout);
       this.downTimeout = undefined;
     }
-    const { headings, gridLines, cursor } = pixiApp;
+    const { headings } = pixiApp;
     this.cursor = undefined;
     this.clicked = false;
 
@@ -256,9 +256,6 @@ export class PointerHeading {
           const delta = this.resizing.width ? this.resizing.lastSize - this.resizing.width : undefined;
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, this.resizing.column, undefined, delta);
-            gridLines.dirty = true;
-            cursor.dirty = true;
-            headings.dirty = true;
             pixiApp.adjustHeadings(sheets.sheet.id);
           }
           this.resizing.lastSize = size;
@@ -273,7 +270,7 @@ export class PointerHeading {
 
           // move viewport by the amount of the resize for negative columns
           const change = size - this.viewportChanges.originalSize;
-          pixiApp.viewport.y = this.viewportChanges.viewportStart + change * pixiApp.viewport.scale.x;
+          pixiApp.viewport.y = this.viewportChanges.viewportStart + change * pixiApp.viewport.scale.y;
           this.viewportChanges.change = change;
         }
 
@@ -283,9 +280,6 @@ export class PointerHeading {
           const delta = this.resizing.height ? this.resizing.lastSize - this.resizing.height : undefined;
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, undefined, this.resizing.row, delta);
-            gridLines.dirty = true;
-            cursor.dirty = true;
-            headings.dirty = true;
             pixiApp.adjustHeadings(sheets.sheet.id);
           }
           this.resizing.lastSize = size;
