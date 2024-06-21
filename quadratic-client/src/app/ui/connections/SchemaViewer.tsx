@@ -29,9 +29,7 @@ type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 export const SchemaViewer = () => {
   const { mode } = useRecoilValue(editorInteractionStateAtom);
   const connection = getConnectionInfo(mode);
-  if (!connection) {
-    throw new Error('Expected a connection cell to be open.');
-  }
+  if (!connection) throw new Error('Expected a connection cell to be open.');
 
   const [expandAll, setExpandAll] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>('error');
@@ -87,8 +85,7 @@ export const SchemaViewer = () => {
               <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
             ))}
           </ul>
-        </div>
-        )}
+        </div>)}
     </>
   );
 };
