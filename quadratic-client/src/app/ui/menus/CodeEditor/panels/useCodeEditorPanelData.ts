@@ -111,6 +111,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
           return availableWidth * editorPercentage;
         });
       }
+      setBottomHidden(false);
     };
 
     window.addEventListener('resize', handleResize, true);
