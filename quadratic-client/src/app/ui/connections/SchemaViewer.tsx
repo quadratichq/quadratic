@@ -8,7 +8,7 @@ import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
 import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type Table = {
@@ -23,53 +23,51 @@ type Column = {
   type: string;
 };
 
-type LoadState = 'loading' | 'loaded' | 'error';
+type LoadState = 'not-initialized' | 'loading' | 'loaded' | 'error';
 type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 
 export const SchemaViewer = () => {
   const { mode } = useRecoilValue(editorInteractionStateAtom);
   const connection = getConnectionInfo(mode);
   if (!connection) throw new Error('Expected a connection cell to be open.');
-
   const [expandAll, setExpandAll] = useState(false);
-  const [loadState, setLoadState] = useState<LoadState>('error');
   const [data, setData] = useState<SchemaData | null>(null);
 
-  // TODO: (connections) fetch this data when the document loads
-  const fetchData = () => {
-    setLoadState('loading');
-    connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id).then((newSchemaData) => {
-      if (newSchemaData) {
-        setData(newSchemaData);
-        setLoadState('loaded');
-      } else {
-        setLoadState('error');
-      }
-    });
-  };
+  // needs to be a ref to ensure only fetch is only called once
+  const loadState = useRef<LoadState>('not-initialized');
+  const [loadingAnimation, setLoadingAnimation] = useState(false);
+  const fetchData = useCallback(async () => {
+    if (loadState.current === 'loading') return;
+    loadState.current = 'loading';
+    setLoadingAnimation(true);
+    const newSchemaData = await connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id);
+    setLoadingAnimation(false);
+    if (newSchemaData) {
+      setData(newSchemaData);
+      loadState.current = 'loaded';
+    } else {
+      loadState.current = 'error';
+    }
+  }, [connection.id, connection.kind]);
 
   useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (loadState.current === 'not-initialized') {
+      fetchData();
+    }
+  }, [fetchData, loadState]);
 
   return (
     <>
       <div style={{ position: 'absolute', top: 8, right: 8 }}>
         <div>
           <TooltipHint title="Refresh schema">
-            <IconButton
-              size="small"
-              onClick={() => {
-                fetchData();
-              }}
-            >
-              <Refresh fontSize="small" className={loadState === 'loading' ? 'animate-spin' : ''} />
+            <IconButton size="small" onClick={fetchData}>
+              <Refresh fontSize="small" className={loadingAnimation ? 'animate-spin' : ''} />
             </IconButton>
           </TooltipHint>
         </div>
       </div>
-      {loadState === 'error' && (
+      {loadState.current === 'error' && (
         <Type className="m-3 mt-0 text-destructive">
           Error loading data schema.{' '}
           <button className="underline" onClick={fetchData}>

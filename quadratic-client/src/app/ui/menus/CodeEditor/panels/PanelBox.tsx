@@ -11,7 +11,7 @@ interface Props {
 
 export function PanelBox(props: Props) {
   const { title, component, index, codeEditorPanelData } = props;
-  // const height = codeEditorPanelData.panelHeightPercentages[index];
+  const height = codeEditorPanelData.panelHeightPercentages[index];
   const open = !codeEditorPanelData.panelHidden[index];
   const setOpen = () => {
     codeEditorPanelData.setPanelHidden((prevState) => prevState.map((val, i) => (i === index ? !val : val)));
@@ -19,8 +19,8 @@ export function PanelBox(props: Props) {
 
   return (
     <Collapsible
-      className={open ? 'h-full' : ''}
-      // className="data-[state=open]:flex-growz flex flex-col relative"
+      className={`relative flex h-full flex-col overflow-scroll ${open ? 'grow' : 'shrink'}`}
+      style={{ flexBasis: `${height}%` }}
       open={open}
       onOpenChange={setOpen}
     >
@@ -28,7 +28,7 @@ export function PanelBox(props: Props) {
         <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
         {title}
       </CollapsibleTrigger>
-      <CollapsibleContent className="h-full overflow-scroll">{component}</CollapsibleContent>
+      <CollapsibleContent className="overflow-scroll">{component}</CollapsibleContent>
     </Collapsible>
   );
 }

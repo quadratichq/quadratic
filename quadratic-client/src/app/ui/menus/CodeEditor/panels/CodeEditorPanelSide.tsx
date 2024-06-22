@@ -4,21 +4,18 @@ import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
-import { useRef } from 'react';
-import { ImperativePanelGroupHandle, Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import './ResizeControl.css';
+import { ResizeControl } from './ResizeControl';
+import { useCodeEditor } from '../CodeEditorContext';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
 }
 
-const MIN_SIZE = 20;
-const MAX_SIZE = 80;
-
 export function CodeEditorPanelSide(props: Props) {
   const { codeEditorPanelData } = props;
+  const { containerRef } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const isConnection = codeCellIsAConnection(editorInteractionState.mode);
 
@@ -27,87 +24,44 @@ export function CodeEditorPanelSide(props: Props) {
   const secondHidden = panelHidden[1];
   const thirdHidden = panelHidden[2];
 
-  const groupApi = useRef<ImperativePanelGroupHandle>(null);
-
-  const ConsolePanel = (
-    <PanelBox title="Console" component={<Console />} index={0} codeEditorPanelData={codeEditorPanelData} />
-  );
-
-  const AIPanel = (
-    <PanelBox title="AI Assistant" component={<AiAssistant />} index={1} codeEditorPanelData={codeEditorPanelData} />
-  );
-
-  const DataBrowserPanel = (
-    <PanelBox title="Data browser" component={<SchemaViewer />} index={2} codeEditorPanelData={codeEditorPanelData} />
-  );
-
-  const resizeHandleClasses = (hidden: boolean): string => {
-    if (hidden) {
-      return 'bg-slate-200 h-1';
+  const changeResizeBar = (e: MouseEvent, first: boolean) => {
+    if (!containerRef.current) return;
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (first) {
+      const newValue = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+      codeEditorPanelData.adjustPanelPercentage(0, newValue);
     } else {
-      return 'transition ease-in-out delay-150 bg-slate-200 hover:bg-resize h-1';
+      const newValue = ((containerRect.bottom - e.clientY) / containerRect.height) * 100;
+      codeEditorPanelData.adjustPanelPercentage(2, newValue);
     }
   };
 
   return (
-    <PanelGroup
-      ref={groupApi}
-      autoSaveId={`codeEditorSide-${isConnection ? 'connection' : 'normal'}`}
-      direction="vertical"
-    >
-      {firstHidden ? (
-        <>{ConsolePanel}</>
-      ) : (
-        <Panel order={0} id="panel-console" defaultSize={isConnection ? 33 : 50} minSize={MIN_SIZE} maxSize={MAX_SIZE}>
-          {ConsolePanel}
-        </Panel>
-      )}
-
-      <PanelResizeHandle
-        disabled={firstHidden && secondHidden}
-        className={resizeHandleClasses(firstHidden && secondHidden)}
+    <div className="relative flex h-full flex-col">
+      <PanelBox title="Console" component={<Console />} index={0} codeEditorPanelData={codeEditorPanelData} />
+      <ResizeControl
+        style={{ position: 'relative' }}
+        disabled={(firstHidden && secondHidden) || (secondHidden && thirdHidden)}
+        position="HORIZONTAL"
+        setState={(e) => changeResizeBar(e, true)}
       />
-
-      {secondHidden ? (
-        <>{AIPanel}</>
-      ) : (
-        <Panel
-          order={firstHidden ? 0 : 1}
-          id="panel-ai"
-          defaultSize={isConnection ? 33 : 50}
-          minSize={MIN_SIZE}
-          maxSize={MAX_SIZE}
-        >
-          {AIPanel}
-        </Panel>
-      )}
-
+      <PanelBox title="AI Assistant" component={<AiAssistant />} index={1} codeEditorPanelData={codeEditorPanelData} />
       {isConnection && (
-        <>
-          <PanelResizeHandle
-            disabled={secondHidden && thirdHidden}
-            className={resizeHandleClasses(secondHidden && thirdHidden)}
-          />
-          {thirdHidden ? (
-            <>{DataBrowserPanel}</>
-          ) : (
-            <Panel
-              order={(firstHidden && !secondHidden) || (!firstHidden && secondHidden) ? 1 : 2}
-              id="panel-connection"
-              defaultSize={34}
-              minSize={MIN_SIZE}
-              maxSize={MAX_SIZE}
-            >
-              <PanelBox
-                title="Data browser"
-                component={<SchemaViewer />}
-                index={2}
-                codeEditorPanelData={codeEditorPanelData}
-              />
-            </Panel>
-          )}
-        </>
+        <ResizeControl
+          style={{ position: 'relative', flexShrink: 0 }}
+          disabled={secondHidden && thirdHidden}
+          position="HORIZONTAL"
+          setState={(e) => changeResizeBar(e, false)}
+        />
       )}
-    </PanelGroup>
+      {isConnection && (
+        <PanelBox
+          title="Data browser"
+          component={<SchemaViewer />}
+          index={2}
+          codeEditorPanelData={codeEditorPanelData}
+        />
+      )}
+    </div>
   );
 }
