@@ -39,9 +39,20 @@ export function CodeEditorPanelSide(props: Props) {
         if (panel2) {
           const collapsedHeight = panel2.getBoundingClientRect().height;
           const expandedHeight = containerRect.height * (codeEditorPanelData.panelHeightPercentages[2] / 100);
-          height -= collapsedHeight - expandedHeight;
-          clientY =
-            containerRect.top + (clientY - containerRect.top) * (height / containerRect.height) - collapsedHeight;
+
+          // todo: this is still not working :( ****
+
+          // adjust height so it's the same as if the panel was expanded
+          height = height - collapsedHeight + expandedHeight;
+
+          // adjust mouse position to account for the total height difference
+          console.log(
+            expandedHeight - collapsedHeight,
+            height / containerRect.height,
+            (expandedHeight - collapsedHeight) * (containerRect.height / height)
+          );
+          clientY -= (expandedHeight - collapsedHeight) * (height / containerRect.height);
+          // clientY -= (expandedHeight - collapsedHeight) * (height / containerRect.height);
         }
       }
       const newValue = ((clientY - containerRect.top) / height) * 100;
@@ -52,8 +63,10 @@ export function CodeEditorPanelSide(props: Props) {
         if (panel0) {
           const collapsedHeight = panel0.getBoundingClientRect().height;
           const expandedHeight = containerRect.height * (codeEditorPanelData.panelHeightPercentages[0] / 100);
+
+          // adjust height so it's the same as if the panel was expanded
+          height = height - collapsedHeight + expandedHeight;
           clientY += collapsedHeight;
-          height -= expandedHeight - collapsedHeight;
         }
       }
       const newValue = ((containerRect.bottom - clientY) / containerRect.height) * 100;
