@@ -2,7 +2,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
 import useLocalStorage, { SetValue } from '@/shared/hooks/useLocalStorage';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export type PanelPosition = 'bottom' | 'left';
@@ -65,7 +65,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   );
   const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
 
-  const [bottomHidden, setBottomHidden] = useState(false);
+  const [bottomHidden, setBottomHidden] = useLocalStorage('codeEditorPanelBottom', false);
 
   // attempts to adjust percentages of panel to match the new value
   const adjustPanelPercentage = (index: number, newValue: number) =>
@@ -118,7 +118,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     return () => {
       window.removeEventListener('resize', handleResize, true);
     };
-  }, [editorWidth, panelPosition, panelWidth, setEditorWidth, setPanelWidth]);
+  }, [editorWidth, panelPosition, panelWidth, setBottomHidden, setEditorWidth, setPanelWidth]);
 
   return {
     editorWidth,

@@ -362,7 +362,10 @@ export const CodeEditor = () => {
     >
       <div
         id="QuadraticCodeEditorID"
-        className={cn('flex shrink flex-col', codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1')}
+        className={cn(
+          'flex min-h-0 shrink flex-col',
+          codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+        )}
         style={{
           width: `${codeEditorPanelData.editorWidth}px`,
           height:
