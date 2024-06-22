@@ -24,28 +24,65 @@ export function CodeEditorPanelSide(props: Props) {
   const secondHidden = panelHidden[1];
   const thirdHidden = panelHidden[2];
 
+  // changes resize bar when dragging
   const changeResizeBar = (e: MouseEvent, first: boolean) => {
     if (!containerRef.current) return;
-    const containerRect = containerRef.current?.getBoundingClientRect();
+    const containerRect = containerRef.current.getBoundingClientRect();
+
+    // need to adjust the heights based on hidden content
+    let height = containerRect.height;
+    let clientY = e.clientY;
+
     if (first) {
-      const newValue = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+      if (panelHidden[2]) {
+        const panel2 = containerRef.current.querySelector('#panel-2');
+        if (panel2) {
+          const collapsedHeight = panel2.getBoundingClientRect().height;
+          const expandedHeight = containerRect.height * (codeEditorPanelData.panelHeightPercentages[2] / 100);
+          height -= collapsedHeight - expandedHeight;
+          clientY =
+            containerRect.top + (clientY - containerRect.top) * (height / containerRect.height) - collapsedHeight;
+        }
+      }
+      const newValue = ((clientY - containerRect.top) / height) * 100;
       codeEditorPanelData.adjustPanelPercentage(0, newValue);
     } else {
-      const newValue = ((containerRect.bottom - e.clientY) / containerRect.height) * 100;
+      if (panelHidden[0]) {
+        const panel0 = containerRef.current.querySelector('#panel-0');
+        if (panel0) {
+          const collapsedHeight = panel0.getBoundingClientRect().height;
+          const expandedHeight = containerRect.height * (codeEditorPanelData.panelHeightPercentages[0] / 100);
+          clientY += collapsedHeight;
+          height -= expandedHeight - collapsedHeight;
+        }
+      }
+      const newValue = ((containerRect.bottom - clientY) / containerRect.height) * 100;
       codeEditorPanelData.adjustPanelPercentage(2, newValue);
     }
   };
 
   return (
     <div className="relative flex h-full flex-col">
-      <PanelBox title="Console" component={<Console />} index={0} codeEditorPanelData={codeEditorPanelData} />
+      <PanelBox
+        id="panel-0"
+        title="Console"
+        component={<Console />}
+        index={0}
+        codeEditorPanelData={codeEditorPanelData}
+      />
       <ResizeControl
         style={{ position: 'relative' }}
-        disabled={(firstHidden && secondHidden) || (secondHidden && thirdHidden)}
+        disabled={firstHidden || (secondHidden && thirdHidden)}
         position="HORIZONTAL"
         setState={(e) => changeResizeBar(e, true)}
       />
-      <PanelBox title="AI Assistant" component={<AiAssistant />} index={1} codeEditorPanelData={codeEditorPanelData} />
+      <PanelBox
+        id="panel-1"
+        title="AI Assistant"
+        component={<AiAssistant />}
+        index={1}
+        codeEditorPanelData={codeEditorPanelData}
+      />
       {isConnection && (
         <ResizeControl
           style={{ position: 'relative', flexShrink: 0 }}
@@ -56,6 +93,7 @@ export function CodeEditorPanelSide(props: Props) {
       )}
       {isConnection && (
         <PanelBox
+          id="panel-2"
           title="Data browser"
           component={<SchemaViewer />}
           index={2}

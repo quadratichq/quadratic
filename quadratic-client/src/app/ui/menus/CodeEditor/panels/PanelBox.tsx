@@ -3,6 +3,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/shared/sh
 import { ChevronRightIcon } from '@radix-ui/react-icons';
 
 interface Props {
+  id: string;
   title: string;
   component: any;
   index: number;
@@ -10,7 +11,7 @@ interface Props {
 }
 
 export function PanelBox(props: Props) {
-  const { title, component, index, codeEditorPanelData } = props;
+  const { title, component, index, codeEditorPanelData, id } = props;
   const height = codeEditorPanelData.panelHeightPercentages[index];
   const open = !codeEditorPanelData.panelHidden[index];
   const setOpen = () => {
@@ -19,8 +20,9 @@ export function PanelBox(props: Props) {
 
   return (
     <Collapsible
-      className={`relative flex h-full flex-col overflow-scroll ${open ? 'grow' : 'shrink'}`}
-      style={{ flexBasis: `${height}%` }}
+      id={id}
+      className={`relative flex flex-col overflow-scroll ${open ? 'h-full grow' : 'shrink'}`}
+      style={{ flexBasis: open ? `${height}%` : 'auto' }}
       open={open}
       onOpenChange={setOpen}
     >

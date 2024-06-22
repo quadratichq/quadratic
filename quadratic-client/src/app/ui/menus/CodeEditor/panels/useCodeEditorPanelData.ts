@@ -59,6 +59,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     type === 'Connection' ? [false, false, false] : [false, false]
   );
 
+  // stores the heights when in horizontal mode (Connection has 3 panels, others have 2)
   const [panelHeightPercentages, setPanelHeightPercentages] = useLocalStorage<number[]>(
     `codeEditorPanelHeightPercentages-${type}`,
     type === 'Connection' ? [34, 33, 33] : [50, 50]
@@ -68,8 +69,9 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   const [bottomHidden, setBottomHidden] = useLocalStorage('codeEditorPanelBottom', false);
 
   // attempts to adjust percentages of panel to match the new value
-  const adjustPanelPercentage = (index: number, newValue: number) =>
+  const adjustPanelPercentage = (index: number, newValue: number) => {
     adjustPercentages(panelHeightPercentages, setPanelHeightPercentages, index, newValue);
+  };
 
   // Whenever we change the position of the panel to be left-to-right, make sure
   // there's enough width for the editor and the panel

@@ -20,7 +20,7 @@ export function CodeEditorPanel(props: Props) {
     setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
     e.currentTarget.blur();
   };
-  console.log('rerender');
+
   return (
     <>
       {/* Panel position (left/bottom) control */}
