@@ -2,7 +2,7 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
 import useLocalStorage, { SetValue } from '@/shared/hooks/useLocalStorage';
-import { Dispatch, SetStateAction, useEffect } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export type PanelPosition = 'bottom' | 'left';
@@ -22,6 +22,8 @@ export interface CodeEditorPanelData {
   adjustPanelPercentage: (index: number, newValue: number) => void;
   panelHidden: boolean[];
   setPanelHidden: Dispatch<SetStateAction<boolean[]>>;
+  bottomHidden: boolean;
+  setBottomHidden: Dispatch<SetStateAction<boolean>>;
 }
 
 export const MIN_WIDTH_PANEL = 300;
@@ -62,6 +64,8 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     type === 'Connection' ? [34, 33, 33] : [50, 50]
   );
   const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
+
+  const [bottomHidden, setBottomHidden] = useState(false);
 
   // attempts to adjust percentages of panel to match the new value
   const adjustPanelPercentage = (index: number, newValue: number) =>
@@ -130,5 +134,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     setPanelPosition,
     panelHidden,
     setPanelHidden,
+    bottomHidden,
+    setBottomHidden,
   };
 };

@@ -7,10 +7,17 @@ import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { useRecoilValue } from 'recoil';
+import { CodeEditorPanelData } from './useCodeEditorPanelData';
+import { ChevronRightIcon } from '@radix-ui/react-icons';
+import { Button } from '@/shared/shadcn/ui/button';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
 
-export function CodeEditorPanelBottom() {
+interface Props {
+  codeEditorPanelData: CodeEditorPanelData;
+}
+
+export function CodeEditorPanelBottom(props: Props) {
   const {
     consoleOutput: [consoleOutput],
     panelBottomActiveTab: [tab, setTab],
@@ -20,6 +27,8 @@ export function CodeEditorPanelBottom() {
   const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   const isConnection = codeCellIsAConnection(editorInteractionState.mode);
 
+  const { bottomHidden, setBottomHidden } = props.codeEditorPanelData;
+
   return (
     <Tabs
       value={tab}
@@ -28,7 +37,15 @@ export function CodeEditorPanelBottom() {
       }}
       className={'grid h-full grid-rows-[auto_1fr]'}
     >
-      <div className={'px-2 pb-2 pt-2'}>
+      <div className={'flex items-center px-2 pb-2 pt-2'}>
+        <Button variant={'ghost'} onClick={() => setBottomHidden(!bottomHidden)} className="mr-1 p-0">
+          <ChevronRightIcon
+            className={cn(
+              'h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200',
+              !bottomHidden ? 'rotate-90' : ''
+            )}
+          />
+        </Button>
         <TabsList>
           <TabsTrigger
             value="console"
@@ -48,17 +65,17 @@ export function CodeEditorPanelBottom() {
       </div>
 
       <TabsContent value="console" className={cn('m-0 grid grid-rows-[auto_1fr] overflow-hidden')}>
-        <Console />
+        {!bottomHidden && <Console />}
       </TabsContent>
 
       <TabsContent value="ai-assistant" className={cn('m-0 grid grid-rows-[1fr_auto] overflow-hidden')}>
-        <AiAssistant autoFocus={true} />
+        {!bottomHidden && <AiAssistant autoFocus={true} />}
       </TabsContent>
 
       {isConnection && (
         <TabsContent value="data-browser" className={cn('m-0 grid grid-rows-[auto_1fr] overflow-hidden')}>
           {/* TODO: (connections) permissions */}
-          <SchemaViewer />
+          {!bottomHidden && <SchemaViewer bottom />}
         </TabsContent>
       )}
     </Tabs>

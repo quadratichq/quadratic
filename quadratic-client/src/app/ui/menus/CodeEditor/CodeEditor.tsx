@@ -348,7 +348,10 @@ export const CodeEditor = () => {
   return (
     <div
       ref={containerRef}
-      className={cn('relative flex bg-background', codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col')}
+      className={cn(
+        'relative flex h-full bg-background',
+        codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
+      )}
       style={{
         width: `${
           codeEditorPanelData.editorWidth +
@@ -359,11 +362,13 @@ export const CodeEditor = () => {
     >
       <div
         id="QuadraticCodeEditorID"
-        className={cn('flex flex-col', codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1')}
+        className={cn('flex shrink flex-col', codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1')}
         style={{
           width: `${codeEditorPanelData.editorWidth}px`,
           height:
-            codeEditorPanelData.panelPosition === 'left' ? '100%' : `${codeEditorPanelData.editorHeightPercentage}%`,
+            codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
+              ? '100%'
+              : `${codeEditorPanelData.editorHeightPercentage}%`,
         }}
         onKeyDownCapture={onKeyDownEditor}
         onPointerEnter={() => {
@@ -417,6 +422,7 @@ export const CodeEditor = () => {
 
       <div
         className={cn(
+          'shrink-0',
           codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
           'relative flex flex-col bg-background'
         )}
@@ -425,12 +431,11 @@ export const CodeEditor = () => {
           height:
             codeEditorPanelData.panelPosition === 'left'
               ? '100%'
-              : `${100 - codeEditorPanelData.editorHeightPercentage}%`,
+              : `${codeEditorPanelData.bottomHidden ? 'auto' : 100 - codeEditorPanelData.editorHeightPercentage + '%'}`,
         }}
       >
         <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} />
       </div>
-
       <CodeEditorPanels codeEditorPanelData={codeEditorPanelData} />
     </div>
   );

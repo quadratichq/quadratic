@@ -30,4 +30,8 @@ test('adjustPercentages', () => {
   percentages = [34, 33, 33];
   adjustPercentages(percentages, setPercentages as any, 1, 70);
   expect(percentages).toEqual([20, 47, 33]);
+
+  percentages = [34, 33, 33];
+  adjustPercentages(percentages, setPercentages as any, 2, 20);
+  expect(percentages).toEqual([34, 46, 20]);
 });

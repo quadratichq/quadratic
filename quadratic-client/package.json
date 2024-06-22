@@ -64,7 +64,6 @@
     "react-device-detect": "^2.2.2",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
-    "react-resizable-panels": "^2.0.19",
     "react-router-dom": "^6.19.0",
     "recoil": "^0.7.7",
     "semver": "^7.5.4",

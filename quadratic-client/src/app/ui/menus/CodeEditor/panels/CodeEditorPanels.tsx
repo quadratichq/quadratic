@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useCodeEditor } from '../CodeEditorContext';
 import { ResizeControl } from './ResizeControl';
 import { CodeEditorPanelData, MIN_WIDTH_PANEL, MIN_WIDTH_VISIBLE_GRID } from './useCodeEditorPanelData';
@@ -11,6 +12,19 @@ const MIN_WIDTH_EDITOR = 350;
 export const CodeEditorPanels = (props: Props) => {
   const { containerRef } = useCodeEditor();
   const { codeEditorPanelData } = props;
+
+  // we need to calculate the console height after a change in bottomHidden
+  const [consoleHeaderHeight, setConsoleHeaderHeight] = useState(0);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (codeEditorPanelData.bottomHidden && container) {
+      const editor = container.firstChild as HTMLDivElement;
+      if (editor) {
+        const editorRect = editor.getBoundingClientRect();
+        setConsoleHeaderHeight(editorRect.height);
+      }
+    }
+  }, [codeEditorPanelData.bottomHidden, containerRef]);
 
   return (
     <>
@@ -76,7 +90,13 @@ export const CodeEditorPanels = (props: Props) => {
           />
           {/* top-to-bottom: height of sections */}
           <ResizeControl
-            style={{ top: codeEditorPanelData.editorHeightPercentage + '%', width: '100%' }}
+            disabled={codeEditorPanelData.bottomHidden}
+            style={{
+              top: codeEditorPanelData.bottomHidden
+                ? consoleHeaderHeight + 'px'
+                : codeEditorPanelData.editorHeightPercentage + '%',
+              width: '100%',
+            }}
             setState={(mouseEvent) => {
               if (!containerRef.current) return;
 

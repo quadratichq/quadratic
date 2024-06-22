@@ -26,7 +26,11 @@ type Column = {
 type LoadState = 'not-initialized' | 'loading' | 'loaded' | 'error';
 type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 
-export const SchemaViewer = () => {
+interface Props {
+  bottom?: boolean;
+}
+
+export const SchemaViewer = (props: Props) => {
   const { mode } = useRecoilValue(editorInteractionStateAtom);
   const connection = getConnectionInfo(mode);
   if (!connection) throw new Error('Expected a connection cell to be open.');
@@ -58,7 +62,7 @@ export const SchemaViewer = () => {
 
   return (
     <>
-      <div style={{ position: 'absolute', top: 8, right: 8 }}>
+      <div style={{ position: 'absolute', top: props.bottom ? '3rem' : 8, right: 8, zIndex: 100 }}>
         <div>
           <TooltipHint title="Refresh schema">
             <IconButton size="small" onClick={fetchData}>

@@ -63,6 +63,36 @@ export function adjustPercentages(
     }
   }
 
+  // if we want to shrink the last panel, then we need th previous panels to grow
+  else if (clampedNewValue < current && index === panelHeightPercentages.length - 1) {
+    const desiredShrink = current - clampedNewValue;
+    let shrink = desiredShrink;
+    let previous = index - 1;
+    while (previous !== -1) {
+      const possibleNewValue = newHeights[previous] + shrink;
+
+      // Cannot shrink previous panel enough to fit the desired growth. Shrink
+      // as much as possible and try the next previous panel.
+      if (possibleNewValue > MAX_HEIGHT_PERCENT) {
+        shrink -= MAX_HEIGHT_PERCENT - newHeights[previous];
+        newHeights[previous] = MAX_HEIGHT_PERCENT;
+      }
+
+      // We can shrink the previous panel to fit the desired growth. We're done.
+      else {
+        newHeights[previous] = possibleNewValue;
+        newHeights[index] = clampedNewValue;
+        break;
+      }
+      previous--;
+    }
+    // we ran out of space to shrink the previous panels, so we adjust the
+    // current panel but whatever we were able to shrink
+    if (previous === -1) {
+      newHeights[index] = current + desiredShrink - shrink;
+    }
+  }
+
   // If we're shrinking the panel, then we need the next panels to grow.
   else if (clampedNewValue < current) {
     const desiredGrowth = current - clampedNewValue;
