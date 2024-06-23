@@ -35,7 +35,7 @@ export function CodeEditorPanelSide(props: Props) {
     const containerRect = containerRef.current.getBoundingClientRect();
 
     // need to adjust the heights based on hidden content
-    const containerHeight = containerRect.height;
+    let containerHeight = containerRect.height;
     let clientY = e.clientY;
 
     const panel0 = containerRef.current.querySelector('#panel-0');
@@ -51,15 +51,16 @@ export function CodeEditorPanelSide(props: Props) {
         // adjustPercent = expandedPercent / 2;
         // clientY += panel1.getBoundingClientRect().height;
       } else if (panelHidden[2] && panel2) {
-        // const desiredHeight = clientY - containerRect.top;
+        const collapsedHeight = panel2.getBoundingClientRect().height;
+        const expandedHeight = (codeEditorPanelData.panelHeightPercentages[2] / 100) * containerHeight;
         // const percentage = desiredHeight / (containerHeight - panel2.getBoundingClientRect().height);
         // const expandedHeight = codeEditorPanelData.panelHeightPercentages[2] / 100;
 
         // const newValue = ((clientY - containerRect.top) / containerHeight) * 100;
         // codeEditorPanelData.adjustPanelPercentage(0, newValue);
 
-        // this works when panel2 = min percentage
-        clientY -= panel2.getBoundingClientRect().height;
+        // clientY -= panel2.getBoundingClientRect().height;
+        containerHeight -= panel2.getBoundingClientRect().height;
       }
       const newValue = ((clientY - containerRect.top) / containerHeight) * 100;
       codeEditorPanelData.adjustPanelPercentage(0, newValue);
