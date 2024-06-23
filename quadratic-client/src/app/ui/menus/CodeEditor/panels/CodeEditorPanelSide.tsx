@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
@@ -34,28 +35,18 @@ export function CodeEditorPanelSide(props: Props) {
     let clientY = e.clientY;
 
     if (first) {
+      let adjustPercent = 0;
       if (panelHidden[2]) {
         const panel2 = containerRef.current.querySelector('#panel-2');
         if (panel2) {
-          const collapsedHeight = panel2.getBoundingClientRect().height;
-          const expandedHeight = containerRect.height * (codeEditorPanelData.panelHeightPercentages[2] / 100);
-
-          // todo: this is still not working :( ****
-
-          // adjust height so it's the same as if the panel was expanded
-          height = height - collapsedHeight + expandedHeight;
-
-          // adjust mouse position to account for the total height difference
-          console.log(
-            expandedHeight - collapsedHeight,
-            height / containerRect.height,
-            (expandedHeight - collapsedHeight) * (containerRect.height / height)
-          );
-          clientY -= (expandedHeight - collapsedHeight) * (height / containerRect.height);
-          // clientY -= (expandedHeight - collapsedHeight) * (height / containerRect.height);
+          const collapsedHeight = panel2.getBoundingClientRect().height / containerRect.height;
+          const expandedHeight = codeEditorPanelData.panelHeightPercentages[2] / 100;
+          // adjustPercent = (expandedHeight - collapsedHeight) / containerRect.height;
+          // adjustPercent = collapsedHeight - expandedHeight; //0.06;
+          // console.log(collapsedHeight / expandedHeight);
         }
       }
-      const newValue = ((clientY - containerRect.top) / height) * 100;
+      const newValue = ((clientY - containerRect.top) / height - adjustPercent) * 100;
       codeEditorPanelData.adjustPanelPercentage(0, newValue);
     } else {
       if (panelHidden[0]) {

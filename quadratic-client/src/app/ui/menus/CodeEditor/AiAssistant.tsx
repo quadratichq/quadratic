@@ -190,7 +190,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
 
   // This component is designed to fill the entire height of its parent container
   return (
-    <div className="grid h-full grid-rows-[1fr_auto]">
+    <div className="flex h-full flex-col justify-between">
       <div
         className="overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}

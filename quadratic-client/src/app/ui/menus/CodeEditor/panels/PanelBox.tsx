@@ -30,7 +30,7 @@ export function PanelBox(props: Props) {
         <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
         {title}
       </CollapsibleTrigger>
-      <CollapsibleContent className="overflow-scroll">{component}</CollapsibleContent>
+      <CollapsibleContent className="grow overflow-scroll">{component}</CollapsibleContent>
     </Collapsible>
   );
 }
