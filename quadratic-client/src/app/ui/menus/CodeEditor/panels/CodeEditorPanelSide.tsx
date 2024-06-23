@@ -28,39 +28,49 @@ export function CodeEditorPanelSide(props: Props) {
   // changes resize bar when dragging
   const changeResizeBar = (e: MouseEvent, first: boolean) => {
     if (!containerRef.current) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+
     const containerRect = containerRef.current.getBoundingClientRect();
 
     // need to adjust the heights based on hidden content
-    let height = containerRect.height;
+    const containerHeight = containerRect.height;
     let clientY = e.clientY;
 
+    const panel0 = containerRef.current.querySelector('#panel-0');
+    const panel1 = containerRef.current.querySelector('#panel-1');
+    const panel2 = containerRef.current.querySelector('#panel-2');
+
+    // We need to adjust the percentage based on the size of the hidden panel.
     if (first) {
-      let adjustPercent = 0;
-      if (panelHidden[2]) {
-        const panel2 = containerRef.current.querySelector('#panel-2');
-        if (panel2) {
-          const collapsedHeight = panel2.getBoundingClientRect().height / containerRect.height;
-          const expandedHeight = codeEditorPanelData.panelHeightPercentages[2] / 100;
-          // adjustPercent = (expandedHeight - collapsedHeight) / containerRect.height;
-          // adjustPercent = collapsedHeight - expandedHeight; //0.06;
-          // console.log(collapsedHeight / expandedHeight);
-        }
+      if (panelHidden[1] && panel1) {
+        // const collapsedHeight = panel1.getBoundingClientRect().height;
+        // const expandedPercent = codeEditorPanelData.panelHeightPercentages[1] / 100;
+        // containerHeight -= collapsedHeight;
+        // adjustPercent = expandedPercent / 2;
+        // clientY += panel1.getBoundingClientRect().height;
+      } else if (panelHidden[2] && panel2) {
+        // const desiredHeight = clientY - containerRect.top;
+        // const percentage = desiredHeight / (containerHeight - panel2.getBoundingClientRect().height);
+        // const expandedHeight = codeEditorPanelData.panelHeightPercentages[2] / 100;
+
+        // const newValue = ((clientY - containerRect.top) / containerHeight) * 100;
+        // codeEditorPanelData.adjustPanelPercentage(0, newValue);
+
+        // this works when panel2 = min percentage
+        clientY -= panel2.getBoundingClientRect().height;
       }
-      const newValue = ((clientY - containerRect.top) / height - adjustPercent) * 100;
+      const newValue = ((clientY - containerRect.top) / containerHeight) * 100;
       codeEditorPanelData.adjustPanelPercentage(0, newValue);
     } else {
       if (panelHidden[0]) {
         const panel0 = containerRef.current.querySelector('#panel-0');
         if (panel0) {
-          const collapsedHeight = panel0.getBoundingClientRect().height;
-          const expandedHeight = containerRect.height * (codeEditorPanelData.panelHeightPercentages[0] / 100);
-
-          // adjust height so it's the same as if the panel was expanded
-          height = height - collapsedHeight + expandedHeight;
-          clientY += collapsedHeight;
+          clientY += panel0.getBoundingClientRect().height;
         }
       }
-      const newValue = ((containerRect.bottom - clientY) / containerRect.height) * 100;
+      const newValue = (1 - (clientY - containerRect.top) / containerHeight) * 100;
       codeEditorPanelData.adjustPanelPercentage(2, newValue);
     }
   };

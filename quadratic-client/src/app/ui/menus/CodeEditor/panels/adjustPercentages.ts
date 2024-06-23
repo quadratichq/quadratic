@@ -150,5 +150,6 @@ export function adjustPercentages(
 
   if (newHeights[index] !== panelHeightPercentages[index]) {
     setPanelHeightPercentages(newHeights);
+    console.log(newHeights);
   }
 }
