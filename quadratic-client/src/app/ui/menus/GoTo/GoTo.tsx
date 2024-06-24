@@ -1,15 +1,14 @@
-import focusInput from '@/shared/utils/focusInput';
-import { East } from '@mui/icons-material';
-import { Dialog, Divider, InputBase, List, ListItem, ListItemButton, ListItemText, Paper } from '@mui/material';
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
+import { moveViewport } from '@/app/gridGL/interaction/viewportHelper';
+import { Coordinate } from '@/app/gridGL/types/size';
+import { focusGrid } from '@/app/helpers/focusGrid';
+import '@/app/ui/styles/floating-dialog.css';
+import { CommandDialog, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
+import { ArrowForward } from '@mui/icons-material';
 import { Rectangle } from 'pixi.js';
-import React, { SyntheticEvent } from 'react';
+import React from 'react';
 import { useRecoilState } from 'recoil';
-import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
-import { sheets } from '../../../grid/controller/Sheets';
-import { moveViewport } from '../../../gridGL/interaction/viewportHelper';
-import { Coordinate } from '../../../gridGL/types/size';
-import { focusGrid } from '../../../helpers/focusGrid';
-import '../../styles/floating-dialog.css';
 import { getCoordinatesFromUserInput } from './getCoordinatesFromUserInput';
 
 export const GoTo = () => {
@@ -26,8 +25,7 @@ export const GoTo = () => {
 
   const coordinates = getCoordinatesFromUserInput(value);
 
-  const onSelect = (e: React.FormEvent | SyntheticEvent) => {
-    e.preventDefault();
+  const onSelect = () => {
     const [coor1, coor2] = coordinates;
 
     // GoTo Cell
@@ -64,33 +62,23 @@ export const GoTo = () => {
   };
 
   return (
-    <Dialog open={showGoToMenu} onClose={closeMenu} fullWidth maxWidth={'xs'}>
-      <Paper component="form" elevation={12} onSubmit={onSelect}>
-        <InputBase
-          sx={{ width: '100%', padding: '8px 16px' }}
-          inputRef={focusInput}
-          value={value}
-          fullWidth
-          placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setValue(e.target.value);
-          }}
-        />
-
-        <Divider />
-
-        <List dense={true} disablePadding>
-          <ListItem disablePadding secondaryAction={<East fontSize="small" color="disabled" />}>
-            <ListItemButton selected onClick={onSelect}>
-              <ListItemText
-                primary={`Go to ${coordinates.length === 1 ? 'cell' : 'range'}: ${coordinates
+    <CommandDialog
+      dialogProps={{ open: showGoToMenu, onOpenChange: closeMenu }}
+      commandProps={{ shouldFilter: false }}
+    >
+      <CommandInput
+        value={value}
+        onValueChange={(value) => {
+          setValue(value);
+        }}
+        placeholder="Enter a cell “0, 0” or range “0, 0, -5, -5”"
+        omitIcon={true}
+      />
+      <CommandList className="p-2">
+        <CommandItem onSelect={onSelect} className="flex justify-between items-center">Go to {coordinates.length === 1 ? 'cell' : 'range'}: {coordinates
                   .map(({ x, y }) => `(${x}, ${y})`)
-                  .join(', ')}`}
-              />
-            </ListItemButton>
-          </ListItem>
-        </List>
-      </Paper>
-    </Dialog>
+                  .join(', ')}<ArrowForward className="text-muted-foreground" /></CommandItem>
+      </CommandList>
+    </CommandDialog>
   );
 };
