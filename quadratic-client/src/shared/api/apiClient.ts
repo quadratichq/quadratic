@@ -301,8 +301,12 @@ export const apiClient = {
   },
 
   connections: {
-    async list() {
-      return fetchFromApi(`/v0/connections`, { method: 'GET' }, ApiSchemas['/v0/connections.GET.response']);
+    async list(teamUuid: string) {
+      return fetchFromApi(
+        `/v0/connections?teamUuid=${teamUuid}`,
+        { method: 'GET' },
+        ApiSchemas['/v0/connections.GET.response']
+      );
     },
     async get(uuid: string) {
       return fetchFromApi(
@@ -311,9 +315,9 @@ export const apiClient = {
         ApiSchemas['/v0/connections/:uuid.GET.response']
       );
     },
-    async create(body: ApiTypes['/v0/connections.POST.request']) {
+    async create(body: ApiTypes['/v0/connections.POST.request'], teamUuid: string) {
       return fetchFromApi(
-        `/v0/connections`,
+        `/v0/connections?teamUuid=${teamUuid}`,
         { method: 'POST', body: JSON.stringify(body) },
         ApiSchemas['/v0/connections.POST.response']
       );
