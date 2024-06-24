@@ -20,10 +20,10 @@ jobs:
      - files_preview
      - multiplayer_preview
     name: Create or Update Infrastructure with Pulumi
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - uses: useblacksmith/setup-node@v5
       with:
         node-version: 18
     - uses: pulumi/actions@v4
@@ -65,10 +65,10 @@ jobs:
 
 
   multiplayer_preview:
-    runs-on: ubuntu-latest-8-cores 
+    runs-on: blacksmith-8vcpu-ubuntu-2204 
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - uses: useblacksmith/setup-node@v5
       with:
         node-version: 18
 
@@ -94,10 +94,10 @@ jobs:
 
 
   files_preview:
-    runs-on: ubuntu-latest-8-cores 
+    runs-on: blacksmith-8vcpu-ubuntu-2204 
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
+    - uses: useblacksmith/setup-node@v5
       with:
         node-version: 18
 
