@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
+import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
@@ -152,31 +153,26 @@ export const CodeEditorHeader = (props: Props) => {
             <CircularProgress size="1rem" color={'primary'} className={`mr-2`} />
           </TooltipHint>
         )}
+        {hasPermission && <CodeEditorRefButton />}
         {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
-        {hasPermission && (
-          <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
-            <span>
-              <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
-                <Stop />
-              </IconButton>
-            </span>
-          </TooltipHint>
-        )}
-        {hasPermission && (
-          <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
-            <span>
-              <IconButton
-                id="QuadraticCodeEditorRunButtonID"
-                size="small"
-                color="primary"
-                onClick={saveAndRunCell}
-                disabled={!!isRunningComputation}
-              >
-                <PlayArrow />
-              </IconButton>
-            </span>
-          </TooltipHint>
-        )}
+        {hasPermission &&
+          (!isRunningComputation ? (
+            <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
+              <span>
+                <IconButton id="QuadraticCodeEditorRunButtonID" size="small" color="primary" onClick={saveAndRunCell}>
+                  <PlayArrow />
+                </IconButton>
+              </span>
+            </TooltipHint>
+          ) : (
+            <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
+              <span>
+                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
+                  <Stop />
+                </IconButton>
+              </span>
+            </TooltipHint>
+          ))}
         <TooltipHint title="Close" shortcut="ESC" placement="bottom">
           <IconButton id="QuadraticCodeEditorCloseButtonID" size="small" onClick={closeEditor}>
             <Close />

@@ -1,6 +1,6 @@
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import Editor, { Monaco } from '@monaco-editor/react';
-import monaco from 'monaco-editor';
+import * as monaco from 'monaco-editor';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -20,8 +20,10 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
 // import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
+import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { SheetRect } from '@/app/quadratic-core-types';
+import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
 import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
@@ -67,12 +69,32 @@ export const CodeEditorBody = (props: Props) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editorInteractionState.showCodeEditor]);
 
+  useEffect(() => {
+    const insertText = (text: string) => {
+      if (!editorRef.current) return;
+      const position = editorRef.current.getPosition();
+      const model = editorRef.current.getModel();
+      if (!position || !model) return;
+      const selection = editorRef.current.getSelection();
+      const range =
+        selection || new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+      model.applyEdits([{ range, text }]);
+      editorRef.current.setPosition(range.getEndPosition().delta(text.length, 0));
+      editorRef.current.focus();
+    };
+    events.on('insertCodeEditorText', insertText);
+    return () => {
+      events.off('insertCodeEditorText', insertText);
+    };
+  });
+
   const lastLocation = useRef<SheetPosTS | undefined>();
 
-  // This is to clear monaco editor's undo/redo stack when the cell location changes
-  // useEffect gets triggered when the cell location changes, but the editor content is not loaded in the editor
-  // new editor content for the next cell also creates a undo stack entry
-  // setTimeout of 250ms is to ensure that the new editor content is loaded, before we clear the undo/redo stack
+  // This is to clear monaco editor's undo/redo stack when the cell location
+  // changes useEffect gets triggered when the cell location changes, but the
+  // editor content is not loaded in the editor new editor content for the next
+  // cell also creates a undo stack entry setTimeout of 250ms is to ensure that
+  // the new editor content is loaded, before we clear the undo/redo stack
   useEffect(() => {
     if (
       lastLocation.current &&
@@ -161,6 +183,9 @@ export const CodeEditorBody = (props: Props) => {
         () => closeEditor(false),
         '!findWidgetVisible && !inReferenceSearchEditor && !editorHasSelection && !suggestWidgetVisible'
       );
+      editorRef.current.addCommand(monacoRef.current.KeyCode.KeyL | monacoRef.current.KeyMod.CtrlCmd, () => {
+        insertCellRef(editorInteractionState);
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closeEditor, didMount]);

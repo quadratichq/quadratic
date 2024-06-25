@@ -178,6 +178,27 @@ async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
+async def rel_cells(first: tuple[int, int], second: tuple[int, int], sheet: str=None, first_row_header: bool=False) -> int | float | str | bool | None:
+    """
+    Relative reference to a single cell in the grid.
+
+    Args:
+        first: The relative grid coordinate tuple from the current cell.
+        second: The relative grid coordinate tuple from the current cell.
+        sheet: The name of the sheet to reference. Defaults to the current sheet.
+        first_row_header: If True the first row will be used as the header.
+
+    Returns:
+        The value of the relative cell referenced.
+
+    Typical usage example:
+        c = rel_cells((-5, -5), (-3, -2)) # references the cells starting -5 cells left, and -5 cells up from the code cell
+    """
+
+    return None
+
+# This function is not used from here (it's a lambda function in run_python.py)
+# This is documented for pyright usage only
 async def rc(x: int, y: int) -> int | float | str | bool | None:
     """
     Relative reference to a single cell in the grid.
