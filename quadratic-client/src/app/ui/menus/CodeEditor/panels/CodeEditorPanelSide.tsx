@@ -82,10 +82,9 @@ export function CodeEditorPanelSide(props: Props) {
       <PanelBox
         id="panel-0"
         title="Console"
-        component={<Console />}
         index={0}
         codeEditorPanelData={codeEditorPanelData}
-      />
+      ><Console /></PanelBox>
       <ResizeControl
         style={{ position: 'relative' }}
         disabled={firstHidden || (secondHidden && thirdHidden)}
@@ -95,10 +94,9 @@ export function CodeEditorPanelSide(props: Props) {
       <PanelBox
         id="panel-1"
         title="AI Assistant"
-        component={<AiAssistant />}
         index={1}
         codeEditorPanelData={codeEditorPanelData}
-      />
+      ><AiAssistant /></PanelBox>
       {isConnection && (
         <ResizeControl
           style={{ position: 'relative', flexShrink: 0 }}
@@ -111,10 +109,9 @@ export function CodeEditorPanelSide(props: Props) {
         <PanelBox
           id="panel-2"
           title="Data browser"
-          component={<SchemaViewer />}
           index={2}
           codeEditorPanelData={codeEditorPanelData}
-        />
+        ><SchemaViewer /></PanelBox>
       )}
     </div>
   );

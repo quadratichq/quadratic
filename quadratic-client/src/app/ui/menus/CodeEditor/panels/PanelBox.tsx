@@ -5,13 +5,13 @@ import { ChevronRightIcon } from '@radix-ui/react-icons';
 interface Props {
   id: string;
   title: string;
-  component: any;
+  children: JSX.Element | JSX.Element[];
   index: number;
   codeEditorPanelData: CodeEditorPanelData;
 }
 
 export function PanelBox(props: Props) {
-  const { title, component, index, codeEditorPanelData, id } = props;
+  const { title, children, index, codeEditorPanelData, id } = props;
   const height = codeEditorPanelData.panelHeightPercentages[index];
   const open = !codeEditorPanelData.panelHidden[index];
   const setOpen = () => {
@@ -30,7 +30,7 @@ export function PanelBox(props: Props) {
         <ChevronRightIcon className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
         {title}
       </CollapsibleTrigger>
-      <CollapsibleContent className="grow overflow-scroll">{component}</CollapsibleContent>
+      <CollapsibleContent className="grow overflow-scroll">{children}</CollapsibleContent>
     </Collapsible>
   );
 }
