@@ -14,6 +14,7 @@ import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
+import { KernelMenu } from './KernelMenu';
 
 export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -107,6 +108,7 @@ export const BottomBar = () => {
       <Stack direction="row">
         <SelectionSummary />
         <SyncState />
+        <KernelMenu />
         {/* {showOnDesktop && <PythonStateItem />} */}
         {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem
