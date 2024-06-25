@@ -6,6 +6,7 @@ use lazy_static::lazy_static;
 
 #[macro_use]
 mod macros;
+pub mod excel;
 mod logic;
 mod lookup;
 mod mathematics;
