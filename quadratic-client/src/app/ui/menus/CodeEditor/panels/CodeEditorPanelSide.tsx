@@ -5,10 +5,11 @@ import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { ResizeControl } from './ResizeControl';
 import { useCodeEditor } from '../CodeEditorContext';
+import { ResizeControl } from './ResizeControl';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
@@ -26,7 +27,7 @@ export function CodeEditorPanelSide(props: Props) {
   const thirdHidden = panelHidden[2];
 
   // changes resize bar when dragging
-  const changeResizeBar = (e: MouseEvent, first: boolean) => {
+  const changeResizeBar = useCallback((e: MouseEvent, first: boolean) => {
     if (!containerRef.current) return;
 
     e.stopPropagation();
@@ -59,8 +60,8 @@ export function CodeEditorPanelSide(props: Props) {
         // const newValue = ((clientY - containerRect.top) / containerHeight) * 100;
         // codeEditorPanelData.adjustPanelPercentage(0, newValue);
 
-        // clientY -= panel2.getBoundingClientRect().height;
-        containerHeight -= panel2.getBoundingClientRect().height;
+        clientY -= panel2.getBoundingClientRect().height;
+        // containerHeight -= panel2.getBoundingClientRect().height;
       }
       const newValue = ((clientY - containerRect.top) / containerHeight) * 100;
       codeEditorPanelData.adjustPanelPercentage(0, newValue);
@@ -74,7 +75,7 @@ export function CodeEditorPanelSide(props: Props) {
       const newValue = (1 - (clientY - containerRect.top) / containerHeight) * 100;
       codeEditorPanelData.adjustPanelPercentage(2, newValue);
     }
-  };
+  }, [codeEditorPanelData, containerRef, panelHidden]);
 
   return (
     <div className="relative flex h-full flex-col">

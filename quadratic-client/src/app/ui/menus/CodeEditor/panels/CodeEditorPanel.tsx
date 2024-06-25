@@ -3,23 +3,22 @@ import { PanelPositionBottomIcon, PanelPositionLeftIcon } from '@/app/ui/icons';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { cn } from '@/shared/shadcn/utils';
 import { IconButton } from '@mui/material';
+import { MouseEvent, useCallback } from 'react';
 import { CodeEditorPanelBottom } from './CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from './CodeEditorPanelSide';
-import { MouseEvent } from 'react';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
 }
 
 export function CodeEditorPanel(props: Props) {
-  const {
-    codeEditorPanelData: { panelPosition, setPanelPosition },
-  } = props;
+  const { codeEditorPanelData } = props;
+  const { panelPosition, setPanelPosition } = codeEditorPanelData;
 
-  const changePanelPosition = (e: MouseEvent<HTMLButtonElement>) => {
+  const changePanelPosition = useCallback((e: MouseEvent<HTMLButtonElement>) => {
     setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
     e.currentTarget.blur();
-  };
+  }, [setPanelPosition]);
 
   return (
     <>

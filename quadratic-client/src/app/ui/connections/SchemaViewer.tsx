@@ -31,6 +31,7 @@ interface Props {
 }
 
 export const SchemaViewer = (props: Props) => {
+  const { bottom } = props;
   const { mode } = useRecoilValue(editorInteractionStateAtom);
   const connection = getConnectionInfo(mode);
   if (!connection) throw new Error('Expected a connection cell to be open.');
@@ -62,7 +63,7 @@ export const SchemaViewer = (props: Props) => {
 
   return (
     <>
-      <div style={{ position: 'absolute', top: props.bottom ? '3rem' : 8, right: 8, zIndex: 100 }}>
+      <div style={{ position: 'absolute', top: bottom ? '3rem' : 8, right: 8, zIndex: 100 }}>
         <div>
           <TooltipHint title="Refresh schema">
             <IconButton size="small" onClick={fetchData}>
