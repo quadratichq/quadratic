@@ -202,6 +202,7 @@ impl Sheet {
                     .code_runs
                     .get(&pos)
                     .and_then(|run| run.cell_value_at(0, 0)),
+                CellValue::Blank => self.get_code_cell_value(pos),
                 _ => Some(cell_value.clone()),
             }
         } else {
@@ -659,5 +660,14 @@ mod test {
         let mut sheet = sheet.clone();
         let new_column = sheet.get_or_create_column(1);
         assert_eq!(new_column, &Column::new(new_column.x));
+    }
+
+    #[test]
+    fn display_value_blanks() {
+        let mut sheet = Sheet::test();
+        let pos = Pos { x: 0, y: 0 };
+        assert_eq!(sheet.display_value(pos), None);
+        sheet.set_cell_value(pos, CellValue::Blank);
+        assert_eq!(sheet.display_value(pos), None);
     }
 }

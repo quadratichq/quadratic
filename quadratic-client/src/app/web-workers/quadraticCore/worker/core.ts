@@ -811,24 +811,17 @@ class Core {
   getCells(
     id: number,
     transactionId: string,
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
     sheet?: string,
     lineNumber?: number
   ) {
+    console.log(x, y, w, h);
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      const cellsStringified = this.gridController.calculationGetCells(
-        transactionId,
-        x0,
-        y0,
-        x1,
-        y1,
-        sheet,
-        lineNumber
-      );
+      const cellsStringified = this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
       const cells = cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
       corePython.sendGetCells(id, cells);
     } catch (e) {
