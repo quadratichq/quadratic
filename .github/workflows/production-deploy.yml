@@ -29,7 +29,7 @@ jobs:
     - multiplayer_production
     - files_production
     name: Update Infrastructure with Pulumi
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
     - uses: actions/checkout@v4
     - uses: useblacksmith/setup-node@v5
@@ -61,7 +61,7 @@ jobs:
         PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
 
   multiplayer_production:
-    runs-on: blacksmith-8vcpu-ubuntu-2204 
+    runs-on: blacksmith-32vcpu-ubuntu-2204 
     steps:
     - uses: actions/checkout@v4
     - uses: useblacksmith/setup-node@v5
@@ -90,7 +90,7 @@ jobs:
 
 
   files_production:
-    runs-on: blacksmith-8vcpu-ubuntu-2204 
+    runs-on: blacksmith-32vcpu-ubuntu-2204 
     steps:
     - uses: actions/checkout@v4
     - uses: useblacksmith/setup-node@v5

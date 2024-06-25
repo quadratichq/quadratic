@@ -20,7 +20,7 @@ jobs:
      - files_preview
      - multiplayer_preview
     name: Create or Update Infrastructure with Pulumi
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2204
     steps:
     - uses: actions/checkout@v4
     - uses: useblacksmith/setup-node@v5
@@ -65,7 +65,7 @@ jobs:
 
 
   multiplayer_preview:
-    runs-on: blacksmith-8vcpu-ubuntu-2204 
+    runs-on: blacksmith-32vcpu-ubuntu-2204 
     steps:
     - uses: actions/checkout@v4
     - uses: useblacksmith/setup-node@v5
@@ -94,7 +94,7 @@ jobs:
 
 
   files_preview:
-    runs-on: blacksmith-8vcpu-ubuntu-2204 
+    runs-on: blacksmith-32vcpu-ubuntu-2204 
     steps:
     - uses: actions/checkout@v4
     - uses: useblacksmith/setup-node@v5
