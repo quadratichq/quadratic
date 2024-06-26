@@ -62,10 +62,7 @@ export const GoTo = () => {
   };
 
   return (
-    <CommandDialog
-      dialogProps={{ open: showGoToMenu, onOpenChange: closeMenu }}
-      commandProps={{ shouldFilter: false }}
-    >
+    <CommandDialog dialogProps={{ open: showGoToMenu, onOpenChange: closeMenu }} commandProps={{ shouldFilter: false }}>
       <CommandInput
         value={value}
         onValueChange={(value) => {
@@ -75,9 +72,11 @@ export const GoTo = () => {
         omitIcon={true}
       />
       <CommandList className="p-2">
-        <CommandItem onSelect={onSelect} className="flex justify-between items-center">Go to {coordinates.length === 1 ? 'cell' : 'range'}: {coordinates
-                  .map(({ x, y }) => `(${x}, ${y})`)
-                  .join(', ')}<ArrowForward className="text-muted-foreground" /></CommandItem>
+        <CommandItem onSelect={onSelect} className="flex items-center justify-between">
+          Go to {coordinates.length === 1 ? 'cell' : 'range'}:{' '}
+          {coordinates.map(({ x, y }) => `(${x}, ${y})`).join(', ')}
+          <ArrowForward className="text-muted-foreground" />
+        </CommandItem>
       </CommandList>
     </CommandDialog>
   );
