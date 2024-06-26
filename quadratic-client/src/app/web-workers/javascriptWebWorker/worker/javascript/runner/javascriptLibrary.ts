@@ -21,6 +21,16 @@ declare global {
   ): Promise<(number | string | boolean | undefined)[][]>;
 
   /**
+   * Gets a cell relative to the current cell
+   * @param {number} deltaX0 Change in x relative to the code cell for first cell
+   * @param {number} deltaY0 Change in y relative to the code cell for first cell
+   * @param {number} deltaX1 Change in x relative to the code cell for second cell
+   * @param {number} deltaY1 Change in y relative to the code cell for second cell
+   * @returns 2D array [y][x] of the cells
+   */
+  function relCells(deltaX0: number, deltaY0: number, deltaX1: number, deltaY1: number): Promise<number | string | boolean | undefined>;
+
+  /**
    * Alias for getCells: Get a range of cells from the sheet
    * @param x0 x coordinate of the top-left cell
    * @param y0 y coordinate of the top-left cell
@@ -146,6 +156,7 @@ export const getCells = async (
   return await javascriptSendMessageAwaitingResponse({ type: 'getCells', x0, y0, x1, y1, sheetName });
 };
 
+
 export const cells = getCells;
 
 export const getCellsWithHeadings = async (
@@ -222,5 +233,25 @@ export const relCell = async (deltaX: number, deltaY: number) => {
 
   return await getCell(deltaX + p.x, deltaY + p.y);
 };
+
+export const relCells = async (deltaX0: number, deltaY0: number, deltaX1: number, deltaY1: number) => {
+  const p = pos();
+  if (isNaN(deltaX0) || isNaN(deltaY0) || isNaN(deltaX1) || isNaN(deltaY1)) {
+    throw new Error(
+      'relCells requires at least 4 arguments, received relCells(' +
+        deltaX0 +
+        ', ' +
+        deltaY0 +
+        ', ' +
+        deltaX1 +
+        ', ' +
+        deltaY1 +
+        ')' +
+        (___line_number___ !== undefined ? ' at line ' + ___line_number___ : '')
+    );
+  }
+
+  return await getCells(deltaX0 + p.x, deltaY0 + p.y, deltaX1 + p.x, deltaY1 + p.y);
+}
 
 export const rc = relCell;
