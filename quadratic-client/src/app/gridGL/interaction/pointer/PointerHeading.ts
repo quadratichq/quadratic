@@ -321,8 +321,8 @@ export class PointerHeading {
           // update remaining hashes hashes in render web worker, which were only updated in pixiApp
           try {
             const { column, row, old_size, new_size } = JSON.parse(transientResize) as TransientResize;
-            const c = column ? Number(column) : undefined;
-            const r = row ? Number(row) : undefined;
+            const c = column !== null ? Number(column) : undefined;
+            const r = row !== null ? Number(row) : undefined;
             const delta = old_size - new_size;
             renderWebWorker.updateSheetOffsetsFinal(sheets.sheet.id, c, r, delta);
             pixiApp.adjustHeadings({
