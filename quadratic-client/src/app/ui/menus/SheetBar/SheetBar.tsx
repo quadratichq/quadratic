@@ -422,7 +422,7 @@ export const SheetBar = (): JSX.Element => {
         zIndex: 1,
         backgroundColor: theme.palette.background.paper,
       }}
-      className="sheet-bar"
+      className="sheet-bar select-none"
     >
       {hasPermission && (
         <SheetBarButton
