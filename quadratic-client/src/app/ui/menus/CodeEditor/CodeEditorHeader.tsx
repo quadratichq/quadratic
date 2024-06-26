@@ -123,7 +123,7 @@ export const CodeEditorHeader = (props: Props) => {
         className={cn(
           `relative`,
           unsaved &&
-            `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-warning after:content-['']`
+            `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
         )}
       >
         <TooltipHint title={`${language}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
@@ -141,7 +141,7 @@ export const CodeEditorHeader = (props: Props) => {
         </TooltipHint>
       </div>
       <div className="mx-2 flex truncate text-sm font-medium">
-        Cell ({cellLocation.x}, {cellLocation.y})
+        Cell ({cellLocation.x}, {cellLocation.y}) {unsaved && ' - Unsaved changes'}
         {currentCodeEditorCellIsNotInActiveSheet && (
           <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
         )}
