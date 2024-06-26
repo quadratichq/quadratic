@@ -403,4 +403,12 @@ mod test {
         );
         assert_eq!(sheet.cell_value((0, 5).into()), None);
     }
+
+    #[test]
+    fn import_excel_invalid() {
+        let mut gc = GridController::test_blank();
+        let file = include_bytes!("../../../test-files/invalid.xlsx");
+        let result = gc.import_excel(file.to_vec(), "invalid.xlsx");
+        assert!(result.is_err());
+    }
 }
