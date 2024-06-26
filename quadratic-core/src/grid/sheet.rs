@@ -122,7 +122,7 @@ impl Sheet {
     /// and did not previously exist (so no change is needed).
     pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
         let value = value.into();
-        let is_empty = value.is_blank();
+        let is_empty = value.is_blank_or_empty_string();
         let value: Option<CellValue> = if is_empty { None } else { Some(value) };
 
         // if there's no value and the column doesn't exist, then nothing more needs to be done
