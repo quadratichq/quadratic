@@ -30,6 +30,7 @@ import '../../styles/floating-dialog.css';
 
 export interface CellTypeOption {
   name: string;
+  searchStrings?: string[];
   mode: CodeCellLanguage;
   icon: any;
   description: string | JSX.Element;
@@ -51,6 +52,7 @@ let CELL_TYPE_OPTIONS = [
   },
   {
     name: 'Formula',
+    searchStrings: ['fx', 'functions', 'formulas'],
     mode: 'Formula',
     icon: <Formula sx={{ color: colors.languageFormula }} />,
     description: (
@@ -62,6 +64,7 @@ let CELL_TYPE_OPTIONS = [
   },
   {
     name: 'JavaScript',
+    searchStrings: ['js'],
     mode: 'Javascript',
     icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
     description: (
@@ -88,7 +91,11 @@ export default function CellTypeMenu() {
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
   const searchlabel = 'Choose a cell type…';
 
-  const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
+  const options = CELL_TYPE_OPTIONS.filter(
+    (option) =>
+      option.name.toLowerCase().includes(value.toLowerCase()) ||
+      option.searchStrings?.some((s) => s.includes(value.toLowerCase()))
+  );
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
