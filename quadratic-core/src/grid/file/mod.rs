@@ -1,4 +1,7 @@
-use crate::compression::{decompress_and_deserialize, serialize_and_compress};
+use crate::compression::{
+    add_header, decompress_and_deserialize, deserialize, remove_header, serialize,
+    serialize_and_compress,
+};
 
 use super::Grid;
 use anyhow::{anyhow, Result};
@@ -14,6 +17,11 @@ mod v1_5;
 mod v1_6;
 
 pub static CURRENT_VERSION: &str = "1.6";
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FileVersion {
+    pub version: String,
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
@@ -65,7 +73,13 @@ pub fn import(file_contents: &[u8]) -> Result<Grid> {
 
 /// Imports a binary file.
 fn import_binary(file_contents: &[u8]) -> Result<Grid> {
-    let schema = decompress_and_deserialize::<GridSchema>(file_contents)?;
+    let (header, data) = remove_header(file_contents)?;
+
+    // we're currently not doing anything with the file version, but will in
+    // the future as we use different serialization and compression methods
+    let _file_version = deserialize::<FileVersion>(header)?;
+
+    let schema = decompress_and_deserialize::<GridSchema>(data)?;
     current::import(schema)
 }
 
@@ -80,10 +94,16 @@ fn import_json(file_contents: &str) -> Result<Grid> {
 }
 
 pub fn export(grid: &Grid) -> Result<Vec<u8>> {
+    let version = FileVersion {
+        version: CURRENT_VERSION.into(),
+    };
+    let header = serialize(&version)?;
+
     let converted = current::export(grid)?;
     let compressed = serialize_and_compress::<GridSchema>(&converted)?;
+    let data = add_header(header, compressed)?;
 
-    Ok(compressed)
+    Ok(data)
 }
 
 #[cfg(test)]
@@ -91,7 +111,6 @@ mod tests {
     use super::*;
     use crate::{
         color::Rgba,
-        controller::GridController,
         grid::{generate_borders, set_rect_borders, BorderSelection, BorderStyle, CellBorderLine},
         Pos, Rect,
     };
@@ -237,14 +256,6 @@ mod tests {
     }
 
     #[test]
-    fn imports_and_exports_a_v1_5_grid() {
-        let imported = import(V1_5_FILE).unwrap();
-        let exported = export(&imported).unwrap();
-        let imported_copy = import(&exported).unwrap();
-        assert_eq!(imported_copy, imported);
-    }
-
-    #[test]
     fn imports_and_exports_v1_4_default() {
         let imported = import(V1_4_FILE).unwrap();
         let exported = export(&imported).unwrap();
@@ -253,26 +264,18 @@ mod tests {
     }
 
     #[test]
-    fn simple_file_binary() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        gc.add_sheet(None);
-        // gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
+    fn imports_and_exports_a_v1_5_grid() {
+        let imported = import(V1_5_FILE).unwrap();
+        let exported = export(&imported).unwrap();
+        let imported_copy = import(&exported).unwrap();
+        assert_eq!(imported_copy, imported);
+    }
 
-        for x in 0..100 {
-            gc.set_cell_value((0, x, sheet_id).into(), "true".into(), None);
-        }
-        // gc.set_cell_value((1, 0, sheet_id).into(), "12".to_string(), None);
-        // gc.set_code_cell(
-        //     (0, 1, sheet_id).into(),
-        //     crate::grid::CodeCellLanguage::Formula,
-        //     "13".into(),
-        //     None,
-        // );
-
+    #[test]
+    fn imports_and_exports_a_v1_6_grid() {
         let imported = import(V1_6_FILE).unwrap();
         let exported = export(&imported).unwrap();
-        // let imported = import(&exported).unwrap();
-        // assert_eq!(*gc.grid(), imported);
+        let imported_copy = import(&exported).unwrap();
+        assert_eq!(imported_copy, imported);
     }
 }

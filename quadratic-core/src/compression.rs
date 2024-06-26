@@ -1,10 +1,12 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use flate2::{
     write::{ZlibDecoder, ZlibEncoder},
     Compression,
 };
 use serde::de::DeserializeOwned;
 use std::io::prelude::*;
+
+const HEADER_DELIMITER: u8 = "*".as_bytes()[0];
 
 pub fn serialize_and_compress<T>(data: &T) -> Result<Vec<u8>>
 where
@@ -32,7 +34,7 @@ where
     T: DeserializeOwned,
 {
     let decompressed = decompress(data)?;
-    deserialize::<T>(decompressed)
+    deserialize::<T>(&decompressed)
 }
 
 pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
@@ -43,11 +45,32 @@ pub fn decompress(data: &[u8]) -> Result<Vec<u8>> {
     Ok(decoder.finish()?)
 }
 
-pub fn deserialize<T>(data: Vec<u8>) -> Result<T>
+pub fn deserialize<T>(data: &[u8]) -> Result<T>
 where
     T: DeserializeOwned,
 {
     Ok(bincode::deserialize::<T>(&data)?)
+}
+
+pub fn add_header<'a>(header: Vec<u8>, data: Vec<u8>) -> Result<Vec<u8>> {
+    // add the delimiter to the header
+    let mut output = [header, vec![HEADER_DELIMITER]].concat();
+
+    // now append the data
+    output.extend(data);
+
+    Ok(output)
+}
+
+pub fn remove_header<'a>(data: &[u8]) -> Result<(&[u8], &[u8])> {
+    let index = data
+        .iter()
+        .position(|&r| r == HEADER_DELIMITER)
+        .ok_or_else(|| anyhow!("Could not find the file header delimiter"))?;
+    let header = &data[0..=index];
+    let data = &data[index + 1..];
+
+    Ok((header, data))
 }
 
 #[cfg(test)]
