@@ -17,6 +17,7 @@ export interface CodeEditorPanelData {
   panelHeightPercentage: number;
   setPanelHeightPercentage: (value: number) => void;
   panelHeightPercentages: number[];
+  setPanelHeightPercentages: SetValue<number[]>;
   panelPosition: PanelPosition;
   setPanelPosition: SetValue<PanelPosition>;
   adjustPanelPercentage: (index: number, newValue: number) => void;
@@ -139,6 +140,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
       panelHeightPercentage,
       setPanelHeightPercentage,
       panelHeightPercentages,
+      setPanelHeightPercentages,
       adjustPanelPercentage,
       panelPosition,
       setPanelPosition,
@@ -157,6 +159,7 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     panelHeightPercentage,
     setPanelHeightPercentage,
     panelHeightPercentages,
+    setPanelHeightPercentages,
     adjustPanelPercentage,
     panelPosition,
     setPanelPosition,

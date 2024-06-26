@@ -1,8 +1,8 @@
 import { SetValue } from '@/shared/hooks/useLocalStorage';
 
 // panel percent minimum and maximum values
-const MIN_HEIGHT_PERCENT = 20;
-const MAX_HEIGHT_PERCENT = 80;
+export const MIN_PANEL_HEIGHT_PERCENT = 20;
+export const MAX_PANEL_HEIGHT_PERCENT = 80;
 
 // Adjust percentages of panel to match the new value.
 export function adjustPercentages(
@@ -12,7 +12,7 @@ export function adjustPercentages(
   newValue: number
 ) {
   // clamp percentage values to (MIN, MAX)
-  let clampedNewValue = Math.max(MIN_HEIGHT_PERCENT, Math.min(MAX_HEIGHT_PERCENT, newValue));
+  let clampedNewValue = Math.max(MIN_PANEL_HEIGHT_PERCENT, Math.min(MAX_PANEL_HEIGHT_PERCENT, newValue));
 
   // if there are only two panels, then it's easy
   if (panelHeightPercentages.length === 2) {
@@ -43,9 +43,9 @@ export function adjustPercentages(
 
       // Cannot grow next panel enough to fit the desired shrink. Grow as much
       // as possible and try the next next panel.
-      if (possibleNewValue < MIN_HEIGHT_PERCENT) {
-        growth -= newHeights[next] - MIN_HEIGHT_PERCENT;
-        newHeights[next] = MIN_HEIGHT_PERCENT;
+      if (possibleNewValue < MIN_PANEL_HEIGHT_PERCENT) {
+        growth -= newHeights[next] - MIN_PANEL_HEIGHT_PERCENT;
+        newHeights[next] = MIN_PANEL_HEIGHT_PERCENT;
       }
 
       // We can grow the next panel to fit the desired shrink. We're done.
@@ -73,9 +73,9 @@ export function adjustPercentages(
 
       // Cannot shrink previous panel enough to fit the desired growth. Shrink
       // as much as possible and try the next previous panel.
-      if (possibleNewValue > MAX_HEIGHT_PERCENT) {
-        shrink -= MAX_HEIGHT_PERCENT - newHeights[previous];
-        newHeights[previous] = MAX_HEIGHT_PERCENT;
+      if (possibleNewValue > MAX_PANEL_HEIGHT_PERCENT) {
+        shrink -= MAX_PANEL_HEIGHT_PERCENT - newHeights[previous];
+        newHeights[previous] = MAX_PANEL_HEIGHT_PERCENT;
       }
 
       // We can shrink the previous panel to fit the desired growth. We're done.
@@ -103,9 +103,9 @@ export function adjustPercentages(
 
       // Cannot grow next panel enough to fit the desired shrink. Grow as much
       // as possible and try the next next panel.
-      if (possibleNewValue > MAX_HEIGHT_PERCENT) {
-        growth -= MAX_HEIGHT_PERCENT - newHeights[next];
-        newHeights[next] = MAX_HEIGHT_PERCENT;
+      if (possibleNewValue > MAX_PANEL_HEIGHT_PERCENT) {
+        growth -= MAX_PANEL_HEIGHT_PERCENT - newHeights[next];
+        newHeights[next] = MAX_PANEL_HEIGHT_PERCENT;
       }
 
       // We can grow the next panel to fit the desired shrink. We're done.
@@ -128,9 +128,9 @@ export function adjustPercentages(
 
       // Cannot shrink previous panel enough to fit the desired growth. Shrink
       // as much as possible and try the next previous panel.
-      if (possibleNewValue < MIN_HEIGHT_PERCENT) {
-        shrink -= newHeights[previous] - MIN_HEIGHT_PERCENT;
-        newHeights[previous] = MIN_HEIGHT_PERCENT;
+      if (possibleNewValue < MIN_PANEL_HEIGHT_PERCENT) {
+        shrink -= newHeights[previous] - MIN_PANEL_HEIGHT_PERCENT;
+        newHeights[previous] = MIN_PANEL_HEIGHT_PERCENT;
       }
 
       // We can shrink the previous panel to fit the desired growth. We're done.
@@ -150,6 +150,5 @@ export function adjustPercentages(
 
   if (newHeights[index] !== panelHeightPercentages[index]) {
     setPanelHeightPercentages(newHeights);
-    console.log(newHeights);
   }
 }
