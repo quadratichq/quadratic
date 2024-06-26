@@ -11,7 +11,7 @@ results = None
 #
 # All functions variations are intentionally included.
 
-async def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
+def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
     """
     Reference a single cell in the grid.
 
@@ -27,14 +27,14 @@ async def getCell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bo
         c = getCell(0, 0)
     """
 
-    result = await getCellsDB(p_x, p_y, p_x, p_y, sheet, int(stack_line_number()))
+    result = getCellsDB(p_x, p_y, p_x, p_y, sheet, int(stack_line_number()))
 
     if len(result):
         return result_to_value(result[0])
     else:
         return None
 
-async def cell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
+def cell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
     """
     Reference a single cell in the grid.
 
@@ -52,7 +52,7 @@ async def cell(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool 
 
     return getCell(p_x, p_y, sheet)
 
-async def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
+def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | None:
     """
     Reference a single cell in the grid.
 
@@ -71,7 +71,7 @@ async def c(p_x: int, p_y: int, sheet: str=None) -> int | float | str | bool | N
     return getCell(p_x, p_y, sheet)
 
 
-async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame:
+def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame:
     """
     Reference multiple cells in the grid.
 
@@ -89,7 +89,7 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
     """
 
     # Get Cells
-    cells = await getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet, int(stack_line_number()))
+    cells = getCellsDB(p0[0], p0[1], p1[0], p1[1], sheet, int(stack_line_number()))
     cell_range_width = p1[0] - p0[0] + 1
     cell_range_height = p1[1] - p0[1] + 1
 
@@ -123,7 +123,7 @@ async def getCells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, fi
 
     return df
 
-async def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame:
+def cells(p0: Tuple[int, int], p1: Tuple[int, int], sheet: str=None, first_row_header: bool=False) -> DataFrame:
     """
     Reference multiple cells in the grid.
 
@@ -159,7 +159,7 @@ def pos() -> tuple[int, int]:
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
-async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
+def rel_cell(x: int, y: int) -> int | float | str | bool | None:
     """
     Relative reference to a single cell in the grid.
 
@@ -178,7 +178,7 @@ async def rel_cell(x: int, y: int) -> int | float | str | bool | None:
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
-async def rel_cells(first: tuple[int, int], second: tuple[int, int], sheet: str=None, first_row_header: bool=False) -> int | float | str | bool | None:
+def rel_cells(first: tuple[int, int], second: tuple[int, int], sheet: str=None, first_row_header: bool=False) -> int | float | str | bool | None:
     """
     Relative reference to a single cell in the grid.
 
@@ -199,7 +199,7 @@ async def rel_cells(first: tuple[int, int], second: tuple[int, int], sheet: str=
 
 # This function is not used from here (it's a lambda function in run_python.py)
 # This is documented for pyright usage only
-async def rc(x: int, y: int) -> int | float | str | bool | None:
+def rc(x: int, y: int) -> int | float | str | bool | None:
     """
     Relative reference to a single cell in the grid.
 

@@ -14,7 +14,6 @@ import {
   Format,
   JsCodeCell,
   JsCodeResult,
-  JsGetCellResponse,
   JsRenderCell,
   MinMax,
   SearchOptions,
@@ -35,7 +34,6 @@ import {
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
 import { coreClient } from './coreClient';
-import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
 import { numbersToRect, pointsToRect, posToPos, posToRect } from './rustConversions';
@@ -808,33 +806,9 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
 
-  getCells(
-    id: number,
-    transactionId: string,
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
-    sheet?: string,
-    lineNumber?: number
-  ) {
+  getCells(transactionId: string, x0: number, y0: number, x1: number, y1: number, sheet?: string, lineNumber?: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    try {
-      const cellsStringified = this.gridController.calculationGetCells(
-        transactionId,
-        x0,
-        y0,
-        x1,
-        y1,
-        sheet,
-        lineNumber
-      );
-      const cells = cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
-      corePython.sendGetCells(id, cells);
-    } catch (e) {
-      // there was an error getting the cells (likely, an unknown sheet name)
-      corePython.sendGetCells(id);
-    }
+    return this.gridController.calculationGetCells(transactionId, x0, y0, x1, y1, sheet, lineNumber);
   }
 
   async importExcel(message: ClientCoreImportExcel): Promise<{ contents?: string; version?: string; error?: string }> {
