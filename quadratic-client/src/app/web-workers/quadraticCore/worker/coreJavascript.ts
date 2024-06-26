@@ -1,6 +1,6 @@
 import { debugWebWorkers } from '@/app/debugFlags';
 import { JsGetCellResponse } from '@/app/quadratic-core-types';
-import { CoreJavascriptMessage, JavascriptCoreGetCells, JavascriptCoreMessage } from '../../javascriptWebWorker/javascriptCoreMessages';
+import { CoreJavascriptMessage, JavascriptCoreMessage } from '../../javascriptWebWorker/javascriptCoreMessages';
 import { core } from './core';
 
 declare var self: WorkerGlobalScope &
@@ -31,7 +31,19 @@ class CoreJavascript {
         break;
 
       case 'javascriptCoreGetCells':
-        core.getCells(e.data as JavascriptCoreGetCells);
+        this.send({
+          type: 'coreJavascriptGetCells',
+          id: e.data.id,
+          cells: core.getCells(
+            e.data.transactionId,
+            e.data.x,
+            e.data.y,
+            e.data.w,
+            e.data.h,
+            e.data.sheet,
+            e.data.lineNumber
+          ),
+        });
         break;
 
       default:

@@ -37,8 +37,6 @@ import { coreClient } from './coreClient';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
 import { numbersToRect, pointsToRect, posToPos, posToRect } from './rustConversions';
-import { corePython } from './corePython';
-import { JavascriptCoreGetCells } from '../../javascriptWebWorker/javascriptCoreMessages';
 
 // Used to coerce bigints to numbers for JSON.stringify; see
 // https://github.com/GoogleChromeLabs/jsbi/issues/30#issuecomment-2064279949.
@@ -786,16 +784,21 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(results));
   }
 
-  getCells(options: JavascriptCoreGetCells) {
-    const { id, transactionId, x, y, w, h, sheet, lineNumber } = options;
+  getCells(
+    transactionId: string,
+    x: number,
+    y: number,
+    w: number,
+    h?: number,
+    sheet?: string,
+    lineNumber?: number
+  ): JsGetCellResponse[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
       const cellsStringified = this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
-      const cells = cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
-      corePython.sendGetCells(id, cells);
+      return cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
     } catch (e) {
       // there was an error getting the cells (likely, an unknown sheet name)
-      corePython.sendGetCells(id);
     }
   }
 
