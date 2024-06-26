@@ -17,7 +17,7 @@ use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
-use crate::{Array, CellValue, IsBlank, Pos, Rect};
+use crate::{Array, CellValue, Pos, Rect};
 
 pub mod bounds;
 pub mod cell_array;
@@ -130,7 +130,7 @@ impl Sheet {
     /// and did not previously exist (so no change is needed).
     pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
         let value = value.into();
-        let is_empty = value.is_blank();
+        let is_empty = value.is_blank_or_empty_string();
         let value: Option<CellValue> = if is_empty { None } else { Some(value) };
 
         // if there's no value and the column doesn't exist, then nothing more needs to be done
@@ -210,6 +210,7 @@ impl Sheet {
                     .code_runs
                     .get(&pos)
                     .and_then(|run| run.cell_value_at(0, 0)),
+                CellValue::Blank => self.get_code_cell_value(pos),
                 _ => Some(cell_value.clone()),
             }
         } else {
@@ -715,6 +716,15 @@ mod test {
         let mut sheet = sheet.clone();
         let new_column = sheet.get_or_create_column(1);
         assert_eq!(new_column, &Column::new(new_column.x));
+    }
+
+    #[test]
+    fn display_value_blanks() {
+        let mut sheet = Sheet::test();
+        let pos = Pos { x: 0, y: 0 };
+        assert_eq!(sheet.display_value(pos), None);
+        sheet.set_cell_value(pos, CellValue::Blank);
+        assert_eq!(sheet.display_value(pos), None);
     }
 
     #[test]
