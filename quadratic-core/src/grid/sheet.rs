@@ -12,7 +12,7 @@ use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;
-use super::{CodeRun, NumericFormat, NumericFormatKind};
+use super::{CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
@@ -228,16 +228,6 @@ impl Sheet {
         A::column_data_ref(column).get(pos.y)
     }
 
-    pub fn cell_numeric_info(&self, pos: Pos) -> (Option<NumericFormat>, Option<i16>) {
-        if let Some(column) = self.get_column(pos.x) {
-            let format = column.numeric_format.get(pos.y);
-            let decimals = column.numeric_decimals.get(pos.y);
-            (format, decimals)
-        } else {
-            (None, None)
-        }
-    }
-
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
         let column = self.get_column(pos.x)?;
         if let Some(format) = column.numeric_format.get(pos.x) {
@@ -329,7 +319,7 @@ impl Sheet {
     /// get or calculate decimal places for a cell
     pub fn decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
-        if let Some(decimals) = self.get_column(pos.x)?.numeric_decimals.get(pos.y) {
+        if let Some(decimals) = self.format_cell(pos.x, pos.y, true).numeric_decimals {
             return Some(decimals);
         }
 
@@ -364,7 +354,10 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{Bold, CodeCellLanguage, Italic, NumericFormat},
+        grid::{
+            formats::{format_update::FormatUpdate, Formats},
+            Bold, CodeCellLanguage, Italic, NumericFormat,
+        },
         selection::Selection,
         test_util::print_table,
         CodeCellValue, SheetPos,
@@ -428,12 +421,31 @@ mod test {
     }
 
     #[test]
-    fn test_current_decimal_places_numeric_format() {
-        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+    fn decimal_places() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
-        let column = sheet.get_or_create_column(3);
-        column.numeric_decimals.set(3, Some(3));
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_formats_columns(
+            &[3],
+            &Formats::repeat(
+                FormatUpdate {
+                    numeric_decimals: Some(Some(2)),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(2));
 
+        sheet.set_format_cell(
+            Pos { x: 3, y: 3 },
+            &FormatUpdate {
+                numeric_decimals: Some(Some(3)),
+                ..Default::default()
+            },
+            false,
+        );
         assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(3));
     }
 

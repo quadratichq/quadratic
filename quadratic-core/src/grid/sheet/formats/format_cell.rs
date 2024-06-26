@@ -24,8 +24,8 @@ impl Sheet {
             render_size: column.render_size.get(y),
         });
         if include_sheet {
-            let column = self.try_format_row(y);
-            let row = self.try_format_column(x);
+            let column = self.try_format_column(x);
+            let row = self.try_format_row(y);
             let sheet = self.format_all.as_ref();
             Format::combine(format.as_ref(), column.as_ref(), row.as_ref(), sheet)
         } else {
