@@ -818,7 +818,6 @@ class Core {
     sheet?: string,
     lineNumber?: number
   ) {
-    console.log(x, y, w, h);
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
       const cellsStringified = this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);

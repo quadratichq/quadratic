@@ -152,7 +152,7 @@ impl GridController {
             for (y, row) in range.rows().enumerate() {
                 for (x, col) in row.iter().enumerate() {
                     let cell_value = match col {
-                        ExcelData::Empty => CellValue::Blank,
+                        ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
                         ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
                         ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
@@ -178,7 +178,7 @@ impl GridController {
                         ExcelData::Int(ref value) => {
                             CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
                         }
-                        ExcelData::Error(_) => CellValue::Blank,
+                        ExcelData::Error(_) => continue,
                         ExcelData::Bool(value) => CellValue::Logical(*value),
                     };
 
