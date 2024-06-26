@@ -402,6 +402,11 @@ mod test {
             Some(CellValue::Number(12.into()))
         );
         assert_eq!(sheet.cell_value((0, 5).into()), None);
+        assert_eq!(
+            sheet.cell_value((3, 1).into()),
+            Some(CellValue::Number(3.into()))
+        );
+        assert_eq!(sheet.cell_value((3, 0).into()), None);
     }
 
     #[test]
