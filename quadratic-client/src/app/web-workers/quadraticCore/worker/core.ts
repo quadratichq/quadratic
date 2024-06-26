@@ -806,9 +806,9 @@ class Core {
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
 
-  getCells(transactionId: string, x0: number, y0: number, x1: number, y1: number, sheet?: string, lineNumber?: number) {
+  getCells(transactionId: string, x: number, y: number, w: number, h: number, sheet?: string, lineNumber?: number) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    return this.gridController.calculationGetCells(transactionId, x0, y0, x1, y1, sheet, lineNumber);
+    return this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
   }
 
   async importExcel(message: ClientCoreImportExcel): Promise<{ contents?: string; version?: string; error?: string }> {
