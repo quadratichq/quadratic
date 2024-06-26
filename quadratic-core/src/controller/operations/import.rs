@@ -139,11 +139,6 @@ impl GridController {
             ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
         let sheets = workbook.sheet_names().to_owned();
 
-        // remove first sheet
-        ops.push(Operation::DeleteSheet {
-            sheet_id: self.sheet_ids()[0],
-        });
-
         let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
             // add the sheet
@@ -156,7 +151,6 @@ impl GridController {
 
             for (y, row) in range.rows().enumerate() {
                 for (x, col) in row.iter().enumerate() {
-                    dbg!(format!("{}:{}:{:?}", x, y, &col));
                     let cell_value = match col {
                         ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
@@ -392,7 +386,7 @@ mod test {
 
     #[test]
     fn import_excel() {
-        let mut gc = GridController::test();
+        let mut gc = GridController::test_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
         gc.import_excel(file.to_vec(), "simple.xlsx").unwrap();
 
