@@ -139,6 +139,11 @@ impl GridController {
             ExcelReader::new(cursor).map_err(|e: XlsxError| error(e.to_string()))?;
         let sheets = workbook.sheet_names().to_owned();
 
+        // remove first sheet
+        ops.push(Operation::DeleteSheet {
+            sheet_id: self.sheet_ids()[0],
+        });
+
         let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
             // add the sheet
@@ -151,6 +156,7 @@ impl GridController {
 
             for (y, row) in range.rows().enumerate() {
                 for (x, col) in row.iter().enumerate() {
+                    dbg!(format!("{}:{}:{:?}", x, y, &col));
                     let cell_value = match col {
                         ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
@@ -191,6 +197,7 @@ impl GridController {
                     );
                 }
             }
+            // add new sheets
             ops.push(Operation::AddSheetSchema {
                 schema: export_sheet(&sheet),
             });
@@ -381,5 +388,25 @@ mod test {
             first_values.get(0, 0),
             Some(&CellValue::Text("city0".into()))
         );
+    }
+
+    #[test]
+    fn import_excel() {
+        let mut gc = GridController::test();
+        let file = include_bytes!("../../../test-files/simple.xlsx");
+        gc.import_excel(file.to_vec(), "simple.xlsx").unwrap();
+
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet = gc.sheet(sheet_id);
+
+        assert_eq!(
+            sheet.cell_value((0, 0).into()),
+            Some(CellValue::Number(1.into()))
+        );
+        assert_eq!(
+            sheet.cell_value((2, 9).into()),
+            Some(CellValue::Number(12.into()))
+        );
+        assert_eq!(sheet.cell_value((0, 5).into()), None);
     }
 }
