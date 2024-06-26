@@ -470,7 +470,7 @@ export class CellsLabels {
     });
     const rowHeights: JsRowHeight[] = await Promise.all(rowHeightsPromises);
     const changesRowHeights: JsRowHeight[] = rowHeights.filter(
-      ({ row, height }) => height !== this.sheetOffsets.getRowHeight(row)
+      ({ row, height }) => Math.abs(height - this.sheetOffsets.getRowHeight(row)) > 0.001
     );
     return changesRowHeights;
   }
