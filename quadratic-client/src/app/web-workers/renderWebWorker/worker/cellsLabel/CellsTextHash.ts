@@ -52,6 +52,8 @@ export class CellsTextHash {
 
   loaded = false;
 
+  updating?: Promise<boolean>;
+
   // screen coordinates
   viewRectangle: Rectangle;
 
@@ -91,7 +93,7 @@ export class CellsTextHash {
     this.labels.set(this.getKey(cell), cellLabel);
   }
 
-  async createLabels(cells: JsRenderCell[]) {
+  createLabels(cells: JsRenderCell[]) {
     this.labels = new Map();
     cells.forEach((cell) => this.createLabel(cell));
     this.updateText();
@@ -136,7 +138,7 @@ export class CellsTextHash {
 
       if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
       if (cells) {
-        await this.createLabels(cells);
+        this.createLabels(cells);
       }
       this.overflowClip();
       this.updateBuffers();
@@ -292,10 +294,14 @@ export class CellsTextHash {
       }
       this.viewRectangle.width -= delta;
 
+      let wrap = false;
       this.labels.forEach((label) => {
         if (label.location.x === column) {
           label.adjustWidth(delta, column < 0);
           changed = true;
+          if (label.wrap === 'wrap') {
+            wrap = true;
+          }
         } else {
           if (column < 0) {
             if (label.location.x < column) {
@@ -310,6 +316,9 @@ export class CellsTextHash {
           }
         }
       });
+      if (wrap) {
+        this.updateText();
+      }
     } else if (row !== undefined) {
       if (this.AABB.y < 0 && this.AABB.y <= row) {
         this.viewRectangle.y += delta;

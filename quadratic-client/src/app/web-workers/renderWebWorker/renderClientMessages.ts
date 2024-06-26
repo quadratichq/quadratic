@@ -55,6 +55,14 @@ export interface ClientRenderSheetOffsetsTransient {
   delta: number;
 }
 
+export interface ClientRenderSheetOffsetsFinal {
+  type: 'clientRenderSheetOffsetsFinal';
+  sheetId: string;
+  column?: number;
+  row?: number;
+  delta: number;
+}
+
 export interface RenderClientFinalizeCellsTextHash {
   type: 'renderClientFinalizeCellsTextHash';
   sheetId: string;
@@ -109,6 +117,7 @@ export type ClientRenderMessage =
   | ClientRenderInit
   | ClientRenderViewport
   | ClientRenderSheetOffsetsTransient
+  | ClientRenderSheetOffsetsFinal
   | ClientRenderShowLabel
   | ClientRenderColumnMaxWidth
   | ClientRenderRowMaxHeight;

@@ -3,7 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
-    Pos, SheetPos, SheetRect,
+    SheetPos,
 };
 
 impl GridController {
@@ -61,23 +61,11 @@ impl GridController {
                 });
 
                 if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let Some(column_bounds) = sheet.column_bounds(column, true) {
-                        let sheet_rect = SheetRect {
-                            min: Pos {
-                                x: column,
-                                y: column_bounds.0,
-                            },
-                            max: Pos {
-                                x: column,
-                                y: column_bounds.1,
-                            },
-                            sheet_id,
-                        };
-                        self.send_render_cells(&sheet_rect);
+                    if let Some((start, end)) = sheet.column_bounds(column, true) {
                         self.start_auto_resize_row_heights(
                             transaction,
                             sheet_id,
-                            sheet_rect.y_range().collect(),
+                            (start..=end).collect(),
                         );
                     }
                 }
@@ -136,23 +124,6 @@ impl GridController {
                     y: row,
                     sheet_id,
                 });
-
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let Some(row_bounds) = sheet.row_bounds(row, true) {
-                        let sheet_rect = SheetRect {
-                            min: Pos {
-                                x: row_bounds.0,
-                                y: row,
-                            },
-                            max: Pos {
-                                x: row_bounds.1,
-                                y: row,
-                            },
-                            sheet_id,
-                        };
-                        self.send_render_cells(&sheet_rect);
-                    }
-                }
             }
         }
     }

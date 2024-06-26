@@ -71,13 +71,13 @@ class RenderCore {
     }
   };
 
-  async getRowHeights(transactionId: string, sheetId: string, cellsString: string) {
+  async getRowHeights(transactionId: string, sheetId: string, rowsString: string) {
     if (!this.renderCorePort) {
       console.warn('Expected renderCorePort to be defined in RenderCore.responseRowHeights');
       return;
     }
 
-    const rows: number[] = JSON.parse(cellsString).map((row: BigInt) => Number(row));
+    const rows: number[] = JSON.parse(rowsString).map((row: BigInt) => Number(row));
     const rowHeights = await renderText.getRowHeights(sheetId, rows);
     const message: RenderCoreResponseRowHeights = {
       type: 'renderCoreResponseRowHeights',

@@ -34,8 +34,8 @@ export class CellsLabels {
 
   // Keep track of headings that need adjusting during next update tick;
   // we aggregate all requests between update ticks
-  private dirtyColumnHeadings: Map<number, number>;
-  private dirtyRowHeadings: Map<number, number>;
+  private dirtyColumnHeadings: Map<number, { delta: number; same: boolean; remaining: boolean }>;
+  private dirtyRowHeadings: Map<number, { delta: number; same: boolean; remaining: boolean }>;
 
   constructor(sheetInfo: SheetInfo, bitmapFonts: RenderBitmapFonts) {
     this.sheetId = sheetInfo.sheet_id;
@@ -167,10 +167,13 @@ export class CellsLabels {
     const viewport = renderText.viewport;
     if (!viewport) return false;
 
-    dirtyColumnHeadings.forEach((delta, column) => {
+    // only same - during transient resize, the hash that contains the row / column is updated
+    // only remaining - after transient resize, hashes to the right or below the row / column are updated
+    // same & remaining - for single commit resize (auto resize) all hashes are updated
+    dirtyColumnHeadings.forEach(({ same, remaining, delta }, column) => {
       const columnHash = Math.floor(column / sheetHashWidth);
       this.cellsTextHash.forEach((hash) => {
-        if (hash.hashX >= columnHash) {
+        if ((same && hash.hashX === columnHash) || (remaining && hash.hashX > columnHash)) {
           if (hash.adjustHeadings({ column, delta })) {
             if (!hashesToUpdate.has(hash)) {
               hashesToUpdateViewRectangle.delete(hash);
@@ -183,10 +186,10 @@ export class CellsLabels {
       });
     });
 
-    dirtyRowHeadings.forEach((delta, row) => {
+    dirtyRowHeadings.forEach(({ same, remaining, delta }, row) => {
       const rowHash = Math.floor(row / sheetHashHeight);
       this.cellsTextHash.forEach((hash) => {
-        if (hash.hashY >= rowHash) {
+        if ((same && hash.hashY === rowHash) || (remaining && hash.hashY > rowHash)) {
           if (hash.adjustHeadings({ row, delta })) {
             if (!hashesToUpdate.has(hash)) {
               hashesToUpdateViewRectangle.delete(hash);
@@ -199,9 +202,7 @@ export class CellsLabels {
       });
     });
 
-    const hashesToUpdateSorted = Array.from(hashesToUpdate).sort((a, b) => {
-      return a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0;
-    });
+    const hashesToUpdateSorted = Array.from(hashesToUpdate).sort((a, b) => a[1] - b[1]);
     hashesToUpdateSorted.forEach((hash) => {
       const otherHashes = hash[0].overflowClip();
       otherHashes.forEach((otherHash) => {
@@ -334,40 +335,29 @@ export class CellsLabels {
 
     const next = this.nextDirtyHash();
     if (next) {
-      await next.hash.update();
+      next.hash.updating = next.hash.update();
+      await next.hash.updating;
       if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
       return next.visible ? 'visible' : true;
     }
     return false;
   }
 
-  // updates hashes if hash.dirty has pending JsRenderCells update
-  // this is required to avoid sending stale data regarding rendered cells
-  async applyPendingJsRenderCells() {
-    const updatePromises: Promise<boolean>[] = [];
-    this.cellsTextHash.forEach((cellTextHash) => {
-      if (Array.isArray(cellTextHash.dirty)) {
-        updatePromises.push(cellTextHash.update());
-      }
-    });
-    await Promise.all(updatePromises);
-  }
-
   // adjust headings without recalculating the glyph geometries
-  adjustHeadings(delta: number, column?: number, row?: number) {
+  adjustHeadings(delta: number, same: boolean, remaining: boolean, column?: number, row?: number) {
     if (column !== undefined) {
       const existing = this.dirtyColumnHeadings.get(column);
       if (existing) {
-        this.dirtyColumnHeadings.set(column, existing + delta);
+        this.dirtyColumnHeadings.set(column, { delta: existing.delta + delta, same, remaining });
       } else {
-        this.dirtyColumnHeadings.set(column, delta);
+        this.dirtyColumnHeadings.set(column, { delta: delta, same, remaining });
       }
     } else if (row !== undefined) {
       const existing = this.dirtyRowHeadings.get(row);
       if (existing) {
-        this.dirtyRowHeadings.set(row, existing + delta);
+        this.dirtyRowHeadings.set(row, { delta: existing.delta + delta, same, remaining });
       } else {
-        this.dirtyRowHeadings.set(row, delta);
+        this.dirtyRowHeadings.set(row, { delta: delta, same, remaining });
       }
     }
   }
@@ -383,6 +373,9 @@ export class CellsLabels {
     cellsHash.dirty = renderCells;
   }
 
+  // updates the hash that contains the row / column during transient resize
+  // remaining are hashes to the right or below the row / column
+  // these are temporarily updated in pixiApp only
   setOffsetsDelta(column: number | undefined, row: number | undefined, delta: number) {
     if (column !== undefined) {
       const size = this.sheetOffsets.getColumnWidth(column) - delta;
@@ -392,10 +385,19 @@ export class CellsLabels {
       this.sheetOffsets.setRowHeight(row, size);
     }
     if (delta) {
-      this.adjustHeadings(delta, column, row);
+      // only same is true, so that only the hash that contains the row / column is updated
+      this.adjustHeadings(delta, true, false, column, row);
     }
   }
 
+  // updates only the hash that is contains to the right or below the row / column
+  // this is done after transient resize
+  setOffsetsFinal(column: number | undefined, row: number | undefined, delta: number) {
+    // only remaining is true, so that hashes to the right or below the row / column are updated
+    this.adjustHeadings(delta, false, true, column, row);
+  }
+
+  // updates all hashes
   setOffsetsSize(column: number | undefined, row: number | undefined, size: number) {
     let delta = 0;
     if (column !== undefined) {
@@ -406,7 +408,8 @@ export class CellsLabels {
       this.sheetOffsets.setRowHeight(row, size);
     }
     if (delta) {
-      this.adjustHeadings(delta, column, row);
+      // both same and remaining are true, so that all hashes are updated
+      this.adjustHeadings(delta, true, true, column, row);
     }
   }
 
@@ -417,7 +420,24 @@ export class CellsLabels {
     }
   }
 
-  columnMaxWidth(column: number): number {
+  private async waitForHashUpdate(column?: number, row?: number) {
+    this.update();
+    const updatePromises: Promise<any>[] = [];
+    this.cellsTextHash.forEach((hash) => {
+      if (column === hash.hashX * sheetHashWidth || row === hash.hashY * sheetHashHeight) {
+        if (hash.updating) {
+          updatePromises.push(hash.updating);
+        } else if (hash.dirty) {
+          hash.updating = hash.update();
+          updatePromises.push(hash.updating);
+        }
+      }
+    });
+    await Promise.all(updatePromises);
+  }
+
+  async columnMaxWidth(column: number): Promise<number> {
+    await this.waitForHashUpdate(column);
     const hashX = Math.floor(column / sheetHashWidth);
     let max = 0;
     this.cellsTextHash.forEach((hash) => {
@@ -428,7 +448,8 @@ export class CellsLabels {
     return max;
   }
 
-  rowMaxHeight(row: number): number {
+  async rowMaxHeight(row: number): Promise<number> {
+    await this.waitForHashUpdate(undefined, row);
     const hashY = Math.floor(row / sheetHashHeight);
     let max = 0;
     this.cellsTextHash.forEach((hash) => {
@@ -440,14 +461,17 @@ export class CellsLabels {
   }
 
   async getRowHeights(rows: number[]): Promise<JsRowHeight[]> {
-    await this.applyPendingJsRenderCells();
-
-    const rowHeights: JsRowHeight[] = rows
-      .map((row) => ({
+    const rowHeightsPromises: Promise<JsRowHeight>[] = rows.map(async (row) => {
+      const maxHeight = await this.rowMaxHeight(row);
+      return {
         row,
-        height: Math.max(this.rowMaxHeight(row), CELL_HEIGHT),
-      }))
-      .filter(({ row, height }) => height !== this.sheetOffsets.getRowHeight(row));
-    return rowHeights;
+        height: Math.max(maxHeight, CELL_HEIGHT),
+      };
+    });
+    const rowHeights: JsRowHeight[] = await Promise.all(rowHeightsPromises);
+    const changesRowHeights: JsRowHeight[] = rowHeights.filter(
+      ({ row, height }) => height !== this.sheetOffsets.getRowHeight(row)
+    );
+    return changesRowHeights;
   }
 }

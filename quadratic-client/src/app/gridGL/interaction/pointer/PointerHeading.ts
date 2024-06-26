@@ -1,9 +1,10 @@
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { TransientResize } from '@/app/quadratic-core-types/index.js';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_TEXT_MARGIN_TOP, CELL_WIDTH } from '@/shared/constants/gridConstants';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { InteractivePointerEvent, Point } from 'pixi.js';
 import { hasPermissionToEditFile } from '../../../actions';
 import { sheets } from '../../../grid/controller/Sheets';
@@ -218,7 +219,7 @@ export class PointerHeading {
       window.clearTimeout(this.downTimeout);
       this.downTimeout = undefined;
     }
-    const { headings } = pixiApp;
+    const { headings, gridLines, cursor } = pixiApp;
     this.cursor = undefined;
     this.clicked = false;
 
@@ -256,7 +257,14 @@ export class PointerHeading {
           const delta = this.resizing.width ? this.resizing.lastSize - this.resizing.width : undefined;
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, this.resizing.column, undefined, delta);
-            pixiApp.adjustHeadings(sheets.sheet.id);
+            gridLines.dirty = true;
+            cursor.dirty = true;
+            headings.dirty = true;
+            pixiApp.adjustHeadings({
+              sheetId: sheets.sheet.id,
+              column: this.resizing.column,
+              delta: size - this.resizing.lastSize,
+            });
           }
           this.resizing.lastSize = size;
           events.emit('resizeHeadingColumn', sheets.sheet.id, this.resizing.column);
@@ -280,7 +288,14 @@ export class PointerHeading {
           const delta = this.resizing.height ? this.resizing.lastSize - this.resizing.height : undefined;
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.sheet.id, undefined, this.resizing.row, delta);
-            pixiApp.adjustHeadings(sheets.sheet.id);
+            gridLines.dirty = true;
+            cursor.dirty = true;
+            headings.dirty = true;
+            pixiApp.adjustHeadings({
+              sheetId: sheets.sheet.id,
+              row: this.resizing.row,
+              delta: size - this.resizing.lastSize,
+            });
           }
           this.resizing.lastSize = size;
           events.emit('resizeHeadingRow', sheets.sheet.id, this.resizing.row);
@@ -302,6 +317,23 @@ export class PointerHeading {
         const transientResize = sheets.sheet.offsets.getResizeToApply();
         if (transientResize) {
           quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
+
+          // update remaining hashes hashes in render web worker, which were only updated in pixiApp
+          try {
+            const { column, row, old_size, new_size } = JSON.parse(transientResize) as TransientResize;
+            const c = column ? Number(column) : undefined;
+            const r = row ? Number(row) : undefined;
+            const delta = old_size - new_size;
+            renderWebWorker.updateSheetOffsetsFinal(sheets.sheet.id, c, r, delta);
+            pixiApp.adjustHeadings({
+              sheetId: sheets.sheet.id,
+              column: c,
+              row: r,
+              delta,
+            });
+          } catch (error) {
+            console.warn('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
+          }
         }
         this.resizing = undefined;
 
@@ -331,8 +363,7 @@ export class PointerHeading {
 
   async autoResizeRow(row: number) {
     const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
-    const contentSizePlusMargin = maxHeight + CELL_TEXT_MARGIN_TOP * 3;
-    const size = Math.max(contentSizePlusMargin, CELL_HEIGHT);
+    const size = Math.max(maxHeight, CELL_HEIGHT);
     const sheetId = sheets.sheet.id;
     const originalSize = sheets.sheet.getCellOffsets(0, row);
     if (originalSize.height !== size) {
