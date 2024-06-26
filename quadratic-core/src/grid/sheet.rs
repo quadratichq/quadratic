@@ -15,7 +15,7 @@ use super::js_types::CellFormatSummary;
 use super::{CodeRun, NumericFormat, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::sheet_offsets::SheetOffsets;
-use crate::{Array, CellValue, IsBlank, Pos, Rect};
+use crate::{Array, CellValue, Pos, Rect};
 
 pub mod bounds;
 pub mod cell_array;

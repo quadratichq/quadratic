@@ -311,7 +311,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{CellAlign, CodeCellLanguage, GridBounds, Sheet},
-        CellValue, IsBlank, Pos, Rect, SheetPos, SheetRect,
+        CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -591,7 +591,7 @@ mod test {
 
         let nonempty_positions = hashmap_of_truth
             .iter()
-            .filter(|(_, value)| !value.is_blank())
+            .filter(|(_, value)| !value.is_blank_or_empty_string())
             .map(|(pos, _)| pos);
         let min_x = nonempty_positions.clone().map(|pos| pos.x).min();
         let min_y = nonempty_positions.clone().map(|pos| pos.y).min();
@@ -607,7 +607,7 @@ mod test {
 
         for (pos, expected) in hashmap_of_truth {
             let actual = sheet.display_value(pos);
-            if expected.is_blank() {
+            if expected.is_blank_or_empty_string() {
                 assert_eq!(None, actual);
             } else {
                 assert_eq!(Some(expected.clone()), actual);
