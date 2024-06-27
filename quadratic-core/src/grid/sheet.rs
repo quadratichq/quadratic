@@ -48,6 +48,13 @@ pub struct Sheet {
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
 
+    // todo: we need to redo this struct to track the timestamp for all formats
+    // applied to column and rows to properly use the latest column or row
+    // formatting. The current implementation only stores the latest format for
+    // fill color (which I mistakenly thought would be the only conflict). This
+    // regrettably requires a change to the file format since it will break
+    // existing use cases.
+
     // Column/Row, and All formatting. The second tuple stores the timestamp for
     // the fill_color, which is used to determine the z-order for overlapping
     // column and row fills.
@@ -317,7 +324,7 @@ impl Sheet {
     }
 
     /// get or calculate decimal places for a cell
-    pub fn decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
+    pub fn calculate_decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
         if let Some(decimals) = self.format_cell(pos.x, pos.y, true).numeric_decimals {
             return Some(decimals);
@@ -400,7 +407,7 @@ mod test {
     ) {
         let pos = Pos { x, y };
         let _ = sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
-        assert_eq!(sheet.decimal_places(pos, is_percentage), expected);
+        assert_eq!(sheet.calculate_decimal_places(pos, is_percentage), expected);
     }
 
     #[test]
@@ -436,7 +443,10 @@ mod test {
                 1,
             ),
         );
-        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(2));
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            Some(2)
+        );
 
         sheet.set_format_cell(
             Pos { x: 3, y: 3 },
@@ -446,7 +456,10 @@ mod test {
             },
             false,
         );
-        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(3));
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            Some(3)
+        );
     }
 
     #[test]
@@ -458,7 +471,10 @@ mod test {
             CellValue::Text(String::from("abc")),
         );
 
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            None
+        );
     }
 
     #[test]
@@ -471,7 +487,10 @@ mod test {
         );
 
         // expect a single decimal place
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(1));
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            Some(1)
+        );
     }
 
     #[test]
