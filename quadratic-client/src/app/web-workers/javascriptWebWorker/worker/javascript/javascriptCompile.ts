@@ -51,6 +51,8 @@ export function javascriptAddLineNumberVars(transform: JavascriptTransformedCode
     multiLineCount += [...list[i].matchAll(/`/g)].length;
     s += list[i];
     if (multiLineCount % 2 === 0) {
+      // inserts a line break if the line includes a comment marker
+      if (s.includes('//')) s += '\n';
       s += `;${LINE_NUMBER_VAR} += ${add};\n`;
       add = 1;
     } else {
