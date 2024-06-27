@@ -71,6 +71,7 @@ export const CodeEditorBody = (props: Props) => {
 
   useEffect(() => {
     const insertText = (text: string) => {
+      debugger;
       if (!editorRef.current) return;
       const position = editorRef.current.getPosition();
       const model = editorRef.current.getModel();
@@ -79,7 +80,6 @@ export const CodeEditorBody = (props: Props) => {
       const range =
         selection || new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
       model.applyEdits([{ range, text }]);
-      editorRef.current.setPosition(range.getEndPosition().delta(text.length, 0));
       editorRef.current.focus();
     };
     events.on('insertCodeEditorText', insertText);
