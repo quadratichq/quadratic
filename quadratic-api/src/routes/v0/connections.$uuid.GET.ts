@@ -22,7 +22,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     params: { uuid },
   } = parseRequest(req, schema);
   const connection = await getConnection({ uuid, userId });
-  const typeDetails = decryptFromEnv(connection.typeDetails?.toString('utf-8') || '');
+
+  // if (connection.typeDetails === null) {
+  //   throw new ApiError(404, `Expected typeDetails to be set for connection ${uuid}.`);
+  // }
+
+  const typeDetails = decryptFromEnv(connection.typeDetails.toString());
 
   return res.status(200).json({
     uuid: connection.uuid,

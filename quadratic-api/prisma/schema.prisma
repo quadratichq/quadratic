@@ -152,7 +152,7 @@ model Connection {
 
     // Type-specific details
     type        ConnectionType
-    typeDetails Bytes // JSON
+    typeDetails Bytes // InitializationVector:Cyphertext(JSON)
 }
 
 model UserConnectionRole {

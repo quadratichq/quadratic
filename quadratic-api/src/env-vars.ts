@@ -1,3 +1,5 @@
+const SAMPLE_ENCRYPTION_KEY = 'eb4758047f74bdb2603cce75c4370327ca2c3662c4786867659126da8e64dfcc';
+
 // Optional
 export const RATE_LIMIT_AI_WINDOW_MS = process.env.RATE_LIMIT_AI_WINDOW_MS;
 export const RATE_LIMIT_AI_REQUESTS_MAX = process.env.RATE_LIMIT_AI_REQUESTS_MAX;
@@ -41,14 +43,27 @@ export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+
 if (NODE_ENV === 'production') {
   ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);
 }
+
+ensureSampleTokenNotUsedInProduction();
 
 function ensureEnvVarExists(key: string) {
   if (NODE_ENV === 'test') return;
 
   if (!process.env[key]) {
     throw new Error(`Missing required environment variable: ${key}`);
+  }
+}
+
+function ensureSampleTokenNotUsedInProduction() {
+  if (NODE_ENV !== 'production') return;
+
+  if (process.env.ENCRYPTION_KEY === SAMPLE_ENCRYPTION_KEY) {
+    throw new Error(
+      `Please set a unique ENCRYPTION_KEY in production. Do not use the sample value.  A new key can be generated with: npm run key:generate`
+    );
   }
 }
