@@ -203,9 +203,9 @@ export class Cursor extends Graphics {
     }
     if (!color || !offsets) return;
     this.lineStyle({
-      width: CURSOR_THICKNESS * 1.5,
+      width: CURSOR_THICKNESS * 1,
       color,
-      alignment: 1,
+      alignment: 0.5,
     });
     this.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
   }
