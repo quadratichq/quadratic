@@ -514,7 +514,7 @@ mod test {
             sheet_id,
         };
         gc.set_code_cell(
-            sheet_pos.into(),
+            sheet_pos,
             CodeCellLanguage::Javascript,
             "code".to_string(),
             None,
