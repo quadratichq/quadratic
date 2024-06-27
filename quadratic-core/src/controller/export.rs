@@ -1,30 +1,39 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use csv::Writer;
+use itertools::PeekingNext;
 
 use super::GridController;
-use crate::{grid::SheetId, Rect};
+use crate::{selection::Selection, Pos};
 
 impl GridController {
     /// exports a CSV string from a selection on the grid.
     ///
     /// Returns a [`String`].
-    pub fn export_csv_selection(&self, sheet_id: SheetId, selection: &Rect) -> Result<String> {
-        // todo: handle this better
-        let Some(sheet) = self.try_sheet(sheet_id) else {
-            return Ok("".to_string());
-        };
-        let values = sheet
-            .cell_values_in_rect(selection, false)?
-            .into_cell_values_vec()
-            .iter()
-            .map(|record| record.to_string())
-            .collect::<Vec<String>>();
-        let width = selection.width() as usize;
+    pub fn export_csv_selection(&self, selection: Selection) -> Result<String> {
+        let sheet = self
+            .try_sheet(selection.sheet_id)
+            .context("Sheet not found")?;
+        let bounds = sheet.selection_bounds(&selection).context("No values")?;
+        let values = sheet.selection_sorted_vec(&selection, false);
         let mut writer = Writer::from_writer(vec![]);
-
-        values.chunks(width).for_each(|row| {
-            writer.write_record(row).unwrap_or_default();
-        });
+        let mut iter = values.iter();
+        for y in bounds.min.y..=bounds.max.y {
+            let mut line = vec![];
+            for x in bounds.min.x..=bounds.max.x {
+                // we need to ignore unselected columns or rows
+                if selection.rects.is_some() || selection.pos_in_selection(Pos { x, y }) {
+                    if let Some((_, value)) = iter.peeking_next(|(pos, _)| pos.x == x && pos.y == y)
+                    {
+                        line.push(value.to_string());
+                    } else {
+                        line.push("".to_string());
+                    }
+                }
+            }
+            if !line.is_empty() {
+                writer.write_record(line)?;
+            }
+        }
 
         let output = String::from_utf8(writer.into_inner()?)?;
 
@@ -38,32 +47,30 @@ mod tests {
     use super::*;
     use crate::Rect;
 
-    fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
-        let mut grid_controller = GridController::test();
-        let sheet_id = grid_controller.grid.sheets()[0].id;
+    #[test]
+    fn exports_a_csv() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let selected = Selection {
+            sheet_id,
+            rects: Some(vec![Rect::from_numbers(0, 0, 4, 4)]),
+            ..Default::default()
+        };
+        let vals = vec![
+            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
+        ];
         let mut count = 0;
 
-        for y in selection.y_range() {
-            for x in selection.x_range() {
-                grid_controller.set_cell_value((x, y, sheet_id).into(), vals[count].into(), None);
+        let sheet = gc.sheet_mut(sheet_id);
+        for y in 0..4 {
+            for x in 0..4 {
+                sheet.test_set_value_number(x, y, vals[count]);
                 count += 1;
             }
         }
 
-        (grid_controller, sheet_id)
-    }
-
-    #[test]
-    fn exports_a_csv() {
-        let selected: Rect = Rect::new_span((0, 0).into(), (3, 3).into());
-        let vals = vec![
-            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16",
-        ];
-        let (grid_controller, sheet_id) = test_setup(&selected, &vals);
-        let sheet = grid_controller.sheet(sheet_id);
-        let result = grid_controller
-            .export_csv_selection(sheet.id, &selected)
-            .unwrap();
+        let result = gc.export_csv_selection(selected).unwrap();
         let expected = "1,2,3,4\n5,6,7,8\n9,10,11,12\n13,14,15,16\n";
 
         assert_eq!(&result, expected);

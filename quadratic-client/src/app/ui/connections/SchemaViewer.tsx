@@ -1,12 +1,15 @@
+import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { SqlAdd } from '@/app/ui/icons';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
-import { KeyboardArrowRight } from '@mui/icons-material';
+import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 
 type Table = {
   name: string;
@@ -24,14 +27,20 @@ type LoadState = 'loading' | 'loaded' | 'error';
 type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 
 export const SchemaViewer = () => {
+  const { mode } = useRecoilValue(editorInteractionStateAtom);
+  const connection = getConnectionInfo(mode);
+  if (!connection) {
+    throw new Error('Expected a connection cell to be open.');
+  }
+
   const [expandAll, setExpandAll] = useState(false);
-  const [loadState, setLoadState] = useState<LoadState>('loading');
+  const [loadState, setLoadState] = useState<LoadState>('error');
   const [data, setData] = useState<SchemaData | null>(null);
 
   // TODO: (connections) fetch this data when the document loads
   const fetchData = () => {
     setLoadState('loading');
-    connectionClient.schemas.get('postgres', 'a31864f1-34ac-4653-9801-bf8ecb31b7b2').then((newSchemaData) => {
+    connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id).then((newSchemaData) => {
       if (newSchemaData) {
         setData(newSchemaData);
         setLoadState('loaded');
@@ -47,9 +56,8 @@ export const SchemaViewer = () => {
   }, []);
 
   return (
-    <div className="overflow-scroll px-3 text-sm">
-      {/* <div className="z-10 flex items-center justify-between bg-background px-1">
-        <p className="font-semibold">[CONNECTION]</p>
+    <>
+      <div style={{ position: 'absolute', top: 8, right: 8 }}>
         <div>
           <TooltipHint title="Refresh schema">
             <IconButton
@@ -62,9 +70,9 @@ export const SchemaViewer = () => {
             </IconButton>
           </TooltipHint>
         </div>
-      </div> */}
+      </div>
       {loadState === 'error' && (
-        <Type className="text-destructive">
+        <Type className="text-destructive m-3 mt-0">
           Error loading data schema.{' '}
           <button className="underline" onClick={fetchData}>
             Try again
@@ -73,13 +81,15 @@ export const SchemaViewer = () => {
         </Type>
       )}
       {data && (
-        <ul>
-          {data.tables.map((table, i) => (
-            <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
-          ))}
-        </ul>
-      )}
-    </div>
+        <div className="overflow-scroll px-3 text-sm">
+          <ul>
+            {data.tables.map((table, i) => (
+              <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
+            ))}
+          </ul>
+        </div>
+        )}
+    </>
   );
 };
 

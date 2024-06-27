@@ -12,6 +12,8 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsSheetFill,
+  Selection,
   SheetBounds,
   SheetInfo,
   TransactionName,
@@ -39,7 +41,9 @@ declare var self: WorkerGlobalScope &
     sheetInfoUpdate: (sheetInfo: SheetInfo) => void;
     sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
     sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
+    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill) => void;
     sendSetCursor: (cursor: string) => void;
+    sendSetCursorSelection: (selection: Selection) => void;
     sendSheetOffsetsClient: (
       sheetId: string,
       column: bigint | undefined,
@@ -85,8 +89,10 @@ class CoreClient {
     self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
     self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
+    self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sheetInfoUpdate = coreClient.sendSheetInfoUpdate;
     self.sendSetCursor = coreClient.sendSetCursor;
+    self.sendSetCursorSelection = coreClient.sendSetCursorSelection;
     self.sendSheetOffsetsClient = coreClient.sendSheetOffsets;
     self.sendSheetHtml = coreClient.sendSheetHtml;
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
@@ -159,7 +165,39 @@ class CoreClient {
         this.send({
           type: 'coreClientGetCellFormatSummary',
           id: e.data.id,
-          formatSummary: await core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y),
+          formatSummary: await core.getCellFormatSummary(e.data.sheetId, e.data.x, e.data.y, e.data.withSheetInfo),
+        });
+        return;
+
+      case 'clientCoreGetFormatAll':
+        this.send({
+          type: 'coreClientGetFormatAll',
+          id: e.data.id,
+          format: await core.getFormatAll(e.data.sheetId),
+        });
+        return;
+
+      case 'clientCoreGetFormatColumn':
+        this.send({
+          type: 'coreClientGetFormatColumn',
+          id: e.data.id,
+          format: await core.getFormatColumn(e.data.sheetId, e.data.column),
+        });
+        return;
+
+      case 'clientCoreGetFormatRow':
+        this.send({
+          type: 'coreClientGetFormatRow',
+          id: e.data.id,
+          format: await core.getFormatRow(e.data.sheetId, e.data.row),
+        });
+        return;
+
+      case 'clientCoreGetFormatCell':
+        this.send({
+          type: 'coreClientGetFormatCell',
+          id: e.data.id,
+          format: await core.getFormatCell(e.data.sheetId, e.data.x, e.data.y),
         });
         return;
 
@@ -180,76 +218,27 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellBold':
-        await core.setCellBold(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.bold,
-          e.data.cursor
-        );
+        await core.setCellBold(e.data.selection, e.data.bold, e.data.cursor);
         return;
 
       case 'clientCoreSetCellItalic':
-        await core.setCellItalic(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.italic,
-          e.data.cursor
-        );
+        await core.setCellItalic(e.data.selection, e.data.italic, e.data.cursor);
         return;
 
       case 'clientCoreSetCellTextColor':
-        await core.setCellTextColor(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.color ?? '',
-          e.data.cursor
-        );
+        await core.setCellTextColor(e.data.selection, e.data.color, e.data.cursor);
         return;
 
       case 'clientCoreSetCellFillColor':
-        await core.setCellFillColor(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.fillColor,
-          e.data.cursor
-        );
+        await core.setCellFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
         return;
 
-      case 'clientCoreToggleCommas':
-        await core.toggleCommas(
-          e.data.sheetId,
-          e.data.sourceX,
-          e.data.sourceY,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.cursor
-        );
+      case 'clientCoreSetCommas':
+        await core.setCommas(e.data.selection, e.data.commas, e.data.cursor);
         return;
 
       case 'clientCoreSetCurrency':
-        await core.setCurrency(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.symbol,
-          e.data.cursor
-        );
+        await core.setCurrency(e.data.selection, e.data.symbol, e.data.cursor);
         return;
 
       case 'clientCoreImportCsv':
@@ -285,7 +274,7 @@ class CoreClient {
         return;
 
       case 'clientCoreDeleteCellValues':
-        await core.deleteCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        await core.deleteCellValues(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreSetCodeCellValue':
@@ -357,44 +346,21 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellAlign':
-        await core.setCellAlign(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.align,
-          e.data.cursor
-        );
+        await core.setCellAlign(e.data.selection, e.data.align, e.data.cursor);
         return;
 
       case 'clientCoreCopyToClipboard':
-        const result = await core.copyToClipboard(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        const result = await core.copyToClipboard(e.data.selection);
         this.send({ type: 'coreClientCopyToClipboard', id: e.data.id, ...result });
         return;
 
       case 'clientCoreCutToClipboard':
-        const cutResult = await core.cutToClipboard(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.cursor
-        );
+        const cutResult = await core.cutToClipboard(e.data.selection, e.data.cursor);
         this.send({ type: 'coreClientCutToClipboard', id: e.data.id, ...cutResult });
         return;
 
       case 'clientCorePasteFromClipboard':
-        await core.pasteFromClipboard(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.plainText,
-          e.data.html,
-          e.data.special,
-          e.data.cursor
-        );
+        await core.pasteFromClipboard(e.data.selection, e.data.plainText, e.data.html, e.data.special, e.data.cursor);
         return;
 
       case 'clientCoreSetRegionBorders':
@@ -417,20 +383,20 @@ class CoreClient {
       case 'clientCoreAutocomplete':
         await core.autocomplete(
           e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height,
-          e.data.fullX,
-          e.data.fullY,
-          e.data.fullWidth,
-          e.data.fullHeight,
+          e.data.x1,
+          e.data.y1,
+          e.data.x2,
+          e.data.y2,
+          e.data.fullX1,
+          e.data.fullY1,
+          e.data.fullX2,
+          e.data.fullY2,
           e.data.cursor
         );
         return;
 
       case 'clientCoreExportCsvSelection':
-        const csv = await core.exportCsvSelection(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height);
+        const csv = await core.exportCsvSelection(e.data.selection);
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         return;
 
@@ -487,7 +453,7 @@ class CoreClient {
         return;
 
       case 'clientCoreClearFormatting':
-        core.clearFormatting(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.clearFormatting(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreRerunCodeCells':
@@ -503,26 +469,19 @@ class CoreClient {
         return;
 
       case 'clientCoreChangeDecimals':
-        core.changeDecimals(
-          e.data.sheetId,
-          e.data.sourceX,
-          e.data.sourceY,
-          e.data.rectangle,
-          e.data.delta,
-          e.data.cursor
-        );
+        core.changeDecimals(e.data.selection, e.data.delta, e.data.cursor);
         return;
 
       case 'clientCoreSetPercentage':
-        core.setPercentage(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.setPercentage(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreSetExponential':
-        core.setExponential(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.setExponential(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreRemoveCellNumericFormat':
-        core.removeCellNumericFormat(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        core.removeCellNumericFormat(e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreMoveCells':
@@ -572,12 +531,20 @@ class CoreClient {
     this.send({ type: 'coreClientSheetFills', sheetId, fills });
   };
 
+  sendSheetMetaFills = (sheetId: string, fills: JsSheetFill) => {
+    this.send({ type: 'coreClientSheetMetaFills', sheetId, fills });
+  };
+
   sendSheetInfoUpdate = (sheetInfo: SheetInfo) => {
     this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo });
   };
 
   sendSetCursor = (cursor: string) => {
     this.send({ type: 'coreClientSetCursor', cursor });
+  };
+
+  sendSetCursorSelection = (selection: Selection) => {
+    this.send({ type: 'coreClientSetCursorSelection', selection });
   };
 
   sendSheetOffsets = (
@@ -621,24 +588,11 @@ class CoreClient {
     this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds });
   };
 
-  sendTransactionStart = (
-    transactionId: string,
-    transactionType: TransactionName,
-    sheetId?: string,
-    x?: number,
-    y?: number,
-    w?: number,
-    h?: number
-  ) => {
+  sendTransactionStart = (transactionId: string, transactionType: TransactionName) => {
     this.send({
       type: 'coreClientTransactionStart',
       transactionId,
       transactionType,
-      sheetId,
-      x,
-      y,
-      w,
-      h,
     });
   };
 
