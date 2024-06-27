@@ -52,6 +52,8 @@ pub enum CellValue {
     Html(String),
     #[cfg_attr(test, proptest(skip))]
     Code(CodeCellValue),
+    #[cfg_attr(test, proptest(skip))]
+    Image(String),
 }
 impl fmt::Display for CellValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -66,6 +68,7 @@ impl fmt::Display for CellValue {
             CellValue::Error(e) => write!(f, "{}", e.msg),
             CellValue::Html(s) => write!(f, "{}", s),
             CellValue::Code(code) => write!(f, "{:?}", code),
+            CellValue::Image(s) => write!(f, "{}", s),
         }
     }
 }
@@ -89,7 +92,8 @@ impl CellValue {
             CellValue::Duration(_) => "time duration",
             CellValue::Error(_) => "error",
             CellValue::Html(_) => "html",
-            CellValue::Code(_) => "python",
+            CellValue::Code(_) => "code",
+            CellValue::Image(_) => "image",
         }
     }
     /// Returns a formula-source-code representation of the value.
@@ -104,7 +108,8 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
             CellValue::Html(s) => s.clone(),
-            CellValue::Code(_) => todo!("repr of python"),
+            CellValue::Code(_) => todo!("repr of code"),
+            CellValue::Image(_) => todo!("repr of image"),
         }
     }
 
@@ -213,8 +218,9 @@ impl CellValue {
             CellValue::Duration(_) => todo!("repr of Duration"),
             CellValue::Error(_) => "[error]".to_string(),
 
-            // this should not render
+            // these should not render
             CellValue::Code(_) => String::new(),
+            CellValue::Image(_) => String::new(),
         }
     }
 
@@ -232,6 +238,7 @@ impl CellValue {
 
             // this should not be editable
             CellValue::Code(_) => String::new(),
+            CellValue::Image(_) => String::new(),
         }
     }
 
@@ -352,6 +359,7 @@ impl CellValue {
             | (CellValue::Duration(_), _)
             | (CellValue::Html(_), _)
             | (CellValue::Code(_), _)
+            | (CellValue::Image(_), _)
             | (CellValue::Blank, _) => return Ok(None),
         }))
     }
@@ -374,6 +382,7 @@ impl CellValue {
                 CellValue::Blank => 6,
                 CellValue::Html(_) => 7,
                 CellValue::Code(_) => 8,
+                CellValue::Image(_) => 9,
             }
         }
 
@@ -521,6 +530,7 @@ impl CellValue {
             }
             "instant" => CellValue::unpack_str_unix_timestamp(value)?,
             "duration" => CellValue::Text("not implemented".into()),
+            "image" => CellValue::Image(value.into()),
             _ => CellValue::Text(value.into()),
         };
 
@@ -529,6 +539,10 @@ impl CellValue {
 
     pub fn is_html(&self) -> bool {
         matches!(self, CellValue::Html(_))
+    }
+
+    pub fn is_image(&self) -> bool {
+        matches!(self, CellValue::Image(_))
     }
 }
 
@@ -539,7 +553,7 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use crate::{
-        grid::{NumericFormat, NumericFormatKind},
+        grid::{NumericFormat, NumericFormatKind, Sheet},
         CellValue,
     };
 
@@ -746,5 +760,24 @@ mod test {
             CellValue::with_commas(value.unwrap()),
             "-123,123,123.123456"
         );
+    }
+
+    #[test]
+    fn test_image() {
+        let value = CellValue::Image("test".into());
+        assert_eq!(value.to_string(), "test");
+        assert_eq!(value.type_name(), "image");
+
+        let sheet = &mut Sheet::test();
+        let value = CellValue::from_js(&"test".to_string(), "image", (0, 1).into(), sheet);
+        assert_eq!(value.unwrap().0, CellValue::Image("test".into()));
+    }
+
+    #[test]
+    fn test_is_image() {
+        let value = CellValue::Image("test".into());
+        assert!(value.is_image());
+        let value = CellValue::Text("test".into());
+        assert!(!value.is_image());
     }
 }
