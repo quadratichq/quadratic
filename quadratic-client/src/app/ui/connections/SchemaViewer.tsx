@@ -8,7 +8,7 @@ import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
 import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type Table = {
@@ -32,13 +32,12 @@ export const SchemaViewer = () => {
   if (!connection) {
     throw new Error('Expected a connection cell to be open.');
   }
-
   const [expandAll, setExpandAll] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>('error');
   const [data, setData] = useState<SchemaData | null>(null);
 
   // TODO: (connections) fetch this data when the document loads
-  const fetchData = () => {
+  const fetchData = useCallback(() => {
     setLoadState('loading');
     connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id).then((newSchemaData) => {
       if (newSchemaData) {
@@ -48,12 +47,26 @@ export const SchemaViewer = () => {
         setLoadState('error');
       }
     });
-  };
+  }, [connection.id, connection.kind]);
 
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const schemaViewerData = useMemo(
+    () =>
+      data && (
+        <div className="overflow-scroll px-3 text-sm">
+          <ul>
+            {data.tables.map((table, i) => (
+              <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
+            ))}
+          </ul>
+        </div>
+      ),
+    [data, expandAll]
+  );
 
   return (
     <>
@@ -72,7 +85,7 @@ export const SchemaViewer = () => {
         </div>
       </div>
       {loadState === 'error' && (
-        <Type className="text-destructive m-3 mt-0">
+        <Type className="m-3 mt-0 text-destructive">
           Error loading data schema.{' '}
           <button className="underline" onClick={fetchData}>
             Try again
@@ -80,15 +93,7 @@ export const SchemaViewer = () => {
           or contact us.
         </Type>
       )}
-      {data && (
-        <div className="overflow-scroll px-3 text-sm">
-          <ul>
-            {data.tables.map((table, i) => (
-              <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
-            ))}
-          </ul>
-        </div>
-        )}
+      {schemaViewerData}
     </>
   );
 };

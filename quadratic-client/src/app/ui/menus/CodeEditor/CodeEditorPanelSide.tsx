@@ -150,7 +150,7 @@ function PanelBox(
 
   return (
     <Collapsible
-      className="data-[state=open]:flex-growz flex flex-col relative"
+      className="data-[state=open]:flex-growz relative flex flex-col"
       style={open ? { height: height + '%' } : {}}
       open={open}
       onOpenChange={setOpen}
