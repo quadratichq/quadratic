@@ -33,7 +33,7 @@ impl Sheet {
         x: i64,
         y: i64,
         column: Option<&Column>,
-        value: CellValue,
+        value: &CellValue,
         language: Option<CodeCellLanguage>,
     ) -> JsRenderCell {
         if let CellValue::Html(_) = value {
@@ -81,7 +81,7 @@ impl Sheet {
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: Some(if logical {
+                special: Some(if *logical {
                     JsRenderCellSpecial::True
                 } else {
                     JsRenderCellSpecial::False
@@ -179,7 +179,7 @@ impl Sheet {
                     code_rect.min.x,
                     code_rect.min.y,
                     None,
-                    CellValue::Error(Box::new(RunError {
+                    &CellValue::Error(Box::new(RunError {
                         span: None,
                         msg: RunErrorMsg::Spill,
                     })),
@@ -190,7 +190,7 @@ impl Sheet {
                     code_rect.min.x,
                     code_rect.min.y,
                     None,
-                    CellValue::Error(Box::new(error)),
+                    &CellValue::Error(Box::new(error)),
                     Some(code.language),
                 ));
             } else {
@@ -228,7 +228,7 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            cells.push(self.get_render_cell(x, y, column, value, language));
+                            cells.push(self.get_render_cell(x, y, column, &value, language));
                         }
                     }
                 }
@@ -240,27 +240,19 @@ impl Sheet {
     /// Returns cell data in a format useful for rendering. This includes only
     /// the data necessary to render raw text values.
     pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
-        let columns_iter = rect
-            .x_range()
-            .filter_map(|x| Some((x, self.get_column(x)?)));
-
         let mut render_cells = vec![];
 
         // Fetch ordinary value cells.
-        columns_iter.clone().for_each(|(x, column)| {
-            column.values.range(rect.y_range()).for_each(|(y, value)| {
-                // ignore code cells when rendering since they will be taken care in the next part
-                if !matches!(value, CellValue::Code(_)) {
-                    render_cells.push(self.get_render_cell(
-                        x,
-                        *y,
-                        Some(column),
-                        value.clone(),
-                        None,
-                    ));
-                }
+        rect.x_range()
+            .filter_map(|x| Some((x, self.get_column(x)?)))
+            .for_each(|(x, column)| {
+                column.values.range(rect.y_range()).for_each(|(y, value)| {
+                    // ignore code cells when rendering since they will be taken care in the next part
+                    if !matches!(value, CellValue::Code(_)) {
+                        render_cells.push(self.get_render_cell(x, *y, Some(column), value, None));
+                    }
+                });
             });
-        });
 
         // Fetch values from code cells
         self.iter_code_output_in_rect(rect)
