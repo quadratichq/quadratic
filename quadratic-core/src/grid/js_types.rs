@@ -1,3 +1,5 @@
+use core::fmt;
+
 use serde::{Deserialize, Serialize};
 
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
@@ -206,10 +208,16 @@ pub struct JsClipboard {
     pub html: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRowHeight {
-    pub row: i32,
+    pub row: i64,
     pub height: f64,
+}
+
+impl fmt::Display for JsRowHeight {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "JsRowHeight(row: {}, height: {})", self.row, self.height)
+    }
 }

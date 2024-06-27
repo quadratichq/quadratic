@@ -46,6 +46,7 @@ export const CodeHint = () => {
     events.on('sheetOffsets', updateCursor);
     events.on('resizeHeadingColumn', updateCursor);
     events.on('resizeHeadingRow', updateCursor);
+    events.on('resizeRowHeights', updateCursor)
 
     return () => {
       events.off('setCursor', updateCursor);
@@ -56,6 +57,7 @@ export const CodeHint = () => {
       events.off('sheetOffsets', updateCursor);
       events.off('resizeHeadingColumn', updateCursor);
       events.off('resizeHeadingRow', updateCursor);
+      events.off('resizeRowHeights', updateCursor);
     };
   }, []);
 

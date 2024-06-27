@@ -1,6 +1,6 @@
 import { events } from '@/app/events/events';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { Selection, SheetInfo } from '@/app/quadratic-core-types';
+import { JsRowHeight, Selection, SheetInfo } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { pixiApp } from '../../gridGL/pixiApp/PixiApp';
@@ -26,6 +26,7 @@ class Sheets {
     events.on('sheetInfoUpdate', this.updateSheet);
     events.on('setCursor', this.setCursor);
     events.on('sheetOffsets', this.updateOffsets);
+    events.on('resizeRowHeights', this.resizeRowHeights);
   }
 
   private create = (sheetInfo: SheetInfo[]) => {
@@ -92,6 +93,18 @@ class Sheets {
     // it's possible we deleted the sheet locally before receiving the message
     if (!sheet) return;
     sheet.updateSheetOffsets(column, row, size);
+    pixiApp.headings.dirty = true;
+    pixiApp.gridLines.dirty = true;
+    pixiApp.cursor.dirty = true;
+    pixiApp.multiplayerCursor.dirty = true;
+  };
+
+  private resizeRowHeights = (sheetId: string, rowHeights: JsRowHeight[]) => {
+    const sheet = this.getById(sheetId);
+    if (!sheet) return;
+    rowHeights.forEach(({ row, height }) => {
+      sheet.updateSheetOffsets(undefined, Number(row), height);
+    });
     pixiApp.headings.dirty = true;
     pixiApp.gridLines.dirty = true;
     pixiApp.cursor.dirty = true;

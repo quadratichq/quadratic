@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRenderCell } from '@/app/quadratic-core-types';
+import { JsRenderCell, JsRowHeight } from '@/app/quadratic-core-types';
 import {
   CoreRenderCells,
   CoreRenderMessage,
@@ -66,6 +66,10 @@ class RenderCore {
         this.getRowHeights(e.data.transactionId, e.data.sheetId, e.data.rows);
         break;
 
+      case 'coreRenderResizeRowHeights':
+        this.resizeRowHeights(e.data.sheetId, e.data.rowHeights);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }
@@ -77,15 +81,29 @@ class RenderCore {
       return;
     }
 
-    const rows: number[] = JSON.parse(rowsString).map((row: BigInt) => Number(row));
-    const rowHeights = await renderText.getRowHeights(sheetId, rows);
-    const message: RenderCoreResponseRowHeights = {
-      type: 'renderCoreResponseRowHeights',
-      transactionId,
-      sheetId,
-      rowHeights,
-    };
-    this.renderCorePort.postMessage(message);
+    try {
+      const rows: bigint[] = JSON.parse(rowsString);
+      const rowHeights = await renderText.getRowHeights(sheetId, rows);
+      const rowHeightsString = JSON.stringify(rowHeights);
+      const message: RenderCoreResponseRowHeights = {
+        type: 'renderCoreResponseRowHeights',
+        transactionId,
+        sheetId,
+        rowHeights: rowHeightsString,
+      };
+      this.renderCorePort.postMessage(message);
+    } catch (e) {
+      console.warn('[renderCore] getRowHeights: Error parsing rows: ', e);
+    }
+  }
+
+  resizeRowHeights(sheetId: string, rowHeightsString: string) {
+    try {
+      const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
+      renderText.resizeRowHeights(sheetId, rowHeights);
+    } catch (e) {
+      console.warn('[renderCore] resizeRowHeights: Error parsing JsRowHeight: ', e);
+    }
   }
 
   /*********************

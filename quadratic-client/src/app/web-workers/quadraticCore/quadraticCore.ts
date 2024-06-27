@@ -148,6 +148,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientSetCursorSelection') {
       events.emit('setCursor', undefined, e.data.selection);
       return;
+    } else if (e.data.type === 'coreClientResizeRowHeights') {
+      events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
+      return;
     }
 
     if (e.data.id !== undefined) {

@@ -335,8 +335,7 @@ export class CellsLabels {
 
     const next = this.nextDirtyHash();
     if (next) {
-      next.hash.updating = next.hash.update();
-      await next.hash.updating;
+      await next.hash.update();
       if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
       return next.visible ? 'visible' : true;
     }
@@ -420,24 +419,8 @@ export class CellsLabels {
     }
   }
 
-  private async waitForHashUpdate(column?: number, row?: number) {
-    this.update();
-    const updatePromises: Promise<any>[] = [];
-    this.cellsTextHash.forEach((hash) => {
-      if (column === hash.hashX * sheetHashWidth || row === hash.hashY * sheetHashHeight) {
-        if (hash.updating) {
-          updatePromises.push(hash.updating);
-        } else if (hash.dirty) {
-          hash.updating = hash.update();
-          updatePromises.push(hash.updating);
-        }
-      }
-    });
-    await Promise.all(updatePromises);
-  }
-
   async columnMaxWidth(column: number): Promise<number> {
-    await this.waitForHashUpdate(column);
+    await this.update();
     const hashX = Math.floor(column / sheetHashWidth);
     let max = 0;
     this.cellsTextHash.forEach((hash) => {
@@ -449,7 +432,7 @@ export class CellsLabels {
   }
 
   async rowMaxHeight(row: number): Promise<number> {
-    await this.waitForHashUpdate(undefined, row);
+    await this.update();
     const hashY = Math.floor(row / sheetHashHeight);
     let max = 0;
     this.cellsTextHash.forEach((hash) => {
@@ -460,9 +443,9 @@ export class CellsLabels {
     return max;
   }
 
-  async getRowHeights(rows: number[]): Promise<JsRowHeight[]> {
+  async getRowHeights(rows: bigint[]): Promise<JsRowHeight[]> {
     const rowHeightsPromises: Promise<JsRowHeight>[] = rows.map(async (row) => {
-      const maxHeight = await this.rowMaxHeight(row);
+      const maxHeight = await this.rowMaxHeight(Number(row));
       return {
         row,
         height: Math.max(maxHeight, CELL_HEIGHT),
@@ -470,8 +453,14 @@ export class CellsLabels {
     });
     const rowHeights: JsRowHeight[] = await Promise.all(rowHeightsPromises);
     const changesRowHeights: JsRowHeight[] = rowHeights.filter(
-      ({ row, height }) => Math.abs(height - this.sheetOffsets.getRowHeight(row)) > 0.001
+      ({ row, height }) => Math.abs(height - this.sheetOffsets.getRowHeight(Number(row))) > 0.001
     );
     return changesRowHeights;
+  }
+
+  resizeRowHeights(rowHeights: JsRowHeight[]) {
+    rowHeights.forEach(({ row, height }) => {
+      this.setOffsetsSize(undefined, Number(row), height);
+    });
   }
 }

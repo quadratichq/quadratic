@@ -18,7 +18,6 @@ import {
   JsCodeResult,
   JsGetCellResponse,
   JsRenderCell,
-  JsRowHeight,
   MinMax,
   SearchOptions,
   Selection,
@@ -947,9 +946,9 @@ class Core {
     );
   }
 
-  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: JsRowHeight[]) {
+  receiveRowHeights(transactionId: string, sheetId: string, rowHeights: string) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.receiveRowHeights(transactionId, sheetId, JSON.stringify(rowHeights));
+    this.gridController.receiveRowHeights(transactionId, sheetId, rowHeights);
   }
 }
 

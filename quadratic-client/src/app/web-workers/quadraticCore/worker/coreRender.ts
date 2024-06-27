@@ -6,7 +6,7 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRowHeight, SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
+import { SheetBounds, SheetInfo } from '@/app/quadratic-core-types';
 import { CoreRenderMessage, RenderCoreMessage, RenderCoreRequestRenderCells } from '../coreRenderMessages';
 import { core } from './core';
 
@@ -25,7 +25,8 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
     sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
-    handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: JsRowHeight[]) => void;
+    handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
+    sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
   };
 
 class CoreRender {
@@ -105,8 +106,12 @@ class CoreRender {
     this.send({ type: 'coreRenderRequestRowHeights', transactionId, sheetId, rows });
   };
 
-  handleResponseRowHeights = (transactionId: string, sheetId: string, rowHeights: JsRowHeight[]) => {
+  handleResponseRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
     core.receiveRowHeights(transactionId, sheetId, rowHeights);
+  };
+
+  sendResizeRowHeights = (sheetId: string, rowHeights: string) => {
+    this.send({ type: 'coreRenderResizeRowHeights', sheetId, rowHeights });
   };
 }
 
@@ -121,3 +126,4 @@ self.sendSheetInfoUpdateRender = coreRender.sendSheetInfoUpdate;
 self.sendSheetBoundsUpdateRender = coreRender.sendSheetBoundsUpdate;
 self.sendRequestRowHeights = coreRender.sendRequestRowHeights;
 self.handleResponseRowHeights = coreRender.handleResponseRowHeights;
+self.sendResizeRowHeightsRender = coreRender.sendResizeRowHeights;

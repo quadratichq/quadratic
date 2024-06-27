@@ -11,6 +11,7 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  JsRowHeight,
   JsSheetFill,
   MinMax,
   SearchOptions,
@@ -593,6 +594,12 @@ export interface CoreClientSheetCodeCellRender {
   codeCells: JsRenderCodeCell[];
 }
 
+export interface CoreClientResizeRowHeights {
+  type: 'coreClientResizeRowHeights';
+  sheetId: string;
+  rowHeights: JsRowHeight[];
+}
+
 //#endregion
 
 //#region Undo/Redo
@@ -923,4 +930,5 @@ export type CoreClientMessage =
   | CoreClientGetFormatRow
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
-  | CoreClientSetCursorSelection;
+  | CoreClientSetCursorSelection
+  | CoreClientResizeRowHeights;

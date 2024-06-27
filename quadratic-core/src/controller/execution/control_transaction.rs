@@ -157,18 +157,10 @@ impl GridController {
         row_heights: Vec<JsRowHeight>,
     ) -> Result<()> {
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-
-        row_heights.iter().for_each(|row_height| {
-            let row = row_height.row as i64;
-            let new_size = row_height.height;
-            transaction.operations.push_back(Operation::ResizeRow {
-                sheet_id,
-                row,
-                new_size,
-                client_resized: false,
-            });
+        transaction.operations.push_back(Operation::ResizeRows {
+            sheet_id,
+            row_heights,
         });
-
         transaction.has_async = false;
         self.start_transaction(&mut transaction);
         self.finalize_transaction(&mut transaction);

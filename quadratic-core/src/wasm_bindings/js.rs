@@ -86,6 +86,8 @@ extern "C" {
 
     // cells: Vec<Pos>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, cells: String);
+    // row_heights: Vec<JsRowHeight>
+    pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/);
 }
 
 #[cfg(test)]
@@ -471,5 +473,14 @@ pub fn jsRequestRowHeights(
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsRequestRowHeights",
         format!("{},{},{}", transaction_id, sheet_id, cells),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsResizeRowHeights(sheet_id: String, row_heights: String /*Vec<JsRowHeight>*/) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsResizeRowHeights",
+        format!("{},{}", sheet_id, row_heights),
     ));
 }

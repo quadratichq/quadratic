@@ -171,10 +171,16 @@ class RenderText {
     return cellsLabels.rowMaxHeight(row);
   }
 
-  getRowHeights(sheetId: string, rows: number[]): Promise<JsRowHeight[]> {
+  getRowHeights(sheetId: string, rows: bigint[]): Promise<JsRowHeight[]> {
     const cellsLabels = this.cellsLabels.get(sheetId);
     if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.getRowHeights');
     return cellsLabels.getRowHeights(rows);
+  }
+
+  resizeRowHeights(sheetId: string, rowHeights: JsRowHeight[]) {
+    const cellsLabels = this.cellsLabels.get(sheetId);
+    if (!cellsLabels) throw new Error('Expected cellsLabel to be defined in RenderText.resizeRowHeights');
+    cellsLabels.resizeRowHeights(rowHeights);
   }
 }
 

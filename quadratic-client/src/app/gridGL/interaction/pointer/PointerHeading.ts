@@ -316,8 +316,6 @@ export class PointerHeading {
       if (this.resizing) {
         const transientResize = sheets.sheet.offsets.getResizeToApply();
         if (transientResize) {
-          quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
-
           // update remaining hashes hashes in render web worker, which were only updated in pixiApp
           try {
             const { column, row, old_size, new_size } = JSON.parse(transientResize) as TransientResize;
@@ -334,6 +332,8 @@ export class PointerHeading {
           } catch (error) {
             console.warn('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
           }
+
+          quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);
         }
         this.resizing = undefined;
 

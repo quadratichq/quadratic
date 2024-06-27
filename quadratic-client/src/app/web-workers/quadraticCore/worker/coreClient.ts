@@ -12,6 +12,7 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsRowHeight,
   JsSheetFill,
   Selection,
   SheetBounds,
@@ -75,6 +76,7 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
+    sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
   };
 
 class CoreClient {
@@ -100,6 +102,7 @@ class CoreClient {
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
+    self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -613,6 +616,15 @@ class CoreClient {
 
   sendUndoRedo = (undo: boolean, redo: boolean) => {
     this.send({ type: 'coreClientUndoRedo', undo, redo });
+  };
+
+  sendResizeRowHeights = (sheetId: string, rowHeightsString: string) => {
+    try {
+      const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
+      this.send({ type: 'coreClientResizeRowHeights', sheetId, rowHeights });
+    } catch (e) {
+      console.warn('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
+    }
   };
 }
 

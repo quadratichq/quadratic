@@ -54,6 +54,7 @@ class InlineEditorHandler {
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
+    events.on('resizeRowHeights', this.sheetOffsets);
     createFormulaStyleHighlights();
   }
 

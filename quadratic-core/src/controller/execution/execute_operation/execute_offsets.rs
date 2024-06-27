@@ -3,6 +3,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation, GridController,
     },
+    grid::js_types::JsRowHeight,
     SheetPos,
 };
 
@@ -123,6 +124,62 @@ impl GridController {
                     x: 0,
                     y: row,
                     sheet_id,
+                });
+            }
+        }
+    }
+
+    pub fn execute_resize_rows(&mut self, transaction: &mut PendingTransaction, op: Operation) {
+        if let Operation::ResizeRows {
+            sheet_id,
+            row_heights,
+        } = op
+        {
+            let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+                // sheet may have been deleted
+                return;
+            };
+            transaction.forward_operations.push(Operation::ResizeRows {
+                sheet_id,
+                row_heights: row_heights.clone(),
+            });
+
+            let old_row_heights: Vec<JsRowHeight> = row_heights
+                .iter()
+                .map(|JsRowHeight { row, height }| {
+                    let old_size = sheet.offsets.set_row_height(*row, *height);
+                    JsRowHeight {
+                        row: *row,
+                        height: old_size,
+                    }
+                })
+                .collect();
+
+            transaction.reverse_operations.insert(
+                0,
+                Operation::ResizeRows {
+                    sheet_id,
+                    row_heights: old_row_heights,
+                },
+            );
+
+            if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+                if let Ok(row_heights_string) = serde_json::to_string(&row_heights) {
+                    crate::wasm_bindings::js::jsResizeRowHeights(
+                        sheet_id.to_string(),
+                        row_heights_string,
+                    );
+                }
+            }
+
+            if !transaction.is_server() {
+                row_heights.iter().any(|JsRowHeight { row, .. }| {
+                    transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
+                        x: 0,
+                        y: *row,
+                        sheet_id,
+                    });
+                    transaction.generate_thumbnail
                 });
             }
         }

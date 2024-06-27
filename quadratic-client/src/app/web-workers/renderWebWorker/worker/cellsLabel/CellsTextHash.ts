@@ -52,8 +52,6 @@ export class CellsTextHash {
 
   loaded = false;
 
-  updating?: Promise<boolean>;
-
   // screen coordinates
   viewRectangle: Rectangle;
 
