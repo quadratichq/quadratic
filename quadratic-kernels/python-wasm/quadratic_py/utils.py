@@ -37,7 +37,7 @@ def attempt_fix_await(code: str) -> str:
         r"(^|\W)(?:await +)?(rel_cell\([^\)]*\))", r"\1(await \2)", code
     )  # captures rel_cell(
     code = re.sub(
-        r"(^|\W)(?:await +)?(rel_cells?\((?:[^\(\)]*|\([^\)]*\))*\))",
+        r"(^|\W)(?:await +)?(rel_cells\((?:[^\(\)]*|\([^\)]*\))*\))",
         r"\1(await \2)",
         code,
     )  # captures get_cell( get_cells(
