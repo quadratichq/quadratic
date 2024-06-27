@@ -19,13 +19,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<()> {
         let ops = self.autocomplete_operations(sheet_id, selection, range)?;
-        self.start_user_transaction(
-            ops,
-            cursor,
-            TransactionName::Autocomplete,
-            Some(sheet_id),
-            Some(range),
-        );
+        self.start_user_transaction(ops, cursor, TransactionName::Autocomplete);
         Ok(())
     }
 }
@@ -182,6 +176,9 @@ mod tests {
         let selected: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 2 });
         let range: Rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 10, y: 2 });
         let (mut grid, sheet_id) = test_setup_rect(&selected);
+
+        print_table(&grid, sheet_id, range);
+
         grid.autocomplete(sheet_id, selected, range, None).unwrap();
 
         print_table(&grid, sheet_id, range);

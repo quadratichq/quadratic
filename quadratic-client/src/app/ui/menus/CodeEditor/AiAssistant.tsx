@@ -84,7 +84,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
     const token = await authClient.getTokenOrRedirect();
     const updatedMessages = [...messages, { role: 'user', content: prompt }] as AiMessage[];
     const request_body = {
-      model: 'gpt-4-32k',
+      model: 'gpt-4o',
       messages: [...systemMessages, ...updatedMessages],
     };
     setMessages(updatedMessages);

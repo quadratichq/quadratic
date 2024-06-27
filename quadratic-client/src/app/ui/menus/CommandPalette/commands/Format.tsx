@@ -13,12 +13,12 @@ import { KeyboardSymbols } from '../../../../helpers/keyboardSymbols';
 import {
   clearFormattingAndBorders,
   removeCellNumericFormat,
+  setCellCommas,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
   textFormatSetExponential,
   textFormatSetPercentage,
-  toggleCommas,
 } from '../../TopBar/SubMenus/formatCells';
 import { CommandGroup, CommandPaletteListItem } from '../CommandPaletteListItem';
 
@@ -72,7 +72,7 @@ const commands: CommandGroup = {
       label: 'Toggle commas',
       isAvailable: isAvailableBecauseCanEditFile,
       Component: (props) => {
-        return <CommandPaletteListItem {...props} action={toggleCommas} icon={<QuoteIcon />} />;
+        return <CommandPaletteListItem {...props} action={setCellCommas} icon={<QuoteIcon />} />;
       },
     },
     {

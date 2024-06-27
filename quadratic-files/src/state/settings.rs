@@ -14,7 +14,8 @@ pub(crate) struct Settings {
 
 impl Settings {
     pub(crate) async fn new(config: &Config) -> Self {
-        let is_local = config.environment == Environment::Docker;
+        let is_local =
+            config.environment == Environment::Docker || config.environment == Environment::Local;
         Settings {
             quadratic_api_uri: config.quadratic_api_uri.to_owned(),
             m2m_auth_token: config.m2m_auth_token.to_owned(),

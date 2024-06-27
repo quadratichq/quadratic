@@ -22,6 +22,7 @@ export class CLI {
     hideConnection: boolean;
     hidePython: boolean;
     hideRustClient: boolean;
+    servicesLocal: boolean;
     dark: boolean;
   };
 
@@ -60,6 +61,7 @@ export class CLI {
       .option("-Y, --hidePython", "Hide Python output")
       .option("-O, --rustClient", "Hide RustClient")
       .option("-E, --hideRustClient", "Hide RustClient")
+      .option("-L, --servicesLocal", "Set Redis & Postgres as running locally")
       .option("-d, --dark", "Use dark theme")
       .showHelpAfterError();
 

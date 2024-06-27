@@ -37,6 +37,9 @@ export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean })
     // If nothing was selected, just exit
     if (!e.target.files) return;
 
+    // need to make sure quadratiCore's worker is initialized to call the Rust functions
+    quadraticCore.initWorker();
+
     try {
       // Get the file and it's contents
       const file: File = e.target.files[0];
