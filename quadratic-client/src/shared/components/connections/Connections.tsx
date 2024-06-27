@@ -98,3 +98,19 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     </div>
   );
 };
+
+/*
+
+<DialogHeader>
+        <ConnectionsBreadcrumb />
+        <DialogTitle>{connectionName} connection</DialogTitle>
+        <DialogDescription>
+          For more information on {connectionName} connections,{' '}
+          <a href={connectionDocsLink} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+            read the docs
+          </a>
+        </DialogDescription>
+      </DialogHeader>
+
+
+*/
