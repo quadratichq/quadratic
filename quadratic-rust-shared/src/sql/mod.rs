@@ -10,7 +10,6 @@ use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, Timelike};
-use futures_util::Future;
 use parquet::arrow::ArrowWriter;
 use serde::Serialize;
 use serde_json::Value;
@@ -214,13 +213,18 @@ pub trait Connection {
     type Column: Column;
 
     // Connect to a database
-    fn connect(&self) -> impl Future<Output = Result<Self::Conn>>;
+    async fn connect(&self) -> Result<Self::Conn>;
 
     /// Generically query a database
-    fn query(&self, pool: Self::Conn, sql: &str) -> impl Future<Output = Result<Vec<Self::Row>>>;
+    async fn query(
+        &self,
+        pool: Self::Conn,
+        sql: &str,
+        max_bytes: Option<u64>,
+    ) -> Result<(Vec<Self::Row>, bool)>;
 
     /// Generically query a database
-    fn schema(&self, pool: Self::Conn) -> impl Future<Output = Result<DatabaseSchema>>;
+    async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema>;
 
     /// Convert a database-specific column to an Arrow type
     fn to_arrow(
@@ -238,9 +242,10 @@ pub trait Connection {
         Self::Column: Column,
     {
         if data.is_empty() {
-            return Err(SharedError::Sql(Sql::ParquetConversion(
-                "No data to convert".to_string(),
-            )));
+            // return Err(SharedError::Sql(Sql::ParquetConversion(
+            //     "No data to convert".to_string(),
+            // )));
+            return Ok(Bytes::new());
         }
 
         let col_count = data[0].len();
@@ -300,7 +305,7 @@ pub trait Connection {
 //     conn: impl Connection,
 //     sql_conn: SqlConnection,
 //     database: &str,
-//     query: impl Future<Output = Result<Vec<T>>>,
+//     query: Result<Vec<T>>>,
 // ) -> Result<DatabaseSchema> {
 //     let rows = query.await?;
 

@@ -1,8 +1,10 @@
 use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
+use async_trait::async_trait;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{
@@ -45,6 +47,7 @@ impl MySqlConnection {
     }
 }
 
+#[async_trait]
 impl Connection for MySqlConnection {
     type Conn = SqlxMySqlConnection;
     type Row = MySqlRow;
@@ -80,13 +83,37 @@ impl Connection for MySqlConnection {
         Ok(pool)
     }
 
-    async fn query(&self, mut pool: Self::Conn, sql: &str) -> Result<Vec<Self::Row>> {
-        let rows = sqlx::query(sql)
-            .fetch_all(&mut pool)
-            .await
-            .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+    async fn query(
+        &self,
+        mut pool: Self::Conn,
+        sql: &str,
+        max_bytes: Option<u64>,
+    ) -> Result<(Vec<Self::Row>, bool)> {
+        let mut rows = vec![];
+        let mut over_the_limit = false;
 
-        Ok(rows)
+        if let Some(max_bytes) = max_bytes {
+            let mut bytes = 0;
+            let mut stream = sqlx::query(sql).fetch(&mut pool);
+
+            while let Some(Ok(row)) = stream.next().await {
+                bytes += row.len() as u64;
+
+                if bytes > max_bytes {
+                    over_the_limit = true;
+                    break;
+                }
+
+                rows.push(row);
+            }
+        } else {
+            rows = sqlx::query(sql)
+                .fetch_all(&mut pool)
+                .await
+                .map_err(|e| SharedError::Sql(Sql::Query(e.to_string())))?;
+        }
+
+        Ok((rows, over_the_limit))
     }
 
     async fn schema(&self, pool: Self::Conn) -> Result<DatabaseSchema> {
@@ -101,7 +128,7 @@ impl Connection for MySqlConnection {
             where table_schema = '{database}'
             order by c.TABLE_NAME, c.ORDINAL_POSITION, c.COLUMN_NAME");
 
-        let rows = self.query(pool, &sql).await?;
+        let (rows, _) = self.query(pool, &sql, None).await?;
 
         let mut schema = DatabaseSchema {
             database: self.database.to_owned().unwrap_or_default(),
@@ -198,11 +225,12 @@ mod tests {
     async fn test_mysql_connection() {
         let connection = new_mysql_connection();
         let pool = connection.connect().await.unwrap();
-        let rows = connection
+        let (rows, _) = connection
             // .query(pool, "select * from \"FileCheckpoint\" limit 10")
             .query(
                 pool,
                 "select * from all_native_data_types order by id limit 1",
+                None,
             )
             .await
             .unwrap();
