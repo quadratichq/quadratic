@@ -67,7 +67,7 @@ async function handler(
       updatedDate: updatedDate.toISOString(),
       type,
       // @ts-expect-error will fix in david's branch
-      ...(includeDetails ? { typeDetails: removeSensitiveInfoFromTypeDetails(type, typeDetails) } : {}),
+      typeDetails: removeSensitiveInfoFromTypeDetails(type, typeDetails),
     }));
 
     return res.status(200).json(data);

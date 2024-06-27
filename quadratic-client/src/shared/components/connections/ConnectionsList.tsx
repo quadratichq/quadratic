@@ -109,7 +109,7 @@ function ListItems({
     : items;
 
   return filteredItems.length > 0 ? (
-    <div className="-mt-4">
+    <div className="-mt-3">
       {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
         <button
           onClick={() => {
