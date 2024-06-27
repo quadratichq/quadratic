@@ -7,6 +7,7 @@ export function keyboardSearch(
 ): boolean {
   // Command/Ctrl + F
   if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+    event.preventDefault();
     if (editorInteractionState.showSearch) {
       const search = document.getElementById('search-input');
       search?.focus();
@@ -16,7 +17,6 @@ export function keyboardSearch(
         showSearch: event.shiftKey ? { sheet_id: undefined } : true,
       }));
     }
-    event.preventDefault();
     return true;
   }
   return false;

@@ -12,6 +12,7 @@ export function keyboardCode(
     return false;
   }
   if (event.code === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
     if (event.shiftKey) {
       if (event.altKey) {
         quadraticCore.rerunCodeCells(sheets.sheet.id, undefined, undefined, sheets.getCursorPosition());
@@ -26,14 +27,13 @@ export function keyboardCode(
         sheets.getCursorPosition()
       );
     }
-    event.preventDefault();
     return true;
   }
 
   if (editorInteractionState.showCodeEditor) {
     if (event.code === 'KeyL' && (event.ctrlKey || event.metaKey)) {
-      insertCellRef(editorInteractionState);
       event.preventDefault();
+      insertCellRef(editorInteractionState);
     }
   }
   return false;

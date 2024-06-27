@@ -258,13 +258,12 @@ export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }:
                 return;
               }
 
+              event.preventDefault();
               if (prompt.trim().length === 0) {
-                event.preventDefault();
                 return;
               }
 
               submitPrompt();
-              event.preventDefault();
               event.currentTarget.focus();
             }
           }}
