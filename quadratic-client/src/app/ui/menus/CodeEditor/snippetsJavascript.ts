@@ -45,10 +45,10 @@ return as;`,
     label: 'Make a relative reference',
     keywords: 'relative reference position cell',
     code: `// c is the cell one cell to the left of the current cell, use either rel_cell or rc
-d = rc(-1, 0);
+let d = rc(-1, 0);
 
 // above for one cell to the left is equivalent to the following
-let cellPos = await pos();
+let cellPos = pos();
 let data = getCell(cellPos['x'] - 1, cellPos['y']);
 
 // one cell left
