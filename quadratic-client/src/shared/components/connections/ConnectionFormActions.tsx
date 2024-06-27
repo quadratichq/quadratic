@@ -88,7 +88,7 @@ export function ConnectionFormActions({
       {connectionState === 'error' && <div className="mt-2 font-mono text-xs text-destructive">{connectionError}</div>}
 
       {connectionUuid && (
-        <div className="mt-8 flex items-center justify-between gap-6 rounded border border-border p-4 text-sm">
+        <div className="mt-2 flex items-center justify-between gap-6 rounded border border-border p-4 text-sm">
           <div className="">
             <strong className="font-semibold">Delete connection:</strong>{' '}
             <span className="text-muted-foreground">
