@@ -1,15 +1,15 @@
 import { events } from '@/app/events/events';
-import { PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { useEffect, useState } from 'react';
 
-export const usePythonState = (): { pythonState: PythonStateType; version?: string } => {
-  const [pythonState, setPythonState] = useState<PythonStateType>(pythonWebWorker.state);
+export const usePythonState = (): { pythonState: LanguageState; version?: string } => {
+  const [pythonState, setPythonState] = useState<LanguageState>(pythonWebWorker.state);
   const [version, setVersion] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const updatePythonVersion = (version: string) => setVersion(version);
-    const updatePythonState = (state: PythonStateType) => {
+    const updatePythonState = (state: LanguageState) => {
       setPythonState(state);
     };
     events.on('pythonInit', updatePythonVersion);
