@@ -301,9 +301,9 @@ export const apiClient = {
   },
 
   connections: {
-    async list(teamUuid: string) {
+    async list(teamUuid: string, includeDetails = false) {
       return fetchFromApi(
-        `/v0/connections?teamUuid=${teamUuid}`,
+        `/v0/connections?team-uuid=${teamUuid}${includeDetails ? '&include-details=true' : ''}`,
         { method: 'GET' },
         ApiSchemas['/v0/connections.GET.response']
       );

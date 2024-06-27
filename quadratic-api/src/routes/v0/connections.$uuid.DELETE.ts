@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
@@ -8,6 +7,7 @@ import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -22,18 +22,20 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   const {
     params: { uuid },
   } = parseRequest(req, schema);
+  const {
+    team: {
+      userMakingRequest: { permissions },
+    },
+  } = await getConnection({ uuid, userId });
 
-  // get connection from DB, this ensures the user has access to it
-  // TODO: (connections) ensure they have delete access...?
-  await getConnection({ uuid, userId });
-
-  // Delete the connetion and any associated user roles
-  // TODO: (connections) do we want to do that? Or just mark it as archived
+  if (!permissions.includes('TEAM_EDIT')) {
+    throw new ApiError(403, 'You do not have permission to delete this connection');
+  }
 
   await dbClient.connection.update({
     where: { uuid },
     data: { archived: new Date() },
   });
 
-  return res.status(200).json({ message: 'Connection deleted' });
+  return res.status(200).json({ message: 'Connection archived' });
 }

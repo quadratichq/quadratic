@@ -11,7 +11,13 @@ import { ApiError } from '../../utils/ApiError';
 export default [validateAccessToken, userMiddleware, handler];
 
 const schema = z.object({
-  query: z.object({ 'team-uuid': z.string().uuid() }),
+  query: z.object({
+    'team-uuid': z.string().uuid(),
+    'include-details': z
+      .string()
+      .refine((value) => value === 'true')
+      .transform((value) => value === 'true'),
+  }),
 });
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connections.GET.response']>) {
@@ -19,7 +25,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
     user: { id: userId },
   } = req;
   const {
-    query: { 'team-uuid': teamUuid },
+    query: { 'team-uuid': teamUuid, 'include-details': includeDetails },
   } = parseRequest(req, schema);
   const {
     team: { id: teamId },
@@ -43,12 +49,13 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   });
 
   // Pick out the data we want to return
-  const data = connections.map(({ uuid, name, type, createdDate, updatedDate }) => ({
+  const data = connections.map(({ uuid, name, type, createdDate, updatedDate, typeDetails }) => ({
     uuid,
     name,
     type,
     createdDate: createdDate.toISOString(),
     updatedDate: updatedDate.toISOString(),
+    ...(includeDetails ? { typeDetails } : {}),
   }));
 
   return res.status(200).json(data);

@@ -353,7 +353,6 @@ export const ApiSchemas = {
     filesPrivate: TeamFilesSchema,
     users: z.array(TeamUserSchema),
     invites: z.array(z.object({ email: emailSchema, role: UserTeamRoleSchema, id: z.number() })),
-    connections: z.array(z.any()),
   }),
   '/v0/teams/:uuid.PATCH.request': TeamSchema.pick({ name: true }),
   '/v0/teams/:uuid.PATCH.response': TeamSchema.pick({ name: true }),

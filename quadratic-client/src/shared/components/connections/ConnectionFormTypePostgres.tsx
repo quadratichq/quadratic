@@ -1,33 +1,33 @@
-import { CONNECTION_FORM_ID } from '@/app/ui/connections/ConnectionDialogBody';
-import { ConnectionTest, ValidateThenTestConnection } from '@/app/ui/connections/ConnectionTest';
-import { getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
-import { getCreateConnectionAction } from '@/routes/file.$uuid.connections.create.$connectionType';
+import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/_api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionFormMysqlSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionFormPostgresSchema } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
 import { z } from 'zod';
+import { ConnectionFormActions, ValidateThenTestConnection } from './ConnectionFormActions';
 
-type FormValues = z.infer<typeof ConnectionFormMysqlSchema>;
+type FormValues = z.infer<typeof ConnectionFormPostgresSchema>;
 
-export function ConnectionFormMysql({
+export function ConnectionFormTypePostgres({
   initialData,
-  connectionUuid,
+  handleNavigateToListView,
 }: {
-  connectionUuid: string;
-  initialData?: ApiTypes['/v0/connections/:uuid.GET.response']; // z.infer<typeof ConnectionMysqlSchema>;
+  handleNavigateToListView: () => void;
+  // TODO: (connections) note this is a very specific kind of get for postgres only, update the type
+  initialData?: ApiTypes['/v0/connections/:uuid.GET.response']; // z.infer<typeof ConnectionPostgresSchema>;
 }) {
   const [hidePassword, setHidePassword] = useState(true);
   const submit = useSubmit();
+  const connectionUuid = initialData?.uuid;
 
   const defaultValues: FormValues =
-    initialData && initialData.type === 'MYSQL' && initialData.typeDetails
+    initialData && initialData.type === 'POSTGRES' && initialData.typeDetails
       ? {
           name: initialData.name,
           type: initialData.type,
@@ -39,7 +39,7 @@ export function ConnectionFormMysql({
         }
       : {
           name: '',
-          type: 'MYSQL',
+          type: 'POSTGRES',
           host: '',
           port: '',
           database: '',
@@ -47,7 +47,7 @@ export function ConnectionFormMysql({
           password: '',
         };
   const form = useForm<FormValues>({
-    resolver: zodResolver(ConnectionFormMysqlSchema),
+    resolver: zodResolver(ConnectionFormPostgresSchema),
     defaultValues,
   });
 
@@ -60,15 +60,17 @@ export function ConnectionFormMysql({
     // }
 
     // Update the connection
-    if (initialData) {
+    if (connectionUuid) {
       const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
-      submit(data, { method: 'POST', encType: 'application/json' });
+      submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
+      handleNavigateToListView();
       return;
     }
 
     // Create a new connection
-    const data = getCreateConnectionAction({ name, type, typeDetails });
-    submit(data, { method: 'POST', encType: 'application/json' });
+    const data = getCreateConnectionAction({ name, type, typeDetails }, '8b125911-d3c8-490a-91bc-6dbacde16768');
+    submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
+    handleNavigateToListView();
   };
 
   // Simulate a form submission to do validation, run the test, return result
@@ -77,8 +79,7 @@ export function ConnectionFormMysql({
       form.handleSubmit(
         async (values) => {
           const { name, type, ...typeDetails } = values;
-
-          resolve(() => connectionClient.test.run({ type: 'mysql', typeDetails }));
+          resolve(() => connectionClient.test.run({ type: 'postgres', typeDetails }));
         },
         () => {
           reject();
@@ -90,7 +91,7 @@ export function ConnectionFormMysql({
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} id={CONNECTION_FORM_ID} className="space-y-2">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
           <FormField
             control={form.control}
             name="name"
@@ -190,9 +191,14 @@ export function ConnectionFormMysql({
               )}
             />
           </div>
+          <ConnectionFormActions
+            form={form}
+            validateThenTest={validateThenTest}
+            handleNavigateToListView={handleNavigateToListView}
+            connectionUuid={connectionUuid}
+          />
         </form>
       </Form>
-      <ConnectionTest form={form} validateThenTest={validateThenTest} />
     </>
   );
 }

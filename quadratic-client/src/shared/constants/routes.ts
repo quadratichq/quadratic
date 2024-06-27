@@ -17,6 +17,9 @@ export const ROUTES = {
   CONNECTIONS_CREATE: '/connections/create',
   CONNECTIONS_CREATE_TYPE: (type: ConnectionType) => `/connections/create/${type}`,
 
+  API: {
+    CONNECTIONS: (teamUuid: string) => `/_api/connections?team-uuid=${teamUuid}`,
+  },
   // API routes are client-side routes to use react-router's data APIs (e.g. fetchers)
   API_FILE: (uuid: string) => `/api/files/${uuid}`,
   API_FILE_SHARING: (uuid: string) => `/api/files/${uuid}/sharing`,

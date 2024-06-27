@@ -1,6 +1,5 @@
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Page404 from '@/routes/404';
-import * as FileMeta from '@/routes/_file.$uuid';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
@@ -41,26 +40,7 @@ export const router = createBrowserRouter(
               shouldRevalidate={() => false}
             >
               {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
-              <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader}>
-                {/* TODO: (connections) consider popping a dialog right away, then loading the body for lazy loading */}
-                <Route path="connections" lazy={() => import('./routes/file.$uuid.connections')}>
-                  <Route
-                    index
-                    lazy={async () => {
-                      const { Index } = await import('./routes/file.$uuid.connections');
-                      return { Component: Index };
-                    }}
-                  />
-                  <Route
-                    path=":connectionUuid"
-                    lazy={() => import('./routes/file.$uuid.connections.$connectionUuid')}
-                  />
-                  <Route
-                    path="create/:connectionType"
-                    lazy={() => import('./routes/file.$uuid.connections.create.$connectionType')}
-                  />
-                </Route>
-              </Route>
+              {/* <Route index id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader} /> */}
             </Route>
           </Route>
         </Route>
@@ -84,6 +64,7 @@ export const router = createBrowserRouter(
             shouldRevalidate={() => false}
           />
           <Route path="teams" index loader={() => redirect('/')} />
+          <Route path="_api/connections" lazy={() => import('./routes/_api.connections')} />
 
           {/* Dashboard UI routes */}
           <Route path="/" id={ROUTE_LOADER_IDS.DASHBOARD} lazy={() => import('./routes/_dashboard')}>

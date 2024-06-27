@@ -172,14 +172,6 @@ async function handler(req: Request, res: Response<ApiTypes['/v0/teams/:uuid.GET
             },
           }))
       : [],
-    // TODO: (connections) setup types for this
-    connections: dbConnections.map(({ uuid, createdDate, updatedDate, name, type }) => ({
-      uuid,
-      createdDate,
-      updatedDate,
-      name,
-      type,
-    })),
   };
 
   return res.status(200).json(response);

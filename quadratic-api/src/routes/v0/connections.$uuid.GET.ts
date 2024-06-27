@@ -21,7 +21,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/connect
   const {
     params: { uuid },
   } = parseRequest(req, schema);
-  const connection = await getConnection({ uuid, userId });
+  const { connection } = await getConnection({ uuid, userId });
 
   return res.status(200).json({
     uuid: connection.uuid,

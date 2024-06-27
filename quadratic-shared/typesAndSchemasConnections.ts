@@ -99,7 +99,7 @@ const GenericConnectionSchema = z.object({
 
 export const ApiSchemasConnections = {
   // List connections
-  '/v0/connections.GET.response': z.array(GenericConnectionSchema.omit({ typeDetails: true })),
+  '/v0/connections.GET.response': z.array(GenericConnectionSchema),
   // z.array(
   //   z.union([ConnectionPostgresSchema.omit({ typeDetails: true }), ConnectionMysqlSchema.omit({ typeDetails: true })])
   // ),

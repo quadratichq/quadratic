@@ -8,6 +8,11 @@ type TeamData = Parameters<typeof dbClient.team.create>[0]['data'];
 type ConnectionData = Parameters<typeof dbClient.connection.create>[0]['data'];
 type ConnectionType = ConnectionData['type'];
 
+/**
+ *
+ * Creating a user
+ *
+ */
 export async function createUser({ auth0Id }: Partial<UserData>) {
   const user = await dbClient.user.create({
     data: {

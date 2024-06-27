@@ -17,12 +17,10 @@ export async function getConnection({ uuid, userId }: { uuid: string; userId: nu
   }
 
   // Make sure they have access to the connection via the team
-  const {
-    userMakingRequest: { permissions },
-  } = await getTeam({ uuid: connection.team.uuid, userId });
-  if (!permissions.includes('TEAM_VIEW')) {
+  const team = await getTeam({ uuid: connection.team.uuid, userId });
+  if (!team.userMakingRequest.permissions.includes('TEAM_VIEW')) {
     throw new ApiError(403, 'You don’t have access to this connection');
   }
 
-  return connection;
+  return { connection, team };
 }
