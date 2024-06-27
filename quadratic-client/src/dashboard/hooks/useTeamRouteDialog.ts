@@ -2,6 +2,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
+// TODO: (connections) we don't have to use this, move it into the component
 export const useTeamRouteDialog = () => {
   const navigate = useNavigate();
   const location = useLocation();
