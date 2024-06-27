@@ -11,7 +11,6 @@ import '../../styles/floating-dialog.css';
 
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
-import { ROUTES } from '@/shared/constants/routes';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -23,7 +22,6 @@ import {
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import { Add } from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
 
 export interface CellTypeOption {
   name: string;
@@ -79,8 +77,6 @@ export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
   const { connections } = useFileMetaRouteLoaderData();
-  const navigate = useNavigate();
-  const { uuid } = useParams() as { uuid: string };
   const searchlabel = 'Choose a cell type…';
 
   useEffect(() => {
@@ -141,7 +137,7 @@ export default function CellTypeMenu() {
           ))}
           <CommandItemWrapper
             name="Create or manage connections"
-            // TODO: (connections) correct URL here
+            // TODO: (connections) correct URL here / cleanup description
             description={
               <>
                 Connect to Postgres, MySQL, <LinkNewTabWrapper href={DOCUMENTATION_URL}>and more</LinkNewTabWrapper>
@@ -152,8 +148,8 @@ export default function CellTypeMenu() {
               setEditorInteractionState({
                 ...editorInteractionState,
                 showCellTypeMenu: false,
+                showConnectionsMenu: true,
               });
-              navigate(ROUTES.FILE_CONNECTIONS(uuid), { replace: true });
             }}
           />
         </CommandGroup>

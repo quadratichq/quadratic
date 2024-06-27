@@ -1,5 +1,6 @@
 import { BrowserCompatibilityLayoutRoute } from '@/dashboard/components/BrowserCompatibilityLayoutRoute';
 import * as Page404 from '@/routes/404';
+import * as FileMeta from '@/routes/_file.$uuid';
 import * as Login from '@/routes/login';
 import * as LoginResult from '@/routes/login-result';
 import * as Logout from '@/routes/logout';
@@ -40,7 +41,7 @@ export const router = createBrowserRouter(
               shouldRevalidate={() => false}
             >
               {/* TODO: (connections) we need to figure out what to do here when it's a publicly viewable file */}
-              {/* <Route index id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader} /> */}
+              <Route path="" id={ROUTE_LOADER_IDS.FILE_METADATA} loader={FileMeta.loader} Component={() => null} />
             </Route>
           </Route>
         </Route>

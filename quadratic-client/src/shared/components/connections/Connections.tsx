@@ -1,6 +1,6 @@
-import { CreateConnectionAction, DeleteConnectionAction } from '@/routes/_api.connections';
+import { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/_api.connections';
 import { ConnectionState } from '@/routes/teams.$teamUuid.connections';
-import { ConnectionForm } from '@/shared/components/connections/ConnectionForm';
+import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
@@ -30,7 +30,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   // Modify our list of connections based on optimistic
   const fetchers = useFetchers();
 
-  // New connection being created?
+  // Connection created? Add it to the list of connections
   const newConnectionFetcher = fetchers.find(
     (fetcher) => isJsonObject(fetcher.json) && fetcher.json.action === 'create-connection' && fetcher.state !== 'idle'
   );
@@ -50,7 +50,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     connections = connections === null ? [newItem] : [newItem, ...connections];
   }
 
-  // Remove any connections that are being deleted
+  // Connection deleted? Remove it from the list
   const connectionUuidsBeingDeleted = fetchers
     .filter(
       (fetcher) => isJsonObject(fetcher.json) && fetcher.json.action === 'delete-connection' && fetcher.state !== 'idle'
@@ -60,7 +60,24 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     connections = connections.filter((c) => !connectionUuidsBeingDeleted.includes(c.uuid));
   }
 
-  // TODO: (connections) update the meta info for any in-flight edit
+  // Connection updated? Update the meta info that will show up in the list
+  const connectionsBeingEdited = fetchers.filter(
+    (fetcher) => isJsonObject(fetcher.json) && fetcher.json.action === 'update-connection' && fetcher.state !== 'idle'
+  );
+  if (connectionsBeingEdited.length) {
+    connections = connections.map((connection) => {
+      const fetcherMatch = connectionsBeingEdited.find(
+        (fetcher) => (fetcher.json as UpdateConnectionAction).connectionUuid === connection.uuid
+      );
+      if (fetcherMatch) {
+        const {
+          body: { name },
+        } = fetcherMatch.json as UpdateConnectionAction;
+        return { ...connection, disabled: true, name };
+      }
+      return connection;
+    });
+  }
 
   const handleNavigateToListView = () => setState((prev) => ({ ...prev, view: { name: 'LIST' } }));
   const handleNavigateToCreateView = (type: ConnectionType) =>
@@ -68,22 +85,15 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   const handleNavigateToEditView = (connectionUuid: string) =>
     setState((prev) => ({ ...prev, view: { name: 'EDIT', connectionUuid } }));
 
-  let initialData =
-    // @ts-expect-error
-    state.view.name === 'EDIT' ? connections?.find((c) => c.uuid === state.view.connectionUuid) : undefined;
-
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">Connetions let you pull outside data into your spreadsheets</p>
+    <div className="flex flex-col gap-2">
       {state.view.name === 'CREATE' && (
-        <ConnectionForm type={state.view.type} handleNavigateToListView={handleNavigateToListView} />
+        <ConnectionFormCreate type={state.view.type} handleNavigateToListView={handleNavigateToListView} />
       )}
       {state.view.name === 'EDIT' && (
-        <ConnectionForm
+        <ConnectionFormEdit
           // @ts-expect-error
-          type={initialData?.type}
-          connectionUuid={state.view.connectionUuid}
-          initialData={initialData}
+          connection={connections?.find((c) => c.uuid === state.view.connectionUuid)}
           handleNavigateToListView={handleNavigateToListView}
         />
       )}

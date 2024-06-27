@@ -12,8 +12,8 @@ export type ConnectionState = {
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const { teamUuid } = params;
   if (!teamUuid) throw new Error('No team UUID provided');
-  // TODO: refine types here so it knows typeDetails is required
-  const connections = await apiClient.connections.list(teamUuid, true);
+  // TODO: (connections) refine types here so it knows typeDetails is required
+  const connections = await apiClient.connections.list({ teamUuid });
   return { connections, teamUuid };
 };
 
@@ -28,7 +28,6 @@ export const useConnectionsState = () => {
 
 export const Component = () => {
   const { connections, teamUuid } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
-
   const [state, setState] = useConnectionsState();
 
   return (
@@ -37,17 +36,17 @@ export const Component = () => {
         title="Team connections"
         // titleNode={
         //   <DashboardHeaderTitle>
-        //     {state.mode === 'VIEW' ? (
+        //     {state.view.name === 'LIST' ? (
         //       'Team connections'
         //     ) : (
         //       <span className="flex items-center gap-1">
         //         <button
         //           className="text-primary underline"
         //           onClick={() =>
-        //             setState({
-        //               mode: 'VIEW',
-        //               modeId: '',
-        //             })
+        //             setState((prev) => ({
+        //               ...prev,
+        //               view: { name: 'LIST' },
+        //             }))
         //           }
         //         >
         //           Team connections

@@ -301,11 +301,18 @@ export const apiClient = {
   },
 
   connections: {
-    async list(teamUuid: string, includeDetails = false) {
+    async list(args: { teamUuid: string } | { fileUuid: string }) {
+      if ('teamUuid' in args) {
+        return fetchFromApi(
+          `/v0/connections?team-uuid=${args.teamUuid}`,
+          { method: 'GET' },
+          ApiSchemas['/v0/connections?team-uuid.GET.response']
+        );
+      }
       return fetchFromApi(
-        `/v0/connections?team-uuid=${teamUuid}${includeDetails ? '&include-details=true' : ''}`,
+        `/v0/connections?file-uuid=${args.fileUuid}`,
         { method: 'GET' },
-        ApiSchemas['/v0/connections.GET.response']
+        ApiSchemas['/v0/connections?file-uuid.GET.response']
       );
     },
     async get(uuid: string) {
@@ -343,38 +350,6 @@ export const apiClient = {
       `/v0/feedback`,
       { method: 'POST', body: JSON.stringify(body) },
       ApiSchemas['/v0/feedback.POST.response']
-    );
-  },
-
-  async getSupportedConnections() {
-    return fetchFromApi<ApiTypes['/v0/connections/supported.GET.response']>(
-      `/v0/connections/supported`,
-      { method: 'GET' },
-      ApiSchemas['/v0/connections/supported.GET.response']
-    );
-  },
-
-  async getConnections() {
-    return fetchFromApi<ApiTypes['/v0/connections.GET.response']>(
-      `/v0/connections/`,
-      { method: 'GET' },
-      ApiSchemas['/v0/connections.GET.response']
-    );
-  },
-
-  async createConnection(body: ApiTypes['/v0/connections.POST.request']) {
-    return fetchFromApi(
-      `/v0/connections`,
-      { method: 'POST', body: JSON.stringify(body) },
-      ApiSchemas['/v0/connections.POST.response']
-    );
-  },
-
-  async runConnection(uuid: string, body: ApiTypes['/v0/connections/:uuid/run.POST.request']) {
-    return fetchFromApi(
-      `/v0/connections/${uuid}/run`,
-      { method: 'POST', body: JSON.stringify(body) },
-      ApiSchemas['/v0/connections.POST.response']
     );
   },
 

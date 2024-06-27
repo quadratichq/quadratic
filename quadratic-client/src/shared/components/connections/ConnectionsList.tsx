@@ -27,68 +27,71 @@ export const ConnectionsList = ({
   const [filterQuery, setFilterQuery] = useState<string>('');
 
   return (
-    <div className="grid gap-6">
-      <div className="grid grid-cols-2 gap-6">
-        {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
-          <Button
-            key={type}
-            variant="outline"
-            className="group relative h-auto w-full"
-            onClick={() => {
-              handleNavigateToCreateView(type as ConnectionType);
-            }}
-          >
-            <PlusIcon className="absolute bottom-2 right-2 opacity-30 group-hover:opacity-100" />
-            <Logo className="h-[40px] w-[160px]" />
-          </Button>
-        ))}
-      </div>
-
-      {connectionsAreLoading && (
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-[20px] w-full rounded" />
-          <Skeleton className="h-[20px] w-full rounded" />
+    <>
+      {/* <p className="text-sm text-muted-foreground">Connetions let you pull outside data into your spreadsheets</p> */}
+      <div className="grid gap-4">
+        <div className="grid grid-cols-2 gap-4">
+          {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
+            <Button
+              key={type}
+              variant="outline"
+              className="group relative h-auto w-full"
+              onClick={() => {
+                handleNavigateToCreateView(type as ConnectionType);
+              }}
+            >
+              <PlusIcon className="absolute bottom-2 right-2 opacity-30 group-hover:opacity-100" />
+              <Logo className="h-[40px] w-[160px]" />
+            </Button>
+          ))}
         </div>
-      )}
 
-      {!connectionsAreLoading && connections.length > 0 && (
-        <>
-          <form
-            className="grid gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
-          >
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search connections"
-                className="pl-8"
-                value={filterQuery}
-                onChange={(e) => setFilterQuery(e.target.value)}
-                autoFocus
-              />
-              {filterQuery.length > 0 && (
-                <Button
-                  type="button"
-                  variant="link"
-                  aria-label="Clear"
-                  onClick={() => setFilterQuery('')}
-                  className="group absolute right-0 top-0"
-                >
-                  <Cross2Icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
-                </Button>
-              )}
-            </div>
-          </form>
-          <ListItems
-            filterQuery={filterQuery}
-            items={connections}
-            handleNavigateToEditView={handleNavigateToEditView}
-          />
-        </>
-      )}
-    </div>
+        {connectionsAreLoading && (
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-[20px] w-full rounded" />
+            <Skeleton className="h-[20px] w-full rounded" />
+          </div>
+        )}
+
+        {!connectionsAreLoading && connections.length > 0 && (
+          <>
+            <form
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+              }}
+            >
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search connections"
+                  className="pl-8"
+                  value={filterQuery}
+                  onChange={(e) => setFilterQuery(e.target.value)}
+                  autoFocus
+                />
+                {filterQuery.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    aria-label="Clear"
+                    onClick={() => setFilterQuery('')}
+                    className="group absolute right-0 top-0"
+                  >
+                    <Cross2Icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                  </Button>
+                )}
+              </div>
+            </form>
+            <ListItems
+              filterQuery={filterQuery}
+              items={connections}
+              handleNavigateToEditView={handleNavigateToEditView}
+            />
+          </>
+        )}
+      </div>
+    </>
   );
 };
 
@@ -107,7 +110,7 @@ function ListItems({
 
   return filteredItems.length > 0 ? (
     <div className="-mt-4">
-      {filteredItems.map(({ uuid, name, type, updatedDate, disabled }, i) => (
+      {filteredItems.map(({ uuid, name, type, createdDate, disabled }, i) => (
         <button
           onClick={() => {
             handleNavigateToEditView(uuid);
@@ -125,8 +128,8 @@ function ListItems({
           </div>
           <div className="flex flex-grow items-center justify-between">
             <span className="text-sm">{name}</span>
-            <time dateTime={updatedDate} className="text-xs text-muted-foreground">
-              Updated {timeAgo(updatedDate)}
+            <time dateTime={createdDate} className="text-xs text-muted-foreground">
+              Created {timeAgo(createdDate)}
             </time>
           </div>
         </button>

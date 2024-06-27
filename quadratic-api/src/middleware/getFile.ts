@@ -38,6 +38,8 @@ export async function getFile<T extends number | undefined>({ uuid, userId }: { 
     throw new ApiError(410, 'File has been deleted');
   }
 
+  // TODO: (connections) what if the team has been archived?
+
   // FYI: the included relational data is not always filtered on the `where`
   // clause because `userId` is possibly `undefined`
   const teamRole =

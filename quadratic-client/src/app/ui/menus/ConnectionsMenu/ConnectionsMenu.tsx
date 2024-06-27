@@ -19,7 +19,6 @@ export function ConnectionsMenu() {
 
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data === undefined) {
-      console.log('fired!', fetcher);
       fetcher.load(ROUTES.API.CONNECTIONS(teamUuid));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

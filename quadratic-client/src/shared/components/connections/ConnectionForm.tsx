@@ -1,31 +1,42 @@
-// import { ConnectionFormMysql } from '@/app/ui/connections/ConnectionFormMysql';
-import { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { Connection, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionFormTypeMysql } from './ConnectionFormTypeMysql';
 import { ConnectionFormTypePostgres } from './ConnectionFormTypePostgres';
 
-type Props = {
+export function ConnectionFormCreate({
+  type,
+  handleNavigateToListView,
+}: {
   type: ConnectionType;
-  initialData?: any;
   handleNavigateToListView: () => void;
-};
-
-// TODO: (connections) refine types
-export const ConnectionForm = ({ type, initialData, handleNavigateToListView }: Props) => {
-  let formProps = {
+}) {
+  let props = {
     handleNavigateToListView,
-    initialData,
   };
+  switch (type) {
+    case 'POSTGRES':
+      return <ConnectionFormTypePostgres {...props} />;
+    case 'MYSQL':
+      return <ConnectionFormTypeMysql {...props} />;
+    default:
+      // This should never happen. Log to sentry?
+      throw new Error('Unknown form type');
+  }
+}
 
-  let form = (() => {
-    switch (type) {
-      case 'POSTGRES':
-        return <ConnectionFormTypePostgres {...formProps} />;
-      // case 'MYSQL':
-      //   return <ConnectionFormMysql {...formProps} />;
-      default:
-        // This should never happen
-        return <div>Form not found</div>;
-    }
-  })();
-
-  return <>{form}</>;
-};
+export function ConnectionFormEdit({
+  connection,
+  handleNavigateToListView,
+}: {
+  connection: Connection;
+  handleNavigateToListView: () => void;
+}) {
+  switch (connection.type) {
+    case 'POSTGRES':
+      return <ConnectionFormTypePostgres connection={connection} handleNavigateToListView={handleNavigateToListView} />;
+    case 'MYSQL':
+      return <ConnectionFormTypeMysql connection={connection} handleNavigateToListView={handleNavigateToListView} />;
+    default:
+      // This should never happen. Log to sentry?
+      throw new Error('Unknown form type');
+  }
+}

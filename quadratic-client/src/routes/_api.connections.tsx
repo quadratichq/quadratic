@@ -11,7 +11,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     throw new Error('No team UUID provided');
   }
 
-  const connections = await apiClient.connections.list(teamUuid, true);
+  const connections = await apiClient.connections.list({ teamUuid });
   return connections;
 };
 
@@ -65,7 +65,7 @@ export const getCreateConnectionAction = (body: ApiTypes['/v0/connections.POST.r
   };
 };
 
-type UpdateConnectionAction = ReturnType<typeof getUpdateConnectionAction>;
+export type UpdateConnectionAction = ReturnType<typeof getUpdateConnectionAction>;
 export const getUpdateConnectionAction = (
   connectionUuid: string,
   body: ApiTypes['/v0/connections/:uuid.PUT.request']

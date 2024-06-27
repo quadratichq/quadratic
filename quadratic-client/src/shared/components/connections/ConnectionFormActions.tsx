@@ -42,50 +42,54 @@ export function ConnectionFormActions({
 
   return (
     <div className="flex flex-col gap-4 pt-4">
-      <div className="flex w-full justify-end gap-2">
-        <div className="mr-auto flex items-center gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={connectionState === 'loading'}
-            onClick={() => {
-              validateThenTest()
-                .then(async (test) => {
-                  setConnectionState('loading');
-                  const { connected, message } = await test();
-                  setConnectionError(connected === false && message ? message : '');
-                  setConnectionState(connected ? 'success' : 'error');
-                })
-                .catch(() => {
-                  // form validation failed, don't do anything
-                });
+      <div className="flex flex-col gap-1">
+        <div className="flex w-full justify-end gap-2">
+          <div className="mr-auto flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={connectionState === 'loading'}
+              onClick={() => {
+                validateThenTest()
+                  .then(async (test) => {
+                    setConnectionState('loading');
+                    const { connected, message } = await test();
+                    setConnectionError(connected === false && message ? message : '');
+                    setConnectionState(connected ? 'success' : 'error');
+                  })
+                  .catch(() => {
+                    // form validation failed, don't do anything
+                  });
 
-              // TODO: (connections) log to sentry if it fails?
-            }}
-          >
-            Test connection
-          </Button>
-          {connectionState === 'loading' && <CircularProgress style={{ width: 18, height: 18 }} />}
-          <div
-            className={cn(
-              `ml-auto flex items-center gap-1 pr-1 font-medium`,
-              (connectionState === 'idle' || connectionState === 'loading') && 'text-muted-foreground',
-              connectionState === 'success' && 'text-success',
-              connectionState === 'error' && 'text-destructive'
-            )}
-          >
-            {/* {connectionState === 'idle' && <Type>Untested</Type>} */}
-            {connectionState === 'success' && <CheckCircledIcon />}
-            {connectionState === 'error' && <ExclamationTriangleIcon />}
+                // TODO: (connections) log to sentry if it fails?
+              }}
+            >
+              Test connection
+            </Button>
+            {connectionState === 'loading' && <CircularProgress style={{ width: 18, height: 18 }} />}
+            <div
+              className={cn(
+                `ml-auto flex items-center gap-1 pr-1 font-medium`,
+                (connectionState === 'idle' || connectionState === 'loading') && 'text-muted-foreground',
+                connectionState === 'success' && 'text-success',
+                connectionState === 'error' && 'text-destructive'
+              )}
+            >
+              {/* {connectionState === 'idle' && <Type>Untested</Type>} */}
+              {connectionState === 'success' && <CheckCircledIcon />}
+              {connectionState === 'error' && <ExclamationTriangleIcon />}
+            </div>
           </div>
-        </div>
 
-        <Button variant="outline" onClick={handleNavigateToListView} type="button">
-          Cancel
-        </Button>
-        <Button type="submit">{connectionUuid ? 'Save changes' : 'Create'}</Button>
+          <Button variant="outline" onClick={handleNavigateToListView} type="button">
+            Cancel
+          </Button>
+          <Button type="submit">{connectionUuid ? 'Save changes' : 'Create'}</Button>
+        </div>
+        {connectionState === 'error' && (
+          <div className="mt-2 font-mono text-xs text-destructive">{connectionError}</div>
+        )}
       </div>
-      {connectionState === 'error' && <div className="mt-2 font-mono text-xs text-destructive">{connectionError}</div>}
 
       {connectionUuid && (
         <div className="mt-2 flex items-center justify-between gap-6 rounded border border-border p-4 text-sm">
@@ -104,7 +108,6 @@ export function ConnectionFormActions({
               if (doDelete) {
                 const data = getDeleteConnectionAction(connectionUuid);
                 submit(data, {
-                  // TODO: don't hard-code these routes
                   action: '/_api/connections',
                   method: 'POST',
                   encType: 'application/json',
@@ -121,15 +124,3 @@ export function ConnectionFormActions({
     </div>
   );
 }
-
-/*
-
-
-        
-        
-
-        <Button disabled={isSubmitting} form={CONNECTION_FORM_ID} type="submit">
-          {isEdit ? 'Save changes' : 'Create'}
-        </Button>
-
-*/

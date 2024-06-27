@@ -4,21 +4,21 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ConnectionFormPostgresSchema, ConnectionPostgres } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionFormMysqlSchema, ConnectionMysql } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
 import { z } from 'zod';
 import { ConnectionFormActions, ValidateThenTestConnection } from './ConnectionFormActions';
 
-type FormValues = z.infer<typeof ConnectionFormPostgresSchema>;
+type FormValues = z.infer<typeof ConnectionFormMysqlSchema>;
 
-export function ConnectionFormTypePostgres({
+export function ConnectionFormTypeMysql({
   handleNavigateToListView,
   connection,
 }: {
   handleNavigateToListView: () => void;
-  connection?: ConnectionPostgres;
+  connection?: ConnectionMysql;
 }) {
   const [hidePassword, setHidePassword] = useState(true);
   const submit = useSubmit();
@@ -36,15 +36,15 @@ export function ConnectionFormTypePostgres({
       }
     : {
         name: '',
-        type: 'POSTGRES',
+        type: 'MYSQL',
         host: '',
-        port: '5432',
-        database: 'postgres',
-        username: 'postgres',
+        port: '3306',
+        database: 'mysql',
+        username: 'root',
         password: '',
       };
   const form = useForm<FormValues>({
-    resolver: zodResolver(ConnectionFormPostgresSchema),
+    resolver: zodResolver(ConnectionFormMysqlSchema),
     defaultValues,
   });
 
@@ -76,7 +76,7 @@ export function ConnectionFormTypePostgres({
       form.handleSubmit(
         async (values) => {
           const { name, type, ...typeDetails } = values;
-          resolve(() => connectionClient.test.run({ type: 'postgres', typeDetails }));
+          resolve(() => connectionClient.test.run({ type: 'mysql', typeDetails }));
         },
         () => {
           reject();
