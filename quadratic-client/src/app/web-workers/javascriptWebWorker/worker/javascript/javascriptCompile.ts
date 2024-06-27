@@ -23,7 +23,7 @@ export async function javascriptFindSyntaxError(transformed: {
   imports: string;
 }): Promise<{ text: string; lineNumber?: number } | false> {
   try {
-    await esbuild.transform(`${transformed.imports};(async() => {\n${transformed.code}\n})()`, { loader: 'js' });
+    await esbuild.transform(`${transformed.imports};(async() => {;${transformed.code};})()`, { loader: 'js' });
     return false;
   } catch (e: any) {
     const error = e as esbuild.TransformFailure;
