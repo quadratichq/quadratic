@@ -38,27 +38,48 @@ export async function javascriptFindSyntaxError(transformed: {
 }
 
 // Adds line number variable, keeping track of ` to ensure we don't place line
-// number variables within multiline strings. TODO: A full JS parser would be
-// better as it would handle all cases and can be used to move the import
-// statements to the top of the code as well.
+// number variables within multiline strings.
+//
+// TODO: A full JS parser would be better as it would handle all cases and can
+// be used to move the import statements to the top of the code as well.
 export function javascriptAddLineNumberVars(transform: JavascriptTransformedCode): string {
   const imports = transform.imports.split('\n');
   const list = transform.code.split('\n');
   let multiLineCount = 0;
   let s = '';
   let add = imports.length + 1;
+  let inMultiLineComment = false;
   for (let i = 0; i < list.length; i++) {
     multiLineCount += [...list[i].matchAll(/`/g)].length;
     s += list[i];
     if (multiLineCount % 2 === 0) {
       // inserts a line break if the line includes a comment marker
       if (s.includes('//')) s += '\n';
-      s += `;${LINE_NUMBER_VAR} += ${add};\n`;
+
+      // track multi-line comments created with /* */
+      if (inMultiLineComment) {
+        if (s.includes('*/')) {
+          inMultiLineComment = false;
+        } else {
+          add++;
+          continue;
+        }
+      }
+
+      // if we're inside a multi-line comment, don't add line numbers but track it
+      if (s.includes('/*') && !s.includes('*/')) {
+        inMultiLineComment = true;
+        add++;
+        continue;
+      } else {
+        s += `;${LINE_NUMBER_VAR} += ${add};\n`;
+      }
       add = 1;
     } else {
       add++;
     }
   }
+  console.log(s);
   return s;
 }
 
