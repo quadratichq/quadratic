@@ -64,8 +64,10 @@ export class CellsMarkers extends Container {
       } else if (codeCell.language === 'Javascript') {
         child.texture = Texture.from('/images/javascript-icon.png');
         child.tint = isError ? colors.cellColorError : colors.cellColorUserJavascript;
-        child.x -= 1;
-        child.y -= 1;
+        if (isError) {
+          child.x -= 1;
+          child.y -= 1;
+        }
       }
     }
     this.markers.push({
