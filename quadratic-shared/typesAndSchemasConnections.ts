@@ -1,10 +1,5 @@
 import * as z from 'zod';
 
-const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-type Literal = z.infer<typeof literalSchema>;
-type Json = Literal | { [key: string]: Json } | Json[];
-const JsonSchema: z.ZodType<Json> = z.lazy(() => z.union([literalSchema, z.array(JsonSchema), z.record(JsonSchema)]));
-
 // Helper to turn empty string into undefined, so JSON.stringify() will remove empty values
 const transformEmptyStringToUndefined = (val: string | undefined) => (val === '' ? undefined : val);
 
