@@ -35,6 +35,11 @@ export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
 };
 
+export interface ConsoleOutput {
+  stdOut?: string;
+  stdErr?: string;
+}
+
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
@@ -48,7 +53,7 @@ export const CodeEditor = () => {
   const [codeString, setCodeString] = useState('');
 
   // code info
-  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
+  const [out, setOut] = useState<ConsoleOutput | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | undefined>(undefined);
   const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
@@ -432,11 +437,10 @@ export const CodeEditor = () => {
         >
           <Console
             consoleOutput={out}
-            editorMode={editorMode}
             editorContent={editorContent}
-            evaluationResult={evaluationResult}
             spillError={spillError}
             codeEditorPanelData={codeEditorPanelData}
+            editorInteractionState={editorInteractionState}
           />
         </div>
         <CodeEditorPanels containerRef={containerRef} codeEditorPanelData={codeEditorPanelData} />

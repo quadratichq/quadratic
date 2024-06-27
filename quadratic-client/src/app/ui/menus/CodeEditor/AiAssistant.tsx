@@ -4,6 +4,7 @@ import { colors } from '@/app/theme/colors';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { AI } from '@/app/ui/icons';
+import { ConsoleOutput } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { authClient } from '@/auth';
 import { useRootRouteLoaderData } from '@/router';
 import { apiClient } from '@/shared/api/apiClient';
@@ -18,8 +19,8 @@ import { QuadraticDocs } from './QuadraticDocs';
 // todo: fix types
 
 interface Props {
-  editorMode: EditorInteractionState['mode'];
-  evalResult?: any; // TODO(ddimaria): fix type
+  editorInteractionState: EditorInteractionState;
+  consoleOutput?: ConsoleOutput;
   editorContent: string | undefined;
   isActive: boolean;
 }
@@ -29,30 +30,22 @@ type Message = {
   content: string;
 };
 
-export const AiAssistant = ({ evalResult, editorMode, editorContent, isActive }: Props) => {
-  const evalResultObj = evalResult;
-  const stdErr = evalResultObj?.std_err;
-
-  // TODO: Improve these messages. Pass current location and more docs.
-  // store in a separate location for different cells
+export const AiAssistant = ({ consoleOutput, editorInteractionState, editorContent, isActive }: Props) => {
+  // TODO: This is only sent with the first message, we should refresh the content with each message.
   const systemMessages = [
     {
       role: 'system',
-      content:
-        'You are a helpful assistant inside of a spreadsheet application called Quadratic. The cell type is: ' +
-        editorMode,
-    },
-    {
-      role: 'system',
-      content: `here are the docs: ${QuadraticDocs}`,
-    },
-    {
-      role: 'system',
-      content: 'Currently, you are in a cell that is being edited. The code in the cell is:' + editorContent,
-    },
-    {
-      role: 'system',
-      content: 'If the code was recently run here is the std error:' + stdErr,
+      content: `
+You are a helpful assistant inside of a spreadsheet application called Quadratic. 
+Do not use any markdown syntax besides triple backticks for ${editorInteractionState.mode} code blocks.
+The cell type is ${editorInteractionState.mode}.
+The cell is located at ${editorInteractionState.selectedCell.x}, ${editorInteractionState.selectedCell.y}.
+Currently, you are in a cell that is being edited. The code in the cell is:
+\`\`\`${editorContent}\`\`\`
+If the code was recently run here is the result: 
+\`\`\`${consoleOutput}\`\`\`
+This is the documentation for Quadratic: 
+${QuadraticDocs}`,
     },
   ] as Message[];
 

@@ -1,6 +1,6 @@
 import { Coordinate } from '@/app/gridGL/types/size';
+import { ConsoleOutput as ConsoleOutputType } from '@/app/ui/menus/CodeEditor/CodeEditor';
 import { CodeEditorPanelData, PanelPosition } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
-import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { useRootRouteLoaderData } from '@/router';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -14,18 +14,17 @@ import { AiAssistant } from './AiAssistant';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from './styles';
 
 interface ConsoleProps {
-  consoleOutput?: { stdOut?: string; stdErr?: string };
-  editorMode: EditorInteractionState['mode'];
+  consoleOutput?: ConsoleOutputType;
   editorContent: string | undefined;
-  evaluationResult?: EvaluationResult;
   spillError?: Coordinate[];
   codeEditorPanelData: CodeEditorPanelData;
+  editorInteractionState: EditorInteractionState;
 }
 
 type Tab = 'console' | 'ai-assistant';
 
 export function Console(props: ConsoleProps) {
-  const { consoleOutput, editorMode, editorContent, evaluationResult, spillError, codeEditorPanelData } = props;
+  const { consoleOutput, editorInteractionState, editorContent, spillError, codeEditorPanelData } = props;
   const { isAuthenticated } = useRootRouteLoaderData();
   const hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   const [tab, setTab] = useState<Tab>('console');
@@ -99,9 +98,8 @@ export function Console(props: ConsoleProps) {
 
           {isAuthenticated ? (
             <AiAssistant
-              // todo: fix this
-              evalResult={evaluationResult}
-              editorMode={editorMode}
+              consoleOutput={consoleOutput}
+              editorInteractionState={editorInteractionState}
               editorContent={editorContent}
               isActive={tab === 'ai-assistant'}
             />
@@ -137,13 +135,7 @@ export function Console(props: ConsoleProps) {
   );
 }
 
-export function ConsoleOutput({
-  consoleOutput,
-  editorMode,
-  editorContent,
-  evaluationResult,
-  spillError,
-}: ConsoleProps) {
+export function ConsoleOutput({ consoleOutput, editorInteractionState, editorContent, spillError }: ConsoleProps) {
   let hasOutput = Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError);
   return (
     <div
@@ -188,8 +180,8 @@ export function ConsoleOutput({
         </>
       ) : (
         <div className="mt-1" style={{ ...codeEditorCommentStyles }}>
-          {editorMode === 'Python' && <>Print statements, standard out, and errors will show here.</>}
-          {editorMode === 'Javascript' && <>Console output and errors will show here.</>}
+          {editorInteractionState.mode === 'Python' && <>Print statements, standard out, and errors will show here.</>}
+          {editorInteractionState.mode === 'Javascript' && <>Console output and errors will show here.</>}
         </div>
       )}
     </div>
