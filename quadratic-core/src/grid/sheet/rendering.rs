@@ -84,6 +84,19 @@ impl Sheet {
                     JsRenderCellSpecial::False
                 }),
             };
+        } else if let CellValue::Image(_) = value {
+            return JsRenderCell {
+                x,
+                y,
+                value: "".to_string(),
+                language,
+                align: None,
+                wrap: None,
+                bold: None,
+                italic: None,
+                text_color: None,
+                special: Some(JsRenderCellSpecial::Chart),
+            };
         }
 
         match column {
@@ -454,6 +467,34 @@ impl Sheet {
             vertical: get_render_vertical_borders(self),
         }
     }
+
+    /// Send images in this sheet to the client. Note: we only have images
+    /// inside CodeRuns. We may open this up in the future to allow images to be
+    /// placed directly on the grid without a CodeRun. In that case, we'll need
+    /// to search the columns for images as well.
+    pub fn send_all_images(&self) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        self.code_runs.iter().for_each(|(pos, run)| {
+            if let Some(CellValue::Image(image)) = run.cell_value_at(0, 0) {
+                let (w, h) = if let Some(render_size) = self.render_size(*pos) {
+                    (Some(render_size.w), Some(render_size.h))
+                } else {
+                    (None, None)
+                };
+                crate::wasm_bindings::js::jsSendImage(
+                    self.id.to_string(),
+                    pos.x as i32,
+                    pos.y as i32,
+                    Some(image),
+                    w,
+                    h,
+                );
+            }
+        });
+    }
 }
 
 #[cfg(test)]
@@ -473,7 +514,7 @@ mod tests {
             Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
         },
         selection::Selection,
-        wasm_bindings::js::{expect_js_call, hash_test},
+        wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
         CellValue, CodeCellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, Value,
     };
 
@@ -888,6 +929,47 @@ mod tests {
 
     #[serial]
     #[test]
+    fn render_images() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        // ensure nothing is sent when no images are in the sheet
+        let sheet = gc.sheet(sheet_id);
+        sheet.send_all_images();
+        expect_js_call_count("jsSendImage", 0, false);
+
+        // add an image to a code run and then send it to the client
+        let sheet = gc.sheet_mut(sheet_id);
+        let pos = (0, 0).into();
+        let image = "image".to_string();
+        let code = CellValue::Image(image.clone());
+        let run = CodeRun {
+            std_out: None,
+            std_err: None,
+            formatted_code_string: None,
+            last_modified: Utc::now(),
+            cells_accessed: HashSet::new(),
+            result: CodeRunResult::Ok(Value::Single(CellValue::Image(image.clone()))),
+            return_type: Some("image".into()),
+            spill_error: false,
+            line_number: None,
+            output_type: None,
+        };
+        sheet.set_code_run(pos, Some(run));
+        sheet.set_cell_value(pos, code);
+        sheet.send_all_images();
+        expect_js_call(
+            "jsSendImage",
+            format!(
+                "{},{},{},{:?},{:?},{:?}",
+                sheet_id, pos.x as u32, pos.y as u32, true, None::<String>, None::<String>
+            ),
+            true,
+        );
+    }
+
+    #[test]
+    #[serial]
     fn render_bool_on_code_run() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];

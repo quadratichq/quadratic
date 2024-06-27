@@ -1,10 +1,11 @@
 import { events } from '@/app/events/events';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import mixpanel from 'mixpanel-browser';
 import { quadraticCore } from '../quadraticCore/quadraticCore';
-import { ClientPythonMessage, PythonClientMessage, PythonStateType } from './pythonClientMessages';
+import { ClientPythonMessage, PythonClientMessage } from './pythonClientMessages';
 
 class PythonWebWorker {
-  state: PythonStateType = 'loading';
+  state: LanguageState = 'loading';
 
   private worker?: Worker;
 
@@ -43,7 +44,7 @@ class PythonWebWorker {
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);
   }
 
-  cancelExecution() {
+  cancelExecution = () => {
     mixpanel.track('[PythonWebWorker].restartFromUser');
 
     if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
@@ -51,7 +52,7 @@ class PythonWebWorker {
     quadraticCore.sendCancelExecution('Python');
     this.init();
     events.emit('pythonState', 'loading');
-  }
+  };
 }
 
 export const pythonWebWorker = new PythonWebWorker();

@@ -2,6 +2,7 @@ use super::*;
 
 #[wasm_bindgen]
 impl GridController {
+    /// Called after a external calculation is complete.
     #[wasm_bindgen(js_name = "calculationComplete")]
     pub fn js_calculation_complete(&mut self, result: String) {
         if let Ok(result) = serde_json::from_str(&result) {
@@ -19,12 +20,19 @@ impl GridController {
         x: i32,
         y: i32,
         w: i32,
-        h: i32,
+        h: Option<i32>,
         sheet_name: Option<String>,
         line_number: Option<u32>,
     ) -> Result<String, JsValue> {
-        let rect = Rect::from_numbers(x as i64, y as i64, w as i64, h as i64);
-        match self.calculation_get_cells(transaction_id, rect, sheet_name, line_number) {
+        match self.calculation_get_cells(
+            transaction_id,
+            x as i64,
+            y as i64,
+            w as i64,
+            h.map(|h| h as i64),
+            sheet_name,
+            line_number,
+        ) {
             Ok(get_cells) => match serde_json::to_string(&get_cells) {
                 Ok(json) => Ok(json),
                 Err(_) => {

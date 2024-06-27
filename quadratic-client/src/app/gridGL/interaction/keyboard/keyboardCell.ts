@@ -41,6 +41,7 @@ export async function keyboardCell(options: {
 
   if (event.key === 'Tab') {
     // move single cursor one right
+    event.preventDefault();
     const delta = event.shiftKey ? -1 : 1;
     cursor.changePosition({
       keyboardMovePosition: {
@@ -52,11 +53,11 @@ export async function keyboardCell(options: {
         y: cursorPosition.y,
       },
     });
-    event.preventDefault();
   }
 
   if (event.key === 'Enter') {
     if (!inlineEditorHandler.isEditingFormula()) {
+      event.preventDefault();
       const column = cursorPosition.x;
       const row = cursorPosition.y;
       const code = await quadraticCore.getCodeCell(sheets.sheet.id, column, row);
@@ -66,7 +67,6 @@ export async function keyboardCell(options: {
         const cell = await quadraticCore.getEditCell(sheets.sheet.id, column, row);
         doubleClickCell({ column, row, cell });
       }
-      event.preventDefault();
     }
   }
 
@@ -101,6 +101,7 @@ export async function keyboardCell(options: {
     const y = cursorPosition.y;
     const cell = await quadraticCore.getRenderCell(sheets.sheet.id, x, y);
     if (cell?.language) {
+      event.preventDefault();
       if (editorInteractionState.showCodeEditor) {
         // Open code editor, or move change editor if already open.
         setEditorInteractionState({
@@ -148,10 +149,10 @@ export async function keyboardCell(options: {
         initialCode: undefined,
       });
     }
-    event.preventDefault();
   }
 
   if (isAllowedFirstChar(event.key)) {
+    event.preventDefault();
     const cursorPosition = cursor.cursorPosition;
     const code = await quadraticCore.getCodeCell(sheets.sheet.id, cursorPosition.x, cursorPosition.y);
 
@@ -161,7 +162,6 @@ export async function keyboardCell(options: {
     } else {
       pixiAppSettings.changeInput(true, event.key);
     }
-    event.preventDefault();
   }
 
   return false;

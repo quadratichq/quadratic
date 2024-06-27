@@ -127,6 +127,8 @@ export class CellsArray extends Container {
       tint = colors.cellColorUserPython;
     } else if (codeCell.language === 'Formula') {
       tint = colors.cellColorUserFormula;
+    } else if (codeCell.language === 'Javascript') {
+      tint = colors.cellColorUserJavascript;
     }
 
     if (!pixiAppSettings.showCellTypeOutlines) {
@@ -249,4 +251,8 @@ export class CellsArray extends Container {
   private getSprite = (): Sprite => {
     return this.particles.addChild(new Sprite(Texture.WHITE));
   };
+
+  isCodeCell(x: number, y: number): boolean {
+    return this.codeCells.has(this.key(x, y));
+  }
 }
