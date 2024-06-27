@@ -37,7 +37,7 @@ export const AiAssistant = ({ consoleOutput, editorInteractionState, editorConte
       role: 'system',
       content: `
 You are a helpful assistant inside of a spreadsheet application called Quadratic. 
-Do not use any markdown syntax besides triple backticks for ${editorInteractionState.mode} code blocks.
+Do not use any markdown syntax besides triple backticks for ${editorInteractionState.mode} code blocks. Do not reply with plain text code blocks.
 The cell type is ${editorInteractionState.mode}.
 The cell is located at ${editorInteractionState.selectedCell.x}, ${editorInteractionState.selectedCell.y}.
 Currently, you are in a cell that is being edited. The code in the cell is:
