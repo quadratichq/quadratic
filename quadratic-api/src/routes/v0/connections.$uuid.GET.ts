@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Response } from 'express';
 import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
