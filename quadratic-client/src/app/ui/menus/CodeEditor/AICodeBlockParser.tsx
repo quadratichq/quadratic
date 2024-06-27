@@ -23,5 +23,9 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
 }
 
 export function CodeBlockParser({ input }: { input: string }): JSX.Element {
-  return <Stack gap={2}>{parseCodeBlocks(input)}</Stack>;
+  return (
+    <Stack gap={2} className="select-text">
+      {parseCodeBlocks(input)}
+    </Stack>
+  );
 }

@@ -5,13 +5,13 @@ import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebW
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '../../helpers/zoom';
 import { pixiApp } from '../../pixiApp/PixiApp';
 
-export async function keyboardViewport(options: {
+export function keyboardViewport(options: {
   event: KeyboardEvent;
   editorInteractionState: EditorInteractionState;
   setEditorInteractionState: React.Dispatch<React.SetStateAction<EditorInteractionState>>;
   presentationMode: boolean;
   setPresentationMode: Function;
-}): Promise<boolean> {
+}): boolean {
   const { event, editorInteractionState, setEditorInteractionState, presentationMode, setPresentationMode } = options;
   const { pointer } = pixiApp;
 
@@ -100,8 +100,6 @@ export async function keyboardViewport(options: {
   }
 
   if ((event.metaKey || event.ctrlKey) && event.key === 'b') {
-    event.preventDefault();
-    event.stopPropagation();
     setBold();
     return true;
   }

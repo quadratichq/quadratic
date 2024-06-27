@@ -83,12 +83,12 @@ export class PointerHeading {
     if (headingResize) {
       pixiApp.setViewportDirty();
       if (this.clicked && headingResize.column !== undefined) {
-        this.autoResizeColumn(headingResize.column);
         event.preventDefault();
+        this.autoResizeColumn(headingResize.column);
         return true;
       } else if (this.clicked && headingResize.row !== undefined) {
-        this.onDoubleClickRow(headingResize.row);
         event.preventDefault();
+        this.onDoubleClickRow(headingResize.row);
         return true;
       }
       this.viewportChanges = {
