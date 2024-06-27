@@ -205,7 +205,6 @@ export class Cursor extends Graphics {
     this.lineStyle({
       width: CURSOR_THICKNESS * 1.5,
       color,
-      alpha: CURSOR_INPUT_ALPHA,
       alignment: 1,
     });
     this.drawRect(offsets.x, offsets.y, offsets.width, offsets.height);
