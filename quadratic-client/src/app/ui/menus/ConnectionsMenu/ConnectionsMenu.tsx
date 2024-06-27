@@ -2,7 +2,6 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { useFileRouteLoaderData } from '@/routes/file.$uuid';
 import { useConnectionsState } from '@/routes/teams.$teamUuid.connections';
 import { Connections } from '@/shared/components/connections/Connections';
-import { ROUTES } from '@/shared/constants/routes';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/shadcn/ui/dialog';
 import { useEffect } from 'react';
 import { useFetcher } from 'react-router-dom';
@@ -19,7 +18,7 @@ export function ConnectionsMenu() {
 
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data === undefined) {
-      fetcher.load(ROUTES.API.CONNECTIONS(teamUuid));
+      fetcher.load(`/_api/connections?team-uuid=${teamUuid}`);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
