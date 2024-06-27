@@ -404,7 +404,9 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use crate::CodeCellValue;
+    use serial_test::serial;
+
+    use crate::{wasm_bindings::js::expect_js_call_count, CodeCellValue};
 
     use super::*;
 
@@ -499,5 +501,37 @@ mod test {
         // assert_eq!(summary.code_cells_modified.len(), 1);
         // assert!(summary.code_cells_modified.contains(&sheet_id));
         // assert!(summary.generate_thumbnail);
+    }
+
+    #[test]
+    #[serial]
+    fn code_run_image() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos.into(),
+            CodeCellLanguage::Javascript,
+            "code".to_string(),
+            None,
+        );
+        let transaction = gc.last_transaction().unwrap();
+        let result = JsCodeResult {
+            transaction_id: transaction.id.to_string(),
+            success: true,
+            std_out: None,
+            std_err: None,
+            line_number: None,
+            output_value: Some(vec!["test".into(), "image".into()]),
+            output_array: None,
+            output_display_type: None,
+            cancel_compute: None,
+        };
+        gc.calculation_complete(result).unwrap();
+        expect_js_call_count("jsSendImage", 1, true);
     }
 }
