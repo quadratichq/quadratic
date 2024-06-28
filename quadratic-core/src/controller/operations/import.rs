@@ -205,7 +205,7 @@ impl GridController {
                 .worksheet_formula(&sheet_name)
                 .map_err(|e: XlsxError| error(e.to_string()))?;
             let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
-            let mut formula_compute_ops = vec![] as Vec<Operation>;
+            let mut formula_compute_ops = vec![];
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {

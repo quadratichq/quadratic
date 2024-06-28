@@ -93,7 +93,7 @@ export class CellsArray extends Container {
             });
           }
         } catch (error) {
-          console.warn('[CellsArray] Error parsing codeCell.evaluation_result', error);
+          console.error('[CellsArray] Error parsing codeCell.evaluation_result', error);
         }
       }
     }
