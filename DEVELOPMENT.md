@@ -50,9 +50,11 @@ Auth0 creds need to be updated in: API, Client, Multiplayer, and Connections.
 
 ## Start Docker
 
-`docker compose --profile base up`
-
-`docker compose --profile base up -d` to run as a daemon
+Keep this running in a tab
+`docker compose --profile base up`  
+or
+`docker compose --profile base up -d` 
+to run as a daemon
 
 ## Start Quadratic Dev
 
