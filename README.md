@@ -49,7 +49,7 @@ _Quadratic is in Beta._
 - [x] Multiplayer Support
 - [x] Charts and Graphs
 - [x] Teams support
-- [ ] JS support
+- [x] JS support
 - [ ] SQL Database Support
 - [ ] AI Auto Complete
 
