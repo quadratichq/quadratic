@@ -23,7 +23,7 @@ Read the documentation ⟶ <https://docs.quadratichq.com>
 
 # What is Quadratic?
 
-Quadratic is a Web-based spreadsheet application for technical users.
+Quadratic is a web-based spreadsheet application for technical users.
 
 Our goal is to build a spreadsheet that enables you to pull your data from its source (SaaS, database, CSV, API, etc) and then work with that data using any popular programming language (Python, SQL, JS, Formulas, etc).
 
@@ -42,18 +42,18 @@ _Quadratic is in Beta._
 
 - [x] WebGL grid (pinch and zoom grid)
 - [x] Python, Pandas support (WASM)
-- [x] Excel Import and Formula Support
+- [x] Excel import and Formula Support
 - [x] Multiplayer support
 - [x] Charts and graphs
 - [x] Teams support
 - [x] JavaScript support
 - [ ] SQL database support
-- [ ] Datawarehouse support (Snowflake, DataBricks, etc)
-- [ ] Self host on your infrastructure
+- [ ] Data warehouse support (Snowflake, DataBricks, etc)
+- [ ] Self-host on your infrastructure
 
 **Feature request or bug report?** Submit a [Github Issue](https://github.com/quadratichq/quadratic/issues/new/choose/).
 
-**Want to contribute?** Read our [Contribution Guide](./CONTRIBUTING.md).
+**Want to contribute?** Read our [Contributing Guide](./CONTRIBUTING.md).
 
 Want to learn more about how Quadratic works? Read the [How Quadratic Works](./docs/how_quadratic_works.md) doc.
 
