@@ -3,6 +3,7 @@ import * as amplitude from '@amplitude/analytics-browser';
 import { User as Auth0User } from '@auth0/auth0-spa-js';
 import { setUser } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { isDesktop } from 'react-device-detect';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
@@ -14,44 +15,23 @@ export function googleAnalyticsAvailable(): boolean {
 
 // This runs in the root loader, so analytics calls can run inside loaders.
 export function initializeAnalytics(user: User) {
-  loadGoogleAnalytics(user);
+  triggerGTagConversion(user);
   initAmplitudeAnalytics(user);
   initMixpanelAnalytics(user);
   configureSentry(user);
 }
 
-function loadGoogleAnalytics(user: User) {
+function triggerGTagConversion(user: User) {
   if (!googleAnalyticsAvailable()) return;
-  const email = user?.email || '';
 
-  // set up Google Analytics
-  const script_1 = document.createElement('script');
-  script_1.src = `https://www.googletagmanager.com/gtag/js?id=${import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG}`;
-  script_1.async = true;
+  // This is a conversion event for desktop signups.
 
-  const script_2 = document.createElement('script');
-  script_2.innerText = `
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){
-          dataLayer.push(arguments);
-          const email = '${email}';
-          if (email) {
-            dataLayer.push({
-              'event': 'Pageview',
-              'userData': {
-                'email': email
-              }
-            });
-          }
-        }
-        gtag('js', new Date());
-        gtag('config', '${import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG}');
-      `;
-
-  // add google analytics scripts to document
-  if (typeof window !== 'undefined') {
-    document.head.appendChild(script_1);
-    document.head.appendChild(script_2);
+  if (isDesktop) {
+    //@ts-expect-error
+    gtag('event', 'conversion', {
+      send_to: import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG,
+      email: user?.email,
+    });
 
     if (debugShow) console.log('[Analytics] Google activated');
   }
