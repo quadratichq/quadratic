@@ -15,10 +15,13 @@ export function CodeEditorPanel(props: Props) {
   const { codeEditorPanelData } = props;
   const { panelPosition, setPanelPosition } = codeEditorPanelData;
 
-  const changePanelPosition = useCallback((e: MouseEvent<HTMLButtonElement>) => {
-    setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
-    e.currentTarget.blur();
-  }, [setPanelPosition]);
+  const changePanelPosition = useCallback(
+    (e: MouseEvent<HTMLButtonElement>) => {
+      setPanelPosition((prev: PanelPosition) => (prev === 'left' ? 'bottom' : 'left'));
+      e.currentTarget.blur();
+    },
+    [setPanelPosition]
+  );
 
   return (
     <>

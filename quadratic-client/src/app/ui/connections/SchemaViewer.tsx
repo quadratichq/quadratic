@@ -63,7 +63,7 @@ export const SchemaViewer = (props: Props) => {
 
   return (
     <>
-      <div style={{ position: 'absolute', top: bottom ? '3rem' : 8, right: 8, zIndex: 100 }}>
+      <div style={{ position: 'absolute', top: bottom ? '3rem' : 3, right: 8, zIndex: 100 }}>
         <div>
           <TooltipHint title="Refresh schema">
             <IconButton size="small" onClick={fetchData}>
