@@ -256,13 +256,9 @@ mod tests {
             // all code cells should have valid function names,
             // valid functions may not be implemented yet
             let code_run = sheet.code_run(pos).unwrap();
-            if code_run.std_err.is_some() {
-                match &code_run.result {
-                    CodeRunResult::Err(error) => match &error.msg {
-                        RunErrorMsg::BadFunctionName => panic!("expected valid function name"),
-                        _ => (),
-                    },
-                    _ => (),
+            if let CodeRunResult::Err(error) = &code_run.result {
+                if error.msg == RunErrorMsg::BadFunctionName {
+                    panic!("expected valid function name")
                 }
             }
         }
