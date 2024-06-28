@@ -297,7 +297,7 @@ mod tests {
     use crate::{
         controller::{transaction_types::JsCodeResult, GridController},
         grid::{CodeCellLanguage, Sheet},
-        CellValue, CodeCellValue, Pos, Rect, SheetPos,
+        CellValue, CodeCellValue, Pos, SheetPos,
     };
     use bigdecimal::BigDecimal;
     use uuid::Uuid;
@@ -912,14 +912,9 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        gc.calculation_get_cells(
-            transaction_id.to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        )
-        .ok()
-        .unwrap();
+        gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None)
+            .ok()
+            .unwrap();
 
         let result = gc.calculation_complete(JsCodeResult::new(
             transaction_id.to_string(),
@@ -953,12 +948,7 @@ mod tests {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let _ = gc
-            .calculation_get_cells(
-                transaction_id.to_string(),
-                Rect::from_numbers(0, 1, 1, 1),
-                None,
-                None,
-            )
+            .calculation_get_cells(transaction_id.to_string(), 0, 1, 1, Some(1), None, None)
             .ok()
             .unwrap();
 

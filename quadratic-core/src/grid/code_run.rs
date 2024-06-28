@@ -79,6 +79,14 @@ impl CodeRun {
         }
     }
 
+    pub fn is_image(&self) -> bool {
+        if let Some(code_cell_value) = self.cell_value_at(0, 0) {
+            code_cell_value.is_image()
+        } else {
+            false
+        }
+    }
+
     /// returns a SheetRect for the output size of a code cell (defaults to 1x1)
     /// Note: this returns a 1x1 if there is a spill_error.
     pub fn output_sheet_rect(&self, sheet_pos: SheetPos, ignore_spill: bool) -> SheetRect {
@@ -113,7 +121,7 @@ impl CodeRun {
 pub enum CodeCellLanguage {
     Python,
     Formula,
-    // JavaScript,
+    Javascript,
     // Sql,
 }
 

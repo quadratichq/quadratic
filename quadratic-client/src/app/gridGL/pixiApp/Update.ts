@@ -84,12 +84,14 @@ export class Update {
 
     this.updateViewport();
 
-    const rendererDirty =
+    let rendererDirty =
       pixiApp.gridLines.dirty ||
       pixiApp.axesLines.dirty ||
       pixiApp.headings.dirty ||
       pixiApp.boxCells.dirty ||
       pixiApp.multiplayerCursor.dirty ||
+      pixiApp.cursor.dirty ||
+      pixiApp.cellImages.dirty ||
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
       pixiApp.cursor.dirty;
@@ -99,8 +101,9 @@ export class Update {
         `dirty: ${pixiApp.viewport.dirty ? 'viewport ' : ''}${pixiApp.gridLines.dirty ? 'gridLines ' : ''}${
           pixiApp.axesLines.dirty ? 'axesLines ' : ''
         }${pixiApp.headings.dirty ? 'headings ' : ''}${pixiApp.cursor.dirty ? 'cursor ' : ''}${
-          pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''
-        }${pixiApp.cellMoving.dirty ? 'cellMoving' : ''}`
+          pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : pixiApp.cellImages.dirty ? 'uiImageResize' : ''
+        }
+          ${pixiApp.multiplayerCursor.dirty ? 'multiplayer cursor' : ''}${pixiApp.cellMoving.dirty ? 'cellMoving' : ''}`
       );
     }
 
@@ -119,6 +122,8 @@ export class Update {
     debugTimeCheck('[Update] cellHighlights');
     pixiApp.multiplayerCursor.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] multiplayerCursor');
+    pixiApp.cellImages.update();
+    debugTimeCheck('[Update] uiImageResize');
     pixiApp.cellMoving.update();
     debugTimeCheck('[Update] cellMoving');
     pixiApp.cellsSheets.update();

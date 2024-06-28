@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
 use crate::{
-    grid::{js_types::JsRenderFill, SheetId},
+    grid::{js_types::JsRenderFill, RenderSize, SheetId},
     selection::Selection,
     wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo},
-    Pos, Rect, SheetPos, SheetRect,
+    CellValue, Pos, Rect, SheetPos, SheetRect,
 };
 
 use super::{
@@ -184,6 +184,37 @@ impl GridController {
             }
         }
     }
+
+    pub fn send_image(&self, sheet_pos: SheetPos) {
+        if cfg!(target_family = "wasm") || cfg!(test) {
+            if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+                let image = sheet.code_run(sheet_pos.into()).and_then(|code_run| {
+                    code_run
+                        .cell_value_at(0, 0)
+                        .and_then(|cell_value| match cell_value {
+                            CellValue::Image(image) => Some(image.clone()),
+                            _ => None,
+                        })
+                });
+                let (w, h) = if let Some(size) =
+                    sheet.get_formatting_value::<RenderSize>(sheet_pos.into())
+                {
+                    (Some(size.w), Some(size.h))
+                } else {
+                    (None, None)
+                };
+
+                crate::wasm_bindings::js::jsSendImage(
+                    sheet_pos.sheet_id.to_string(),
+                    sheet_pos.x as i32,
+                    sheet_pos.y as i32,
+                    image,
+                    w,
+                    h,
+                );
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -296,12 +327,12 @@ mod test {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            error_msg: None,
-            input_python_std_out: None,
+            std_err: None,
+            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            array_output: None,
+            output_array: None,
             line_number: None,
-            output_type: None,
+            output_display_type: None,
             cancel_compute: None,
         });
 
@@ -337,12 +368,12 @@ mod test {
         let _ = gc.calculation_complete(JsCodeResult {
             transaction_id,
             success: true,
-            error_msg: None,
-            input_python_std_out: None,
+            std_err: None,
+            std_out: None,
             output_value: Some(vec!["<html></html>".to_string(), "text".to_string()]),
-            array_output: None,
+            output_array: None,
             line_number: None,
-            output_type: None,
+            output_display_type: None,
             cancel_compute: None,
         });
 

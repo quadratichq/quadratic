@@ -157,23 +157,23 @@ export const QuadraticMenu = () => {
         </SubMenu>
         <SubMenu label={<MenuLineItem primary="View" />}>
           <MenuItem onClick={() => settings.setShowHeadings(!settings.showHeadings)}>
-            <MenuLineItem primary="Show row and column headings" Icon={settings.showHeadings && Check} indent />
+            <MenuLineItem primary="Show row and column headings" icon={settings.showHeadings && Check} indent />
           </MenuItem>
           <MenuItem onClick={() => settings.setShowGridAxes(!settings.showGridAxes)}>
-            <MenuLineItem primary="Show grid axis" Icon={settings.showGridAxes && Check} indent />
+            <MenuLineItem primary="Show grid axis" icon={settings.showGridAxes && Check} indent />
           </MenuItem>
           <MenuItem onClick={() => settings.setShowGridLines(!settings.showGridLines)}>
-            <MenuLineItem primary="Show grid lines" Icon={settings.showGridLines && Check} indent />
+            <MenuLineItem primary="Show grid lines" icon={settings.showGridLines && Check} indent />
           </MenuItem>
           <MenuItem onClick={() => settings.setShowCellTypeOutlines(!settings.showCellTypeOutlines)}>
-            <MenuLineItem primary="Show code cell outlines" Icon={settings.showCellTypeOutlines && Check} indent />
+            <MenuLineItem primary="Show code cell outlines" icon={settings.showCellTypeOutlines && Check} indent />
           </MenuItem>
           <MenuItem onClick={() => settings.setShowCodePeek(!settings.showCodePeek)}>
-            <MenuLineItem primary="Show code peek" Icon={settings.showCodePeek && Check} indent />
+            <MenuLineItem primary="Show code peek" icon={settings.showCodePeek && Check} indent />
           </MenuItem>
           <MenuDivider />
           <MenuItem onClick={() => settings.setPresentationMode(!settings.presentationMode)}>
-            <MenuLineItem primary="Presentation mode" Icon={settings.presentationMode && Check} indent />
+            <MenuLineItem primary="Presentation mode" icon={settings.presentationMode && Check} indent />
           </MenuItem>
           {/*
           Commented out because the editor switches this state automatically when the user
