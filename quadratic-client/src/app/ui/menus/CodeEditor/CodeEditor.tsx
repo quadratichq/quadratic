@@ -39,7 +39,6 @@ export const CodeEditor = () => {
   const mode = getLanguage(editorMode);
   const {
     consoleOutput: [out, setOut],
-    containerRef,
     spillError: [, setSpillError],
     codeString: [codeString, setCodeString],
     editorContent: [editorContent, setEditorContent],
@@ -347,7 +346,7 @@ export const CodeEditor = () => {
 
   return (
     <div
-      ref={containerRef}
+      id="code-editor-container"
       className={cn(
         'relative flex h-full bg-background',
         codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'

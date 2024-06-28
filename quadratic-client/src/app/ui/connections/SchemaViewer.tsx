@@ -2,7 +2,6 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { SqlAdd } from '@/app/ui/icons';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
@@ -33,6 +32,7 @@ interface Props {
 export const SchemaViewer = (props: Props) => {
   const { bottom } = props;
   const { mode } = useRecoilValue(editorInteractionStateAtom);
+
   const connection = getConnectionInfo(mode);
   if (!connection) throw new Error('Expected a connection cell to be open.');
   const [expandAll, setExpandAll] = useState(false);
@@ -104,22 +104,22 @@ function TableListItem({
   setExpandAll: any;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { editorRef } = useCodeEditor();
+  // const { editorRef } = useCodeEditor();
   const expanded = isExpanded || expandAll;
 
-  const onQuery = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onQuery = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
-    if (editorRef.current) {
-      const selection = editorRef.current.getSelection();
-      if (!selection) return;
-      const id = { major: 1, minor: 1 };
-      const text = `SELECT * FROM "${name}" LIMIT 100`;
-      const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
-      editorRef.current.executeEdits('my-source', [op]);
-      editorRef.current.focus();
-    }
-  };
+    // if (editorRef.current) {
+    //   const selection = editorRef.current.getSelection();
+    //   if (!selection) return;
+    //   const id = { major: 1, minor: 1 };
+    //   const text = `SELECT * FROM "${name}" LIMIT 100`;
+    //   const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
+    //   editorRef.current.executeEdits('my-source', [op]);
+    //   editorRef.current.focus();
+    // }
+  }, []);
 
   return (
     <li>

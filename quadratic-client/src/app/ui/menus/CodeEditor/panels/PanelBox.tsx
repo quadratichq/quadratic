@@ -1,4 +1,3 @@
-import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
@@ -7,25 +6,29 @@ interface Props {
   id: string;
   title: string;
   children: JSX.Element | JSX.Element[];
-  index: number;
-  codeEditorPanelData: CodeEditorPanelData;
+  open: boolean;
+  toggleOpen: () => void;
+  height: number;
 }
 
-export function PanelBox(props: Props) {
-  const { title, children, index, codeEditorPanelData, id } = props;
-  const height = codeEditorPanelData.panelHeightPercentages[index];
-  const open = !codeEditorPanelData.panelHidden[index];
-  const setOpen = () => {
-    codeEditorPanelData.setPanelHidden((prevState) => prevState.map((val, i) => (i === index ? !val : val)));
-  };
+// Calculates the height of the minimized box by creating the same element and
+// measuring its height.
+export const calculatePanelBoxMinimizedSize = () => {
+  const minimized = `<div class="px-2 pb-2 pt-2"><div class="h-9">Test</div></div>`;
+  const div = document.createElement('div');
+  div.innerHTML = minimized;
+  document.body.appendChild(div);
+  const height = div.getBoundingClientRect().height;
+  document.body.removeChild(div);
+  return height;
+};
+
+export const PanelBox = (props: Props) => {
+  const { title, children, open, toggleOpen, height, id } = props;
 
   return (
-    <div
-      id={id}
-      className={`relative flex flex-col overflow-scroll ${open ? 'h-full grow' : 'shrink'}`}
-      style={{ flexBasis: open ? `${height}%` : 'auto' }}
-    >
-      <Button variant={'ghost'} onClick={setOpen} className="p-0">
+    <div id={id} className={`relative flex flex-col overflow-scroll`} style={{ height }}>
+      <Button variant={'ghost'} onClick={toggleOpen} className="p-0">
         <div className={'flex w-full items-center px-2 pb-2 pt-2'}>
           <ChevronRightIcon
             className={cn(
@@ -39,4 +42,4 @@ export function PanelBox(props: Props) {
       <div className={cn('grow overflow-scroll', open ? 'block' : 'hidden')}>{children}</div>
     </div>
   );
-}
+};

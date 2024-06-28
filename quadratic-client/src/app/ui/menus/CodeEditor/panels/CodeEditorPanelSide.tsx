@@ -3,107 +3,152 @@ import { codeCellIsAConnection } from '@/app/helpers/codeCellLanguage';
 import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
-import { PanelBox } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
+import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { editorInteractionStateAtom } from '../../../../atoms/editorInteractionStateAtom';
-import { useCodeEditor } from '../CodeEditorContext';
 import { ResizeControl } from './ResizeControl';
-import { MIN_PANEL_HEIGHT_PERCENT } from './adjustPercentages';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
 }
 
-const MIN_PANEL_HEIGHT = 0.2;
-const MAX_PANEL_HEIGHT = 0.8;
-
 export function CodeEditorPanelSide(props: Props) {
+  const container = document.querySelector('#code-editor-container');
+  const { minimizedSize, minimizedPercent } = useMemo(() => {
+    const minimizedSize = calculatePanelBoxMinimizedSize();
+    const minimizedPercent = minimizedSize / (container ? container.getBoundingClientRect().height : 1);
+    return { minimizedSize, minimizedPercent };
+  }, [container]);
+
   const { codeEditorPanelData } = props;
-  const { containerRef } = useCodeEditor();
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const isConnection = codeCellIsAConnection(editorInteractionState.mode);
 
-  const panelHidden = codeEditorPanelData.panelHidden;
-  const firstHidden = panelHidden[0];
-  const secondHidden = panelHidden[1];
-  const thirdHidden = panelHidden[2];
+  const [containerHeight, setContainerHeight] = useState(0);
+  useEffect(() => {
+    if (container) {
+      setContainerHeight(container.getBoundingClientRect().height);
+    }
+  }, [container]);
+
+  const { panels, adjustedContainerHeight } = useMemo(() => {
+    let adjustedContainerHeight = containerHeight;
+
+    for (let i = 0; i < codeEditorPanelData.panelHidden.length; i++) {
+      if (codeEditorPanelData.panelHidden[i]) {
+        adjustedContainerHeight +=
+          (codeEditorPanelData.panelHeightPercentages[i] / 100) * containerHeight - minimizedSize;
+      }
+    }
+    return {
+      panels: codeEditorPanelData.panelHidden.map((hidden, i) => {
+        const toggleOpen = () => {
+          codeEditorPanelData.setPanelHidden((prevState) => prevState.map((val, j) => (i === j ? !val : val)));
+        };
+        let height: number;
+        if (hidden) {
+          height = minimizedSize;
+        } else {
+          height = (codeEditorPanelData.panelHeightPercentages[i] / 100) * adjustedContainerHeight;
+        }
+        return { open: !hidden, toggleOpen, height };
+      }),
+      adjustedContainerHeight,
+    };
+  }, [containerHeight, codeEditorPanelData, minimizedSize]);
+
+  const a = panels[0].height;
+  const b = panels[1].height;
+  const c = panels[2].height;
+  console.log(a, b, c, a + b + c, containerHeight, minimizedSize);
 
   // changes resize bar when dragging
   const changeResizeBar = useCallback(
     (e: MouseEvent, first: boolean) => {
-      if (!containerRef.current) return;
+      if (!container) return;
 
       e.stopPropagation();
       e.preventDefault();
 
-      const containerRect = containerRef.current.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
 
       // need to adjust the heights based on hidden content
       let containerHeight = containerRect.height;
       let clientY = e.clientY;
 
-      const panel0 = containerRef.current.querySelector('#panel-0');
-      const panel1 = containerRef.current.querySelector('#panel-1');
-      const panel2 = containerRef.current.querySelector('#panel-2');
-
       // We need to adjust the percentage based on the size of the hidden panel.
       if (first) {
-        if (panelHidden[1] && panel1) {
+        if (!panels[1].open) {
           // const collapsedHeight = panel1.getBoundingClientRect().height;
           // const expandedPercent = codeEditorPanelData.panelHeightPercentages[1] / 100;
           // containerHeight -= collapsedHeight;
           // adjustPercent = expandedPercent / 2;
           // clientY += panel1.getBoundingClientRect().height;
-        } else if (panelHidden[2] && panel2) {
-          const collapsedHeight = panel2.getBoundingClientRect().height;
-          const expandedHeight = (codeEditorPanelData.panelHeightPercentages[2] / 100) * containerHeight;
-          const expandedAreaDifference = expandedHeight - collapsedHeight;
-          console.log(expandedAreaDifference);
-          const topPercent = (clientY - containerRect.top) / containerHeight;
-          const leftOver = 1 - codeEditorPanelData.panelHeightPercentages[2] / 100;
-          let top = topPercent * leftOver;
+        } else if (!panels[2].open) {
+          const top = (clientY - containerRect.top) / adjustedContainerHeight;
           codeEditorPanelData.adjustPanelPercentage(0, top * 100);
+        } else {
+          const newValue = ((clientY - containerRect.top) / containerHeight) * 100;
+          codeEditorPanelData.adjustPanelPercentage(0, newValue);
         }
       } else {
-        if (panelHidden[0]) {
-          const panel0 = containerRef.current.querySelector('#panel-0');
-          if (panel0) {
-            clientY += panel0.getBoundingClientRect().height;
-          }
-        }
+        // if (panelHidden[0]) {
+        //   const panel0 = containerRef.current.querySelector('#panel-0');
+        //   if (panel0) {
+        //     clientY += panel0.getBoundingClientRect().height;
+        //   }
+        // }
         const newValue = (1 - (clientY - containerRect.top) / containerHeight) * 100;
         codeEditorPanelData.adjustPanelPercentage(2, newValue);
       }
     },
-    [codeEditorPanelData, containerRef, panelHidden]
+    [adjustedContainerHeight, codeEditorPanelData, container, panels]
   );
 
   return (
-    <div className="relative flex h-full flex-col">
-      <PanelBox id="panel-0" title="Console" index={0} codeEditorPanelData={codeEditorPanelData}>
+    <div className="h-full">
+      <PanelBox
+        id="panel-0"
+        title="Console"
+        open={panels[0].open}
+        toggleOpen={panels[0].toggleOpen}
+        height={panels[0].height}
+      >
         <Console />
       </PanelBox>
       <ResizeControl
         style={{ position: 'relative' }}
-        disabled={firstHidden || (secondHidden && thirdHidden)}
+        disabled={!panels[0].open || (!panels[1].open && !panels[2].open)}
         position="HORIZONTAL"
         setState={(e) => changeResizeBar(e, true)}
       />
-      <PanelBox id="panel-1" title="AI Assistant" index={1} codeEditorPanelData={codeEditorPanelData}>
+      <PanelBox
+        id="panel-1"
+        title="AI Assistant"
+        open={panels[1].open}
+        toggleOpen={panels[1].toggleOpen}
+        height={panels[1].height}
+      >
         <AiAssistant />
       </PanelBox>
-      {isConnection && (
+      {isConnection && panels.length === 3 && (
         <ResizeControl
           style={{ position: 'relative', flexShrink: 0 }}
-          disabled={secondHidden && thirdHidden}
+          disabled={!panels[1].open && !panels[2].open}
           position="HORIZONTAL"
           setState={(e) => changeResizeBar(e, false)}
         />
       )}
       {isConnection && (
-        <PanelBox id="panel-2" title="Data browser" index={2} codeEditorPanelData={codeEditorPanelData}>
+        <PanelBox
+          id="panel-2"
+          title="Data browser"
+          open={panels[2].open}
+          toggleOpen={panels[2].toggleOpen}
+          height={panels[2].height}
+        >
           <SchemaViewer />
         </PanelBox>
       )}
