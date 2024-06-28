@@ -54,9 +54,10 @@ mod tests {
     use std::io::Read;
 
     use crate::{
+        grid::{CodeCellLanguage, CodeRunResult},
         test_util::{assert_cell_value_row, print_table},
         wasm_bindings::js::clear_js_calls,
-        Rect,
+        CellValue, Rect, RunErrorMsg,
     };
 
     use super::*;
@@ -68,6 +69,8 @@ mod tests {
 
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/temperature.xlsx";
     const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/basic.xlsx";
+    const EXCEL_FUNCTIONS_FILE: &str =
+        "../quadratic-rust-shared/data/excel/all_excel_functions.xlsx";
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/financial_sample.xlsx";
     const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
     // const MEDIUM_PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/lineitem.parquet";
@@ -165,7 +168,7 @@ mod tests {
         let mut buffer = vec![0; metadata.len() as usize];
         file.read_exact(&mut buffer).expect("buffer overflow");
 
-        let _ = grid_controller.import_excel(buffer, "temperature.xlsx");
+        let _ = grid_controller.import_excel(buffer, "basic.xlsx");
         let sheet_id = grid_controller.grid.sheets()[0].id;
 
         print_table(
@@ -215,6 +218,54 @@ mod tests {
                 "Hello Red",
             ],
         );
+    }
+
+    #[test]
+    fn import_all_excel_functions() {
+        let mut grid_controller = GridController::test_blank();
+        let pos = Pos { x: 0, y: 0 };
+        let mut file = File::open(EXCEL_FUNCTIONS_FILE).unwrap();
+        let metadata = std::fs::metadata(EXCEL_FUNCTIONS_FILE).expect("unable to read metadata");
+        let mut buffer = vec![0; metadata.len() as usize];
+        file.read_exact(&mut buffer).expect("buffer overflow");
+
+        let _ = grid_controller.import_excel(buffer, "all_excel_functions.xlsx");
+        let sheet_id = grid_controller.grid.sheets()[0].id;
+
+        print_table(
+            &grid_controller,
+            sheet_id,
+            Rect::new_span(pos, Pos { x: 10, y: 10 }),
+        );
+
+        let sheet = grid_controller.grid.try_sheet(sheet_id).unwrap();
+        let (y_start, y_end) = sheet.column_bounds(0, true).unwrap();
+        assert_eq!(y_start, 1);
+        assert_eq!(y_end, 512);
+        for y in y_start..=y_end {
+            let pos = Pos { x: 0, y };
+            // all cells should be formula code cells
+            let code_cell = sheet.cell_value(pos).unwrap();
+            match &code_cell {
+                CellValue::Code(code_cell_value) => {
+                    assert_eq!(code_cell_value.language, CodeCellLanguage::Formula);
+                }
+                _ => panic!("expected code cell"),
+            }
+
+            // all code cells should have valid function names,
+            // valid functions may not be implemented yet
+            let code_run = sheet.code_run(pos).unwrap();
+            if code_run.std_err.is_some() {
+                match &code_run.result {
+                    CodeRunResult::Err(error) => match &error.msg {
+                        RunErrorMsg::BadFunctionName => panic!("expected valid function name"),
+                        _ => (),
+                    },
+                    _ => (),
+                }
+            }
+        }
     }
 
     #[test]

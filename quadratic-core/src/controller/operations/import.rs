@@ -7,7 +7,7 @@ use crate::{
     cell_values::CellValues,
     controller::GridController,
     grid::{file::sheet_schema::export_sheet, CodeCellLanguage, Sheet, SheetId},
-    CellValue, Pos, SheetPos,
+    CellValue, CodeCellValue, Pos, SheetPos,
 };
 use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
@@ -213,7 +213,7 @@ impl GridController {
                             x: insert_at.x + x as i64,
                             y: insert_at.y + y as i64,
                         };
-                        let cell_value = CellValue::Code(crate::CodeCellValue {
+                        let cell_value = CellValue::Code(CodeCellValue {
                             language: CodeCellLanguage::Formula,
                             code: cell.to_string(),
                         });
@@ -428,19 +428,22 @@ mod test {
         let sheet = gc.sheet(sheet_id);
 
         assert_eq!(
-            sheet.cell_value((0, 0).into()),
+            sheet.cell_value((0, 1).into()),
             Some(CellValue::Number(1.into()))
         );
         assert_eq!(
-            sheet.cell_value((2, 9).into()),
+            sheet.cell_value((2, 10).into()),
             Some(CellValue::Number(12.into()))
         );
-        assert_eq!(sheet.cell_value((0, 5).into()), None);
+        assert_eq!(sheet.cell_value((0, 6).into()), None);
         assert_eq!(
-            sheet.cell_value((3, 1).into()),
-            Some(CellValue::Number(3.into()))
+            sheet.cell_value((3, 2).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "C1:C5".into()
+            }))
         );
-        assert_eq!(sheet.cell_value((3, 0).into()), None);
+        assert_eq!(sheet.cell_value((3, 1).into()), None);
     }
 
     #[test]
