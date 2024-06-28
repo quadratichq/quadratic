@@ -6,7 +6,6 @@ use axum::{
     async_trait,
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
-    middleware::{self, FromExtractorLayer},
     RequestPartsExt,
 };
 use axum_extra::{
@@ -30,8 +29,19 @@ pub struct Claims {
 }
 
 /// Instance of Axum's middleware that also contains a copy of state
-pub fn get_middleware(state: State) -> FromExtractorLayer<Claims, State> {
-    middleware::from_extractor_with_state::<Claims, _>(state)
+#[cfg(not(test))]
+pub fn get_middleware(state: State) -> axum::middleware::FromExtractorLayer<Claims, State> {
+    axum::middleware::from_extractor_with_state::<Claims, _>(state)
+}
+
+// Middleware that accepts json for tests
+#[cfg(test)]
+pub fn get_middleware(
+    _state: State,
+) -> tower_http::validate_request::ValidateRequestHeaderLayer<
+    tower_http::validate_request::AcceptHeader<axum::body::Body>,
+> {
+    tower_http::validate_request::ValidateRequestHeaderLayer::accept("application/json")
 }
 
 /// Extract the claims from the request.

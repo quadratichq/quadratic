@@ -15,6 +15,7 @@ use futures::StreamExt;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 use parquet::data_type::AsBytes;
 use quadratic_rust_shared::sql::postgres_connection::PostgresConnection;
+use serde::de::DeserializeOwned;
 
 use crate::auth::Claims;
 use crate::config::config;
@@ -81,6 +82,11 @@ pub(crate) async fn response_bytes(response: Response) -> Bytes {
         .0
         .unwrap()
         .unwrap()
+}
+
+pub(crate) async fn response_json<T: DeserializeOwned>(response: Response) -> T {
+    let body = response_bytes(response).await;
+    serde_json::from_slice::<T>(&body).unwrap()
 }
 
 /// Validate a parquet response against an expected array of (DataType, Value Byte Array)

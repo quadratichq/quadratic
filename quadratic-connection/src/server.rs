@@ -74,6 +74,11 @@ impl TestResponse {
     }
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub(crate) struct StaticIpsResponse {
+    static_ips: Vec<String>,
+}
+
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
 pub(crate) fn app(state: State) -> Result<Router> {
@@ -90,6 +95,7 @@ pub(crate) fn app(state: State) -> Result<Router> {
         ])
         .expose_headers(Any);
 
+    // get the auth middleware
     let auth = get_middleware(state.clone());
 
     // Routes apply in reverse order, so placing a route before the middleware
@@ -108,6 +114,9 @@ pub(crate) fn app(state: State) -> Result<Router> {
         //
         // proxy
         .route("/proxy", any(proxy))
+        //
+        // static ips
+        .route("/static-ips", get(static_ips))
         //
         // auth middleware
         .route_layer(auth)
@@ -196,6 +205,13 @@ pub(crate) async fn healthcheck() -> impl IntoResponse {
     StatusCode::OK
 }
 
+pub(crate) async fn static_ips() -> Result<Json<StaticIpsResponse>> {
+    let static_ips = config()?.static_ips.iter().cloned().collect();
+    let response = StaticIpsResponse { static_ips };
+
+    Ok(response.into())
+}
+
 pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestResponse> {
     let message = match connection.connect().await {
         Ok(_) => None,
@@ -207,7 +223,7 @@ pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestRes
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use crate::test_util::new_state;
+    use crate::test_util::{new_state, response_json};
     use axum::{
         body::Body,
         http::{self, Request},
@@ -233,5 +249,31 @@ pub(crate) mod tests {
             .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn gets_static_ips() {
+        let state = new_state().await;
+        let app = app(state).unwrap();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method(http::Method::GET)
+                    .uri("/static-ips")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_json(response).await;
+        let expected = StaticIpsResponse {
+            static_ips: vec!["0.0.0.0".into(), "127.0.0.1".into()],
+        };
+
+        assert_eq!(expected, body);
     }
 }
