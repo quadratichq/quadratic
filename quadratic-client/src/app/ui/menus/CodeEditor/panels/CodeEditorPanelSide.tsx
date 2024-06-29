@@ -16,11 +16,10 @@ interface Props {
 
 export function CodeEditorPanelSide(props: Props) {
   const container = document.querySelector('#code-editor-container');
-  const { minimizedSize, minimizedPercent } = useMemo(() => {
+  const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
-    const minimizedPercent = minimizedSize / (container ? container.getBoundingClientRect().height : 1);
-    return { minimizedSize, minimizedPercent };
-  }, [container]);
+    return minimizedSize;
+  }, []);
 
   const { codeEditorPanelData } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
@@ -35,11 +34,9 @@ export function CodeEditorPanelSide(props: Props) {
 
   const { panels, adjustedContainerHeight } = useMemo(() => {
     let adjustedContainerHeight = containerHeight;
-
     for (let i = 0; i < codeEditorPanelData.panelHidden.length; i++) {
       if (codeEditorPanelData.panelHidden[i]) {
-        adjustedContainerHeight +=
-          (codeEditorPanelData.panelHeightPercentages[i] / 100) * containerHeight - minimizedSize;
+        adjustedContainerHeight += (codeEditorPanelData.panelHeightPercentages[i] / 100) * containerHeight;
       }
     }
     return {
@@ -62,7 +59,7 @@ export function CodeEditorPanelSide(props: Props) {
   const a = panels[0].height;
   const b = panels[1].height;
   const c = panels[2].height;
-  console.log(a, b, c, a + b + c, containerHeight, minimizedSize);
+  // console.log(a, b, c, a + b + c, containerHeight, minimizedSize);
 
   // changes resize bar when dragging
   const changeResizeBar = useCallback(
@@ -119,7 +116,7 @@ export function CodeEditorPanelSide(props: Props) {
         <Console />
       </PanelBox>
       <ResizeControl
-        style={{ position: 'relative' }}
+        style={{ top: panels[0].height }}
         disabled={!panels[0].open || (!panels[1].open && !panels[2].open)}
         position="HORIZONTAL"
         setState={(e) => changeResizeBar(e, true)}
@@ -135,7 +132,7 @@ export function CodeEditorPanelSide(props: Props) {
       </PanelBox>
       {isConnection && panels.length === 3 && (
         <ResizeControl
-          style={{ position: 'relative', flexShrink: 0 }}
+          style={{ top: panels[0].height + panels[1].height }}
           disabled={!panels[1].open && !panels[2].open}
           position="HORIZONTAL"
           setState={(e) => changeResizeBar(e, false)}
