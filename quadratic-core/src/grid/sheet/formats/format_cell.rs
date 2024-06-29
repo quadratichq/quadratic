@@ -9,6 +9,26 @@ use crate::{
 };
 
 impl Sheet {
+    // gets decimal_places for a cell, including checking sheet format
+    pub fn decimal_places(&self, x: i64, y: i64) -> Option<i16> {
+        if let Some(decimals) = self
+            .get_column(x)
+            .and_then(|column| column.numeric_decimals.get(y))
+        {
+            Some(decimals)
+        } else {
+            let column = self.try_format_column(x);
+            let row = self.try_format_row(y);
+            let sheet = self.format_all.as_ref();
+            let format = Format::combine(None, column.as_ref(), row.as_ref(), sheet);
+            if format.numeric_decimals.is_some() {
+                format.numeric_decimals
+            } else {
+                None
+            }
+        }
+    }
+
     /// Gets a format for a cell, returning Format::default if not set.
     pub fn format_cell(&self, x: i64, y: i64, include_sheet: bool) -> Format {
         let format = self.get_column(x).map(|column| Format {
@@ -25,8 +45,8 @@ impl Sheet {
             render_size: column.render_size.get(y),
         });
         if include_sheet {
-            let column = self.try_format_row(y);
-            let row = self.try_format_column(x);
+            let column = self.try_format_column(x);
+            let row = self.try_format_row(y);
             let sheet = self.format_all.as_ref();
             Format::combine(format.as_ref(), column.as_ref(), row.as_ref(), sheet)
         } else {
@@ -222,5 +242,45 @@ mod tests {
         .unwrap();
         let args = format!("{},{},{},{}", sheet.id, 0, 0, hash_test(&cells));
         expect_js_call("jsRenderCellSheets", args, true);
+    }
+
+    #[test]
+    fn decimal_places() {
+        let mut sheet = Sheet::test();
+        assert_eq!(sheet.decimal_places(0, 0), None);
+
+        sheet.set_formats_rows(
+            &[0],
+            &Formats::repeat(
+                FormatUpdate {
+                    numeric_decimals: Some(Some(3)),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        assert_eq!(sheet.decimal_places(0, 0), Some(3));
+
+        sheet.set_formats_columns(
+            &[0],
+            &Formats::repeat(
+                FormatUpdate {
+                    numeric_decimals: Some(Some(2)),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        assert_eq!(sheet.decimal_places(0, 0), Some(2));
+
+        sheet.set_format_cell(
+            (0, 0).into(),
+            &FormatUpdate {
+                numeric_decimals: Some(Some(5)),
+                ..Default::default()
+            },
+            false,
+        );
+        assert_eq!(sheet.decimal_places(0, 0), Some(5));
     }
 }

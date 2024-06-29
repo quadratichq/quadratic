@@ -22,6 +22,7 @@ import {
 import { MultiplayerState } from '../../multiplayerWebWorker/multiplayerClientMessages';
 import { ClientCoreLoad, ClientCoreMessage, CoreClientMessage } from '../coreClientMessages';
 import { core } from './core';
+import { coreJavascript } from './coreJavascript';
 import { coreMultiplayer } from './coreMultiplayer';
 import { corePython } from './corePython';
 import { offline } from './offline';
@@ -76,6 +77,7 @@ declare var self: WorkerGlobalScope &
       renderCodeCell?: JsRenderCodeCell
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
+    sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
     sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
   };
 
@@ -102,6 +104,7 @@ class CoreClient {
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
+    self.sendImage = coreClient.sendImage;
     self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
@@ -450,6 +453,10 @@ class CoreClient {
         corePython.init(e.ports[0]);
         break;
 
+      case 'clientCoreInitJavascript':
+        coreJavascript.init(e.ports[0]);
+        break;
+
       case 'clientCoreImportExcel':
         this.send({ type: 'coreClientImportExcel', id: e.data.id, ...(await core.importExcel(e.data)) });
         break;
@@ -465,6 +472,8 @@ class CoreClient {
       case 'clientCoreCancelExecution':
         if (e.data.language === 'Python') {
           corePython.cancelExecution();
+        } else if (e.data.language === 'Javascript') {
+          coreJavascript.cancelExecution();
         } else {
           console.warn("Unhandled language in 'clientCoreCancelExecution'", e.data.language);
         }
@@ -616,6 +625,10 @@ class CoreClient {
 
   sendUndoRedo = (undo: boolean, redo: boolean) => {
     this.send({ type: 'coreClientUndoRedo', undo, redo });
+  };
+
+  sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
+    this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
   };
 
   sendResizeRowHeights = (sheetId: string, rowHeightsString: string) => {

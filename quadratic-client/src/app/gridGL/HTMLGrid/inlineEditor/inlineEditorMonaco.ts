@@ -6,9 +6,10 @@ import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { provideCompletionItems, provideHover } from '@/app/quadratic-rust-client/quadratic_rust_client';
 import { FormulaLanguageConfig, FormulaTokenizerConfig } from '@/app/ui/menus/CodeEditor/FormulaLanguageModel';
-import * as monaco from 'monaco-editor';
 import { editor } from 'monaco-editor';
-import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import * as monaco from 'monaco-editor';
+import DefaultEditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
+import TsEditorWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 
 const theme: editor.IStandaloneThemeData = {
   base: 'vs',
@@ -18,11 +19,17 @@ const theme: editor.IStandaloneThemeData = {
 };
 monaco.editor.defineTheme('inline-editor', theme);
 
-// We are only defining the worker for the editor itself. We may need other
-// types down the road, however.
+// This is where we globally define worker types for Monaco. See
+// https://github.com/microsoft/monaco-editor/blob/main/docs/integrate-esm.md
 window.MonacoEnvironment = {
   getWorker(_, label) {
-    return new editorWorker();
+    switch (label) {
+      case 'typescript':
+      case 'javascript':
+        return new TsEditorWorker({ name: label });
+      default:
+        return new DefaultEditorWorker({ name: label });
+    }
   },
 };
 

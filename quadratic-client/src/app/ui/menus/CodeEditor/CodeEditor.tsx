@@ -11,9 +11,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/CodeEditorPanels';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -33,18 +35,25 @@ export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
 };
 
+export interface ConsoleOutput {
+  stdOut?: string;
+  stdErr?: string;
+}
+
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
 
   const { pythonState } = usePythonState();
+  const javascriptState = useJavascriptState();
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   // update code cell
   const [codeString, setCodeString] = useState('');
 
   // code info
-  const [out, setOut] = useState<{ stdOut?: string; stdErr?: string } | undefined>(undefined);
+  const [out, setOut] = useState<ConsoleOutput | undefined>(undefined);
   const [evaluationResult, setEvaluationResult] = useState<EvaluationResult | undefined>(undefined);
   const [spillError, setSpillError] = useState<Coordinate[] | undefined>();
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
@@ -234,7 +243,6 @@ export const CodeEditor = () => {
       language,
       cursor: sheets.getCursorPosition(),
     });
-
     setCodeString(editorContent ?? '');
 
     mixpanel.track('[CodeEditor].cellRun', {
@@ -249,10 +257,16 @@ export const CodeEditor = () => {
     }
   };
 
-  const cancelPython = () => {
-    if (pythonState !== 'running') return;
-
-    pythonWebWorker.cancelExecution();
+  const cancelRun = () => {
+    if (editorInteractionState.mode === 'Python') {
+      if (pythonState === 'running') {
+        pythonWebWorker.cancelExecution();
+      }
+    } else if (editorInteractionState.mode === 'Javascript') {
+      if (javascriptState === 'running') {
+        javascriptWebWorker.cancelExecution();
+      }
+    }
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -278,7 +292,7 @@ export const CodeEditor = () => {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
-      cancelPython();
+      cancelRun();
     }
 
     // Command + Plus
@@ -388,7 +402,7 @@ export const CodeEditor = () => {
             cellLocation={cellLocation}
             unsaved={unsaved}
             saveAndRunCell={saveAndRunCell}
-            cancelPython={cancelPython}
+            cancelRun={cancelRun}
             closeEditor={() => closeEditor(false)}
           />
           <CodeEditorBody
@@ -399,10 +413,11 @@ export const CodeEditor = () => {
             cellsAccessed={!unsaved ? cellsAccessed : []}
             cellLocation={cellLocation}
           />
-          {editorInteractionState.mode === 'Python' && (
+          {['Javascript', 'Python'].includes(editorInteractionState.mode as string) && (
             <ReturnTypeInspector
               evaluationResult={evaluationResult}
               show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
+              language={editorInteractionState.mode}
             />
           )}
         </div>
@@ -422,11 +437,10 @@ export const CodeEditor = () => {
         >
           <Console
             consoleOutput={out}
-            editorMode={editorMode}
             editorContent={editorContent}
-            evaluationResult={evaluationResult}
             spillError={spillError}
             codeEditorPanelData={codeEditorPanelData}
+            editorInteractionState={editorInteractionState}
           />
         </div>
         <CodeEditorPanels containerRef={containerRef} codeEditorPanelData={codeEditorPanelData} />

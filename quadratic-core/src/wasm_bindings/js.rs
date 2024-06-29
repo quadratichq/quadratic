@@ -30,6 +30,14 @@ extern "C" {
         code: String,
     ) -> JsValue;
 
+    pub fn jsRunJavascript(
+        transactionId: String,
+        x: i32,
+        y: i32,
+        sheet_id: String,
+        code: String,
+    ) -> JsValue;
+
     // cells: Vec<JsRenderCell>
     pub fn jsRenderCellSheets(
         sheet_id: String,
@@ -83,6 +91,15 @@ extern "C" {
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
 
     pub fn jsUndoRedo(undo: bool, redo: bool);
+
+    pub fn jsSendImage(
+        sheet_id: String,
+        x: i32,
+        y: i32,
+        image: Option<String>,
+        w: Option<String>,
+        h: Option<String>,
+    );
 
     // cells: Vec<Pos>
     pub fn jsRequestRowHeights(transaction_id: String, sheet_id: String, cells: String);
@@ -460,6 +477,30 @@ pub fn jsUndoRedo(undo: bool, redo: bool) {
     TEST_ARRAY.lock().unwrap().push(TestFunction::new(
         "jsUndoRedo",
         format!("{},{}", undo, redo),
+    ));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendImage(
+    sheet_id: String,
+    x: i32,
+    y: i32,
+    image: Option<String>,
+    w: Option<String>,
+    h: Option<String>,
+) {
+    TEST_ARRAY.lock().unwrap().push(TestFunction::new(
+        "jsSendImage",
+        format!(
+            "{},{},{},{:?},{:?},{:?}",
+            sheet_id,
+            x,
+            y,
+            image.is_some(),
+            w,
+            h
+        ),
     ));
 }
 

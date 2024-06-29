@@ -9,6 +9,7 @@ export const colors = {
   cellColorUserPython: 0x3776ab,
   cellColorUserPythonRgba: 'rgba(55, 118, 171, 0.5)',
   cellColorUserFormula: 0x8c1a6a,
+  cellColorUserJavascript: 0xca8a04,
   cellColorUserAI: 0x1a8c5d,
   cellColorError: 0xf25f5c,
   cursorCell: 0x6cd4ff,
@@ -43,6 +44,11 @@ export const colors = {
   languagePython: '#3776ab',
   languageFormula: '#8c1a6a',
   languageAI: '#1a8c5d',
+  languageJavascript: '#ca8a04',
+
+  // todo: this can be change for dark background
+  backgroundColor: 0xffffff,
+
   error: '#f25f5c',
   cellHighlightColor: [
     muiColors.orange['900'],

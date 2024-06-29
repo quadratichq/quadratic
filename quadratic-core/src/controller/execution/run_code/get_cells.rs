@@ -19,10 +19,14 @@ pub struct JsGetCellResponse {
 impl GridController {
     /// This is used to get cells during an async calculation.
     #[allow(clippy::result_large_err)]
+    #[allow(clippy::too_many_arguments)]
     pub fn calculation_get_cells(
         &mut self,
         transaction_id: String,
-        rect: Rect,
+        x: i64,
+        y: i64,
+        w: i64,
+        h: Option<i64>,
         sheet_name: Option<String>,
         line_number: Option<u32>,
     ) -> Result<Vec<JsGetCellResponse>, CoreError> {
@@ -71,7 +75,11 @@ impl GridController {
             return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 
-        if transaction.transaction_type != TransactionType::User {
+        let h = h.unwrap_or(sheet.find_last_data_row(x, y, w));
+        let rect = Rect::from_numbers(x, y, w, h);
+
+        let transaction_type = transaction.transaction_type.clone();
+        if transaction_type != TransactionType::User {
             // this should only be called for a user transaction
             return Err(CoreError::TransactionNotFound(
                 "getCells can only be called for non-user transaction".to_string(),
@@ -101,7 +109,10 @@ mod test {
 
         let result = gc.calculation_get_cells(
             "bad transaction id".to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
+            0,
+            0,
+            1,
+            Some(1),
             None,
             None,
         );
@@ -112,12 +123,8 @@ mod test {
     fn test_calculation_get_cells_no_transaction() {
         let mut gc = GridController::test();
 
-        let result = gc.calculation_get_cells(
-            Uuid::new_v4().to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        );
+        let result =
+            gc.calculation_get_cells(Uuid::new_v4().to_string(), 0, 0, 1, Some(1), None, None);
         assert!(result.is_err());
     }
 
@@ -139,8 +146,7 @@ mod test {
         let transactions = gc.transactions.async_transactions_mut();
         transactions[0].current_sheet_pos = None;
         let transaction_id = transactions[0].id.to_string();
-        let result =
-            gc.calculation_get_cells(transaction_id, Rect::from_numbers(0, 0, 1, 1), None, None);
+        let result = gc.calculation_get_cells(transaction_id, 0, 0, 1, Some(1), None, None);
         assert!(result.is_err());
     }
 
@@ -162,7 +168,10 @@ mod test {
 
         let result = gc.calculation_get_cells(
             transaction_id.to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
+            0,
+            0,
+            1,
+            Some(1),
             Some("bad sheet name".to_string()),
             None,
         );
@@ -206,12 +215,8 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells(
-            transaction_id.to_string(),
-            Rect::from_numbers(0, 1, 1, 1),
-            None,
-            None,
-        );
+        let result =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 1, 1, Some(1), None, None);
         assert!(result.is_ok());
 
         let sheet = gc.sheet(sheet_id);
@@ -255,12 +260,8 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells(
-            transaction_id.to_string(),
-            Rect::from_numbers(0, 0, 1, 1),
-            None,
-            None,
-        );
+        let result =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, Some(1), None, None);
         assert_eq!(
             result,
             Ok(vec![JsGetCellResponse {
@@ -269,6 +270,88 @@ mod test {
                 value: "test".into(),
                 type_name: "text".into()
             }])
+        );
+    }
+
+    #[test]
+    fn calculation_get_cells_with_no_y1() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 0,
+                sheet_id,
+            },
+            "test1".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 1,
+                sheet_id,
+            },
+            "test2".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 2,
+                sheet_id,
+            },
+            "test3".to_string(),
+            None,
+        );
+        gc.set_cell_value(
+            SheetPos {
+                x: 0,
+                y: 4,
+                sheet_id,
+            },
+            "test4".to_string(),
+            None,
+        );
+
+        // create a code cell so we can get a transaction_id
+        gc.set_code_cell(
+            SheetPos {
+                x: 1,
+                y: 1,
+                sheet_id,
+            },
+            CodeCellLanguage::Python,
+            "".to_string(),
+            None,
+        );
+
+        let transaction_id = gc.last_transaction().unwrap().id;
+        let result =
+            gc.calculation_get_cells(transaction_id.to_string(), 0, 0, 1, None, None, None);
+        assert_eq!(
+            result,
+            Ok(vec![
+                JsGetCellResponse {
+                    x: 0,
+                    y: 0,
+                    value: "test1".into(),
+                    type_name: "text".into()
+                },
+                JsGetCellResponse {
+                    x: 0,
+                    y: 1,
+                    value: "test2".into(),
+                    type_name: "text".into()
+                },
+                JsGetCellResponse {
+                    x: 0,
+                    y: 2,
+                    value: "test3".into(),
+                    type_name: "text".into()
+                }
+            ])
         );
     }
 }

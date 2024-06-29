@@ -70,6 +70,10 @@ export interface ClientCoreInitPython {
   type: 'clientCoreInitPython';
 }
 
+export interface ClientCoreInitJavascript {
+  type: 'clientCoreInitJavascript';
+}
+
 export interface ClientCoreExport {
   type: 'clientCoreExport';
   id: number;
@@ -819,6 +823,16 @@ export interface CoreClientSetCursorSelection {
 
 //#endregion
 
+export interface CoreClientImage {
+  type: 'coreClientImage';
+  sheetId: string;
+  x: number;
+  y: number;
+  image?: string;
+  w?: string;
+  h?: string;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -874,6 +888,7 @@ export type ClientCoreMessage =
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
   | ClientCoreInitPython
+  | ClientCoreInitJavascript
   | ClientCoreImportExcel
   | ClientCoreCancelExecution
   | ClientCoreMoveCells
@@ -925,6 +940,7 @@ export type CoreClientMessage =
   | CoreClientMultiplayerState
   | CoreClientOfflineTransactions
   | CoreClientUndoRedo
+  | CoreClientImage
   | CoreClientGetFormatAll
   | CoreClientGetFormatColumn
   | CoreClientGetFormatRow

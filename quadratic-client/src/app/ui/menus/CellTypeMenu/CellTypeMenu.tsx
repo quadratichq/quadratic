@@ -5,10 +5,14 @@ import { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { LinkNewTab } from '@/app/ui/components/LinkNewTab';
 import { Formula, JavaScript, Python, Sql } from '@/app/ui/icons';
-import { DOCUMENTATION_FORMULAS_URL, DOCUMENTATION_PYTHON_URL } from '@/shared/constants/urls';
+import { Badge } from '@/shadcn/ui/badge';
+import {
+  DOCUMENTATION_FORMULAS_URL,
+  DOCUMENTATION_JAVASCRIPT_URL,
+  DOCUMENTATION_PYTHON_URL,
+} from '@/shared/constants/urls';
 import focusInput from '@/shared/utils/focusInput';
 import {
-  Chip,
   Dialog,
   Divider,
   InputBase,
@@ -26,6 +30,7 @@ import '../../styles/floating-dialog.css';
 
 export interface CellTypeOption {
   name: string;
+  searchStrings?: string[];
   mode: CodeCellLanguage;
   icon: any;
   description: string | JSX.Element;
@@ -47,6 +52,7 @@ let CELL_TYPE_OPTIONS = [
   },
   {
     name: 'Formula',
+    searchStrings: ['fx', 'functions', 'formulas'],
     mode: 'Formula',
     icon: <Formula sx={{ color: colors.languageFormula }} />,
     description: (
@@ -56,20 +62,24 @@ let CELL_TYPE_OPTIONS = [
       </>
     ),
   },
-
-  // todo: create CodeCellLanguage for these types in Rust (when ready to implement)
+  {
+    name: 'JavaScript',
+    searchStrings: ['js'],
+    mode: 'Javascript',
+    icon: <JavaScript sx={{ color: colors.languageJavascript }} />,
+    description: (
+      <>
+        Script with modern ES modules{' '}
+        <LinkNewTabWrapper href={DOCUMENTATION_JAVASCRIPT_URL}>and more</LinkNewTabWrapper>.
+      </>
+    ),
+    experimental: true,
+  },
   {
     name: 'SQL Query',
     mode: '',
     icon: <Sql color="disabled" />,
     description: 'Import your data with queries.',
-    disabled: true,
-  },
-  {
-    name: 'JavaScript',
-    mode: '',
-    icon: <JavaScript color="disabled" />,
-    description: 'The world’s most popular programming language.',
     disabled: true,
   },
 ] as CellTypeOption[];
@@ -81,7 +91,11 @@ export default function CellTypeMenu() {
   const setCellTypeMenuOpenedCount = useSetRecoilState(cellTypeMenuOpenedCountAtom);
   const searchlabel = 'Choose a cell type…';
 
-  const options = CELL_TYPE_OPTIONS.filter((option) => option.name.toLowerCase().includes(value.toLowerCase()));
+  const options = CELL_TYPE_OPTIONS.filter(
+    (option) =>
+      option.name.toLowerCase().includes(value.toLowerCase()) ||
+      option.searchStrings?.some((s) => s.includes(value.toLowerCase()))
+  );
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
@@ -178,8 +192,17 @@ export default function CellTypeMenu() {
                 <ListItemText
                   primary={
                     <>
-                      {name} {disabled && <Chip label="Coming soon" size="small" />}{' '}
-                      {experimental && <Chip label="Experimental" size="small" color="warning" variant="outlined" />}
+                      {name}
+                      {disabled && (
+                        <Badge variant="secondary" className="ml-1">
+                          Coming soon
+                        </Badge>
+                      )}
+                      {experimental && (
+                        <Badge variant="warning" className="ml-1">
+                          Experimental
+                        </Badge>
+                      )}
                     </>
                   }
                   secondary={description}

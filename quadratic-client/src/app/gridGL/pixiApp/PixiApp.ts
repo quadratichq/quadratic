@@ -1,6 +1,8 @@
 import { events } from '@/app/events/events';
+import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
+import { CellsImages } from '@/app/gridGL/cells/cellsImages/CellsImages';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -57,6 +59,8 @@ export class PixiApp {
   pointer!: Pointer;
   viewportContents!: Container;
   htmlPlaceholders!: HtmlPlaceholders;
+  imagePlaceholders!: Container;
+  cellImages!: UICellImages;
   renderer!: Renderer;
   stage = new Container();
   loading = true;
@@ -74,6 +78,7 @@ export class PixiApp {
   constructor() {
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
+    this.cellImages = new UICellImages();
     this.viewport = new Viewport();
   }
 
@@ -136,10 +141,12 @@ export class PixiApp {
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(new GridLines());
     this.axesLines = this.viewportContents.addChild(new AxesLines());
-    this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
     this.boxCells = this.viewportContents.addChild(new BoxCells());
+    this.cellImages = this.viewportContents.addChild(this.cellImages);
     this.multiplayerCursor = this.viewportContents.addChild(new UIMultiPlayerCursor());
     this.cursor = this.viewportContents.addChild(new Cursor());
+    this.htmlPlaceholders = this.viewportContents.addChild(new HtmlPlaceholders());
+    this.imagePlaceholders = this.viewportContents.addChild(new Container());
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.headings = this.viewportContents.addChild(new GridHeadings());
@@ -328,6 +335,18 @@ export class PixiApp {
       this.headings.dirty = true;
       this.multiplayerCursor.dirty = true;
     }
+  }
+
+  // this shows the CellImages of the current sheet, removing any old ones. This
+  // is needed to ensure the proper z-index for the images (ie, so it shows over
+  // the grid lines).
+  changeCellImages(cellsImages: CellsImages) {
+    this.imagePlaceholders.removeChildren();
+    this.imagePlaceholders.addChild(cellsImages);
+  }
+
+  isCursorOnCodeCell(): boolean {
+    return this.cellsSheets.isCursorOnCodeCell();
   }
 
   // called when the viewport is loaded from the URL

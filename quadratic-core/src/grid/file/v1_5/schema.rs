@@ -205,6 +205,7 @@ pub enum CellValue {
     Instant(String),
     Duration(String),
     Error(RunError),
+    Image(String),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -235,6 +236,7 @@ pub type CellBorder = v1_4::CellBorder;
 pub enum CodeCellLanguage {
     Python,
     Formula,
+    Javascript,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
