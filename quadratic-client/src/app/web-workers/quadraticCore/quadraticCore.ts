@@ -148,6 +148,7 @@ class QuadraticCore {
       const jwt = await authClient.getTokenOrRedirect();
       const data = e.data as CoreClientGetJwt;
       this.send({ type: 'clientCoreGetJwt', id: data.id, jwt });
+      return;
     } else if (e.data.type === 'coreClientImage') {
       events.emit('updateImage', e.data);
       return;
@@ -165,7 +166,7 @@ class QuadraticCore {
         this.waitingForResponse[e.data.id](e.data);
         delete this.waitingForResponse[e.data.id];
       } else {
-        console.warn('No resolve for message in quadraticCore', e.data.id);
+        console.warn('No resolve for message in quadraticCore', e.data);
       }
     }
 

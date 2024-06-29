@@ -4,6 +4,7 @@ import { SchemaViewer } from '@/app/ui/connections/SchemaViewer';
 import { AiAssistant } from '@/app/ui/menus/CodeEditor/AiAssistant';
 import { Console } from '@/app/ui/menus/CodeEditor/Console';
 import { PanelBox, calculatePanelBoxMinimizedSize } from '@/app/ui/menus/CodeEditor/panels/PanelBox';
+import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { CodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -15,7 +16,7 @@ interface Props {
 }
 
 export function CodeEditorPanelSide(props: Props) {
-  const container = document.querySelector('#code-editor-container');
+  const container = useCodeEditorContainer();
   const minimizedSize = useMemo(() => {
     const minimizedSize = calculatePanelBoxMinimizedSize();
     return minimizedSize;
@@ -88,7 +89,7 @@ export function CodeEditorPanelSide(props: Props) {
           const percent = (clientY - containerRect.top) / containerHeight - leftOverPercentage * percentOfVisible;
           codeEditorPanelData.adjustPanelPercentage(0, percent * 100);
         }
-        if (!panels[2].open) {
+        if (!panels[2]?.open) {
           const percentOfVisible = (clientY - containerRect.top) / adjustedContainerHeight;
           const percent = (clientY - containerRect.top) / containerHeight - leftOverPercentage * percentOfVisible;
           codeEditorPanelData.adjustPanelPercentage(0, percent * 100);
@@ -125,7 +126,7 @@ export function CodeEditorPanelSide(props: Props) {
       </PanelBox>
       <ResizeControl
         style={{ top: panels[0].height }}
-        disabled={!panels[0].open || (!panels[1].open && !panels[2].open)}
+        disabled={!panels[0].open || (!panels[1].open && !panels[2]?.open)}
         position="HORIZONTAL"
         setState={(e) => changeResizeBar(e, true)}
       />
@@ -141,7 +142,7 @@ export function CodeEditorPanelSide(props: Props) {
       {isConnection && panels.length === 3 && (
         <ResizeControl
           style={{ top: panels[0].height + panels[1].height }}
-          disabled={!panels[1].open && !panels[2].open}
+          disabled={!panels[1].open && !panels[2]?.open}
           position="HORIZONTAL"
           setState={(e) => changeResizeBar(e, false)}
         />

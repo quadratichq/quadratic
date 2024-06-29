@@ -125,7 +125,7 @@ impl GridController {
                 CodeCellLanguage::Connection { kind, id } => {
                     self.run_connection(transaction, sheet_pos, code, kind, id);
                 }
-                CodeCellLanguage::JavaScript => {
+                CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
                 }
             }
@@ -210,7 +210,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
             (0, 0, sheet_id).into(),
-            CodeCellLanguage::JavaScript,
+            CodeCellLanguage::Javascript,
             "code".to_string(),
             None,
         );

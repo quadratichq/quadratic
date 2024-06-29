@@ -230,7 +230,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
         );
     });
 
-    // limited suppported color set
+    // limited supported color set
     let bg_colors = HashMap::<&str, Color>::from_iter([
         ("white", Color::BG_WHITE),
         ("red", Color::BG_RED),

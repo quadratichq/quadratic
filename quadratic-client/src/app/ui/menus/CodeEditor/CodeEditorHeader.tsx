@@ -2,7 +2,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
-import { colors } from '@/app/theme/colors';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
 import { LanguageState } from '@/app/web-workers/languageTypes';
@@ -10,7 +9,7 @@ import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multipla
 import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { cn } from '@/shared/shadcn/utils';
-import { Close, PlayArrow, Stop, Subject } from '@mui/icons-material';
+import { Close, PlayArrow, Stop } from '@mui/icons-material';
 import { CircularProgress, IconButton } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -18,7 +17,6 @@ import { hasPermissionToEditFile } from '../../../actions';
 import { editorInteractionStateAtom } from '../../../atoms/editorInteractionStateAtom';
 import { KeyboardSymbols } from '../../../helpers/keyboardSymbols';
 import { TooltipHint } from '../../components/TooltipHint';
-import { Formula, JavaScript, Python } from '../../icons';
 import { SnippetsPopover } from './SnippetsPopover';
 
 interface Props {
@@ -151,23 +149,7 @@ export const CodeEditorHeader = (props: Props) => {
         {currentConnectionName && (
           <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
         )}
-        {language === 'Python' ? (
-          <Python sx={{ color: colors.languagePython }} fontSize="small" />
-        ) : language === 'Formula' ? (
-          <Formula sx={{ color: colors.languageFormula }} fontSize="small" />
-        ) : language === 'Javascript' ? (
-          <JavaScript sx={{ color: colors.languageJavascript }} fontSize="small" />
-        ) : (
-          <Subject fontSize="small" />
-        )}
       </div>
-      <div className="mx-2 flex truncate text-sm font-medium">
-        Cell ({cellLocation.x}, {cellLocation.y}) {unsaved && ' - Unsaved changes'}
-        {currentCodeEditorCellIsNotInActiveSheet && (
-          <span className="ml-1 min-w-0 truncate">- {currentSheetNameOfActiveCodeEditorCell}</span>
-        )}
-      </div>
-
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
           <TooltipHint title={'Python executing…'} placement="bottom">

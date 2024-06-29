@@ -1,3 +1,4 @@
+import { useCodeEditorContainer } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorContainer';
 import { memo, useEffect, useState } from 'react';
 import { ResizeControl } from './ResizeControl';
 import { CodeEditorPanelData, MIN_WIDTH_PANEL, MIN_WIDTH_VISIBLE_GRID } from './useCodeEditorPanelData';
@@ -9,18 +10,27 @@ interface Props {
 const MIN_WIDTH_EDITOR = 350;
 
 export const CodeEditorPanels = memo((props: Props) => {
-  const container = document.querySelector('#code-editor-container');
   const { codeEditorPanelData } = props;
 
   // we need to calculate the console height after a change in bottomHidden
   const [consoleHeaderHeight, setConsoleHeaderHeight] = useState(0);
+
+  const container = useCodeEditorContainer();
   useEffect(() => {
-    if (codeEditorPanelData.bottomHidden && container) {
-      const editor = container.firstChild as HTMLDivElement;
-      if (editor) {
-        const editorRect = editor.getBoundingClientRect();
-        setConsoleHeaderHeight(editorRect.height);
+    const setHeight = () => {
+      if (codeEditorPanelData.bottomHidden && container) {
+        const editor = container.firstChild as HTMLDivElement;
+        if (editor) {
+          const editorRect = editor.getBoundingClientRect();
+          setConsoleHeaderHeight(editorRect.height);
+        }
       }
+    };
+    // ensures container is already rendered; otherwise we wait for the next tick
+    if (!container) {
+      setTimeout(setHeight, 0);
+    } else {
+      setHeight();
     }
   }, [codeEditorPanelData.bottomHidden, container]);
 

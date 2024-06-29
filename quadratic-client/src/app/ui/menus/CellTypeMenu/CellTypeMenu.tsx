@@ -42,7 +42,7 @@ export interface CellTypeOption {
   experimental?: boolean;
 }
 
-let CELL_TYPE_OPTIONS = [
+let CELL_TYPE_OPTIONS: CellTypeOption[] = [
   {
     name: 'Python',
     mode: 'Python',
@@ -79,7 +79,7 @@ let CELL_TYPE_OPTIONS = [
     ),
     experimental: true,
   },
-] as CellTypeOption[];
+];
 
 export default function CellTypeMenu() {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -87,7 +87,7 @@ export default function CellTypeMenu() {
   const { connections } = useFileMetaRouteLoaderData();
   const navigate = useNavigate();
   const { uuid } = useParams() as { uuid: string };
-  const searchlabel = 'Choose a cell type…';
+  const searchLabel = 'Choose a cell type…';
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
@@ -118,7 +118,7 @@ export default function CellTypeMenu() {
 
   return (
     <CommandDialog dialogProps={{ open: true, onOpenChange: close }} commandProps={{}}>
-      <CommandInput placeholder={searchlabel} id="CellTypeMenuInputID" />
+      <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Languages">

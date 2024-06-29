@@ -123,7 +123,7 @@ pub enum CodeCellLanguage {
     Python,
     Formula,
     Connection { kind: ConnectionKind, id: String },
-    JavaScript,
+    Javascript,
 }
 
 #[derive(Serialize, Deserialize, Display, Copy, Debug, Clone, PartialEq, Eq, Hash)]
