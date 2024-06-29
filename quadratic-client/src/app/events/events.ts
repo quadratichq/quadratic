@@ -12,10 +12,12 @@ import {
   SheetBounds,
   SheetInfo,
 } from '@/app/quadratic-core-types';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import { CellEdit, MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import {
+  CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionProgress,
   CoreClientTransactionStart,
@@ -56,7 +58,10 @@ interface EventTypes {
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
 
   pythonInit: (version: string) => void;
-  pythonState: (state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+  javascriptInit: (version: string) => void;
+  javascriptState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
+
   updateCodeCell: (options: {
     sheetId: string;
     x: number;
@@ -64,6 +69,7 @@ interface EventTypes {
     codeCell?: JsCodeCell;
     renderCodeCell?: JsRenderCodeCell;
   }) => void;
+  updateImage: (message: CoreClientImage) => void;
 
   importProgress: (message: CoreClientImportProgress) => void;
   transactionStart: (message: CoreClientTransactionStart) => void;

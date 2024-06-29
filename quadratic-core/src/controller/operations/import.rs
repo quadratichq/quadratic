@@ -152,7 +152,7 @@ impl GridController {
             for (y, row) in range.rows().enumerate() {
                 for (x, col) in row.iter().enumerate() {
                     let cell_value = match col {
-                        ExcelData::Empty => CellValue::Blank,
+                        ExcelData::Empty => continue,
                         ExcelData::String(value) => CellValue::Text(value.to_string()),
                         ExcelData::DateTimeIso(ref value) => CellValue::Text(value.to_string()),
                         ExcelData::DurationIso(ref value) => CellValue::Text(value.to_string()),
@@ -178,7 +178,7 @@ impl GridController {
                         ExcelData::Int(ref value) => {
                             CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
                         }
-                        ExcelData::Error(_) => CellValue::Blank,
+                        ExcelData::Error(_) => continue,
                         ExcelData::Bool(value) => CellValue::Logical(*value),
                     };
 
@@ -191,6 +191,7 @@ impl GridController {
                     );
                 }
             }
+            // add new sheets
             ops.push(Operation::AddSheetSchema {
                 schema: export_sheet(&sheet),
             });
@@ -381,5 +382,38 @@ mod test {
             first_values.get(0, 0),
             Some(&CellValue::Text("city0".into()))
         );
+    }
+
+    #[test]
+    fn import_excel() {
+        let mut gc = GridController::test_blank();
+        let file = include_bytes!("../../../test-files/simple.xlsx");
+        gc.import_excel(file.to_vec(), "simple.xlsx").unwrap();
+
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet = gc.sheet(sheet_id);
+
+        assert_eq!(
+            sheet.cell_value((0, 0).into()),
+            Some(CellValue::Number(1.into()))
+        );
+        assert_eq!(
+            sheet.cell_value((2, 9).into()),
+            Some(CellValue::Number(12.into()))
+        );
+        assert_eq!(sheet.cell_value((0, 5).into()), None);
+        assert_eq!(
+            sheet.cell_value((3, 1).into()),
+            Some(CellValue::Number(3.into()))
+        );
+        assert_eq!(sheet.cell_value((3, 0).into()), None);
+    }
+
+    #[test]
+    fn import_excel_invalid() {
+        let mut gc = GridController::test_blank();
+        let file = include_bytes!("../../../test-files/invalid.xlsx");
+        let result = gc.import_excel(file.to_vec(), "invalid.xlsx");
+        assert!(result.is_err());
     }
 }

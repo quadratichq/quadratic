@@ -55,7 +55,8 @@ export function Console() {
         </>
       ) : (
         <div className="mt-1" style={{ ...codeEditorCommentStyles }}>
-          {mode === 'Python' ? 'Print statements, standard out, and errors will show here.' : 'Errors will show here.'}
+          {mode === 'Python' && <>Print statements, standard out, and errors will show here.</>}
+          {mode === 'Javascript' && <>Console output and errors will show here.</>}
         </div>
       )}
     </div>

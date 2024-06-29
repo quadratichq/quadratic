@@ -47,6 +47,7 @@ export const TopBar = () => {
         // if clicked (not child clicked), maximize window. For electron.
         if (event.target === event.currentTarget) electronMaximizeCurrentWindow();
       }}
+      className="select-none"
     >
       <div
         className="flex items-stretch lg:basis-1/3"

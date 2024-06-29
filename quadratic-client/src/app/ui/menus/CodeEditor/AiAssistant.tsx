@@ -192,7 +192,7 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
   return (
     <div className="flex h-full flex-col justify-between">
       <div
-        className="overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
+        className="select-text overflow-y-auto whitespace-pre-wrap pb-2 pl-3 pr-4 text-sm outline-none"
         spellCheck={false}
         onKeyDown={(e) => {
           if (((e.metaKey || e.ctrlKey) && e.key === 'a') || ((e.metaKey || e.ctrlKey) && e.key === 'c')) {
@@ -269,13 +269,12 @@ export const AiAssistant = ({ autoFocus }: { autoFocus?: boolean }) => {
                 return;
               }
 
+              event.preventDefault();
               if (prompt.trim().length === 0) {
-                event.preventDefault();
                 return;
               }
 
               submitPrompt();
-              event.preventDefault();
               event.currentTarget.focus();
             }
           }}

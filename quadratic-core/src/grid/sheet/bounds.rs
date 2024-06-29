@@ -295,6 +295,33 @@ impl Sheet {
         y
     }
 
+    /// Finds the height of a rectangle that contains data given an (x, y, w).
+    pub fn find_last_data_row(&self, x: i64, y: i64, w: i64) -> i64 {
+        let bounds = self.bounds(true);
+        match bounds {
+            GridBounds::Empty => 0,
+            GridBounds::NonEmpty(rect) => {
+                let mut h = 0;
+                for y in y..=rect.max.y {
+                    let mut has_data = false;
+                    for x in x..x + w {
+                        if self.display_value(Pos { x, y }).is_some() {
+                            has_data = true;
+                            break;
+                        }
+                    }
+                    if has_data {
+                        h += 1;
+                    } else {
+                        // We've reached a column without any data, so we can stop
+                        return h;
+                    }
+                }
+                h
+            }
+        }
+    }
+
     /// Returns the bounds of the sheet.
     ///
     /// Returns `(data_bounds, format_bounds)`.
@@ -311,7 +338,7 @@ mod test {
     use crate::{
         controller::GridController,
         grid::{CellAlign, CodeCellLanguage, GridBounds, Sheet},
-        CellValue, IsBlank, Pos, Rect, SheetPos, SheetRect,
+        CellValue, Pos, Rect, SheetPos, SheetRect,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -591,7 +618,7 @@ mod test {
 
         let nonempty_positions = hashmap_of_truth
             .iter()
-            .filter(|(_, value)| !value.is_blank())
+            .filter(|(_, value)| !value.is_blank_or_empty_string())
             .map(|(pos, _)| pos);
         let min_x = nonempty_positions.clone().map(|pos| pos.x).min();
         let min_y = nonempty_positions.clone().map(|pos| pos.y).min();
@@ -607,7 +634,7 @@ mod test {
 
         for (pos, expected) in hashmap_of_truth {
             let actual = sheet.display_value(pos);
-            if expected.is_blank() {
+            if expected.is_blank_or_empty_string() {
                 assert_eq!(None, actual);
             } else {
                 assert_eq!(Some(expected.clone()), actual);
@@ -764,5 +791,26 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.row_bounds(0, true), Some((0, 3)));
         assert_eq!(sheet.row_bounds(0, false), Some((0, 3)));
+    }
+
+    #[test]
+    fn find_last_data_row() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((0, 1, sheet_id).into(), "b".to_string(), None);
+        gc.set_cell_value((0, 2, sheet_id).into(), "c".to_string(), None);
+        gc.set_cell_value((0, 4, sheet_id).into(), "e".to_string(), None);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // height should be 3 (0,0 - 0.2)
+        assert_eq!(sheet.find_last_data_row(0, 0, 1), 3);
+
+        // height should be 1 (0,4)
+        assert_eq!(sheet.find_last_data_row(0, 4, 1), 1);
+
+        // height should be 0 since there is no data
+        assert_eq!(sheet.find_last_data_row(0, 10, 1), 0);
     }
 }

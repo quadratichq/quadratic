@@ -148,6 +148,8 @@ class QuadraticCore {
       const jwt = await authClient.getTokenOrRedirect();
       const data = e.data as CoreClientGetJwt;
       this.send({ type: 'clientCoreGetJwt', id: data.id, jwt });
+    } else if (e.data.type === 'coreClientImage') {
+      events.emit('updateImage', e.data);
       return;
     } else if (e.data.type === 'coreClientSheetMetaFills') {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
@@ -925,6 +927,10 @@ class QuadraticCore {
 
   sendPythonInit(port: MessagePort) {
     this.send({ type: 'clientCoreInitPython' }, port);
+  }
+
+  sendJavascriptInit(port: MessagePort) {
+    this.send({ type: 'clientCoreInitJavascript' }, port);
   }
 
   sendCancelExecution(language: CodeCellLanguage) {

@@ -32,7 +32,7 @@ export const SaveChangesAlert = (props: Props) => {
       aria-describedby="save-changes-description"
       maxWidth="sm"
     >
-      <DialogTitle>Do you want to save your changes?</DialogTitle>
+      <DialogTitle>Do you want to save your code editor changes?</DialogTitle>
       <DialogContent>
         <DialogContentText id="save-changes-description">
           Your changes will be lost if you don’t save and run them.

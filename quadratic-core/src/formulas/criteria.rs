@@ -34,6 +34,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
             | CellValue::Code(_)
             | CellValue::Logical(_)
             | CellValue::Instant(_)
+            | CellValue::Image(_)
             | CellValue::Duration(_) => Ok(Criterion::Compare {
                 compare_fn: CompareFn::Eql,
                 rhs: value.inner.clone(),
@@ -105,6 +106,7 @@ impl Criterion {
             CellValue::Error(_) => false,
             CellValue::Html(_) => false,
             CellValue::Code(_) => false,
+            CellValue::Image(_) => false,
         }
     }
 

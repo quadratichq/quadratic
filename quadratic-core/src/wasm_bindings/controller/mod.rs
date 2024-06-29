@@ -80,6 +80,9 @@ impl GridController {
                             }
                             // sends all sheet fills to the client
                             sheet.send_sheet_fills();
+
+                            // sends all images to the client
+                            sheet.send_all_images();
                         }
                     });
                 }

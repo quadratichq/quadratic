@@ -3,12 +3,13 @@ import { useTheme } from '@mui/material';
 interface IMenuLineItem {
   primary: string;
   secondary?: string | JSX.Element | React.ReactNode;
-  Icon?: any;
+  icon?: any;
+  iconColor?: string;
   indent?: boolean;
 }
 
 export const MenuLineItem = (props: IMenuLineItem): JSX.Element => {
-  const { primary, secondary, Icon, indent } = props;
+  const { primary, secondary, icon: Icon, indent, iconColor } = props;
   const theme = useTheme();
   return (
     <div
@@ -28,7 +29,7 @@ export const MenuLineItem = (props: IMenuLineItem): JSX.Element => {
           ...(indent && !Icon ? { paddingLeft: '2.25rem' } : {}),
         }}
       >
-        {Icon && <Icon style={{ color: 'inherit' }} fontSize="small" />}
+        {Icon && <Icon style={{ color: iconColor ?? 'inherit' }} fontSize="small" />}
         {primary}
       </div>
       {secondary && (

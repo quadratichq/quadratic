@@ -5,8 +5,6 @@ export interface PythonClientLoadError {
   error?: string;
 }
 
-export type PythonStateType = 'loading' | 'ready' | 'error' | 'running';
-
 export interface CodeRun {
   transactionId: string;
   sheetPos: SheetPosTS;

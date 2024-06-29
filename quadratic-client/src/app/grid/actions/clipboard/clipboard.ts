@@ -27,20 +27,20 @@ const canvasIsTarget = () => {
 
 export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   if (!canvasIsTarget()) return;
+  e.preventDefault();
   debugTimeReset();
   const { plainText, html } = await quadraticCore.copyToClipboard(sheets.getRustSelection());
   toClipboard(plainText, html);
-  e.preventDefault();
   debugTimeCheck('copy to clipboard');
 };
 
 export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   if (!canvasIsTarget()) return;
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
+  e.preventDefault();
   debugTimeReset();
   const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition());
   toClipboard(plainText, html);
-  e.preventDefault();
   debugTimeCheck('[Clipboard] cut to clipboard');
 };
 
@@ -52,6 +52,7 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
     console.warn('clipboardData is not defined');
     return;
   }
+  e.preventDefault();
   let html: string | undefined;
   let plainText: string | undefined;
 
@@ -74,8 +75,6 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
 
   // enables Firefox menu pasting after a ctrl+v paste
   localforage.setItem(clipboardLocalStorageKey, html);
-
-  e.preventDefault();
 };
 
 //#endregion

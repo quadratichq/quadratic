@@ -12,9 +12,9 @@ import { sheets } from '../../../grid/controller/Sheets';
 import { focusGrid } from '../../../helpers/focusGrid';
 import { colors } from '../../../theme/colors';
 import BottomBarItem from './BottomBarItem';
-import PythonStateItem from './PythonStateItem';
 import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
+import { KernelMenu } from './KernelMenu';
 
 export const BottomBar = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
@@ -108,7 +108,8 @@ export const BottomBar = () => {
       <Stack direction="row">
         <SelectionSummary />
         <SyncState />
-        {showOnDesktop && <PythonStateItem />}
+        <KernelMenu />
+        {/* {showOnDesktop && <PythonStateItem />} */}
         {provideFeedbackAction.isAvailable(permissions, isAuthenticated) && (
           <BottomBarItem
             icon={<FeedbackIcon fontSize="inherit" />}
