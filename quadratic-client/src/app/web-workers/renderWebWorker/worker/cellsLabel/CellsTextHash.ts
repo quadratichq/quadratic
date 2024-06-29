@@ -47,6 +47,9 @@ export class CellsTextHash {
 
   // todo: not sure if this is still used as I ran into issues with only rendering buffers:
 
+  // update text to re-wrap
+  dirtyWrapText = false;
+
   // rebuild only buffers
   dirtyBuffers = false;
 
@@ -108,7 +111,7 @@ export class CellsTextHash {
     renderClient.sendCellsTextHashClear(this.cellsLabels.sheetId, this.hashX, this.hashY, this.viewRectangle);
   }
 
-  async update(): Promise<boolean> {
+  update = async (): Promise<boolean> => {
     if (this.dirty) {
       // If dirty is true, then we need to get the cells from the server; but we
       // need to keep open the case where we receive new cells after dirty is
@@ -141,20 +144,31 @@ export class CellsTextHash {
       this.overflowClip();
       this.updateBuffers();
       return true;
-    } else if (this.dirtyBuffers) {
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating only buffers ${this.hashX}, ${this.hashY}`);
-      this.updateBuffers();
+    } else if (this.dirtyWrapText || this.dirtyBuffers) {
+      if (this.dirtyWrapText) {
+        if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text ${this.hashX}, ${this.hashY}`);
+        this.updateText();
+      }
+      if (this.dirtyBuffers) {
+        if (debugShowHashUpdates) console.log(`[CellsTextHash] updating buffers ${this.hashX}, ${this.hashY}`);
+        this.updateBuffers();
+      }
+
       return true;
     }
     return false;
-  }
+  };
 
-  private updateText() {
+  private updateText = () => {
     this.labelMeshes.clear();
     this.labels.forEach((child) => child.updateText(this.labelMeshes));
-  }
+    if (this.dirtyWrapText) {
+      this.dirtyWrapText = false;
+      this.dirtyBuffers = true;
+    }
+  };
 
-  overflowClip(): Set<CellsTextHash> {
+  overflowClip = (): Set<CellsTextHash> => {
     const bounds = this.cellsLabels.bounds;
     if (!bounds) return new Set();
     const clipLeft: TrackClip[] = [];
@@ -194,7 +208,7 @@ export class CellsTextHash {
     this.rightClip = clipRight;
 
     return updatedHashes;
-  }
+  };
 
   private checkClip(label: CellLabel, leftClip: TrackClip[], rightClip: TrackClip[]) {
     const bounds = this.cellsLabels.bounds;
@@ -243,7 +257,7 @@ export class CellsTextHash {
     }
   }
 
-  updateBuffers(): void {
+  updateBuffers = (): void => {
     // creates labelMeshes webGL buffers based on size
     this.labelMeshes.prepare();
 
@@ -279,9 +293,9 @@ export class CellsTextHash {
 
     this.loaded = true;
     this.dirtyBuffers = false;
-  }
+  };
 
-  adjustHeadings(options: { delta: number; column?: number; row?: number }): boolean {
+  adjustHeadings = (options: { delta: number; column?: number; row?: number }): boolean => {
     const { delta, column, row } = options;
     let changed = false;
     if (column !== undefined) {
@@ -292,14 +306,10 @@ export class CellsTextHash {
       }
       this.viewRectangle.width -= delta;
 
-      let wrap = false;
       this.labels.forEach((label) => {
         if (label.location.x === column) {
           label.adjustWidth(delta, column < 0);
           changed = true;
-          if (label.wrap === 'wrap') {
-            wrap = true;
-          }
         } else {
           if (column < 0) {
             if (label.location.x < column) {
@@ -314,9 +324,6 @@ export class CellsTextHash {
           }
         }
       });
-      if (wrap) {
-        this.updateText();
-      }
     } else if (row !== undefined) {
       if (this.AABB.y < 0 && this.AABB.y <= row) {
         this.viewRectangle.y += delta;
@@ -350,9 +357,10 @@ export class CellsTextHash {
       );
 
     return changed;
-  }
+  };
 
-  getCellsContentMaxWidth(column: number): number {
+  async getCellsContentMaxWidth(column: number): Promise<number> {
+    await this.update();
     let max = 0;
     this.labels.forEach((label) => {
       if (label.location.x === column) {
@@ -362,7 +370,8 @@ export class CellsTextHash {
     return max;
   }
 
-  getCellsContentMaxHeight(row: number): number {
+  async getCellsContentMaxHeight(row: number): Promise<number> {
+    await this.update();
     let max = 0;
     this.labels.forEach((label) => {
       if (label.location.y === row) {

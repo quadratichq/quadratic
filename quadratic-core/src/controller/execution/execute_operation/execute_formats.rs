@@ -96,10 +96,10 @@ impl GridController {
             if let Some(sheet) = self.try_sheet_mut(selection.sheet_id) {
                 let reverse_operations = sheet.set_formats_selection(&selection, &formats);
                 let rows = sheet.get_rows_in_selection(&selection);
+                self.start_auto_resize_row_heights(transaction, selection.sheet_id, rows);
 
                 if !transaction.is_server() {
                     self.send_updated_bounds_selection(&selection, true);
-                    self.start_auto_resize_row_heights(transaction, selection.sheet_id, rows);
                 }
 
                 transaction.generate_thumbnail |= self.thumbnail_dirty_selection(&selection);

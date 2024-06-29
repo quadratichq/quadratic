@@ -295,7 +295,7 @@ export class CellLabel {
       this.chars.push(charRenderData);
       pos.x += charData.xAdvance + this.letterSpacing;
       prevCharCode = charCode;
-      if (maxWidth !== undefined && pos.x > maxWidth / scale) {
+      if (maxWidth !== undefined && pos.x - maxWidth / scale > 0.001) {
         const start = lastBreakPos === -1 ? i - spacesRemoved : 1 + lastBreakPos - spacesRemoved;
         const count = lastBreakPos === -1 ? 1 : 1 + i - lastBreakPos;
         removeItems(this.chars, start, count);
@@ -332,16 +332,26 @@ export class CellLabel {
     this.textWidth = maxLineWidth * scale;
     this.textHeight = textHeight * scale;
 
-    // calculate the unwrapped text width
-    // content can be multi-line due to \n or \r, this corresponds to lineSpaces[i] === -1
+    // calculate the unwrapped text width, content can be multi-line due to \n or \r
     let curUnwrappedTextWidth = 0;
     let maxUnwrappedTextWidth = 0;
-    for (let i = 0; i < lineWidths.length; i++) {
-      curUnwrappedTextWidth += lineWidths[i];
-      if (lineSpaces[i] === -1) {
+    for (let i = 0; i < charsInput.length; i++) {
+      const char = charsInput[i];
+      if (char === '\r' || char === '\n') {
         maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
         curUnwrappedTextWidth = 0;
+        continue;
       }
+      const charCode = extractCharCode(char);
+      const charData = data.chars[charCode];
+      if (!charData) continue;
+      if (prevCharCode && charData.kerning[prevCharCode]) {
+        curUnwrappedTextWidth += charData.kerning[prevCharCode];
+      }
+      curUnwrappedTextWidth +=
+        this.letterSpacing / 2 + charData.xOffset + Math.max(charData.xAdvance, charData.origWidth);
+      maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
+      prevCharCode = charCode;
     }
     this.unwrappedTextWidth = (maxUnwrappedTextWidth + 3 * CELL_TEXT_MARGIN_LEFT) * scale;
 

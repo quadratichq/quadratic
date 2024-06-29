@@ -54,22 +54,16 @@ impl GridController {
                 );
             }
 
+            if let Some((start, end)) = sheet.column_bounds(column, true) {
+                self.start_auto_resize_row_heights(transaction, sheet_id, (start..=end).collect());
+            }
+
             if !transaction.is_server() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: column,
                     y: 0,
                     sheet_id,
                 });
-
-                if let Some(sheet) = self.try_sheet(sheet_id) {
-                    if let Some((start, end)) = sheet.column_bounds(column, true) {
-                        self.start_auto_resize_row_heights(
-                            transaction,
-                            sheet_id,
-                            (start..=end).collect(),
-                        );
-                    }
-                }
             }
         }
     }
