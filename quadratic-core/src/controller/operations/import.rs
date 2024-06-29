@@ -2,6 +2,7 @@ use std::io::Cursor;
 
 use anyhow::{anyhow, bail, Result};
 use lexicon_fractional_index::key_between;
+use regex::Regex;
 
 use crate::{
     cell_values::CellValues,
@@ -146,6 +147,9 @@ impl GridController {
             y: row as i64 + 1,
         };
 
+        // remove the _xlfn. _xludf. prefix from the function name
+        let re = Regex::new(r"(?:^|[^A-Za-z\d])(?:_xlfn|_xludf)\.").unwrap();
+
         let mut order = key_between(&None, &None).unwrap_or("A0".to_string());
         for sheet_name in sheets {
             // add the sheet
@@ -209,13 +213,14 @@ impl GridController {
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {
+                        let code = re.replace_all(cell, "").into_owned();
                         let pos = Pos {
                             x: insert_at.x + x as i64,
                             y: insert_at.y + y as i64,
                         };
                         let cell_value = CellValue::Code(CodeCellValue {
                             language: CodeCellLanguage::Formula,
-                            code: cell.to_string(),
+                            code,
                         });
                         sheet.set_cell_value(pos, cell_value);
                         // add code compute operation, to generate code runs

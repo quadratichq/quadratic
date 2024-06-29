@@ -1,20 +1,9 @@
 use std::collections::HashSet;
 
 use lazy_static::lazy_static;
-use regex::Regex;
 
 pub fn is_valid_excel_function(name: &str) -> bool {
-    ALL_EXCEL_FUNCTIONS.contains(
-        clean_excel_formula_prefix(name)
-            .to_ascii_uppercase()
-            .as_str(),
-    )
-}
-
-// Remove the _xlfn. _xludf. prefix from the function name.
-pub fn clean_excel_formula_prefix(name: &str) -> String {
-    let re = Regex::new(r"^(_xlfn|_xludf)\.").unwrap();
-    re.replace(name, "").into_owned()
+    ALL_EXCEL_FUNCTIONS.contains(name.to_ascii_uppercase().as_str())
 }
 
 lazy_static! {

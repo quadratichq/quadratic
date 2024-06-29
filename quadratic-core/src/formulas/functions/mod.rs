@@ -23,11 +23,7 @@ use crate::{
 };
 
 pub fn lookup_function(name: &str) -> Option<&'static FormulaFunction> {
-    ALL_FUNCTIONS.get(
-        excel::clean_excel_formula_prefix(name)
-            .to_ascii_uppercase()
-            .as_str(),
-    )
+    ALL_FUNCTIONS.get(name.to_ascii_uppercase().as_str())
 }
 
 pub const CATEGORIES: &[FormulaFunctionCategory] = &[
