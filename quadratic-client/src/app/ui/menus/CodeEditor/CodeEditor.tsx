@@ -13,8 +13,7 @@ import { useRecoilState } from 'recoil';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/CodeEditorPanels';
-import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -25,7 +24,8 @@ import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebW
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
-import { CodeEditorPanel } from './CodeEditorPanel';
+import { CodeEditorPanel } from './panels/CodeEditorPanel';
+import { CodeEditorPanels } from './panels/CodeEditorPanelsResize';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
@@ -39,7 +39,6 @@ export const CodeEditor = () => {
   const mode = getLanguage(editorMode);
   const {
     consoleOutput: [out, setOut],
-    containerRef,
     spillError: [, setSpillError],
     codeString: [codeString, setCodeString],
     editorContent: [editorContent, setEditorContent],
@@ -347,8 +346,11 @@ export const CodeEditor = () => {
 
   return (
     <div
-      ref={containerRef}
-      className={cn('relative flex bg-background', codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col')}
+      id="code-editor-container"
+      className={cn(
+        'relative flex h-full bg-background',
+        codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
+      )}
       style={{
         width: `${
           codeEditorPanelData.editorWidth +
@@ -359,11 +361,16 @@ export const CodeEditor = () => {
     >
       <div
         id="QuadraticCodeEditorID"
-        className={cn('flex flex-col', codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1')}
+        className={cn(
+          'flex min-h-0 shrink flex-col',
+          codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+        )}
         style={{
           width: `${codeEditorPanelData.editorWidth}px`,
           height:
-            codeEditorPanelData.panelPosition === 'left' ? '100%' : `${codeEditorPanelData.editorHeightPercentage}%`,
+            codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
+              ? '100%'
+              : `${codeEditorPanelData.editorHeightPercentage}%`,
         }}
         onKeyDownCapture={onKeyDownEditor}
         onPointerEnter={() => {
@@ -417,6 +424,7 @@ export const CodeEditor = () => {
 
       <div
         className={cn(
+          'shrink-0',
           codeEditorPanelData.panelPosition === 'left' ? 'order-1' : 'order-2',
           'relative flex flex-col bg-background'
         )}
@@ -425,12 +433,11 @@ export const CodeEditor = () => {
           height:
             codeEditorPanelData.panelPosition === 'left'
               ? '100%'
-              : `${100 - codeEditorPanelData.editorHeightPercentage}%`,
+              : `${codeEditorPanelData.bottomHidden ? 'auto' : 100 - codeEditorPanelData.editorHeightPercentage + '%'}`,
         }}
       >
         <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} />
       </div>
-
       <CodeEditorPanels codeEditorPanelData={codeEditorPanelData} />
     </div>
   );

@@ -1,10 +1,6 @@
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { ResizeControl } from '@/app/ui/menus/CodeEditor/ResizeControl';
-import {
-  CodeEditorPanelData,
-  MIN_WIDTH_PANEL,
-  MIN_WIDTH_VISIBLE_GRID,
-} from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
+import { memo, useEffect, useState } from 'react';
+import { ResizeControl } from './ResizeControl';
+import { CodeEditorPanelData, MIN_WIDTH_PANEL, MIN_WIDTH_VISIBLE_GRID } from './useCodeEditorPanelData';
 
 interface Props {
   codeEditorPanelData: CodeEditorPanelData;
@@ -12,9 +8,21 @@ interface Props {
 
 const MIN_WIDTH_EDITOR = 350;
 
-export const CodeEditorPanels = (props: Props) => {
-  const { containerRef } = useCodeEditor();
+export const CodeEditorPanels = memo((props: Props) => {
+  const container = document.querySelector('#code-editor-container');
   const { codeEditorPanelData } = props;
+
+  // we need to calculate the console height after a change in bottomHidden
+  const [consoleHeaderHeight, setConsoleHeaderHeight] = useState(0);
+  useEffect(() => {
+    if (codeEditorPanelData.bottomHidden && container) {
+      const editor = container.firstChild as HTMLDivElement;
+      if (editor) {
+        const editorRect = editor.getBoundingClientRect();
+        setConsoleHeaderHeight(editorRect.height);
+      }
+    }
+  }, [codeEditorPanelData.bottomHidden, container]);
 
   return (
     <>
@@ -80,11 +88,17 @@ export const CodeEditorPanels = (props: Props) => {
           />
           {/* top-to-bottom: height of sections */}
           <ResizeControl
-            style={{ top: codeEditorPanelData.editorHeightPercentage + '%', width: '100%' }}
+            disabled={codeEditorPanelData.bottomHidden}
+            style={{
+              top: codeEditorPanelData.bottomHidden
+                ? consoleHeaderHeight + 'px'
+                : codeEditorPanelData.editorHeightPercentage + '%',
+              width: '100%',
+            }}
             setState={(mouseEvent) => {
-              if (!containerRef.current) return;
+              if (!container) return;
 
-              const containerRect = containerRef.current?.getBoundingClientRect();
+              const containerRect = container.getBoundingClientRect();
               const newTopHeight = ((mouseEvent.clientY - containerRect.top) / containerRect.height) * 100;
 
               if (newTopHeight >= 25 && newTopHeight <= 75) {
@@ -97,4 +111,4 @@ export const CodeEditorPanels = (props: Props) => {
       )}
     </>
   );
-};
+});

@@ -1,6 +1,8 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { adjustPercentages } from '@/app/ui/menus/CodeEditor/panels/adjustPercentages';
+import useLocalStorage, { SetValue } from '@/shared/hooks/useLocalStorage';
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export type PanelPosition = 'bottom' | 'left';
@@ -15,9 +17,14 @@ export interface CodeEditorPanelData {
   panelHeightPercentage: number;
   setPanelHeightPercentage: (value: number) => void;
   panelHeightPercentages: number[];
-  setPanelHeightPercentages: Dispatch<SetStateAction<number[]>>;
+  setPanelHeightPercentages: SetValue<number[]>;
   panelPosition: PanelPosition;
-  setPanelPosition: (value: PanelPosition | ((old: PanelPosition) => PanelPosition)) => void;
+  setPanelPosition: SetValue<PanelPosition>;
+  adjustPanelPercentage: (index: number, newValue: number) => void;
+  panelHidden: boolean[];
+  setPanelHidden: Dispatch<SetStateAction<boolean[]>>;
+  bottomHidden: boolean;
+  setBottomHidden: Dispatch<SetStateAction<boolean>>;
 }
 
 export const MIN_WIDTH_PANEL = 300;
@@ -30,29 +37,48 @@ export const MIN_WIDTH_VISIBLE_GRID = 215;
 // maximum width for showing the editor
 const MAX_WIDTH = 1024;
 
+const HIDDEN_3 = [false, false, false];
+const HIDDEN_2 = [false, false];
+const HEIGHT_PERCENT_3 = [34, 33, 33];
+const HEIGHT_PERCENT_2 = [50, 50];
+
 export const useCodeEditorPanelData = (): CodeEditorPanelData => {
   const { mode } = useRecoilValue(editorInteractionStateAtom);
   const [editorWidth, setEditorWidth] = useLocalStorage<number>(
     'codeEditorWidth',
     window.innerWidth * 0.35 // default to 35% of the window width
   );
-  const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>('codeEditorHeightPercentage', 75);
+
+  // this stores the height when editor is in vertical mode
+  const [editorHeightPercentage, setEditorHeightPercentage] = useLocalStorage<number>(`codeEditorHeightPercentage`, 75);
+
+  const type = getLanguage(mode);
+
+  // this stores the width/height when editor is in horizontal mode
   const [panelWidth, setPanelWidth] = useLocalStorage('codeEditorPanelWidth', MIN_WIDTH_PANEL);
   const [panelHeightPercentage, setPanelHeightPercentage] = useLocalStorage<number>(
-    'codeEditorPanelHeightPercentage',
+    `codeEditorPanelHeightPercentage-${type}`,
     50
   );
-  const [panelHeightPercentages, setPanelHeightPercentages] = useState<number[]>([33, 33]);
+  const [panelHidden, setPanelHidden] = useLocalStorage<boolean[]>(
+    `codeEditorPanelHidden-${type}`,
+    type === 'Connection' ? HIDDEN_3 : HIDDEN_2
+  );
+  // stores the heights when in horizontal mode (Connection has 3 panels, others have 2)
+  const [panelHeightPercentages, setPanelHeightPercentages] = useLocalStorage<number[]>(
+    `codeEditorPanelHeightPercentages-${type}`,
+    type === 'Connection' ? HEIGHT_PERCENT_3 : HEIGHT_PERCENT_2
+  );
   const [panelPosition, setPanelPosition] = useLocalStorage<PanelPosition>('codeEditorPanelPosition', 'bottom');
+  const [bottomHidden, setBottomHidden] = useLocalStorage('codeEditorPanelBottom', false);
 
-  // When we change the number of panels, reset the heights
-  useEffect(() => {
-    if (typeof mode === 'object') {
-      setPanelHeightPercentages([34, 33, 33]);
-    } else {
-      setPanelHeightPercentages([50, 50]);
-    }
-  }, [mode, setPanelHeightPercentages]);
+  // attempts to adjust percentages of panel to match the new value
+  const adjustPanelPercentage = useCallback(
+    (index: number, newValue: number) => {
+      adjustPercentages(panelHeightPercentages, setPanelHeightPercentages, index, newValue);
+    },
+    [panelHeightPercentages, setPanelHeightPercentages]
+  );
 
   // Whenever we change the position of the panel to be left-to-right, make sure
   // there's enough width for the editor and the panel
@@ -94,15 +120,36 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
           return availableWidth * editorPercentage;
         });
       }
+      setBottomHidden(false);
     };
 
     window.addEventListener('resize', handleResize, true);
     return () => {
       window.removeEventListener('resize', handleResize, true);
     };
-  }, [editorWidth, panelPosition, panelWidth, setEditorWidth, setPanelWidth]);
+  }, [editorWidth, panelPosition, panelWidth, setBottomHidden, setEditorWidth, setPanelWidth]);
 
-  return {
+  return useMemo(() => {
+    return {
+      editorWidth,
+      setEditorWidth,
+      editorHeightPercentage,
+      setEditorHeightPercentage,
+      panelWidth,
+      setPanelWidth,
+      panelHeightPercentage,
+      setPanelHeightPercentage,
+      panelHeightPercentages,
+      setPanelHeightPercentages,
+      adjustPanelPercentage,
+      panelPosition,
+      setPanelPosition,
+      panelHidden,
+      setPanelHidden,
+      bottomHidden,
+      setBottomHidden,
+    };
+  }, [
     editorWidth,
     setEditorWidth,
     editorHeightPercentage,
@@ -113,7 +160,12 @@ export const useCodeEditorPanelData = (): CodeEditorPanelData => {
     setPanelHeightPercentage,
     panelHeightPercentages,
     setPanelHeightPercentages,
+    adjustPanelPercentage,
     panelPosition,
     setPanelPosition,
-  };
+    panelHidden,
+    setPanelHidden,
+    bottomHidden,
+    setBottomHidden,
+  ]);
 };
