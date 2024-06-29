@@ -13,7 +13,7 @@ use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;
 use super::resize::{Resize, ResizeMap};
-use super::{CodeRun, NumericFormat, NumericFormatKind};
+use super::{CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;

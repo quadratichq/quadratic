@@ -94,6 +94,7 @@ impl Sheet {
                 value: "".to_string(),
                 language,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -150,7 +151,8 @@ impl Sheet {
                         let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                             numeric_format.kind == NumericFormatKind::Percentage
                         });
-                        let numeric_decimals = self.calculate_decimal_places(Pos { x, y }, is_percentage);
+                        let numeric_decimals =
+                            self.calculate_decimal_places(Pos { x, y }, is_percentage);
                         let numeric_commas = column.numeric_commas.get(y).or(format.numeric_commas);
 
                         // if align is not set, set it to right only for numbers
