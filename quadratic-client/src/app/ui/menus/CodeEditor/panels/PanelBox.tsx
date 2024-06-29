@@ -14,9 +14,9 @@ interface Props {
 // Calculates the height of the minimized box by creating the same element and
 // measuring its height.
 export const calculatePanelBoxMinimizedSize = () => {
-  const minimized = `<div class="px-2 pb-2 pt-2"><div class="h-9">Test</div></div>`;
   const div = document.createElement('div');
-  div.innerHTML = minimized;
+  div.className = 'px-2 pb-2 pt-2 text-sm';
+  div.innerHTML = 'Test';
   document.body.appendChild(div);
   const height = div.getBoundingClientRect().height;
   document.body.removeChild(div);

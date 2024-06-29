@@ -36,7 +36,8 @@ export function CodeEditorPanelSide(props: Props) {
     let adjustedContainerHeight = containerHeight;
     for (let i = 0; i < codeEditorPanelData.panelHidden.length; i++) {
       if (codeEditorPanelData.panelHidden[i]) {
-        adjustedContainerHeight += (codeEditorPanelData.panelHeightPercentages[i] / 100) * containerHeight;
+        adjustedContainerHeight +=
+          (codeEditorPanelData.panelHeightPercentages[i] / 100) * containerHeight - minimizedSize;
       }
     }
     return {
@@ -77,28 +78,21 @@ export function CodeEditorPanelSide(props: Props) {
 
       // We need to adjust the percentage based on the size of the hidden panel.
       if (first) {
-        if (!panels[1].open) {
-          // const collapsedHeight = panel1.getBoundingClientRect().height;
-          // const expandedPercent = codeEditorPanelData.panelHeightPercentages[1] / 100;
-          // containerHeight -= collapsedHeight;
-          // adjustPercent = expandedPercent / 2;
-          // clientY += panel1.getBoundingClientRect().height;
-        } else if (!panels[2].open) {
-          const top = (clientY - containerRect.top) / adjustedContainerHeight;
-          codeEditorPanelData.adjustPanelPercentage(0, top * 100);
+        if (!panels[2].open) {
+          const percent = (clientY - containerRect.top) / adjustedContainerHeight;
+          codeEditorPanelData.adjustPanelPercentage(0, percent * 100);
         } else {
           const newValue = ((clientY - containerRect.top) / containerHeight) * 100;
           codeEditorPanelData.adjustPanelPercentage(0, newValue);
         }
       } else {
-        // if (panelHidden[0]) {
-        //   const panel0 = containerRef.current.querySelector('#panel-0');
-        //   if (panel0) {
-        //     clientY += panel0.getBoundingClientRect().height;
-        //   }
-        // }
-        const newValue = (1 - (clientY - containerRect.top) / containerHeight) * 100;
-        codeEditorPanelData.adjustPanelPercentage(2, newValue);
+        if (!panels[0].open) {
+          const percent = ((containerRect.bottom - clientY) / adjustedContainerHeight) * 100;
+          codeEditorPanelData.adjustPanelPercentage(2, percent);
+        } else {
+          const newValue = (1 - (clientY - containerRect.top) / containerHeight) * 100;
+          codeEditorPanelData.adjustPanelPercentage(2, newValue);
+        }
       }
     },
     [adjustedContainerHeight, codeEditorPanelData, container, panels]
