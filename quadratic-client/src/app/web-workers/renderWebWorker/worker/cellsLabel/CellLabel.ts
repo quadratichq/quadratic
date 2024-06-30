@@ -348,8 +348,7 @@ export class CellLabel {
       if (prevCharCode && charData.kerning[prevCharCode]) {
         curUnwrappedTextWidth += charData.kerning[prevCharCode];
       }
-      curUnwrappedTextWidth +=
-        this.letterSpacing / 2 + charData.xOffset + Math.max(charData.xAdvance, charData.origWidth);
+      curUnwrappedTextWidth += charData.xAdvance + this.letterSpacing;
       maxUnwrappedTextWidth = Math.max(maxUnwrappedTextWidth, curUnwrappedTextWidth);
       prevCharCode = charCode;
     }
