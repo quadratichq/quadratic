@@ -24,6 +24,9 @@ declare var self: WorkerGlobalScope &
       size: number
     ) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
+    sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
+    handleResponseRowHeights: (transactionId: string, sheetId: string, rowHeights: string) => void;
+    sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
   };
 
 class CoreRender {
@@ -43,8 +46,12 @@ class CoreRender {
         this.getRenderCells(e.data);
         break;
 
+      case 'renderCoreResponseRowHeights':
+        this.handleResponseRowHeights(e.data.transactionId, e.data.sheetId, e.data.rowHeights);
+        break;
+
       default:
-        console.warn('[coreRender] Unhandled message type', e.data.type);
+        console.warn('[coreRender] Unhandled message type', e.data);
     }
   };
 
@@ -94,6 +101,18 @@ class CoreRender {
   sendSheetBoundsUpdate = (sheetBounds: SheetBounds) => {
     this.send({ type: 'coreRenderSheetBoundsUpdate', sheetBounds });
   };
+
+  sendRequestRowHeights = (transactionId: string, sheetId: string, rows: string) => {
+    this.send({ type: 'coreRenderRequestRowHeights', transactionId, sheetId, rows });
+  };
+
+  handleResponseRowHeights = (transactionId: string, sheetId: string, rowHeights: string) => {
+    core.receiveRowHeights(transactionId, sheetId, rowHeights);
+  };
+
+  sendResizeRowHeights = (sheetId: string, rowHeights: string) => {
+    this.send({ type: 'coreRenderResizeRowHeights', sheetId, rowHeights });
+  };
 }
 
 export const coreRender = new CoreRender();
@@ -105,3 +124,6 @@ self.sendDeleteSheetRender = coreRender.sendDeleteSheet;
 self.sendSheetOffsetsRender = coreRender.sendSheetOffsets;
 self.sendSheetInfoUpdateRender = coreRender.sendSheetInfoUpdate;
 self.sendSheetBoundsUpdateRender = coreRender.sendSheetBoundsUpdate;
+self.sendRequestRowHeights = coreRender.sendRequestRowHeights;
+self.handleResponseRowHeights = coreRender.handleResponseRowHeights;
+self.sendResizeRowHeightsRender = coreRender.sendResizeRowHeights;

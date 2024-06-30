@@ -6,11 +6,12 @@
  */
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import { JsRenderCell } from '@/app/quadratic-core-types';
+import { JsRenderCell, JsRowHeight } from '@/app/quadratic-core-types';
 import {
   CoreRenderCells,
   CoreRenderMessage,
   RenderCoreRequestRenderCells,
+  RenderCoreResponseRowHeights,
 } from '@/app/web-workers/quadraticCore/coreRenderMessages';
 import { renderText } from './renderText';
 
@@ -61,10 +62,49 @@ class RenderCore {
         renderText.sheetBoundsUpdate(e.data.sheetBounds);
         break;
 
+      case 'coreRenderRequestRowHeights':
+        this.getRowHeights(e.data.transactionId, e.data.sheetId, e.data.rows);
+        break;
+
+      case 'coreRenderResizeRowHeights':
+        this.resizeRowHeights(e.data.sheetId, e.data.rowHeights);
+        break;
+
       default:
         console.warn('[renderCore] Unhandled message', e.data);
     }
   };
+
+  async getRowHeights(transactionId: string, sheetId: string, rowsString: string) {
+    if (!this.renderCorePort) {
+      console.error('Expected renderCorePort to be defined in RenderCore.responseRowHeights');
+      return;
+    }
+
+    try {
+      const rows: bigint[] = JSON.parse(rowsString);
+      const rowHeights = await renderText.getRowHeights(sheetId, rows);
+      const rowHeightsString = JSON.stringify(rowHeights);
+      const message: RenderCoreResponseRowHeights = {
+        type: 'renderCoreResponseRowHeights',
+        transactionId,
+        sheetId,
+        rowHeights: rowHeightsString,
+      };
+      this.renderCorePort.postMessage(message);
+    } catch (e) {
+      console.error('[renderCore] getRowHeights: Error parsing rows: ', e);
+    }
+  }
+
+  resizeRowHeights(sheetId: string, rowHeightsString: string) {
+    try {
+      const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
+      renderText.resizeRowHeights(sheetId, rowHeights);
+    } catch (e) {
+      console.error('[renderCore] resizeRowHeights: Error parsing JsRowHeight: ', e);
+    }
+  }
 
   /*********************
    * Core API requests *

@@ -1,6 +1,8 @@
 import {
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   Format,
   JsCodeCell,
@@ -9,6 +11,7 @@ import {
   JsRenderCell,
   JsRenderCodeCell,
   JsRenderFill,
+  JsRowHeight,
   JsSheetFill,
   MinMax,
   SearchOptions,
@@ -331,6 +334,20 @@ export interface ClientCoreSetCellAlign {
   cursor?: string;
 }
 
+export interface ClientCoreSetCellVerticalAlign {
+  type: 'clientCoreSetCellVerticalAlign';
+  selection: Selection;
+  verticalAlign: CellVerticalAlign;
+  cursor?: string;
+}
+
+export interface ClientCoreSetCellWrap {
+  type: 'clientCoreSetCellWrap';
+  selection: Selection;
+  wrap: CellWrap;
+  cursor?: string;
+}
+
 export interface ClientCoreSetCurrency {
   type: 'clientCoreSetCurrency';
   selection: Selection;
@@ -581,6 +598,12 @@ export interface CoreClientSheetCodeCellRender {
   codeCells: JsRenderCodeCell[];
 }
 
+export interface CoreClientResizeRowHeights {
+  type: 'coreClientResizeRowHeights';
+  sheetId: string;
+  rowHeights: JsRowHeight[];
+}
+
 //#endregion
 
 //#region Undo/Redo
@@ -824,6 +847,8 @@ export type ClientCoreMessage =
   | ClientCoreSetCellFillColor
   | ClientCoreSetCellTextColor
   | ClientCoreSetCellAlign
+  | ClientCoreSetCellVerticalAlign
+  | ClientCoreSetCellWrap
   | ClientCoreSetCurrency
   | ClientCoreSetPercentage
   | ClientCoreSetExponential
@@ -921,4 +946,5 @@ export type CoreClientMessage =
   | CoreClientGetFormatRow
   | CoreClientGetFormatCell
   | CoreClientSheetMetaFills
-  | CoreClientSetCursorSelection;
+  | CoreClientSetCursorSelection
+  | CoreClientResizeRowHeights;

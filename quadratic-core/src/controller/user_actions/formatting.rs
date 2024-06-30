@@ -2,8 +2,8 @@ use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::{operations::operation::Operation, GridController};
 use crate::{
     grid::{
-        formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellWrap, FillColor, Italic,
-        NumericDecimals, NumericFormat, RenderSize, TextColor,
+        formatting::CellFmtArray, Bold, CellAlign, CellFmtAttr, CellVerticalAlign, CellWrap,
+        FillColor, Italic, NumericDecimals, NumericFormat, RenderSize, TextColor,
     },
     RunLengthEncoding, SheetPos, SheetRect,
 };
@@ -102,6 +102,7 @@ macro_rules! impl_set_cell_fmt_method {
 }
 
 impl_set_cell_fmt_method!(set_cell_align<CellAlign>(CellFmtArray::Align));
+impl_set_cell_fmt_method!(set_cell_vertical_align<CellVerticalAlign>(CellFmtArray::VerticalAlign));
 impl_set_cell_fmt_method!(set_cell_wrap<CellWrap>(CellFmtArray::Wrap));
 impl_set_cell_fmt_method!(set_cell_numeric_format<NumericFormat>(CellFmtArray::NumericFormat));
 impl_set_cell_fmt_method!(set_cell_numeric_decimals<NumericDecimals>(CellFmtArray::NumericDecimals));

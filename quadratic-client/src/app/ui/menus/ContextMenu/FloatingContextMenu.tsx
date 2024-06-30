@@ -19,6 +19,7 @@ import {
   DecimalIncreaseIcon,
   DollarIcon,
   DotsHorizontalIcon,
+  ExpandMoreIcon,
   FontBoldIcon,
   FontItalicIcon,
   FunctionIcon,
@@ -28,8 +29,14 @@ import {
   TextAlignCenterIcon,
   TextAlignLeftIcon,
   TextAlignRightIcon,
+  TextClipIcon,
   TextColorIcon,
   TextNoneIcon,
+  TextOverflowIcon,
+  TextVerticalAlignBottomIcon,
+  TextVerticalAlignMiddleIcon,
+  TextVerticalAlignTopIcon,
+  WrapTextIcon,
 } from '@/app/ui/icons';
 import { MenuLineItem } from '@/app/ui/menus/TopBar/MenuLineItem';
 import { useGetBorderMenu } from '@/app/ui/menus/TopBar/SubMenus/FormatMenu/useGetBorderMenu';
@@ -37,16 +44,18 @@ import {
   clearFillColor,
   clearFormattingAndBorders,
   removeCellNumericFormat,
-  setAlignment,
+  setAlign,
   setBold,
   setFillColor,
   setItalic,
   setTextColor,
+  setVerticalAlign,
+  setWrap,
   textFormatDecreaseDecimalPlaces,
   textFormatIncreaseDecimalPlaces,
   textFormatSetCurrency,
   textFormatSetExponential,
-  textFormatSetPercentage,
+  textFormatSetPercentage
 } from '@/app/ui/menus/TopBar/SubMenus/formatCells';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { Divider, IconButton, Toolbar } from '@mui/material';
@@ -54,6 +63,7 @@ import { ControlledMenu, Menu, MenuDivider, MenuInstance, MenuItem, useMenuState
 import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
+import './floatingMenuStyles.scss';
 
 interface Props {
   container?: HTMLDivElement;
@@ -330,21 +340,101 @@ export const FloatingContextMenu = (props: Props) => {
 
         <MenuDividerVertical />
 
-        <TooltipHint title="Align left">
-          <IconButton size="small" onClick={() => setAlignment('left')}>
-            <TextAlignLeftIcon fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-        <TooltipHint title="Align center">
-          <IconButton size="small" onClick={() => setAlignment('center')}>
-            <TextAlignCenterIcon fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
-        <TooltipHint title="Align right">
-          <IconButton size="small" onClick={() => setAlignment('right')}>
-            <TextAlignRightIcon fontSize={iconSize} />
-          </IconButton>
-        </TooltipHint>
+        <Menu
+          className="text-submenu"
+          menuButton={
+            <div>
+              <TooltipHint title="Horizontal align">
+                <IconButton size="small">
+                  <TextAlignLeftIcon fontSize={iconSize} />
+                  <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
+                </IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
+          <div style={{ padding: '0px 4px' }}>
+            <TooltipHint title="Align left">
+              <IconButton size="small" onClick={() => setAlign('left')}>
+                <TextAlignLeftIcon fontSize={iconSize} />
+              </IconButton>
+            </TooltipHint>
+            <TooltipHint title="Align center">
+              <IconButton size="small" onClick={() => setAlign('center')}>
+                <TextAlignCenterIcon fontSize={iconSize} />
+              </IconButton>
+            </TooltipHint>
+            <TooltipHint title="Align right">
+              <IconButton size="small" onClick={() => setAlign('right')}>
+                <TextAlignRightIcon fontSize={iconSize} />
+              </IconButton>
+            </TooltipHint>
+          </div>
+        </Menu>
+
+        <Menu
+          className="text-submenu"
+          menuButton={
+            <div>
+              <TooltipHint title="Vertical align">
+                <IconButton size="small">
+                  <TextVerticalAlignTopIcon fontSize={iconSize} />
+                  <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
+                </IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
+          <div style={{ padding: '0px 4px' }}>
+            <TooltipHint title="Top align">
+              <IconButton size="small" onClick={() => setVerticalAlign('top')}>
+                <TextVerticalAlignTopIcon fontSize={iconSize} />
+              </IconButton>
+            </TooltipHint>
+            <TooltipHint title="Middle align">
+              <IconButton size="small" onClick={() => setVerticalAlign('middle')}>
+                <TextVerticalAlignMiddleIcon fontSize={iconSize} />
+              </IconButton>
+            </TooltipHint>
+            <TooltipHint title="Bottom align">
+              <IconButton size="small" onClick={() => setVerticalAlign('bottom')}>
+                <TextVerticalAlignBottomIcon fontSize={iconSize} />
+              </IconButton>
+            </TooltipHint>
+          </div>
+        </Menu>
+
+        <Menu
+          className="text-submenu"
+          menuButton={
+            <div>
+              <TooltipHint title="Text wrap">
+                <IconButton size="small">
+                <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
+                  <ExpandMoreIcon fontSize={'inherit'} style={{ fontSize: '12px' }} />
+                </IconButton>
+              </TooltipHint>
+            </div>
+          }
+        >
+          <div style={{ padding: '0px 4px' }}>
+            <TooltipHint title="Overflow">
+              <IconButton size="small" onClick={() => setWrap('overflow')}>
+                <TextOverflowIcon style={{ width: '20px', height: '20px' }} />
+              </IconButton>
+            </TooltipHint>
+            <TooltipHint title="Wrap">
+              <IconButton size="small" onClick={() => setWrap('wrap')}>
+                <WrapTextIcon fontSize={iconSize} />
+              </IconButton>
+            </TooltipHint>
+            <TooltipHint title="Clip">
+              <IconButton size="small" onClick={() => setWrap('clip')}>
+                <TextClipIcon style={{ width: '20px', height: '20px' }} />
+              </IconButton>
+            </TooltipHint>
+          </div>
+        </Menu>
 
         <MenuDividerVertical />
 

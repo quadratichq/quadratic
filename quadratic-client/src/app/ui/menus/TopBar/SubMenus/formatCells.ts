@@ -1,4 +1,4 @@
-import { CellAlign, Format, Selection } from '@/app/quadratic-core-types';
+import { CellAlign, CellVerticalAlign, CellWrap, Format, Selection } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ColorResult } from 'react-color';
 import { sheets } from '../../../../grid/controller/Sheets';
@@ -51,8 +51,16 @@ export const setTextColor = (rgb?: ColorResult) => {
   );
 };
 
-export const setAlignment = (align: CellAlign) => {
+export const setAlign = (align: CellAlign) => {
   quadraticCore.setCellAlign(sheets.getRustSelection(), align, sheets.getCursorPosition());
+};
+
+export const setVerticalAlign = (verticalAlign: CellVerticalAlign) => {
+  quadraticCore.setCellVerticalAlign(sheets.getRustSelection(), verticalAlign, sheets.getCursorPosition());
+};
+
+export const setWrap = (wrap: CellWrap) => {
+  quadraticCore.setCellWrap(sheets.getRustSelection(), wrap, sheets.getCursorPosition());
 };
 
 export const textFormatIncreaseDecimalPlaces = () => {

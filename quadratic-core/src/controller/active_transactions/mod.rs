@@ -45,7 +45,7 @@ impl ActiveTransactions {
     pub fn get_async_transaction_index(&self, transaction_id: Uuid) -> Result<usize> {
         self.async_transactions
             .iter()
-            .position(|p| p.id == transaction_id && p.waiting_for_async.is_some())
+            .position(|p| p.id == transaction_id && p.has_async)
             .ok_or_else(|| {
                 CoreError::TransactionNotFound(
                     "async transaction not found in get_async_transaction".into(),

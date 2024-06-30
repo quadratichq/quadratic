@@ -12,6 +12,7 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsRowHeight,
   JsSheetFill,
   Selection,
   SheetBounds,
@@ -77,6 +78,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendResizeRowHeightsClient(sheetId: string, rowHeights: string): void;
   };
 
 class CoreClient {
@@ -103,6 +105,7 @@ class CoreClient {
     self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
+    self.sendResizeRowHeightsClient = coreClient.sendResizeRowHeights;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -345,6 +348,14 @@ class CoreClient {
 
       case 'clientCoreSetCellAlign':
         await core.setCellAlign(e.data.selection, e.data.align, e.data.cursor);
+        break;
+
+      case 'clientCoreSetCellVerticalAlign':
+        await core.setCellVerticalAlign(e.data.selection, e.data.verticalAlign, e.data.cursor);
+        break;
+
+      case 'clientCoreSetCellWrap':
+        await core.setCellWrap(e.data.selection, e.data.wrap, e.data.cursor);
         break;
 
       case 'clientCoreCopyToClipboard':
@@ -618,6 +629,15 @@ class CoreClient {
 
   sendImage = (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => {
     this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h });
+  };
+
+  sendResizeRowHeights = (sheetId: string, rowHeightsString: string) => {
+    try {
+      const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
+      this.send({ type: 'coreClientResizeRowHeights', sheetId, rowHeights });
+    } catch (e) {
+      console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
+    }
   };
 }
 

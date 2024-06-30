@@ -60,7 +60,7 @@ declare var self: WorkerGlobalScope &
     sendSheetBoundsUpdateClient: (sheetBounds: SheetBounds) => void;
     sendSheetBoundsUpdateRender: (sheetBounds: SheetBounds) => void;
     sendTransactionStart: (transactionId: string, transactionType: TransactionName) => void;
-    sendTransactionProgress: (transactionId: String, remainingOperations: number) => void;
+    sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
     sendUpdateCodeCell: (
@@ -72,6 +72,9 @@ declare var self: WorkerGlobalScope &
     ) => void;
     sendUndoRedo: (undo: string, redo: string) => void;
     sendImage: (sheetId: string, x: number, y: number, image?: string, w?: string, h?: string) => void;
+    sendRequestRowHeights: (transactionId: string, sheetId: string, rows: string) => void;
+    sendResizeRowHeightsClient: (sheetId: string, rowHeights: string) => void;
+    sendResizeRowHeightsRender: (sheetId: string, rowHeights: string) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -118,9 +121,9 @@ export const jsSheetInfo = (sheetInfoStringified: string) => {
   self.sendSheetInfoRender(sheetInfo);
 };
 
-export const jsSheetFills = (sheet_id: string, fills: string) => {
-  const sheet_fills = JSON.parse(fills);
-  self.sendSheetFills(sheet_id, sheet_fills);
+export const jsSheetFills = (sheetId: string, fills: string) => {
+  const sheetFills = JSON.parse(fills);
+  self.sendSheetFills(sheetId, sheetFills);
 };
 
 export const jsSheetInfoUpdate = (sheetInfoStringified: string) => {
@@ -187,7 +190,7 @@ export const jsTransactionStart = (transaction_id: string, transaction_name: str
   self.sendTransactionStart(transaction_id, transactionType);
 };
 
-export const jsTransactionProgress = (transactionId: String, remainingOperations: number) => {
+export const jsTransactionProgress = (transactionId: string, remainingOperations: number) => {
   self.sendTransactionProgress(transactionId, remainingOperations);
 };
 
@@ -226,4 +229,13 @@ export const jsSendImage = (sheetId: string, x: number, y: number, image?: strin
 export const jsSheetMetaFills = (sheetId: string, sheetMetaFillsStringified: string) => {
   const sheetMetaFills = JSON.parse(sheetMetaFillsStringified) as JsSheetFill;
   self.sendSheetMetaFills(sheetId, sheetMetaFills);
+};
+
+export const jsRequestRowHeights = (transactionId: string, sheetId: string, rows: string) => {
+  self.sendRequestRowHeights(transactionId, sheetId, rows);
+};
+
+export const jsResizeRowHeights = (sheetId: string, rowHeights: string) => {
+  self.sendResizeRowHeightsClient(sheetId, rowHeights);
+  self.sendResizeRowHeightsRender(sheetId, rowHeights);
 };

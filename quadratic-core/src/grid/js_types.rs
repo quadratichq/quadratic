@@ -1,6 +1,8 @@
+use core::fmt;
+
 use serde::{Deserialize, Serialize};
 
-use super::formatting::{CellAlign, CellWrap};
+use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::CodeCellLanguage;
 use crate::grid::BorderStyle;
 use crate::{Pos, SheetRect};
@@ -31,6 +33,8 @@ pub struct JsRenderCell {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub align: Option<CellAlign>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub vertical_align: Option<CellVerticalAlign>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub wrap: Option<CellWrap>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bold: Option<bool>,
@@ -51,6 +55,7 @@ impl JsRenderCell {
             value: value.to_string(),
             language,
             align: Some(CellAlign::Right),
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,
@@ -68,6 +73,7 @@ impl From<Pos> for JsRenderCell {
             value: "".to_string(),
             language: None,
             align: None,
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,
@@ -200,4 +206,18 @@ pub enum JsRenderCodeCellState {
 pub struct JsClipboard {
     pub plain_text: String,
     pub html: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+#[serde(rename_all = "camelCase")]
+pub struct JsRowHeight {
+    pub row: i64,
+    pub height: f64,
+}
+
+impl fmt::Display for JsRowHeight {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "JsRowHeight(row: {}, height: {})", self.row, self.height)
+    }
 }

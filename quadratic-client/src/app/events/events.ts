@@ -7,6 +7,7 @@ import {
   JsRenderBorders,
   JsRenderCodeCell,
   JsRenderFill,
+  JsRowHeight,
   JsSheetFill,
   Selection,
   SheetBounds,
@@ -56,6 +57,7 @@ interface EventTypes {
   htmlUpdate: (html: JsHtmlOutput) => void;
   sheetBorders: (sheetId: string, borders: JsRenderBorders) => void;
   renderCodeCells: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
+  resizeRowHeights: (sheetId: string, rowHeights: JsRowHeight[]) => void;
 
   pythonInit: (version: string) => void;
   pythonState: (state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => void;
@@ -84,6 +86,7 @@ interface EventTypes {
   multiplayerCodeRunning: (multiplayerUser: MultiplayerUser) => void;
 
   resizeHeadingColumn: (sheetId: string, column: number) => void;
+  resizeHeadingRow: (sheetId: string, row: number) => void;
 
   offlineTransactions: (transactions: number, operations: number) => void;
 

@@ -32,9 +32,10 @@ impl GridController {
                 });
             }
         }
-        // send the modified cells to the render web worker
-        modified.iter().for_each(|modified| {
-            if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+
+        if let Some(sheet) = self.try_sheet(sheet_rect.sheet_id) {
+            // send the modified cells to the render web worker
+            modified.iter().for_each(|modified| {
                 let rect = Rect::from_numbers(
                     modified.x * CELL_SHEET_WIDTH as i64,
                     modified.y * CELL_SHEET_HEIGHT as i64,
@@ -50,8 +51,8 @@ impl GridController {
                         cells,
                     );
                 }
-            }
-        });
+            });
+        }
     }
 
     /// Sends the modified fills to the client
@@ -244,6 +245,7 @@ mod test {
             value: "test 1".to_string(),
             special: None,
             align: None,
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,
@@ -264,6 +266,7 @@ mod test {
             value: "test 2".to_string(),
             special: None,
             align: None,
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,
@@ -418,6 +421,7 @@ mod test {
             value: "test 1".to_string(),
             special: None,
             align: None,
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,
@@ -437,6 +441,7 @@ mod test {
             value: "test 2".to_string(),
             special: None,
             align: None,
+            vertical_align: None,
             wrap: None,
             bold: None,
             italic: None,

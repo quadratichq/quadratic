@@ -13,6 +13,8 @@ import {
   BorderStyle,
   CellAlign,
   CellFormatSummary,
+  CellVerticalAlign,
+  CellWrap,
   CodeCellLanguage,
   Format,
   JsCodeCell,
@@ -148,6 +150,9 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientSetCursorSelection') {
       events.emit('setCursor', undefined, e.data.selection);
+      return;
+    } else if (e.data.type === 'coreClientResizeRowHeights') {
+      events.emit('resizeRowHeights', e.data.sheetId, e.data.rowHeights);
       return;
     }
 
@@ -535,6 +540,24 @@ class QuadraticCore {
       type: 'clientCoreSetCellAlign',
       selection,
       align,
+      cursor,
+    });
+  }
+
+  setCellVerticalAlign(selection: Selection, verticalAlign: CellVerticalAlign, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellVerticalAlign',
+      selection,
+      verticalAlign,
+      cursor,
+    });
+  }
+
+  setCellWrap(selection: Selection, wrap: CellWrap, cursor?: string) {
+    this.send({
+      type: 'clientCoreSetCellWrap',
+      selection,
+      wrap,
       cursor,
     });
   }

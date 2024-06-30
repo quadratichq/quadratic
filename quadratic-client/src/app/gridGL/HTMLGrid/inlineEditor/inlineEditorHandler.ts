@@ -14,7 +14,7 @@ import { SheetPosTS } from '@/app/gridGL/types/size';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import { CellFormatSummary } from '@/app/quadratic-core-types';
+import { CellFormatSummary, JsRenderCell } from '@/app/quadratic-core-types';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -29,17 +29,19 @@ class InlineEditorHandler {
   private div?: HTMLDivElement;
 
   private cellOffsets?: Rectangle;
-  private height = 0;
   private open = false;
   private showing = false;
 
   width = 0;
+  height = 0;
   location?: SheetPosTS;
   formula = false;
 
   cursorIsMoving = false;
 
   private formatSummary?: CellFormatSummary;
+  private renderCell?: JsRenderCell;
+
   temporaryBold: boolean | undefined;
   temporaryItalic: boolean | undefined;
 
@@ -51,6 +53,8 @@ class InlineEditorHandler {
     events.on('changeSheet', this.changeSheet);
     events.on('sheetOffsets', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
+    events.on('resizeHeadingRow', this.sheetOffsets);
+    events.on('resizeRowHeights', this.sheetOffsets);
     createFormulaStyleHighlights();
   }
 
@@ -60,9 +64,7 @@ class InlineEditorHandler {
       if (this.open) {
         this.div?.style.setProperty('left', this.cellOffsets.x + CURSOR_THICKNESS + 'px');
         this.div?.style.setProperty('top', this.cellOffsets.y + 2 + 'px');
-        this.height = this.cellOffsets.height - 4;
-        this.width = inlineEditorMonaco.resize(this.cellOffsets.width - CURSOR_THICKNESS * 2, this.height);
-        pixiApp.cursor.dirty = true;
+        this.updateMonacoCellLayout();
       }
     }
   };
@@ -180,12 +182,17 @@ class InlineEditorHandler {
         }
       }
       inlineEditorMonaco.set(value);
+
       this.formatSummary = await quadraticCore.getCellFormatSummary(
         this.location.sheetId,
         this.location.x,
         this.location.y,
         true
       );
+      this.temporaryBold = this.formatSummary?.bold || undefined;
+      this.temporaryItalic = this.formatSummary?.italic || undefined;
+      this.renderCell = await quadraticCore.getRenderCell(this.location.sheetId, this.location.x, this.location.y);
+
       inlineEditorMonaco.setBackgroundColor(
         this.formatSummary.fillColor ? convertColorStringToHex(this.formatSummary.fillColor) : '#ffffff'
       );
@@ -272,13 +279,27 @@ class InlineEditorHandler {
       this.changeToFormula(false);
     }
 
-    this.width = inlineEditorMonaco.resize(this.cellOffsets.width - CURSOR_THICKNESS * 2, this.height);
-    pixiApp.cursor.dirty = true;
+    this.updateMonacoCellLayout();
 
     if (this.formula) {
       inlineEditorFormula.cellHighlights(this.location, value.slice(1));
     }
     this.sendMultiplayerUpdate();
+  };
+
+  updateMonacoCellLayout = () => {
+    if (!this.div || !this.cellOffsets || !this.location) return;
+
+    const { width, height } = inlineEditorMonaco.resize(
+      this.cellOffsets.width - CURSOR_THICKNESS * 2,
+      this.cellOffsets.height - 4,
+      this.renderCell?.align ?? 'left',
+      this.renderCell?.verticalAlign ?? 'top',
+      this.renderCell?.wrap ?? 'overflow'
+    );
+    this.width = width;
+    this.height = height;
+    pixiApp.cursor.dirty = true;
   };
 
   // Toggle between normal editor and formula editor.

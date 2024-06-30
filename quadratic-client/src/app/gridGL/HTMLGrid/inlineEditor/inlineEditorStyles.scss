@@ -1,0 +1,15 @@
+#cell-edit .monaco-editor[data-text-align='left'] .view-line {
+  text-align: left;
+}
+
+#cell-edit .monaco-editor[data-text-align='right'] .view-line {
+  text-align: right;
+}
+
+#cell-edit .monaco-editor[data-text-align='center'] .view-line {
+  text-align: center;
+}
+
+#cell-edit .monaco-editor[data-text-align='justify'] .view-line {
+  text-align: justify;
+}

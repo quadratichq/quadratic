@@ -175,6 +175,11 @@ impl GridController {
             }
             self.send_updated_bounds_rect(&sheet_rect, false);
             self.send_render_cells(&sheet_rect);
+            self.start_auto_resize_row_heights(
+                transaction,
+                sheet_id,
+                sheet_rect.y_range().collect(),
+            );
         }
     }
 
@@ -204,13 +209,14 @@ impl GridController {
                         current_sheet_pos,
                     );
 
+                    transaction.waiting_for_async = None;
+                    transaction.has_async = false;
                     self.finalize_code_run(
                         transaction,
                         current_sheet_pos,
                         Some(new_code_run),
                         None,
                     );
-                    transaction.waiting_for_async = None;
                 }
                 CodeCellLanguage::Javascript => {
                     let new_code_run = self.js_code_result_to_code_cell_value(
@@ -309,8 +315,10 @@ impl GridController {
                 cells_accessed: transaction.cells_accessed.clone(),
             },
         };
-        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
         transaction.waiting_for_async = None;
+        transaction.has_async = false;
+        self.finalize_code_run(transaction, sheet_pos, Some(new_code_run), None);
+
         Ok(())
     }
 

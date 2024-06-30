@@ -1,4 +1,4 @@
-use std::collections::{btree_map, BTreeMap};
+use std::collections::{btree_map, BTreeMap, HashSet};
 use std::str::FromStr;
 
 use bigdecimal::{BigDecimal, RoundingMode};
@@ -12,8 +12,10 @@ use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;
+use super::resize::{Resize, ResizeMap};
 use super::{CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
+use crate::selection::Selection;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{Array, CellValue, Pos, Rect};
 
@@ -77,6 +79,8 @@ pub struct Sheet {
 
     // bounds for the gird with only formatting
     pub(super) format_bounds: GridBounds,
+
+    pub(super) rows_resize: ResizeMap,
 }
 impl Sheet {
     /// Constructs a new empty sheet.
@@ -87,8 +91,11 @@ impl Sheet {
             color: None,
             order,
 
+            offsets: SheetOffsets::default(),
+
             columns: BTreeMap::new(),
             borders: SheetBorders::new(),
+
             code_runs: IndexMap::new(),
 
             formats_columns: BTreeMap::new(),
@@ -96,9 +103,10 @@ impl Sheet {
             format_all: None,
 
             data_bounds: GridBounds::Empty,
+
             format_bounds: GridBounds::Empty,
 
-            offsets: SheetOffsets::default(),
+            rows_resize: ResizeMap::default(),
         }
     }
 
@@ -237,7 +245,7 @@ impl Sheet {
 
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
         let column = self.get_column(pos.x)?;
-        if let Some(format) = column.numeric_format.get(pos.x) {
+        if let Some(format) = column.numeric_format.get(pos.y) {
             Some(format.kind)
         } else {
             None
@@ -353,6 +361,54 @@ impl Sheet {
         } else {
             None
         }
+    }
+
+    pub fn update_row_resize(&mut self, row: i64, client_resized: bool) -> bool {
+        let resize = if client_resized {
+            Resize::Manual
+        } else {
+            Resize::Auto
+        };
+        let old_resize = self.rows_resize.set_resize(row, resize);
+        old_resize == Resize::Manual
+    }
+
+    pub fn get_rows_in_selection(&self, selection: &Selection) -> Vec<i64> {
+        let mut rows = HashSet::<i64>::new();
+        if (selection.all) || selection.columns.is_some() {
+            if let GridBounds::NonEmpty(rect) = self.data_bounds {
+                for y in rect.y_range() {
+                    rows.insert(y);
+                }
+            }
+            if let GridBounds::NonEmpty(rect) = self.format_bounds {
+                for y in rect.y_range() {
+                    rows.insert(y);
+                }
+            }
+        } else {
+            if let Some(selection_rows) = &selection.rows {
+                for &row in selection_rows {
+                    rows.insert(row);
+                }
+            }
+            if let Some(selection_rects) = &selection.rects {
+                for rect in selection_rects {
+                    for y in rect.y_range() {
+                        rows.insert(y);
+                    }
+                }
+            }
+        }
+        rows.into_iter().collect()
+    }
+
+    pub fn get_auto_resize_rows(&self, rows: Vec<i64>) -> Option<Vec<i64>> {
+        let auto_resize_rows: Vec<i64> = rows
+            .into_iter()
+            .filter(|&row| self.rows_resize.get_resize(row) == Resize::Auto)
+            .collect();
+        Some(auto_resize_rows).filter(|r| !r.is_empty())
     }
 }
 
@@ -700,5 +756,60 @@ mod test {
         assert_eq!(sheet.display_value(pos), None);
         sheet.set_cell_value(pos, CellValue::Blank);
         assert_eq!(sheet.display_value(pos), None);
+    }
+
+    #[test]
+    fn test_update_row_resize() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.sheet(sheet_id).clone();
+        let row = 1;
+
+        // update row resize
+        let old_client_resize = sheet.update_row_resize(row, true);
+        assert!(!old_client_resize);
+        // check if row is auto resized
+        let auto_resized = sheet.rows_resize.get_resize(row);
+        assert_eq!(auto_resized, Resize::Manual);
+
+        // update row resize
+        let old_client_resize = sheet.update_row_resize(row, false);
+        assert!(old_client_resize);
+        // check if row is auto resized
+        let auto_resized = sheet.rows_resize.get_resize(row);
+        assert_eq!(auto_resized, Resize::Auto);
+    }
+
+    #[test]
+    fn test_get_auto_resize_rows() {
+        let (grid, sheet_id, _) = test_setup_basic();
+        let mut sheet = grid.sheet(sheet_id).clone();
+
+        let view_rect = Rect::new_span(Pos { x: 2, y: 1 }, Pos { x: 5, y: 4 });
+        let sheet_rect = view_rect.to_sheet_rect(sheet_id);
+
+        // all rows should be auto resized by default
+        let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
+        assert_eq!(rows, Some(vec![1, 2, 3, 4]));
+
+        // update row resize
+        sheet.update_row_resize(1, true);
+        sheet.update_row_resize(2, true);
+        // check new auto resized rows
+        let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
+        assert_eq!(rows, Some(vec![3, 4]));
+
+        // update row resize
+        sheet.update_row_resize(1, false);
+        // check new auto resized rows
+        let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
+        assert_eq!(rows, Some(vec![1, 3, 4]));
+
+        // update all rows to manual resize
+        sheet.update_row_resize(1, true);
+        sheet.update_row_resize(3, true);
+        sheet.update_row_resize(4, true);
+        // check new auto resized rows should be None
+        let rows = sheet.get_auto_resize_rows(sheet_rect.y_range().collect());
+        assert_eq!(rows, None);
     }
 }

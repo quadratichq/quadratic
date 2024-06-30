@@ -9,7 +9,7 @@ use crate::{
             JsHtmlOutput, JsRenderBorders, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell,
             JsRenderCodeCellState, JsRenderFill, JsSheetFill,
         },
-        CellAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
+        CellAlign, CellVerticalAlign, CodeCellLanguage, CodeRun, Column, NumericFormatKind,
     },
     CellValue, Pos, Rect, RunError, RunErrorMsg,
 };
@@ -33,7 +33,7 @@ impl Sheet {
         x: i64,
         y: i64,
         column: Option<&Column>,
-        value: CellValue,
+        value: &CellValue,
         language: Option<CodeCellLanguage>,
     ) -> JsRenderCell {
         if let CellValue::Html(_) = value {
@@ -43,6 +43,7 @@ impl Sheet {
                 value: "".to_string(),
                 language,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -57,6 +58,7 @@ impl Sheet {
                 value: "".into(),
                 language,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -74,11 +76,12 @@ impl Sheet {
                 value: "".to_string(),
                 language,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
                 text_color: None,
-                special: Some(if logical {
+                special: Some(if *logical {
                     JsRenderCellSpecial::True
                 } else {
                     JsRenderCellSpecial::False
@@ -91,6 +94,7 @@ impl Sheet {
                 value: "".to_string(),
                 language,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -119,6 +123,7 @@ impl Sheet {
                     value: value.to_display(None, None, None),
                     language,
                     align,
+                    vertical_align: format.vertical_align,
                     wrap: format.wrap,
                     bold: format.bold,
                     italic: format.italic,
@@ -134,6 +139,7 @@ impl Sheet {
                     self.format_all.as_ref(),
                 );
                 let mut align: Option<CellAlign> = column.align.get(y).or(format.align);
+                let vertical_align: Option<CellVerticalAlign> = column.vertical_align.get(y);
                 let wrap = column.wrap.get(y).or(format.wrap);
                 let bold = column.bold.get(y).or(format.bold);
                 let italic = column.italic.get(y).or(format.italic);
@@ -145,7 +151,8 @@ impl Sheet {
                         let is_percentage = numeric_format.as_ref().is_some_and(|numeric_format| {
                             numeric_format.kind == NumericFormatKind::Percentage
                         });
-                        let numeric_decimals = self.calculate_decimal_places(Pos { x, y }, is_percentage);
+                        let numeric_decimals =
+                            self.calculate_decimal_places(Pos { x, y }, is_percentage);
                         let numeric_commas = column.numeric_commas.get(y).or(format.numeric_commas);
 
                         // if align is not set, set it to right only for numbers
@@ -161,6 +168,7 @@ impl Sheet {
                     value,
                     language,
                     align,
+                    vertical_align,
                     wrap,
                     bold,
                     italic,
@@ -186,7 +194,7 @@ impl Sheet {
                     code_rect.min.x,
                     code_rect.min.y,
                     None,
-                    CellValue::Error(Box::new(RunError {
+                    &CellValue::Error(Box::new(RunError {
                         span: None,
                         msg: RunErrorMsg::Spill,
                     })),
@@ -197,7 +205,7 @@ impl Sheet {
                     code_rect.min.x,
                     code_rect.min.y,
                     None,
-                    CellValue::Error(Box::new(error)),
+                    &CellValue::Error(Box::new(error)),
                     Some(code.language),
                 ));
             } else {
@@ -235,7 +243,7 @@ impl Sheet {
                             } else {
                                 None
                             };
-                            cells.push(self.get_render_cell(x, y, column, value, language));
+                            cells.push(self.get_render_cell(x, y, column, &value, language));
                         }
                     }
                 }
@@ -247,27 +255,19 @@ impl Sheet {
     /// Returns cell data in a format useful for rendering. This includes only
     /// the data necessary to render raw text values.
     pub fn get_render_cells(&self, rect: Rect) -> Vec<JsRenderCell> {
-        let columns_iter = rect
-            .x_range()
-            .filter_map(|x| Some((x, self.get_column(x)?)));
-
         let mut render_cells = vec![];
 
         // Fetch ordinary value cells.
-        columns_iter.clone().for_each(|(x, column)| {
-            column.values.range(rect.y_range()).for_each(|(y, value)| {
-                // ignore code cells when rendering since they will be taken care in the next part
-                if !matches!(value, CellValue::Code(_)) {
-                    render_cells.push(self.get_render_cell(
-                        x,
-                        *y,
-                        Some(column),
-                        value.clone(),
-                        None,
-                    ));
-                }
+        rect.x_range()
+            .filter_map(|x| Some((x, self.get_column(x)?)))
+            .for_each(|(x, column)| {
+                column.values.range(rect.y_range()).for_each(|(y, value)| {
+                    // ignore code cells when rendering since they will be taken care in the next part
+                    if !matches!(value, CellValue::Code(_)) {
+                        render_cells.push(self.get_render_cell(x, *y, Some(column), value, None));
+                    }
+                });
             });
-        });
 
         // Fetch values from code cells
         self.iter_code_output_in_rect(rect)
@@ -511,7 +511,8 @@ mod tests {
             js_types::{
                 JsHtmlOutput, JsRenderCell, JsRenderCellSpecial, JsRenderCodeCell, JsSheetFill,
             },
-            Bold, CellAlign, CodeCellLanguage, CodeRun, CodeRunResult, Italic, RenderSize, Sheet,
+            Bold, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeRun, CodeRunResult,
+            Italic, RenderSize, Sheet,
         },
         selection::Selection,
         wasm_bindings::js::{expect_js_call, expect_js_call_count, hash_test},
@@ -576,6 +577,11 @@ mod tests {
         let _ = sheet.set_formatting_value::<Bold>(Pos { x: 1, y: 2 }, Some(true));
         let _ =
             sheet.set_formatting_value::<CellAlign>(Pos { x: 1, y: 2 }, Some(CellAlign::Center));
+        let _ = sheet.set_formatting_value::<CellVerticalAlign>(
+            Pos { x: 1, y: 2 },
+            Some(CellVerticalAlign::Middle),
+        );
+        let _ = sheet.set_formatting_value::<CellWrap>(Pos { x: 1, y: 2 }, Some(CellWrap::Wrap));
         let _ = sheet.set_cell_value(Pos { x: 1, y: 3 }, CellValue::Number(123.into()));
         let _ = sheet.set_formatting_value::<Italic>(Pos { x: 1, y: 3 }, Some(true));
         let _ = sheet.set_cell_value(Pos { x: 2, y: 4 }, CellValue::Html("html".to_string()));
@@ -615,7 +621,8 @@ mod tests {
                 value: "test".to_string(),
                 language: None,
                 align: Some(CellAlign::Center),
-                wrap: None,
+                vertical_align: Some(CellVerticalAlign::Middle),
+                wrap: Some(CellWrap::Wrap),
                 bold: Some(true),
                 italic: None,
                 text_color: None,
@@ -630,6 +637,7 @@ mod tests {
                 value: "123".to_string(),
                 language: None,
                 align: Some(CellAlign::Right),
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: Some(true),
@@ -645,6 +653,7 @@ mod tests {
                 value: "".to_string(),
                 language: None,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -660,6 +669,7 @@ mod tests {
                 value: "".to_string(),
                 language: None,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -675,6 +685,7 @@ mod tests {
                 value: "".to_string(),
                 language: None,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -690,6 +701,7 @@ mod tests {
                 value: "".to_string(),
                 language: None,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -853,6 +865,7 @@ mod tests {
                 value: "2".to_string(),
                 language: Some(CodeCellLanguage::Formula),
                 align: Some(CellAlign::Right),
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -987,6 +1000,7 @@ mod tests {
                 value: "".to_string(),
                 language: Some(CodeCellLanguage::Formula),
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -999,6 +1013,7 @@ mod tests {
                 value: "".to_string(),
                 language: None,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
@@ -1011,6 +1026,7 @@ mod tests {
                 value: "".to_string(),
                 language: None,
                 align: None,
+                vertical_align: None,
                 wrap: None,
                 bold: None,
                 italic: None,
