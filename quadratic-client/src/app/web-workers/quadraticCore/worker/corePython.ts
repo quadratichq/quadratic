@@ -35,7 +35,8 @@ class CorePython {
         break;
 
       case 'pythonCoreGetCellsLength':
-        const cells = core.getCells(
+        this.sendGetCellsLength(
+          e.data.sharedBuffer,
           e.data.transactionId,
           e.data.x,
           e.data.y,
@@ -44,7 +45,6 @@ class CorePython {
           e.data.sheet,
           e.data.lineNumber
         );
-        this.handleGetCellsResponse(e.data.sharedBuffer, cells);
         break;
 
       case 'pythonCoreGetCellsData':
@@ -64,16 +64,24 @@ class CorePython {
     this.corePythonPort.postMessage(message);
   }
 
-  private handleGetCellsResponse(sharedBuffer: SharedArrayBuffer, cells: string) {
+  private sendGetCellsLength(
+    sharedBuffer: SharedArrayBuffer,
+    transactionId: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    sheet?: string,
+    lineNumber?: number
+  ) {
+    const cells = core.getCells(transactionId, x, y, w, h, sheet, lineNumber);
     const int32View = new Int32Array(sharedBuffer, 0, 3);
     Atomics.store(int32View, 1, cells.length);
-
     if (cells.length !== 0) {
       const id = this.id++;
       this.getCellsResponses[id] = cells;
       Atomics.store(int32View, 2, id);
     }
-
     Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);
   }
@@ -81,19 +89,15 @@ class CorePython {
   private sendGetCellsData(id: number, sharedBuffer: SharedArrayBuffer) {
     const cells = this.getCellsResponses[id];
     delete this.getCellsResponses[id];
-
     const int32View = new Int32Array(sharedBuffer, 0, 1);
-
     if (cells === undefined) {
       console.warn('[corePython] No cells found for id:', id);
     } else {
       const encoder = new TextEncoder();
       const encodedCells = encoder.encode(cells);
-
       const uint8View = new Uint8Array(sharedBuffer, 4, encodedCells.length);
       uint8View.set(encodedCells);
     }
-
     Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);
   }
