@@ -330,7 +330,7 @@ export class PointerHeading {
               delta,
             });
           } catch (error) {
-            console.warn('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
+            console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
           }
 
           quadraticCore.commitTransientResize(sheets.sheet.id, transientResize);

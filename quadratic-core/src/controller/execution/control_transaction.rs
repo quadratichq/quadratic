@@ -143,10 +143,13 @@ impl GridController {
                         sheet_id.to_string(),
                         rows_string,
                     );
-
                     transaction.has_async = true;
+                } else {
+                    dbgjs!("[control_transactions] start_auto_resize_row_heights: Failed to serialize auto resize rows")
                 }
             }
+        } else {
+            dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found")
         }
     }
 

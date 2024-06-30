@@ -636,7 +636,7 @@ class CoreClient {
       const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
       this.send({ type: 'coreClientResizeRowHeights', sheetId, rowHeights });
     } catch (e) {
-      console.warn('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
+      console.error('[coreClient] sendResizeRowHeights: Error parsing JsRowHeight: ', e);
     }
   };
 }

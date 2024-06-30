@@ -77,7 +77,7 @@ class RenderCore {
 
   async getRowHeights(transactionId: string, sheetId: string, rowsString: string) {
     if (!this.renderCorePort) {
-      console.warn('Expected renderCorePort to be defined in RenderCore.responseRowHeights');
+      console.error('Expected renderCorePort to be defined in RenderCore.responseRowHeights');
       return;
     }
 
@@ -93,7 +93,7 @@ class RenderCore {
       };
       this.renderCorePort.postMessage(message);
     } catch (e) {
-      console.warn('[renderCore] getRowHeights: Error parsing rows: ', e);
+      console.error('[renderCore] getRowHeights: Error parsing rows: ', e);
     }
   }
 
@@ -102,7 +102,7 @@ class RenderCore {
       const rowHeights = JSON.parse(rowHeightsString) as JsRowHeight[];
       renderText.resizeRowHeights(sheetId, rowHeights);
     } catch (e) {
-      console.warn('[renderCore] resizeRowHeights: Error parsing JsRowHeight: ', e);
+      console.error('[renderCore] resizeRowHeights: Error parsing JsRowHeight: ', e);
     }
   }
 

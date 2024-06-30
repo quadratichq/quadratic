@@ -143,8 +143,8 @@ export class CellLabel {
   }
 
   updateCellLimits() {
-    this.cellClipLeft = this.wrap === 'clip' && this.align !== 'left' ? this.AABB.left : undefined;
-    this.cellClipRight = this.wrap === 'clip' && this.align !== 'right' ? this.AABB.right : undefined;
+    this.cellClipLeft = this.wrap !== 'overflow' && this.align !== 'left' ? this.AABB.left : undefined;
+    this.cellClipRight = this.wrap !== 'overflow' && this.align !== 'right' ? this.AABB.right : undefined;
     this.cellClipTop = this.AABB.top;
     this.cellClipBottom = this.AABB.bottom;
     this.maxWidth = this.wrap === 'wrap' ? this.AABB.width - CELL_TEXT_MARGIN_LEFT * 3 : undefined;
