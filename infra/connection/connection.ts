@@ -52,6 +52,7 @@ const instance = new aws.ec2.Instance("connection-instance", {
       true
     )
   ),
+  associatePublicIpAddress: false,
 });
 
 // Allocate an Elastic IP for the instance
