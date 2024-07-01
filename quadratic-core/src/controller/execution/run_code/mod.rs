@@ -14,6 +14,7 @@ use crate::{
 pub mod get_cells;
 pub mod run_connection;
 pub mod run_formula;
+pub mod run_javascript;
 pub mod run_python;
 
 impl GridController {
@@ -42,12 +43,19 @@ impl GridController {
         );
 
         let mut update_html = false;
+        let mut update_image = false;
         let old_code_run = if let Some(new_code_run) = &new_code_run {
             if new_code_run.is_html()
                 && (cfg!(target_family = "wasm") || cfg!(test))
                 && !transaction.is_server()
             {
                 update_html = true;
+            }
+            if new_code_run.is_image()
+                && (cfg!(target_family = "wasm") || cfg!(test))
+                && !transaction.is_server()
+            {
+                update_image = true;
             }
             let (old_index, old_code_run) = sheet.code_runs.insert_full(pos, new_code_run.clone());
 
@@ -69,7 +77,9 @@ impl GridController {
                 if old_code_run.is_html() && !transaction.is_server() {
                     update_html = true;
                 }
-
+                if old_code_run.is_image() && !transaction.is_server() {
+                    update_image = true;
+                }
                 // if the code run is being removed, tell the client that there is no longer a code cell
                 if new_code_run.is_none() && !transaction.is_server() {
                     crate::wasm_bindings::js::jsUpdateCodeCell(
@@ -117,6 +127,10 @@ impl GridController {
             } else {
                 dbgjs!("Error serializing html");
             }
+        }
+
+        if update_image {
+            self.send_image(sheet_pos);
         }
 
         transaction.forward_operations.push(Operation::SetCodeRun {
@@ -185,6 +199,21 @@ impl GridController {
             }
             Some(waiting_for_async) => match waiting_for_async {
                 CodeCellLanguage::Python => {
+                    let new_code_run = self.js_code_result_to_code_cell_value(
+                        transaction,
+                        result,
+                        current_sheet_pos,
+                    );
+
+                    self.finalize_code_run(
+                        transaction,
+                        current_sheet_pos,
+                        Some(new_code_run),
+                        None,
+                    );
+                    transaction.waiting_for_async = None;
+                }
+                CodeCellLanguage::Javascript => {
                     let new_code_run = self.js_code_result_to_code_cell_value(
                         transaction,
                         result,
@@ -306,7 +335,7 @@ impl GridController {
                 }),
                 return_type: None,
                 line_number: js_code_result.line_number,
-                output_type: js_code_result.output_type,
+                output_type: js_code_result.output_display_type,
                 std_out: None,
                 std_err: None,
                 spill_error: false,
@@ -315,7 +344,7 @@ impl GridController {
             };
         };
         let result = if js_code_result.success {
-            let result = if let Some(array_output) = js_code_result.array_output {
+            let result = if let Some(array_output) = js_code_result.output_array {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.splice(0..0, ops);
                 if let Some(array) = array {
@@ -338,7 +367,7 @@ impl GridController {
             CodeRunResult::Ok(result)
         } else {
             let error_msg = js_code_result
-                .error_msg
+                .std_err
                 .clone()
                 .unwrap_or_else(|| "Unknown Python Error".into());
             let msg = RunErrorMsg::PythonError(error_msg.into());
@@ -360,9 +389,9 @@ impl GridController {
             result,
             return_type,
             line_number: js_code_result.line_number,
-            output_type: js_code_result.output_type,
-            std_out: js_code_result.input_python_std_out,
-            std_err: js_code_result.error_msg,
+            output_type: js_code_result.output_display_type,
+            std_out: js_code_result.std_out,
+            std_err: js_code_result.std_err,
             spill_error: false,
             last_modified: Utc::now(),
             cells_accessed: transaction.cells_accessed.clone(),
@@ -376,7 +405,9 @@ impl GridController {
 mod test {
     use std::collections::HashSet;
 
-    use crate::CodeCellValue;
+    use serial_test::serial;
+
+    use crate::{wasm_bindings::js::expect_js_call_count, CodeCellValue};
 
     use super::*;
 
@@ -471,5 +502,37 @@ mod test {
         // assert_eq!(summary.code_cells_modified.len(), 1);
         // assert!(summary.code_cells_modified.contains(&sheet_id));
         // assert!(summary.generate_thumbnail);
+    }
+
+    #[test]
+    #[serial]
+    fn code_run_image() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet_pos = SheetPos {
+            x: 0,
+            y: 0,
+            sheet_id,
+        };
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Javascript,
+            "code".to_string(),
+            None,
+        );
+        let transaction = gc.last_transaction().unwrap();
+        let result = JsCodeResult {
+            transaction_id: transaction.id.to_string(),
+            success: true,
+            std_out: None,
+            std_err: None,
+            line_number: None,
+            output_value: Some(vec!["test".into(), "image".into()]),
+            output_array: None,
+            output_display_type: None,
+            cancel_compute: None,
+        };
+        gc.calculation_complete(result).unwrap();
+        expect_js_call_count("jsSendImage", 1, true);
     }
 }

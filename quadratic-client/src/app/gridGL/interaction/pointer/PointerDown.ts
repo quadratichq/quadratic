@@ -54,6 +54,7 @@ export class PointerDown {
         if (rightClick) {
           return;
         }
+        event.preventDefault();
         const code = await quadraticCore.getCodeCell(sheet.id, column, row);
         if (code) {
           doubleClickCell({ column: Number(code.x), row: Number(code.y), language: code.language, cell: '' });
@@ -62,7 +63,6 @@ export class PointerDown {
           doubleClickCell({ column, row, cell });
         }
         this.active = false;
-        event.preventDefault();
         return;
       }
     }
@@ -105,7 +105,8 @@ export class PointerDown {
     // select another multiCursor range
     if (!this.active && (event.metaKey || event.ctrlKey)) {
       const cursorPosition = cursor.cursorPosition;
-      if (column !== cursorPosition.x || row !== cursorPosition.y) {
+      if (cursor.multiCursor || column !== cursorPosition.x || row !== cursorPosition.y) {
+        event.stopPropagation();
         const multiCursor = cursor.multiCursor ?? [new Rectangle(cursorPosition.x, cursorPosition.y, 1, 1)];
         multiCursor.push(new Rectangle(column, row, 1, 1));
         cursor.changePosition({
@@ -119,7 +120,6 @@ export class PointerDown {
         this.previousPosition = new Point(column, row);
 
         this.pointerMoved = false;
-        event.stopPropagation();
         return;
       }
     }

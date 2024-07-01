@@ -157,17 +157,6 @@ class InlineEditorHandler {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
     }
     if (input) {
-      if (pixiAppSettings.editorInteractionState.showCodeEditor) {
-        pixiAppSettings.setEditorInteractionState?.({
-          ...pixiAppSettings.editorInteractionState,
-          waitingForEditorClose: {
-            selectedCell: pixiAppSettings.editorInteractionState.selectedCell,
-            selectedCellSheet: pixiAppSettings.editorInteractionState.selectedCellSheet,
-            mode: pixiAppSettings.editorInteractionState.mode,
-            showCellTypeMenu: false,
-          },
-        });
-      }
       this.open = true;
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.getCursor();
@@ -400,6 +389,7 @@ class InlineEditorHandler {
 
   // Handler for the click for the expand code editor button.
   private openCodeEditor = (e: MouseEvent) => {
+    e.stopPropagation();
     if (!pixiAppSettings.setEditorInteractionState) {
       throw new Error('Expected setEditorInteractionState to be defined in openCodeEditor');
     }
@@ -415,7 +405,6 @@ class InlineEditorHandler {
       showCodeEditor: true,
     });
     this.close(0, 0, true);
-    e.stopPropagation();
   };
 
   // Attaches the inline editor to a div created by React in InlineEditor.tsx

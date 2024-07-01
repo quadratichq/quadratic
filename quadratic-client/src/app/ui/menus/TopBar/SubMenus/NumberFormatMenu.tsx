@@ -35,19 +35,19 @@ export const NumberFormatMenu = () => {
       )}
     >
       <MenuItem onClick={() => removeCellNumericFormat()}>
-        <MenuLineItem primary="Automatic" secondary={<code className="text-xs">999.99</code>} Icon={MagicWandIcon} />
+        <MenuLineItem primary="Automatic" secondary={<code className="text-xs">999.99</code>} icon={MagicWandIcon} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetCurrency()}>
-        <MenuLineItem primary="Currency" secondary={<code className="text-xs">$9,999.99</code>} Icon={DollarIcon} />
+        <MenuLineItem primary="Currency" secondary={<code className="text-xs">$9,999.99</code>} icon={DollarIcon} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetPercentage()}>
-        <MenuLineItem primary="Percent" secondary={<code className="text-xs">99.99%</code>} Icon={PercentIcon} />
+        <MenuLineItem primary="Percent" secondary={<code className="text-xs">99.99%</code>} icon={PercentIcon} />
       </MenuItem>
       <MenuItem onClick={() => textFormatSetExponential()}>
-        <MenuLineItem primary="Scientific" secondary={<code className="text-xs">6.02E+23</code>} Icon={FunctionIcon} />
+        <MenuLineItem primary="Scientific" secondary={<code className="text-xs">6.02E+23</code>} icon={FunctionIcon} />
       </MenuItem>
       <MenuItem onClick={() => setCellCommas()}>
-        <MenuLineItem primary="Toggle commas" secondary={<code className="text-xs">9,999.99</code>} Icon={QuoteIcon} />
+        <MenuLineItem primary="Toggle commas" secondary={<code className="text-xs">9,999.99</code>} icon={QuoteIcon} />
       </MenuItem>
 
       <MenuDivider />
@@ -60,7 +60,7 @@ export const NumberFormatMenu = () => {
         <MenuLineItem
           primary="Increase decimals"
           secondary={<code className="text-xs">.0000</code>}
-          Icon={DecimalIncreaseIcon}
+          icon={DecimalIncreaseIcon}
         />
       </MenuItem>
       <MenuItem
@@ -71,7 +71,7 @@ export const NumberFormatMenu = () => {
         <MenuLineItem
           primary="Decrease decimals"
           secondary={<code className="text-xs">.0</code>}
-          Icon={DecimalDecreaseIcon}
+          icon={DecimalDecreaseIcon}
         />
       </MenuItem>
     </Menu>
