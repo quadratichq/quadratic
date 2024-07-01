@@ -1,4 +1,4 @@
-import { isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
+import { getExtension, isCsv, isExcel, isGrid, isParquet, stripExtension } from '@/app/helpers/files';
 import { validateAndUpgradeGridFile } from '@/app/schemas/validateAndUpgradeGridFile';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
@@ -23,7 +23,7 @@ const getFileType = (file: File): UploadFileType => {
   if (isCsv(file)) return 'csv';
   if (isParquet(file)) return 'parquet';
 
-  throw new Error(`Unsupported file type: ${file}`);
+  throw new Error(`Unsupported file type: ${getExtension(file.name)}`);
 };
 
 export default function CreateFileButton({ isPrivate }: { isPrivate?: boolean }) {

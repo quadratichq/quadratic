@@ -8,6 +8,7 @@ services:
     volumes:
       - ./docker/redis/data:/data
     profiles:
+      - base
       - all
 
   postgres:
@@ -17,6 +18,7 @@ services:
     volumes:
       - ./docker/postgres/data:/var/lib/postgresql/data
     profiles:
+      - base
       - all
 
   localstack:
@@ -27,6 +29,7 @@ services:
       - "./docker/localstack/data:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
     profiles:
+      - base
       - all
 
   aws-cli:
@@ -38,6 +41,7 @@ services:
     volumes:
       - ./docker/localstack/cli:/aws
     profiles:
+      - base
       - all
 
   quadratic-client:

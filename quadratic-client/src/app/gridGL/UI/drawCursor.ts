@@ -77,7 +77,7 @@ export const drawMultiCursor = (g: Graphics, color: number, alpha: number, recta
   const sheet = sheets.sheet;
   g.lineStyle(1, color, 1, 0, true);
   g.beginFill(color, alpha);
-  rectangles.forEach((rectangle, index) => {
+  rectangles.forEach((rectangle) => {
     const rect = sheet.getScreenRectangle(rectangle.x, rectangle.y, rectangle.width - 1, rectangle.height - 1);
     g.drawShape(rect);
   });

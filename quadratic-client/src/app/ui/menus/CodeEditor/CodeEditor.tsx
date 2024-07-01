@@ -10,11 +10,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState } from 'recoil';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { Diagnostic } from 'vscode-languageserver-types';
+import { useJavascriptState } from '@/app/atoms/useJavascriptState';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
-import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/CodeEditorPanels';
-import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/useCodeEditorPanelData';
+import { CodeEditorPanel } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanel';
+import { CodeEditorPanels } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelsResize';
+import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
+import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { cn } from '@/shared/shadcn/utils';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
 import { hasPermissionToEditFile } from '../../../actions';
@@ -25,7 +28,6 @@ import { pythonWebWorker } from '../../../web-workers/pythonWebWorker/pythonWebW
 import './CodeEditor.css';
 import { CodeEditorBody } from './CodeEditorBody';
 import { CodeEditorHeader } from './CodeEditorHeader';
-import { CodeEditorPanel } from './CodeEditorPanel';
 import { ReturnTypeInspector } from './ReturnTypeInspector';
 import { SaveChangesAlert } from './SaveChangesAlert';
 
@@ -33,13 +35,17 @@ export const dispatchEditorAction = (name: string) => {
   window.dispatchEvent(new CustomEvent('run-editor-action', { detail: name }));
 };
 
+export interface ConsoleOutput {
+  stdOut?: string;
+  stdErr?: string;
+}
+
 export const CodeEditor = () => {
   const [editorInteractionState, setEditorInteractionState] = useRecoilState(editorInteractionStateAtom);
   const { showCodeEditor, mode: editorMode } = editorInteractionState;
   const mode = getLanguage(editorMode);
   const {
     consoleOutput: [out, setOut],
-    containerRef,
     spillError: [, setSpillError],
     codeString: [codeString, setCodeString],
     editorContent: [editorContent, setEditorContent],
@@ -50,8 +56,8 @@ export const CodeEditor = () => {
     },
   } = useCodeEditor();
   const { pythonState } = usePythonState();
+  const javascriptState = useJavascriptState();
 
-  // code info
   const [cellsAccessed, setCellsAccessed] = useState<SheetRect[] | undefined | null>();
   const [showSaveChangesAlert, setShowSaveChangesAlert] = useState(false);
 
@@ -245,7 +251,6 @@ export const CodeEditor = () => {
       language: editorMode,
       cursor: sheets.getCursorPosition(),
     });
-
     setCodeString(editorContent ?? '');
 
     mixpanel.track('[CodeEditor].cellRun', {
@@ -260,10 +265,16 @@ export const CodeEditor = () => {
     }
   };
 
-  const cancelPython = () => {
-    if (pythonState !== 'running') return;
-
-    pythonWebWorker.cancelExecution();
+  const cancelRun = () => {
+    if (editorInteractionState.mode === 'Python') {
+      if (pythonState === 'running') {
+        pythonWebWorker.cancelExecution();
+      }
+    } else if (editorInteractionState.mode === 'Javascript') {
+      if (javascriptState === 'running') {
+        javascriptWebWorker.cancelExecution();
+      }
+    }
   };
 
   const onKeyDownEditor = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -289,7 +300,7 @@ export const CodeEditor = () => {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
-      cancelPython();
+      cancelRun();
     }
 
     // Command + Plus
@@ -344,11 +355,13 @@ export const CodeEditor = () => {
   if (!showCodeEditor) {
     return null;
   }
-
   return (
     <div
-      ref={containerRef}
-      className={cn('relative flex bg-background', codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col')}
+      id="code-editor-container"
+      className={cn(
+        'relative flex h-full bg-background',
+        codeEditorPanelData.panelPosition === 'left' ? '' : 'flex-col'
+      )}
       style={{
         width: `${
           codeEditorPanelData.editorWidth +
@@ -359,11 +372,16 @@ export const CodeEditor = () => {
     >
       <div
         id="QuadraticCodeEditorID"
-        className={cn('flex flex-col', codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1')}
+        className={cn(
+          'flex min-h-0 shrink flex-col',
+          codeEditorPanelData.panelPosition === 'left' ? 'order-2' : 'order-1'
+        )}
         style={{
           width: `${codeEditorPanelData.editorWidth}px`,
           height:
-            codeEditorPanelData.panelPosition === 'left' ? '100%' : `${codeEditorPanelData.editorHeightPercentage}%`,
+            codeEditorPanelData.panelPosition === 'left' || codeEditorPanelData.bottomHidden
+              ? '100%'
+              : `${codeEditorPanelData.editorHeightPercentage}%`,
         }}
         onKeyDownCapture={onKeyDownEditor}
         onPointerEnter={() => {
@@ -395,7 +413,7 @@ export const CodeEditor = () => {
           cellLocation={cellLocation}
           unsaved={unsaved}
           saveAndRunCell={saveAndRunCell}
-          cancelPython={cancelPython}
+          cancelRun={cancelRun}
           closeEditor={() => closeEditor(false)}
         />
         <CodeEditorBody
@@ -406,9 +424,9 @@ export const CodeEditor = () => {
           cellsAccessed={!unsaved ? cellsAccessed : []}
           cellLocation={cellLocation}
         />
-
         {editorInteractionState.mode !== 'Formula' && (
           <ReturnTypeInspector
+            language={editorInteractionState.mode}
             evaluationResult={evaluationResult}
             show={Boolean(evaluationResult?.line_number && !out?.stdErr && !unsaved)}
           />
@@ -425,12 +443,13 @@ export const CodeEditor = () => {
           height:
             codeEditorPanelData.panelPosition === 'left'
               ? '100%'
-              : `${100 - codeEditorPanelData.editorHeightPercentage}%`,
+              : codeEditorPanelData.bottomHidden
+              ? 'auto'
+              : 100 - codeEditorPanelData.editorHeightPercentage + '%',
         }}
       >
         <CodeEditorPanel codeEditorPanelData={codeEditorPanelData} />
       </div>
-
       <CodeEditorPanels codeEditorPanelData={codeEditorPanelData} />
     </div>
   );
