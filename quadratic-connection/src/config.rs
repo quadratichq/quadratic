@@ -21,6 +21,7 @@ pub(crate) struct Config {
     pub(crate) quadratic_api_uri: String,
     pub(crate) m2m_auth_token: String,
     pub(crate) max_response_bytes: u64,
+    pub(crate) static_ips: Vec<String>,
 }
 
 /// Load the global configuration from the environment into Config.

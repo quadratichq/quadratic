@@ -32,7 +32,7 @@ pub enum SqlConnection {
     Mysql(MySqlConnection),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ArrowType {
     Int8(i8),
     Int16(i16),
