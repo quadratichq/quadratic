@@ -26,51 +26,7 @@ const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 
 // Allocate Elastic IPs for the NAT Gateways
-const eip1 = new aws.ec2.Eip("nat-eip-1");
-const eip2 = new aws.ec2.Eip("nat-eip-2");
-
-// Create NAT Gateways in each public subnet
-const natGateway1 = new aws.ec2.NatGateway("nat-gateway-1", {
-  allocationId: eip1.id,
-  subnetId: subNet1,
-});
-
-const natGateway2 = new aws.ec2.NatGateway("nat-gateway-2", {
-  allocationId: eip2.id,
-  subnetId: subNet2,
-});
-
-// Create route tables for private subnets
-const privateRouteTable1 = new aws.ec2.RouteTable("private-route-table-1", {
-  vpcId: vpcId,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      natGatewayId: natGateway1.id,
-    },
-  ],
-});
-
-const privateRouteTable2 = new aws.ec2.RouteTable("private-route-table-2", {
-  vpcId: vpcId,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      natGatewayId: natGateway2.id,
-    },
-  ],
-});
-
-// Associate the private subnets with the route tables
-new aws.ec2.RouteTableAssociation("private-subnet-1-association", {
-  subnetId: subNet1,
-  routeTableId: privateRouteTable1.id,
-});
-
-new aws.ec2.RouteTableAssociation("private-subnet-2-association", {
-  subnetId: subNet2,
-  routeTableId: privateRouteTable2.id,
-});
+const eip = new aws.ec2.Eip("nat-eip-1");
 
 // create the instance
 const instance = new aws.ec2.Instance("connection-instance", {
@@ -91,12 +47,21 @@ const instance = new aws.ec2.Instance("connection-instance", {
       "quadratic-connection-development",
       {
         QUADRATIC_API_URI: quadraticApiUri,
-        STATIC_IPS: `${eip1.publicIp},${eip2.publicIp}`,
+        STATIC_IPS: `${eip.publicIp}`,
       },
       true
     )
   ),
 });
+
+// Allocate an Elastic IP for the instance
+const eipAssociation = new aws.ec2.EipAssociation(
+  "connection-instance-eip-association",
+  {
+    instanceId: instance.id,
+    allocationId: eip.id,
+  }
+);
 
 // Create a new Network Load Balancer
 const nlb = new aws.lb.LoadBalancer("connection-nlb", {
