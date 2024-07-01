@@ -129,6 +129,7 @@ export default function CellTypeMenu() {
           {connections.map(({ name, type, uuid }) => (
             <CommandItemWrapper
               key={uuid}
+              uuid={uuid}
               name={name}
               description={`${type === 'POSTGRES' ? 'PostgreSQL' : 'SQL'}`}
               icon={<LanguageIcon language={type} />}
@@ -165,6 +166,7 @@ function CommandItemWrapper({
   experimental,
   description,
   onSelect,
+  uuid,
 }: {
   disabled?: boolean;
   icon: React.ReactNode;
@@ -172,9 +174,10 @@ function CommandItemWrapper({
   experimental?: boolean;
   description: string | JSX.Element;
   onSelect: () => void;
+  uuid?: string;
 }) {
   return (
-    <CommandItem disabled={disabled} onSelect={onSelect}>
+    <CommandItem disabled={disabled} onSelect={onSelect} value={name + (uuid ? uuid : '')}>
       <div className="mr-4">{icon}</div>
       <div className="flex flex-col">
         <span className="flex items-center">
