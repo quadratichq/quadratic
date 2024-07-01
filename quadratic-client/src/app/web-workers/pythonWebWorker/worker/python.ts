@@ -1,7 +1,8 @@
 import { debugWebWorkers } from '@/app/debugFlags';
 import { JsGetCellResponse } from '@/app/quadratic-core-types';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { PyodideInterface, loadPyodide } from 'pyodide';
-import type { CodeRun, PythonStateType } from '../pythonClientMessages';
+import type { CodeRun } from '../pythonClientMessages';
 import type { CorePythonRun } from '../pythonCoreMessages';
 import type { InspectPython, PythonError, PythonSuccess, outputType } from '../pythonTypes';
 import { pythonClient } from './pythonClient';
@@ -20,7 +21,7 @@ function isEmpty(value: [string, outputType] | string | null | undefined) {
 class Python {
   private pyodide: PyodideInterface | undefined;
   private awaitingExecution: CodeRun[];
-  state: PythonStateType;
+  state: LanguageState;
   private transactionId?: string;
 
   constructor() {

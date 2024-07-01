@@ -14,7 +14,7 @@ export function LanguageIcon({ language, ...props }: LanguageIconProps) {
   ) : language === 'Formula' ? (
     <Formula sx={{ color: colors.languageFormula }} {...props} />
   ) : language === 'Javascript' ? (
-    <JavaScript className="text-gray-700" />
+    <JavaScript className="text-gray-700" sx={{ color: colors.languageJavascript }} />
   ) : language === 'POSTGRES' ? (
     <PostgresIcon sx={{ color: colors.languagePostgres }} {...props} />
   ) : language === 'MYSQL' ? (

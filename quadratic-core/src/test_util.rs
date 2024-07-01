@@ -201,6 +201,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
                     }
                     CodeCellLanguage::Python => code_cell.code.to_string(),
                     CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),
+                    CodeCellLanguage::Javascript => code_cell.code.to_string(),
                 },
                 _ => sheet
                     .display_value(pos)
@@ -229,7 +230,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
         );
     });
 
-    // limited suppported color set
+    // limited supported color set
     let bg_colors = HashMap::<&str, Color>::from_iter([
         ("white", Color::BG_WHITE),
         ("red", Color::BG_RED),
