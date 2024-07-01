@@ -2,13 +2,12 @@ import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAt
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
 import { TooltipHint } from '@/app/ui/components/TooltipHint';
 import { SqlAdd } from '@/app/ui/icons';
-import { useCodeEditor } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Type } from '@/shared/components/Type';
 import { cn } from '@/shared/shadcn/utils';
 import { KeyboardArrowRight, Refresh } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type Table = {
@@ -23,68 +22,57 @@ type Column = {
   type: string;
 };
 
-type LoadState = 'loading' | 'loaded' | 'error';
+type LoadState = 'not-initialized' | 'loading' | 'loaded' | 'error';
 type SchemaData = Awaited<ReturnType<typeof connectionClient.schemas.get>>;
 
-export const SchemaViewer = () => {
+interface Props {
+  bottom?: boolean;
+}
+
+export const SchemaViewer = (props: Props) => {
+  const { bottom } = props;
   const { mode } = useRecoilValue(editorInteractionStateAtom);
+
   const connection = getConnectionInfo(mode);
-  if (!connection) {
-    throw new Error('Expected a connection cell to be open.');
-  }
+  if (!connection) throw new Error('Expected a connection cell to be open.');
   const [expandAll, setExpandAll] = useState(false);
-  const [loadState, setLoadState] = useState<LoadState>('error');
   const [data, setData] = useState<SchemaData | null>(null);
 
-  // TODO: (connections) fetch this data when the document loads
-  const fetchData = useCallback(() => {
-    setLoadState('loading');
-    connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id).then((newSchemaData) => {
-      if (newSchemaData) {
-        setData(newSchemaData);
-        setLoadState('loaded');
-      } else {
-        setLoadState('error');
-      }
-    });
+  // needs to be a ref to ensure only fetch is only called once
+  const loadState = useRef<LoadState>('not-initialized');
+  const [loadingAnimation, setLoadingAnimation] = useState(false);
+  const fetchData = useCallback(async () => {
+    if (loadState.current === 'loading') return;
+    loadState.current = 'loading';
+    setLoadingAnimation(true);
+    const newSchemaData = await connectionClient.schemas.get(connection.kind.toLowerCase() as any, connection.id);
+    setLoadingAnimation(false);
+    if (newSchemaData) {
+      setData(newSchemaData);
+      loadState.current = 'loaded';
+    } else {
+      loadState.current = 'error';
+    }
   }, [connection.id, connection.kind]);
 
   useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const schemaViewerData = useMemo(
-    () =>
-      data && (
-        <div className="overflow-scroll px-3 text-sm">
-          <ul>
-            {data.tables.map((table, i) => (
-              <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
-            ))}
-          </ul>
-        </div>
-      ),
-    [data, expandAll]
-  );
+    if (loadState.current === 'not-initialized') {
+      fetchData();
+    }
+  }, [fetchData, loadState]);
 
   return (
     <>
-      <div style={{ position: 'absolute', top: 8, right: 8 }}>
+      <div style={{ position: 'absolute', top: bottom ? '3rem' : 3, right: 8, zIndex: 100 }}>
         <div>
           <TooltipHint title="Refresh schema">
-            <IconButton
-              size="small"
-              onClick={() => {
-                fetchData();
-              }}
-            >
-              <Refresh fontSize="small" className={loadState === 'loading' ? 'animate-spin' : ''} />
+            <IconButton size="small" onClick={fetchData}>
+              <Refresh fontSize="small" className={loadingAnimation ? 'animate-spin' : ''} />
             </IconButton>
           </TooltipHint>
         </div>
       </div>
-      {loadState === 'error' && (
+      {loadState.current === 'error' && (
         <Type className="m-3 mt-0 text-destructive">
           Error loading data schema.{' '}
           <button className="underline" onClick={fetchData}>
@@ -93,7 +81,15 @@ export const SchemaViewer = () => {
           or contact us.
         </Type>
       )}
-      {schemaViewerData}
+      {data && (
+        <div className="overflow-scroll px-3 text-sm">
+          <ul>
+            {data.tables.map((table, i) => (
+              <TableListItem data={table} key={i} expandAll={expandAll} setExpandAll={setExpandAll} />
+            ))}
+          </ul>
+        </div>
+      )}
     </>
   );
 };
@@ -108,22 +104,22 @@ function TableListItem({
   setExpandAll: any;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { editorRef } = useCodeEditor();
+  // const { editorRef } = useCodeEditor();
   const expanded = isExpanded || expandAll;
 
-  const onQuery = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const onQuery = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
-    if (editorRef.current) {
-      const selection = editorRef.current.getSelection();
-      if (!selection) return;
-      const id = { major: 1, minor: 1 };
-      const text = `SELECT * FROM "${name}" LIMIT 100`;
-      const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
-      editorRef.current.executeEdits('my-source', [op]);
-      editorRef.current.focus();
-    }
-  };
+    // if (editorRef.current) {
+    //   const selection = editorRef.current.getSelection();
+    //   if (!selection) return;
+    //   const id = { major: 1, minor: 1 };
+    //   const text = `SELECT * FROM "${name}" LIMIT 100`;
+    //   const op = { identifier: id, range: selection, text: text, forceMoveMarkers: true };
+    //   editorRef.current.executeEdits('my-source', [op]);
+    //   editorRef.current.focus();
+    // }
+  }, []);
 
   return (
     <li>

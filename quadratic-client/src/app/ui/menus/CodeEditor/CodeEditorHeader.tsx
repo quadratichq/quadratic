@@ -1,11 +1,12 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetPosTS } from '@/app/gridGL/types/size';
-import { getCodeCell, getConnectionUuid } from '@/app/helpers/codeCellLanguage';
+import { getCodeCell, getConnectionUuid, getLanguage } from '@/app/helpers/codeCellLanguage';
 import { LanguageIcon } from '@/app/ui/components/LanguageIcon';
 import { CodeEditorRefButton } from '@/app/ui/menus/CodeEditor/CodeEditorRefButton';
+import { LanguageState } from '@/app/web-workers/languageTypes';
 import { MultiplayerUser } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
-import { CodeRun, PythonStateType } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
+import { CodeRun } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { useFileMetaRouteLoaderData } from '@/routes/_file.$uuid';
 import { cn } from '@/shared/shadcn/utils';
 import { Close, PlayArrow, Stop } from '@mui/icons-material';
@@ -23,17 +24,18 @@ interface Props {
   unsaved: boolean;
 
   saveAndRunCell: () => void;
-  cancelPython: () => void;
+  cancelRun: () => void;
   closeEditor: () => void;
 }
 
 export const CodeEditorHeader = (props: Props) => {
-  const { cellLocation, unsaved, saveAndRunCell, cancelPython, closeEditor } = props;
+  const { cellLocation, unsaved, saveAndRunCell, cancelRun, closeEditor } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const [currentSheetId, setCurrentSheetId] = useState<string>(sheets.sheet.id);
   const hasPermission = hasPermissionToEditFile(editorInteractionState.permissions);
   const codeCell = getCodeCell(editorInteractionState.mode);
   const { connections } = useFileMetaRouteLoaderData();
+  const language = getLanguage(editorInteractionState.mode);
 
   const connectionUuid = getConnectionUuid(editorInteractionState.mode);
   const foundConnection = connections.find((connection) => connection.uuid === connectionUuid);
@@ -55,7 +57,7 @@ export const CodeEditorHeader = (props: Props) => {
   const [isRunningComputation, setIsRunningComputation] = useState<false | 'multiplayer' | 'player'>(false);
   useEffect(() => {
     // update running computation for player
-    const playerState = (_state: PythonStateType, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
+    const playerState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
       if (!cellLocation) return;
       if (
         current &&
@@ -111,9 +113,11 @@ export const CodeEditorHeader = (props: Props) => {
     };
 
     events.on('pythonState', playerState);
+    events.on('javascriptState', playerState);
     events.on('multiplayerUpdate', multiplayerUpdate);
     return () => {
       events.off('pythonState', playerState);
+      events.off('javascriptState', playerState);
       events.off('multiplayerUpdate', multiplayerUpdate);
     };
   }, [cellLocation]);
@@ -126,7 +130,7 @@ export const CodeEditorHeader = (props: Props) => {
         className={cn(
           `relative`,
           unsaved &&
-            `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-warning after:content-['']`
+            `after:pointer-events-none after:absolute after:-bottom-0.5 after:-right-0.5 after:h-3 after:w-3 after:rounded-full after:border-2 after:border-solid after:border-background after:bg-gray-400 after:content-['']`
         )}
       >
         <TooltipHint title={`${codeCell?.label}${unsaved ? ' · Unsaved changes' : ''}`} placement="bottom">
@@ -146,7 +150,6 @@ export const CodeEditorHeader = (props: Props) => {
           <div className="text-xs leading-4 text-muted-foreground">Connection: {currentConnectionName}</div>
         )}
       </div>
-
       <div className="ml-auto flex flex-shrink-0 items-center gap-2">
         {isRunningComputation && (
           <TooltipHint title={'Python executing…'} placement="bottom">
@@ -154,7 +157,7 @@ export const CodeEditorHeader = (props: Props) => {
           </TooltipHint>
         )}
         {hasPermission && <CodeEditorRefButton />}
-        {hasPermission && codeCell?.id === 'Python' && <SnippetsPopover />}
+        {hasPermission && ['Python', 'Javascript'].includes(language as string) && <SnippetsPopover />}
         {hasPermission &&
           (!isRunningComputation ? (
             <TooltipHint title="Save & run" shortcut={`${KeyboardSymbols.Command}↵`} placement="bottom">
@@ -167,7 +170,7 @@ export const CodeEditorHeader = (props: Props) => {
           ) : (
             <TooltipHint title="Cancel execution" shortcut={`${KeyboardSymbols.Command}␛`} placement="bottom">
               <span>
-                <IconButton size="small" color="primary" onClick={cancelPython} disabled={!isRunningComputation}>
+                <IconButton size="small" color="primary" onClick={cancelRun} disabled={!isRunningComputation}>
                   <Stop />
                 </IconButton>
               </span>

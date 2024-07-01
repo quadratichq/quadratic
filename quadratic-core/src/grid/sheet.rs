@@ -12,10 +12,10 @@ use super::formats::format::Format;
 use super::formatting::CellFmtAttr;
 use super::ids::SheetId;
 use super::js_types::CellFormatSummary;
-use super::{CodeRun, NumericFormat, NumericFormatKind};
+use super::{CodeRun, NumericFormatKind};
 use crate::grid::{borders, SheetBorders};
 use crate::sheet_offsets::SheetOffsets;
-use crate::{Array, CellValue, IsBlank, Pos, Rect};
+use crate::{Array, CellValue, Pos, Rect};
 
 pub mod bounds;
 pub mod cell_array;
@@ -47,6 +47,13 @@ pub struct Sheet {
 
     #[serde(with = "crate::util::indexmap_serde")]
     pub code_runs: IndexMap<Pos, CodeRun>,
+
+    // todo: we need to redo this struct to track the timestamp for all formats
+    // applied to column and rows to properly use the latest column or row
+    // formatting. The current implementation only stores the latest format for
+    // fill color (which I mistakenly thought would be the only conflict). This
+    // regrettably requires a change to the file format since it will break
+    // existing use cases.
 
     // Column/Row, and All formatting. The second tuple stores the timestamp for
     // the fill_color, which is used to determine the z-order for overlapping
@@ -122,7 +129,7 @@ impl Sheet {
     /// and did not previously exist (so no change is needed).
     pub fn set_cell_value(&mut self, pos: Pos, value: impl Into<CellValue>) -> Option<CellValue> {
         let value = value.into();
-        let is_empty = value.is_blank();
+        let is_empty = value.is_blank_or_empty_string();
         let value: Option<CellValue> = if is_empty { None } else { Some(value) };
 
         // if there's no value and the column doesn't exist, then nothing more needs to be done
@@ -202,6 +209,7 @@ impl Sheet {
                     .code_runs
                     .get(&pos)
                     .and_then(|run| run.cell_value_at(0, 0)),
+                CellValue::Blank => self.get_code_cell_value(pos),
                 _ => Some(cell_value.clone()),
             }
         } else {
@@ -225,16 +233,6 @@ impl Sheet {
     pub fn get_formatting_value<A: CellFmtAttr>(&self, pos: Pos) -> Option<A::Value> {
         let column = self.get_column(pos.x)?;
         A::column_data_ref(column).get(pos.y)
-    }
-
-    pub fn cell_numeric_info(&self, pos: Pos) -> (Option<NumericFormat>, Option<i16>) {
-        if let Some(column) = self.get_column(pos.x) {
-            let format = column.numeric_format.get(pos.y);
-            let decimals = column.numeric_decimals.get(pos.y);
-            (format, decimals)
-        } else {
-            (None, None)
-        }
     }
 
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> Option<NumericFormatKind> {
@@ -326,9 +324,9 @@ impl Sheet {
     }
 
     /// get or calculate decimal places for a cell
-    pub fn decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
+    pub fn calculate_decimal_places(&self, pos: Pos, is_percentage: bool) -> Option<i16> {
         // first check if numeric_decimals already exists for this cell
-        if let Some(decimals) = self.get_column(pos.x)?.numeric_decimals.get(pos.y) {
+        if let Some(decimals) = self.format_cell(pos.x, pos.y, true).numeric_decimals {
             return Some(decimals);
         }
 
@@ -363,7 +361,10 @@ mod test {
     use super::*;
     use crate::{
         controller::GridController,
-        grid::{Bold, CodeCellLanguage, Italic, NumericFormat},
+        grid::{
+            formats::{format_update::FormatUpdate, Formats},
+            Bold, CodeCellLanguage, Italic, NumericFormat,
+        },
         selection::Selection,
         test_util::print_table,
         CodeCellValue, SheetPos,
@@ -406,7 +407,7 @@ mod test {
     ) {
         let pos = Pos { x, y };
         let _ = sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
-        assert_eq!(sheet.decimal_places(pos, is_percentage), expected);
+        assert_eq!(sheet.calculate_decimal_places(pos, is_percentage), expected);
     }
 
     #[test]
@@ -427,13 +428,38 @@ mod test {
     }
 
     #[test]
-    fn test_current_decimal_places_numeric_format() {
-        let mut sheet = Sheet::new(SheetId::new(), String::from(""), String::from(""));
+    fn decimal_places() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
-        let column = sheet.get_or_create_column(3);
-        column.numeric_decimals.set(3, Some(3));
+        let sheet = gc.sheet_mut(sheet_id);
+        sheet.set_formats_columns(
+            &[3],
+            &Formats::repeat(
+                FormatUpdate {
+                    numeric_decimals: Some(Some(2)),
+                    ..Default::default()
+                },
+                1,
+            ),
+        );
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            Some(2)
+        );
 
-        assert_eq!(sheet.decimal_places(Pos { x: 3, y: 3 }, false), Some(3));
+        sheet.set_format_cell(
+            Pos { x: 3, y: 3 },
+            &FormatUpdate {
+                numeric_decimals: Some(Some(3)),
+                ..Default::default()
+            },
+            false,
+        );
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 3, y: 3 }, false),
+            Some(3)
+        );
     }
 
     #[test]
@@ -445,7 +471,10 @@ mod test {
             CellValue::Text(String::from("abc")),
         );
 
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), None);
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            None
+        );
     }
 
     #[test]
@@ -458,7 +487,10 @@ mod test {
         );
 
         // expect a single decimal place
-        assert_eq!(sheet.decimal_places(Pos { x: 1, y: 2 }, false), Some(1));
+        assert_eq!(
+            sheet.calculate_decimal_places(Pos { x: 1, y: 2 }, false),
+            Some(1)
+        );
     }
 
     #[test]
@@ -659,5 +691,14 @@ mod test {
         let mut sheet = sheet.clone();
         let new_column = sheet.get_or_create_column(1);
         assert_eq!(new_column, &Column::new(new_column.x));
+    }
+
+    #[test]
+    fn display_value_blanks() {
+        let mut sheet = Sheet::test();
+        let pos = Pos { x: 0, y: 0 };
+        assert_eq!(sheet.display_value(pos), None);
+        sheet.set_cell_value(pos, CellValue::Blank);
+        assert_eq!(sheet.display_value(pos), None);
     }
 }

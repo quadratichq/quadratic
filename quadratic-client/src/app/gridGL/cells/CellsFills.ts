@@ -9,9 +9,6 @@ import { intersects } from '../helpers/intersects';
 import { pixiApp } from '../pixiApp/PixiApp';
 import { CellsSheet } from './CellsSheet';
 
-// todo: might want to add this to the update loop instead of listening for
-// viewport changes to avoid multiple calls to drawMeta
-
 interface SpriteBounds extends Sprite {
   viewBounds: Rectangle;
 }
