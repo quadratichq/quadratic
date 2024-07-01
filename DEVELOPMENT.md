@@ -1,4 +1,3 @@
-<!-- omit in toc -->
 # Development
 
 Let's get everything setup to develop on Quadratic!
