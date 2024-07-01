@@ -91,6 +91,7 @@ const instance = new aws.ec2.Instance("connection-instance", {
       "quadratic-connection-development",
       {
         QUADRATIC_API_URI: quadraticApiUri,
+        STATIC_IPS: `${eip1.publicIp},${eip2.publicIp}`,
       },
       true
     )
