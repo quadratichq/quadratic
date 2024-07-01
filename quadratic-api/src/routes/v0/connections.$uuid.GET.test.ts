@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { encryptFromEnv } from '../../utils/crypto';
 
 beforeAll(async () => {
   const userWithConnection = await dbClient.user.create({
@@ -14,18 +15,20 @@ beforeAll(async () => {
     },
   });
 
+  const typeDetails = {
+    host: 'localhost',
+    port: '5432',
+    database: 'postgres',
+    username: 'root',
+    password: 'password',
+  };
+
   await dbClient.connection.create({
     data: {
       uuid: '00000000-0000-0000-0000-000000000000',
       name: 'First connection',
       type: 'POSTGRES',
-      typeDetails: JSON.stringify({
-        host: 'localhost',
-        port: '5432',
-        database: 'postgres',
-        username: 'root',
-        password: 'password',
-      }),
+      typeDetails: Buffer.from(encryptFromEnv(JSON.stringify(typeDetails))),
       UserConnectionRole: {
         create: {
           userId: userWithConnection.id,
