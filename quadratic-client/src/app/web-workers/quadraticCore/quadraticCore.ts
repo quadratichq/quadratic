@@ -140,6 +140,9 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientUndoRedo') {
       events.emit('undoRedo', e.data.undo, e.data.redo);
       return;
+    } else if (e.data.type === 'coreClientImage') {
+      events.emit('updateImage', e.data);
+      return;
     } else if (e.data.type === 'coreClientSheetMetaFills') {
       events.emit('sheetMetaFills', e.data.sheetId, e.data.fills);
       return;
@@ -912,6 +915,10 @@ class QuadraticCore {
 
   sendPythonInit(port: MessagePort) {
     this.send({ type: 'clientCoreInitPython' }, port);
+  }
+
+  sendJavascriptInit(port: MessagePort) {
+    this.send({ type: 'clientCoreInitJavascript' }, port);
   }
 
   sendCancelExecution(language: CodeCellLanguage) {

@@ -200,6 +200,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect) {
                         replace_internal_cell_references(&code_cell.code.to_string(), pos)
                     }
                     CodeCellLanguage::Python => code_cell.code.to_string(),
+                    CodeCellLanguage::Javascript => code_cell.code.to_string(),
                 },
                 _ => sheet
                     .display_value(pos)

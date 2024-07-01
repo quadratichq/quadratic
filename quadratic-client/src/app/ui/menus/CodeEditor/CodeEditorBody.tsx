@@ -19,10 +19,12 @@ import { useEditorCellHighlights } from './useEditorCellHighlights';
 // TODO(ddimaria): leave this as we're looking to add this back in once improved
 // import { useEditorDiagnostics } from './useEditorDiagnostics';
 // import { Diagnostic } from 'vscode-languageserver-types';
+// import { typescriptLibrary } from '@/web-workers/javascriptWebWorker/worker/javascript/typescriptLibrary';
 import { events } from '@/app/events/events';
 import { SheetPosTS } from '@/app/gridGL/types/size';
 import { SheetRect } from '@/app/quadratic-core-types';
 import { insertCellRef } from '@/app/ui/menus/CodeEditor/insertCellRef';
+import { javascriptLibraryForEditor } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generatedJavascriptForEditor';
 import { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import useEventListener from '@/shared/hooks/useEventListener';
 import { useEditorOnSelectionChange } from './useEditorOnSelectionChange';
@@ -43,7 +45,7 @@ interface Props {
 let registered = false;
 
 export const CodeEditorBody = (props: Props) => {
-  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellsAccessed, cellLocation } = props;
+  const { editorContent, setEditorContent, closeEditor, evaluationResult, cellLocation } = props;
   const editorInteractionState = useRecoilValue(editorInteractionStateAtom);
   const language = editorInteractionState.mode;
   const readOnly = !hasPermissionToEditFile(editorInteractionState.permissions);
@@ -51,7 +53,7 @@ export const CodeEditorBody = (props: Props) => {
   const [isValidRef, setIsValidRef] = useState(false);
   const { editorRef, monacoRef } = useCodeEditor();
 
-  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language, cellsAccessed);
+  useEditorCellHighlights(isValidRef, editorRef, monacoRef, language);
   useEditorOnSelectionChange(isValidRef, editorRef, monacoRef, language);
   useEditorReturn(isValidRef, editorRef, monacoRef, language, evaluationResult);
 
@@ -69,6 +71,7 @@ export const CodeEditorBody = (props: Props) => {
 
   useEffect(() => {
     const insertText = (text: string) => {
+      debugger;
       if (!editorRef.current) return;
       const position = editorRef.current.getPosition();
       const model = editorRef.current.getModel();
@@ -77,7 +80,6 @@ export const CodeEditorBody = (props: Props) => {
       const range =
         selection || new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
       model.applyEdits([{ range, text }]);
-      editorRef.current.setPosition(range.getEndPosition().delta(text.length, 0));
       editorRef.current.focus();
     };
     events.on('insertCodeEditorText', insertText);
@@ -133,29 +135,40 @@ export const CodeEditorBody = (props: Props) => {
       // Only register language once
       if (registered) return;
 
-      monaco.languages.register({ id: 'Formula' });
-      monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
-      monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
-      monaco.languages.registerCompletionItemProvider('Formula', {
-        provideCompletionItems,
-      });
-      monaco.languages.registerHoverProvider('Formula', { provideHover });
+      if (language === 'Formula') {
+        monaco.languages.register({ id: 'Formula' });
+        monaco.languages.setLanguageConfiguration('Formula', FormulaLanguageConfig);
+        monaco.languages.setMonarchTokensProvider('Formula', FormulaTokenizerConfig);
+        monaco.languages.registerCompletionItemProvider('Formula', {
+          provideCompletionItems,
+        });
+        monaco.languages.registerHoverProvider('Formula', { provideHover });
+      }
 
-      monaco.languages.register({ id: 'python' });
-      monaco.languages.registerCompletionItemProvider('python', {
-        provideCompletionItems: provideCompletionItemsPython,
-        triggerCharacters: ['.', '[', '"', "'"],
-      });
-      monaco.languages.registerSignatureHelpProvider('python', {
-        provideSignatureHelp: provideSignatureHelpPython,
-        signatureHelpTriggerCharacters: ['(', ','],
-      });
-      monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
+      if (language === 'Python') {
+        monaco.languages.register({ id: 'python' });
+        monaco.languages.registerCompletionItemProvider('python', {
+          provideCompletionItems: provideCompletionItemsPython,
+          triggerCharacters: ['.', '[', '"', "'"],
+        });
+        monaco.languages.registerSignatureHelpProvider('python', {
+          provideSignatureHelp: provideSignatureHelpPython,
+          signatureHelpTriggerCharacters: ['(', ','],
+        });
+        monaco.languages.registerHoverProvider('python', { provideHover: provideHoverPython });
 
-      // load the document in the python language server
-      pyrightWorker?.openDocument({
-        textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
-      });
+        // load the document in the python language server
+        pyrightWorker?.openDocument({
+          textDocument: { text: editorRef.current?.getValue() ?? '', uri, languageId: 'python' },
+        });
+      }
+
+      if (language === 'Javascript') {
+        monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+          diagnosticCodesToIgnore: [1108, 1375, 1378],
+        });
+        monaco.editor.createModel(javascriptLibraryForEditor, 'javascript');
+      }
 
       registered = true;
     },
@@ -193,7 +206,7 @@ export const CodeEditorBody = (props: Props) => {
       <Editor
         height="100%"
         width="100%"
-        language={language === 'Python' ? 'python' : language}
+        language={language === 'Python' ? 'python' : language === 'Javascript' ? 'javascript' : undefined}
         value={editorContent}
         onChange={setEditorContent}
         onMount={onMount}
@@ -208,9 +221,12 @@ export const CodeEditorBody = (props: Props) => {
             horizontal: 'hidden',
           },
           wordWrap: 'on',
+
+          // need to ignore unused b/c of the async wrapper around the code and import code
+          showUnused: language === 'Javascript' ? false : true,
         }}
       />
-      {language === 'Python' && (
+      {['Python', 'Javascript'].includes(language as string) && (
         <CodeEditorPlaceholder editorContent={editorContent} setEditorContent={setEditorContent} />
       )}
     </div>

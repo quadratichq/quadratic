@@ -157,17 +157,6 @@ class InlineEditorHandler {
       throw new Error('Expected div and editor to be defined in InlineEditorHandler');
     }
     if (input) {
-      if (pixiAppSettings.editorInteractionState.showCodeEditor) {
-        pixiAppSettings.setEditorInteractionState?.({
-          ...pixiAppSettings.editorInteractionState,
-          waitingForEditorClose: {
-            selectedCell: pixiAppSettings.editorInteractionState.selectedCell,
-            selectedCellSheet: pixiAppSettings.editorInteractionState.selectedCellSheet,
-            mode: pixiAppSettings.editorInteractionState.mode,
-            showCellTypeMenu: false,
-          },
-        });
-      }
       this.open = true;
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.getCursor();

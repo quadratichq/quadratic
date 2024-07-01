@@ -24,7 +24,6 @@ import {
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
 import { MultiplayerCoreReceiveTransaction } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
-import { PythonRun } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import * as Sentry from '@sentry/react';
 import {
   ClientCoreFindNextColumn,
@@ -35,7 +34,6 @@ import {
   ClientCoreSummarizeSelection,
 } from '../coreClientMessages';
 import { coreClient } from './coreClient';
-import { corePython } from './corePython';
 import { coreRender } from './coreRender';
 import { offline } from './offline';
 import { numbersToRect, pointsToRect, posToPos, posToRect } from './rustConversions';
@@ -781,51 +779,26 @@ class Core {
     });
   }
 
-  calculationComplete(transactionId: string, results: PythonRun) {
-    let array_output: string[][][] | null = null;
-    if (results.array_output) {
-      // A 1d list was provided. We convert it to a 2d array by changing each entry into an array.
-      if (!Array.isArray(results.array_output[0][0])) {
-        array_output = (results.array_output as any).map((row: any) => [row]);
-      } else {
-        array_output = results.array_output as any as string[][][];
-      }
-    }
-
-    const codeResult: JsCodeResult = {
-      transaction_id: transactionId,
-      success: results.success,
-      error_msg: results.std_err,
-      input_python_std_out: results.std_out,
-      output_value: results.output ? (results.output as any as string[]) : null,
-      array_output,
-      line_number: results.lineno ?? null,
-      output_type: results.output_type ?? null,
-      cancel_compute: false,
-    } as JsCodeResult;
-
+  calculationComplete(results: JsCodeResult) {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
-    this.gridController.calculationComplete(JSON.stringify(codeResult));
+    this.gridController.calculationComplete(JSON.stringify(results));
   }
 
   getCells(
-    id: number,
     transactionId: string,
     x: number,
     y: number,
     w: number,
-    h: number,
+    h?: number,
     sheet?: string,
     lineNumber?: number
-  ) {
+  ): JsGetCellResponse[] | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
       const cellsStringified = this.gridController.calculationGetCells(transactionId, x, y, w, h, sheet, lineNumber);
-      const cells = cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
-      corePython.sendGetCells(id, cells);
+      return cellsStringified ? (JSON.parse(cellsStringified) as JsGetCellResponse[]) : undefined;
     } catch (e) {
       // there was an error getting the cells (likely, an unknown sheet name)
-      corePython.sendGetCells(id);
     }
   }
 
@@ -879,14 +852,14 @@ class Core {
     const codeResult: JsCodeResult = {
       transaction_id: transactionId,
       success: false,
-      error_msg: 'Python execution cancelled by user',
-      input_python_std_out: null,
+      std_err: 'Execution cancelled by user',
+      std_out: null,
       output_value: null,
-      array_output: null,
+      output_array: null,
       line_number: null,
-      output_type: null,
+      output_display_type: null,
       cancel_compute: true,
-    } as JsCodeResult;
+    };
     this.gridController.calculationComplete(JSON.stringify(codeResult));
   }
 
