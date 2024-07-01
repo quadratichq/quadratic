@@ -25,7 +25,7 @@ const subNet1 = config.require("subnet1");
 const subNet2 = config.require("subnet2");
 const vpcId = config.require("vpc-id");
 
-// Allocate Elastic IPs for the NAT Gateways
+// Allocate Elastic IP for the instance so it remands the same after deployments
 const eip = new aws.ec2.Eip("nat-eip-1");
 
 // create the instance
