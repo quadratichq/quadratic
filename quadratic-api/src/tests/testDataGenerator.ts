@@ -62,8 +62,6 @@ export async function createTeam({
     data: {
       // Required fields
       name: team?.name ?? 'Test Team',
-      // TODO: (connetions) this shouldn't be required
-      stripeCustomerId: '1',
 
       // Spread in additional data
       ...(team ? team : {}),
