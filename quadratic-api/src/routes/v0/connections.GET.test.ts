@@ -46,7 +46,7 @@ describe('GET /v0/connections', () => {
           expect(res.body[0].createdDate).toBeDefined();
           expect(res.body[0].updatedDate).toBeDefined();
           expect(res.body[0].type).toBeDefined();
-          expect(res.body[0].typeDetails).not.toBeDefined();
+          expect(res.body[0].typeDetails).toBeDefined();
 
           expect(res.body[0].name).toBe('Created second');
           expect(res.body[1].name).toBe('Created first');
