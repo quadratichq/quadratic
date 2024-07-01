@@ -1,4 +1,5 @@
 import { CodeEditorProvider } from '@/app/ui/menus/CodeEditor/CodeEditorContext';
+import ConnectionsMenu from '@/app/ui/menus/ConnectionsMenu';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { useEffect } from 'react';
 import { useNavigation, useParams } from 'react-router';
@@ -85,6 +86,7 @@ export default function QuadraticUI() {
       </div>
 
       {!presentationMode && !isEmbed && <BottomBar />}
+      {editorInteractionState.showConnectionsMenu && <ConnectionsMenu />}
       {editorInteractionState.showFeedbackMenu && <FeedbackMenu />}
       {editorInteractionState.showShareFileMenu && (
         <ShareFileDialog

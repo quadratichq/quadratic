@@ -1,7 +1,7 @@
 import * as z from 'zod';
 
 // Helper to turn empty string into undefined, so JSON.stringify() will remove empty values
-const transformEmptyStringToUndefined = (val: any) => (val === '' ? undefined : val);
+const transformEmptyStringToUndefined = (val: string | undefined) => (val === '' ? undefined : val);
 
 /**
  * =============================================================================
@@ -18,10 +18,9 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
   host: z.string().min(1, { message: 'Required' }),
   port: z
     .string()
-    .optional()
+    .min(1, { message: 'Required' })
     .refine(
       (port) => {
-        if (port === '') return true;
         const portNumber = Number(port);
         if (isNaN(portNumber)) return false;
         return portNumber >= 0 && portNumber <= 65535;
@@ -29,10 +28,9 @@ export const ConnectionTypeDetailsPostgresSchema = z.object({
       {
         message: 'Port must be a valid number between 0 and 65535',
       }
-    )
-    .transform(transformEmptyStringToUndefined),
+    ),
   database: z.string().min(1, { message: 'Required' }),
-  username: z.string().optional().transform(transformEmptyStringToUndefined),
+  username: z.string().min(1, { message: 'Required' }),
   password: z.string().optional().transform(transformEmptyStringToUndefined),
 });
 
@@ -72,12 +70,17 @@ export const ConnectionPostgresSchema = z.object({
   type: ConnectionTypePostgresSchema,
   typeDetails: ConnectionTypeDetailsPostgresSchema,
 });
+export type ConnectionPostgres = z.infer<typeof ConnectionPostgresSchema>;
 
 export const ConnectionMysqlSchema = z.object({
   ...ConnectionBaseSchema.shape,
   type: ConnectionTypeMysqlSchema,
   typeDetails: ConnectionTypeDetailsMysqlSchema,
 });
+export type ConnectionMysql = z.infer<typeof ConnectionMysqlSchema>;
+
+const ConnectionSchema = z.union([ConnectionPostgresSchema, ConnectionMysqlSchema]);
+export type Connection = z.infer<typeof ConnectionSchema>;
 
 /**
  * =============================================================================
@@ -85,21 +88,20 @@ export const ConnectionMysqlSchema = z.object({
  * =============================================================================
  */
 
-const ConnectionSchema = z.union([ConnectionPostgresSchema, ConnectionMysqlSchema]);
-
 const GenericConnectionSchema = z.object({
   uuid: z.string().uuid(),
   createdDate: z.string().datetime(),
   updatedDate: z.string().datetime(),
-
   name: ConnectionNameSchema,
+
   type: ConnectionTypesSchema,
-  typeDetails: z.any(),
+  typeDetails: z.union([ConnectionTypeDetailsPostgresSchema, ConnectionTypeDetailsMysqlSchema]),
 });
 
 export const ApiSchemasConnections = {
   // List connections
-  '/v0/connections.GET.response': z.array(GenericConnectionSchema.omit({ typeDetails: true })),
+  '/v0/connections?team-uuid.GET.response': z.array(GenericConnectionSchema),
+  '/v0/connections?file-uuid.GET.response': z.array(GenericConnectionSchema.omit({ typeDetails: true })),
   // z.array(
   //   z.union([ConnectionPostgresSchema.omit({ typeDetails: true }), ConnectionMysqlSchema.omit({ typeDetails: true })])
   // ),

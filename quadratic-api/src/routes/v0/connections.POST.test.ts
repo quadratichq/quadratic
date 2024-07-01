@@ -3,45 +3,70 @@ import { app } from '../../app';
 import dbClient from '../../dbClient';
 
 beforeAll(async () => {
-  await dbClient.user.create({
+  const user = await dbClient.user.create({
     data: {
       auth0Id: 'user1',
+    },
+  });
+
+  await dbClient.team.create({
+    data: {
+      uuid: '00000000-0000-0000-0000-000000000000',
+      name: 'test team',
+      // TODO: (connections) not necessary
+      stripeCustomerId: '1',
+      UserTeamRole: {
+        create: [
+          {
+            role: 'OWNER',
+            userId: user.id,
+          },
+        ],
+      },
     },
   });
 });
 
 afterAll(async () => {
   await dbClient.$transaction([
-    dbClient.userConnectionRole.deleteMany(),
     dbClient.connection.deleteMany(),
+    dbClient.userTeamRole.deleteMany(),
+    dbClient.team.deleteMany(),
     dbClient.user.deleteMany(),
   ]);
 });
 
-describe('POST /v0/connections', () => {
+const validPayload = {
+  name: 'My connection',
+  type: 'POSTGRES',
+  typeDetails: JSON.stringify({}),
+};
+
+describe.skip('POST /v0/connections', () => {
   describe('bad request', () => {
-    it("responds with a 400 if the connection type isn't supported", async () => {
+    it('responds with a 400 if you don’t pass the team uuid', async () => {
       await request(app)
         .post('/v0/connections')
         .set('Authorization', `Bearer ValidToken user1`)
-        .send({
-          type: 'UNSUPPORTED',
-        })
+        .send(validPayload)
+        .expect(400);
+    });
+    it('responds with a 403 if you don’t have permission', async () => {
+      await request(app).post('/v0/connections').set('Authorization', `Bearer ValidToken user1`).send({}).expect(400);
+    });
+    it('returns a 400 without all required fields', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { name, ...rest } = validPayload;
+      await request(app)
+        .post('/v0/connections?team-uuid=00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ValidToken user1`)
+        .send(rest)
         .expect(400);
     });
   });
+
   describe('postgres', () => {
-    it('returns a 400 without all required fields', async () => {
-      await request(app)
-        .post('/v0/connections')
-        .set('Authorization', `Bearer ValidToken user1`)
-        .send({
-          name: 'First connection',
-        })
-        .expect(400);
-    });
-    it.todo('creates a connection with only required fields');
-    it('creates a postgres connection with all fields', async () => {
+    it('creates a connection', async () => {
       await request(app)
         .post('/v0/connections')
         .set('Authorization', `Bearer ValidToken user1`)

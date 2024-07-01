@@ -1,51 +1,48 @@
-import { CONNECTION_FORM_ID } from '@/app/ui/connections/ConnectionDialogBody';
-import { ConnectionTest, ValidateThenTestConnection } from '@/app/ui/connections/ConnectionTest';
-import { getUpdateConnectionAction } from '@/routes/file.$uuid.connections.$connectionUuid';
-import { getCreateConnectionAction } from '@/routes/file.$uuid.connections.create.$connectionType';
+import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/_api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { ConnectionFormMysqlSchema } from 'quadratic-shared/typesAndSchemasConnections';
+import { ConnectionFormMysqlSchema, ConnectionMysql } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useSubmit } from 'react-router-dom';
 import { z } from 'zod';
+import { ConnectionFormActions, ValidateThenTestConnection } from './ConnectionFormActions';
 
 type FormValues = z.infer<typeof ConnectionFormMysqlSchema>;
 
-export function ConnectionFormMysql({
-  initialData,
-  connectionUuid,
+export function ConnectionFormTypeMysql({
+  handleNavigateToListView,
+  connection,
 }: {
-  connectionUuid: string;
-  initialData?: ApiTypes['/v0/connections/:uuid.GET.response']; // z.infer<typeof ConnectionMysqlSchema>;
+  handleNavigateToListView: () => void;
+  connection?: ConnectionMysql;
 }) {
   const [hidePassword, setHidePassword] = useState(true);
   const submit = useSubmit();
+  const connectionUuid = connection?.uuid;
 
-  const defaultValues: FormValues =
-    initialData && initialData.type === 'MYSQL' && initialData.typeDetails
-      ? {
-          name: initialData.name,
-          type: initialData.type,
-          host: initialData.typeDetails.host,
-          port: initialData.typeDetails.port,
-          database: initialData.typeDetails.database,
-          username: initialData.typeDetails.username,
-          password: initialData.typeDetails.password,
-        }
-      : {
-          name: '',
-          type: 'MYSQL',
-          host: '',
-          port: '',
-          database: '',
-          username: '',
-          password: '',
-        };
+  const defaultValues: FormValues = connection
+    ? {
+        name: connection.name,
+        type: connection.type,
+        host: connection.typeDetails.host,
+        port: connection.typeDetails.port,
+        database: connection.typeDetails.database,
+        username: connection.typeDetails.username,
+        password: '',
+      }
+    : {
+        name: '',
+        type: 'MYSQL',
+        host: '',
+        port: '3306',
+        database: 'mysql',
+        username: 'root',
+        password: '',
+      };
   const form = useForm<FormValues>({
     resolver: zodResolver(ConnectionFormMysqlSchema),
     defaultValues,
@@ -60,15 +57,17 @@ export function ConnectionFormMysql({
     // }
 
     // Update the connection
-    if (initialData) {
+    if (connectionUuid) {
       const data = getUpdateConnectionAction(connectionUuid, { name, typeDetails });
-      submit(data, { method: 'POST', encType: 'application/json' });
+      submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
+      handleNavigateToListView();
       return;
     }
 
     // Create a new connection
-    const data = getCreateConnectionAction({ name, type, typeDetails });
-    submit(data, { method: 'POST', encType: 'application/json' });
+    const data = getCreateConnectionAction({ name, type, typeDetails }, '8b125911-d3c8-490a-91bc-6dbacde16768');
+    submit(data, { action: '/_api/connections', method: 'POST', encType: 'application/json', navigate: false });
+    handleNavigateToListView();
   };
 
   // Simulate a form submission to do validation, run the test, return result
@@ -77,7 +76,6 @@ export function ConnectionFormMysql({
       form.handleSubmit(
         async (values) => {
           const { name, type, ...typeDetails } = values;
-
           resolve(() => connectionClient.test.run({ type: 'mysql', typeDetails }));
         },
         () => {
@@ -90,7 +88,7 @@ export function ConnectionFormMysql({
   return (
     <>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} id={CONNECTION_FORM_ID} className="space-y-2">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
           <FormField
             control={form.control}
             name="name"
@@ -98,7 +96,7 @@ export function ConnectionFormMysql({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input placeholder="My database (production)" autoComplete="off" {...field} autoFocus />
+                  <Input autoComplete="off" {...field} autoFocus />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -112,7 +110,7 @@ export function ConnectionFormMysql({
                 <FormItem className="col-span-2">
                   <FormLabel>Host</FormLabel>
                   <FormControl>
-                    <Input placeholder="127.0.0.1" autoComplete="off" {...field} />
+                    <Input autoComplete="off" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -125,7 +123,7 @@ export function ConnectionFormMysql({
                 <FormItem>
                   <FormLabel>Port</FormLabel>
                   <FormControl>
-                    <Input placeholder="5432" autoComplete="off" {...field} />
+                    <Input autoComplete="off" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -139,7 +137,7 @@ export function ConnectionFormMysql({
               <FormItem>
                 <FormLabel>Database</FormLabel>
                 <FormControl>
-                  <Input placeholder="my_database" autoComplete="off" {...field} />
+                  <Input autoComplete="off" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -154,7 +152,7 @@ export function ConnectionFormMysql({
                 <FormItem>
                   <FormLabel>Username</FormLabel>
                   <FormControl>
-                    <Input placeholder="root" autoComplete="off" {...field} />
+                    <Input autoComplete="off" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -190,9 +188,14 @@ export function ConnectionFormMysql({
               )}
             />
           </div>
+          <ConnectionFormActions
+            form={form}
+            validateThenTest={validateThenTest}
+            handleNavigateToListView={handleNavigateToListView}
+            connectionUuid={connectionUuid}
+          />
         </form>
       </Form>
-      <ConnectionTest form={form} validateThenTest={validateThenTest} />
     </>
   );
 }

@@ -1,73 +1,43 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
+import { expectError } from '../../tests/helpers';
+import { createConnection, createTeam, createUser } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
-  const userWithConnection = await dbClient.user.create({
-    data: {
-      auth0Id: 'userWithConnection',
+  const teamUser = await createUser({ auth0Id: 'teamUser' });
+  await createUser({ auth0Id: 'noTeamUser' });
+
+  const team = await createTeam({
+    team: {
+      uuid: '00000000-0000-0000-0000-000000000000',
     },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userWithoutConnection',
-    },
+    users: [{ userId: teamUser.id, role: 'OWNER' }],
+    connections: [{ type: 'POSTGRES', name: 'Created first' }],
   });
 
-  await dbClient.connection.create({
-    data: {
-      name: 'First connection',
-      type: 'POSTGRES',
-      typeDetails: JSON.stringify({
-        host: 'localhost',
-        port: '5432',
-        database: 'postgres',
-        username: 'root',
-        password: 'password',
-      }),
-      UserConnectionRole: {
-        create: {
-          userId: userWithConnection.id,
-          role: 'OWNER',
-        },
-      },
-    },
-  });
-  await dbClient.connection.create({
-    data: {
-      name: 'Second connection',
-      type: 'POSTGRES',
-      typeDetails: JSON.stringify({
-        host: 'localhost',
-        port: '5432',
-        database: 'postgres',
-        username: 'root',
-        password: 'password',
-      }),
-      UserConnectionRole: {
-        create: {
-          userId: userWithConnection.id,
-          role: 'OWNER',
-        },
-      },
-    },
+  await createConnection({
+    teamId: team.id,
+    type: 'POSTGRES',
+    name: 'Created second',
   });
 });
 
 afterAll(async () => {
   await dbClient.$transaction([
-    dbClient.userConnectionRole.deleteMany(),
     dbClient.connection.deleteMany(),
+    dbClient.userTeamRole.deleteMany(),
+    dbClient.team.deleteMany(),
     dbClient.user.deleteMany(),
   ]);
 });
 
 describe('GET /v0/connections', () => {
-  describe('connections you own', () => {
-    it('responds with connection data ordered reverse chronological', async () => {
+  describe('get all connections for a team user', () => {
+    it('responds with connection data', async () => {
       await request(app)
-        .get('/v0/connections')
-        .set('Authorization', `Bearer ValidToken userWithConnection`)
+        .get('/v0/connections?team-uuid=00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ValidToken teamUser`)
         .expect(200)
         .expect((res) => {
           expect(res.body.length).toBe(2);
@@ -76,24 +46,21 @@ describe('GET /v0/connections', () => {
           expect(res.body[0].createdDate).toBeDefined();
           expect(res.body[0].updatedDate).toBeDefined();
           expect(res.body[0].type).toBeDefined();
-          expect(res.body[0].typeDetails).not.toBeDefined();
+          expect(res.body[0].typeDetails).toBeDefined();
 
-          expect(res.body[0].name).toBe('Second connection');
-          expect(res.body[1].name).toBe('First connection');
+          expect(res.body[0].name).toBe('Created second');
+          expect(res.body[1].name).toBe('Created first');
         });
     });
   });
-  // TODO: (connections) sharing connections
-  // // describe('a connection you’ve been added to as an editor', () => {
-  // //   it.todo('responds with sharing data');
-  // // });
-  describe('you have access to zero connections', () => {
+
+  describe('get all connections for non-team user', () => {
     it('responds with a 403 if the file is private', async () => {
       await request(app)
-        .get('/v0/connections')
-        .set('Authorization', `Bearer ValidToken userWithoutConnection`)
-        .expect(200)
-        .expect((res) => res.body.length === 0);
+        .get('/v0/connections?team-uuid=00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ValidToken noTeamUser`)
+        .expect(403)
+        .expect(expectError);
     });
   });
 });
