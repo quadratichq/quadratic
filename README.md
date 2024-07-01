@@ -57,7 +57,6 @@ _Quadratic is in Beta._
 
 Want to learn more about how Quadratic works? Read the [How Quadratic Works](./docs/how_quadratic_works.md) doc.
 
-
 ## Examples
 
 Example sheets - [Examples](https://www.quadratichq.com/examples)
